@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#f6efe6">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Caveat:wght@600;700&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
      IDENTIDADE: CARTÃO DE CAFETERIA PREMIUM
@@ -82,28 +82,21 @@
   /* =========================================================
      1. CAPA
      ========================================================= */
-  .capa{padding:100px 0 32px}
-  .capa-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:44px;align-items:center}
-  .capa-chip{display:inline-flex;align-items:center;gap:8px;border:1.5px dashed var(--tracejado);background:var(--papel);color:var(--cafe);font-weight:700;font-size:.9rem;padding:6px 14px;border-radius:999px}
-  .capa-chip i{width:8px;height:8px;border-radius:50%;background:var(--verde);display:inline-block}
-  .capa .manuscrito{display:block;margin-top:18px}
-  .capa h1{font-size:clamp(2.9rem,7.5vw,5.2rem);letter-spacing:-1.5px;color:var(--cafe);margin:2px 0 12px}
-  .capa-frase{font-size:clamp(1.1rem,2.2vw,1.35rem);font-weight:600;max-width:520px}
-  .capa-botoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
-  .capa-numeros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:28px 0 0;padding:0;list-style:none;max-width:520px}
-  .capa-numeros li{padding:12px 14px;text-align:center}
-  .capa-numeros strong{display:block;font-size:1.7rem;font-weight:800;color:var(--cafe);line-height:1.1}
-  .capa-numeros span{font-size:.86rem;color:var(--texto-suave);font-weight:600}
-  .capa-foto{position:relative;max-width:390px;width:100%;margin:0 auto;padding:10px;transform:rotate(1.5deg)}
-  .capa-foto img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:16px}
-  .capa-foto .bilhete{position:absolute;left:-22px;bottom:34px;background:var(--papel);border:1.5px dashed var(--tracejado);border-radius:14px;padding:6px 14px;transform:rotate(-5deg);box-shadow:var(--sombra)}
-  .capa-foto .carimbo{
-    position:absolute;right:-18px;top:-18px;width:86px;height:86px;border-radius:50%;
-    border:2px dashed var(--vermelho);background:var(--papel);color:var(--vermelho);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transform:rotate(10deg);box-shadow:var(--sombra)
-  }
-  .carimbo b{font-size:1.25rem;line-height:1}
-  .carimbo small{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;line-height:1.2}
+  .capa{position:relative;height:clamp(440px,70vh,620px);padding:0;overflow:hidden;background:var(--creme)}
+  .capa-foto{position:absolute;top:0;right:0;width:68%;height:100%;object-fit:cover;object-position:60% 22%;
+    -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 30%);mask-image:linear-gradient(90deg,transparent 0%,#000 30%)}
+  .capa-tom{position:absolute;inset:0;background:rgba(236,220,200,.35);mix-blend-mode:multiply;pointer-events:none}
+  .capa-conteudo{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:52px}
+  .capa-nome{font-family:"Bebas Neue","Figtree",sans-serif;font-weight:400;text-transform:uppercase;line-height:.84;font-size:clamp(4.6rem,11vw,9.6rem);letter-spacing:1px;color:var(--cafe);margin:0 0 0 6%}
+  .capa-nome span{display:block}
+  .capa-nome .contorno{color:transparent;-webkit-text-stroke:1.5px var(--cafe)}
+  @supports not (-webkit-text-stroke:1px black){.capa-nome .contorno{color:var(--cafe)}}
+  .capa-linha{width:min(500px,82%);height:1px;border:0;background:var(--cafe);opacity:.55;margin:20px 0 14px 6%}
+  .capa-redes{display:flex;justify-content:center;gap:10px;width:min(500px,82%);margin:0 0 0 6%;padding:0;list-style:none}
+  .rede-btn{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--cafe);background:rgba(255,253,249,.65);display:flex;align-items:center;justify-content:center;transition:background .2s,transform .2s}
+  .rede-btn:hover{background:var(--cafe);transform:translateY(-2px)}
+  .rede-btn svg{width:20px;height:20px;fill:none;stroke:var(--cafe);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
+  .rede-btn:hover svg{stroke:var(--papel)}
 
   /* Espaços de imagem ainda sem foto */
   .vazio-img{display:flex;align-items:flex-end;justify-content:center;background:linear-gradient(160deg,#e9dccb 0%,#d2b59c 100%)}
@@ -283,8 +276,7 @@
      RESPONSIVO
      ========================================================= */
   @media (max-width:1000px){
-    .capa-grid{grid-template-columns:minmax(0,1fr);gap:36px}
-    .capa-foto{max-width:340px}
+    .capa-foto{width:82%}
     .cartao-marrom{grid-template-columns:minmax(0,1fr);padding:40px 34px}
     .sobre-foto{max-width:300px;grid-row:1}
     .servicos-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -303,15 +295,14 @@
   @media (max-width:620px){
     section{padding:44px 0}
     .container{padding:0 16px}
-    .capa{padding:88px 0 24px}
-    .capa-botoes .btn{flex:1 1 100%}
-    .capa-numeros{gap:8px}
-    .capa-numeros li{padding:10px 6px}
-    .capa-numeros strong{font-size:1.4rem}
-    .capa-numeros span{font-size:.76rem}
-    .capa-foto{max-width:290px}
-    .capa-foto .bilhete{left:-6px}
-    .capa-foto .carimbo{right:-6px;width:74px;height:74px}
+    .capa{height:540px}
+    .capa-foto{width:100%;object-position:66% 18%;
+      -webkit-mask-image:linear-gradient(180deg,#000 50%,transparent 92%);mask-image:linear-gradient(180deg,#000 50%,transparent 92%)}
+    .capa-conteudo{padding-bottom:28px}
+    .capa-nome{font-size:clamp(4rem,19vw,5.4rem);margin-left:0}
+    .capa-nome .contorno{-webkit-text-stroke:1.2px var(--cafe)}
+    .capa-linha,.capa-redes{margin-left:0;width:100%}
+    .capa-redes{justify-content:flex-start}
     .marcas-secao{padding:8px 0 32px}
     .selo{width:56px;height:56px}
     .faixa-trilho ul{gap:14px;padding:6px 7px}
@@ -368,26 +359,21 @@
 
   <!-- ================= 1. CAPA ================= -->
   <section class="capa" id="inicio" aria-labelledby="titulo-capa">
-    <div class="container capa-grid">
-      <div class="revelar">
-        <span class="capa-chip"><i aria-hidden="true"></i>UGC Creator em Valinhos, SP</span>
-        <span class="manuscrito" aria-hidden="true">oi, eu sou a</span>
-        <h1 id="titulo-capa">Mari Bonetto</h1>
-        <p class="capa-frase">Conteúdo que parece indicação de amiga antes de parecer anúncio.</p>
-        <div class="capa-botoes">
-          <a class="btn btn-cafe" href="#contato"><span aria-hidden="true">♥</span> Falar comigo</a>
-          <a class="btn btn-papel" href="#destaques">Ver os trabalhos</a>
-        </div>
-        <!-- Os três números da capa vêm do array "numerosCapa" no script -->
-        <ul class="capa-numeros" id="capa-numeros" aria-label="Números em destaque"></ul>
-      </div>
-
-      <div class="capa-foto cartao revelar">
-        <!-- FOTO PRINCIPAL: para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
-        <img src="mari-bonetto.webp" alt="Mari Bonetto sorrindo, de cabelo longo ondulado e blusa de tricô bege" width="1537" height="1023" style="object-position:52% 30%" fetchpriority="high">
-        <span class="bilhete manuscrito" aria-hidden="true">indicação de amiga ♥</span>
-        <span class="carimbo" aria-hidden="true"><b>+80</b><small>marcas</small></span>
-      </div>
+    <!-- FOTO DA CAPA: para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
+    <img class="capa-foto" src="mari-bonetto-capa.webp" alt="Mari Bonetto sorrindo, de cabelo longo ondulado e blusa de tricô bege" width="1537" height="1023" fetchpriority="high">
+    <div class="capa-tom" aria-hidden="true"></div>
+    <div class="container capa-conteudo">
+      <h1 class="capa-nome" id="titulo-capa"><span>Mari</span> <span class="contorno">Bonetto</span></h1>
+      <hr class="capa-linha">
+      <!-- Os links das redes vêm do objeto CONTATO no script -->
+      <ul class="capa-redes" aria-label="Minhas redes sociais">
+        <li><a class="rede-btn" id="capa-insta" target="_blank" rel="noopener" aria-label="Instagram (abre em outra aba)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg></a></li>
+        <li><a class="rede-btn" id="capa-tiktok" target="_blank" rel="noopener" aria-label="TikTok (abre em outra aba)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3.5v11.2a3.6 3.6 0 1 1-3.6-3.6"/><path d="M14 3.5c.4 2.8 2.4 4.7 5.2 4.9"/></svg></a></li>
+        <li><a class="rede-btn" id="capa-whats" target="_blank" rel="noopener" aria-label="WhatsApp (abre em outra aba)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.4L3.5 20.5l1.4-4.2a8.5 8.5 0 1 1 15.6-4.6z"/><path d="M9.2 8.6c.2 2.9 3 5.8 6 6.1l1-1.3-1.8-1-.8.7c-1.1-.5-2-1.4-2.6-2.6l.7-.8-1-1.8z"/></svg></a></li>
+      </ul>
     </div>
   </section>
 
@@ -607,15 +593,6 @@ const CONTATO = {
 };
 
 // ================================
-// NÚMEROS DA CAPA
-// ================================
-const numerosCapa = [
-  { valor: "150", rotulo: "vídeos entregues" },
-  { valor: "+80", rotulo: "marcas atendidas" },
-  { valor: "8M",  rotulo: "views somadas" }
-];
-
-// ================================
 // MARCAS DA ESTEIRA DE LOGOS
 // logo: caminho da imagem da logo (pasta "logos").
 // As marcas com logo vazio ("") ainda não aparecem na esteira:
@@ -781,9 +758,6 @@ const $ = (s) => document.querySelector(s);
 const escapar = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const seloSVG = '<svg class="verificado" aria-hidden="true"><use href="#selo-verificado"/></svg>';
 
-// ---------- Capa ----------
-$("#capa-numeros").innerHTML = numerosCapa
-  .map((n) => `<li class="cartao"><strong>${escapar(n.valor)}</strong><span>${escapar(n.rotulo)}</span></li>`).join("");
 
 // ---------- Esteira de logos (movimento contínuo e infinito) ----------
 const marcasComLogo = marcas.filter((m) => m.logo);
@@ -939,6 +913,9 @@ const linkEmail = `mailto:${CONTATO.email}`;
 const linkInsta = `https://www.instagram.com/${CONTATO.instagram}/`;
 const linkTiktok = `https://www.tiktok.com/@${CONTATO.tiktok}`;
 $("#link-whats").href = linkWhats;
+$("#capa-insta").href = linkInsta;
+$("#capa-tiktok").href = linkTiktok;
+$("#capa-whats").href = linkWhats;
 $("#texto-whats").textContent = CONTATO.whatsappTexto;
 $("#link-email").href = linkEmail;
 $("#texto-email").textContent = CONTATO.email;
