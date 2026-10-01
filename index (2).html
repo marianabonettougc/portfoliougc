@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mari Bonetto | Portfólio UGC</title>
+<meta name="description" content="Mari Bonetto, UGC Creator em Valinhos, SP. Conteúdo que parece indicação de amiga antes de parecer anúncio.">
+<meta name="theme-color" content="#f6efe6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================
+     IDENTIDADE: CARTÃO DE CAFETERIA PREMIUM
+     ========================================================= */
+  :root{
+    --creme:#f6efe6;
+    --papel:#fffdf9;
+    --cafe:#6b4a35;
+    --cafe-2:#8a634b;
+    --verde:#4f7a54;
+    --vermelho:#c5533f;
+    --texto:#3d2b20;
+    --texto-suave:#6e5646;
+    --tracejado:rgba(107,74,53,.38);
+    --tracejado-claro:rgba(255,253,249,.42);
+    --raio:22px;
+    --sombra:0 6px 18px rgba(61,43,32,.07);
+    --sombra-hover:0 12px 26px rgba(61,43,32,.13);
+    --largura:1180px;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:76px;-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--creme);color:var(--texto);font-family:"Figtree",system-ui,sans-serif;font-size:1rem;line-height:1.6;overflow-x:hidden}
+  img{max-width:100%;height:auto;display:block}
+  a{color:inherit}
+  h1,h2,h3,h4{margin:0;line-height:1.12;font-weight:800;color:var(--texto)}
+  p{margin:0}
+  button,input,textarea{font:inherit;color:inherit}
+  :focus-visible{outline:3px solid var(--vermelho);outline-offset:3px;border-radius:10px}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .pular{position:absolute;left:16px;top:-60px;z-index:300;background:var(--cafe);color:var(--papel);padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:700}
+  .pular:focus{top:12px}
+
+  .container{width:100%;max-width:var(--largura);margin:0 auto;padding:0 20px}
+  section{padding:56px 0}
+  .manuscrito{font-family:"Caveat",cursive;font-weight:700;color:var(--vermelho);font-size:1.45rem;line-height:1}
+  .cabecalho{margin-bottom:24px}
+  .cabecalho h2{font-size:clamp(1.8rem,4vw,2.5rem);margin-top:4px}
+
+  /* Cartão destacável: papel, borda tracejada, cantos arredondados */
+  .cartao{background:var(--papel);border:1.5px dashed var(--tracejado);border-radius:var(--raio);box-shadow:var(--sombra)}
+
+  /* Botões */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 26px;border-radius:999px;border:1.5px solid transparent;font-weight:700;font-size:1rem;text-decoration:none;cursor:pointer;transition:transform .2s ease,background .2s ease,box-shadow .2s ease}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-cafe{background:var(--cafe);color:var(--papel);box-shadow:0 8px 18px rgba(107,74,53,.25)}
+  .btn-cafe:hover{background:#5a3e2c}
+  .btn-papel{background:var(--papel);color:var(--cafe);border:1.5px dashed var(--cafe)}
+
+  /* =========================================================
+     MENU
+     ========================================================= */
+  .topo{position:fixed;inset:0 0 auto 0;z-index:100;padding:10px 0;transition:background .3s ease,border-color .3s ease;border-bottom:1.5px dashed transparent}
+  .topo.rolou{background:rgba(255,253,249,.94);border-bottom-color:var(--tracejado);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  .topo .container{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .logo-nome{font-weight:800;font-size:1.3rem;text-decoration:none;color:var(--cafe);letter-spacing:-.2px}
+  .logo-nome span{font-family:"Caveat",cursive;color:var(--vermelho);font-size:1.5rem;margin-left:4px}
+  .menu ul{display:flex;gap:2px;list-style:none;margin:0;padding:0}
+  .menu a{display:block;padding:8px 14px;border-radius:999px;text-decoration:none;font-weight:600;font-size:.97rem;transition:background .2s}
+  .menu a:hover{background:rgba(107,74,53,.1)}
+  .hamburguer{display:none;width:46px;height:46px;border-radius:50%;border:1.5px dashed var(--tracejado);background:var(--papel);cursor:pointer;align-items:center;justify-content:center}
+  .hamburguer span,.hamburguer span::before,.hamburguer span::after{display:block;width:20px;height:2.5px;background:var(--cafe);border-radius:3px;transition:transform .25s ease,background .2s}
+  .hamburguer span{position:relative}
+  .hamburguer span::before,.hamburguer span::after{content:"";position:absolute;left:0}
+  .hamburguer span::before{top:-7px}
+  .hamburguer span::after{top:7px}
+  .hamburguer[aria-expanded="true"] span{background:transparent}
+  .hamburguer[aria-expanded="true"] span::before{transform:translateY(7px) rotate(45deg)}
+  .hamburguer[aria-expanded="true"] span::after{transform:translateY(-7px) rotate(-45deg)}
+
+  /* =========================================================
+     1. CAPA
+     ========================================================= */
+  .capa{padding:100px 0 32px}
+  .capa-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:44px;align-items:center}
+  .capa-chip{display:inline-flex;align-items:center;gap:8px;border:1.5px dashed var(--tracejado);background:var(--papel);color:var(--cafe);font-weight:700;font-size:.9rem;padding:6px 14px;border-radius:999px}
+  .capa-chip i{width:8px;height:8px;border-radius:50%;background:var(--verde);display:inline-block}
+  .capa .manuscrito{display:block;margin-top:18px}
+  .capa h1{font-size:clamp(2.9rem,7.5vw,5.2rem);letter-spacing:-1.5px;color:var(--cafe);margin:2px 0 12px}
+  .capa-frase{font-size:clamp(1.1rem,2.2vw,1.35rem);font-weight:600;max-width:520px}
+  .capa-botoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+  .capa-numeros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:28px 0 0;padding:0;list-style:none;max-width:520px}
+  .capa-numeros li{padding:12px 14px;text-align:center}
+  .capa-numeros strong{display:block;font-size:1.7rem;font-weight:800;color:var(--cafe);line-height:1.1}
+  .capa-numeros span{font-size:.86rem;color:var(--texto-suave);font-weight:600}
+  .capa-foto{position:relative;max-width:390px;width:100%;margin:0 auto;padding:10px;transform:rotate(1.5deg)}
+  .capa-foto img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:16px}
+  .capa-foto .bilhete{position:absolute;left:-22px;bottom:34px;background:var(--papel);border:1.5px dashed var(--tracejado);border-radius:14px;padding:6px 14px;transform:rotate(-5deg);box-shadow:var(--sombra)}
+  .capa-foto .carimbo{
+    position:absolute;right:-18px;top:-18px;width:86px;height:86px;border-radius:50%;
+    border:2px dashed var(--vermelho);background:var(--papel);color:var(--vermelho);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transform:rotate(10deg);box-shadow:var(--sombra)
+  }
+  .carimbo b{font-size:1.25rem;line-height:1}
+  .carimbo small{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;line-height:1.2}
+
+  /* Espaços de imagem ainda sem foto */
+  .vazio-img{display:flex;align-items:flex-end;justify-content:center;background:linear-gradient(160deg,#e9dccb 0%,#d2b59c 100%)}
+  .vazio-img span{margin:12px;background:rgba(255,253,249,.9);color:var(--texto);font-weight:700;font-size:.78rem;padding:4px 12px;border-radius:999px}
+
+  /* =========================================================
+     2. FAIXA DE MARCAS (esteira contínua)
+     ========================================================= */
+  .marcas-secao{padding:16px 0 40px}
+  .faixa{position:relative;background:var(--cafe-2);border-radius:var(--raio);padding:16px 0 18px;overflow:hidden;box-shadow:var(--sombra)}
+  .faixa::before{content:"";position:absolute;inset:7px;border:1.5px dashed var(--tracejado-claro);border-radius:17px;pointer-events:none;z-index:2}
+  .faixa-titulo{position:relative;z-index:3;text-align:center;color:var(--papel);font-family:"Caveat",cursive;font-size:1.4rem;font-weight:700;margin-bottom:8px}
+  .faixa-janela{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+  .faixa-trilho{display:flex;width:max-content;will-change:transform}
+  .faixa-trilho ul{display:flex;gap:18px;list-style:none;margin:0;padding:6px 9px}
+  .selo{position:relative;flex:0 0 auto;width:66px;height:66px;border-radius:50%;background:#fff;border:1.5px solid rgba(255,253,249,.85);box-shadow:0 0 0 4px rgba(255,253,249,.18),0 4px 10px rgba(40,25,15,.18)}
+  .selo img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+  .verificado{position:absolute;right:-3px;bottom:-1px;width:22px;height:22px}
+
+  /* =========================================================
+     3. SOBRE MIM (grande cartão marrom)
+     ========================================================= */
+  .sobre-secao{padding-bottom:0}
+  .cartao-marrom{
+    position:relative;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:36px;align-items:center;
+    background:var(--cafe);color:var(--papel);border-radius:30px;padding:44px 48px;box-shadow:0 14px 30px rgba(61,43,32,.18)
+  }
+  .cartao-marrom::before{content:"";position:absolute;inset:12px;border:1.5px dashed var(--tracejado-claro);border-radius:22px;pointer-events:none}
+  .cartao-marrom .manuscrito{color:#f2c9a8}
+  .cartao-marrom h2{color:var(--papel);font-size:clamp(2rem,4.5vw,2.8rem);margin:2px 0 14px}
+  .sobre-texto p{color:rgba(255,253,249,.92);font-size:.98rem}
+  .sobre-texto p+p{margin-top:10px}
+  .promessas{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+  .promessas li{display:inline-flex;align-items:center;gap:8px;border:1.5px dashed var(--tracejado-claro);border-radius:999px;padding:6px 14px 6px 6px;font-weight:600;font-size:.92rem}
+  .promessas li i{width:22px;height:22px;border-radius:50%;background:var(--verde);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .promessas li i svg{width:12px;height:12px;stroke:#fff;stroke-width:3.4;fill:none}
+  .sobre-texto .assinatura{font-family:"Caveat",cursive;font-size:2.4rem;font-weight:700;color:var(--papel);margin-top:14px;transform:rotate(-3deg);display:inline-block}
+  .sobre-foto{position:relative;z-index:1;background:var(--papel);padding:9px;border-radius:20px;transform:rotate(-1.5deg);max-width:340px;width:100%;justify-self:center}
+  .sobre-foto img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:13px}
+  .sobre-foto .manuscrito{position:absolute;left:50%;bottom:-16px;transform:translateX(-50%) rotate(-2deg);background:var(--papel);padding:2px 14px;border-radius:999px;color:var(--vermelho);white-space:nowrap;font-size:1.3rem}
+
+  /* =========================================================
+     4. CONTEÚDOS DE DESTAQUE (com a linha marrom vertical)
+     ========================================================= */
+  .destaques-secao{padding-top:0}
+  .com-linha{position:relative;margin-left:44px;padding:36px 0 4px 28px;border-left:1.5px solid var(--cafe)}
+  .com-linha::before{content:"";position:absolute;left:-6px;bottom:0;width:11px;height:11px;border-radius:50%;background:var(--cafe)}
+  .videos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,220px));gap:18px;list-style:none;margin:0;padding:0}
+  .video-card{display:flex;flex-direction:column;min-width:0}
+  .video-midia{position:relative;aspect-ratio:9/16;border-radius:16px;overflow:hidden;background:#d9c4ae;box-shadow:var(--sombra);transition:transform .25s ease,box-shadow .25s ease}
+  .video-card:hover .video-midia{transform:translateY(-4px);box-shadow:var(--sombra-hover)}
+  .video-midia .capa-img,.video-midia .vazio-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .video-midia .vazio-img{align-items:flex-start;justify-content:flex-end}
+  .video-midia iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .video-logo{position:absolute;top:10px;left:10px;z-index:3;width:44px;height:44px;border-radius:50%;background:#fff;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;display:flex;align-items:center;justify-content:center}
+  .video-logo img{width:100%;height:100%;object-fit:contain}
+  .video-logo.sem-logo{font-size:.6rem;font-weight:700;color:var(--texto-suave);border:1.5px dashed var(--tracejado)}
+  .play{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;border:0;background:transparent;cursor:pointer;padding:0}
+  .play span{width:58px;height:58px;border-radius:50%;background:rgba(40,25,15,.55);display:flex;align-items:center;justify-content:center;transition:transform .2s ease,background .2s ease}
+  .play svg{width:24px;height:24px;fill:#fff;margin-left:3px}
+  .play:hover span,.play:focus-visible span{transform:scale(1.08);background:var(--cafe)}
+  .play:focus-visible{outline-offset:-4px;border-radius:16px}
+  .resultado-chip{position:absolute;left:10px;bottom:10px;z-index:3;background:var(--papel);color:var(--cafe);font-weight:800;font-size:.85rem;padding:4px 10px;border-radius:999px;pointer-events:none}
+  .resultado-chip small{font-weight:600;color:var(--texto-suave)}
+  .video-card h3{font-size:.98rem;font-weight:800;text-transform:uppercase;letter-spacing:.2px;margin-top:10px;color:var(--cafe)}
+  .video-card p{font-size:.9rem;color:var(--texto-suave)}
+
+  /* =========================================================
+     5. TRABALHOS POR NICHO
+     ========================================================= */
+  .filtros{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+  .filtro{padding:8px 16px;border-radius:999px;border:1.5px dashed var(--tracejado);background:var(--papel);font-weight:600;font-size:.92rem;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
+  .filtro:hover{border-color:var(--cafe)}
+  .filtro[aria-pressed="true"]{background:var(--cafe);color:var(--papel);border-style:solid;border-color:var(--cafe)}
+  .trabalhos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;list-style:none;margin:0;padding:0}
+  .trabalho{padding:7px 7px 12px;transition:opacity .25s ease,transform .25s ease}
+  .trabalho.saindo{opacity:0;transform:scale(.95)}
+  .trabalho[hidden]{display:none}
+  .trabalho .img{aspect-ratio:4/5;border-radius:14px;overflow:hidden}
+  .trabalho .img img{width:100%;height:100%;object-fit:cover}
+  .trabalho .tag{display:inline-block;margin:9px 4px 0;font-size:.74rem;font-weight:700;color:var(--verde);background:rgba(79,122,84,.12);padding:2px 10px;border-radius:999px}
+  .trabalho h3{font-size:.92rem;margin:5px 4px 0;font-weight:700}
+
+  /* =========================================================
+     6. COMO EU TE AJUDO
+     ========================================================= */
+  .servicos-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;list-style:none;margin:0;padding:0}
+  .servico{display:flex;gap:14px;align-items:flex-start;padding:18px 18px 20px;transition:transform .2s ease,box-shadow .2s ease}
+  .servico:hover{transform:translateY(-3px);box-shadow:var(--sombra-hover)}
+  .servico-num{flex-shrink:0;width:50px;height:50px;border-radius:50%;border:2px dashed var(--vermelho);color:var(--vermelho);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem}
+  .servico h3{font-size:1.1rem;margin-bottom:4px}
+  .servico p{font-size:.93rem;color:var(--texto-suave)}
+
+  /* =========================================================
+     7. NÚMEROS E DEPOIMENTOS
+     ========================================================= */
+  .metricas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;list-style:none;margin:0 0 14px;padding:0}
+  .metrica{text-align:center;padding:20px 12px}
+  .metrica strong{display:block;font-size:clamp(2rem,4vw,2.6rem);font-weight:800;color:var(--cafe);line-height:1}
+  .metrica.placeholder strong{font-size:clamp(1.2rem,2.4vw,1.5rem);color:var(--vermelho);padding:8px 0}
+  .metrica span{display:block;margin-top:6px;font-weight:600;color:var(--texto-suave);font-size:.92rem}
+  .resultados{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;list-style:none;margin:0 0 14px;padding:0}
+  .resultado{padding:20px;background:var(--cafe);color:var(--papel);border-color:var(--tracejado-claro)}
+  .resultado strong{display:block;font-size:1.5rem;font-weight:800;letter-spacing:.5px}
+  .resultado p{color:rgba(255,253,249,.85);font-size:.93rem;margin-top:4px}
+  .depoimentos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;list-style:none;margin:0;padding:0}
+  .depoimento{padding:20px;position:relative}
+  .depoimento .aspas{font-family:"Caveat",cursive;font-size:3rem;line-height:.6;color:var(--vermelho);display:block;margin-bottom:6px}
+  .depoimento blockquote{margin:0;font-size:.95rem}
+  .depoimento figcaption{margin-top:12px;padding-top:10px;border-top:1.5px dashed var(--tracejado)}
+  .depoimento figcaption strong{display:block;font-size:.98rem}
+  .depoimento figcaption span{font-size:.86rem;color:var(--texto-suave)}
+
+  /* =========================================================
+     8. BORA CRIAR JUNTOS
+     ========================================================= */
+  .contato-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:16px;align-items:start}
+  .formulario{padding:26px}
+  .campo{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+  .campo label{font-weight:700;font-size:.95rem}
+  .campo input,.campo textarea{width:100%;padding:12px 16px;border-radius:14px;border:1.5px dashed var(--tracejado);background:#fff;transition:border-color .2s,box-shadow .2s}
+  .campo textarea{min-height:120px;resize:vertical}
+  .campo input:focus,.campo textarea:focus{outline:none;border-style:solid;border-color:var(--cafe);box-shadow:0 0 0 3px rgba(107,74,53,.15)}
+  .erro{color:var(--vermelho);font-size:.88rem;font-weight:700;min-height:1.2em;margin-bottom:6px}
+  .confirmacao{text-align:center;padding:22px 6px}
+  .confirmacao .manuscrito{font-size:2.2rem;display:block;margin-bottom:6px}
+  .confirmacao h3{font-size:1.4rem;margin-bottom:6px}
+  .confirmacao p{color:var(--texto-suave)}
+  .canais{padding:26px;background:var(--cafe);color:var(--papel);border-color:var(--tracejado-claro)}
+  .canais h3{color:var(--papel);font-size:1.35rem}
+  .canais > p{color:rgba(255,253,249,.85);margin:4px 0 16px}
+  .canal{display:flex;align-items:center;gap:12px;padding:11px 14px;margin-bottom:10px;border-radius:14px;background:rgba(255,253,249,.1);border:1.5px dashed var(--tracejado-claro);text-decoration:none;transition:background .2s}
+  .canal:hover{background:rgba(255,253,249,.18)}
+  .canal svg{width:22px;height:22px;fill:var(--papel);flex-shrink:0}
+  .canal span{display:flex;flex-direction:column;min-width:0;line-height:1.3}
+  .canal small{font-size:.78rem;opacity:.8;font-weight:600}
+  .canal b{font-weight:700;overflow-wrap:anywhere}
+  .canais .cidade{margin-top:12px;font-size:.92rem;opacity:.85}
+
+  /* =========================================================
+     9. RODAPÉ
+     ========================================================= */
+  .rodape{background:var(--cafe);color:var(--papel);border-radius:34px 34px 0 0;padding:36px 0 22px;margin-top:16px;position:relative}
+  .rodape::before{content:"";position:absolute;inset:10px 10px 0;border:1.5px dashed var(--tracejado-claro);border-bottom:0;border-radius:26px 26px 0 0;pointer-events:none}
+  .rodape .container{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;position:relative}
+  .rodape .logo-nome{color:var(--papel);font-size:1.6rem}
+  .rodape .logo-nome span{color:#f2c9a8}
+  .redes{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;list-style:none;margin:0;padding:0}
+  .redes a{display:inline-block;padding:8px 18px;border-radius:999px;border:1.5px dashed var(--tracejado-claro);text-decoration:none;font-weight:600;transition:background .2s}
+  .redes a:hover{background:rgba(255,253,249,.14)}
+  .rodape small{opacity:.8;font-size:.86rem}
+  .rodape :focus-visible{outline-color:var(--papel)}
+
+  /* =========================================================
+     CARD DE CAPTURA
+     ========================================================= */
+  .modal-fundo{position:fixed;inset:0;z-index:400;background:rgba(45,30,20,.55);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;transition:opacity .3s ease}
+  .modal-fundo.aberto{opacity:1}
+  .modal-fundo[hidden]{display:none}
+  .modal{position:relative;width:100%;max-width:400px;max-height:calc(100vh - 32px);overflow-y:auto;padding:32px 26px 26px;text-align:center;transform:translateY(16px);transition:transform .3s ease}
+  .modal-fundo.aberto .modal{transform:none}
+  .modal .manuscrito{display:block;font-size:1.6rem;margin-bottom:2px}
+  .modal h2{font-size:1.6rem;margin-bottom:6px}
+  .modal-texto{color:var(--texto-suave);margin-bottom:16px;font-size:.95rem}
+  .modal .campo{text-align:left}
+  .modal .btn{width:100%}
+  .fechar{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:50%;border:1.5px dashed var(--tracejado);background:var(--papel);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .fechar svg{width:16px;height:16px;stroke:var(--cafe);stroke-width:2.6;fill:none}
+
+  /* =========================================================
+     ANIMAÇÃO DE ENTRADA
+     ========================================================= */
+  .js .revelar{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}
+  .js .revelar.visivel{opacity:1;transform:none}
+
+  /* =========================================================
+     RESPONSIVO
+     ========================================================= */
+  @media (max-width:1000px){
+    .capa-grid{grid-template-columns:minmax(0,1fr);gap:36px}
+    .capa-foto{max-width:340px}
+    .cartao-marrom{grid-template-columns:minmax(0,1fr);padding:40px 34px}
+    .sobre-foto{max-width:300px;grid-row:1}
+    .servicos-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .metricas{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .depoimentos{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .contato-grid{grid-template-columns:minmax(0,1fr)}
+  }
+  @media (max-width:860px){
+    .hamburguer{display:inline-flex}
+    .menu{position:absolute;top:calc(100% + 6px);left:16px;right:16px;background:var(--papel);border:1.5px dashed var(--tracejado);border-radius:var(--raio);box-shadow:var(--sombra-hover);padding:10px;display:none}
+    .menu.aberto{display:block}
+    .menu ul{flex-direction:column}
+    .menu a{padding:12px 16px;font-size:1.05rem}
+    .resultados{grid-template-columns:minmax(0,1fr)}
+  }
+  @media (max-width:620px){
+    section{padding:44px 0}
+    .container{padding:0 16px}
+    .capa{padding:88px 0 24px}
+    .capa-botoes .btn{flex:1 1 100%}
+    .capa-numeros{gap:8px}
+    .capa-numeros li{padding:10px 6px}
+    .capa-numeros strong{font-size:1.4rem}
+    .capa-numeros span{font-size:.76rem}
+    .capa-foto{max-width:290px}
+    .capa-foto .bilhete{left:-6px}
+    .capa-foto .carimbo{right:-6px;width:74px;height:74px}
+    .marcas-secao{padding:8px 0 32px}
+    .selo{width:56px;height:56px}
+    .faixa-trilho ul{gap:14px;padding:6px 7px}
+    .verificado{width:19px;height:19px}
+    .cartao-marrom{padding:34px 22px 30px;border-radius:24px}
+    .cartao-marrom::before{inset:8px;border-radius:18px}
+    .sobre-foto{max-width:250px}
+    .com-linha{margin-left:14px;padding:30px 0 4px 16px}
+    .videos-grid{grid-template-columns:minmax(0,1fr);max-width:300px}
+    .servicos-grid,.depoimentos{grid-template-columns:minmax(0,1fr)}
+    .metricas{gap:10px}
+    .trabalhos-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .formulario,.canais{padding:20px}
+    .rodape{border-radius:26px 26px 0 0}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+    .js .revelar{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+<!-- Selo azul de verificado e check (desenhados uma vez e reutilizados) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="selo-verificado" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="11" fill="#1d9bf0" stroke="#fff" stroke-width="2"/>
+    <path d="M7.2 12.4l3.1 3.1 6.4-6.6" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<!-- ================= MENU ================= -->
+<header class="topo" id="topo">
+  <div class="container">
+    <a class="logo-nome" href="#inicio">Mari Bonetto<span aria-hidden="true">ugc</span></a>
+    <button class="hamburguer" id="hamburguer" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menu"><span></span></button>
+    <nav class="menu" id="menu" aria-label="Menu principal">
+      <ul>
+        <li><a href="#sobre">Sobre</a></li>
+        <li><a href="#destaques">Destaques</a></li>
+        <li><a href="#trabalhos">Trabalhos</a></li>
+        <li><a href="#servicos">Serviços</a></li>
+        <li><a href="#numeros">Números</a></li>
+        <li><a href="#contato">Contato</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="conteudo">
+
+  <!-- ================= 1. CAPA ================= -->
+  <section class="capa" id="inicio" aria-labelledby="titulo-capa">
+    <div class="container capa-grid">
+      <div class="revelar">
+        <span class="capa-chip"><i aria-hidden="true"></i>UGC Creator em Valinhos, SP</span>
+        <span class="manuscrito" aria-hidden="true">oi, eu sou a</span>
+        <h1 id="titulo-capa">Mari Bonetto</h1>
+        <p class="capa-frase">Conteúdo que parece indicação de amiga antes de parecer anúncio.</p>
+        <div class="capa-botoes">
+          <a class="btn btn-cafe" href="#contato"><span aria-hidden="true">♥</span> Falar comigo</a>
+          <a class="btn btn-papel" href="#destaques">Ver os trabalhos</a>
+        </div>
+        <!-- Os três números da capa vêm do array "numerosCapa" no script -->
+        <ul class="capa-numeros" id="capa-numeros" aria-label="Números em destaque"></ul>
+      </div>
+
+      <div class="capa-foto cartao revelar">
+        <!-- FOTO PRINCIPAL: para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
+        <img src="mari-bonetto.webp" alt="Mari Bonetto sorrindo, de cabelo longo ondulado e blusa de tricô bege" width="1537" height="1023" style="object-position:52% 30%" fetchpriority="high">
+        <span class="bilhete manuscrito" aria-hidden="true">indicação de amiga ♥</span>
+        <span class="carimbo" aria-hidden="true"><b>+80</b><small>marcas</small></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 2. FAIXA DE MARCAS ================= -->
+  <section class="marcas-secao" aria-label="Marcas com quem já trabalhei">
+    <div class="container">
+      <div class="faixa revelar">
+        <p class="faixa-titulo">marcas que já confiaram no meu trabalho</p>
+        <div class="faixa-janela">
+          <!-- As logos vêm do array "marcas" no script. A esteira é montada e duplicada pelo JavaScript. -->
+          <div class="faixa-trilho" id="faixa-trilho"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 3. SOBRE MIM ================= -->
+  <section class="sobre-secao" id="sobre" aria-labelledby="titulo-sobre">
+    <div class="container">
+      <div class="cartao-marrom revelar">
+        <div class="sobre-texto">
+          <span class="manuscrito" aria-hidden="true">prazer!</span>
+          <h2 id="titulo-sobre">Sobre mim</h2>
+          <p>Eu sempre amei compartilhar resenhas de produtos que fazem diferença no meu dia a dia e foi assim que me apaixonei por esse universo.</p>
+          <p>Faz quase um ano que comecei no UGC e, nesse período, mais de 80 marcas já confiaram no meu trabalho.</p>
+          <p>Meus conteúdos refletem muito do que vivo hoje. Em beleza e autocuidado, compartilho minha rotina com cabelos com progressiva e luzes, cuidados com quebra e queda, além de produtos para pele e corpo.</p>
+          <p>Também compartilho minha jornada após perder 23 kg e sobre me reencontrar com a moda, vivendo uma fase em que finalmente eu escolho as roupas que quero usar, e não o contrário.</p>
+          <p>Também compartilho conteúdos sobre maternidade, rotina fitness, casa, organização, achadinhos e produtos que facilitam a rotina de uma dona de casa, sempre trazendo situações e experiências que fazem parte da minha vida.</p>
+          <p>Sou detalhista e comprometida em entregar conteúdos que despertam interesse e confiança, sem deixar de lado aquilo que mais gosto de colocar no meu trabalho: verdade e identificação.</p>
+          <ul class="promessas">
+            <li><i aria-hidden="true"><svg><use href="#check"/></svg></i>Roteiro aprovado antes de gravar</li>
+            <li><i aria-hidden="true"><svg><use href="#check"/></svg></i>Uma rodada de ajuste inclusa</li>
+            <li><i aria-hidden="true"><svg><use href="#check"/></svg></i>Entrega em até 72 horas úteis</li>
+          </ul>
+          <p class="assinatura">Mari Bonetto</p>
+        </div>
+
+        <div class="sobre-foto">
+          <!-- FOTO DO SOBRE MIM: para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
+          <img src="mari-bonetto.webp" alt="Mari Bonetto, UGC Creator" width="1537" height="1023" style="object-position:52% 30%" loading="lazy">
+          <span class="manuscrito" aria-hidden="true">verdade e identificação</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 4. CONTEÚDOS DE DESTAQUE ================= -->
+  <section class="destaques-secao" id="destaques" aria-labelledby="titulo-destaques">
+    <div class="container">
+      <!-- A borda esquerda deste bloco é a linha marrom vertical que desce do cartão do Sobre mim -->
+      <div class="com-linha">
+        <div class="cabecalho revelar">
+          <span class="manuscrito" aria-hidden="true">dá o play aqui mesmo</span>
+          <h2 id="titulo-destaques">Conteúdos de destaque</h2>
+        </div>
+        <!-- Os vídeos vêm do array "destaques" no script -->
+        <ul class="videos-grid" id="videos-grid"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 5. TRABALHOS POR NICHO ================= -->
+  <section id="trabalhos" aria-labelledby="titulo-trabalhos">
+    <div class="container">
+      <div class="cabecalho revelar">
+        <span class="manuscrito" aria-hidden="true">um pouco de cada universo</span>
+        <h2 id="titulo-trabalhos">Trabalhos por nicho</h2>
+      </div>
+      <div class="filtros revelar" id="filtros" role="group" aria-label="Filtrar trabalhos por nicho"></div>
+      <!-- Os trabalhos vêm do array "trabalhos" no script -->
+      <ul class="trabalhos-grid" id="trabalhos-grid"></ul>
+      <p class="sr-only" id="aviso-filtro" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- ================= 6. COMO EU TE AJUDO ================= -->
+  <section id="servicos" aria-labelledby="titulo-servicos">
+    <div class="container">
+      <div class="cabecalho revelar">
+        <span class="manuscrito" aria-hidden="true">do roteiro ao vídeo pronto</span>
+        <h2 id="titulo-servicos">Como eu te ajudo</h2>
+      </div>
+      <!-- Os serviços vêm do array "servicos" no script -->
+      <ol class="servicos-grid" id="servicos-grid"></ol>
+    </div>
+  </section>
+
+  <!-- ================= 7. NÚMEROS E DEPOIMENTOS ================= -->
+  <section id="numeros" aria-labelledby="titulo-numeros">
+    <div class="container">
+      <div class="cabecalho revelar">
+        <span class="manuscrito" aria-hidden="true">o que fica depois do play</span>
+        <h2 id="titulo-numeros">Números e depoimentos</h2>
+      </div>
+      <ul class="metricas" id="metricas" aria-label="Métricas"></ul>
+      <ul class="resultados" id="resultados" aria-label="Resultados de campanha"></ul>
+      <ul class="depoimentos" id="depoimentos" aria-label="Depoimentos de clientes"></ul>
+    </div>
+  </section>
+
+  <!-- ================= 8. BORA CRIAR JUNTOS ================= -->
+  <section id="contato" aria-labelledby="titulo-contato">
+    <div class="container">
+      <div class="cabecalho revelar">
+        <span class="manuscrito" aria-hidden="true">me conta da sua marca</span>
+        <h2 id="titulo-contato">Bora criar juntos?</h2>
+      </div>
+      <div class="contato-grid">
+        <div class="cartao formulario revelar">
+          <!--
+            O formulário mostra a confirmação na tela, sem recarregar a página.
+            Para receber as mensagens no seu e-mail, crie um formulário grátis no Formspree
+            e cole o endereço dele na constante ENDERECO_FORMULARIO do script.
+          -->
+          <form id="form-contato" novalidate>
+            <div class="campo">
+              <label for="nome">Nome</label>
+              <input id="nome" name="nome" type="text" autocomplete="name" required>
+            </div>
+            <div class="campo">
+              <label for="email">E-mail</label>
+              <input id="email" name="email" type="email" autocomplete="email" required>
+            </div>
+            <div class="campo">
+              <label for="mensagem">Mensagem</label>
+              <textarea id="mensagem" name="mensagem" required></textarea>
+            </div>
+            <p class="erro" id="erro-form" role="alert"></p>
+            <button class="btn btn-cafe" type="submit">Enviar mensagem</button>
+          </form>
+          <div class="confirmacao" id="confirmacao" hidden tabindex="-1">
+            <span class="manuscrito" aria-hidden="true">obrigada! ♥</span>
+            <h3>Mensagem recebida!</h3>
+            <p>Vou te responder em breve no e-mail que você deixou.</p>
+          </div>
+        </div>
+
+        <aside class="cartao canais revelar" aria-labelledby="titulo-canais">
+          <h3 id="titulo-canais">Prefere falar direto?</h3>
+          <p>Escolhe o canal mais fácil pra você.</p>
+          <a class="canal" id="link-whats" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.7 11.7 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.5-.3z"/></svg>
+            <span><small>WhatsApp</small><b id="texto-whats"></b></span>
+          </a>
+          <a class="canal" id="link-email">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4.2-8 5-8-5V6l8 5 8-5z"/></svg>
+            <span><small>E-mail</small><b id="texto-email"></b></span>
+          </a>
+          <a class="canal" id="link-insta" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.3A4.7 4.7 0 1 0 16.7 12 4.7 4.7 0 0 0 12 7.3zm0 7.7a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm6-7.9a1.1 1.1 0 1 1-1.1-1.1A1.1 1.1 0 0 1 18 7.1zM21.9 8.2a5.4 5.4 0 0 0-1.5-3.8 5.5 5.5 0 0 0-3.8-1.5C15 2.8 9 2.8 7.4 2.9a5.5 5.5 0 0 0-3.8 1.5 5.4 5.4 0 0 0-1.5 3.8C2 9.8 2 14.2 2.1 15.8a5.4 5.4 0 0 0 1.5 3.8 5.5 5.5 0 0 0 3.8 1.5c1.6.1 7.6.1 9.2 0a5.4 5.4 0 0 0 3.8-1.5 5.5 5.5 0 0 0 1.5-3.8c.1-1.6.1-6 0-7.6zM19.7 18a3 3 0 0 1-1.7 1.7c-1.2.5-4 .4-6 .4s-4.8.1-6-.4A3 3 0 0 1 4.3 18c-.5-1.2-.4-4-.4-6s-.1-4.8.4-6A3 3 0 0 1 6 4.3c1.2-.5 4-.4 6-.4s4.8-.1 6 .4A3 3 0 0 1 19.7 6c.5 1.2.4 4 .4 6s.1 4.8-.4 6z"/></svg>
+            <span><small>Instagram</small><b id="texto-insta"></b></span>
+          </a>
+          <p class="cidade" id="texto-cidade"></p>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= 9. RODAPÉ ================= -->
+<footer class="rodape">
+  <div class="container">
+    <a class="logo-nome" href="#inicio">Mari Bonetto<span aria-hidden="true">ugc</span></a>
+    <ul class="redes" id="redes"></ul>
+    <small>© <span id="ano"></span> Mari Bonetto. UGC Creator em Valinhos, SP.</small>
+  </div>
+</footer>
+
+<!-- ================= CARD DE CAPTURA (MÍDIA KIT) ================= -->
+<div class="modal-fundo" id="modal-fundo" hidden>
+  <div class="modal cartao" role="dialog" aria-modal="true" aria-labelledby="titulo-modal">
+    <button class="fechar" id="fechar-modal" type="button" aria-label="Fechar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg>
+    </button>
+    <div id="modal-conteudo">
+      <span class="manuscrito" aria-hidden="true">presentinho ♥</span>
+      <h2 id="titulo-modal">Quer meu mídia kit completo?</h2>
+      <p class="modal-texto">Deixa seu nome e e-mail que eu te mando.</p>
+      <form id="form-kit" novalidate>
+        <div class="campo">
+          <label for="kit-nome">Nome</label>
+          <input id="kit-nome" name="nome" type="text" autocomplete="name" required>
+        </div>
+        <div class="campo">
+          <label for="kit-email">E-mail</label>
+          <input id="kit-email" name="email" type="email" autocomplete="email" required>
+        </div>
+        <p class="erro" id="erro-kit" role="alert"></p>
+        <button class="btn btn-cafe" type="submit">Quero receber</button>
+      </form>
+    </div>
+    <div class="confirmacao" id="kit-ok" hidden tabindex="-1">
+      <span class="manuscrito" aria-hidden="true">prontinho!</span>
+      <h3>Já anotei aqui</h3>
+      <p>Seu mídia kit vai chegar no seu e-mail em breve.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   DADOS DO PORTFÓLIO
+   Edite só esta parte para trocar textos, imagens e listas.
+   ========================================================= */
+
+// ================================
+// CONTATOS E REDES
+// ================================
+const CONTATO = {
+  instagram: "maribonettougc",               // sem o @
+  tiktok: "seuusuario",                      // TROCAR: seu usuário do TikTok, sem o @
+  email: "marianabonettougc@gmail.com",
+  whatsapp: "5519983974502",                 // 55 + DDD + número, só dígitos
+  whatsappTexto: "(19) 98397-4502",
+  cidade: "Valinhos, SP",
+  mensagemWhats: "Oi, Mari! Vi seu portfólio e quero conversar sobre um conteúdo UGC."
+};
+
+// ================================
+// NÚMEROS DA CAPA
+// ================================
+const numerosCapa = [
+  { valor: "150", rotulo: "vídeos entregues" },
+  { valor: "+80", rotulo: "marcas atendidas" },
+  { valor: "8M",  rotulo: "views somadas" }
+];
+
+// ================================
+// MARCAS DA ESTEIRA DE LOGOS
+// logo: caminho da imagem da logo (pasta "logos").
+// As marcas com logo vazio ("") ainda não aparecem na esteira:
+// quando você mandar a imagem da logo, é só colocar o caminho aqui.
+// ================================
+const marcas = [
+  { nome: "Shein",              logo: "logos/shein.png" },
+  { nome: "Elseve",             logo: "logos/elseve.png" },
+  { nome: "WAP",                logo: "logos/wap.png" },
+  { nome: "Pantene",            logo: "logos/pantene.png" },
+  { nome: "Dove",               logo: "logos/dove.png" },
+  { nome: "Natura",             logo: "logos/natura.png" },
+  { nome: "Piccadilly",         logo: "logos/piccadilly.png" },
+  { nome: "Bepantol Baby",      logo: "logos/bepantol-baby.png" },
+  { nome: "Pague Menos",        logo: "logos/pague-menos.png" },
+  { nome: "Mercado Livre",      logo: "logos/mercado-livre.png" },
+  { nome: "Americanas",         logo: "logos/americanas.png" },
+  { nome: "Seguros Unimed",     logo: "logos/seguros-unimed.png" },
+  { nome: "L'Oréal",            logo: "" },
+  { nome: "Garnier",            logo: "" },
+  { nome: "Tirolez",            logo: "" },
+  { nome: "Vale Bônus",         logo: "" },
+  { nome: "Cacau Show",         logo: "" },
+  { nome: "Lazzie",             logo: "" },
+  { nome: "Omo",                logo: "" },
+  { nome: "SunKids",            logo: "" },
+  { nome: "YPÊ",                logo: "" },
+  { nome: "Clube Life Mix",     logo: "" },
+  { nome: "Assaí",              logo: "" },
+  { nome: "Hellmann's",         logo: "" },
+  { nome: "Kinder Ovo",         logo: "" },
+  { nome: "Philips Avent",      logo: "" },
+  { nome: "Cartão de Todos",    logo: "" },
+  { nome: "WAAW by Alok",       logo: "" },
+  { nome: "Koin",               logo: "" },
+  { nome: "O Boticário",        logo: "" },
+  { nome: "Seda",               logo: "" },
+  { nome: "Natuair",            logo: "" },
+  { nome: "Comfort",            logo: "" },
+  { nome: "Dentro da História", logo: "" },
+  { nome: "Leiturinha",         logo: "" },
+  { nome: "Lysol",              logo: "" },
+  { nome: "Vanish",             logo: "" },
+  { nome: "Neoenergia",         logo: "" }
+];
+
+// ================================
+// VÍDEOS DE DESTAQUE
+// Os vídeos rodam dentro do próprio card, com o player oficial do YouTube.
+// Para adicionar um vídeo novo, copie um bloco { ... } e cole no fim da lista.
+// ================================
+const destaques = [
+  {
+    link: "https://www.youtube.com/shorts/vIAAHLv0V18",           // LINK DO VÍDEO
+    capa: "",                                                      // CAPA DO VÍDEO (ex.: "capas/video-01.jpg"). Vazio = bloco com degradê
+    logo: "",                                                      // LOGO DA MARCA (ex.: "logos/mercado-livre.png")
+    titulo: "Título do vídeo 01",
+    categoria: "Categoria",
+    resultado: "+5.5M",
+    resultadoLabel: "views"
+  },
+  {
+    link: "https://youtu.be/x3cTwB7OKOY",                          // LINK DO VÍDEO
+    capa: "",                                                      // CAPA DO VÍDEO
+    logo: "",                                                      // LOGO DA MARCA
+    titulo: "Título do vídeo 02",
+    categoria: "Categoria",
+    resultado: "+470K",
+    resultadoLabel: "views"
+  },
+  {
+    link: "https://youtube.com/shorts/MFT4boPq418?feature=share",  // LINK DO VÍDEO
+    capa: "",                                                      // CAPA DO VÍDEO
+    logo: "",                                                      // LOGO DA MARCA
+    titulo: "Título do vídeo 03",
+    categoria: "Categoria",
+    resultado: "+55K",
+    resultadoLabel: "views"
+  }
+];
+
+// ================================
+// NICHOS (botões de filtro, nesta ordem)
+// ================================
+const nichos = ["Beleza", "Skincare", "Moda", "Casa e decoração", "Fitness", "Maternidade", "Tech"];
+
+// ================================
+// TRABALHOS POR NICHO
+// nicho: precisa ser igual a um nome da lista "nichos".
+// imagem: TROCAR AQUI pelo caminho da foto do trabalho (ex.: "trabalhos/beleza-01.jpg"). Vazio = bloco com degradê.
+// ================================
+const trabalhos = [
+  { nicho: "Beleza",           titulo: "Trabalho de beleza 01",      imagem: "" },
+  { nicho: "Beleza",           titulo: "Trabalho de beleza 02",      imagem: "" },
+  { nicho: "Skincare",         titulo: "Trabalho de skincare 01",    imagem: "" },
+  { nicho: "Skincare",         titulo: "Trabalho de skincare 02",    imagem: "" },
+  { nicho: "Moda",             titulo: "Trabalho de moda 01",        imagem: "" },
+  { nicho: "Moda",             titulo: "Trabalho de moda 02",        imagem: "" },
+  { nicho: "Casa e decoração", titulo: "Trabalho de casa 01",        imagem: "" },
+  { nicho: "Casa e decoração", titulo: "Trabalho de casa 02",        imagem: "" },
+  { nicho: "Fitness",          titulo: "Trabalho de fitness 01",     imagem: "" },
+  { nicho: "Fitness",          titulo: "Trabalho de fitness 02",     imagem: "" },
+  { nicho: "Maternidade",      titulo: "Trabalho de maternidade 01", imagem: "" },
+  { nicho: "Maternidade",      titulo: "Trabalho de maternidade 02", imagem: "" },
+  { nicho: "Tech",             titulo: "Trabalho de tech 01",        imagem: "" },
+  { nicho: "Tech",             titulo: "Trabalho de tech 02",        imagem: "" }
+];
+
+// ================================
+// SERVIÇOS
+// ================================
+const servicos = [
+  { titulo: "Vídeo UGC",                descricao: "Vídeo vertical com roteiro, gravação e edição, falando do produto como quem indica para uma amiga." },
+  { titulo: "Corte para anúncio",       descricao: "Versões curtas com ganchos diferentes, prontas para testar nos anúncios da sua marca." },
+  { titulo: "Fotos do produto",         descricao: "Fotos do produto em uso, com luz natural e cenário de casa, para site, anúncio e redes." },
+  { titulo: "Unboxing",                 descricao: "A experiência de abrir a caixa pela primeira vez, com reação real e detalhes da embalagem." },
+  { titulo: "Publicação no meu perfil", descricao: "O conteúdo publicado no meu Instagram, em collab com a sua marca." },
+  { titulo: "Pacote mensal",            descricao: "Uma quantidade fixa de vídeos por mês, com planejamento junto e prioridade na agenda." }
+];
+
+// ================================
+// MÉTRICAS (contador animado)
+// valor: número animado. Deixe valor vazio ("") para mostrar o texto fixo.
+// ================================
+const metricas = [
+  { valor: 150, prefixo: "",  sufixo: "",  rotulo: "vídeos entregues" },
+  { valor: 80,  prefixo: "+", sufixo: "",  rotulo: "marcas atendidas" },
+  { valor: 8,   prefixo: "",  sufixo: "M", rotulo: "views somadas" },
+  { valor: "",  texto: "SUA MÉTRICA",      rotulo: "descrição da métrica" }   // TROCAR quando tiver a quarta métrica
+];
+
+// ================================
+// RESULTADOS DE CAMPANHA (troque pelos resultados reais)
+// ================================
+const resultados = [
+  { titulo: "RESULTADO 01", descricao: "Descreva aqui o resultado da campanha." },
+  { titulo: "RESULTADO 02", descricao: "Descreva aqui o resultado da campanha." },
+  { titulo: "RESULTADO 03", descricao: "Descreva aqui o resultado da campanha." }
+];
+
+// ================================
+// DEPOIMENTOS (troque pelo texto real que cada cliente mandou)
+// ================================
+const depoimentos = [
+  { texto: "Espaço para o depoimento da Cliente 01.", nome: "Cliente 01", empresa: "Empresa da Cliente 01" },
+  { texto: "Espaço para o depoimento da Cliente 02.", nome: "Cliente 02", empresa: "Empresa da Cliente 02" },
+  { texto: "Espaço para o depoimento da Cliente 03.", nome: "Cliente 03", empresa: "Empresa da Cliente 03" },
+  { texto: "Espaço para o depoimento da Cliente 04.", nome: "Cliente 04", empresa: "Empresa da Cliente 04" }
+];
+
+// Endereço do formulário (Formspree ou similar). Vazio = só mostra a confirmação na tela.
+const ENDERECO_FORMULARIO = "";
+
+// Segundos até o card do mídia kit aparecer
+const SEGUNDOS_CARD_KIT = 7;
+
+/* =========================================================
+   DAQUI PARA BAIXO É A LÓGICA DA PÁGINA
+   ========================================================= */
+document.documentElement.classList.add("js");
+const reduzMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = (s) => document.querySelector(s);
+const escapar = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const seloSVG = '<svg class="verificado" aria-hidden="true"><use href="#selo-verificado"/></svg>';
+
+// ---------- Capa ----------
+$("#capa-numeros").innerHTML = numerosCapa
+  .map((n) => `<li class="cartao"><strong>${escapar(n.valor)}</strong><span>${escapar(n.rotulo)}</span></li>`).join("");
+
+// ---------- Esteira de logos (movimento contínuo e infinito) ----------
+const marcasComLogo = marcas.filter((m) => m.logo);
+const trilho = $("#faixa-trilho");
+const listaLogos = (oculta) => `<ul${oculta ? ' aria-hidden="true"' : ""}>${marcasComLogo.map((m) => `
+  <li class="selo"><img src="${escapar(m.logo)}" alt="${oculta ? "" : "Logo " + escapar(m.nome)}" width="132" height="132" decoding="async">${seloSVG}</li>`).join("")}</ul>`;
+let animacaoFaixa = null;
+function montarEsteira() {
+  trilho.innerHTML = listaLogos(false);
+  const largura = trilho.firstElementChild.getBoundingClientRect().width;
+  if (!largura) return;
+  // Repete a sequência até cobrir a tela duas vezes, para nunca aparecer espaço vazio
+  const copias = Math.max(2, Math.ceil((window.innerWidth * 2) / largura) + 1);
+  trilho.innerHTML = listaLogos(false) + listaLogos(true).repeat(copias - 1);
+  if (animacaoFaixa) animacaoFaixa.cancel();
+  if (reduzMovimento || !trilho.animate) return;
+  animacaoFaixa = trilho.animate(
+    [{ transform: "translateX(0)" }, { transform: `translateX(-${largura}px)` }],
+    { duration: largura * 28, iterations: Infinity, easing: "linear" } // velocidade: aumente o 28 para ficar mais lento
+  );
+}
+if (marcasComLogo.length) {
+  montarEsteira();
+  let ultimaLargura = window.innerWidth;
+  window.addEventListener("resize", () => {
+    if (Math.abs(window.innerWidth - ultimaLargura) > 80) { ultimaLargura = window.innerWidth; montarEsteira(); }
+  });
+  const faixa = trilho.closest(".faixa");
+  faixa.addEventListener("mouseenter", () => animacaoFaixa && animacaoFaixa.pause());
+  faixa.addEventListener("mouseleave", () => animacaoFaixa && animacaoFaixa.play());
+}
+
+// ---------- Vídeos de destaque com player do YouTube dentro do card ----------
+function idDoYoutube(link) {
+  const m = String(link).match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+$("#videos-grid").innerHTML = destaques.map((d, i) => {
+  const capa = d.capa
+    ? `<img class="capa-img" src="${escapar(d.capa)}" alt="Capa do vídeo ${escapar(d.titulo)}" loading="lazy">`
+    : `<div class="vazio-img" aria-hidden="true"><span>capa 9:16</span></div>`;
+  const logo = d.logo
+    ? `<span class="video-logo"><img src="${escapar(d.logo)}" alt="" loading="lazy"></span>`
+    : `<span class="video-logo sem-logo" aria-hidden="true">logo</span>`;
+  return `
+  <li class="video-card revelar">
+    <div class="video-midia" data-indice="${i}">
+      ${capa}
+      ${logo}
+      <button class="play" type="button" aria-label="Assistir ${escapar(d.titulo)} aqui no site">
+        <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+      </button>
+      <span class="resultado-chip">${escapar(d.resultado)} <small>${escapar(d.resultadoLabel)}</small></span>
+    </div>
+    <h3>${escapar(d.titulo)}</h3>
+    <p>${escapar(d.categoria)}</p>
+  </li>`;
+}).join("");
+
+$("#videos-grid").addEventListener("click", (e) => {
+  const botao = e.target.closest(".play");
+  if (!botao) return;
+  const midia = botao.closest(".video-midia");
+  const d = destaques[Number(midia.dataset.indice)];
+  const id = idDoYoutube(d.link);
+  if (!id) return;
+  const iframe = document.createElement("iframe");
+  iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
+  iframe.title = `Vídeo: ${d.titulo}`;
+  iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+  iframe.allowFullscreen = true;
+  iframe.referrerPolicy = "strict-origin-when-cross-origin";
+  midia.querySelectorAll(".capa-img, .vazio-img, .play, .resultado-chip").forEach((el) => el.remove());
+  midia.prepend(iframe);
+  iframe.focus();
+});
+
+// ---------- Trabalhos por nicho com filtro ----------
+const degrades = [
+  "linear-gradient(160deg,#ead9c6,#cfae93)",
+  "linear-gradient(160deg,#e3d3c0,#b98f72)",
+  "linear-gradient(160deg,#f1e5d6,#d6b9a0)"
+];
+$("#filtros").innerHTML = ["Todos", ...nichos]
+  .map((n) => `<button class="filtro" type="button" data-nicho="${escapar(n)}" aria-pressed="${n === "Todos"}">${escapar(n)}</button>`).join("");
+
+$("#trabalhos-grid").innerHTML = trabalhos.map((t, i) => `
+  <li class="trabalho cartao" data-nicho="${escapar(t.nicho)}">
+    <div class="img">${t.imagem
+      ? `<img src="${escapar(t.imagem)}" alt="${escapar(t.titulo)}" loading="lazy">`
+      : `<div class="vazio-img" style="height:100%;background:${degrades[i % degrades.length]}" role="img" aria-label="Espaço para a imagem: ${escapar(t.titulo)}"><span>foto 4:5</span></div>`}
+    </div>
+    <span class="tag">${escapar(t.nicho)}</span>
+    <h3>${escapar(t.titulo)}</h3>
+  </li>`).join("");
+
+let filtroTimer = null;
+$("#filtros").addEventListener("click", (e) => {
+  const botao = e.target.closest(".filtro");
+  if (!botao) return;
+  const escolhido = botao.dataset.nicho;
+  const pertence = (c) => escolhido === "Todos" || c.dataset.nicho === escolhido;
+  document.querySelectorAll(".filtro").forEach((b) => b.setAttribute("aria-pressed", String(b === botao)));
+  const cards = [...document.querySelectorAll(".trabalho")];
+  const espera = reduzMovimento ? 0 : 220;
+  clearTimeout(filtroTimer);
+  cards.forEach((c) => { if (!pertence(c)) c.classList.add("saindo"); });
+  filtroTimer = setTimeout(() => {
+    cards.forEach((c) => {
+      if (!pertence(c)) { c.hidden = true; return; }
+      const estavaOculto = c.hidden;
+      c.hidden = false;
+      if (estavaOculto) { c.classList.add("saindo"); requestAnimationFrame(() => requestAnimationFrame(() => c.classList.remove("saindo"))); }
+      else c.classList.remove("saindo");
+    });
+  }, espera);
+  const total = cards.filter(pertence).length;
+  $("#aviso-filtro").textContent = `Mostrando ${total} ${total === 1 ? "trabalho" : "trabalhos"}.`;
+});
+
+// ---------- Serviços ----------
+$("#servicos-grid").innerHTML = servicos.map((s, i) => `
+  <li class="cartao servico revelar">
+    <span class="servico-num" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>
+    <div><h3>${escapar(s.titulo)}</h3><p>${escapar(s.descricao)}</p></div>
+  </li>`).join("");
+
+// ---------- Números e depoimentos ----------
+const formatar = (v) => Math.round(v).toLocaleString("pt-BR");
+$("#metricas").innerHTML = metricas.map((m, i) => m.valor === ""
+  ? `<li class="cartao metrica placeholder revelar"><strong>${escapar(m.texto)}</strong><span>${escapar(m.rotulo)}</span></li>`
+  : `<li class="cartao metrica revelar">
+      <strong data-metrica="${i}" aria-hidden="true">${escapar(m.prefixo)}${formatar(reduzMovimento ? m.valor : 0)}${escapar(m.sufixo)}</strong>
+      <span class="sr-only">${escapar(m.prefixo)}${formatar(m.valor)}${escapar(m.sufixo)}</span>
+      <span>${escapar(m.rotulo)}</span>
+    </li>`).join("");
+
+$("#resultados").innerHTML = resultados.map((r) => `
+  <li class="cartao resultado revelar"><strong>${escapar(r.titulo)}</strong><p>${escapar(r.descricao)}</p></li>`).join("");
+
+$("#depoimentos").innerHTML = depoimentos.map((d) => `
+  <li class="cartao depoimento revelar">
+    <figure style="margin:0">
+      <span class="aspas" aria-hidden="true">“</span>
+      <blockquote>${escapar(d.texto)}</blockquote>
+      <figcaption><strong>${escapar(d.nome)}</strong><span>${escapar(d.empresa)}</span></figcaption>
+    </figure>
+  </li>`).join("");
+
+// ---------- Contato ----------
+const linkWhats = `https://wa.me/${CONTATO.whatsapp}?text=${encodeURIComponent(CONTATO.mensagemWhats)}`;
+const linkEmail = `mailto:${CONTATO.email}`;
+const linkInsta = `https://www.instagram.com/${CONTATO.instagram}/`;
+const linkTiktok = `https://www.tiktok.com/@${CONTATO.tiktok}`;
+$("#link-whats").href = linkWhats;
+$("#texto-whats").textContent = CONTATO.whatsappTexto;
+$("#link-email").href = linkEmail;
+$("#texto-email").textContent = CONTATO.email;
+$("#link-insta").href = linkInsta;
+$("#texto-insta").textContent = "@" + CONTATO.instagram;
+$("#texto-cidade").textContent = "📍 " + CONTATO.cidade;
+
+// ---------- Rodapé ----------
+$("#redes").innerHTML = [
+  { nome: "Instagram", link: linkInsta },
+  { nome: "TikTok", link: linkTiktok },
+  { nome: "E-mail", link: linkEmail }
+].map((r) => `<li><a href="${escapar(r.link)}"${r.link.startsWith("mailto") ? "" : ' target="_blank" rel="noopener"'}>${escapar(r.nome)}</a></li>`).join("");
+$("#ano").textContent = new Date().getFullYear();
+
+// ---------- Menu ----------
+const topo = $("#topo"), menu = $("#menu"), hamburguer = $("#hamburguer");
+const marcarRolagem = () => topo.classList.toggle("rolou", window.scrollY > 10);
+window.addEventListener("scroll", marcarRolagem, { passive: true });
+marcarRolagem();
+function fecharMenu() {
+  menu.classList.remove("aberto");
+  hamburguer.setAttribute("aria-expanded", "false");
+  hamburguer.setAttribute("aria-label", "Abrir menu");
+}
+hamburguer.addEventListener("click", () => {
+  const abrir = hamburguer.getAttribute("aria-expanded") !== "true";
+  menu.classList.toggle("aberto", abrir);
+  hamburguer.setAttribute("aria-expanded", String(abrir));
+  hamburguer.setAttribute("aria-label", abrir ? "Fechar menu" : "Abrir menu");
+  if (abrir) topo.classList.add("rolou");
+});
+menu.addEventListener("click", (e) => { if (e.target.closest("a")) fecharMenu(); });
+document.addEventListener("click", (e) => { if (!topo.contains(e.target)) fecharMenu(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && menu.classList.contains("aberto")) { fecharMenu(); hamburguer.focus(); } });
+
+// ---------- Animação de entrada e contador ----------
+function animarContador(el) {
+  const m = metricas[Number(el.dataset.metrica)];
+  const inicio = performance.now(), duracao = 1500;
+  (function passo(agora) {
+    const p = Math.min((agora - inicio) / duracao, 1);
+    el.textContent = m.prefixo + formatar(m.valor * (1 - Math.pow(1 - p, 3))) + m.sufixo;
+    if (p < 1) requestAnimationFrame(passo);
+  })(inicio);
+}
+const revelaveis = document.querySelectorAll(".revelar");
+if (reduzMovimento || !("IntersectionObserver" in window)) {
+  revelaveis.forEach((el) => el.classList.add("visivel"));
+  document.querySelectorAll("[data-metrica]").forEach((el) => {
+    const m = metricas[Number(el.dataset.metrica)];
+    el.textContent = m.prefixo + formatar(m.valor) + m.sufixo;
+  });
+} else {
+  const observador = new IntersectionObserver((entradas) => {
+    entradas.forEach((ent) => {
+      if (!ent.isIntersecting) return;
+      ent.target.classList.add("visivel");
+      ent.target.querySelectorAll("[data-metrica]").forEach(animarContador);
+      observador.unobserve(ent.target);
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -30px 0px" });
+  revelaveis.forEach((el, i) => { el.style.transitionDelay = (i % 4) * 70 + "ms"; observador.observe(el); });
+}
+
+// ---------- Formulários ----------
+const emailValido = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+async function enviarDados(dados) {
+  if (!ENDERECO_FORMULARIO) return;
+  try {
+    await fetch(ENDERECO_FORMULARIO, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(dados) });
+  } catch (e) { /* mesmo sem internet, a confirmação aparece */ }
+}
+$("#form-contato").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = e.target, erro = $("#erro-form");
+  const nome = f.nome.value.trim(), email = f.email.value.trim(), mensagem = f.mensagem.value.trim();
+  if (!nome) { erro.textContent = "Qual é o seu nome?"; f.nome.focus(); return; }
+  if (!emailValido(email)) { erro.textContent = "Confere o e-mail, por favor."; f.email.focus(); return; }
+  if (!mensagem) { erro.textContent = "Escreve uma mensagem pra mim."; f.mensagem.focus(); return; }
+  erro.textContent = "";
+  await enviarDados({ tipo: "contato", nome, email, mensagem });
+  f.hidden = true;
+  const ok = $("#confirmacao");
+  ok.hidden = false;
+  ok.querySelector("h3").textContent = `Mensagem recebida, ${nome.split(" ")[0]}!`;
+  ok.focus();
+});
+
+// ---------- Card de captura: aparece uma vez por visita ----------
+const fundo = $("#modal-fundo");
+let focoAnterior = null;
+const lerSessao = (k) => { try { return sessionStorage.getItem(k); } catch (e) { return null; } };
+const gravarSessao = (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) {} };
+function abrirKit() {
+  if (lerSessao("kitMostrado")) return;
+  gravarSessao("kitMostrado", "1");
+  focoAnterior = document.activeElement;
+  fundo.hidden = false;
+  requestAnimationFrame(() => fundo.classList.add("aberto"));
+  $("#kit-nome").focus();
+  document.addEventListener("keydown", teclasKit);
+}
+function fecharKit() {
+  fundo.classList.remove("aberto");
+  document.removeEventListener("keydown", teclasKit);
+  setTimeout(() => { fundo.hidden = true; }, reduzMovimento ? 0 : 300);
+  if (focoAnterior && focoAnterior.focus) focoAnterior.focus();
+}
+function teclasKit(e) {
+  if (e.key === "Escape") { fecharKit(); return; }
+  if (e.key === "Tab") {
+    const focaveis = [...fundo.querySelectorAll("button, input, [tabindex='-1']")].filter((el) => el.offsetParent !== null);
+    const primeiro = focaveis[0], ultimo = focaveis[focaveis.length - 1];
+    if (e.shiftKey && document.activeElement === primeiro) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primeiro.focus(); }
+  }
+}
+$("#fechar-modal").addEventListener("click", fecharKit);
+fundo.addEventListener("click", (e) => { if (e.target === fundo) fecharKit(); });
+$("#form-kit").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = e.target, erro = $("#erro-kit");
+  const nome = f.nome.value.trim(), email = f.email.value.trim();
+  if (!nome) { erro.textContent = "Qual é o seu nome?"; f.nome.focus(); return; }
+  if (!emailValido(email)) { erro.textContent = "Confere o e-mail, por favor."; f.email.focus(); return; }
+  erro.textContent = "";
+  await enviarDados({ tipo: "midia-kit", nome, email });
+  $("#modal-conteudo").hidden = true;
+  const ok = $("#kit-ok");
+  ok.hidden = false;
+  ok.focus();
+});
+if (!lerSessao("kitMostrado")) setTimeout(abrirKit, SEGUNDOS_CARD_KIT * 1000);
+</script>
+</body>
+</html>
