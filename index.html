@@ -127,8 +127,8 @@
   .faixa-janela{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
   .faixa-trilho{display:flex;width:max-content;will-change:transform}
   .faixa-trilho ul{display:flex;gap:22px;list-style:none;margin:0;padding:4px 11px}
-  .selo{position:relative;flex:0 0 auto;width:88px;height:88px;padding:6px;border-radius:50%;border:1.5px solid rgba(107,74,53,.28)}
-  .selo img{width:100%;height:100%;border-radius:50%;object-fit:cover;background:#fff}
+  .selo{position:relative;flex:0 0 auto;width:76px;height:76px}
+  .selo img{width:100%;height:100%;object-fit:contain}
   .verificado{position:absolute;right:1px;bottom:1px;width:24px;height:24px}
 
   /* =========================================================
@@ -171,6 +171,7 @@
   .nota p{font-size:.92rem;line-height:1.55;color:var(--texto);margin:0 0 10px}
   .nota p:last-child{margin-bottom:0}
   .nota strong{font-weight:700}
+  .nota em{font-style:italic;text-decoration:underline;text-decoration-color:rgba(168,124,90,.6);text-underline-offset:2px}
 
   /* =========================================================
      5. TRABALHOS POR NICHO
@@ -317,7 +318,7 @@
     .sobre-texto{padding:0 20px}
     .sobre-titulo{margin-bottom:28px}
     .sobre-apresenta{padding:2px 18px 12px;border-radius:40px}
-    .selo{width:64px;height:64px;padding:5px}
+    .selo{width:58px;height:58px}
     .faixa-trilho ul{gap:12px;padding:6px 6px}
     .verificado{width:20px;height:20px;right:0;bottom:0}
     .marcas-secao{padding:16px 10px 0}
@@ -707,9 +708,11 @@ const caseDestaque = {
   logo: "logos/pantene.png",                                       // LOGO DA MARCA
   resultado: "+100 mil",                                           // VISUALIZAÇÕES
   notas: [
-    "O conteúdo trouxe uma situação com a qual muita gente se identifica, e isso apareceu nos comentários de pessoas que se viram na mesma situação.",
-    "O resultado: <strong>mais de 100 mil visualizações</strong> e <strong>alto engajamento</strong>.",
-    "E o resultado foi além das métricas: <strong>fui recontratada pela Pantene em mais de 4 campanhas</strong>."
+    "O vídeo começou com uma cena impossível de ignorar: <strong>um tufo de cabelo nas mãos</strong>, enquanto a frase “<strong>Eu quase fiquei careca</strong>” reforça o impacto da cena.",
+    "A imagem, combinada a uma <em>dor comum</em> para quem sofre com queda e quebra, <em>despertou curiosidade</em> e <em>identificação logo nos primeiros segundos</em>.",
+    "A estratégia foi transformar uma situação cotidiana em um gancho visual forte, conduzindo a audiência para a história e para a solução apresentada pela marca.",
+    "<strong>O resultado</strong>: mais de <strong>100 mil visualizações</strong>, além de alto engajamento e comentários de pessoas que se identificaram com a situação.",
+    "E o resultado para o meu trabalho foi além das métricas: depois desse conteúdo, fui <strong>recontratada pela Pantene em mais de 4 campanhas</strong>."
   ]
 };
 
