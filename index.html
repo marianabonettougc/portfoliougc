@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#f6efe6">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Pinyon+Script&family=Caveat:wght@600;700&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Caveat:wght@600;700&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
      IDENTIDADE: CARTÃO DE CAFETERIA PREMIUM
@@ -83,24 +83,17 @@
   /* =========================================================
      1. CAPA
      ========================================================= */
-  .capa{position:relative;padding:36px 0 0;overflow:hidden;background:linear-gradient(180deg,#f8f2ea 0%,var(--creme) 100%)}
-  .capa-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:end;gap:40px;min-height:470px}
-  .capa-foto-area{position:relative;align-self:end;display:flex;justify-content:center}
-  /* Forma arquitetônica (arco) atrás da foto */
-  .capa-foto-area::before{content:"";position:absolute;left:50%;bottom:0;width:76%;height:88%;transform:translateX(-50%);border-radius:999px 999px 0 0;background:linear-gradient(180deg,#e9d9c4 0%,#dcc4a8 100%)}
-  .capa-foto-area::after{content:"";position:absolute;left:50%;bottom:0;width:calc(76% + 26px);height:calc(88% + 13px);transform:translateX(-50%);border-radius:999px 999px 0 0;border:1px solid rgba(138,99,75,.35);border-bottom:0;pointer-events:none}
-  .capa-foto{position:relative;z-index:1;display:block;height:470px;width:auto;max-width:100%;object-fit:contain;object-position:bottom}
-  .capa-texto{align-self:center;padding:24px 0 40px}
-  .capa-nome{font-family:"Playfair Display",Georgia,serif;font-weight:500;text-transform:uppercase;line-height:.95;font-size:clamp(3.2rem,6.6vw,5.8rem);letter-spacing:.04em;color:var(--cafe);margin:0}
-  .capa-nome span{display:block}
-  .capa-titulo{display:flex;align-items:baseline;gap:.35em;margin:-.05em 0 0 .2em;color:var(--cafe-2)}
-  .capa-titulo .script{font-family:"Pinyon Script","Caveat",cursive;font-size:clamp(2.4rem,4.6vw,3.8rem);line-height:1;color:#a87c5a}
-  .capa-titulo .ugc{font-family:"Figtree",sans-serif;font-weight:500;font-size:clamp(.95rem,1.5vw,1.2rem);letter-spacing:.42em;color:var(--cafe)}
-  .capa-redes{display:flex;align-items:center;gap:12px;margin:30px 0 0;padding:0;list-style:none}
-  .rede-btn{width:42px;height:42px;border-radius:50%;border:1px solid rgba(107,74,53,.55);background:transparent;display:flex;align-items:center;justify-content:center;transition:background .25s,border-color .25s,transform .25s}
-  .rede-btn:hover{background:var(--cafe);border-color:var(--cafe);transform:translateY(-2px)}
-  .rede-btn svg{width:18px;height:18px;fill:none;stroke:var(--cafe);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:stroke .25s}
-  .rede-btn:hover svg{stroke:var(--papel)}
+  .capa{padding:16px 20px 0;background:var(--creme)}
+  .capa-quadro{position:relative;max-width:calc(var(--largura) - 40px);height:clamp(460px,74vh,600px);margin:0 auto;border-radius:26px;overflow:hidden;background:#4a3428;display:flex;align-items:flex-end;justify-content:center;text-align:center;box-shadow:0 14px 34px rgba(61,43,32,.18)}
+  .capa-foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:52% 6%;filter:sepia(.45) saturate(.85) brightness(.82) contrast(1.05)}
+  .capa-quadro::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(61,40,28,.25) 0%,rgba(61,40,28,.35) 45%,rgba(45,30,20,.55) 100%);pointer-events:none}
+  .capa-texto{position:relative;z-index:2;padding:0 20px 40px;color:#fff}
+  .capa-nome{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(3.4rem,8vw,6.4rem);line-height:.95;letter-spacing:-.02em;color:#fff;margin:0;text-shadow:0 4px 24px rgba(0,0,0,.25)}
+  .capa-titulo{margin:12px 0 0;font-family:"Figtree",sans-serif;font-weight:600;font-size:clamp(.85rem,1.4vw,1rem);letter-spacing:.06em;color:#fff}
+  .capa-redes{display:flex;align-items:center;justify-content:center;gap:9px;margin:16px 0 0;padding:0;list-style:none}
+  .rede-btn{width:32px;height:32px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;transition:transform .25s,background .25s}
+  .rede-btn:hover{transform:translateY(-2px);background:var(--creme)}
+  .rede-btn svg{width:16px;height:16px;fill:none;stroke:#3d2b20;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
   /* Espaços de imagem ainda sem foto */
   .vazio-img{display:flex;align-items:flex-end;justify-content:center;background:linear-gradient(160deg,#e9dccb 0%,#d2b59c 100%)}
@@ -280,8 +273,6 @@
      RESPONSIVO
      ========================================================= */
   @media (max-width:1000px){
-    .capa-foto{height:390px}
-    .capa-grid{min-height:390px;gap:24px}
     .cartao-marrom{grid-template-columns:minmax(0,1fr);padding:40px 34px}
     .sobre-foto{max-width:300px;grid-row:1}
     .servicos-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -300,17 +291,11 @@
   @media (max-width:620px){
     section{padding:44px 0}
     .container{padding:0 16px}
-    .capa{padding-top:24px}
-    .capa-grid{gap:10px;min-height:0}
-    .capa-foto{height:270px}
-    .capa-foto-area::after{width:calc(76% + 14px);height:calc(88% + 7px)}
-    .capa-texto{padding:12px 0 22px}
-    .capa-nome{font-size:clamp(1.8rem,9vw,2.5rem);letter-spacing:.02em}
-    .capa-titulo .script{font-size:clamp(1.9rem,9vw,2.4rem)}
-    .capa-titulo .ugc{font-size:.8rem;letter-spacing:.3em}
-    .capa-redes{gap:6px;margin-top:16px}
-    .rede-btn{width:34px;height:34px}
-    .rede-btn svg{width:15px;height:15px}
+    .capa{padding:12px 16px 0}
+    .capa-quadro{height:470px;border-radius:20px}
+    .capa-foto{object-position:54% 8%}
+    .capa-texto{padding-bottom:30px}
+    .capa-nome{font-size:clamp(3rem,15vw,3.9rem)}
     .marcas-secao{padding:8px 0 32px}
     .selo{width:56px;height:56px}
     .faixa-trilho ul{gap:14px;padding:6px 7px}
@@ -367,14 +352,12 @@
 
   <!-- ================= 1. CAPA ================= -->
   <section class="capa" id="inicio" aria-labelledby="titulo-capa">
-    <div class="container capa-grid">
-      <div class="capa-foto-area">
-        <!-- FOTO DA CAPA: PNG recortado, sem fundo. Para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
-        <img class="capa-foto" src="mari-bonetto-capa.png" alt="Mari Bonetto sorrindo, de cabelo longo ondulado e blusa de tricô bege" width="642" height="700" fetchpriority="high">
-      </div>
-      <div class="capa-texto">
-        <h1 class="capa-nome" id="titulo-capa"><span>Mari</span> <span>Bonetto</span></h1>
-        <p class="capa-titulo"><span class="script">Portfólio</span> <span class="ugc">UGC</span></p>
+   <div class="capa-quadro">
+    <!-- FOTO DA CAPA: para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
+    <img class="capa-foto" src="mari-bonetto-capa.webp" alt="Mari Bonetto sorrindo, de cabelo longo ondulado e blusa de tricô bege" width="1537" height="1023" fetchpriority="high">
+    <div class="capa-texto">
+        <h1 class="capa-nome" id="titulo-capa">Mari Bonetto</h1>
+        <p class="capa-titulo">Portfólio UGC</p>
         <!-- Os links dos ícones vêm do objeto CONTATO no script -->
         <ul class="capa-redes" aria-label="Redes sociais">
           <li><a class="rede-btn" id="capa-insta" target="_blank" rel="noopener" aria-label="Instagram UGC @maribonettougc (abre em outra aba)">
@@ -386,8 +369,8 @@
           <li><a class="rede-btn" id="capa-whats" target="_blank" rel="noopener" aria-label="WhatsApp comercial (abre em outra aba)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.4L3.5 20.5l1.4-4.2a8.5 8.5 0 1 1 15.6-4.6z"/><path d="M9.2 8.6c.2 2.9 3 5.8 6 6.1l1-1.3-1.8-1-.8.7c-1.1-.5-2-1.4-2.6-2.6l.7-.8-1-1.8z"/></svg></a></li>
         </ul>
-      </div>
     </div>
+   </div>
   </section>
 
   <!-- ================= 2. FAIXA DE MARCAS ================= -->
