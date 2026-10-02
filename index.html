@@ -147,6 +147,11 @@
   .video-midia .vazio-img{align-items:flex-end;justify-content:center;background:linear-gradient(170deg,#c9b09b 0%,#a98d7a 100%)}
   .video-midia .vazio-img span{margin-bottom:44px}
   .video-midia iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  /* Prévia sem som ao passar o mouse: fica por cima da capa e não bloqueia o clique */
+  .video-midia iframe.previa{z-index:1;pointer-events:none;transform:scale(1.02);opacity:0;transition:opacity .4s ease}
+  .video-midia iframe.previa.pronta{opacity:1}
+  .video-midia.tocando-previa .play span{opacity:0;transition:opacity .3s}
+  .video-midia.tocando-previa:hover .play span{opacity:.85}
   /* Logo da marca no topo do card, com selo de verificado */
   .video-logo{position:absolute;top:10px;left:10px;z-index:3;width:46px;height:46px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;display:flex;align-items:center;justify-content:center}
   .video-logo img{width:100%;height:100%;border-radius:50%;object-fit:cover}
@@ -865,25 +870,64 @@ caseEl.innerHTML = `
     </div>
   </div>`;
 
-// Clique no play: o vídeo do YouTube roda dentro do próprio card
+// Vídeos rodam dentro do portfólio (player oficial do YouTube incorporado, nunca abre o YouTube)
+const dadosDoCard = (midia) => (midia.dataset.chave === "case" ? caseDestaque : destaques[Number(midia.dataset.chave)]);
+const urlEmbed = (id, extra) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3${extra}`;
+const permissoes = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+const temMouse = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+// 1) Passar o mouse: o vídeo começa a rodar SEM SOM, em loop, sem controles
+if (temMouse && !reduzMovimento) {
+  document.querySelectorAll(".video-midia").forEach((midia) => {
+    const id = idDoYoutube(dadosDoCard(midia).link);
+    if (!id) return;
+    let espera = null;
+    midia.addEventListener("mouseenter", () => {
+      if (midia.dataset.ativo) return;
+      espera = setTimeout(() => {
+        if (midia.dataset.ativo) return;
+        const previa = document.createElement("iframe");
+        previa.className = "previa";
+        previa.src = urlEmbed(id, `&mute=1&controls=0&loop=1&playlist=${id}&disablekb=1&fs=0`);
+        previa.title = "Prévia do vídeo sem som";
+        previa.tabIndex = -1;
+        previa.setAttribute("aria-hidden", "true");
+        previa.allow = permissoes;
+        previa.addEventListener("load", () => setTimeout(() => previa.classList.add("pronta"), 350));
+        midia.appendChild(previa);
+        midia.classList.add("tocando-previa");
+      }, 250);
+    });
+    midia.addEventListener("mouseleave", () => {
+      clearTimeout(espera);
+      midia.querySelectorAll("iframe.previa").forEach((el) => el.remove());
+      midia.classList.remove("tocando-previa");
+    });
+  });
+}
+
+// 2) Clicar no card: o vídeo toca COM SOM e com controles, dentro do próprio card
 document.addEventListener("click", (e) => {
-  const botao = e.target.closest(".play");
-  if (!botao) return;
-  const midia = botao.closest(".video-midia");
-  const chave = midia.dataset.chave;
-  const d = chave === "case" ? caseDestaque : destaques[Number(chave)];
+  const midia = e.target.closest(".video-midia");
+  if (!midia || midia.dataset.ativo) return;
+  const d = dadosDoCard(midia);
   const id = idDoYoutube(d.link);
   if (!id) return;
+  midia.dataset.ativo = "1";
+  midia.querySelectorAll("iframe.previa").forEach((el) => el.remove());
+  midia.classList.remove("tocando-previa");
   const iframe = document.createElement("iframe");
-  iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
+  iframe.src = urlEmbed(id, "&controls=1");
   iframe.title = `Vídeo: ${d.titulo || "case"}`;
-  iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+  iframe.allow = permissoes;
   iframe.allowFullscreen = true;
   iframe.referrerPolicy = "strict-origin-when-cross-origin";
   midia.querySelectorAll(".capa-img, .vazio-img, .play, .views").forEach((el) => el.remove());
   midia.prepend(iframe);
   iframe.focus();
 });
+// o card inteiro é clicável
+document.querySelectorAll(".video-midia").forEach((m) => { if (idDoYoutube(dadosDoCard(m).link)) m.style.cursor = "pointer"; });
 
 // ---------- Trabalhos por nicho com filtro ----------
 const degrades = [
