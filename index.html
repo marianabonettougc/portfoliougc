@@ -104,38 +104,28 @@
   .vazio-img span{margin:12px;background:rgba(255,253,249,.9);color:var(--texto);font-weight:700;font-size:.78rem;padding:4px 12px;border-radius:999px}
 
   /* =========================================================
-     2. FAIXA DE MARCAS (esteira contínua)
+     2. SOBRE MIM (painel taupe igual à referência) + 3. MARCAS ROLANDO
      ========================================================= */
-  .faixa{position:relative;grid-column:1/-1;min-width:0;padding:22px 0 4px;overflow:hidden;border-top:1.5px dashed var(--tracejado-claro);margin-top:4px}
-  .faixa-titulo{position:relative;z-index:3;text-align:center;color:var(--papel);font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:1.3rem;font-weight:400;margin-bottom:8px}
-  .faixa-janela{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
-  .faixa-trilho{display:flex;width:max-content;will-change:transform}
-  .faixa-trilho ul{display:flex;gap:18px;list-style:none;margin:0;padding:6px 9px}
-  .selo{position:relative;flex:0 0 auto;width:66px;height:66px;border-radius:50%;background:#fff;border:1.5px solid rgba(255,253,249,.85);box-shadow:0 0 0 4px rgba(255,253,249,.18),0 4px 10px rgba(40,25,15,.18)}
-  .selo img{width:100%;height:100%;border-radius:50%;object-fit:cover}
-  .verificado{position:absolute;right:-3px;bottom:-1px;width:22px;height:22px}
+  .sobre-secao{padding:0 16px}
+  .sobre-painel{position:relative;max-width:1500px;min-height:780px;margin:0 auto;padding:22px 0 150px;overflow:hidden;color:#fff;
+    background:linear-gradient(180deg,#b8a08f 0%,#b09682 55%,#a88d7a 100%);border-radius:0 0 90px 90px}
+  .sobre-texto{position:relative;z-index:2;width:57%;padding-left:9%}
+  .sobre-titulo{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(3.4rem,6.4vw,5.8rem);line-height:1;letter-spacing:-.075em;color:#fff;margin:0 0 34px}
+  .sobre-apresenta{max-width:470px;margin:0 0 30px;padding:2px 30px 16px;border:1.5px solid rgba(255,255,255,.8);border-radius:999px;text-align:center;min-width:0}
+  .sobre-nome{margin:0 auto;padding:0 12px;font-family:"DM Serif Display",Georgia,serif;font-size:clamp(2rem,3.3vw,3rem);line-height:1;color:#fff;white-space:nowrap}
+  .sobre-apresenta p:last-child{margin:0;font-size:clamp(.85rem,1vw,.98rem);font-weight:300;line-height:1.35;color:#fff}
+  .sobre-texto > p{margin:0 0 20px;font-size:clamp(.95rem,1.18vw,1.14rem);font-weight:300;line-height:1.28;color:#fff}
+  .sobre-texto strong{font-weight:600;color:#fff}
+  .sobre-recorte{position:absolute;z-index:1;right:4%;bottom:0;height:calc(100% - 8px);width:auto;max-width:44%;object-fit:contain;object-position:bottom right}
 
-  /* =========================================================
-     3. SOBRE MIM (grande cartão marrom)
-     ========================================================= */
-  .sobre-secao{padding-top:0;padding-bottom:0}
-  .cartao-marrom{
-    position:relative;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:36px;align-items:center;
-    background:var(--cafe);color:var(--papel);border-radius:0 0 30px 30px;padding:44px 48px 30px;box-shadow:0 14px 30px rgba(61,43,32,.18)
-  }
-  .cartao-marrom::before{content:"";position:absolute;inset:0 12px 12px;border:1.5px dashed var(--tracejado-claro);border-top:0;border-radius:0 0 22px 22px;pointer-events:none}
-  .cartao-marrom .manuscrito{color:#f2c9a8}
-  .cartao-marrom h2{color:var(--papel);font-size:clamp(2rem,4.5vw,2.8rem);margin:2px 0 14px}
-  .sobre-texto p{color:rgba(255,253,249,.92);font-size:.98rem}
-  .sobre-texto p+p{margin-top:10px}
-  .promessas{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
-  .promessas li{display:inline-flex;align-items:center;gap:8px;border:1.5px dashed var(--tracejado-claro);border-radius:999px;padding:6px 14px 6px 6px;font-weight:600;font-size:.92rem}
-  .promessas li i{width:22px;height:22px;border-radius:50%;background:var(--verde);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
-  .promessas li i svg{width:12px;height:12px;stroke:#fff;stroke-width:3.4;fill:none}
-  .sobre-texto .assinatura{font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:2.1rem;font-weight:400;color:var(--papel);margin-top:14px;transform:rotate(-3deg);display:inline-block}
-  .sobre-foto{position:relative;z-index:1;background:var(--papel);padding:9px;border-radius:20px;transform:rotate(-1.5deg);max-width:340px;width:100%;justify-self:center}
-  .sobre-foto img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:13px}
-  .sobre-foto .manuscrito{position:absolute;left:50%;bottom:-16px;transform:translateX(-50%) rotate(-2deg);background:var(--papel);padding:2px 14px;border-radius:999px;color:var(--vermelho);white-space:nowrap;font-size:1.3rem}
+  /* Marcas rolando na parte de baixo do painel */
+  .faixa{position:absolute;z-index:3;left:0;right:0;bottom:26px;padding:0 4%}
+  .faixa-janela{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+  .faixa-trilho{display:flex;width:max-content;will-change:transform}
+  .faixa-trilho ul{display:flex;gap:22px;list-style:none;margin:0;padding:6px 11px}
+  .selo{position:relative;flex:0 0 auto;width:96px;height:96px;padding:7px;border-radius:50%;border:1.5px solid rgba(255,255,255,.8)}
+  .selo img{width:100%;height:100%;border-radius:50%;object-fit:cover;background:#fff}
+  .verificado{position:absolute;right:2px;bottom:2px;width:26px;height:26px}
 
   /* =========================================================
      4. CONTEÚDOS DE DESTAQUE (com a linha marrom vertical)
@@ -275,8 +265,10 @@
      RESPONSIVO
      ========================================================= */
   @media (max-width:1000px){
-    .cartao-marrom{grid-template-columns:minmax(0,1fr);padding:40px 34px}
-    .sobre-foto{max-width:300px;grid-row:1}
+    .sobre-painel{min-height:0;padding:30px 0 0;border-radius:0 0 50px 50px}
+    .sobre-texto{width:100%;padding:0 32px}
+    .sobre-recorte{position:relative;display:block;right:auto;height:auto;width:min(78%,420px);max-width:none;margin:0 auto}
+    .faixa{position:relative;bottom:auto;margin-top:-70px;padding:0 0 26px}
     .servicos-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     .metricas{grid-template-columns:repeat(2,minmax(0,1fr))}
     .depoimentos{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -299,12 +291,15 @@
     .container{padding:0 16px}
     .capa-texto{padding:28px 16px 14px}
     .capa-nome{font-size:clamp(2.9rem,14vw,3.6rem)}
-    .selo{width:56px;height:56px}
-    .faixa-trilho ul{gap:14px;padding:6px 7px}
-    .verificado{width:19px;height:19px}
-    .cartao-marrom{padding:34px 22px 24px;border-radius:0 0 24px 24px}
-    .cartao-marrom::before{inset:0 8px 8px;border-radius:0 0 18px 18px}
-    .sobre-foto{max-width:250px}
+    .sobre-secao{padding:0 10px}
+    .sobre-painel{border-radius:0 0 36px 36px}
+    .sobre-texto{padding:0 20px}
+    .sobre-titulo{margin-bottom:28px}
+    .sobre-apresenta{padding:2px 18px 12px;border-radius:40px}
+    .selo{width:66px;height:66px;padding:5px}
+    .faixa-trilho ul{gap:12px;padding:6px 6px}
+    .verificado{width:20px;height:20px;right:0;bottom:0}
+    .faixa{margin-top:-46px;padding-bottom:20px}
     .com-linha{margin-left:14px;padding:30px 0 4px 16px}
     .videos-grid{grid-template-columns:minmax(0,1fr);max-width:300px}
     .servicos-grid,.depoimentos{grid-template-columns:minmax(0,1fr)}
@@ -377,38 +372,27 @@
 
   <!-- ================= 2. SOBRE MIM ================= -->
   <section class="sobre-secao" id="sobre" aria-labelledby="titulo-sobre">
-    <div class="container">
-      <div class="cartao-marrom revelar">
-        <div class="sobre-texto">
-          <span class="manuscrito" aria-hidden="true">prazer!</span>
-          <h2 id="titulo-sobre">Sobre mim</h2>
-          <p>Eu sempre amei compartilhar resenhas de produtos que fazem diferença no meu dia a dia e foi assim que me apaixonei por esse universo.</p>
-          <p>Faz quase um ano que comecei no UGC e, nesse período, mais de 80 marcas já confiaram no meu trabalho.</p>
-          <p>Meus conteúdos refletem muito do que vivo hoje. Em beleza e autocuidado, compartilho minha rotina com cabelos com progressiva e luzes, cuidados com quebra e queda, além de produtos para pele e corpo.</p>
-          <p>Também compartilho minha jornada após perder 23 kg e sobre me reencontrar com a moda, vivendo uma fase em que finalmente eu escolho as roupas que quero usar, e não o contrário.</p>
-          <p>Também compartilho conteúdos sobre maternidade, rotina fitness, casa, organização, achadinhos e produtos que facilitam a rotina de uma dona de casa, sempre trazendo situações e experiências que fazem parte da minha vida.</p>
-          <p>Sou detalhista e comprometida em entregar conteúdos que despertam interesse e confiança, sem deixar de lado aquilo que mais gosto de colocar no meu trabalho: verdade e identificação.</p>
-          <ul class="promessas">
-            <li><i aria-hidden="true"><svg><use href="#check"/></svg></i>Roteiro aprovado antes de gravar</li>
-            <li><i aria-hidden="true"><svg><use href="#check"/></svg></i>Uma rodada de ajuste inclusa</li>
-            <li><i aria-hidden="true"><svg><use href="#check"/></svg></i>Entrega em até 72 horas úteis</li>
-          </ul>
-          <p class="assinatura">Mari Bonetto</p>
-        </div>
+    <div class="sobre-painel revelar">
+      <div class="sobre-texto">
+        <h2 class="sobre-titulo" id="titulo-sobre">Sobre mim</h2>
+        <fieldset class="sobre-apresenta">
+          <legend class="sobre-nome">Mari Bonetto</legend>
+          <p>Oi, tenho <strong>31 anos</strong>, moro em <strong>Valinhos</strong>, interior de <strong>SP</strong>, sou mãe de duas meninas e de três gatinhas</p>
+        </fieldset>
+        <p>Sempre amei compartilhar resenhas de produtos que fazem a diferença no meu dia a dia e foi assim que me apaixonei por esse universo.</p>
+        <p>Faz <strong>quase um ano</strong> que comecei no <strong>UGC</strong> e, nesse período, mais de <strong>80 marcas</strong> já confiaram no meu trabalho.</p>
+        <p>Meus conteúdos refletem muito do que vivo hoje. Em <strong>beleza e autocuidado</strong>, compartilho minha rotina com cabelos com progressiva e luzes, cuidados com quebra e queda, além de produtos para pele e corpo. Também falo sobre minha jornada após <strong>perder 23 kg</strong> e sobre me reencontrar com a moda, vivendo uma fase em que finalmente eu escolho as roupas que quero usar, e não o contrário.</p>
+        <p>Também compartilho conteúdos sobre <strong>maternidade</strong>, <strong>rotina fitness</strong>, <strong>casa</strong>, <strong>organização</strong>, <strong>achadinhos</strong> e produtos que facilitam a rotina de uma dona de casa, sempre trazendo situações e experiências que fazem parte da minha vida.</p>
+        <p>Sou detalhista e comprometida em entregar conteúdos que despertam interesse e confiança, sem deixar de lado aquilo que mais gosto de colocar no meu trabalho: verdade e identificação.</p>
+      </div>
 
-        <div class="sobre-foto">
-          <!-- FOTO DO SOBRE MIM: para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
-          <img src="mari-bonetto-sobre.webp" alt="Mari Bonetto sentada segurando um celular no estabilizador e uma claquete escrita Mari Bonetto UGC Creator" width="1448" height="1086" style="object-position:56% 30%" loading="lazy">
-          <span class="manuscrito" aria-hidden="true">verdade e identificação</span>
-        </div>
+      <!-- FOTO DO SOBRE MIM: recortada, sem fundo (WebP transparente). Para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
+      <img class="sobre-recorte" src="mari-bonetto-sobre-recorte.webp" alt="Mari Bonetto sentada em um cubo branco, segurando um celular no estabilizador e uma claquete escrita Mari Bonetto UGC Creator" width="720" height="1023" loading="lazy">
 
-        <!-- ================= 3. FAIXA DE MARCAS (esteira passando, dentro do card) ================= -->
-        <div class="faixa" aria-label="Marcas com quem já trabalhei">
-          <p class="faixa-titulo">marcas que já confiaram no meu trabalho</p>
-          <div class="faixa-janela">
-            <!-- As logos vêm do array "marcas" no script. A esteira é montada e duplicada pelo JavaScript. -->
-            <div class="faixa-trilho" id="faixa-trilho"></div>
-          </div>
+      <!-- ================= 3. MARCAS ROLANDO (as logos vêm do array "marcas" no script) ================= -->
+      <div class="faixa" aria-label="Marcas com quem já trabalhei">
+        <div class="faixa-janela">
+          <div class="faixa-trilho" id="faixa-trilho"></div>
         </div>
       </div>
     </div>
