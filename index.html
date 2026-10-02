@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#f6efe6">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Oswald:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Pinyon+Script&family=DM+Serif+Display:ital@0;1&family=Oswald:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
      IDENTIDADE: CARTÃO DE CAFETERIA PREMIUM
@@ -89,11 +89,13 @@
   .capa{padding:0;background:var(--creme)}
   /* Capa de fora a fora com fundo na paleta e foto recortada (sem fundo) */
   .capa-quadro{position:relative;width:100%;height:clamp(440px,min(46vw,82vh),660px);overflow:hidden;background:linear-gradient(180deg,#f8f2ea 0%,#efe3d3 100%);display:flex;align-items:center}
-  .capa-foto{position:absolute;bottom:0;right:max(20px,calc((100% - var(--largura)) / 2 + 20px));height:96%;width:auto;max-width:62%;object-fit:contain;object-position:bottom right}
+  .capa-foto{position:absolute;bottom:0;right:max(20px,calc((100% - var(--largura)) / 2 + 20px));height:88%;width:auto;max-width:52%;object-fit:contain;object-position:bottom right}
   .capa-texto{position:relative;z-index:2;width:100%;max-width:var(--largura);margin:0 auto;padding:40px 20px 0;text-align:left}
-  .capa-nome{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(3.6rem,7vw,6.6rem);line-height:.92;letter-spacing:-.02em;color:var(--cafe);margin:0}
+  .capa-nome{font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;text-transform:uppercase;font-size:clamp(3.6rem,7.4vw,7rem);line-height:.88;letter-spacing:.02em;color:var(--cafe);margin:0}
   .capa-nome span{display:block}
-  .capa-titulo{margin:16px 0 0;font-family:"Oswald",sans-serif;font-weight:500;font-size:clamp(1rem,1.5vw,1.15rem);letter-spacing:.08em;color:var(--cafe-2)}
+  .capa-titulo{display:flex;align-items:baseline;gap:.4em;margin:10px 0 0 .1em}
+  .capa-titulo .script{font-family:"Pinyon Script",Georgia,cursive;font-size:clamp(2.2rem,3.6vw,3.2rem);line-height:1;color:var(--cafe-2)}
+  .capa-titulo .ugc{font-family:"Poppins",sans-serif;font-weight:500;font-size:clamp(.95rem,1.3vw,1.1rem);letter-spacing:.38em;color:var(--cafe)}
   .capa-redes{display:flex;align-items:center;justify-content:flex-start;gap:10px;margin:20px 0 0;padding:0;list-style:none}
   .rede-btn{width:40px;height:40px;border-radius:50%;background:var(--cafe);display:flex;align-items:center;justify-content:center;transition:transform .25s,background .25s}
   .rede-btn:hover{transform:translateY(-2px);background:var(--vermelho)}
@@ -107,25 +109,27 @@
      2. SOBRE MIM (painel taupe igual à referência) + 3. MARCAS ROLANDO
      ========================================================= */
   .sobre-secao{padding:0 16px}
-  .sobre-painel{position:relative;max-width:1500px;min-height:780px;margin:0 auto;padding:22px 0 150px;overflow:hidden;color:#fff;
-    background:linear-gradient(180deg,#b8a08f 0%,#b09682 55%,#a88d7a 100%);border-radius:0 0 90px 90px}
-  .sobre-texto{position:relative;z-index:2;width:57%;padding-left:9%}
+  /* Cor tirada da imagem de referência (taupe #ac8e7d, variando de #ae907f a #a78a7b) com dobras suaves de cortina */
+  .sobre-painel{position:relative;max-width:1500px;min-height:720px;margin:0 auto;padding:22px 0 56px;overflow:hidden;color:#fff;
+    background:repeating-linear-gradient(90deg,rgba(255,255,255,0) 0,rgba(255,255,255,.035) 45px,rgba(255,255,255,0) 90px,rgba(60,35,20,.03) 135px,rgba(255,255,255,0) 180px),linear-gradient(180deg,#ae907f 0%,#ac8e7d 50%,#a78a7b 100%);border-radius:0 0 90px 90px}
+  .sobre-texto{position:relative;z-index:2;width:54%;padding-left:8%}
   .sobre-titulo{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(3.4rem,6.4vw,5.8rem);line-height:1;letter-spacing:-.075em;color:#fff;margin:0 0 34px}
   .sobre-apresenta{max-width:470px;margin:0 0 30px;padding:2px 30px 16px;border:1.5px solid rgba(255,255,255,.8);border-radius:999px;text-align:center;min-width:0}
   .sobre-nome{margin:0 auto;padding:0 12px;font-family:"DM Serif Display",Georgia,serif;font-size:clamp(2rem,3.3vw,3rem);line-height:1;color:#fff;white-space:nowrap}
   .sobre-apresenta p:last-child{margin:0;font-size:clamp(.85rem,1vw,.98rem);font-weight:300;line-height:1.35;color:#fff}
   .sobre-texto > p{margin:0 0 20px;font-size:clamp(.95rem,1.18vw,1.14rem);font-weight:300;line-height:1.28;color:#fff}
   .sobre-texto strong{font-weight:600;color:#fff}
-  .sobre-recorte{position:absolute;z-index:1;right:4%;bottom:0;height:calc(100% - 8px);width:auto;max-width:44%;object-fit:contain;object-position:bottom right}
+  .sobre-recorte{position:absolute;z-index:1;right:6%;bottom:0;height:calc(100% - 8px);width:auto;max-width:40%;object-fit:contain;object-position:bottom right}
 
-  /* Marcas rolando na parte de baixo do painel */
-  .faixa{position:absolute;z-index:3;left:0;right:0;bottom:26px;padding:0 4%}
-  .faixa-janela{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+  /* Marcas rolando em faixa clara logo abaixo do Sobre mim (direita para a esquerda, sem fim) */
+  .marcas-secao{padding:22px 16px 0}
+  .faixa{position:relative;max-width:1500px;margin:0 auto;padding:16px 0;background:#fff8ed;border-radius:999px;box-shadow:var(--sombra);overflow:hidden}
+  .faixa-janela{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
   .faixa-trilho{display:flex;width:max-content;will-change:transform}
-  .faixa-trilho ul{display:flex;gap:22px;list-style:none;margin:0;padding:6px 11px}
-  .selo{position:relative;flex:0 0 auto;width:96px;height:96px;padding:7px;border-radius:50%;border:1.5px solid rgba(255,255,255,.8)}
+  .faixa-trilho ul{display:flex;gap:22px;list-style:none;margin:0;padding:4px 11px}
+  .selo{position:relative;flex:0 0 auto;width:88px;height:88px;padding:6px;border-radius:50%;border:1.5px solid rgba(107,74,53,.28)}
   .selo img{width:100%;height:100%;border-radius:50%;object-fit:cover;background:#fff}
-  .verificado{position:absolute;right:2px;bottom:2px;width:26px;height:26px}
+  .verificado{position:absolute;right:1px;bottom:1px;width:24px;height:24px}
 
   /* =========================================================
      4. CONTEÚDOS DE DESTAQUE (com a linha marrom vertical)
@@ -268,7 +272,7 @@
     .sobre-painel{min-height:0;padding:30px 0 0;border-radius:0 0 50px 50px}
     .sobre-texto{width:100%;padding:0 32px}
     .sobre-recorte{position:relative;display:block;right:auto;height:auto;width:min(78%,420px);max-width:none;margin:0 auto}
-    .faixa{position:relative;bottom:auto;margin-top:-70px;padding:0 0 26px}
+    .sobre-painel{padding-bottom:0}
     .servicos-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     .metricas{grid-template-columns:repeat(2,minmax(0,1fr))}
     .depoimentos{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -283,23 +287,25 @@
     .resultados{grid-template-columns:minmax(0,1fr)}
     .capa-quadro{height:auto;flex-direction:column;align-items:stretch}
     .capa-texto{padding:32px 20px 18px;text-align:center}
-    .capa-foto{position:relative;right:auto;order:2;width:min(86%,440px);height:auto;max-width:none;margin:0 auto}
+    .capa-foto{position:relative;right:auto;order:2;width:min(80%,420px);height:auto;max-width:none;margin:8px auto 0}
+    .capa-titulo{justify-content:center}
     .capa-redes{justify-content:center}
   }
   @media (max-width:620px){
     section{padding:44px 0}
     .container{padding:0 16px}
     .capa-texto{padding:28px 16px 14px}
-    .capa-nome{font-size:clamp(2.9rem,14vw,3.6rem)}
+    .capa-nome{font-size:clamp(2.7rem,13.5vw,3.6rem)}
     .sobre-secao{padding:0 10px}
     .sobre-painel{border-radius:0 0 36px 36px}
     .sobre-texto{padding:0 20px}
     .sobre-titulo{margin-bottom:28px}
     .sobre-apresenta{padding:2px 18px 12px;border-radius:40px}
-    .selo{width:66px;height:66px;padding:5px}
+    .selo{width:64px;height:64px;padding:5px}
     .faixa-trilho ul{gap:12px;padding:6px 6px}
     .verificado{width:20px;height:20px;right:0;bottom:0}
-    .faixa{margin-top:-46px;padding-bottom:20px}
+    .marcas-secao{padding:16px 10px 0}
+    .faixa{padding:10px 0;border-radius:40px}
     .com-linha{margin-left:14px;padding:30px 0 4px 16px}
     .videos-grid{grid-template-columns:minmax(0,1fr);max-width:300px}
     .servicos-grid,.depoimentos{grid-template-columns:minmax(0,1fr)}
@@ -354,16 +360,16 @@
     <img class="capa-foto" src="mari-bonetto-recorte.webp" alt="Mari Bonetto sorrindo, de cabelo longo ondulado e blusa de tricô bege" width="871" height="949" fetchpriority="high">
     <div class="capa-texto">
         <h1 class="capa-nome" id="titulo-capa"><span>Mari</span> <span>Bonetto</span></h1>
-        <p class="capa-titulo">Portfólio UGC</p>
+        <p class="capa-titulo"><span class="script">Portfólio</span> <span class="ugc">UGC</span></p>
         <!-- Os links dos ícones vêm do objeto CONTATO no script -->
         <ul class="capa-redes" aria-label="Redes sociais">
-          <li><a class="rede-btn" id="capa-insta" target="_blank" rel="noopener" aria-label="Instagram UGC @maribonettougc (abre em outra aba)">
+          <li><a class="rede-btn" id="capa-insta" href="https://www.instagram.com/maribonettougc/" target="_blank" rel="noopener" aria-label="Instagram UGC @maribonettougc (abre em outra aba)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg></a></li>
-          <li><a class="rede-btn" id="capa-insta-pessoal" target="_blank" rel="noopener" aria-label="Instagram pessoal @mari.bonetto (abre em outra aba)">
+          <li><a class="rede-btn" id="capa-insta-pessoal" href="https://www.instagram.com/mari.bonetto/" target="_blank" rel="noopener" aria-label="Instagram pessoal @mari.bonetto (abre em outra aba)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg></a></li>
-          <li><a class="rede-btn" id="capa-tiktok" target="_blank" rel="noopener" aria-label="TikTok @maribonettougc (abre em outra aba)">
+          <li><a class="rede-btn" id="capa-tiktok" href="https://www.tiktok.com/@maribonettougc" target="_blank" rel="noopener" aria-label="TikTok @maribonettougc (abre em outra aba)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3.5v11.2a3.6 3.6 0 1 1-3.6-3.6"/><path d="M14 3.5c.4 2.8 2.4 4.7 5.2 4.9"/></svg></a></li>
-          <li><a class="rede-btn" id="capa-whats" target="_blank" rel="noopener" aria-label="WhatsApp comercial (abre em outra aba)">
+          <li><a class="rede-btn" id="capa-whats" href="https://api.whatsapp.com/send/?phone=5519983974502&amp;text=Oi%2C+Mari%21+Vi+seu+portf%C3%B3lio+e+quero+conversar+sobre+um+conte%C3%BAdo+UGC.&amp;type=phone_number&amp;app_absent=0" target="_blank" rel="noopener" aria-label="WhatsApp comercial (abre em outra aba)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.4L3.5 20.5l1.4-4.2a8.5 8.5 0 1 1 15.6-4.6z"/><path d="M9.2 8.6c.2 2.9 3 5.8 6 6.1l1-1.3-1.8-1-.8.7c-1.1-.5-2-1.4-2.6-2.6l.7-.8-1-1.8z"/></svg></a></li>
         </ul>
     </div>
@@ -389,11 +395,14 @@
       <!-- FOTO DO SOBRE MIM: recortada, sem fundo (WebP transparente). Para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
       <img class="sobre-recorte" src="mari-bonetto-sobre-recorte.webp" alt="Mari Bonetto sentada em um cubo branco, segurando um celular no estabilizador e uma claquete escrita Mari Bonetto UGC Creator" width="720" height="1023" loading="lazy">
 
-      <!-- ================= 3. MARCAS ROLANDO (as logos vêm do array "marcas" no script) ================= -->
-      <div class="faixa" aria-label="Marcas com quem já trabalhei">
-        <div class="faixa-janela">
-          <div class="faixa-trilho" id="faixa-trilho"></div>
-        </div>
+    </div>
+  </section>
+
+  <!-- ================= 3. MARCAS ROLANDO (as logos vêm do array "marcas" no script) ================= -->
+  <section class="marcas-secao" aria-label="Marcas com quem já trabalhei">
+    <div class="faixa">
+      <div class="faixa-janela">
+        <div class="faixa-trilho" id="faixa-trilho"></div>
       </div>
     </div>
   </section>
@@ -892,10 +901,7 @@ const linkEmail = `mailto:${CONTATO.email}`;
 const linkInsta = `https://www.instagram.com/${CONTATO.instagram}/`;
 const linkTiktok = `https://www.tiktok.com/@${CONTATO.tiktok}`;
 $("#link-whats").href = linkWhats;
-$("#capa-insta").href = linkInsta;
-$("#capa-tiktok").href = linkTiktok;
-$("#capa-whats").href = linkWhats;
-$("#capa-insta-pessoal").href = `https://www.instagram.com/${CONTATO.instagramPessoal}/`;
+// Os links dos ícones da capa estão direto no HTML da capa
 $("#texto-whats").textContent = CONTATO.whatsappTexto;
 $("#link-email").href = linkEmail;
 $("#texto-email").textContent = CONTATO.email;
