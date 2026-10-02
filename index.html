@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#f6efe6">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Caveat:wght@600;700&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Oswald:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
      IDENTIDADE: CARTÃO DE CAFETERIA PREMIUM
@@ -31,10 +31,13 @@
   }
   *,*::before,*::after{box-sizing:border-box}
   html{scroll-behavior:smooth;scroll-padding-top:76px;-webkit-text-size-adjust:100%}
-  body{margin:0;background:var(--creme);color:var(--texto);font-family:"Figtree",system-ui,sans-serif;font-size:1rem;line-height:1.6;overflow-x:hidden}
+  body{margin:0;background:var(--creme);color:var(--texto);font-family:"Poppins",system-ui,sans-serif;font-size:.95rem;line-height:1.65;overflow-x:hidden}
   img{max-width:100%;height:auto;display:block}
   a{color:inherit}
-  h1,h2,h3,h4{margin:0;line-height:1.12;font-weight:800;color:var(--texto)}
+  h1,h2,h3,h4{margin:0;line-height:1.12;font-weight:600;color:var(--texto)}
+  /* Títulos de seção em serifa display apertada; subtítulos em Oswald, como no print de referência */
+  h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400;letter-spacing:-.03em}
+  h3,h4{font-family:"Oswald","Poppins",sans-serif;font-weight:500;letter-spacing:.01em}
   p{margin:0}
   button,input,textarea{font:inherit;color:inherit}
   :focus-visible{outline:3px solid var(--vermelho);outline-offset:3px;border-radius:10px}
@@ -44,7 +47,7 @@
 
   .container{width:100%;max-width:var(--largura);margin:0 auto;padding:0 20px}
   section{padding:56px 0}
-  .manuscrito{font-family:"Caveat",cursive;font-weight:700;color:var(--vermelho);font-size:1.45rem;line-height:1}
+  .manuscrito{font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-weight:400;color:var(--vermelho);font-size:1.3rem;line-height:1}
   .cabecalho{margin-bottom:24px}
   .cabecalho h2{font-size:clamp(1.8rem,4vw,2.5rem);margin-top:4px}
 
@@ -65,8 +68,8 @@
   .topo.visivel{transform:none;visibility:visible}
   .topo.rolou{background:rgba(255,253,249,.94);border-bottom-color:var(--tracejado);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
   .topo .container{display:flex;align-items:center;justify-content:space-between;gap:16px}
-  .logo-nome{font-weight:800;font-size:1.3rem;text-decoration:none;color:var(--cafe);letter-spacing:-.2px}
-  .logo-nome span{font-family:"Caveat",cursive;color:var(--vermelho);font-size:1.5rem;margin-left:4px}
+  .logo-nome{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:1.4rem;text-decoration:none;color:var(--cafe);letter-spacing:-.2px}
+  .logo-nome span{font-family:"Oswald",sans-serif;font-weight:500;text-transform:uppercase;letter-spacing:.12em;color:var(--vermelho);font-size:.8rem;margin-left:6px}
   .menu ul{display:flex;gap:2px;list-style:none;margin:0;padding:0}
   .menu a{display:block;padding:8px 14px;border-radius:999px;text-decoration:none;font-weight:600;font-size:.97rem;transition:background .2s}
   .menu a:hover{background:rgba(107,74,53,.1)}
@@ -85,14 +88,15 @@
      ========================================================= */
   .capa{padding:0;background:var(--creme)}
   /* Foto de fora a fora, clara, sem camada escura */
-  .capa-quadro{position:relative;width:100%;height:clamp(480px,80vh,680px);overflow:hidden;background:#ece8e6;display:flex;align-items:center}
-  .capa-foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:62% 14%;filter:sepia(.08) brightness(1.03)}
+  .capa-quadro{position:relative;width:100%;height:clamp(420px,min(45vw,80vh),680px);overflow:hidden;background:linear-gradient(180deg,#dad9e0 0%,#cfced7 60%,#c3c2ca 100%);display:flex;align-items:center}
+  .capa-foto{position:absolute;top:0;right:0;height:100%;width:auto;max-width:none;object-fit:contain;
+    -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 16%);mask-image:linear-gradient(90deg,transparent 0%,#000 16%)}
   /* Leve tom creme só no lado esquerdo, onde fica o texto (clareia, não escurece) */
-  .capa-quadro::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(246,239,230,.75) 0%,rgba(246,239,230,.4) 28%,rgba(246,239,230,0) 48%);pointer-events:none}
+  .capa-quadro::after{content:"";position:absolute;inset:0;background:none;pointer-events:none}
   .capa-texto{position:relative;z-index:2;width:100%;max-width:var(--largura);margin:0 auto;padding:40px 20px 0;text-align:left}
   .capa-nome{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(3.6rem,7vw,6.6rem);line-height:.92;letter-spacing:-.02em;color:var(--cafe);margin:0}
   .capa-nome span{display:block}
-  .capa-titulo{margin:16px 0 0;font-family:"Figtree",sans-serif;font-weight:600;font-size:clamp(1rem,1.5vw,1.15rem);letter-spacing:.08em;color:var(--cafe-2)}
+  .capa-titulo{margin:16px 0 0;font-family:"Oswald",sans-serif;font-weight:500;font-size:clamp(1rem,1.5vw,1.15rem);letter-spacing:.08em;color:var(--cafe-2)}
   .capa-redes{display:flex;align-items:center;justify-content:flex-start;gap:10px;margin:20px 0 0;padding:0;list-style:none}
   .rede-btn{width:40px;height:40px;border-radius:50%;background:var(--cafe);display:flex;align-items:center;justify-content:center;transition:transform .25s,background .25s}
   .rede-btn:hover{transform:translateY(-2px);background:var(--vermelho)}
@@ -105,10 +109,10 @@
   /* =========================================================
      2. FAIXA DE MARCAS (esteira contínua)
      ========================================================= */
-  .marcas-secao{padding:16px 0 40px}
+  .marcas-secao{padding:16px 0 0}
   .faixa{position:relative;background:var(--cafe-2);border-radius:var(--raio);padding:16px 0 18px;overflow:hidden;box-shadow:var(--sombra)}
   .faixa::before{content:"";position:absolute;inset:7px;border:1.5px dashed var(--tracejado-claro);border-radius:17px;pointer-events:none;z-index:2}
-  .faixa-titulo{position:relative;z-index:3;text-align:center;color:var(--papel);font-family:"Caveat",cursive;font-size:1.4rem;font-weight:700;margin-bottom:8px}
+  .faixa-titulo{position:relative;z-index:3;text-align:center;color:var(--papel);font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:1.3rem;font-weight:400;margin-bottom:8px}
   .faixa-janela{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
   .faixa-trilho{display:flex;width:max-content;will-change:transform}
   .faixa-trilho ul{display:flex;gap:18px;list-style:none;margin:0;padding:6px 9px}
@@ -133,7 +137,7 @@
   .promessas li{display:inline-flex;align-items:center;gap:8px;border:1.5px dashed var(--tracejado-claro);border-radius:999px;padding:6px 14px 6px 6px;font-weight:600;font-size:.92rem}
   .promessas li i{width:22px;height:22px;border-radius:50%;background:var(--verde);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
   .promessas li i svg{width:12px;height:12px;stroke:#fff;stroke-width:3.4;fill:none}
-  .sobre-texto .assinatura{font-family:"Caveat",cursive;font-size:2.4rem;font-weight:700;color:var(--papel);margin-top:14px;transform:rotate(-3deg);display:inline-block}
+  .sobre-texto .assinatura{font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:2.1rem;font-weight:400;color:var(--papel);margin-top:14px;transform:rotate(-3deg);display:inline-block}
   .sobre-foto{position:relative;z-index:1;background:var(--papel);padding:9px;border-radius:20px;transform:rotate(-1.5deg);max-width:340px;width:100%;justify-self:center}
   .sobre-foto img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:13px}
   .sobre-foto .manuscrito{position:absolute;left:50%;bottom:-16px;transform:translateX(-50%) rotate(-2deg);background:var(--papel);padding:2px 14px;border-radius:999px;color:var(--vermelho);white-space:nowrap;font-size:1.3rem}
@@ -159,9 +163,9 @@
   .play svg{width:24px;height:24px;fill:#fff;margin-left:3px}
   .play:hover span,.play:focus-visible span{transform:scale(1.08);background:var(--cafe)}
   .play:focus-visible{outline-offset:-4px;border-radius:16px}
-  .resultado-chip{position:absolute;left:10px;bottom:10px;z-index:3;background:var(--papel);color:var(--cafe);font-weight:800;font-size:.85rem;padding:4px 10px;border-radius:999px;pointer-events:none}
+  .resultado-chip{position:absolute;left:10px;bottom:10px;z-index:3;background:var(--papel);color:var(--cafe);font-weight:700;font-size:.85rem;padding:4px 10px;border-radius:999px;pointer-events:none}
   .resultado-chip small{font-weight:600;color:var(--texto-suave)}
-  .video-card h3{font-size:.98rem;font-weight:800;text-transform:uppercase;letter-spacing:.2px;margin-top:10px;color:var(--cafe)}
+  .video-card h3{font-size:1.05rem;font-weight:600;text-transform:uppercase;letter-spacing:.2px;margin-top:10px;color:var(--cafe)}
   .video-card p{font-size:.9rem;color:var(--texto-suave)}
 
   /* =========================================================
@@ -186,7 +190,7 @@
   .servicos-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;list-style:none;margin:0;padding:0}
   .servico{display:flex;gap:14px;align-items:flex-start;padding:18px 18px 20px;transition:transform .2s ease,box-shadow .2s ease}
   .servico:hover{transform:translateY(-3px);box-shadow:var(--sombra-hover)}
-  .servico-num{flex-shrink:0;width:50px;height:50px;border-radius:50%;border:2px dashed var(--vermelho);color:var(--vermelho);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem}
+  .servico-num{font-family:"Oswald",sans-serif;flex-shrink:0;width:50px;height:50px;border-radius:50%;border:2px dashed var(--vermelho);color:var(--vermelho);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem}
   .servico h3{font-size:1.1rem;margin-bottom:4px}
   .servico p{font-size:.93rem;color:var(--texto-suave)}
 
@@ -195,16 +199,16 @@
      ========================================================= */
   .metricas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;list-style:none;margin:0 0 14px;padding:0}
   .metrica{text-align:center;padding:20px 12px}
-  .metrica strong{display:block;font-size:clamp(2rem,4vw,2.6rem);font-weight:800;color:var(--cafe);line-height:1}
+  .metrica strong{display:block;font-family:"Oswald",sans-serif;font-size:clamp(2rem,4vw,2.6rem);font-weight:600;color:var(--cafe);line-height:1}
   .metrica.placeholder strong{font-size:clamp(1.2rem,2.4vw,1.5rem);color:var(--vermelho);padding:8px 0}
   .metrica span{display:block;margin-top:6px;font-weight:600;color:var(--texto-suave);font-size:.92rem}
   .resultados{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;list-style:none;margin:0 0 14px;padding:0}
   .resultado{padding:20px;background:var(--cafe);color:var(--papel);border-color:var(--tracejado-claro)}
-  .resultado strong{display:block;font-size:1.5rem;font-weight:800;letter-spacing:.5px}
+  .resultado strong{display:block;font-family:"Oswald",sans-serif;font-size:1.5rem;font-weight:600;letter-spacing:.5px}
   .resultado p{color:rgba(255,253,249,.85);font-size:.93rem;margin-top:4px}
   .depoimentos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;list-style:none;margin:0;padding:0}
   .depoimento{padding:20px;position:relative}
-  .depoimento .aspas{font-family:"Caveat",cursive;font-size:3rem;line-height:.6;color:var(--vermelho);display:block;margin-bottom:6px}
+  .depoimento .aspas{font-family:"DM Serif Display",Georgia,serif;font-size:3rem;line-height:.6;color:var(--vermelho);display:block;margin-bottom:6px}
   .depoimento blockquote{margin:0;font-size:.95rem}
   .depoimento figcaption{margin-top:12px;padding-top:10px;border-top:1.5px dashed var(--tracejado)}
   .depoimento figcaption strong{display:block;font-size:.98rem}
@@ -291,7 +295,7 @@
     .menu a{padding:12px 16px;font-size:1.05rem}
     .resultados{grid-template-columns:minmax(0,1fr)}
     .capa-quadro{height:auto;flex-direction:column;align-items:stretch;background:var(--creme)}
-    .capa-foto{position:relative;height:440px;object-position:56% 10%}
+    .capa-foto{position:relative;width:100%;height:auto;-webkit-mask-image:none;mask-image:none}
     .capa-quadro::after{display:none}
     .capa-texto{padding:24px 20px 28px;text-align:center}
     .capa-redes{justify-content:center}
@@ -299,10 +303,9 @@
   @media (max-width:620px){
     section{padding:44px 0}
     .container{padding:0 16px}
-    .capa-foto{height:380px;object-position:54% 8%}
     .capa-texto{padding:20px 16px 24px}
     .capa-nome{font-size:clamp(2.9rem,14vw,3.6rem)}
-    .marcas-secao{padding:8px 0 32px}
+    .marcas-secao{padding:12px 0 0}
     .selo{width:56px;height:56px}
     .faixa-trilho ul{gap:14px;padding:6px 7px}
     .verificado{width:19px;height:19px}
@@ -379,20 +382,7 @@
    </div>
   </section>
 
-  <!-- ================= 2. FAIXA DE MARCAS ================= -->
-  <section class="marcas-secao" aria-label="Marcas com quem já trabalhei">
-    <div class="container">
-      <div class="faixa revelar">
-        <p class="faixa-titulo">marcas que já confiaram no meu trabalho</p>
-        <div class="faixa-janela">
-          <!-- As logos vêm do array "marcas" no script. A esteira é montada e duplicada pelo JavaScript. -->
-          <div class="faixa-trilho" id="faixa-trilho"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= 3. SOBRE MIM ================= -->
+  <!-- ================= 2. SOBRE MIM ================= -->
   <section class="sobre-secao" id="sobre" aria-labelledby="titulo-sobre">
     <div class="container">
       <div class="cartao-marrom revelar">
@@ -417,6 +407,19 @@
           <!-- FOTO DO SOBRE MIM: para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
           <img src="mari-bonetto-sobre.webp" alt="Mari Bonetto sentada segurando um celular no estabilizador e uma claquete escrita Mari Bonetto UGC Creator" width="1448" height="1086" style="object-position:56% 30%" loading="lazy">
           <span class="manuscrito" aria-hidden="true">verdade e identificação</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 3. FAIXA DE MARCAS ================= -->
+  <section class="marcas-secao" aria-label="Marcas com quem já trabalhei">
+    <div class="container">
+      <div class="faixa revelar">
+        <p class="faixa-titulo">marcas que já confiaram no meu trabalho</p>
+        <div class="faixa-janela">
+          <!-- As logos vêm do array "marcas" no script. A esteira é montada e duplicada pelo JavaScript. -->
+          <div class="faixa-trilho" id="faixa-trilho"></div>
         </div>
       </div>
     </div>
