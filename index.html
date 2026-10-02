@@ -132,30 +132,45 @@
   .verificado{position:absolute;right:1px;bottom:1px;width:24px;height:24px}
 
   /* =========================================================
-     4. CONTEÚDOS DE DESTAQUE (com a linha marrom vertical)
+     4. MEUS CASES DE SUCESSO (com a linha marrom vertical)
      ========================================================= */
   .destaques-secao{padding-top:0}
-  .com-linha{position:relative;margin-left:44px;padding:36px 0 4px 28px;border-left:1.5px solid var(--cafe)}
+  .com-linha{position:relative;margin-left:44px;padding:24px 0 4px 26px;border-left:1.5px solid var(--cafe)}
   .com-linha::before{content:"";position:absolute;left:-6px;bottom:0;width:11px;height:11px;border-radius:50%;background:var(--cafe)}
-  .videos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,220px));gap:18px;list-style:none;margin:0;padding:0}
+  .cases-titulo{font-size:clamp(2.2rem,4.4vw,3.2rem);margin:0 0 18px}
+  /* Grade de cases: 5 cards verticais por linha no desktop */
+  .videos-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;list-style:none;margin:0;padding:0}
   .video-card{display:flex;flex-direction:column;min-width:0}
   .video-midia{position:relative;aspect-ratio:9/16;border-radius:16px;overflow:hidden;background:#d9c4ae;box-shadow:var(--sombra);transition:transform .25s ease,box-shadow .25s ease}
-  .video-card:hover .video-midia{transform:translateY(-4px);box-shadow:var(--sombra-hover)}
+  .video-card:hover .video-midia,.case-video:hover .video-midia{transform:translateY(-4px);box-shadow:var(--sombra-hover)}
   .video-midia .capa-img,.video-midia .vazio-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-  .video-midia .vazio-img{align-items:flex-start;justify-content:flex-end}
+  .video-midia .vazio-img{align-items:flex-end;justify-content:center;background:linear-gradient(170deg,#c9b09b 0%,#a98d7a 100%)}
+  .video-midia .vazio-img span{margin-bottom:44px}
   .video-midia iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-  .video-logo{position:absolute;top:10px;left:10px;z-index:3;width:44px;height:44px;border-radius:50%;background:#fff;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;display:flex;align-items:center;justify-content:center}
-  .video-logo img{width:100%;height:100%;object-fit:contain}
+  /* Logo da marca no topo do card, com selo de verificado */
+  .video-logo{position:absolute;top:10px;left:10px;z-index:3;width:46px;height:46px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;display:flex;align-items:center;justify-content:center}
+  .video-logo img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+  .video-logo .verificado{width:17px;height:17px;right:-3px;bottom:-2px}
   .video-logo.sem-logo{font-size:.6rem;font-weight:700;color:var(--texto-suave);border:1.5px dashed var(--tracejado)}
   .play{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;border:0;background:transparent;cursor:pointer;padding:0}
-  .play span{width:58px;height:58px;border-radius:50%;background:rgba(40,25,15,.55);display:flex;align-items:center;justify-content:center;transition:transform .2s ease,background .2s ease}
-  .play svg{width:24px;height:24px;fill:#fff;margin-left:3px}
+  .play span{width:52px;height:52px;border-radius:50%;background:rgba(40,25,15,.5);display:flex;align-items:center;justify-content:center;transition:transform .2s ease,background .2s ease}
+  .play svg{width:22px;height:22px;fill:#fff;margin-left:3px}
   .play:hover span,.play:focus-visible span{transform:scale(1.08);background:var(--cafe)}
   .play:focus-visible{outline-offset:-4px;border-radius:16px}
-  .resultado-chip{position:absolute;left:10px;bottom:10px;z-index:3;background:var(--papel);color:var(--cafe);font-weight:700;font-size:.85rem;padding:4px 10px;border-radius:999px;pointer-events:none}
-  .resultado-chip small{font-weight:600;color:var(--texto-suave)}
-  .video-card h3{font-size:1.05rem;font-weight:600;text-transform:uppercase;letter-spacing:.2px;margin-top:10px;color:var(--cafe)}
-  .video-card p{font-size:.9rem;color:var(--texto-suave)}
+  /* Visualizações com ícone de olho na parte de baixo */
+  .views{position:absolute;left:12px;bottom:10px;z-index:3;display:flex;align-items:center;gap:6px;color:#fff;font-weight:600;font-size:.88rem;text-shadow:0 1px 6px rgba(0,0,0,.45);pointer-events:none}
+  .views svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.8;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+
+  /* Case em destaque */
+  .case-destaque{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:28px;align-items:start;margin-top:30px}
+  .case-video{min-width:0}
+  .case-titulo{font-family:"Oswald",sans-serif;font-weight:600;font-size:clamp(2.2rem,4.2vw,3.4rem);line-height:1;letter-spacing:0;color:#a87c5a;margin:0 0 18px}
+  .nota{max-width:470px;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(61,43,32,.16);padding:16px 22px 20px}
+  .nota-topo{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:.9rem;color:var(--texto);padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid #eee5dc}
+  .nota-topo span:last-child{font-size:1.1rem;color:var(--texto-suave)}
+  .nota p{font-size:.92rem;line-height:1.55;color:var(--texto);margin:0 0 10px}
+  .nota p:last-child{margin-bottom:0}
+  .nota strong{font-weight:700}
 
   /* =========================================================
      5. TRABALHOS POR NICHO
@@ -285,6 +300,7 @@
     .menu ul{flex-direction:column}
     .menu a{padding:12px 16px;font-size:1.05rem}
     .resultados{grid-template-columns:minmax(0,1fr)}
+    .videos-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
     .capa-quadro{height:auto;flex-direction:column;align-items:stretch}
     .capa-texto{padding:32px 20px 18px;text-align:center}
     .capa-foto{position:relative;right:auto;order:2;width:min(80%,420px);height:auto;max-width:none;margin:8px auto 0}
@@ -307,7 +323,12 @@
     .marcas-secao{padding:16px 10px 0}
     .faixa{padding:10px 0;border-radius:40px}
     .com-linha{margin-left:14px;padding:30px 0 4px 16px}
-    .videos-grid{grid-template-columns:minmax(0,1fr);max-width:300px}
+    /* celular: cases viram carrossel horizontal só dentro da própria faixa */
+    .videos-grid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:62%;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
+    .videos-grid::-webkit-scrollbar{display:none}
+    .video-card{scroll-snap-align:start}
+    .case-destaque{grid-template-columns:minmax(0,1fr);gap:16px}
+    .case-video{max-width:200px}
     .servicos-grid,.depoimentos{grid-template-columns:minmax(0,1fr)}
     .metricas{gap:10px}
     .trabalhos-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -407,17 +428,17 @@
     </div>
   </section>
 
-  <!-- ================= 4. CONTEÚDOS DE DESTAQUE ================= -->
+  <!-- ================= 4. MEUS CASES DE SUCESSO ================= -->
   <section class="destaques-secao" id="destaques" aria-labelledby="titulo-destaques">
     <div class="container">
-      <!-- A borda esquerda deste bloco é a linha marrom vertical que desce do cartão do Sobre mim -->
+      <!-- A borda esquerda deste bloco é a linha marrom vertical que desce da faixa de marcas -->
       <div class="com-linha">
-        <div class="cabecalho revelar">
-          <span class="manuscrito" aria-hidden="true">dá o play aqui mesmo</span>
-          <h2 id="titulo-destaques">Conteúdos de destaque</h2>
-        </div>
-        <!-- Os vídeos vêm do array "destaques" no script -->
+        <h2 class="cases-titulo revelar" id="titulo-destaques">Meus cases de sucesso</h2>
+        <!-- Os cards vêm do array "destaques" no script -->
         <ul class="videos-grid" id="videos-grid"></ul>
+
+        <!-- Case em destaque (dados no objeto "caseDestaque" do script) -->
+        <div class="case-destaque revelar" id="case-destaque"></div>
       </div>
     </div>
   </section>
@@ -639,8 +660,7 @@ const destaques = [
     logo: "",                                                      // LOGO DA MARCA (ex.: "logos/mercado-livre.png")
     titulo: "Título do vídeo 01",
     categoria: "Categoria",
-    resultado: "+5.5M",
-    resultadoLabel: "views"
+    resultado: "+5,5 mi"                                          // VISUALIZAÇÕES
   },
   {
     link: "https://youtu.be/x3cTwB7OKOY",                          // LINK DO VÍDEO
@@ -648,8 +668,7 @@ const destaques = [
     logo: "",                                                      // LOGO DA MARCA
     titulo: "Título do vídeo 02",
     categoria: "Categoria",
-    resultado: "+470K",
-    resultadoLabel: "views"
+    resultado: "+470k"                                            // VISUALIZAÇÕES
   },
   {
     link: "https://youtube.com/shorts/MFT4boPq418?feature=share",  // LINK DO VÍDEO
@@ -657,10 +676,42 @@ const destaques = [
     logo: "",                                                      // LOGO DA MARCA
     titulo: "Título do vídeo 03",
     categoria: "Categoria",
-    resultado: "+55K",
-    resultadoLabel: "views"
+    resultado: "+55k"                                             // VISUALIZAÇÕES
+  },
+  {
+    link: "",                                                      // TROCAR: LINK DO VÍDEO 04
+    capa: "",                                                      // CAPA DO VÍDEO
+    logo: "",                                                      // LOGO DA MARCA
+    titulo: "Vídeo 04",
+    categoria: "",
+    resultado: ""                                                  // TROCAR: VISUALIZAÇÕES
+  },
+  {
+    link: "",                                                      // TROCAR: LINK DO VÍDEO 05
+    capa: "",                                                      // CAPA DO VÍDEO
+    logo: "",                                                      // LOGO DA MARCA
+    titulo: "Vídeo 05",
+    categoria: "",
+    resultado: ""                                                  // TROCAR: VISUALIZAÇÕES
   }
 ];
+
+// ================================
+// CASE EM DESTAQUE (abaixo da linha de cards)
+// notas: cada item é um parágrafo da janela de notas (pode usar <strong> para negrito)
+// ================================
+const caseDestaque = {
+  titulo: ["Case: Pantene", "Biotinamina"],
+  link: "",                                                        // TROCAR: LINK DO VÍDEO DO CASE PANTENE
+  capa: "",                                                        // CAPA DO VÍDEO
+  logo: "logos/pantene.png",                                       // LOGO DA MARCA
+  resultado: "+100 mil",                                           // VISUALIZAÇÕES
+  notas: [
+    "O conteúdo trouxe uma situação com a qual muita gente se identifica, e isso apareceu nos comentários de pessoas que se viram na mesma situação.",
+    "O resultado: <strong>mais de 100 mil visualizações</strong> e <strong>alto engajamento</strong>.",
+    "E o resultado foi além das métricas: <strong>fui recontratada pela Pantene em mais de 4 campanhas</strong>."
+  ]
+};
 
 // ================================
 // NICHOS (botões de filtro, nesta ordem)
@@ -783,42 +834,50 @@ function idDoYoutube(link) {
   const m = String(link).match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
   return m ? m[1] : null;
 }
-$("#videos-grid").innerHTML = destaques.map((d, i) => {
+const olhoSVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+function cardVideo(d, chave) {
+  const temVideo = Boolean(idDoYoutube(d.link));
   const capa = d.capa
-    ? `<img class="capa-img" src="${escapar(d.capa)}" alt="Capa do vídeo ${escapar(d.titulo)}" loading="lazy">`
-    : `<div class="vazio-img" aria-hidden="true"><span>capa 9:16</span></div>`;
+    ? `<img class="capa-img" src="${escapar(d.capa)}" alt="Capa do vídeo ${escapar(d.titulo || "")}" loading="lazy">`
+    : `<div class="vazio-img" aria-hidden="true"><span>${temVideo ? "capa 9:16" : "adicione o vídeo"}</span></div>`;
   const logo = d.logo
-    ? `<span class="video-logo"><img src="${escapar(d.logo)}" alt="" loading="lazy"></span>`
+    ? `<span class="video-logo"><img src="${escapar(d.logo)}" alt="" loading="lazy">${seloSVG}</span>`
     : `<span class="video-logo sem-logo" aria-hidden="true">logo</span>`;
-  return `
-  <li class="video-card revelar">
-    <div class="video-midia" data-indice="${i}">
-      ${capa}
-      ${logo}
-      <button class="play" type="button" aria-label="Assistir ${escapar(d.titulo)} aqui no site">
-        <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
-      </button>
-      <span class="resultado-chip">${escapar(d.resultado)} <small>${escapar(d.resultadoLabel)}</small></span>
-    </div>
-    <h3>${escapar(d.titulo)}</h3>
-    <p>${escapar(d.categoria)}</p>
-  </li>`;
-}).join("");
+  const play = temVideo
+    ? `<button class="play" type="button" aria-label="Assistir ${escapar(d.titulo || "vídeo")} aqui no site"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></button>`
+    : "";
+  const views = d.resultado ? `<span class="views">${olhoSVG}${escapar(d.resultado)}<span class="sr-only"> visualizações</span></span>` : "";
+  return `<div class="video-midia" data-chave="${chave}">${capa}${logo}${play}${views}</div>`;
+}
+$("#videos-grid").innerHTML = destaques.map((d, i) => `<li class="video-card revelar">${cardVideo(d, i)}</li>`).join("");
 
-$("#videos-grid").addEventListener("click", (e) => {
+const caseEl = $("#case-destaque");
+caseEl.innerHTML = `
+  <div class="case-video">${cardVideo(caseDestaque, "case")}</div>
+  <div>
+    <h3 class="case-titulo">${caseDestaque.titulo.map(escapar).join("<br>")}</h3>
+    <div class="nota">
+      <div class="nota-topo"><span>‹ Notas</span><span aria-hidden="true">×</span></div>
+      ${caseDestaque.notas.map((n) => `<p>${n}</p>`).join("")}
+    </div>
+  </div>`;
+
+// Clique no play: o vídeo do YouTube roda dentro do próprio card
+document.addEventListener("click", (e) => {
   const botao = e.target.closest(".play");
   if (!botao) return;
   const midia = botao.closest(".video-midia");
-  const d = destaques[Number(midia.dataset.indice)];
+  const chave = midia.dataset.chave;
+  const d = chave === "case" ? caseDestaque : destaques[Number(chave)];
   const id = idDoYoutube(d.link);
   if (!id) return;
   const iframe = document.createElement("iframe");
   iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
-  iframe.title = `Vídeo: ${d.titulo}`;
+  iframe.title = `Vídeo: ${d.titulo || "case"}`;
   iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
   iframe.allowFullscreen = true;
   iframe.referrerPolicy = "strict-origin-when-cross-origin";
-  midia.querySelectorAll(".capa-img, .vazio-img, .play, .resultado-chip").forEach((el) => el.remove());
+  midia.querySelectorAll(".capa-img, .vazio-img, .play, .views").forEach((el) => el.remove());
   midia.prepend(iframe);
   iframe.focus();
 });
