@@ -91,8 +91,9 @@
   .bf-selo{background:#2e211a;color:#f6d38a;font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:5px 11px;border-radius:999px}
   .bf-dias{font-weight:600;font-size:1.05rem}
   .bf-sep{opacity:.5}
-  .bf-texto{color:#4a3424;transition:opacity .4s ease}
-  .bf-texto.trocando{opacity:0}
+  .bf-texto{display:inline-block;color:#4a3424;transition:opacity .35s ease,transform .35s ease}
+  .bf-texto.trocando{opacity:0;transform:translateY(-10px)}
+  .bf-texto.entrando{opacity:0;transform:translateY(10px);transition:none}
   .bf-link{margin-left:14px;font-weight:600;font-size:.9rem;color:#2e211a;text-decoration:none;white-space:nowrap}
   .bf-link:hover{text-decoration:underline}
 
@@ -1246,15 +1247,22 @@ $("#redes").innerHTML = [
     "roteiros validados para performance",
     "poucas vagas para gravar em novembro",
     "reserve a sua agenda de novembro",
-    "criativos de tráfego prontos antes do pico"
+    "vídeo de e-commerce que vende no dia"
   ];
   const texto = $("#bf-texto");
   let atual = 0;
   setInterval(() => {
     atual = (atual + 1) % frasesBF.length;
     if (reduzMovimento) { texto.textContent = frasesBF[atual]; return; }
+    // a frase atual sai para cima e a próxima entra por baixo
     texto.classList.add("trocando");
-    setTimeout(() => { texto.textContent = frasesBF[atual]; texto.classList.remove("trocando"); }, 400);
+    setTimeout(() => {
+      texto.textContent = frasesBF[atual];
+      texto.classList.remove("trocando");
+      texto.classList.add("entrando");
+      void texto.offsetWidth;
+      texto.classList.remove("entrando");
+    }, 350);
   }, 3500);
 })();
 
