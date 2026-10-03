@@ -122,14 +122,18 @@
   .sobre-recorte{position:absolute;z-index:1;right:6%;bottom:0;height:calc(100% - 8px);width:auto;max-width:40%;object-fit:contain;object-position:bottom right}
 
   /* Marcas rolando em faixa clara logo abaixo do Sobre mim (direita para a esquerda, sem fim) */
-  .marcas-secao{padding:22px 16px 0}
-  .faixa{position:relative;max-width:1500px;margin:0 auto;padding:16px 0;background:#fff8ed;border-radius:999px;box-shadow:var(--sombra);overflow:hidden}
+  /* Faixa de ponta a ponta, colada no painel marrom (passa por trás dos cantos arredondados dele) */
+  .sobre-secao{position:relative;z-index:2}
+  .marcas-secao{position:relative;z-index:1;margin-top:-90px;padding:126px 0 40px;background:var(--creme)}
+  .faixa{position:relative;width:100%;overflow:hidden}
+  .faixa-titulo{display:flex;align-items:center;justify-content:center;gap:22px;margin:0 16px 28px;font-family:"Poppins",sans-serif;font-weight:500;font-size:.82rem;letter-spacing:.42em;text-transform:uppercase;color:var(--cafe-2);text-align:center}
+  .faixa-titulo::before,.faixa-titulo::after{content:"";width:64px;height:1px;background:rgba(138,99,75,.45);flex-shrink:0}
   .faixa-janela{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
   .faixa-trilho{display:flex;width:max-content;will-change:transform}
-  .faixa-trilho ul{display:flex;gap:22px;list-style:none;margin:0;padding:4px 11px}
-  .selo{position:relative;flex:0 0 auto;width:76px;height:76px}
+  .faixa-trilho ul{display:flex;gap:30px;list-style:none;margin:0;padding:6px 15px}
+  .selo{position:relative;flex:0 0 auto;width:118px;height:118px}
   .selo img{width:100%;height:100%;object-fit:contain}
-  .verificado{position:absolute;right:1px;bottom:1px;width:24px;height:24px}
+  .verificado{position:absolute;right:4px;bottom:4px;width:30px;height:30px}
 
   /* =========================================================
      4. MEUS CASES DE SUCESSO (com a linha marrom vertical)
@@ -323,11 +327,12 @@
     .sobre-texto{padding:0 20px}
     .sobre-titulo{margin-bottom:28px}
     .sobre-apresenta{padding:2px 18px 12px;border-radius:40px}
-    .selo{width:58px;height:58px}
-    .faixa-trilho ul{gap:12px;padding:6px 6px}
-    .verificado{width:20px;height:20px;right:0;bottom:0}
-    .marcas-secao{padding:16px 10px 0}
-    .faixa{padding:10px 0;border-radius:40px}
+    .selo{width:82px;height:82px}
+    .faixa-trilho ul{gap:18px;padding:6px 9px}
+    .verificado{width:24px;height:24px;right:2px;bottom:2px}
+    .marcas-secao{margin-top:-36px;padding:66px 0 30px}
+    .faixa-titulo{font-size:.6rem;letter-spacing:.18em;gap:10px;margin-bottom:20px;white-space:nowrap}
+    .faixa-titulo::before,.faixa-titulo::after{width:18px}
     .com-linha{margin-left:14px;padding:30px 0 4px 16px}
     /* celular: cases viram carrossel horizontal só dentro da própria faixa */
     .videos-grid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:62%;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
@@ -428,6 +433,7 @@
   <!-- ================= 3. MARCAS ROLANDO (as logos vêm do array "marcas" no script) ================= -->
   <section class="marcas-secao" aria-label="Marcas com quem já trabalhei">
     <div class="faixa">
+      <p class="faixa-titulo">Marcas que confiam no meu trabalho</p>
       <div class="faixa-janela">
         <div class="faixa-trilho" id="faixa-trilho"></div>
       </div>
