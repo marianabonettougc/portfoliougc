@@ -309,6 +309,38 @@
   .canais .cidade{margin-top:12px;font-size:.92rem;opacity:.85}
 
   /* =========================================================
+     8. CONTATO (formato do print: fundo escuro, info à esquerda, formulário à direita)
+     ========================================================= */
+  section.contato-secao{background:#3d2b20;color:#f6efe6;padding:64px 0 70px}
+  .contato-secao .contato-grid{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:60px;align-items:start}
+  .contato-secao .sobretitulo{color:#e0b48f}
+  .contato-secao .sobretitulo::before{background:#e0b48f}
+  .contato-secao h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(2.4rem,5vw,3.8rem);line-height:1.02;letter-spacing:-.02em;color:#fbf6ef;margin:0}
+  .contato-secao h2 em{font-style:italic;color:#e0b48f}
+  .contato-texto{margin:22px 0 30px;font-size:1.08rem;line-height:1.65;color:rgba(246,239,230,.75);max-width:470px}
+  .contato-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+  .contato-lista a{display:inline-flex;align-items:center;gap:14px;color:#f6efe6;text-decoration:none;font-size:1.02rem;overflow-wrap:anywhere}
+  .contato-lista a:hover span:last-child{text-decoration:underline}
+  .contato-ico{flex-shrink:0;width:46px;height:46px;border-radius:50%;border:1px solid rgba(246,239,230,.25);display:flex;align-items:center;justify-content:center}
+  .contato-ico svg{width:19px;height:19px;fill:none;stroke:#f6efe6;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .contato-cidade{margin-top:6px;font-size:.98rem;color:rgba(246,239,230,.8)}
+  .contato-secao .campos-duplos{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .contato-secao .campo{margin-bottom:18px}
+  .contato-secao .campo label{font-size:.76rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:rgba(246,239,230,.85)}
+  .contato-secao .campo input,.contato-secao .campo textarea{background:rgba(255,255,255,.06);border:1px solid rgba(246,239,230,.16);border-radius:14px;padding:16px 18px;color:#fbf6ef;font-size:1rem}
+  .contato-secao .campo input::placeholder,.contato-secao .campo textarea::placeholder{color:rgba(246,239,230,.4)}
+  .contato-secao .campo textarea{min-height:170px}
+  .contato-secao .campo input:focus,.contato-secao .campo textarea:focus{border-color:#e0b48f;box-shadow:0 0 0 3px rgba(224,180,143,.2)}
+  .contato-secao .erro{color:#f2a58f}
+  .btn-enviar{display:inline-flex;align-items:center;gap:10px;margin-top:6px;padding:17px 34px;border:0;border-radius:999px;background:#e0b48f;color:#3d2b20;font-weight:600;font-size:1rem;cursor:pointer;transition:transform .2s,background .2s}
+  .btn-enviar:hover{transform:translateY(-2px);background:#ecc6a5}
+  .btn-enviar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .contato-secao .confirmacao{padding:40px 10px;text-align:left}
+  .contato-secao .confirmacao h3{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:2rem;color:#fbf6ef}
+  .contato-secao .confirmacao p{color:rgba(246,239,230,.75)}
+  .contato-secao :focus-visible{outline-color:#e0b48f}
+
+  /* =========================================================
      9. RODAPÉ
      ========================================================= */
   .rodape{background:var(--cafe);color:var(--papel);border-radius:34px 34px 0 0;padding:36px 0 22px;margin-top:16px;position:relative}
@@ -356,6 +388,7 @@
     .metricas{grid-template-columns:repeat(2,minmax(0,1fr))}
     .depoimentos{grid-template-columns:repeat(2,minmax(0,1fr))}
     .contato-grid{grid-template-columns:minmax(0,1fr)}
+    .contato-secao .contato-grid{grid-template-columns:minmax(0,1fr);gap:36px}
     .marcas-grade{grid-template-columns:repeat(8,minmax(0,1fr))}
     .fb-palco{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
     .fb-foto{grid-column:1/-1;grid-row:1}
@@ -417,6 +450,8 @@
     .fb-palco{grid-template-columns:minmax(0,1fr);padding:14px;gap:14px}
     .fb-foto img{max-height:440px}
     .formulario,.canais{padding:20px}
+    section.contato-secao{padding:48px 0 52px}
+    .contato-secao .campos-duplos{grid-template-columns:1fr;gap:0}
     .rodape{border-radius:26px 26px 0 0}
   }
   @media (prefers-reduced-motion:reduce){
@@ -586,60 +621,44 @@
     </div>
   </section>
 
-  <!-- ================= 8. BORA CRIAR JUNTOS ================= -->
-  <section id="contato" aria-labelledby="titulo-contato">
-    <div class="container">
-      <div class="cabecalho revelar">
-        <span class="manuscrito" aria-hidden="true">me conta da sua marca</span>
-        <h2 id="titulo-contato">Bora criar juntos?</h2>
+  <!-- ================= 8. CONTATO (formato do print de referência) ================= -->
+  <section id="contato" class="contato-secao" aria-labelledby="titulo-contato">
+    <div class="container contato-grid">
+      <div class="contato-info revelar">
+        <p class="sobretitulo">Contato</p>
+        <h2 id="titulo-contato">Vamos criar algo <em>juntos</em>?</h2>
+        <p class="contato-texto">Conta um pouco sobre sua marca e o que você quer alcançar. Respondo em até 24h úteis.</p>
+        <!-- Os links vêm do objeto CONTATO no script -->
+        <ul class="contato-lista">
+          <li><a id="link-email"><span class="contato-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M4 7l8 6 8-6"/></svg></span><span id="texto-email"></span></a></li>
+          <li><a id="link-insta" target="_blank" rel="noopener"><span class="contato-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg></span><span id="texto-insta"></span></a></li>
+          <li><a id="link-insta-pessoal" target="_blank" rel="noopener"><span class="contato-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg></span><span id="texto-insta-pessoal"></span></a></li>
+          <li><a id="link-whats" target="_blank" rel="noopener"><span class="contato-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.4L3.5 20.5l1.4-4.2a8.5 8.5 0 1 1 15.6-4.6z"/><path d="M9.2 8.6c.2 2.9 3 5.8 6 6.1l1-1.3-1.8-1-.8.7c-1.1-.5-2-1.4-2.6-2.6l.7-.8-1-1.8z"/></svg></span><span id="texto-whats"></span></a></li>
+          <li class="contato-cidade" id="texto-cidade"></li>
+        </ul>
       </div>
-      <div class="contato-grid">
-        <div class="cartao formulario revelar">
-          <!--
-            O formulário mostra a confirmação na tela, sem recarregar a página.
-            Para receber as mensagens no seu e-mail, crie um formulário grátis no Formspree
-            e cole o endereço dele na constante ENDERECO_FORMULARIO do script.
-          -->
-          <form id="form-contato" novalidate>
-            <div class="campo">
-              <label for="nome">Nome</label>
-              <input id="nome" name="nome" type="text" autocomplete="name" required>
-            </div>
-            <div class="campo">
-              <label for="email">E-mail</label>
-              <input id="email" name="email" type="email" autocomplete="email" required>
-            </div>
-            <div class="campo">
-              <label for="mensagem">Mensagem</label>
-              <textarea id="mensagem" name="mensagem" required></textarea>
-            </div>
-            <p class="erro" id="erro-form" role="alert"></p>
-            <button class="btn btn-cafe" type="submit">Enviar mensagem</button>
-          </form>
-          <div class="confirmacao" id="confirmacao" hidden tabindex="-1">
-            <span class="manuscrito" aria-hidden="true">obrigada! ♥</span>
-            <h3>Mensagem recebida!</h3>
-            <p>Vou te responder em breve no e-mail que você deixou.</p>
-          </div>
-        </div>
 
-        <aside class="cartao canais revelar" aria-labelledby="titulo-canais">
-          <h3 id="titulo-canais">Prefere falar direto?</h3>
-          <p>Escolhe o canal mais fácil pra você.</p>
-          <a class="canal" id="link-whats" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.7 11.7 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.5-.3z"/></svg>
-            <span><small>WhatsApp</small><b id="texto-whats"></b></span>
-          </a>
-          <a class="canal" id="link-email">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4.2-8 5-8-5V6l8 5 8-5z"/></svg>
-            <span><small>E-mail</small><b id="texto-email"></b></span>
-          </a>
-          <a class="canal" id="link-insta" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.3A4.7 4.7 0 1 0 16.7 12 4.7 4.7 0 0 0 12 7.3zm0 7.7a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm6-7.9a1.1 1.1 0 1 1-1.1-1.1A1.1 1.1 0 0 1 18 7.1zM21.9 8.2a5.4 5.4 0 0 0-1.5-3.8 5.5 5.5 0 0 0-3.8-1.5C15 2.8 9 2.8 7.4 2.9a5.5 5.5 0 0 0-3.8 1.5 5.4 5.4 0 0 0-1.5 3.8C2 9.8 2 14.2 2.1 15.8a5.4 5.4 0 0 0 1.5 3.8 5.5 5.5 0 0 0 3.8 1.5c1.6.1 7.6.1 9.2 0a5.4 5.4 0 0 0 3.8-1.5 5.5 5.5 0 0 0 1.5-3.8c.1-1.6.1-6 0-7.6zM19.7 18a3 3 0 0 1-1.7 1.7c-1.2.5-4 .4-6 .4s-4.8.1-6-.4A3 3 0 0 1 4.3 18c-.5-1.2-.4-4-.4-6s-.1-4.8.4-6A3 3 0 0 1 6 4.3c1.2-.5 4-.4 6-.4s4.8-.1 6 .4A3 3 0 0 1 19.7 6c.5 1.2.4 4 .4 6s.1 4.8-.4 6z"/></svg>
-            <span><small>Instagram</small><b id="texto-insta"></b></span>
-          </a>
-          <p class="cidade" id="texto-cidade"></p>
-        </aside>
+      <div class="contato-form revelar">
+        <!--
+          O formulário mostra a confirmação na tela, sem recarregar a página.
+          Para receber as mensagens no seu e-mail, crie um formulário grátis no Formspree
+          e cole o endereço dele na constante ENDERECO_FORMULARIO do script.
+        -->
+        <form id="form-contato" novalidate>
+          <div class="campos-duplos">
+            <div class="campo"><label for="nome">Nome</label><input id="nome" name="nome" type="text" autocomplete="name" placeholder="Seu nome" required></div>
+            <div class="campo"><label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="email" placeholder="voce@marca.com" required></div>
+          </div>
+          <div class="campo"><label for="marca">Marca / Empresa</label><input id="marca" name="marca" type="text" autocomplete="organization" placeholder="Nome da marca"></div>
+          <div class="campo"><label for="orcamento">Orçamento estimado</label><input id="orcamento" name="orcamento" type="text" placeholder="Ex: R$ 1.000 a R$ 5.000"></div>
+          <div class="campo"><label for="mensagem">Conta sobre o projeto</label><textarea id="mensagem" name="mensagem" placeholder="Categoria, formato, prazo, objetivo da campanha..." required></textarea></div>
+          <p class="erro" id="erro-form" role="alert"></p>
+          <button class="btn-enviar" type="submit">Enviar mensagem <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></button>
+        </form>
+        <div class="confirmacao" id="confirmacao" hidden tabindex="-1">
+          <h3>Mensagem recebida!</h3>
+          <p>Vou te responder em até 24h úteis no e-mail que você deixou.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -701,7 +720,7 @@ const CONTATO = {
   email: "marianabonettougc@gmail.com",
   whatsapp: "5519983974502",                 // 55 + DDD + número, só dígitos
   whatsappTexto: "(19) 98397-4502",
-  cidade: "Valinhos, SP",
+  cidade: "Valinhos - SP | Todo o Brasil",
   mensagemWhats: "Oi, Mari! Vi seu portfólio e quero conversar sobre um conteúdo UGC."
 };
 
@@ -1164,6 +1183,8 @@ $("#texto-email").textContent = CONTATO.email;
 $("#link-insta").href = linkInsta;
 $("#texto-insta").textContent = "@" + CONTATO.instagram;
 $("#texto-cidade").textContent = "📍 " + CONTATO.cidade;
+$("#link-insta-pessoal").href = `https://www.instagram.com/${CONTATO.instagramPessoal}/`;
+$("#texto-insta-pessoal").textContent = "@" + CONTATO.instagramPessoal;
 
 // ---------- Rodapé ----------
 $("#redes").innerHTML = [
@@ -1241,11 +1262,12 @@ $("#form-contato").addEventListener("submit", async (e) => {
   e.preventDefault();
   const f = e.target, erro = $("#erro-form");
   const nome = f.nome.value.trim(), email = f.email.value.trim(), mensagem = f.mensagem.value.trim();
+  const marca = f.marca.value.trim(), orcamento = f.orcamento.value.trim();
   if (!nome) { erro.textContent = "Qual é o seu nome?"; f.nome.focus(); return; }
   if (!emailValido(email)) { erro.textContent = "Confere o e-mail, por favor."; f.email.focus(); return; }
   if (!mensagem) { erro.textContent = "Escreve uma mensagem pra mim."; f.mensagem.focus(); return; }
   erro.textContent = "";
-  await enviarDados({ tipo: "contato", nome, email, mensagem });
+  await enviarDados({ tipo: "contato", nome, email, marca, orcamento, mensagem });
   f.hidden = true;
   const ok = $("#confirmacao");
   ok.hidden = false;
