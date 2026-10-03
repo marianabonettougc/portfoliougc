@@ -188,10 +188,9 @@
   /* Capa automática (miniatura do próprio vídeo) */
   .video-midia .capa-img{transition:transform .5s ease}
   .video-card:hover .capa-img{transform:scale(1.03)}
-  /* Logo da marca numa bolinha no topo do card, com selo de verificado */
+  /* Logo da marca numa bolinha no topo do card */
   .video-logo{position:absolute;top:12px;left:12px;z-index:3;width:50px;height:50px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.22);pointer-events:none}
   .video-logo img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
-  .video-logo .verificado{position:absolute;width:18px;height:18px;right:-3px;bottom:-2px}
   /* Nome da marca no topo, em etiqueta */
   .video-marca{position:absolute;top:12px;left:12px;z-index:3;padding:6px 12px;border-radius:999px;background:rgba(255,253,249,.92);color:var(--texto);font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;line-height:1;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.12)}
   /* Escurecido suave embaixo para o texto aparecer */
@@ -212,7 +211,29 @@
   .player-janela[hidden]{display:none}
   .player-caixa{position:relative;height:min(88vh,calc((100vw - 40px) * 16 / 9));aspect-ratio:9/16;max-width:100%;border-radius:18px;overflow:hidden;background:#000;box-shadow:0 20px 60px rgba(0,0,0,.5)}
   .player-caixa.horizontal{height:auto;width:min(1100px,100%);aspect-ratio:16/9}
-  .player-caixa iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  /* Player próprio: o vídeo do YouTube roda por baixo, sem nenhum botão ou texto do YouTube aparecendo */
+  .player-recorte{position:absolute;inset:0;overflow:hidden;background:#000}
+  .player-recorte iframe{position:absolute;top:0;left:-108.03%;width:316.05%;height:100%;border:0;pointer-events:none;transform:scale(1.04)}
+  .player-caixa.horizontal .player-recorte iframe{left:0;width:100%;transform:none}
+  .player-caixa.simples .player-recorte iframe{left:0;width:100%;transform:none;pointer-events:auto}
+  .player-escudo{position:absolute;inset:0;z-index:2;cursor:pointer;background:transparent;border:0;padding:0}
+  .player-caixa.simples .player-escudo,.player-caixa.simples .player-controles,.player-caixa.simples .player-pausa{display:none}
+  .player-caixa .video-logo{top:16px;left:16px;width:58px;height:58px;z-index:4}
+  .player-pausa{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;background:rgba(30,20,14,.35) center/cover no-repeat;pointer-events:none;transition:opacity .25s}
+  .player-pausa[hidden]{display:flex;opacity:0}
+  .player-pausa span{width:74px;height:74px;border-radius:50%;background:rgba(107,74,53,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+  .player-pausa svg{width:28px;height:28px;fill:#fff;margin-left:4px}
+  .player-carregando{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.9rem;letter-spacing:.08em}
+  .player-controles{position:absolute;left:0;right:0;bottom:0;z-index:4;display:flex;align-items:center;gap:12px;padding:40px 16px 16px;background:linear-gradient(180deg,transparent,rgba(30,20,14,.7));color:#fff}
+  .player-controles button{flex:0 0 auto;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,253,249,.18);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .player-controles button:hover{background:rgba(255,253,249,.3)}
+  .player-controles svg{width:20px;height:20px;fill:currentColor}
+  .player-barra{position:relative;flex:1;height:22px;cursor:pointer;display:flex;align-items:center}
+  .player-barra::before{content:"";position:absolute;left:0;right:0;height:4px;border-radius:4px;background:rgba(255,253,249,.35)}
+  .player-barra i{position:absolute;left:0;height:4px;border-radius:4px;background:#fff;width:0}
+  .player-tempo{font-size:.78rem;font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
+  .player-aviso-som{position:absolute;left:50%;top:18px;transform:translateX(-50%);z-index:5;border:0;border-radius:999px;padding:9px 16px;background:#fffdf9;color:#3d2b20;font-weight:600;font-size:.82rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+  .player-aviso-som[hidden]{display:none}
   .player-fechar{position:absolute;top:14px;right:14px;z-index:101;width:46px;height:46px;border-radius:50%;border:0;background:#fffdf9;color:#3d2b20;font-size:1.6rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .player-fechar:hover{transform:scale(1.06)}
 
@@ -1139,7 +1160,7 @@ function cardVideo(d, chave) {
   } else capa = `<div class="vazio-img" aria-hidden="true"><span>adicione o vídeo</span></div>`;
   // com logo: bolinha com o logo; sem logo: etiqueta com o nome da marca
   const marca = d.logo
-    ? `<span class="video-logo"><img src="${escapar(d.logo)}" alt="" loading="lazy">${seloSVG}</span>`
+    ? `<span class="video-logo"><img src="${escapar(d.logo)}" alt="" loading="lazy"></span>`
     : d.marca ? `<span class="video-marca">${escapar(d.marca)}</span>` : "";
   const nome = d.titulo || d.marca || "vídeo";
   const play = id
@@ -1204,20 +1225,118 @@ if (temMouse && !reduzMovimento) {
   });
 }
 
-// 2) Clicar no card: o vídeo abre numa janela grande AQUI NO SITE, com som e controles (nunca leva para o YouTube)
+// 2) Clicar no card: o vídeo abre numa janela grande AQUI NO SITE, com som, num player limpo (sem nada do YouTube por cima)
+const ICONES = {"play": "<svg viewBox=\"0 0 24 24\"><path d=\"M8 5v14l11-7z\"/></svg>", "pausa": "<svg viewBox=\"0 0 24 24\"><path d=\"M7 5h4v14H7zM13 5h4v14h-4z\"/></svg>", "som": "<svg viewBox=\"0 0 24 24\"><path d=\"M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z\"/></svg>", "mudo": "<svg viewBox=\"0 0 24 24\"><path d=\"M4 9v6h4l5 4V5L8 9H4zm12.6 3 2.7-2.7-1.4-1.4-2.7 2.7-2.7-2.7-1.4 1.4 2.7 2.7-2.7 2.7 1.4 1.4 2.7-2.7 2.7 2.7 1.4-1.4z\"/></svg>"};
 const janela = document.createElement("div");
 janela.className = "player-janela";
 janela.hidden = true;
 janela.setAttribute("role", "dialog");
 janela.setAttribute("aria-modal", "true");
 janela.setAttribute("aria-label", "Vídeo");
-janela.innerHTML = `<button class="player-fechar" type="button" aria-label="Fechar vídeo">×</button><div class="player-caixa"></div>`;
+janela.innerHTML = `<button class="player-fechar" type="button" aria-label="Fechar vídeo">×</button>
+  <div class="player-caixa">
+    <div class="player-recorte"><p class="player-carregando">carregando...</p><div id="player-alvo"></div></div>
+    <button class="player-escudo" type="button" aria-label="Pausar ou continuar o vídeo"></button>
+    <div class="player-pausa" hidden><span>${ICONES.play}</span></div>
+    <button class="player-aviso-som" type="button" hidden>Toque para ativar o som</button>
+    <div class="player-controles">
+      <button class="player-btn-play" type="button" aria-label="Pausar">${ICONES.pausa}</button>
+      <div class="player-barra" role="slider" aria-label="Posição do vídeo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><i></i></div>
+      <span class="player-tempo">0:00 / 0:00</span>
+      <button class="player-btn-som" type="button" aria-label="Tirar o som">${ICONES.som}</button>
+    </div>
+  </div>`;
 document.body.appendChild(janela);
 const caixaPlayer = janela.querySelector(".player-caixa");
-let focoAntes = null;
+const elPausa = janela.querySelector(".player-pausa");
+const btnPlay = janela.querySelector(".player-btn-play");
+const btnSom = janela.querySelector(".player-btn-som");
+const avisoSom = janela.querySelector(".player-aviso-som");
+const barra = janela.querySelector(".player-barra");
+const tempo = janela.querySelector(".player-tempo");
+let player = null, relogio = null, focoAntes = null;
+const mmss = (t) => { t = Math.max(0, Math.floor(t || 0)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+
+// carrega a API oficial do YouTube só quando alguém clica no primeiro vídeo
+let apiYoutube = null;
+function carregarApiYoutube() {
+  if (window.YT && window.YT.Player) return Promise.resolve();
+  if (apiYoutube) return apiYoutube;
+  apiYoutube = new Promise((ok, falhou) => {
+    const antes = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { if (antes) antes(); ok(); };
+    const sc = document.createElement("script");
+    sc.src = "https://www.youtube.com/iframe_api";
+    sc.onerror = falhou;
+    document.head.appendChild(sc);
+    setTimeout(falhou, 8000);
+  });
+  apiYoutube.catch(() => { apiYoutube = null; });
+  return apiYoutube;
+}
+function atualizarBotoes() {
+  if (!player || !player.getPlayerState) return;
+  const tocando = player.getPlayerState() === 1;
+  btnPlay.innerHTML = tocando ? ICONES.pausa : ICONES.play;
+  btnPlay.setAttribute("aria-label", tocando ? "Pausar" : "Continuar");
+  elPausa.hidden = tocando;
+  const mudo = player.isMuted();
+  btnSom.innerHTML = mudo ? ICONES.mudo : ICONES.som;
+  btnSom.setAttribute("aria-label", mudo ? "Ativar o som" : "Tirar o som");
+  if (!mudo) avisoSom.hidden = true;
+}
+function atualizarTempo() {
+  if (!player || !player.getDuration) return;
+  const total = player.getDuration() || 0, agora = player.getCurrentTime() || 0;
+  const pct = total ? (agora / total) * 100 : 0;
+  barra.querySelector("i").style.width = pct + "%";
+  barra.setAttribute("aria-valuenow", Math.round(pct));
+  tempo.textContent = `${mmss(agora)} / ${mmss(total)}`;
+}
+function alternarPlay() {
+  if (!player || !player.getPlayerState) return;
+  if (player.getPlayerState() === 1) player.pauseVideo(); else player.playVideo();
+}
+function alternarSom() {
+  if (!player || !player.isMuted) return;
+  if (player.isMuted()) { player.unMute(); player.setVolume(100); } else player.mute();
+  setTimeout(atualizarBotoes, 150);
+}
+janela.querySelector(".player-escudo").addEventListener("click", alternarPlay);
+btnPlay.addEventListener("click", alternarPlay);
+btnSom.addEventListener("click", alternarSom);
+avisoSom.addEventListener("click", () => { if (player) { player.unMute(); player.setVolume(100); player.playVideo(); } setTimeout(atualizarBotoes, 150); });
+barra.addEventListener("click", (e) => {
+  if (!player || !player.getDuration) return;
+  const r = barra.getBoundingClientRect();
+  player.seekTo(((e.clientX - r.left) / r.width) * player.getDuration(), true);
+});
+barra.addEventListener("keydown", (e) => {
+  if (!player || !player.getCurrentTime) return;
+  if (e.key === "ArrowRight") player.seekTo(player.getCurrentTime() + 5, true);
+  if (e.key === "ArrowLeft") player.seekTo(player.getCurrentTime() - 5, true);
+});
+
+// se a API do YouTube não carregar, usa o player normal do YouTube como reserva
+function playerSimples(id, d) {
+  caixaPlayer.classList.add("simples");
+  const iframe = document.createElement("iframe");
+  iframe.src = urlEmbed(id, "&controls=1");
+  iframe.title = `Vídeo: ${d.titulo || d.marca || "case"}`;
+  iframe.allow = permissoes + "; fullscreen";
+  iframe.allowFullscreen = true;
+  janela.querySelector("#player-alvo").replaceWith(iframe);
+}
 function fecharPlayer() {
   janela.hidden = true;
-  caixaPlayer.innerHTML = "";
+  clearInterval(relogio);
+  if (player && player.destroy) player.destroy();
+  player = null;
+  const recorte = janela.querySelector(".player-recorte");
+  recorte.innerHTML = '<p class="player-carregando">carregando...</p><div id="player-alvo"></div>';
+  caixaPlayer.classList.remove("simples");
+  caixaPlayer.querySelectorAll(".video-logo").forEach((el) => el.remove());
+  avisoSom.hidden = true;
   document.body.style.overflow = "";
   if (focoAntes) focoAntes.focus();
 }
@@ -1227,22 +1346,56 @@ function abrirPlayer(d) {
   focoAntes = document.activeElement;
   // os vídeos da Mari são verticais: a janela abre em pé (para um vídeo deitado, use horizontal: true no bloco do vídeo)
   caixaPlayer.classList.toggle("horizontal", Boolean(d.horizontal));
-  const iframe = document.createElement("iframe");
-  iframe.src = urlEmbed(id, "&controls=1&vq=hd1080");
-  iframe.title = `Vídeo: ${d.titulo || d.marca || "case"}`;
-  iframe.allow = permissoes + "; fullscreen";
-  iframe.allowFullscreen = true;
-  iframe.referrerPolicy = "strict-origin-when-cross-origin";
-  caixaPlayer.appendChild(iframe);
+  if (d.logo) caixaPlayer.insertAdjacentHTML("beforeend", `<span class="video-logo"><img src="${escapar(d.logo)}" alt=""></span>`);
+  // a capa aparece por baixo do botão de play quando o vídeo está pausado
+  const capa = d.capa || miniaturas(id)[1];
+  elPausa.style.backgroundImage = `linear-gradient(rgba(30,20,14,.25),rgba(30,20,14,.25)),url("${capa}")`;
+  elPausa.hidden = true;
+  btnPlay.innerHTML = ICONES.pausa;
+  barra.querySelector("i").style.width = "0";
+  tempo.textContent = "0:00 / 0:00";
   janela.hidden = false;
   document.body.style.overflow = "hidden";
   janela.querySelector(".player-fechar").focus();
+  carregarApiYoutube().then(() => {
+    if (janela.hidden) return;
+    player = new YT.Player("player-alvo", {
+      videoId: id,
+      host: "https://www.youtube-nocookie.com",
+      playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1, loop: 1, playlist: id },
+      events: {
+        onReady: (e) => {
+          const p = e.target;
+          const iframe = p.getIframe();
+          janela.querySelectorAll(".player-carregando").forEach((el) => el.remove());
+          iframe.title = `Vídeo: ${d.titulo || d.marca || "case"}`;
+          iframe.tabIndex = -1;
+          p.unMute(); p.setVolume(100); p.playVideo();
+          // se o navegador não deixar começar com som, começa sem som e mostra o aviso para ativar
+          setTimeout(() => {
+            if (!player || player !== p) return;
+            if (p.getPlayerState() !== 1) { p.mute(); p.playVideo(); avisoSom.hidden = false; }
+            atualizarBotoes();
+          }, 1300);
+          clearInterval(relogio);
+          relogio = setInterval(atualizarTempo, 250);
+        },
+        onStateChange: atualizarBotoes
+      }
+    });
+  }).catch(() => { if (!janela.hidden) playerSimples(id, d); });
 }
 janela.addEventListener("click", (e) => { if (e.target === janela || e.target.closest(".player-fechar")) fecharPlayer(); });
 document.addEventListener("keydown", (e) => {
   if (janela.hidden) return;
   if (e.key === "Escape") fecharPlayer();
-  if (e.key === "Tab") { e.preventDefault(); janela.querySelector(".player-fechar").focus(); }
+  if (e.key === " " && e.target === document.body) { e.preventDefault(); alternarPlay(); }
+  if (e.key === "Tab") {
+    const focaveis = [...janela.querySelectorAll("button:not([hidden]), [tabindex='0']")].filter((el) => el.offsetParent);
+    const i = focaveis.indexOf(document.activeElement);
+    e.preventDefault();
+    focaveis[(i + (e.shiftKey ? -1 : 1) + focaveis.length) % focaveis.length].focus();
+  }
 });
 document.addEventListener("click", (e) => {
   const midia = e.target.closest(".video-midia");
