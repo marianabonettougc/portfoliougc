@@ -280,14 +280,14 @@
      ========================================================= */
   section.fotos-secao{padding:30px 0 34px}
   .fotos-titulo{margin:0 0 18px}
-  /* Mosaico em colunas: cada foto aparece inteira, no formato original, sem cortar os produtos */
-  .fotos-mural{columns:7 140px;column-gap:12px;list-style:none;margin:0;padding:0}
-  .fotos-mural li{break-inside:avoid;margin:0 0 12px;border-radius:14px;overflow:hidden;background:#e9dccb;box-shadow:var(--sombra)}
-  .fotos-mural img{width:100%;height:auto;display:block;transition:transform .4s ease}
-  .fotos-mural li:hover img{transform:scale(1.03)}
+  /* Duas fileiras de fotos em pé, todas do mesmo tamanho, com os produtos à vista */
+  .fotos-mural{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;list-style:none;margin:0;padding:0}
+  .fotos-mural li{flex:0 0 calc((100% - 72px) / 7);aspect-ratio:2/3;border-radius:14px;overflow:hidden;background:#e9dccb;box-shadow:var(--sombra)}
+  .fotos-mural img{width:100%;height:100%;object-fit:cover;object-position:center 55%;display:block;transition:transform .4s ease}
+  .fotos-mural li:hover img{transform:scale(1.04)}
   @media (max-width:620px){
-    .fotos-mural{columns:3;column-gap:8px}
-    .fotos-mural li{border-radius:10px;margin-bottom:8px}
+    .fotos-mural{gap:8px}
+    .fotos-mural li{flex-basis:calc((100% - 16px) / 3);border-radius:10px}
   }
   section.parceiros-secao{padding:8px 16px 0}
   .parceiros{position:relative;max-width:1400px;margin:0 auto;padding:30px 5% 40px;color:#fff;border-radius:0 0 140px 140px;
@@ -1434,11 +1434,12 @@ document.querySelectorAll(".video-midia").forEach((m) => { if (idDoYoutube(dados
 
 // ---------- Mural de fotos ----------
 // Para trocar uma foto: salve o arquivo na pasta "fotos" e coloque o caminho em "src".
-// As fotos aparecem inteiras, sem corte, na ordem da lista (de cima para baixo, coluna por coluna)
+// Duas fileiras de fotos em pé (7 em cima e o resto embaixo), na ordem da lista.
+// posicao (opcional): qual parte da foto fica visível, ex.: "center 80%" (mais para baixo) ou "center 20%" (mais para cima)
 const fotos = [
   { src: "fotos/foto-01.webp", alt: "Mari Bonetto sorrindo e segurando a caixa de presente Eudora Siàge" },
   { src: "fotos/foto-02.jpg", alt: "Mari Bonetto mostrando o app Koin no celular e a caixa de um iPhone" },
-  { src: "fotos/foto-03.jpg", alt: "Mari Bonetto no sofá com um kit de escova secadora e o pacote do Mercado Livre" },
+  { src: "fotos/foto-03.jpg", alt: "Mari Bonetto no sofá com um kit de escova secadora e o pacote do Mercado Livre", posicao: "center 75%" },
   { src: "fotos/foto-09.jpg", alt: "Mari Bonetto e o marido à mesa com fondue de queijo e queijos Tirolez" },
   { src: "fotos/foto-07.jpg", alt: "Mari Bonetto colocando sabão líquido Omo no copinho medidor ao lado da máquina de lavar" },
   { src: "fotos/foto-08.jpg", alt: "Mari Bonetto abraçando caixinhas de suco Life Mix" },
@@ -1446,12 +1447,12 @@ const fotos = [
   { src: "fotos/foto-12.jpg", alt: "Mari Bonetto com o pacote da Pague Menos e produtos de bebê Huggies e Granado" },
   { src: "fotos/foto-04.jpg", alt: "Mari Bonetto sorrindo com o desodorante Dove Original na mão" },
   { src: "fotos/foto-05.webp", alt: "Mari Bonetto segurando a linha Elseve Bond Repair" },
-  { src: "fotos/foto-06.webp", alt: "Mari Bonetto sorrindo com dois hidratantes Natura Tododia" },
-  { src: "fotos/foto-10.jpg", alt: "Mari Bonetto no sofá com as duas filhas usando óculos de sol" },
+  { src: "fotos/foto-06.webp", alt: "Mari Bonetto sorrindo com dois hidratantes Natura Tododia", posicao: "center 30%" },
+  { src: "fotos/foto-10.jpg", alt: "Mari Bonetto no sofá com as duas filhas usando óculos de sol", posicao: "center 90%" },
   { src: "fotos/foto-13.jpg", alt: "Mari Bonetto no sofá mostrando chocolates Cacau Show" },
 ];
 $("#fotos-mural").innerHTML = fotos.filter((f) => f.src).map((f) =>
-  `<li><img src="${escapar(f.src)}" alt="${escapar(f.alt || "Mari Bonetto com produto de marca parceira")}" loading="lazy"></li>`).join("");
+  `<li><img src="${escapar(f.src)}" alt="${escapar(f.alt || "Mari Bonetto com produto de marca parceira")}" loading="lazy"${f.posicao ? ` style="object-position:${escapar(f.posicao)}"` : ""}></li>`).join("");
 
 // ---------- Trabalhos por nicho com filtro ----------
 const degrades = [
