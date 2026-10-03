@@ -229,6 +229,28 @@
   .parceiros-frase{margin:44px 0 0;text-align:center;font-family:"Poppins",sans-serif;font-weight:700;font-size:clamp(1rem,1.9vw,1.8rem);letter-spacing:.01em;text-transform:uppercase;color:#fff}
 
   /* =========================================================
+     FEEDBACKS (foto no meio e depoimentos dos dois lados)
+     ========================================================= */
+  .feedbacks-secao .com-linha{padding-top:20px}
+  .feedbacks-titulo{font-size:clamp(2.4rem,5vw,3.8rem);margin:0 0 18px}
+  .fb-palco{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr) minmax(0,1fr);gap:18px;align-items:center;padding:22px;border-radius:24px;overflow:hidden;
+    background:linear-gradient(180deg,#eee7de 0%,#e6dcd0 100%)}
+  .fb-foto{align-self:stretch;display:flex;align-items:flex-end;justify-content:center}
+  .fb-foto img{width:100%;height:100%;max-height:720px;object-fit:cover;object-position:top;border-radius:18px}
+  .fb-coluna{display:flex;flex-direction:column;gap:16px;list-style:none;margin:0;padding:0}
+  .fb-card{background:#fff;border-radius:20px;padding:16px 20px 18px;box-shadow:0 8px 22px rgba(61,43,32,.12);position:relative}
+  .fb-coluna:first-child .fb-card::after,.fb-coluna:last-child .fb-card::after{content:"";position:absolute;bottom:14px;width:14px;height:14px;background:#fff;transform:rotate(45deg)}
+  .fb-coluna:first-child .fb-card::after{right:-6px}
+  .fb-coluna:last-child .fb-card::after{left:-6px}
+  .fb-topo{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+  .fb-topo img{width:52px;height:52px;border-radius:50%;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+  .fb-nome{margin:0;font-weight:600;font-size:.92rem;color:var(--texto)}
+  .fb-nome span{color:var(--texto-suave);font-weight:400}
+  .fb-estrelas{margin:2px 0 0;color:#e2a93b;font-size:1.05rem;letter-spacing:2px;line-height:1}
+  .fb-card > p{margin:0 0 6px;font-size:.9rem;line-height:1.45;color:#3a3a3a}
+  .fb-card > p:last-child{margin-bottom:0}
+
+  /* =========================================================
      6. COMO EU TE AJUDO
      ========================================================= */
   .servicos-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;list-style:none;margin:0;padding:0}
@@ -333,6 +355,10 @@
     .depoimentos{grid-template-columns:repeat(2,minmax(0,1fr))}
     .contato-grid{grid-template-columns:minmax(0,1fr)}
     .marcas-grade{grid-template-columns:repeat(8,minmax(0,1fr))}
+    .fb-palco{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+    .fb-foto{grid-column:1/-1;grid-row:1}
+    .fb-foto img{max-height:520px;width:auto;max-width:100%}
+    .fb-coluna .fb-card::after{display:none}
     .parceiros{border-radius:0 0 70px 70px}
   }
   @media (max-width:860px){
@@ -386,6 +412,8 @@
     .parceiros-casa svg{width:24px;height:24px}
     .marcas-grade{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px 10px}
     .parceiros-frase{margin-top:26px}
+    .fb-palco{grid-template-columns:minmax(0,1fr);padding:14px;gap:14px}
+    .fb-foto img{max-height:440px}
     .formulario,.canais{padding:20px}
     .rodape{border-radius:26px 26px 0 0}
   }
@@ -530,6 +558,24 @@
       <!-- Os logos vêm do array "marcasGrade" no script -->
       <ul class="marcas-grade" id="marcas-grade" aria-label="Logos das marcas"></ul>
       <p class="parceiros-frase">+80 parceiros já testaram e aprovaram meus conteúdos</p>
+    </div>
+  </section>
+
+  <!-- ================= FEEDBACKS ================= -->
+  <section class="feedbacks-secao" id="feedbacks" aria-labelledby="titulo-feedbacks">
+    <div class="container">
+      <div class="com-linha">
+        <h2 class="feedbacks-titulo revelar" id="titulo-feedbacks">Feedbacks</h2>
+        <!-- Os depoimentos vêm do array "feedbacks" no script -->
+        <div class="fb-palco revelar">
+          <ul class="fb-coluna" id="fb-esq"></ul>
+          <div class="fb-foto">
+            <!-- FOTO DOS FEEDBACKS: para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
+            <img src="mari-bonetto-feedbacks.webp" alt="Mari Bonetto sorrindo ao lado de uma pilha de caixas de produtos recebidos das marcas" width="438" height="725" loading="lazy">
+          </div>
+          <ul class="fb-coluna" id="fb-dir"></ul>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -865,12 +911,31 @@ const marcasGrade = [
   { nome: "Lazzie", logo: "logos/parceiros/lazzie.webp" },
   { nome: "Life Mix", logo: "logos/parceiros/life-mix.webp" },
   { nome: "Land Brasil", logo: "logos/parceiros/land-brasil.webp" },
-  { nome: "Marca parceira", logo: "logos/parceiros/borboleta.webp" },
+  { nome: "Midas Time", logo: "logos/parceiros/borboleta.webp" },
   { nome: "Ypê", logo: "logos/parceiros/ype.webp" },
   { nome: "Kenvue", logo: "logos/parceiros/kenvue.webp" },
   { nome: "Hellmann's", logo: "logos/parceiros/hellmanns.webp" },
   { nome: "Mercado Livre", logo: "logos/parceiros/mercado-livre.webp" },
   { nome: "Assaí", logo: "logos/parceiros/assai.webp" }
+];
+
+// ================================
+// FEEDBACKS (lado: "esq" ou "dir" da foto). Os textos estão exatamente como as marcas escreveram.
+// Cada item de "texto" é um parágrafo.
+// ================================
+const feedbacks = [
+  { lado: "esq", nome: "Fernanda", marca: "Open English", sep: "|", logo: "logos/parceiros/open-english.webp",
+    texto: ["Sua entrega foi COMPLETA, até mencionei isso aqui dentro, você pensou em todos os detalhes e nos deu a chance de escolher o que acharíamos melhor e isso sem sombra de dúvidas é maravilhoso. Além do que, a qualidade do seu conteúdo é impecável, edição, qualidade de vídeo e qualidade das fotos. Adoraria trabalhar com você novamente, vou te deixar no topo da nossa lista de renovação futura!!!!!", "Obrigada pela parceria 💙"] },
+  { lado: "esq", nome: "Nicoli", marca: "Publi Americanas", sep: "|", logo: "logos/parceiros/americanas.webp",
+    texto: ["Foi ótimo trabalhar com vc!! A comunicação foi sempre clara, rápida e organizada, o que facilitou muito o processo. O conteúdo que você entregou estava super alinhado com o briefing e com as expectativas ❤️❤️"] },
+  { lado: "esq", nome: "Thaina", marca: "Nivea Potinhos", sep: "|", logo: "logos/parceiros/nivea.webp",
+    texto: ["amiga. foi super tranquilo tocar essa campanha contigo até porque você entendeu muito bem a proposta do briefing e trouxe um conteúdo com uma linguagem muito orgânica", "foi ótimo, de verdade mesmo ❤️"] },
+  { lado: "dir", nome: "Nath", marca: "Midas Time", sep: "|", logo: "logos/parceiros/borboleta.webp",
+    texto: ["Oi Mari, eu sabia que você faria um ÓTIMO trabalho, ainda bem que fechamos um vídeo hahaha", "Seu vídeo ficou ótimo, parabéns 🥰", "Você é um mulher muito bonita e entendeu a proposta que gostaríamos, enviei um roteiro e você conseguiu deixa-lo dinâmico e transmitiu todas as qualidades do body shaper, deixou o vídeo super dinâmico e criativo 💜", "Adoramos como você desenvolveu o roteiro e o vídeo ✨", "Aprovadissimo! 🥰"] },
+  { lado: "dir", nome: "Nat", marca: "Mercado Livre", sep: "-", logo: "logos/parceiros/mercado-livre.webp",
+    texto: ["foi ótimo.", "entendeu o briefing, respondeu rapidamente e entregou dentro do prazo! 💜"] },
+  { lado: "dir", nome: "Julia", marca: "Marketing Omo", sep: "|", logo: "logos/parceiros/omo.webp",
+    texto: ["Amor, ficou muito bom, o conteúdo ficou ótimo, arrasou mesmo 💜💜💜"] }
 ];
 
 // ================================
@@ -1099,6 +1164,19 @@ $("#filtros").addEventListener("click", (e) => {
 
 // ---------- Algumas marcas que já trabalhei ----------
 $("#marcas-grade").innerHTML = marcasGrade.map((m) => `<li><img src="${escapar(m.logo)}" alt="${escapar(m.nome === "Marca parceira" ? "Logo de marca parceira" : "Logo " + m.nome)}" width="150" height="150" loading="lazy" decoding="async"></li>`).join("");
+
+// ---------- Feedbacks ----------
+const cartaoFeedback = (f) => `
+  <li class="fb-card">
+    <div class="fb-topo">
+      <img src="${escapar(f.logo)}" alt="Logo ${escapar(f.marca)}" width="150" height="150" loading="lazy">
+      <div><p class="fb-nome">${escapar(f.nome)} <span>${escapar(f.sep)}</span> ${escapar(f.marca)}</p>
+      <p class="fb-estrelas" role="img" aria-label="5 de 5 estrelas">★★★★★</p></div>
+    </div>
+    ${f.texto.map((t) => `<p>${escapar(t)}</p>`).join("")}
+  </li>`;
+$("#fb-esq").innerHTML = feedbacks.filter((f) => f.lado === "esq").map(cartaoFeedback).join("");
+$("#fb-dir").innerHTML = feedbacks.filter((f) => f.lado === "dir").map(cartaoFeedback).join("");
 
 // ---------- Serviços ----------
 $("#servicos-grid").innerHTML = servicos.map((s, i) => `
