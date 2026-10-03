@@ -218,21 +218,22 @@
      ALGUMAS MARCAS QUE JÁ TRABALHEI (painel marrom com grade de logos)
      ========================================================= */
   section.parceiros-secao{padding:8px 16px 0}
-  .parceiros{position:relative;max-width:1720px;margin:0 auto;padding:34px 5% 50px;color:#fff;border-radius:0 0 140px 140px;
+  .parceiros{position:relative;max-width:1400px;margin:0 auto;padding:30px 5% 40px;color:#fff;border-radius:0 0 140px 140px;
     background:radial-gradient(ellipse at 50% 0%,rgba(60,35,20,.25) 0%,rgba(60,35,20,0) 45%),linear-gradient(180deg,#a17862 0%,#9d745e 60%,#98705a 100%)}
-  .parceiros h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(2.4rem,6vw,5.6rem);line-height:1;letter-spacing:-.06em;color:#fff;margin:0 0 40px;padding-right:90px}
+  .parceiros h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(2.2rem,4.6vw,4.4rem);line-height:1;letter-spacing:-.06em;color:#fff;margin:0 0 30px}
   .parceiros-casa{position:absolute;top:44px;right:4%;width:66px;height:66px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;transition:transform .2s}
   .parceiros-casa:hover{transform:translateY(-2px)}
   .parceiros-casa svg{width:36px;height:36px;fill:#9d745e}
-  .marcas-grade{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:20px 18px;list-style:none;margin:0 auto;padding:0;max-width:1520px}
+  .marcas-grade{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:16px 14px;list-style:none;margin:0 auto;padding:0;max-width:1180px}
   .marcas-grade img{width:100%;height:auto;aspect-ratio:1;border-radius:50%;display:block}
-  .parceiros-frase{margin:44px 0 0;text-align:center;font-family:"Poppins",sans-serif;font-weight:700;font-size:clamp(1rem,1.9vw,1.8rem);letter-spacing:.01em;text-transform:uppercase;color:#fff}
+  .parceiros-frase{margin:32px 0 0;text-align:center;font-family:"Poppins",sans-serif;font-weight:700;font-size:clamp(.95rem,1.5vw,1.4rem);letter-spacing:.01em;text-transform:uppercase;color:#fff}
 
   /* =========================================================
      FEEDBACKS (foto no meio e depoimentos dos dois lados)
      ========================================================= */
   .feedbacks-secao .com-linha{padding-top:20px}
   .feedbacks-titulo{font-size:clamp(2.4rem,5vw,3.8rem);margin:0 0 18px}
+  section.feedbacks-secao{padding:0;background:#fff8ed}
   .fb-imagem{display:block;width:100%;height:auto}
   .fb-palco{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr) minmax(0,1fr);gap:18px;align-items:center;padding:22px;border-radius:24px;overflow:hidden;
     background:linear-gradient(180deg,#eee7de 0%,#e6dcd0 100%)}
@@ -408,7 +409,7 @@
     .trabalhos-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
     section.parceiros-secao{padding:8px 10px 0}
     .parceiros{padding:26px 18px 34px;border-radius:0 0 40px 40px}
-    .parceiros h2{margin-bottom:24px;padding-right:56px}
+    .parceiros h2{margin-bottom:22px}
     .parceiros-casa{top:22px;right:16px;width:44px;height:44px}
     .parceiros-casa svg{width:24px;height:24px}
     .marcas-grade{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px 10px}
@@ -555,7 +556,6 @@
   <section class="parceiros-secao" aria-labelledby="titulo-parceiros">
     <div class="parceiros revelar">
       <h2 id="titulo-parceiros">Algumas marcas que já trabalhei</h2>
-      <a class="parceiros-casa" href="#inicio" aria-label="Voltar ao início"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 2.5 11.1a1 1 0 0 0 1.3 1.5l.7-.6V20a1.5 1.5 0 0 0 1.5 1.5h3.5V15h5v6.5H18a1.5 1.5 0 0 0 1.5-1.5v-8l.7.6a1 1 0 0 0 1.3-1.5z"/></svg></a>
       <!-- Os logos vêm do array "marcasGrade" no script -->
       <ul class="marcas-grade" id="marcas-grade" aria-label="Logos das marcas"></ul>
       <p class="parceiros-frase">+80 parceiros já testaram e aprovaram meus conteúdos</p>
@@ -564,11 +564,11 @@
 
   <!-- ================= FEEDBACKS ================= -->
   <section class="feedbacks-secao" id="feedbacks" aria-labelledby="titulo-feedbacks">
-    <div class="container">
+    <div>
       <div>
         <h2 class="sr-only" id="titulo-feedbacks">Feedbacks</h2>
-        <!-- IMAGEM DOS FEEDBACKS: é exatamente a imagem enviada pela Mari, sem cortes nem alterações -->
-        <img class="fb-imagem revelar" src="feedbacks.webp" width="1906" height="827" loading="lazy"
+        <!-- IMAGEM DOS FEEDBACKS: é a imagem enviada pela Mari; só as margens creme vazias das laterais foram cortadas para a foto ir de ponta a ponta -->
+        <img class="fb-imagem revelar" src="feedbacks.webp" width="1139" height="811" loading="lazy"
           alt="Mari Bonetto sorrindo ao lado de caixas de produtos, cercada por seis feedbacks de marcas com cinco estrelas: Fernanda da Open English, Nicoli da Publi Americanas, Thaina da Nivea Potinhos, Nath da Midas Time, Nat do Mercado Livre e Julia do Marketing Omo">
         <!-- Texto dos feedbacks para leitores de tela (não aparece na tela) -->
         <ul class="sr-only" id="fb-esq"></ul><ul class="sr-only" id="fb-dir"></ul>
