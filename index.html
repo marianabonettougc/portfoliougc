@@ -280,16 +280,14 @@
      ========================================================= */
   section.fotos-secao{padding:30px 0 34px}
   .fotos-titulo{margin:0 0 18px}
-  .fotos-mural{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:clamp(34px,3.7vw,52px);grid-auto-flow:dense;gap:12px;list-style:none;margin:0;padding:0}
-  .fotos-mural li{grid-row:span 2;border-radius:14px;overflow:hidden;background:linear-gradient(160deg,#e9dccb,#cfae93);box-shadow:var(--sombra);position:relative}
-  .fotos-mural li.alta{grid-row:span 4}
-  .fotos-mural li.larga{grid-column:span 2}
-  .fotos-mural img{width:100%;height:100%;object-fit:cover;object-position:center 30%;display:block;transition:transform .4s ease}
-  .fotos-mural li:hover img{transform:scale(1.04)}
-  .fotos-mural .foto-vazia{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;color:#fff;letter-spacing:.08em;text-transform:uppercase}
+  /* Mosaico em colunas: cada foto aparece inteira, no formato original, sem cortar os produtos */
+  .fotos-mural{columns:7 140px;column-gap:12px;list-style:none;margin:0;padding:0}
+  .fotos-mural li{break-inside:avoid;margin:0 0 12px;border-radius:14px;overflow:hidden;background:#e9dccb;box-shadow:var(--sombra)}
+  .fotos-mural img{width:100%;height:auto;display:block;transition:transform .4s ease}
+  .fotos-mural li:hover img{transform:scale(1.03)}
   @media (max-width:620px){
-    .fotos-mural{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:38px;gap:8px}
-    .fotos-mural li{border-radius:10px}
+    .fotos-mural{columns:3;column-gap:8px}
+    .fotos-mural li{border-radius:10px;margin-bottom:8px}
   }
   section.parceiros-secao{padding:8px 16px 0}
   .parceiros{position:relative;max-width:1400px;margin:0 auto;padding:30px 5% 40px;color:#fff;border-radius:0 0 140px 140px;
@@ -1436,27 +1434,24 @@ document.querySelectorAll(".video-midia").forEach((m) => { if (idDoYoutube(dados
 
 // ---------- Mural de fotos ----------
 // Para trocar uma foto: salve o arquivo na pasta "fotos" e coloque o caminho em "src".
-// formato: "alta" (foto em pé, ocupa mais altura), "larga" (foto deitada, ocupa duas colunas) ou "" (foto menor)
-// posicao (opcional): qual parte da foto fica visível, ex.: "center 40%" (mais para baixo) ou "center 10%" (mais para cima)
+// As fotos aparecem inteiras, sem corte, na ordem da lista (de cima para baixo, coluna por coluna)
 const fotos = [
-  { src: "fotos/foto-01.webp", alt: "Mari Bonetto sorrindo e segurando a caixa de presente Eudora Siàge", formato: "alta" },
-  { src: "fotos/foto-02.jpg", alt: "Mari Bonetto mostrando o app Koin no celular e a caixa de um iPhone", formato: "alta" },
-  { src: "fotos/foto-03.jpg", alt: "Mari Bonetto no sofá com um kit de escova secadora e o pacote do Mercado Livre", formato: "alta" },
-  { src: "fotos/foto-09.jpg", alt: "Mari Bonetto e o marido à mesa com fondue de queijo e queijos Tirolez", formato: "larga", posicao: "center 36%" },
-  { src: "fotos/foto-07.jpg", alt: "Mari Bonetto colocando sabão líquido Omo no copinho medidor ao lado da máquina de lavar", formato: "" },
-  { src: "fotos/foto-08.jpg", alt: "Mari Bonetto abraçando caixinhas de suco Life Mix", formato: "", posicao: "center 15%" },
-  { src: "fotos/foto-11.jpg", alt: "Mari Bonetto no sofá mostrando o site da UniCesumar no tablet", formato: "" },
-  { src: "fotos/foto-12.jpg", alt: "Mari Bonetto com o pacote da Pague Menos e produtos de bebê Huggies e Granado", formato: "", posicao: "center 45%" },
-  { src: "fotos/foto-04.jpg", alt: "Mari Bonetto sorrindo com o desodorante Dove Original na mão", formato: "alta" },
-  { src: "fotos/foto-05.webp", alt: "Mari Bonetto segurando a linha Elseve Bond Repair", formato: "alta" },
-  { src: "fotos/foto-06.webp", alt: "Mari Bonetto sorrindo com dois hidratantes Natura Tododia", formato: "alta" },
-  { src: "fotos/foto-10.jpg", alt: "Mari Bonetto no sofá com as duas filhas usando óculos de sol", formato: "alta" },
-  { src: "fotos/foto-13.jpg", alt: "Mari Bonetto no sofá mostrando chocolates Cacau Show", formato: "alta" },
-  { src: "", alt: "", formato: "alta" }
+  { src: "fotos/foto-01.webp", alt: "Mari Bonetto sorrindo e segurando a caixa de presente Eudora Siàge" },
+  { src: "fotos/foto-02.jpg", alt: "Mari Bonetto mostrando o app Koin no celular e a caixa de um iPhone" },
+  { src: "fotos/foto-03.jpg", alt: "Mari Bonetto no sofá com um kit de escova secadora e o pacote do Mercado Livre" },
+  { src: "fotos/foto-09.jpg", alt: "Mari Bonetto e o marido à mesa com fondue de queijo e queijos Tirolez" },
+  { src: "fotos/foto-07.jpg", alt: "Mari Bonetto colocando sabão líquido Omo no copinho medidor ao lado da máquina de lavar" },
+  { src: "fotos/foto-08.jpg", alt: "Mari Bonetto abraçando caixinhas de suco Life Mix" },
+  { src: "fotos/foto-11.jpg", alt: "Mari Bonetto no sofá mostrando o site da UniCesumar no tablet" },
+  { src: "fotos/foto-12.jpg", alt: "Mari Bonetto com o pacote da Pague Menos e produtos de bebê Huggies e Granado" },
+  { src: "fotos/foto-04.jpg", alt: "Mari Bonetto sorrindo com o desodorante Dove Original na mão" },
+  { src: "fotos/foto-05.webp", alt: "Mari Bonetto segurando a linha Elseve Bond Repair" },
+  { src: "fotos/foto-06.webp", alt: "Mari Bonetto sorrindo com dois hidratantes Natura Tododia" },
+  { src: "fotos/foto-10.jpg", alt: "Mari Bonetto no sofá com as duas filhas usando óculos de sol" },
+  { src: "fotos/foto-13.jpg", alt: "Mari Bonetto no sofá mostrando chocolates Cacau Show" },
 ];
-$("#fotos-mural").innerHTML = fotos.map((f, i) => `<li class="${f.formato || ""}">${f.src
-  ? `<img src="${escapar(f.src)}" alt="${escapar(f.alt || "Mari Bonetto com produto de marca parceira")}" loading="lazy"${f.posicao ? ` style="object-position:${escapar(f.posicao)}"` : ""}>`
-  : `<span class="foto-vazia" aria-hidden="true">foto</span>`}</li>`).join("");
+$("#fotos-mural").innerHTML = fotos.filter((f) => f.src).map((f) =>
+  `<li><img src="${escapar(f.src)}" alt="${escapar(f.alt || "Mari Bonetto com produto de marca parceira")}" loading="lazy"></li>`).join("");
 
 // ---------- Trabalhos por nicho com filtro ----------
 const degrades = [
