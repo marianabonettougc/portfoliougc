@@ -2,7 +2,14 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" id="viewport">
+<script>
+  // Celular e tablet: mostra o site com o mesmo visual do computador, só que reduzido para caber na tela (igual ao Canva)
+  if (Math.min(screen.width, screen.height) < 1024) {
+    document.getElementById("viewport").setAttribute("content", "width=1280");
+    document.documentElement.classList.add("miniatura");
+  }
+</script>
 <title>Mari Bonetto | Portfólio UGC</title>
 <meta name="description" content="Mari Bonetto, UGC Creator em Valinhos, SP. Conteúdo que parece indicação de amiga antes de parecer anúncio.">
 <meta name="theme-color" content="#f6efe6">
@@ -238,6 +245,10 @@
   .player-aviso-som[hidden]{display:none}
   .player-fechar{position:absolute;top:14px;right:14px;z-index:101;width:46px;height:46px;border-radius:50%;border:0;background:#fffdf9;color:#3d2b20;font-size:1.6rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .player-fechar:hover{transform:scale(1.06)}
+  /* site reduzido no celular: a janela do vídeo e o botão de fechar ficam do tamanho certo para o dedo */
+  .miniatura .player-janela{padding:60px}
+  .miniatura .player-fechar{top:40px;right:40px;width:140px;height:140px;font-size:5rem}
+  .miniatura .player-caixa{border-radius:40px}
 
   /* Case em destaque */
   .case-destaque{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:28px;align-items:start;margin-top:30px}
