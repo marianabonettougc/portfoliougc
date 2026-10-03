@@ -233,6 +233,7 @@
      ========================================================= */
   .feedbacks-secao .com-linha{padding-top:20px}
   .feedbacks-titulo{font-size:clamp(2.4rem,5vw,3.8rem);margin:0 0 18px}
+  .fb-imagem{display:block;width:100%;height:auto}
   .fb-palco{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr) minmax(0,1fr);gap:18px;align-items:center;padding:22px;border-radius:24px;overflow:hidden;
     background:linear-gradient(180deg,#eee7de 0%,#e6dcd0 100%)}
   .fb-foto{align-self:stretch;display:flex;align-items:flex-end;justify-content:center}
@@ -564,17 +565,13 @@
   <!-- ================= FEEDBACKS ================= -->
   <section class="feedbacks-secao" id="feedbacks" aria-labelledby="titulo-feedbacks">
     <div class="container">
-      <div class="com-linha">
-        <h2 class="feedbacks-titulo revelar" id="titulo-feedbacks">Feedbacks</h2>
-        <!-- Os depoimentos vêm do array "feedbacks" no script -->
-        <div class="fb-palco revelar">
-          <ul class="fb-coluna" id="fb-esq"></ul>
-          <div class="fb-foto">
-            <!-- FOTO DOS FEEDBACKS: para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
-            <img src="mari-bonetto-feedbacks.webp" alt="Mari Bonetto sorrindo ao lado de uma pilha de caixas de produtos recebidos das marcas" width="438" height="725" loading="lazy">
-          </div>
-          <ul class="fb-coluna" id="fb-dir"></ul>
-        </div>
+      <div>
+        <h2 class="sr-only" id="titulo-feedbacks">Feedbacks</h2>
+        <!-- IMAGEM DOS FEEDBACKS: é exatamente a imagem enviada pela Mari, sem cortes nem alterações -->
+        <img class="fb-imagem revelar" src="feedbacks.webp" width="1906" height="827" loading="lazy"
+          alt="Mari Bonetto sorrindo ao lado de caixas de produtos, cercada por seis feedbacks de marcas com cinco estrelas: Fernanda da Open English, Nicoli da Publi Americanas, Thaina da Nivea Potinhos, Nath da Midas Time, Nat do Mercado Livre e Julia do Marketing Omo">
+        <!-- Texto dos feedbacks para leitores de tela (não aparece na tela) -->
+        <ul class="sr-only" id="fb-esq"></ul><ul class="sr-only" id="fb-dir"></ul>
       </div>
     </div>
   </section>
