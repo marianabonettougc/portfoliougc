@@ -232,9 +232,9 @@
      FEEDBACKS (foto no meio e depoimentos dos dois lados)
      ========================================================= */
   .feedbacks-secao .com-linha{padding-top:20px}
-  .feedbacks-titulo{font-size:clamp(2.4rem,5vw,3.8rem);margin:0 0 18px}
-  section.feedbacks-secao{padding:0;background:#fff8ed}
-  .fb-imagem{display:block;width:100%;height:auto}
+  .feedbacks-titulo{font-size:clamp(2.4rem,5vw,3.8rem);margin:0 auto 18px;max-width:1180px}
+  section.feedbacks-secao{padding:36px 0 20px}
+  .fb-imagem{display:block;width:100%;max-width:1180px;height:auto;margin:0 auto;border-radius:22px;box-shadow:0 12px 30px rgba(61,43,32,.14)}
   .fb-palco{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr) minmax(0,1fr);gap:18px;align-items:center;padding:22px;border-radius:24px;overflow:hidden;
     background:linear-gradient(180deg,#eee7de 0%,#e6dcd0 100%)}
   .fb-foto{align-self:stretch;display:flex;align-items:flex-end;justify-content:center}
@@ -564,15 +564,13 @@
 
   <!-- ================= FEEDBACKS ================= -->
   <section class="feedbacks-secao" id="feedbacks" aria-labelledby="titulo-feedbacks">
-    <div>
-      <div>
-        <h2 class="sr-only" id="titulo-feedbacks">Feedbacks</h2>
-        <!-- IMAGEM DOS FEEDBACKS: é a imagem enviada pela Mari; só as margens creme vazias das laterais foram cortadas para a foto ir de ponta a ponta -->
-        <img class="fb-imagem revelar" src="feedbacks.webp" width="1139" height="811" loading="lazy"
-          alt="Mari Bonetto sorrindo ao lado de caixas de produtos, cercada por seis feedbacks de marcas com cinco estrelas: Fernanda da Open English, Nicoli da Publi Americanas, Thaina da Nivea Potinhos, Nath da Midas Time, Nat do Mercado Livre e Julia do Marketing Omo">
-        <!-- Texto dos feedbacks para leitores de tela (não aparece na tela) -->
-        <ul class="sr-only" id="fb-esq"></ul><ul class="sr-only" id="fb-dir"></ul>
-      </div>
+    <div class="container">
+      <h2 class="feedbacks-titulo revelar" id="titulo-feedbacks">Feedbacks</h2>
+      <!-- IMAGEM DOS FEEDBACKS: arquivo enviado pela Mari, usado sem alterações -->
+      <img class="fb-imagem revelar" src="feedbacks.jpg" width="1536" height="1024" loading="lazy"
+        alt="Mari Bonetto sorrindo ao lado de caixas de produtos, cercada por seis feedbacks de marcas com cinco estrelas: Fernanda da Open English, Nicoli da Publi Americanas, Thaina da Nivea Potinhos, Nath da Midas Time, Nat do Mercado Livre e Julia do Marketing Omo">
+      <!-- Texto dos feedbacks para leitores de tela (não aparece na tela) -->
+      <ul class="sr-only" id="fb-esq"></ul><ul class="sr-only" id="fb-dir"></ul>
     </div>
   </section>
 
