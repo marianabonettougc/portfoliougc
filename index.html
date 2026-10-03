@@ -482,7 +482,7 @@
   </section>
 
   <!-- ================= MEUS NÚMEROS (entre a capa e o Sobre mim) ================= -->
-  <section class="numeros-faixa" aria-label="Meus números">
+  <section class="numeros-faixa" id="numeros" aria-label="Meus números">
     <ul>
       <li><strong>+80</strong><span>marcas trabalhadas</span></li>
       <li><strong>+150</strong><span>vídeos entregues</span></li>
@@ -583,19 +583,6 @@
         alt="Mari Bonetto sorrindo ao lado de caixas de produtos, cercada por seis feedbacks de marcas com cinco estrelas: Fernanda da Open English, Nicoli da Publi Americanas, Thaina da Nivea Potinhos, Nath da Midas Time, Nat do Mercado Livre e Julia do Marketing Omo">
       <!-- Texto dos feedbacks para leitores de tela (não aparece na tela) -->
       <ul class="sr-only" id="fb-esq"></ul><ul class="sr-only" id="fb-dir"></ul>
-    </div>
-  </section>
-
-  <!-- ================= 7. NÚMEROS E DEPOIMENTOS ================= -->
-  <section id="numeros" aria-labelledby="titulo-numeros">
-    <div class="container">
-      <div class="cabecalho revelar">
-        <span class="manuscrito" aria-hidden="true">o que fica depois do play</span>
-        <h2 id="titulo-numeros">Números e depoimentos</h2>
-      </div>
-      <ul class="metricas" id="metricas" aria-label="Métricas"></ul>
-      <ul class="resultados" id="resultados" aria-label="Resultados de campanha"></ul>
-      <ul class="depoimentos" id="depoimentos" aria-label="Depoimentos de clientes"></ul>
     </div>
   </section>
 
@@ -956,25 +943,6 @@ const metricas = [
   { valor: "",  texto: "SUA MÉTRICA",      rotulo: "descrição da métrica" }   // TROCAR quando tiver a quarta métrica
 ];
 
-// ================================
-// RESULTADOS DE CAMPANHA (troque pelos resultados reais)
-// ================================
-const resultados = [
-  { titulo: "RESULTADO 01", descricao: "Descreva aqui o resultado da campanha." },
-  { titulo: "RESULTADO 02", descricao: "Descreva aqui o resultado da campanha." },
-  { titulo: "RESULTADO 03", descricao: "Descreva aqui o resultado da campanha." }
-];
-
-// ================================
-// DEPOIMENTOS (troque pelo texto real que cada cliente mandou)
-// ================================
-const depoimentos = [
-  { texto: "Espaço para o depoimento da Cliente 01.", nome: "Cliente 01", empresa: "Empresa da Cliente 01" },
-  { texto: "Espaço para o depoimento da Cliente 02.", nome: "Cliente 02", empresa: "Empresa da Cliente 02" },
-  { texto: "Espaço para o depoimento da Cliente 03.", nome: "Cliente 03", empresa: "Empresa da Cliente 03" },
-  { texto: "Espaço para o depoimento da Cliente 04.", nome: "Cliente 04", empresa: "Empresa da Cliente 04" }
-];
-
 // Endereço do formulário (Formspree ou similar). Vazio = só mostra a confirmação na tela.
 const ENDERECO_FORMULARIO = "";
 
@@ -1182,25 +1150,6 @@ $("#servicos-grid").innerHTML = servicos.map((s, i) => `
 
 // ---------- Números e depoimentos ----------
 const formatar = (v) => Math.round(v).toLocaleString("pt-BR");
-$("#metricas").innerHTML = metricas.map((m, i) => m.valor === ""
-  ? `<li class="cartao metrica placeholder revelar"><strong>${escapar(m.texto)}</strong><span>${escapar(m.rotulo)}</span></li>`
-  : `<li class="cartao metrica revelar">
-      <strong data-metrica="${i}" aria-hidden="true">${escapar(m.prefixo)}${formatar(reduzMovimento ? m.valor : 0)}${escapar(m.sufixo)}</strong>
-      <span class="sr-only">${escapar(m.prefixo)}${formatar(m.valor)}${escapar(m.sufixo)}</span>
-      <span>${escapar(m.rotulo)}</span>
-    </li>`).join("");
-
-$("#resultados").innerHTML = resultados.map((r) => `
-  <li class="cartao resultado revelar"><strong>${escapar(r.titulo)}</strong><p>${escapar(r.descricao)}</p></li>`).join("");
-
-$("#depoimentos").innerHTML = depoimentos.map((d) => `
-  <li class="cartao depoimento revelar">
-    <figure style="margin:0">
-      <span class="aspas" aria-hidden="true">“</span>
-      <blockquote>${escapar(d.texto)}</blockquote>
-      <figcaption><strong>${escapar(d.nome)}</strong><span>${escapar(d.empresa)}</span></figcaption>
-    </figure>
-  </li>`).join("");
 
 // ---------- Contato ----------
 const linkWhats = `https://wa.me/${CONTATO.whatsapp}?text=${encodeURIComponent(CONTATO.mensagemWhats)}`;
