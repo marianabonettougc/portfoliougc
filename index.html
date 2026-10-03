@@ -283,7 +283,7 @@
   .fotos-mural li{grid-row:span 2;border-radius:14px;overflow:hidden;background:linear-gradient(160deg,#e9dccb,#cfae93);box-shadow:var(--sombra);position:relative}
   .fotos-mural li.alta{grid-row:span 4}
   .fotos-mural li.larga{grid-column:span 2}
-  .fotos-mural img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
+  .fotos-mural img{width:100%;height:100%;object-fit:cover;object-position:center 30%;display:block;transition:transform .4s ease}
   .fotos-mural li:hover img{transform:scale(1.04)}
   .fotos-mural .foto-vazia{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;color:#fff;letter-spacing:.08em;text-transform:uppercase}
   @media (max-width:620px){
@@ -1437,16 +1437,16 @@ document.querySelectorAll(".video-midia").forEach((m) => { if (idDoYoutube(dados
 // Para trocar uma foto: salve o arquivo na pasta "fotos" e coloque o caminho em "src".
 // formato: "alta" (foto em pé, ocupa mais altura), "larga" (foto deitada, ocupa duas colunas) ou "" (foto menor)
 const fotos = [
-  { src: "", alt: "", formato: "alta" },
-  { src: "", alt: "", formato: "alta" },
-  { src: "", alt: "", formato: "alta" },
+  { src: "fotos/foto-01.webp", alt: "Mari Bonetto sorrindo e segurando a caixa de presente Eudora Siàge", formato: "alta" },
+  { src: "fotos/foto-02.jpg", alt: "Mari Bonetto mostrando o app Koin no celular e a caixa de um iPhone", formato: "alta" },
+  { src: "fotos/foto-03.jpg", alt: "Mari Bonetto no sofá com um kit de escova secadora e o pacote do Mercado Livre", formato: "alta" },
   { src: "", alt: "", formato: "larga" },
   { src: "", alt: "", formato: "" },
   { src: "", alt: "", formato: "" },
   { src: "", alt: "", formato: "" },
   { src: "", alt: "", formato: "" },
-  { src: "", alt: "", formato: "alta" },
-  { src: "", alt: "", formato: "alta" },
+  { src: "fotos/foto-04.jpg", alt: "Mari Bonetto sorrindo com o desodorante Dove Original na mão", formato: "alta" },
+  { src: "fotos/foto-05.webp", alt: "Mari Bonetto segurando a linha Elseve Bond Repair", formato: "alta" },
   { src: "", alt: "", formato: "alta" },
   { src: "", alt: "", formato: "alta" },
   { src: "", alt: "", formato: "alta" },
@@ -1460,7 +1460,7 @@ const fotos = [
 ];
 $("#fotos-mural").innerHTML = fotos.map((f, i) => `<li class="${f.formato || ""}">${f.src
   ? `<img src="${escapar(f.src)}" alt="${escapar(f.alt || "Mari Bonetto com produto de marca parceira")}" loading="lazy">`
-  : `<span class="foto-vazia" aria-hidden="true">foto ${String(i + 1).padStart(2, "0")}</span>`}</li>`).join("");
+  : `<span class="foto-vazia" aria-hidden="true">foto</span>`}</li>`).join("");
 
 // ---------- Trabalhos por nicho com filtro ----------
 const degrades = [
