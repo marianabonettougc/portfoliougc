@@ -641,9 +641,8 @@
 
       <div class="contato-form revelar">
         <!--
-          O formulário mostra a confirmação na tela, sem recarregar a página.
-          Para receber as mensagens no seu e-mail, crie um formulário grátis no Formspree
-          e cole o endereço dele na constante ENDERECO_FORMULARIO do script.
+          O formulário envia a mensagem para o e-mail da Mari pelo FormSubmit (grátis, sem cadastro)
+          e mostra a confirmação na tela, sem recarregar a página.
         -->
         <form id="form-contato" novalidate>
           <div class="campos-duplos">
@@ -967,7 +966,9 @@ const metricas = [
 ];
 
 // Endereço do formulário (Formspree ou similar). Vazio = só mostra a confirmação na tela.
-const ENDERECO_FORMULARIO = "";
+// As mensagens do formulário (e os pedidos de mídia kit) chegam no e-mail abaixo, pelo FormSubmit.
+// Na PRIMEIRA mensagem, o FormSubmit manda um e-mail de ativação: é só clicar em "Activate Form".
+const ENDERECO_FORMULARIO = "https://formsubmit.co/ajax/marianabonettougc@gmail.com";
 
 // Segundos até o card do mídia kit aparecer
 const SEGUNDOS_CARD_KIT = 7;
@@ -1255,11 +1256,29 @@ if (reduzMovimento || !("IntersectionObserver" in window)) {
 
 // ---------- Formulários ----------
 const emailValido = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+// Envia para o e-mail da Mari. Devolve true se o envio deu certo.
 async function enviarDados(dados) {
-  if (!ENDERECO_FORMULARIO) return;
+  if (!ENDERECO_FORMULARIO) return true;
+  const assunto = dados.tipo === "midia-kit"
+    ? `Pedido de mídia kit: ${dados.nome}`
+    : `Nova mensagem do portfólio: ${dados.nome}${dados.marca ? " (" + dados.marca + ")" : ""}`;
+  const corpo = {
+    _subject: assunto,
+    _template: "table",
+    _captcha: "false",
+    _replyto: dados.email,
+    Nome: dados.nome,
+    "E-mail": dados.email
+  };
+  if (dados.marca) corpo["Marca / Empresa"] = dados.marca;
+  if (dados.orcamento) corpo["Orçamento estimado"] = dados.orcamento;
+  if (dados.mensagem) corpo["Projeto"] = dados.mensagem;
+  if (dados.tipo === "midia-kit") corpo["Pedido"] = "Quer receber o mídia kit completo";
   try {
-    await fetch(ENDERECO_FORMULARIO, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(dados) });
-  } catch (e) { /* mesmo sem internet, a confirmação aparece */ }
+    const resp = await fetch(ENDERECO_FORMULARIO, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(corpo) });
+    const json = await resp.json().catch(() => ({}));
+    return resp.ok && String(json.success) !== "false";
+  } catch (e) { return false; }
 }
 $("#form-contato").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -1270,7 +1289,17 @@ $("#form-contato").addEventListener("submit", async (e) => {
   if (!emailValido(email)) { erro.textContent = "Confere o e-mail, por favor."; f.email.focus(); return; }
   if (!mensagem) { erro.textContent = "Escreve uma mensagem pra mim."; f.mensagem.focus(); return; }
   erro.textContent = "";
-  await enviarDados({ tipo: "contato", nome, email, marca, orcamento, mensagem });
+  const botao = f.querySelector('button[type="submit"]');
+  const textoBotao = botao.innerHTML;
+  botao.disabled = true;
+  botao.textContent = "Enviando...";
+  const enviado = await enviarDados({ tipo: "contato", nome, email, marca, orcamento, mensagem });
+  botao.disabled = false;
+  botao.innerHTML = textoBotao;
+  if (!enviado) {
+    erro.textContent = "Não consegui enviar agora. Tenta de novo ou me chama no WhatsApp, por favor.";
+    return;
+  }
   f.hidden = true;
   const ok = $("#confirmacao");
   ok.hidden = false;
