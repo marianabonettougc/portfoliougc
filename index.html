@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#f6efe6">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Pinyon+Script&family=DM+Serif+Display:ital@0;1&family=Oswald:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Mrs+Saint+Delafield&family=DM+Serif+Display:ital@0;1&family=Oswald:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
      IDENTIDADE: CARTÃO DE CAFETERIA PREMIUM
@@ -91,11 +91,13 @@
   .capa-quadro{position:relative;width:100%;height:clamp(440px,min(46vw,82vh),660px);overflow:hidden;background:linear-gradient(180deg,#f8f2ea 0%,#efe3d3 100%);display:flex;align-items:center}
   .capa-foto{position:absolute;bottom:0;right:max(20px,calc((100% - var(--largura)) / 2 + 20px));height:88%;width:auto;max-width:52%;object-fit:contain;object-position:bottom right}
   .capa-texto{position:relative;z-index:2;width:100%;max-width:var(--largura);margin:0 auto;padding:40px 20px 0;text-align:left}
-  .capa-nome{font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;text-transform:uppercase;font-size:clamp(3.6rem,7.4vw,7rem);line-height:.88;letter-spacing:.02em;color:var(--cafe);margin:0}
+  /* Fonte no estilo da referência Juliana Moura: letras altas e condensadas em dourado, com "Portfólio" manuscrito por cima */
+  .capa-nome{font-family:"Anton","Oswald",Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:clamp(4rem,8.6vw,8.2rem);line-height:.9;letter-spacing:.01em;color:#b89568;margin:0}
   .capa-nome span{display:block}
-  .capa-titulo{display:flex;align-items:baseline;gap:.4em;margin:10px 0 0 .1em}
-  .capa-titulo .script{font-family:"Pinyon Script",Georgia,cursive;font-size:clamp(2.2rem,3.6vw,3.2rem);line-height:1;color:var(--cafe-2)}
-  .capa-titulo .ugc{font-family:"Poppins",sans-serif;font-weight:500;font-size:clamp(.95rem,1.3vw,1.1rem);letter-spacing:.38em;color:var(--cafe)}
+  .capa-titulo{display:flex;align-items:baseline;gap:.5em;margin:-.55em 0 0 22%;position:relative;transform:rotate(-4deg);transform-origin:left}
+  .capa-titulo .script{font-family:"Mrs Saint Delafield",cursive;font-size:clamp(3.4rem,6.4vw,6rem);line-height:1;color:#2e211a}
+  .capa-titulo .ugc{font-family:"Poppins",sans-serif;font-weight:500;font-size:clamp(.9rem,1.2vw,1.05rem);letter-spacing:.38em;color:#2e211a;transform:rotate(4deg)}
+  .capa-redes{margin-top:26px}
   .capa-redes{display:flex;align-items:center;justify-content:flex-start;gap:10px;margin:20px 0 0;padding:0;list-style:none}
   .rede-btn{width:40px;height:40px;border-radius:50%;background:var(--cafe);display:flex;align-items:center;justify-content:center;transition:transform .25s,background .25s}
   .rede-btn:hover{transform:translateY(-2px);background:var(--vermelho)}
@@ -407,14 +409,14 @@
     .capa-quadro{height:auto;flex-direction:column;align-items:stretch}
     .capa-texto{padding:32px 20px 18px;text-align:center}
     .capa-foto{position:relative;right:auto;order:2;width:min(80%,420px);height:auto;max-width:none;margin:8px auto 0}
-    .capa-titulo{justify-content:center}
+    .capa-titulo{justify-content:center;margin-left:0}
     .capa-redes{justify-content:center}
   }
   @media (max-width:620px){
     section{padding:44px 0}
     .container{padding:0 16px}
     .capa-texto{padding:28px 16px 14px}
-    .capa-nome{font-size:clamp(2.7rem,13.5vw,3.6rem)}
+    .capa-nome{font-size:clamp(3rem,15vw,4.2rem)}
     .sobre-secao{padding:0 10px}
     .sobre-painel{border-radius:0 0 36px 36px}
     .sobre-texto{padding:0 20px}
@@ -498,7 +500,7 @@
   <section class="capa" id="inicio" aria-labelledby="titulo-capa">
    <div class="capa-quadro">
     <!-- FOTO DA CAPA: foto recortada, sem fundo (WebP transparente). Para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
-    <img class="capa-foto" src="mari-bonetto-recorte.webp" alt="Mari Bonetto sorrindo, de cabelo longo ondulado e blusa de tricô bege" width="871" height="949" fetchpriority="high">
+    <img class="capa-foto" src="mari-bonetto-capa.png" alt="Mari Bonetto sorrindo, de cabelo longo ondulado e blusa de tricô bege" width="869" height="951" fetchpriority="high">
     <div class="capa-texto">
         <h1 class="capa-nome" id="titulo-capa"><span>Mari</span> <span>Bonetto</span></h1>
         <p class="capa-titulo"><span class="script">Portfólio</span> <span class="ugc">UGC</span></p>
