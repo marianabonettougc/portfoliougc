@@ -388,6 +388,36 @@
   /* =========================================================
      RESPONSIVO
      ========================================================= */
+
+  /* =========================================================
+     HORA DE CRIAR (processo em 4 passos)
+     ========================================================= */
+  section.criar-secao{padding:30px 0 70px}
+  .criar-titulo{font-size:clamp(2.4rem,5vw,3.8rem);margin:0 0 34px}
+  .criar-titulo em{font-style:italic;color:#a8603f}
+  .criar-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(28px,5vw,70px);align-items:center}
+  .criar-arco{position:relative;max-width:400px;margin:0 auto;width:100%;background:var(--cafe-2);border-radius:200px 200px var(--raio) var(--raio);padding:44px 0 22px;box-shadow:var(--sombra)}
+  .criar-notebook{width:calc(100% + 40px);margin:0 -20px}
+  .criar-tela{margin:0 34px;background:var(--papel);border:2px solid #e6dccf;border-bottom:0;border-radius:12px 12px 0 0;padding:10px}
+  .criar-tela img{width:100%;aspect-ratio:1448/1086;object-fit:cover;border-radius:3px}
+  .criar-base{height:12px;background:linear-gradient(#e9e2d9,#c9bfb3);border-radius:0 0 12px 12px;position:relative}
+  .criar-base::after{content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);width:56px;height:4px;background:#3d2b20;border-radius:0 0 6px 6px}
+  .criar-passos{list-style:none;margin:16px 0 0;padding:0 30px}
+  .criar-passos li{display:flex;align-items:center;gap:18px;padding:9px 0;color:var(--papel);font-size:clamp(1.05rem,1.5vw,1.3rem)}
+  .criar-passos span{font-family:"Poppins",sans-serif;font-weight:300;font-size:2.4rem;line-height:1;width:34px;text-align:center}
+  .criar-baloes{display:flex;flex-direction:column;gap:38px}
+  .criar-balao{position:relative;background:var(--cafe-2);color:var(--papel);border-radius:16px;padding:20px 24px;text-align:center;font-weight:500;font-size:.95rem;line-height:1.5;box-shadow:var(--sombra)}
+  .criar-balao::after{content:"";position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);border:18px solid transparent;border-bottom:0;border-top-color:var(--cafe-2)}
+  .criar-acao{text-align:center;margin-top:4px}
+  @media (max-width:860px){
+    .criar-grid{grid-template-columns:1fr}
+    .criar-balao{font-size:.9rem;padding:18px}
+  }
+  @media (max-width:520px){
+    .criar-notebook{width:calc(100% + 16px);margin:0 -8px}
+    .criar-tela{margin:0 24px}
+    .criar-passos{padding:0 22px}
+  }
   @media (max-width:1000px){
     .sobre-grid{grid-template-columns:minmax(0,1fr);gap:30px}
     .sobre-foto{max-width:520px;width:100%;margin:0 auto;aspect-ratio:9/10}
@@ -568,9 +598,9 @@
   <!-- ================= MEUS NÚMEROS (entre a capa e o Sobre mim) ================= -->
   <section class="numeros-faixa" id="numeros" aria-label="Meus números">
     <ul>
-      <li><strong>+80</strong><span>marcas atendidas</span></li>
-      <li><strong>+150</strong><span>vídeos entregues</span></li>
-      <li><strong>+10M</strong><span>de views nas redes</span></li>
+      <li><span>marcas atendidas</span></li>
+      <li><span>vídeos entregues</span></li>
+      <li><span>de views nas redes</span></li>
     </ul>
   </section>
 
@@ -584,12 +614,12 @@
       <div class="sobre-texto revelar">
         <p class="sobretitulo">Sobre mim</p>
         <h2 class="sobre-titulo" id="titulo-sobre">Oi, eu sou a <em>Mari Bonetto</em></h2>
-        <p>Tenho <strong>31 anos</strong>, moro em Valinhos, interior de SP, sou mãe de duas meninas e de três gatinhas.</p>
+        <p>Tenho , moro em Valinhos, interior de SP, sou mãe de duas meninas e de três gatinhas.</p>
         <p>Sempre amei compartilhar resenhas de produtos que fazem a diferença no meu dia a dia e foi assim que me apaixonei por esse universo.</p>
-        <p>Faz quase um ano que comecei no UGC e, nesse período, <strong>mais de 80 marcas</strong> já confiaram no meu trabalho.</p>
-        <p>Meus conteúdos refletem muito do que vivo hoje. Em <strong>beleza e autocuidado</strong>, compartilho minha rotina com cabelos com progressiva e luzes, cuidados com quebra e queda, além de produtos para pele e corpo. Também falo sobre minha jornada após <strong>perder 23 kg</strong> e sobre me reencontrar com a moda, vivendo uma fase em que finalmente eu escolho as roupas que quero usar, e não o contrário.</p>
-        <p>Também compartilho conteúdos sobre <strong>maternidade, rotina fitness, casa, organização, achadinhos</strong> e produtos que facilitam a rotina de uma dona de casa, sempre trazendo situações e experiências que fazem parte da minha vida.</p>
-        <p>Sou detalhista e comprometida em entregar conteúdos que despertam interesse e confiança, sem deixar de lado aquilo que mais gosto de colocar no meu trabalho: <strong>verdade e identificação.</strong></p>
+        <p>Faz quase um ano que comecei no UGC e, nesse período,  já confiaram no meu trabalho.</p>
+        <p>Meus conteúdos refletem muito do que vivo hoje. Em , compartilho minha rotina com cabelos com progressiva e luzes, cuidados com quebra e queda, além de produtos para pele e corpo. Também falo sobre minha jornada após <strong>perder 23 kg</strong> e sobre me reencontrar com a moda, vivendo uma fase em que finalmente eu escolho as roupas que quero usar, e não o contrário.</p>
+        <p>Também compartilho conteúdos sobre  e produtos que facilitam a rotina de uma dona de casa, sempre trazendo situações e experiências que fazem parte da minha vida.</p>
+        <p>Sou detalhista e comprometida em entregar conteúdos que despertam interesse e confiança, sem deixar de lado aquilo que mais gosto de colocar no meu trabalho: </p>
       </div>
     </div>
   </section>
@@ -664,6 +694,36 @@
         alt="Mari Bonetto sorrindo ao lado de caixas de produtos, cercada por seis feedbacks de marcas com cinco estrelas: Fernanda da Open English, Nicoli da Publi Americanas, Thaina da Nivea Potinhos, Nath da Midas Time, Nat do Mercado Livre e Julia do Marketing Omo">
       <!-- Texto dos feedbacks para leitores de tela (não aparece na tela) -->
       <ul class="sr-only" id="fb-esq"></ul><ul class="sr-only" id="fb-dir"></ul>
+    </div>
+  </section>
+
+  <!-- ================= HORA DE CRIAR ================= -->
+  <section class="criar-secao" id="processo" aria-labelledby="titulo-criar">
+    <div class="container">
+      <h2 class="criar-titulo revelar" id="titulo-criar">Hora de <em>criar</em></h2>
+      <div class="criar-grid">
+        <div class="criar-arco revelar">
+          <div class="criar-notebook">
+            <div class="criar-tela">
+              <img src="mari-bonetto-hora-de-criar.webp" width="1448" height="1086" loading="lazy"
+                alt="Mari Bonetto sentada no chão do estúdio entre tripés de luz, segurando o celular perto do rosto e sorrindo, com câmera, notebook e microfone ao redor">
+            </div>
+            <div class="criar-base" aria-hidden="true"></div>
+          </div>
+          <ol class="criar-passos">
+            <li><span aria-hidden="true">1</span>Análise de marca</li>
+            <li><span aria-hidden="true">2</span>Briefing + conteúdo</li>
+            <li><span aria-hidden="true">3</span>Gravação e edição</li>
+            <li><span aria-hidden="true">4</span>Acompanhamento</li>
+          </ol>
+        </div>
+        <div class="criar-baloes revelar">
+          <p class="criar-balao">O primeiro passo é o estudo da marca para entender as maiores necessidades e dores. Assim como a compreensão do público-alvo para conteúdos mais estratégicos.</p>
+          <p class="criar-balao">Ideias e roteiros dos conteúdos que serão criados para a marca, desenvolvidos pela creator e enviados para a marca anteriormente.</p>
+          <p class="criar-balao">Momento de gravação e edição em alta qualidade para a marca, além da entrega e pós-venda. Prazo de 7 dias úteis para entrega após o recebimento.</p>
+          <div class="criar-acao"><a class="btn btn-cafe" id="criar-whats" target="_blank" rel="noopener">Contate-me</a></div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -847,11 +907,11 @@ const caseDestaque = {
   logo: "logos/pantene.png",                                       // LOGO DA MARCA
   resultado: "+100 mil",                                           // VISUALIZAÇÕES
   notas: [
-    "O vídeo começou com uma cena impossível de ignorar: <strong>um tufo de cabelo nas mãos</strong>, enquanto a frase “<strong>Eu quase fiquei careca</strong>” reforça o impacto da cena.",
+    "O vídeo começou com uma cena impossível de ignorar: , enquanto a frase “<strong>Eu quase fiquei careca</strong>” reforça o impacto da cena.",
     "A imagem, combinada a uma <em>dor comum</em> para quem sofre com queda e quebra, <em>despertou curiosidade</em> e <em>identificação logo nos primeiros segundos</em>.",
     "A estratégia foi transformar uma situação cotidiana em um gancho visual forte, conduzindo a audiência para a história e para a solução apresentada pela marca.",
-    "<strong>O resultado</strong>: mais de <strong>100 mil visualizações</strong>, além de alto engajamento e comentários de pessoas que se identificaram com a situação.",
-    "E o resultado para o meu trabalho foi além das métricas: depois desse conteúdo, fui <strong>recontratada pela Pantene em mais de 4 campanhas</strong>."
+    ": mais de <strong>100 mil visualizações</strong>, além de alto engajamento e comentários de pessoas que se identificaram com a situação.",
+    "E o resultado para o meu trabalho foi além das métricas: depois desse conteúdo, fui ."
   ]
 };
 
@@ -1193,6 +1253,7 @@ const linkEmail = `mailto:${CONTATO.email}`;
 const linkInsta = `https://www.instagram.com/${CONTATO.instagram}/`;
 const linkTiktok = `https://www.tiktok.com/@${CONTATO.tiktok}`;
 $("#link-whats").href = linkWhats;
+$("#criar-whats").href = linkWhats;
 // Os links dos ícones da capa estão direto no HTML da capa
 $("#texto-whats").textContent = CONTATO.whatsappTexto;
 $("#link-email").href = linkEmail;
