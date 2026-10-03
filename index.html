@@ -1274,11 +1274,24 @@ async function enviarDados(dados) {
   if (dados.orcamento) corpo["Orçamento estimado"] = dados.orcamento;
   if (dados.mensagem) corpo["Projeto"] = dados.mensagem;
   if (dados.tipo === "midia-kit") corpo["Pedido"] = "Quer receber o mídia kit completo";
+  // Plano B: se o envio automático falhar, abre o e-mail da marca já preenchido para a Mari,
+  // assim a mensagem nunca se perde.
+  const abrirEmailPreenchido = () => {
+    const texto = Object.entries(corpo).filter(([k]) => !k.startsWith("_")).map(([k, v]) => `${k}: ${v}`).join("\n");
+    window.location.href = `mailto:${CONTATO.email}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(texto)}`;
+  };
+  if (location.protocol === "file:") { abrirEmailPreenchido(); return "email"; }
   try {
     const resp = await fetch(ENDERECO_FORMULARIO, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(corpo) });
     const json = await resp.json().catch(() => ({}));
-    return resp.ok && String(json.success) !== "false";
-  } catch (e) { return false; }
+    console.info("FormSubmit:", resp.status, json);
+    if (resp.ok && String(json.success) !== "false") return true;
+    // Antes da ativação o FormSubmit responde pedindo para ativar o formulário (e manda o e-mail de ativação)
+    abrirEmailPreenchido(); return "email";
+  } catch (e) {
+    console.warn("FormSubmit falhou:", e);
+    abrirEmailPreenchido(); return "email";
+  }
 }
 $("#form-contato").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -1303,7 +1316,8 @@ $("#form-contato").addEventListener("submit", async (e) => {
   f.hidden = true;
   const ok = $("#confirmacao");
   ok.hidden = false;
-  ok.querySelector("h3").textContent = `Mensagem recebida, ${nome.split(" ")[0]}!`;
+  ok.querySelector("h3").textContent = enviado === "email" ? `Quase lá, ${nome.split(" ")[0]}!` : `Mensagem recebida, ${nome.split(" ")[0]}!`;
+  if (enviado === "email") ok.querySelector("p").textContent = "Abri o seu e-mail com a mensagem já pronta para mim. É só clicar em enviar que eu respondo em até 24h úteis.";
   ok.focus();
 });
 
