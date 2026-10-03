@@ -161,7 +161,7 @@
   .faixa-trilho{display:flex;width:max-content;will-change:transform}
   .faixa-trilho ul{display:flex;gap:30px;list-style:none;margin:0;padding:6px 15px}
   .selo{position:relative;flex:0 0 auto;width:118px;height:118px}
-  .selo img{width:100%;height:100%;object-fit:contain}
+  .selo img{width:100%;height:100%;object-fit:contain;border-radius:50%}
   .verificado{position:absolute;right:4px;bottom:4px;width:30px;height:30px}
 
   /* =========================================================
@@ -188,6 +188,10 @@
   /* Capa automática (miniatura do próprio vídeo) */
   .video-midia .capa-img{transition:transform .5s ease}
   .video-card:hover .capa-img{transform:scale(1.03)}
+  /* Logo da marca numa bolinha no topo do card, com selo de verificado */
+  .video-logo{position:absolute;top:12px;left:12px;z-index:3;width:50px;height:50px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.22);pointer-events:none}
+  .video-logo img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+  .video-logo .verificado{position:absolute;width:18px;height:18px;right:-3px;bottom:-2px}
   /* Nome da marca no topo, em etiqueta */
   .video-marca{position:absolute;top:12px;left:12px;z-index:3;padding:6px 12px;border-radius:999px;background:rgba(255,253,249,.92);color:var(--texto);font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;line-height:1;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.12)}
   /* Escurecido suave embaixo para o texto aparecer */
@@ -876,7 +880,8 @@ const destaques = [
   {
     link: "https://www.youtube.com/shorts/vIAAHLv0V18",           // LINK DO VÍDEO
     capa: "",                                                      // CAPA DO VÍDEO (ex.: "capas/video-01.jpg"). Vazio = usa a miniatura do YouTube
-    marca: "Unicesumar",                                           // NOME DA MARCA (etiqueta no topo)
+    marca: "Unicesumar",                                           // NOME DA MARCA (aparece em etiqueta quando não tem logo)
+    logo: "",                                                      // LOGO DA MARCA NA BOLINHA (ex.: "logos/parceiros/natura.webp")
     titulo: "Unicesumar",
     categoria: "Categoria",
     resultado: "+5,5 mi"                                          // VISUALIZAÇÕES
@@ -885,6 +890,7 @@ const destaques = [
     link: "https://youtu.be/x3cTwB7OKOY",                          // LINK DO VÍDEO
     capa: "",                                                      // CAPA DO VÍDEO
     marca: "",                                                     // TROCAR: NOME DA MARCA
+    logo: "",                                                      // LOGO DA MARCA NA BOLINHA
     titulo: "",
     categoria: "Categoria",
     resultado: "+470k"                                            // VISUALIZAÇÕES
@@ -893,6 +899,7 @@ const destaques = [
     link: "https://youtube.com/shorts/MFT4boPq418?feature=share",  // LINK DO VÍDEO
     capa: "",                                                      // CAPA DO VÍDEO
     marca: "Piccadilly",                                           // NOME DA MARCA
+    logo: "logos/parceiros/piccadilly.webp",                       // LOGO DA MARCA NA BOLINHA
     titulo: "Piccadilly",
     categoria: "Categoria",
     resultado: "+55k"                                             // VISUALIZAÇÕES
@@ -901,6 +908,7 @@ const destaques = [
     link: "",                                                      // TROCAR: LINK DO VÍDEO 04
     capa: "",                                                      // CAPA DO VÍDEO
     marca: "",                                                     // NOME DA MARCA
+    logo: "",                                                      // LOGO DA MARCA NA BOLINHA
     titulo: "Vídeo 04",
     categoria: "",
     resultado: ""                                                  // TROCAR: VISUALIZAÇÕES
@@ -909,6 +917,7 @@ const destaques = [
     link: "",                                                      // TROCAR: LINK DO VÍDEO 05
     capa: "",                                                      // CAPA DO VÍDEO
     marca: "",                                                     // NOME DA MARCA
+    logo: "",                                                      // LOGO DA MARCA NA BOLINHA
     titulo: "Vídeo 05",
     categoria: "",
     resultado: ""                                                  // TROCAR: VISUALIZAÇÕES
@@ -924,6 +933,7 @@ const caseDestaque = {
   link: "",                                                        // TROCAR: LINK DO VÍDEO DO CASE PANTENE
   capa: "",                                                        // CAPA DO VÍDEO
   marca: "Pantene",                                                // NOME DA MARCA
+  logo: "logos/parceiros/pantene.webp",                            // LOGO DA MARCA NA BOLINHA
   resultado: "+100 mil",                                           // VISUALIZAÇÕES
   notas: [
     "O vídeo começou com uma cena impossível de ignorar: <strong>um tufo de cabelo nas mãos</strong>, enquanto a frase “<strong>Eu quase fiquei careca</strong>” reforça o impacto da cena.",
@@ -1127,7 +1137,10 @@ function cardVideo(d, chave) {
     const [primeira, ...resto] = miniaturas(id);
     capa = `<div class="vazio-img" aria-hidden="true"></div><img class="capa-img auto" src="${primeira}" data-lista='${JSON.stringify(resto)}' alt="" loading="lazy">`;
   } else capa = `<div class="vazio-img" aria-hidden="true"><span>adicione o vídeo</span></div>`;
-  const marca = d.marca ? `<span class="video-marca">${escapar(d.marca)}</span>` : "";
+  // com logo: bolinha com o logo; sem logo: etiqueta com o nome da marca
+  const marca = d.logo
+    ? `<span class="video-logo"><img src="${escapar(d.logo)}" alt="" loading="lazy">${seloSVG}</span>`
+    : d.marca ? `<span class="video-marca">${escapar(d.marca)}</span>` : "";
   const nome = d.titulo || d.marca || "vídeo";
   const play = id
     ? `<button class="play" type="button" aria-label="Assistir ${escapar(nome)} aqui no site"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></button>`
