@@ -110,8 +110,6 @@
   .capa-menu{display:flex;gap:30px;list-style:none;margin:0;padding:0}
   .capa-menu a{white-space:nowrap;font-size:.76rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:#3d2b20;text-decoration:none;padding:6px 0;border-bottom:1.5px solid transparent;transition:border-color .2s}
   .capa-menu a:hover,.capa-menu a[aria-current]{border-bottom-color:var(--cafe)}
-  .capa-cta{display:inline-flex;align-items:center;gap:10px;padding:14px 26px;border-radius:999px;background:#6b3f2a;color:#fff;font-size:.8rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;white-space:nowrap;transition:background .2s,transform .2s}
-  .capa-cta:hover{background:#56301f;transform:translateY(-2px)}
   .capa-foto{position:absolute;z-index:1;bottom:0;left:48%;height:calc(100% - 70px);width:auto;max-width:56%;object-fit:contain;object-position:bottom}
   .capa-texto{position:relative;z-index:2;max-width:1340px;margin:0 auto;padding:clamp(40px,7vw,96px) 24px 40px}
   .capa-texto > *{max-width:560px}
@@ -435,7 +433,6 @@
     .capa-menu{gap:16px}
     .capa-menu a{font-size:.66rem;letter-spacing:.08em}
     .capa-topo .capa-selo{display:none}
-    .capa-cta{padding:12px 18px;font-size:.7rem}
     .capa-foto{left:44%;max-width:58%}
     .servicos-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     .metricas{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -471,7 +468,6 @@
     .sobre-foto{border-radius:24px}
     .capa-topo{padding:16px 14px 0;flex-wrap:wrap;justify-content:center;gap:10px}
     .capa-selo{padding:7px 12px;font-size:.6rem;letter-spacing:.08em}
-    .capa-cta{padding:10px 14px;font-size:.66rem;letter-spacing:.06em}
     .capa-nome{font-size:clamp(3.4rem,17vw,4.6rem)}
     .capa-frase{font-size:1.45rem}
     .capa-sub{font-size:.98rem}
@@ -573,7 +569,7 @@
   <!-- ================= 1. CAPA ================= -->
   <section class="capa" id="inicio" aria-labelledby="titulo-capa">
    <div class="capa-quadro">
-    <!-- Topo da capa: selo, menu e botão -->
+    <!-- Topo da capa: selo e menu -->
     <div class="capa-topo">
       <span class="capa-selo">UGC Creator · Valinhos/SP</span>
       <nav aria-label="Seções do portfólio">
@@ -587,7 +583,6 @@
           <li><a href="#contato">Contato</a></li>
         </ul>
       </nav>
-      <a class="capa-cta" href="#contato">Vamos conversar <span aria-hidden="true">→</span></a>
     </div>
     <!-- FOTO DA CAPA: PNG recortado com IA, fundo transparente. Para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
     <img class="capa-foto" src="mari-bonetto-capa.png" alt="Mari Bonetto sorrindo, de cabelo longo ondulado e blusa de tricô bege" width="869" height="951" fetchpriority="high">
