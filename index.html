@@ -282,7 +282,7 @@
   .fotos-titulo{margin:0 0 18px}
   /* Duas fileiras de fotos em pé, todas do mesmo tamanho, com os produtos à vista */
   .fotos-mural{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;list-style:none;margin:0;padding:0}
-  .fotos-mural li{flex:0 0 calc((100% - 72px) / 7);aspect-ratio:2/3;border-radius:14px;overflow:hidden;background:#e9dccb;box-shadow:var(--sombra)}
+  .fotos-mural li{flex:0 0 calc((100% - 84px) / 8);aspect-ratio:2/3;border-radius:14px;overflow:hidden;background:#e9dccb;box-shadow:var(--sombra)}
   .fotos-mural img{width:100%;height:100%;object-fit:cover;object-position:center 55%;display:block;transition:transform .4s ease}
   .fotos-mural li:hover img{transform:scale(1.04)}
   @media (max-width:620px){
@@ -1434,7 +1434,7 @@ document.querySelectorAll(".video-midia").forEach((m) => { if (idDoYoutube(dados
 
 // ---------- Mural de fotos ----------
 // Para trocar uma foto: salve o arquivo na pasta "fotos" e coloque o caminho em "src".
-// Duas fileiras de fotos em pé (7 em cima e o resto embaixo), na ordem da lista.
+// Duas fileiras de fotos em pé (8 em cima e o resto embaixo), na ordem da lista.
 // posicao (opcional): qual parte da foto fica visível, ex.: "center 80%" (mais para baixo) ou "center 20%" (mais para cima)
 const fotos = [
   { src: "fotos/foto-01.webp", alt: "Mari Bonetto sorrindo e segurando a caixa de presente Eudora Siàge" },
@@ -1449,7 +1449,9 @@ const fotos = [
   { src: "fotos/foto-05.webp", alt: "Mari Bonetto segurando a linha Elseve Bond Repair" },
   { src: "fotos/foto-06.webp", alt: "Mari Bonetto sorrindo com dois hidratantes Natura Tododia", posicao: "center 30%" },
   { src: "fotos/foto-10.jpg", alt: "Mari Bonetto no sofá com as duas filhas usando óculos de sol", posicao: "center 90%" },
-  { src: "fotos/foto-13.jpg", alt: "Mari Bonetto no sofá mostrando chocolates Cacau Show" },
+  { src: "fotos/foto-13.jpg", alt: "Mari Bonetto no sofá mostrando chocolates Cacau Show" },,
+  { src: "fotos/foto-14.webp", alt: "Mari Bonetto sorrindo atrás de uma air fryer Philco" },
+  { src: "fotos/foto-15.webp", alt: "Mari Bonetto de pijama na cama ao lado de um pacote da Shein", posicao: "center 80%" }
 ];
 $("#fotos-mural").innerHTML = fotos.filter((f) => f.src).map((f) =>
   `<li><img src="${escapar(f.src)}" alt="${escapar(f.alt || "Mari Bonetto com produto de marca parceira")}" loading="lazy"${f.posicao ? ` style="object-position:${escapar(f.posicao)}"` : ""}></li>`).join("");
