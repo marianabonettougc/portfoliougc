@@ -91,7 +91,8 @@
   .bf-selo{background:#2e211a;color:#f6d38a;font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:5px 11px;border-radius:999px}
   .bf-dias{font-weight:600;font-size:1.05rem}
   .bf-sep{opacity:.5}
-  .bf-texto{color:#4a3424}
+  .bf-texto{color:#4a3424;transition:opacity .4s ease}
+  .bf-texto.trocando{opacity:0}
   .bf-link{margin-left:14px;font-weight:600;font-size:.9rem;color:#2e211a;text-decoration:none;white-space:nowrap}
   .bf-link:hover{text-decoration:underline}
 
@@ -430,7 +431,9 @@
     .capa-texto{padding:28px 16px 14px}
     .tarja-bf{font-size:.85rem;gap:6px 10px;padding:10px 12px}
     .bf-dias{font-size:.92rem}
-    .bf-sep,.bf-texto{display:none}
+    .bf-sep{display:none}
+    .bf-texto{flex-basis:100%;order:3;font-size:.85rem}
+    .bf-link{order:4}
     .bf-link{margin-left:0}
     .capa-nome{font-size:clamp(3rem,15vw,4.2rem)}
     .sobre-secao{padding:0 10px}
@@ -515,7 +518,7 @@
   <span class="bf-selo">Black Friday</span>
   <span class="bf-dias" id="bf-dias">Faltam dias pra Black Friday</span>
   <span class="bf-sep" aria-hidden="true">·</span>
-  <span class="bf-texto">vídeo de e-commerce que vende no dia</span>
+  <span class="bf-texto" id="bf-texto" aria-live="polite">roteiros validados para performance</span>
   <a class="bf-link" href="#contato">reservar agenda <span aria-hidden="true">⟶</span></a>
 </div>
 
@@ -1237,6 +1240,22 @@ $("#redes").innerHTML = [
   }
   atualizar();
   setInterval(atualizar, 60 * 60 * 1000); // confere de hora em hora, para virar o dia sozinho
+
+  // Frases que ficam trocando na tarja (edite aqui)
+  const frasesBF = [
+    "roteiros validados para performance",
+    "poucas vagas para gravar em novembro",
+    "reserve a sua agenda de novembro",
+    "criativos de tráfego prontos antes do pico"
+  ];
+  const texto = $("#bf-texto");
+  let atual = 0;
+  setInterval(() => {
+    atual = (atual + 1) % frasesBF.length;
+    if (reduzMovimento) { texto.textContent = frasesBF[atual]; return; }
+    texto.classList.add("trocando");
+    setTimeout(() => { texto.textContent = frasesBF[atual]; texto.classList.remove("trocando"); }, 400);
+  }, 3500);
 })();
 
 // ---------- Menu ----------
