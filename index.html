@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#f8f8e8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Serif+Display:ital@0;1&family=Oswald:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Serif+Display:ital@0;1&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
      IDENTIDADE: CARTÃO DE CAFETERIA PREMIUM
@@ -45,9 +45,9 @@
   img{max-width:100%;height:auto;display:block}
   a{color:inherit}
   h1,h2,h3,h4{margin:0;line-height:1.12;font-weight:600;color:var(--texto)}
-  /* Títulos de seção em serifa display apertada; subtítulos em Oswald, como no print de referência */
+  /* Fontes do site (no máximo 3): Anton só no nome da capa, DM Serif Display nos títulos e Poppins no resto */
   h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400;letter-spacing:-.045em;color:var(--cafe-2)}
-  h3,h4{font-family:"Oswald","Poppins",sans-serif;font-weight:500;letter-spacing:.01em}
+  h3,h4{font-family:"Poppins",sans-serif;font-weight:500;letter-spacing:.01em}
   p{margin:0}
   button,input,textarea{font:inherit;color:inherit}
   :focus-visible{outline:3px solid var(--vermelho);outline-offset:3px;border-radius:10px}
@@ -79,7 +79,7 @@
   .topo.rolou{background:rgba(255,255,255,.94);border-bottom-color:var(--tracejado);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
   .topo .container{display:flex;align-items:center;justify-content:space-between;gap:16px}
   .logo-nome{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:1.4rem;text-decoration:none;color:var(--cafe);letter-spacing:-.2px}
-  .logo-nome span{font-family:"Oswald",sans-serif;font-weight:500;text-transform:uppercase;letter-spacing:.12em;color:var(--vermelho);font-size:.8rem;margin-left:6px}
+  .logo-nome span{font-family:"Poppins",sans-serif;font-weight:500;text-transform:uppercase;letter-spacing:.12em;color:var(--vermelho);font-size:.8rem;margin-left:6px}
   .menu ul{display:flex;gap:2px;list-style:none;margin:0;padding:0}
   .menu a{display:block;padding:8px 14px;border-radius:999px;text-decoration:none;font-weight:600;font-size:.97rem;transition:background .2s}
   .menu a:hover{background:rgba(112,85,72,.1)}
@@ -96,15 +96,15 @@
   /* =========================================================
      TARJA BLACK FRIDAY
      ========================================================= */
-  .tarja-bf{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 16px;padding:12px 16px;background:#705548;color:#fff;font-size:.98rem;text-align:center}
+  .tarja-bf{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 16px;padding:12px 16px;background:#f6d070;color:var(--marrom-escuro);font-size:.98rem;text-align:center}
   .tarja-bf[hidden]{display:none}
-  .bf-selo{background:#f8f0e8;color:#705548;font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:5px 11px;border-radius:999px}
+  .bf-selo{background:var(--marrom-escuro);color:#f6d070;font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:5px 11px;border-radius:999px}
   .bf-dias{font-weight:600;font-size:1.05rem}
   .bf-sep{opacity:.5}
-  .bf-texto{display:inline-block;color:#f8f0e8;transition:opacity .35s ease,transform .35s ease}
+  .bf-texto{display:inline-block;color:var(--marrom-escuro);transition:opacity .35s ease,transform .35s ease}
   .bf-texto.trocando{opacity:0;transform:translateY(-10px)}
   .bf-texto.entrando{opacity:0;transform:translateY(10px);transition:none}
-  .bf-link{margin-left:14px;font-weight:600;font-size:.9rem;color:#fff;text-decoration:none;white-space:nowrap}
+  .bf-link{margin-left:14px;font-weight:600;font-size:.9rem;color:var(--marrom-escuro);text-decoration:none;white-space:nowrap}
   .bf-link:hover{text-decoration:underline}
 
   /* =========================================================
@@ -126,7 +126,7 @@
   .capa-texto{position:relative;z-index:2;max-width:1340px;margin:0 auto;padding:clamp(40px,7vw,96px) 24px 40px}
   .capa-texto > *{max-width:560px}
   /* Nome na fonte alta e condensada, em dourado */
-  .capa-nome{font-family:"Anton","Oswald",Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:clamp(4rem,7.6vw,7.4rem);line-height:.9;letter-spacing:.01em;color:#a87860;margin:0}
+  .capa-nome{font-family:"Anton",Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:clamp(4rem,7.6vw,7.4rem);line-height:.9;letter-spacing:.01em;color:#a87860;margin:0}
   .capa-nome span{display:block}
   .capa-frase{margin:30px 0 0;font-family:"Poppins",sans-serif;font-weight:400;font-size:clamp(1.6rem,2.6vw,2.4rem);line-height:1.15;color:#705548}
   .capa-frase em{display:block;font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:1.25em;line-height:1.05;color:#705548}
@@ -214,7 +214,7 @@
   /* Case em destaque */
   .case-destaque{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:28px;align-items:start;margin-top:30px}
   .case-video{min-width:0}
-  .case-titulo{font-family:"Oswald",sans-serif;font-weight:600;font-size:clamp(2.2rem,4.2vw,3.4rem);line-height:1;letter-spacing:0;color:#a87860;margin:0 0 18px}
+  .case-titulo{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(2.2rem,4.2vw,3.4rem);line-height:1;letter-spacing:-.04em;color:#a87860;margin:0 0 18px}
   .nota{max-width:470px;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(112,85,72,.16);padding:16px 22px 20px}
   .nota-topo{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:.9rem;color:var(--texto);padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid #f8f0e8}
   .nota-topo span:last-child{font-size:1.1rem;color:var(--texto-suave)}
@@ -293,7 +293,7 @@
   .servicos-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;list-style:none;margin:0;padding:0}
   .servico{display:flex;gap:14px;align-items:flex-start;padding:18px 18px 20px;transition:transform .2s ease,box-shadow .2s ease}
   .servico:hover{transform:translateY(-3px);box-shadow:var(--sombra-hover)}
-  .servico-num{font-family:"Oswald",sans-serif;flex-shrink:0;width:50px;height:50px;border-radius:50%;border:2px dashed var(--vermelho);color:var(--vermelho);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem}
+  .servico-num{font-family:"Poppins",sans-serif;flex-shrink:0;width:50px;height:50px;border-radius:50%;border:2px dashed var(--vermelho);color:var(--vermelho);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem}
   .servico h3{font-size:1.1rem;margin-bottom:4px}
   .servico p{font-size:.93rem;color:var(--texto-suave)}
 
@@ -302,12 +302,12 @@
      ========================================================= */
   .metricas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;list-style:none;margin:0 0 14px;padding:0}
   .metrica{text-align:center;padding:20px 12px}
-  .metrica strong{display:block;font-family:"Oswald",sans-serif;font-size:clamp(2rem,4vw,2.6rem);font-weight:600;color:var(--cafe);line-height:1}
+  .metrica strong{display:block;font-family:"Poppins",sans-serif;font-size:clamp(2rem,4vw,2.6rem);font-weight:600;color:var(--cafe);line-height:1}
   .metrica.placeholder strong{font-size:clamp(1.2rem,2.4vw,1.5rem);color:var(--vermelho);padding:8px 0}
   .metrica span{display:block;margin-top:6px;font-weight:600;color:var(--texto-suave);font-size:.92rem}
   .resultados{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;list-style:none;margin:0 0 14px;padding:0}
   .resultado{padding:20px;background:var(--cafe);color:var(--papel);border-color:var(--tracejado-claro)}
-  .resultado strong{display:block;font-family:"Oswald",sans-serif;font-size:1.5rem;font-weight:600;letter-spacing:.5px}
+  .resultado strong{display:block;font-family:"Poppins",sans-serif;font-size:1.5rem;font-weight:600;letter-spacing:.5px}
   .resultado p{color:rgba(255,255,255,.85);font-size:.93rem;margin-top:4px}
   .depoimentos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;list-style:none;margin:0;padding:0}
   .depoimento{padding:20px;position:relative}
@@ -406,7 +406,7 @@
   .criar-titulo{font-size:clamp(2.4rem,5vw,3.8rem);margin:0 0 34px}
   .criar-titulo em{font-style:italic;color:#a87058}
   .criar-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(28px,5vw,70px);align-items:center}
-  .criar-arco{position:relative;max-width:400px;margin:0 auto;width:100%;background:var(--cafe-2);border-radius:200px 200px var(--raio) var(--raio);padding:44px 0 22px;box-shadow:var(--sombra)}
+  .criar-arco{position:relative;max-width:400px;margin:0 auto;width:100%;background:var(--marrom-medio);border-radius:200px 200px var(--raio) var(--raio);padding:44px 0 22px;box-shadow:var(--sombra)}
   .criar-notebook{width:calc(100% + 40px);margin:0 -20px}
   .criar-tela{margin:0 34px;background:var(--papel);border:2px solid #f8f0e8;border-bottom:0;border-radius:12px 12px 0 0;padding:10px}
   .criar-tela img{width:100%;aspect-ratio:1448/1086;object-fit:cover;border-radius:3px}
@@ -416,8 +416,8 @@
   .criar-passos li{display:flex;align-items:center;gap:18px;padding:9px 0;color:var(--papel);font-size:clamp(1.05rem,1.5vw,1.3rem)}
   .criar-passos span{font-family:"Poppins",sans-serif;font-weight:300;font-size:2.4rem;line-height:1;width:34px;text-align:center}
   .criar-baloes{display:flex;flex-direction:column;gap:38px}
-  .criar-balao{position:relative;background:var(--cafe-2);color:var(--papel);border-radius:16px;padding:20px 24px;text-align:center;font-weight:500;font-size:.95rem;line-height:1.5;box-shadow:var(--sombra)}
-  .criar-balao::after{content:"";position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);border:18px solid transparent;border-bottom:0;border-top-color:var(--cafe-2)}
+  .criar-balao{position:relative;background:var(--marrom-medio);color:var(--papel);border-radius:16px;padding:20px 24px;text-align:center;font-weight:500;font-size:.95rem;line-height:1.5;box-shadow:var(--sombra)}
+  .criar-balao::after{content:"";position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);border:18px solid transparent;border-bottom:0;border-top-color:var(--marrom-medio)}
   .criar-acao{text-align:center;margin-top:4px}
   @media (max-width:860px){
     .criar-grid{grid-template-columns:1fr}
