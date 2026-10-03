@@ -275,6 +275,21 @@
   /* =========================================================
      ALGUMAS MARCAS QUE JÁ TRABALHEI (painel marrom com grade de logos)
      ========================================================= */
+  /* =========================================================
+     MURAL DE FOTOS (mosaico com fotos de tamanhos diferentes)
+     ========================================================= */
+  section.fotos-secao{padding:30px 0 34px}
+  .fotos-mural{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:clamp(40px,4.6vw,64px);grid-auto-flow:dense;gap:12px;list-style:none;margin:0;padding:0}
+  .fotos-mural li{grid-row:span 2;border-radius:14px;overflow:hidden;background:linear-gradient(160deg,#e9dccb,#cfae93);box-shadow:var(--sombra);position:relative}
+  .fotos-mural li.alta{grid-row:span 4}
+  .fotos-mural li.larga{grid-column:span 2}
+  .fotos-mural img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
+  .fotos-mural li:hover img{transform:scale(1.04)}
+  .fotos-mural .foto-vazia{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;color:#fff;letter-spacing:.08em;text-transform:uppercase}
+  @media (max-width:620px){
+    .fotos-mural{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:46px;gap:8px}
+    .fotos-mural li{border-radius:10px}
+  }
   section.parceiros-secao{padding:8px 16px 0}
   .parceiros{position:relative;max-width:1400px;margin:0 auto;padding:30px 5% 40px;color:#fff;border-radius:0 0 140px 140px;
     background:radial-gradient(ellipse at 50% 0%,rgba(60,35,20,.25) 0%,rgba(60,35,20,0) 45%),linear-gradient(180deg,#a17862 0%,#9d745e 60%,#98705a 100%)}
@@ -716,6 +731,15 @@
       <!-- Os trabalhos vêm do array "trabalhos" no script -->
       <ul class="trabalhos-grid" id="trabalhos-grid"></ul>
       <p class="sr-only" id="aviso-filtro" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- ================= MURAL DE FOTOS ================= -->
+  <section class="fotos-secao" id="fotos" aria-labelledby="titulo-fotos">
+    <div class="container">
+      <h2 class="sr-only" id="titulo-fotos">Fotos com produtos das marcas</h2>
+      <!-- As fotos vêm do array "fotos" no script -->
+      <ul class="fotos-mural revelar" id="fotos-mural"></ul>
     </div>
   </section>
 
@@ -1408,6 +1432,35 @@ document.addEventListener("click", (e) => {
 });
 // o card inteiro é clicável
 document.querySelectorAll(".video-midia").forEach((m) => { if (idDoYoutube(dadosDoCard(m).link)) m.style.cursor = "pointer"; });
+
+// ---------- Mural de fotos ----------
+// Para trocar uma foto: salve o arquivo na pasta "fotos" e coloque o caminho em "src".
+// formato: "alta" (foto em pé, ocupa mais altura), "larga" (foto deitada, ocupa duas colunas) ou "" (foto menor)
+const fotos = [
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "larga" },
+  { src: "", alt: "", formato: "" },
+  { src: "", alt: "", formato: "" },
+  { src: "", alt: "", formato: "" },
+  { src: "", alt: "", formato: "" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" },
+  { src: "", alt: "", formato: "alta" }
+];
+$("#fotos-mural").innerHTML = fotos.map((f, i) => `<li class="${f.formato || ""}">${f.src
+  ? `<img src="${escapar(f.src)}" alt="${escapar(f.alt || "Mari Bonetto com produto de marca parceira")}" loading="lazy">`
+  : `<span class="foto-vazia" aria-hidden="true">foto ${String(i + 1).padStart(2, "0")}</span>`}</li>`).join("");
 
 // ---------- Trabalhos por nicho com filtro ----------
 const degrades = [
