@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#f6efe6">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Mrs+Saint+Delafield&family=DM+Serif+Display:ital@0;1&family=Oswald:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Oswald:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
      IDENTIDADE: CARTÃO DE CAFETERIA PREMIUM
@@ -101,21 +101,30 @@
      1. CAPA
      ========================================================= */
   .capa{padding:0;background:var(--creme)}
-  /* Capa de fora a fora com fundo na paleta e foto recortada (sem fundo) */
-  .capa-quadro{position:relative;width:100%;height:clamp(440px,min(46vw,82vh),660px);overflow:hidden;background:linear-gradient(180deg,#f8f2ea 0%,#efe3d3 100%);display:flex;align-items:center}
-  .capa-foto{position:absolute;bottom:0;right:max(20px,calc((100% - var(--largura)) / 2 + 20px));height:88%;width:auto;max-width:52%;object-fit:contain;object-position:bottom right}
-  .capa-texto{position:relative;z-index:2;width:100%;max-width:var(--largura);margin:0 auto;padding:40px 20px 0;text-align:left}
-  /* Fonte no estilo da referência Juliana Moura: letras altas e condensadas em dourado, com "Portfólio" manuscrito por cima */
-  .capa-nome{font-family:"Anton","Oswald",Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:clamp(4rem,8.6vw,8.2rem);line-height:.9;letter-spacing:.01em;color:#b89568;margin:0}
+  /* Capa no estilo da referência: menu no topo, nome em serifa, frase, ícones e foto recortada à direita */
+  .capa-quadro{position:relative;width:100%;min-height:clamp(560px,min(52vw,86vh),760px);overflow:hidden;
+    background:radial-gradient(ellipse at 72% 45%,#f3e6d8 0%,rgba(243,230,216,0) 55%),linear-gradient(180deg,#efe3d5 0%,#e9dccb 100%);padding-bottom:70px}
+  .capa-topo{position:relative;z-index:3;max-width:1340px;margin:0 auto;padding:26px 24px 0;display:flex;align-items:center;justify-content:space-between;gap:20px}
+  .capa-selo{display:inline-flex;align-items:center;gap:10px;padding:9px 20px;border:1px solid rgba(107,74,53,.45);border-radius:999px;font-size:.74rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#3d2b20;white-space:nowrap}
+  .capa-selo::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--cafe)}
+  .capa-menu{display:flex;gap:30px;list-style:none;margin:0;padding:0}
+  .capa-menu a{white-space:nowrap;font-size:.76rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:#3d2b20;text-decoration:none;padding:6px 0;border-bottom:1.5px solid transparent;transition:border-color .2s}
+  .capa-menu a:hover,.capa-menu a[aria-current]{border-bottom-color:var(--cafe)}
+  .capa-cta{display:inline-flex;align-items:center;gap:10px;padding:14px 26px;border-radius:999px;background:#6b3f2a;color:#fff;font-size:.8rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;white-space:nowrap;transition:background .2s,transform .2s}
+  .capa-cta:hover{background:#56301f;transform:translateY(-2px)}
+  .capa-foto{position:absolute;z-index:1;bottom:0;left:48%;height:calc(100% - 70px);width:auto;max-width:56%;object-fit:contain;object-position:bottom}
+  .capa-texto{position:relative;z-index:2;max-width:1340px;margin:0 auto;padding:clamp(40px,7vw,96px) 24px 40px}
+  .capa-texto > *{max-width:560px}
+  .capa-nome{font-family:"DM Serif Display",Georgia,serif;font-weight:400;text-transform:uppercase;font-size:clamp(3.4rem,6.4vw,6rem);line-height:.86;letter-spacing:-.02em;color:#3d2416;margin:0}
   .capa-nome span{display:block}
-  .capa-titulo{display:flex;align-items:baseline;gap:.5em;margin:-.55em 0 0 22%;position:relative;transform:rotate(-4deg);transform-origin:left}
-  .capa-titulo .script{font-family:"Mrs Saint Delafield",cursive;font-size:clamp(3.4rem,6.4vw,6rem);line-height:1;color:#2e211a}
-  .capa-titulo .ugc{font-family:"Poppins",sans-serif;font-weight:500;font-size:clamp(.9rem,1.2vw,1.05rem);letter-spacing:.38em;color:#2e211a;transform:rotate(4deg)}
-  .capa-redes{margin-top:26px}
-  .capa-redes{display:flex;align-items:center;justify-content:flex-start;gap:10px;margin:20px 0 0;padding:0;list-style:none}
-  .rede-btn{width:40px;height:40px;border-radius:50%;background:var(--cafe);display:flex;align-items:center;justify-content:center;transition:transform .25s,background .25s}
+  .capa-nome span:first-child{color:#8a4e33}
+  .capa-frase{margin:30px 0 0;font-family:"Poppins",sans-serif;font-weight:400;font-size:clamp(1.6rem,2.6vw,2.4rem);line-height:1.15;color:#2e211a}
+  .capa-frase em{display:block;font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:1.25em;line-height:1.05;color:#6b3f2a}
+  .capa-sub{margin:16px 0 0;font-size:clamp(1rem,1.3vw,1.18rem);line-height:1.5;color:#2e211a;max-width:480px}
+  .capa-redes{display:flex;align-items:center;gap:12px;margin:30px 0 0;padding:0;list-style:none}
+  .rede-btn{width:50px;height:50px;border-radius:50%;background:#6b3f2a;display:flex;align-items:center;justify-content:center;transition:transform .25s,background .25s}
   .rede-btn:hover{transform:translateY(-2px);background:var(--vermelho)}
-  .rede-btn svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .rede-btn svg{width:23px;height:23px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
   /* Espaços de imagem ainda sem foto */
   .vazio-img{display:flex;align-items:flex-end;justify-content:center;background:linear-gradient(160deg,#e9dccb 0%,#d2b59c 100%)}
@@ -138,13 +147,13 @@
   .sobre-recorte{position:absolute;z-index:1;right:6%;bottom:0;height:calc(100% - 8px);width:auto;max-width:40%;object-fit:contain;object-position:bottom right}
 
   /* Faixa de números entre a capa e o Sobre mim */
-  section.numeros-faixa{padding:0}
-  .numeros-faixa{background:#f8f3ec;border-top:1px solid rgba(107,74,53,.18);border-bottom:1px solid rgba(107,74,53,.12)}
-  .numeros-faixa ul{max-width:var(--largura);margin:0 auto;padding:24px 20px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));list-style:none}
-  .numeros-faixa li{padding:4px 0 4px 8%;border-left:1px solid rgba(107,74,53,.2)}
+  section.numeros-faixa{position:relative;z-index:3;padding:0 16px;margin-top:-70px}
+  .numeros-faixa ul{max-width:1600px;margin:0 auto;padding:26px 20px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));list-style:none;
+    background:rgba(249,243,236,.94);border-radius:22px;box-shadow:0 14px 34px rgba(61,43,32,.12);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  .numeros-faixa li{padding:4px 0;text-align:center;border-left:1px solid rgba(107,74,53,.3)}
   .numeros-faixa li:first-child{border-left:0}
-  .numeros-faixa strong{display:block;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(2rem,3.4vw,2.8rem);line-height:1.05;color:var(--cafe)}
-  .numeros-faixa span{display:block;margin-top:6px;font-size:.78rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--cafe-2)}
+  .numeros-faixa strong{display:block;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(2rem,3.4vw,3rem);line-height:1.05;color:#3d2416}
+  .numeros-faixa span{display:block;margin-top:6px;font-size:.8rem;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:#3d2b20}
 
   /* Marcas rolando em faixa clara logo abaixo do Sobre mim (direita para a esquerda, sem fim) */
   /* Faixa de ponta a ponta, colada no painel marrom (passa por trás dos cantos arredondados dele) */
@@ -396,6 +405,11 @@
      RESPONSIVO
      ========================================================= */
   @media (max-width:1000px){
+    .capa-menu{gap:16px}
+    .capa-menu a{font-size:.66rem;letter-spacing:.08em}
+    .capa-topo .capa-selo{display:none}
+    .capa-cta{padding:12px 18px;font-size:.7rem}
+    .capa-foto{left:44%;max-width:58%}
     .sobre-painel{min-height:0;padding:30px 0 0;border-radius:0 0 50px 50px}
     .sobre-texto{width:100%;padding:0 32px}
     .sobre-recorte{position:relative;display:block;right:auto;height:auto;width:min(78%,420px);max-width:none;margin:0 auto}
@@ -413,6 +427,13 @@
     .parceiros{border-radius:0 0 70px 70px}
   }
   @media (max-width:860px){
+    .capa-topo nav{display:none}
+    .capa-topo .capa-selo{display:inline-flex}
+    .capa-quadro{min-height:0;padding-bottom:60px;display:flex;flex-direction:column}
+    .capa-texto{padding:34px 20px 10px;text-align:center}
+    .capa-texto > *{margin-left:auto;margin-right:auto}
+    .capa-redes{justify-content:center}
+    .capa-foto{position:relative;left:auto;order:3;height:auto;width:min(86%,460px);max-width:none;margin:10px auto 0}
     .hamburguer{display:inline-flex}
     .menu{position:absolute;top:calc(100% + 6px);left:16px;right:16px;background:var(--papel);border:1.5px dashed var(--tracejado);border-radius:var(--raio);box-shadow:var(--sombra-hover);padding:10px;display:none}
     .menu.aberto{display:block}
@@ -420,23 +441,26 @@
     .menu a{padding:12px 16px;font-size:1.05rem}
     .resultados{grid-template-columns:minmax(0,1fr)}
     .videos-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-    .capa-quadro{height:auto;flex-direction:column;align-items:stretch}
-    .capa-texto{padding:32px 20px 18px;text-align:center}
-    .capa-foto{position:relative;right:auto;order:2;width:min(80%,420px);height:auto;max-width:none;margin:8px auto 0}
-    .capa-titulo{justify-content:center;margin-left:0}
-    .capa-redes{justify-content:center}
   }
   @media (max-width:620px){
+    .capa-topo{padding:16px 14px 0;flex-wrap:wrap;justify-content:center;gap:10px}
+    .capa-selo{padding:7px 12px;font-size:.6rem;letter-spacing:.08em}
+    .capa-cta{padding:10px 14px;font-size:.66rem;letter-spacing:.06em}
+    .capa-nome{font-size:clamp(3rem,15vw,4rem)}
+    .capa-frase{font-size:1.45rem}
+    .capa-sub{font-size:.98rem}
+    .rede-btn{width:44px;height:44px}
+    section.numeros-faixa{margin-top:-50px;padding:0 10px}
+    .numeros-faixa ul{padding:18px 6px}
+    .numeros-faixa span{font-size:.56rem;letter-spacing:.08em;line-height:1.35}
     section{padding:44px 0}
     .container{padding:0 16px}
-    .capa-texto{padding:28px 16px 14px}
     .tarja-bf{font-size:.85rem;gap:6px 10px;padding:10px 12px}
     .bf-dias{font-size:.92rem}
     .bf-sep{display:none}
     .bf-texto{flex-basis:100%;order:3;font-size:.85rem}
     .bf-link{order:4}
     .bf-link{margin-left:0}
-    .capa-nome{font-size:clamp(3rem,15vw,4.2rem)}
     .sobre-secao{padding:0 10px}
     .sobre-painel{border-radius:0 0 36px 36px}
     .sobre-texto{padding:0 20px}
@@ -450,7 +474,7 @@
     .faixa-titulo::before,.faixa-titulo::after{width:18px}
     .com-linha{margin-left:14px;padding:30px 0 4px 16px}
     .numeros-faixa ul{padding:18px 12px}
-    .numeros-faixa li{padding:2px 0 2px 10px;text-align:left}
+    .numeros-faixa li{padding:2px 4px;text-align:center}
     .numeros-faixa strong{font-size:1.65rem}
     .numeros-faixa span{font-size:.58rem;letter-spacing:.1em;line-height:1.35}
     /* celular: cases viram carrossel horizontal só dentro da própria faixa */
@@ -528,11 +552,28 @@
   <!-- ================= 1. CAPA ================= -->
   <section class="capa" id="inicio" aria-labelledby="titulo-capa">
    <div class="capa-quadro">
-    <!-- FOTO DA CAPA: foto recortada, sem fundo (WebP transparente). Para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
+    <!-- Topo da capa: selo, menu e botão -->
+    <div class="capa-topo">
+      <span class="capa-selo">UGC Creator · Valinhos/SP</span>
+      <nav aria-label="Seções do portfólio">
+        <ul class="capa-menu">
+          <li><a href="#inicio" aria-current="page">Início</a></li>
+          <li><a href="#sobre">Sobre mim</a></li>
+          <li><a href="#destaques">Cases</a></li>
+          <li><a href="#servicos">Serviços</a></li>
+          <li><a href="#trabalhos">Categorias</a></li>
+          <li><a href="#marcas">Marcas</a></li>
+          <li><a href="#contato">Contato</a></li>
+        </ul>
+      </nav>
+      <a class="capa-cta" href="#contato">Vamos conversar <span aria-hidden="true">→</span></a>
+    </div>
+    <!-- FOTO DA CAPA: PNG recortado com IA, fundo transparente. Para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
     <img class="capa-foto" src="mari-bonetto-capa.png" alt="Mari Bonetto sorrindo, de cabelo longo ondulado e blusa de tricô bege" width="869" height="951" fetchpriority="high">
     <div class="capa-texto">
         <h1 class="capa-nome" id="titulo-capa"><span>Mari</span> <span>Bonetto</span></h1>
-        <p class="capa-titulo"><span class="script">Portfólio</span> <span class="ugc">UGC</span></p>
+        <p class="capa-frase">Conteúdo que aproxima <em>marcas e pessoas.</em></p>
+        <p class="capa-sub">Cada detalhe pensado para prender atenção, gerar conexão e conversão.</p>
         <!-- Os links dos ícones vêm do objeto CONTATO no script -->
         <ul class="capa-redes" aria-label="Redes sociais">
           <li><a class="rede-btn" id="capa-insta" href="https://www.instagram.com/maribonettougc/" target="_blank" rel="noopener" aria-label="Instagram UGC @maribonettougc (abre em outra aba)">
@@ -551,9 +592,9 @@
   <!-- ================= MEUS NÚMEROS (entre a capa e o Sobre mim) ================= -->
   <section class="numeros-faixa" id="numeros" aria-label="Meus números">
     <ul>
-      <li><strong>+80</strong><span>marcas trabalhadas</span></li>
+      <li><strong>+80</strong><span>marcas atendidas</span></li>
       <li><strong>+150</strong><span>vídeos entregues</span></li>
-      <li><strong>+10M</strong><span>de views</span></li>
+      <li><strong>+10M</strong><span>de views nas redes</span></li>
     </ul>
   </section>
 
@@ -632,7 +673,7 @@
   </section>
 
   <!-- ================= ALGUMAS MARCAS QUE JÁ TRABALHEI ================= -->
-  <section class="parceiros-secao" aria-labelledby="titulo-parceiros">
+  <section class="parceiros-secao" id="marcas" aria-labelledby="titulo-parceiros">
     <div class="parceiros revelar">
       <h2 id="titulo-parceiros">Algumas marcas que já trabalhei</h2>
       <!-- Os logos vêm do array "marcasGrade" no script -->
