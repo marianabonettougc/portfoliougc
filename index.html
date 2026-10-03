@@ -281,13 +281,16 @@
   section.fotos-secao{padding:30px 0 34px}
   .fotos-titulo{margin:0 0 18px}
   /* Duas fileiras de fotos em pé, todas do mesmo tamanho, com os produtos à vista */
-  .fotos-mural{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;list-style:none;margin:0;padding:0}
-  .fotos-mural li{flex:0 0 calc((100% - 84px) / 8);aspect-ratio:2/3;border-radius:14px;overflow:hidden;background:#e9dccb;box-shadow:var(--sombra)}
+  .fotos-mural{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;list-style:none;padding:0;width:min(1400px,calc(100vw - 32px));margin:0 0 0 calc((100% - min(1400px,calc(100vw - 32px))) / 2)}
+  .fotos-mural li{flex:0 0 calc((100% - 108px) / 10);aspect-ratio:2/3;border-radius:14px;overflow:hidden;background:#e9dccb;box-shadow:var(--sombra)}
+  /* foto deitada: ocupa o lugar de duas fotos em pé, com a mesma altura */
+  .fotos-mural li.deitada{flex-basis:calc((100% - 108px) / 10 * 2 + 12px);aspect-ratio:4/3}
   .fotos-mural img{width:100%;height:100%;object-fit:cover;object-position:center 55%;display:block;transition:transform .4s ease}
   .fotos-mural li:hover img{transform:scale(1.04)}
   @media (max-width:620px){
     .fotos-mural{gap:8px}
     .fotos-mural li{flex-basis:calc((100% - 16px) / 3);border-radius:10px}
+    .fotos-mural li.deitada{flex-basis:calc((100% - 16px) / 3 * 2 + 8px)}
   }
   section.parceiros-secao{padding:8px 16px 0}
   .parceiros{position:relative;max-width:1400px;margin:0 auto;padding:30px 5% 40px;color:#fff;border-radius:0 0 140px 140px;
@@ -1434,7 +1437,8 @@ document.querySelectorAll(".video-midia").forEach((m) => { if (idDoYoutube(dados
 
 // ---------- Mural de fotos ----------
 // Para trocar uma foto: salve o arquivo na pasta "fotos" e coloque o caminho em "src".
-// Duas fileiras de fotos em pé (8 em cima e o resto embaixo), na ordem da lista.
+// Duas fileiras de fotos (10 lugares por fileira), na ordem da lista.
+// formato: "deitada" para foto na horizontal (ocupa o lugar de duas fotos em pé)
 // posicao (opcional): qual parte da foto fica visível, ex.: "center 80%" (mais para baixo) ou "center 20%" (mais para cima)
 const fotos = [
   { src: "fotos/foto-01.webp", alt: "Mari Bonetto sorrindo e segurando a caixa de presente Eudora Siàge" },
@@ -1451,10 +1455,13 @@ const fotos = [
   { src: "fotos/foto-10.jpg", alt: "Mari Bonetto no sofá com as duas filhas usando óculos de sol", posicao: "center 90%" },
   { src: "fotos/foto-13.jpg", alt: "Mari Bonetto no sofá mostrando chocolates Cacau Show" },,
   { src: "fotos/foto-14.webp", alt: "Mari Bonetto sorrindo atrás de uma air fryer Philco" },
-  { src: "fotos/foto-15.webp", alt: "Mari Bonetto de pijama na cama ao lado de um pacote da Shein", posicao: "center 80%" }
+  { src: "fotos/foto-15.webp", alt: "Mari Bonetto de pijama na cama ao lado de um pacote da Shein", posicao: "center 80%" },
+  { src: "fotos/foto-16.webp", alt: "Mari Bonetto com creme Nivea Facial no rosto, segurando o pote" },
+  { src: "fotos/foto-17.webp", alt: "Mari Bonetto sentada no chão com livros e bolsas da Leiturinha", formato: "deitada" },
+  { src: "fotos/foto-18.webp", alt: "Mari Bonetto e a filha com os cremes Natu Hair Kids" }
 ];
 $("#fotos-mural").innerHTML = fotos.filter((f) => f.src).map((f) =>
-  `<li><img src="${escapar(f.src)}" alt="${escapar(f.alt || "Mari Bonetto com produto de marca parceira")}" loading="lazy"${f.posicao ? ` style="object-position:${escapar(f.posicao)}"` : ""}></li>`).join("");
+  `<li${f.formato === "deitada" ? ' class="deitada"' : ""}><img src="${escapar(f.src)}" alt="${escapar(f.alt || "Mari Bonetto com produto de marca parceira")}" loading="lazy"${f.posicao ? ` style="object-position:${escapar(f.posicao)}"` : ""}></li>`).join("");
 
 // ---------- Trabalhos por nicho com filtro ----------
 const degrades = [
