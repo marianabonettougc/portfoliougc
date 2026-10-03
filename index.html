@@ -704,7 +704,7 @@
       <div class="com-linha">
         <h2 class="cases-titulo revelar" id="titulo-destaques">Meus cases de sucesso</h2>
         <!-- Os cards vêm do array "destaques" no script -->
-        <ul class="videos-grid" id="videos-grid"></ul>
+        <ul class="videos-grid revelar" id="videos-grid"></ul>
 
         <!-- Case em destaque (dados no objeto "caseDestaque" do script) -->
         <div class="case-destaque revelar" id="case-destaque"></div>
@@ -1199,7 +1199,7 @@ function cardVideo(d, chave) {
   const info = titulo || views ? `<div class="video-info">${titulo}${views}</div>` : "";
   return `<div class="video-midia${id ? "" : " sem-video"}" data-chave="${chave}">${capa}${marca}${play}${info}</div>`;
 }
-$("#videos-grid").innerHTML = destaques.map((d, i) => `<li class="video-card revelar">${cardVideo(d, i)}</li>`).join("");
+$("#videos-grid").innerHTML = destaques.map((d, i) => `<li class="video-card">${cardVideo(d, i)}</li>`).join("");
 
 const caseEl = $("#case-destaque");
 caseEl.innerHTML = `
