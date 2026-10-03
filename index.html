@@ -121,6 +121,15 @@
   .sobre-texto strong{font-weight:600;color:#fff}
   .sobre-recorte{position:absolute;z-index:1;right:6%;bottom:0;height:calc(100% - 8px);width:auto;max-width:40%;object-fit:contain;object-position:bottom right}
 
+  /* Faixa de números entre a capa e o Sobre mim */
+  section.numeros-faixa{padding:0}
+  .numeros-faixa{background:#f8f3ec;border-top:1px solid rgba(107,74,53,.18);border-bottom:1px solid rgba(107,74,53,.12)}
+  .numeros-faixa ul{max-width:var(--largura);margin:0 auto;padding:24px 20px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));list-style:none}
+  .numeros-faixa li{padding:4px 0 4px 8%;border-left:1px solid rgba(107,74,53,.2)}
+  .numeros-faixa li:first-child{border-left:0}
+  .numeros-faixa strong{display:block;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(2rem,3.4vw,2.8rem);line-height:1.05;color:var(--cafe)}
+  .numeros-faixa span{display:block;margin-top:6px;font-size:.78rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--cafe-2)}
+
   /* Marcas rolando em faixa clara logo abaixo do Sobre mim (direita para a esquerda, sem fim) */
   /* Faixa de ponta a ponta, colada no painel marrom (passa por trás dos cantos arredondados dele) */
   .sobre-secao{position:relative;z-index:2}
@@ -334,6 +343,10 @@
     .faixa-titulo{font-size:.6rem;letter-spacing:.18em;gap:10px;margin-bottom:20px;white-space:nowrap}
     .faixa-titulo::before,.faixa-titulo::after{width:18px}
     .com-linha{margin-left:14px;padding:30px 0 4px 16px}
+    .numeros-faixa ul{padding:18px 12px}
+    .numeros-faixa li{padding:2px 0 2px 10px;text-align:left}
+    .numeros-faixa strong{font-size:1.65rem}
+    .numeros-faixa span{font-size:.58rem;letter-spacing:.1em;line-height:1.35}
     /* celular: cases viram carrossel horizontal só dentro da própria faixa */
     .videos-grid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:62%;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
     .videos-grid::-webkit-scrollbar{display:none}
@@ -406,6 +419,15 @@
         </ul>
     </div>
    </div>
+  </section>
+
+  <!-- ================= MEUS NÚMEROS (entre a capa e o Sobre mim) ================= -->
+  <section class="numeros-faixa" aria-label="Meus números">
+    <ul>
+      <li><strong>+80</strong><span>marcas trabalhadas</span></li>
+      <li><strong>+150</strong><span>vídeos entregues</span></li>
+      <li><strong>+10M</strong><span>de views</span></li>
+    </ul>
   </section>
 
   <!-- ================= 2. SOBRE MIM ================= -->
@@ -773,7 +795,7 @@ const servicos = [
 const metricas = [
   { valor: 150, prefixo: "",  sufixo: "",  rotulo: "vídeos entregues" },
   { valor: 80,  prefixo: "+", sufixo: "",  rotulo: "marcas atendidas" },
-  { valor: 8,   prefixo: "",  sufixo: "M", rotulo: "views somadas" },
+  { valor: 10,  prefixo: "+", sufixo: "M", rotulo: "views somadas" },
   { valor: "",  texto: "SUA MÉTRICA",      rotulo: "descrição da métrica" }   // TROCAR quando tiver a quarta métrica
 ];
 
