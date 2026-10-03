@@ -84,6 +84,18 @@
   .hamburguer[aria-expanded="true"] span::after{transform:translateY(-7px) rotate(-45deg)}
 
   /* =========================================================
+     TARJA BLACK FRIDAY
+     ========================================================= */
+  .tarja-bf{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 16px;padding:12px 16px;background:#e9b44c;color:#2e211a;font-size:.98rem;text-align:center}
+  .tarja-bf[hidden]{display:none}
+  .bf-selo{background:#2e211a;color:#f6d38a;font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:5px 11px;border-radius:999px}
+  .bf-dias{font-weight:600;font-size:1.05rem}
+  .bf-sep{opacity:.5}
+  .bf-texto{color:#4a3424}
+  .bf-link{margin-left:14px;font-weight:600;font-size:.9rem;color:#2e211a;text-decoration:none;white-space:nowrap}
+  .bf-link:hover{text-decoration:underline}
+
+  /* =========================================================
      1. CAPA
      ========================================================= */
   .capa{padding:0;background:var(--creme)}
@@ -416,6 +428,10 @@
     section{padding:44px 0}
     .container{padding:0 16px}
     .capa-texto{padding:28px 16px 14px}
+    .tarja-bf{font-size:.85rem;gap:6px 10px;padding:10px 12px}
+    .bf-dias{font-size:.92rem}
+    .bf-sep,.bf-texto{display:none}
+    .bf-link{margin-left:0}
     .capa-nome{font-size:clamp(3rem,15vw,4.2rem)}
     .sobre-secao{padding:0 10px}
     .sobre-painel{border-radius:0 0 36px 36px}
@@ -493,6 +509,15 @@
     </nav>
   </div>
 </header>
+
+<!-- ================= TARJA BLACK FRIDAY (contagem regressiva automática) ================= -->
+<div class="tarja-bf" id="tarja-bf" role="region" aria-label="Black Friday">
+  <span class="bf-selo">Black Friday</span>
+  <span class="bf-dias" id="bf-dias">Faltam dias pra Black Friday</span>
+  <span class="bf-sep" aria-hidden="true">·</span>
+  <span class="bf-texto">vídeo de e-commerce que vende no dia</span>
+  <a class="bf-link" href="#contato">reservar agenda <span aria-hidden="true">⟶</span></a>
+</div>
 
 <main id="conteudo">
 
@@ -1199,6 +1224,20 @@ $("#redes").innerHTML = [
   { nome: "Instagram", link: linkInsta }
 ].map((r) => `<li><a href="${escapar(r.link)}"${r.link.startsWith("mailto") ? "" : ' target="_blank" rel="noopener"'}>${escapar(r.nome)}</a></li>`).join("")
   + `<li>© ${new Date().getFullYear()}</li>`;
+
+// ---------- Tarja Black Friday: contagem regressiva até 27/11/2026 ----------
+(function () {
+  const tarja = $("#tarja-bf"), dias = $("#bf-dias");
+  const BLACK_FRIDAY = new Date(2026, 10, 27); // 27 de novembro de 2026 (mês começa em 0)
+  function atualizar() {
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    const faltam = Math.round((BLACK_FRIDAY - hoje) / 86400000);
+    if (faltam < 0) { tarja.hidden = true; return; }
+    dias.textContent = faltam === 0 ? "Hoje é Black Friday!" : faltam === 1 ? "Falta 1 dia pra Black Friday" : `Faltam ${faltam} dias pra Black Friday`;
+  }
+  atualizar();
+  setInterval(atualizar, 60 * 60 * 1000); // confere de hora em hora, para virar o dia sozinho
+})();
 
 // ---------- Menu ----------
 const topo = $("#topo"), menu = $("#menu"), hamburguer = $("#hamburguer");
