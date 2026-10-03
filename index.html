@@ -180,24 +180,37 @@
   .video-midia .vazio-img{align-items:flex-end;justify-content:center;background:linear-gradient(170deg,#c9b09b 0%,#a98d7a 100%)}
   .video-midia .vazio-img span{margin-bottom:44px}
   .video-midia iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-  /* Prévia sem som ao passar o mouse: fica por cima da capa e não bloqueia o clique */
-  .video-midia iframe.previa{z-index:1;pointer-events:none;transform:scale(1.02);opacity:0;transition:opacity .4s ease}
+  /* Prévia sem som ao passar o mouse. O player fica mais largo que o card (formato 16:9) e o vídeo vertical
+     ocupa só o meio: assim o título, os ícones e a marca do YouTube ficam de fora da área visível */
+  .video-midia iframe.previa{inset:auto;top:0;left:-108.03%;width:316.05%;height:100%;z-index:1;pointer-events:none;transform:scale(1.04);opacity:0;transition:opacity .45s ease}
   .video-midia iframe.previa.pronta{opacity:1}
-  .video-midia.tocando-previa .play span{opacity:0;transition:opacity .3s}
-  .video-midia.tocando-previa:hover .play span{opacity:.85}
-  /* Logo da marca no topo do card, com selo de verificado */
-  .video-logo{position:absolute;top:10px;left:10px;z-index:3;width:46px;height:46px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;display:flex;align-items:center;justify-content:center}
-  .video-logo img{width:100%;height:100%;border-radius:50%;object-fit:cover}
-  .video-logo .verificado{width:17px;height:17px;right:-3px;bottom:-2px}
-  .video-logo.sem-logo{font-size:.6rem;font-weight:700;color:var(--texto-suave);border:1.5px dashed var(--tracejado)}
-  .play{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;border:0;background:transparent;cursor:pointer;padding:0}
-  .play span{width:52px;height:52px;border-radius:50%;background:rgba(40,25,15,.5);display:flex;align-items:center;justify-content:center;transition:transform .2s ease,background .2s ease}
-  .play svg{width:22px;height:22px;fill:#fff;margin-left:3px}
+  .video-midia.tocando-previa .play span{opacity:0;transform:scale(.85)}
+  /* Capa automática (miniatura do próprio vídeo) */
+  .video-midia .capa-img{transition:transform .5s ease}
+  .video-card:hover .capa-img{transform:scale(1.03)}
+  /* Nome da marca no topo, em etiqueta */
+  .video-marca{position:absolute;top:12px;left:12px;z-index:3;padding:6px 12px;border-radius:999px;background:rgba(255,253,249,.92);color:var(--texto);font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;line-height:1;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  /* Escurecido suave embaixo para o texto aparecer */
+  .video-midia::after{content:"";position:absolute;left:0;right:0;bottom:0;height:42%;z-index:2;background:linear-gradient(180deg,transparent,rgba(30,20,14,.62));pointer-events:none}
+  .video-midia.sem-video::after{display:none}
+  .play{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;border:0;background:transparent;cursor:pointer;padding:0}
+  .play span{width:62px;height:62px;border-radius:50%;background:rgba(107,74,53,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.25);transition:transform .25s ease,opacity .3s ease,background .2s ease}
+  .play svg{width:24px;height:24px;fill:#fff;margin-left:3px}
   .play:hover span,.play:focus-visible span{transform:scale(1.08);background:var(--cafe)}
   .play:focus-visible{outline-offset:-4px;border-radius:16px}
-  /* Visualizações com ícone de olho na parte de baixo */
-  .views{position:absolute;left:12px;bottom:10px;z-index:3;display:flex;align-items:center;gap:6px;color:#fff;font-weight:600;font-size:.88rem;text-shadow:0 1px 6px rgba(0,0,0,.45);pointer-events:none}
-  .views svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.8;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+  /* Título e visualizações na parte de baixo */
+  .video-info{position:absolute;left:14px;right:14px;bottom:12px;z-index:3;color:#fff;pointer-events:none;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+  .video-info strong{display:block;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(1.05rem,1.6vw,1.35rem);line-height:1.1;margin-bottom:4px}
+  .views{display:flex;align-items:center;gap:6px;font-weight:600;font-size:.8rem;letter-spacing:.04em}
+  .views svg{width:17px;height:17px;fill:none;stroke:#fff;stroke-width:1.8}
+  /* Janela do player: o vídeo abre aqui no site, grande, com som */
+  .player-janela{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(30,20,14,.88)}
+  .player-janela[hidden]{display:none}
+  .player-caixa{position:relative;height:min(88vh,calc((100vw - 40px) * 16 / 9));aspect-ratio:9/16;max-width:100%;border-radius:18px;overflow:hidden;background:#000;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .player-caixa.horizontal{height:auto;width:min(1100px,100%);aspect-ratio:16/9}
+  .player-caixa iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .player-fechar{position:absolute;top:14px;right:14px;z-index:101;width:46px;height:46px;border-radius:50%;border:0;background:#fffdf9;color:#3d2b20;font-size:1.6rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .player-fechar:hover{transform:scale(1.06)}
 
   /* Case em destaque */
   .case-destaque{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:28px;align-items:start;margin-top:30px}
@@ -862,32 +875,32 @@ const marcas = [
 const destaques = [
   {
     link: "https://www.youtube.com/shorts/vIAAHLv0V18",           // LINK DO VÍDEO
-    capa: "",                                                      // CAPA DO VÍDEO (ex.: "capas/video-01.jpg"). Vazio = bloco com degradê
-    logo: "",                                                      // LOGO DA MARCA (ex.: "logos/mercado-livre.png")
-    titulo: "Título do vídeo 01",
+    capa: "",                                                      // CAPA DO VÍDEO (ex.: "capas/video-01.jpg"). Vazio = usa a miniatura do YouTube
+    marca: "Unicesumar",                                           // NOME DA MARCA (etiqueta no topo)
+    titulo: "Unicesumar",
     categoria: "Categoria",
     resultado: "+5,5 mi"                                          // VISUALIZAÇÕES
   },
   {
     link: "https://youtu.be/x3cTwB7OKOY",                          // LINK DO VÍDEO
     capa: "",                                                      // CAPA DO VÍDEO
-    logo: "",                                                      // LOGO DA MARCA
-    titulo: "Título do vídeo 02",
+    marca: "",                                                     // TROCAR: NOME DA MARCA
+    titulo: "",
     categoria: "Categoria",
     resultado: "+470k"                                            // VISUALIZAÇÕES
   },
   {
     link: "https://youtube.com/shorts/MFT4boPq418?feature=share",  // LINK DO VÍDEO
     capa: "",                                                      // CAPA DO VÍDEO
-    logo: "",                                                      // LOGO DA MARCA
-    titulo: "Título do vídeo 03",
+    marca: "Piccadilly",                                           // NOME DA MARCA
+    titulo: "Piccadilly",
     categoria: "Categoria",
     resultado: "+55k"                                             // VISUALIZAÇÕES
   },
   {
     link: "",                                                      // TROCAR: LINK DO VÍDEO 04
     capa: "",                                                      // CAPA DO VÍDEO
-    logo: "",                                                      // LOGO DA MARCA
+    marca: "",                                                     // NOME DA MARCA
     titulo: "Vídeo 04",
     categoria: "",
     resultado: ""                                                  // TROCAR: VISUALIZAÇÕES
@@ -895,7 +908,7 @@ const destaques = [
   {
     link: "",                                                      // TROCAR: LINK DO VÍDEO 05
     capa: "",                                                      // CAPA DO VÍDEO
-    logo: "",                                                      // LOGO DA MARCA
+    marca: "",                                                     // NOME DA MARCA
     titulo: "Vídeo 05",
     categoria: "",
     resultado: ""                                                  // TROCAR: VISUALIZAÇÕES
@@ -910,7 +923,7 @@ const caseDestaque = {
   titulo: ["Case: Pantene", "Biotinamina"],
   link: "",                                                        // TROCAR: LINK DO VÍDEO DO CASE PANTENE
   capa: "",                                                        // CAPA DO VÍDEO
-  logo: "logos/pantene.png",                                       // LOGO DA MARCA
+  marca: "Pantene",                                                // NOME DA MARCA
   resultado: "+100 mil",                                           // VISUALIZAÇÕES
   notas: [
     "O vídeo começou com uma cena impossível de ignorar: <strong>um tufo de cabelo nas mãos</strong>, enquanto a frase “<strong>Eu quase fiquei careca</strong>” reforça o impacto da cena.",
@@ -1098,19 +1111,31 @@ function idDoYoutube(link) {
   return m ? m[1] : null;
 }
 const olhoSVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+// Miniatura automática do YouTube: tenta a vertical, depois a maior, depois a padrão
+const miniaturas = (id) => ["oardefault", "maxresdefault", "sddefault", "hqdefault"].map((t) => `https://i.ytimg.com/vi/${id}/${t}.jpg`);
+function proximaMiniatura(img) {
+  const lista = JSON.parse(img.dataset.lista || "[]");
+  if (!lista.length) { img.remove(); return; }
+  img.src = lista.shift();
+  img.dataset.lista = JSON.stringify(lista);
+}
 function cardVideo(d, chave) {
-  const temVideo = Boolean(idDoYoutube(d.link));
-  const capa = d.capa
-    ? `<img class="capa-img" src="${escapar(d.capa)}" alt="Capa do vídeo ${escapar(d.titulo || "")}" loading="lazy">`
-    : `<div class="vazio-img" aria-hidden="true"><span>${temVideo ? "capa 9:16" : "adicione o vídeo"}</span></div>`;
-  const logo = d.logo
-    ? `<span class="video-logo"><img src="${escapar(d.logo)}" alt="" loading="lazy">${seloSVG}</span>`
-    : `<span class="video-logo sem-logo" aria-hidden="true">logo</span>`;
-  const play = temVideo
-    ? `<button class="play" type="button" aria-label="Assistir ${escapar(d.titulo || "vídeo")} aqui no site"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></button>`
+  const id = idDoYoutube(d.link);
+  let capa;
+  if (d.capa) capa = `<img class="capa-img" src="${escapar(d.capa)}" alt="" loading="lazy">`;
+  else if (id) {
+    const [primeira, ...resto] = miniaturas(id);
+    capa = `<div class="vazio-img" aria-hidden="true"></div><img class="capa-img auto" src="${primeira}" data-lista='${JSON.stringify(resto)}' alt="" loading="lazy">`;
+  } else capa = `<div class="vazio-img" aria-hidden="true"><span>adicione o vídeo</span></div>`;
+  const marca = d.marca ? `<span class="video-marca">${escapar(d.marca)}</span>` : "";
+  const nome = d.titulo || d.marca || "vídeo";
+  const play = id
+    ? `<button class="play" type="button" aria-label="Assistir ${escapar(nome)} aqui no site"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></button>`
     : "";
+  const titulo = id && d.titulo && !Array.isArray(d.titulo) ? `<strong>${escapar(d.titulo)}</strong>` : "";
   const views = d.resultado ? `<span class="views">${olhoSVG}${escapar(d.resultado)}<span class="sr-only"> visualizações</span></span>` : "";
-  return `<div class="video-midia" data-chave="${chave}">${capa}${logo}${play}${views}</div>`;
+  const info = titulo || views ? `<div class="video-info">${titulo}${views}</div>` : "";
+  return `<div class="video-midia${id ? "" : " sem-video"}" data-chave="${chave}">${capa}${marca}${play}${info}</div>`;
 }
 $("#videos-grid").innerHTML = destaques.map((d, i) => `<li class="video-card revelar">${cardVideo(d, i)}</li>`).join("");
 
@@ -1125,6 +1150,13 @@ caseEl.innerHTML = `
     </div>
   </div>`;
 
+// miniaturas: se a imagem não existir (ou vier o quadradinho cinza de 120px do YouTube), tenta a próxima
+document.querySelectorAll("img.capa-img.auto").forEach((img) => {
+  img.addEventListener("error", () => proximaMiniatura(img));
+  img.addEventListener("load", () => { if (img.naturalWidth <= 120) proximaMiniatura(img); });
+  if (img.complete && img.naturalWidth && img.naturalWidth <= 120) proximaMiniatura(img);
+});
+
 // Vídeos rodam dentro do portfólio (player oficial do YouTube incorporado, nunca abre o YouTube)
 const dadosDoCard = (midia) => (midia.dataset.chave === "case" ? caseDestaque : destaques[Number(midia.dataset.chave)]);
 const urlEmbed = (id, extra) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3${extra}`;
@@ -1138,9 +1170,7 @@ if (temMouse && !reduzMovimento) {
     if (!id) return;
     let espera = null;
     midia.addEventListener("mouseenter", () => {
-      if (midia.dataset.ativo) return;
       espera = setTimeout(() => {
-        if (midia.dataset.ativo) return;
         const previa = document.createElement("iframe");
         previa.className = "previa";
         previa.src = urlEmbed(id, `&mute=1&controls=0&loop=1&playlist=${id}&disablekb=1&fs=0`);
@@ -1161,25 +1191,54 @@ if (temMouse && !reduzMovimento) {
   });
 }
 
-// 2) Clicar no card: o vídeo toca COM SOM e com controles, dentro do próprio card
-document.addEventListener("click", (e) => {
-  const midia = e.target.closest(".video-midia");
-  if (!midia || midia.dataset.ativo) return;
-  const d = dadosDoCard(midia);
+// 2) Clicar no card: o vídeo abre numa janela grande AQUI NO SITE, com som e controles (nunca leva para o YouTube)
+const janela = document.createElement("div");
+janela.className = "player-janela";
+janela.hidden = true;
+janela.setAttribute("role", "dialog");
+janela.setAttribute("aria-modal", "true");
+janela.setAttribute("aria-label", "Vídeo");
+janela.innerHTML = `<button class="player-fechar" type="button" aria-label="Fechar vídeo">×</button><div class="player-caixa"></div>`;
+document.body.appendChild(janela);
+const caixaPlayer = janela.querySelector(".player-caixa");
+let focoAntes = null;
+function fecharPlayer() {
+  janela.hidden = true;
+  caixaPlayer.innerHTML = "";
+  document.body.style.overflow = "";
+  if (focoAntes) focoAntes.focus();
+}
+function abrirPlayer(d) {
   const id = idDoYoutube(d.link);
   if (!id) return;
-  midia.dataset.ativo = "1";
-  midia.querySelectorAll("iframe.previa").forEach((el) => el.remove());
-  midia.classList.remove("tocando-previa");
+  focoAntes = document.activeElement;
+  // os vídeos da Mari são verticais: a janela abre em pé (para um vídeo deitado, use horizontal: true no bloco do vídeo)
+  caixaPlayer.classList.toggle("horizontal", Boolean(d.horizontal));
   const iframe = document.createElement("iframe");
-  iframe.src = urlEmbed(id, "&controls=1");
-  iframe.title = `Vídeo: ${d.titulo || "case"}`;
-  iframe.allow = permissoes;
+  iframe.src = urlEmbed(id, "&controls=1&vq=hd1080");
+  iframe.title = `Vídeo: ${d.titulo || d.marca || "case"}`;
+  iframe.allow = permissoes + "; fullscreen";
   iframe.allowFullscreen = true;
   iframe.referrerPolicy = "strict-origin-when-cross-origin";
-  midia.querySelectorAll(".capa-img, .vazio-img, .play, .views").forEach((el) => el.remove());
-  midia.prepend(iframe);
-  iframe.focus();
+  caixaPlayer.appendChild(iframe);
+  janela.hidden = false;
+  document.body.style.overflow = "hidden";
+  janela.querySelector(".player-fechar").focus();
+}
+janela.addEventListener("click", (e) => { if (e.target === janela || e.target.closest(".player-fechar")) fecharPlayer(); });
+document.addEventListener("keydown", (e) => {
+  if (janela.hidden) return;
+  if (e.key === "Escape") fecharPlayer();
+  if (e.key === "Tab") { e.preventDefault(); janela.querySelector(".player-fechar").focus(); }
+});
+document.addEventListener("click", (e) => {
+  const midia = e.target.closest(".video-midia");
+  if (!midia) return;
+  const d = dadosDoCard(midia);
+  if (!idDoYoutube(d.link)) return;
+  midia.querySelectorAll("iframe.previa").forEach((el) => el.remove());
+  midia.classList.remove("tocando-previa");
+  abrirPlayer(d);
 });
 // o card inteiro é clicável
 document.querySelectorAll(".video-midia").forEach((m) => { if (idDoYoutube(dadosDoCard(m).link)) m.style.cursor = "pointer"; });
