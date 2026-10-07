@@ -1829,20 +1829,48 @@ function deOndeVeio() {
   const achado = conhecidos.find(([pedaco]) => host.includes(pedaco));
   return achado ? achado[1] : (utm ? utm.charAt(0).toUpperCase() + utm.slice(1) : host);
 }
-async function registrarVisita() {
-  if (location.protocol === "file:") return;
+async function registrarVisita(forcar) {
+  if (location.protocol === "file:") return { ok: false, motivo: "página aberta como arquivo, sem internet" };
   try {
-    if (localStorage.getItem("mb_nao_contar_visita")) return;     // a própria Mari (entrou no painel neste navegador)
-    if (sessionStorage.getItem("mb_visita")) return;              // conta uma vez por visita, não a cada recarregar
-    sessionStorage.setItem("mb_visita", "1");
+    if (!forcar && localStorage.getItem("mb_nao_contar_visita")) return { ok: false, motivo: "este navegador é da Mari (não conta)" };
+    if (!forcar && sessionStorage.getItem("mb_visita")) return { ok: false, motivo: "já contada nesta aba" };
   } catch (e) {}
   const banco = await bancoPronto();
-  if (!banco) return;
-  try { await banco.from("visitas").insert({ pagina: location.pathname || "/", origem: deOndeVeio() }); } catch (e) {}
+  if (!banco) return { ok: false, motivo: "a ligação com o banco não carregou (js/banco.js ou a biblioteca do Supabase)" };
+  try {
+    const { error } = await banco.from("visitas").insert({ pagina: location.pathname || "/", origem: deOndeVeio() });
+    if (error) { console.warn("Visita não registrada:", error); return { ok: false, motivo: `${error.code || ""} ${error.message || ""}`.trim() }; }
+    try { sessionStorage.setItem("mb_visita", "1"); } catch (e) {}   // só marca depois de gravar de verdade
+    return { ok: true };
+  } catch (e) {
+    console.warn("Visita não registrada:", e);
+    return { ok: false, motivo: String(e && e.message || e) };
+  }
+}
+
+// Teste da ligação com o banco: abra o site com ?teste-banco no fim do endereço
+async function testarBanco() {
+  const caixa = document.createElement("div");
+  caixa.style.cssText = "position:fixed;left:16px;right:16px;bottom:16px;z-index:9999;max-width:560px;margin:0 auto;background:#fffdf9;color:#3d2b20;border:2px solid #6b4a35;border-radius:14px;padding:16px 18px;font:14px/1.5 Poppins,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.25)";
+  caixa.innerHTML = "<b>Teste da ligação com o banco</b><div id='teste-banco-linhas'>Testando...</div>";
+  document.body.appendChild(caixa);
+  const linhas = [];
+  const banco = await bancoPronto();
+  linhas.push(banco ? "✔ Ligação com o banco carregada" : "✘ A ligação com o banco não carregou");
+  if (banco) {
+    try {
+      const { data, error } = await banco.rpc("videos_no_ar");
+      linhas.push(error ? `✘ Vídeos do painel: ${error.code || ""} ${error.message}` : `✔ Vídeos do painel: ${(data || []).length} encontrados`);
+    } catch (e) { linhas.push("✘ Vídeos do painel: " + (e.message || e)); }
+    const r = await registrarVisita(true);
+    linhas.push(r.ok ? "✔ Visita gravada no banco" : "✘ Visita não gravada: " + r.motivo);
+  }
+  caixa.querySelector("#teste-banco-linhas").innerHTML = linhas.map((l) => `<div>${escapar(l)}</div>`).join("");
 }
 
 carregarVideosDoPainel();
-registrarVisita();
+if (new URLSearchParams(location.search).has("teste-banco")) testarBanco();
+else registrarVisita(false);
 </script>
 </body>
 </html>
