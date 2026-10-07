@@ -84,9 +84,20 @@
       const { error } = await banco.auth.signInWithPassword({ email, password: senha });
       if (error) {
         const msg = String(error.message || "").toLowerCase();
-        if (msg.includes("not confirmed")) mostrar($("erro-entrar"), "Esse e-mail ainda não foi confirmado. Confirme pelo link que chegou no seu e-mail.");
-        else if (error.status === 0 || msg.includes("fetch")) mostrar($("erro-entrar"), "Sem conexão com o servidor. Confira sua internet e tente de novo.");
-        else mostrar($("erro-entrar"), "E-mail ou senha incorretos");
+        const cod = String(error.code || "");
+        console.warn("Login:", error.status, cod, error.message);
+        if (cod === "email_not_confirmed" || msg.includes("not confirmed"))
+          mostrar($("erro-entrar"), "Esse e-mail ainda não foi confirmado. No Supabase, abra Authentication > Users, clique no seu usuário e confirme o e-mail (ou crie de novo marcando Auto Confirm User).");
+        else if (cod === "invalid_credentials" || msg.includes("invalid login credentials"))
+          mostrar($("erro-entrar"), "E-mail ou senha incorretos");
+        else if (msg.includes("api key") || error.status === 401)
+          mostrar($("erro-entrar"), "O banco não aceitou a chave do site. Confira se a chave pública em js/banco.js é a do projeto certo.");
+        else if (error.status === 0 || msg.includes("fetch"))
+          mostrar($("erro-entrar"), "Sem conexão com o servidor. Confira sua internet e tente de novo.");
+        else if (error.status === 429)
+          mostrar($("erro-entrar"), "Muitas tentativas seguidas. Espere alguns minutos e tente de novo.");
+        else
+          mostrar($("erro-entrar"), "Não foi possível entrar agora. Detalhe técnico: " + (error.message || "erro desconhecido"));
       } else {
         irProAdmin();
         return;
