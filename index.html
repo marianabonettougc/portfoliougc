@@ -2,7 +2,14 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" id="viewport">
+<script>
+  // Celular e tablet: mostra o site com o mesmo visual do computador, só que reduzido para caber na tela (igual ao Canva)
+  if (Math.min(screen.width, screen.height) < 1024) {
+    document.getElementById("viewport").setAttribute("content", "width=1280");
+    document.documentElement.classList.add("miniatura");
+  }
+</script>
 <title>Mari Bonetto | Portfólio UGC</title>
 <meta name="description" content="Mari Bonetto, UGC Creator em Valinhos, SP. Conteúdo que parece indicação de amiga antes de parecer anúncio.">
 <meta name="theme-color" content="#f6efe6">
@@ -178,7 +185,8 @@
   .videos-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;list-style:none;margin:0;padding:0}
   .video-card{display:flex;flex-direction:column;min-width:0}
   .video-midia{position:relative;aspect-ratio:9/16;border-radius:16px;overflow:hidden;background:#d9c4ae;box-shadow:var(--sombra);transition:transform .25s ease,box-shadow .25s ease}
-  .video-card:hover .video-midia,.case-video:hover .video-midia{transform:translateY(-4px);box-shadow:var(--sombra-hover)}
+  @media (hover:hover) and (pointer:fine){.video-card:hover .video-midia,.case-video:hover .video-midia{transform:translateY(-4px);box-shadow:var(--sombra-hover)}}
+  .video-midia{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .video-midia .capa-img,.video-midia .vazio-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .video-midia .vazio-img{align-items:flex-end;justify-content:center;background:linear-gradient(170deg,#c9b09b 0%,#a98d7a 100%)}
   .video-midia .vazio-img span{margin-bottom:44px}
@@ -190,7 +198,7 @@
   .video-midia.tocando-previa .play span{opacity:0;transform:scale(.85)}
   /* Capa automática (miniatura do próprio vídeo) */
   .video-midia .capa-img{transition:transform .5s ease}
-  .video-card:hover .capa-img{transform:scale(1.03)}
+  @media (hover:hover) and (pointer:fine){.video-card:hover .capa-img{transform:scale(1.03)}}
   /* Logo da marca numa bolinha no topo do card */
   .video-logo{position:absolute;top:12px;left:12px;z-index:3;width:50px;height:50px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.22);pointer-events:none}
   .video-logo img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
@@ -210,9 +218,10 @@
   .views{display:flex;align-items:center;gap:6px;font-weight:600;font-size:.8rem;letter-spacing:.04em}
   .views svg{width:17px;height:17px;fill:none;stroke:#fff;stroke-width:1.8}
   /* Janela do player: o vídeo abre aqui no site, grande, com som */
-  .player-janela{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(30,20,14,.88)}
+  .player-janela{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(30,20,14,.88);touch-action:manipulation;overscroll-behavior:contain}
   .player-janela[hidden]{display:none}
   .player-caixa{position:relative;height:min(88vh,calc((100vw - 40px) * 16 / 9));aspect-ratio:9/16;max-width:100%;border-radius:18px;overflow:hidden;background:#000;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  @supports (height:1dvh){.player-caixa{height:min(82dvh,calc((100vw - 40px) * 16 / 9))}}
   .player-caixa.horizontal{height:auto;width:min(1100px,100%);aspect-ratio:16/9}
   /* Player próprio: o vídeo do YouTube roda por baixo, sem nenhum botão ou texto do YouTube aparecendo */
   .player-recorte{position:absolute;inset:0;overflow:hidden;background:#000}
@@ -239,6 +248,10 @@
   .player-aviso-som[hidden]{display:none}
   .player-fechar{position:absolute;top:14px;right:14px;z-index:101;width:46px;height:46px;border-radius:50%;border:0;background:#fffdf9;color:#3d2b20;font-size:1.6rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .player-fechar:hover{transform:scale(1.06)}
+  /* site reduzido no celular: a janela do vídeo e o botão de fechar ficam do tamanho certo para o dedo */
+  .miniatura .player-janela{padding:60px}
+  .miniatura .player-fechar{top:40px;right:40px;width:140px;height:140px;font-size:5rem}
+  .miniatura .player-caixa{border-radius:40px}
 
   /* Case em destaque */
   .case-destaque{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:28px;align-items:start;margin-top:30px}
@@ -705,7 +718,7 @@
       <div class="com-linha">
         <h2 class="cases-titulo revelar" id="titulo-destaques">Meus cases de sucesso</h2>
         <!-- Os cards vêm do array "destaques" no script -->
-        <ul class="videos-grid" id="videos-grid"></ul>
+        <ul class="videos-grid revelar" id="videos-grid"></ul>
 
         <!-- Case em destaque (dados no objeto "caseDestaque" do script) -->
         <div class="case-destaque revelar" id="case-destaque"></div>
@@ -1200,10 +1213,11 @@ function cardVideo(d, chave) {
   const info = titulo || views ? `<div class="video-info">${titulo}${views}</div>` : "";
   return `<div class="video-midia${id ? "" : " sem-video"}" data-chave="${chave}">${capa}${marca}${play}${info}</div>`;
 }
-function desenharDestaques(jaVisivel) {
-  $("#videos-grid").innerHTML = destaques.map((d, i) => `<li class="video-card revelar${jaVisivel ? " visivel" : ""}">${cardVideo(d, i)}</li>`).join("");
+// A animação de entrada fica na grade inteira (classe "revelar" no <ul>), então os cards podem ser redesenhados à vontade
+function desenharDestaques() {
+  $("#videos-grid").innerHTML = destaques.map((d, i) => `<li class="video-card">${cardVideo(d, i)}</li>`).join("");
 }
-desenharDestaques(false);
+desenharDestaques();
 
 const caseEl = $("#case-destaque");
 caseEl.innerHTML = `
@@ -1394,6 +1408,8 @@ function abrirPlayer(d) {
   janela.hidden = false;
   document.body.style.overflow = "hidden";
   janela.querySelector(".player-fechar").focus();
+  // celular/tablet: usa o player do YouTube encaixado na caixa em pé, sem recorte nem zoom (o recorte do computador fica estranho no celular)
+  if (!temMouse) { janela.querySelectorAll(".player-carregando").forEach((el) => el.remove()); playerSimples(id, d); return; }
   carregarApiYoutube().then(() => {
     if (janela.hidden) return;
     player = new YT.Player("player-alvo", {
@@ -1789,7 +1805,7 @@ async function carregarVideosDoPainel() {
       categoria: v.nicho || "",
       resultado: v.destaque || ""
     })));
-    desenharDestaques(true);
+    desenharDestaques();
     const grade = $("#videos-grid");
     ligarMiniaturas(grade);
     ligarPrevias(grade);
