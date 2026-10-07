@@ -75,7 +75,7 @@
   // ---------------------------------------------------------
   // DADOS (com proteção: se faltar tabela ou campo, avisa e segue)
   // ---------------------------------------------------------
-  const dados = { videos: [], marcas: [], calendario: [], campanhas: [], marcados: [], visitas: [] };
+  const dados = { videos: [], marcas: [], calendario: [], campanhas: [], marcados: [], visitas: [], roteiros: [] };
   const faltando = {};
 
   function traduzErro(err, tabela) {
@@ -165,7 +165,7 @@
   janela.addEventListener("click", (e) => { if (e.target === janela) janela.close(); });
   // ao fechar, tira vídeos que estavam tocando dentro da janela
   janela.addEventListener("close", () => $$("#janela-corpo iframe").forEach((f) => f.remove()));
-  function abrirJanela({ titulo, corpo, botoes = [], larga = false, aoAbrir }) {
+  function abrirJanela({ titulo, corpo, botoes = [], larga = false, extraLarga = false, sobretitulo = "", aoAbrir }) {
     $("#janela-titulo").textContent = titulo;
     $("#janela-corpo").innerHTML = corpo;
     const rodape = $("#janela-rodape");
@@ -186,6 +186,9 @@
       rodape.appendChild(el);
     });
     janela.classList.toggle("larga", larga);
+    janela.classList.toggle("extra-larga", extraLarga);
+    $("#janela-sobretitulo").textContent = sobretitulo;
+    $("#janela-sobretitulo").hidden = !sobretitulo;
     if (!janela.open) janela.showModal();
     if (aoAbrir) aoAbrir($("#janela-corpo"));
     const primeiro = $("#janela-corpo input:not([type=checkbox]), #janela-corpo select, #janela-corpo textarea");
@@ -249,7 +252,7 @@
   // ---------------------------------------------------------
   // MENU E ABAS
   // ---------------------------------------------------------
-  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Calendário", campanhas: "Campanhas", checklist: "Checklist portfólio" };
+  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Calendário", campanhas: "Campanhas", roteiros: "Roteiros", checklist: "Checklist portfólio" };
   let abaAtual = "portfolio";
   function mostrarAba(nome) {
     if (!TITULOS[nome]) nome = "portfolio";
@@ -262,6 +265,7 @@
     $("#painel").classList.remove("menu-aberto");
   }
   $$(".menu-item").forEach((b) => b.addEventListener("click", () => mostrarAba(b.dataset.aba)));
+  window.addEventListener("hashchange", () => { const h = location.hash.replace("#", ""); if (h && h !== abaAtual) mostrarAba(h); });
   $("#btn-menu").addEventListener("click", () => $("#painel").classList.add("menu-aberto"));
   $("#menu-fundo").addEventListener("click", () => $("#painel").classList.remove("menu-aberto"));
   $("#menu-email").textContent = sessao.user.email;
@@ -911,6 +915,254 @@
     });
   }
 
+
+  // =========================================================
+  // 5b. ROTEIROS (transcrição de vídeos do YouTube, Instagram e TikTok)
+  // =========================================================
+  const ORIGENS = [{ v: "instagram", t: "Instagram" }, { v: "tiktok", t: "TikTok" }, { v: "youtube", t: "YouTube" }, { v: "outro", t: "Outro" }];
+  const TIPOS_GANCHO = ["pergunta", "promessa", "dor", "curiosidade", "polêmica", "número", "história", "prova"];
+  const estadoRot = { filtro: "todos", busca: "" };
+
+  function origemDoLink(link) {
+    const l = String(link || "").toLowerCase();
+    if (/instagram\.com/.test(l)) return "instagram";
+    if (/tiktok\.com/.test(l)) return "tiktok";
+    if (/youtube\.com|youtu\.be/.test(l)) return "youtube";
+    return "outro";
+  }
+  function perfilDoLink(link) {
+    const l = String(link || "");
+    const tk = l.match(/tiktok\.com\/@([\w.]+)/i); if (tk) return tk[1];
+    const ig = l.match(/instagram\.com\/(?!p\/|reel\/|reels\/|tv\/|stories\/)([\w.]+)/i); if (ig) return ig[1];
+    const yt = l.match(/youtube\.com\/@([\w.-]+)/i); if (yt) return yt[1];
+    return "";
+  }
+  // Endereço para o vídeo tocar dentro do painel
+  function embedDoLink(link) {
+    const l = String(link || "");
+    const yt = idYoutube(l);
+    if (yt) return `https://www.youtube-nocookie.com/embed/${yt}?rel=0&modestbranding=1&playsinline=1`;
+    const ig = l.match(/instagram\.com\/(?:[\w.]+\/)?(p|reel|reels|tv)\/([\w-]+)/i);
+    if (ig) return `https://www.instagram.com/${ig[1] === "reels" ? "reel" : ig[1]}/${ig[2]}/embed/`;
+    const tk = l.match(/tiktok\.com\/.*\/video\/(\d+)/i) || l.match(/tiktok\.com\/embed(?:\/v2)?\/(\d+)/i);
+    if (tk) return `https://www.tiktok.com/embed/v2/${tk[1]}`;
+    return "";
+  }
+  const capaDoLink = (link) => { const yt = idYoutube(link); return yt ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` : ""; };
+  const nomeOrigem = (o) => (ORIGENS.find((x) => x.v === o) || { t: "Vídeo" }).t;
+  const listaVirgula = (t) => String(t || "").split(",").map((x) => x.trim()).filter(Boolean);
+  const linhas = (t) => String(t || "").split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+
+  // Monta gancho, passos e CTA a partir do texto colado (sem inteligência artificial: separa as frases)
+  function montarEstrutura(texto) {
+    const frases = String(texto || "").replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s+/).filter(Boolean);
+    if (!frases.length) return null;
+    let gancho = frases[0];
+    let resto = frases.slice(1);
+    if (gancho.length < 40 && resto.length && !/[?]$/.test(gancho)) { gancho += " " + resto[0]; resto = resto.slice(1); }
+    let cta = "";
+    if (resto.length > 1) cta = resto.pop();
+    const tipo = /\?/.test(gancho) ? "pergunta" : /\d/.test(gancho) ? "número" : /vou te|vou mostrar|aprenda|descubra|como /i.test(gancho) ? "promessa" : "curiosidade";
+    // junta as frases do meio em até 6 passos
+    const passos = [];
+    const tamanho = Math.max(1, Math.ceil(resto.length / 6));
+    for (let i = 0; i < resto.length; i += tamanho) passos.push(resto.slice(i, i + tamanho).join(" "));
+    return { gancho, gancho_tipo: tipo, desenvolvimento: passos.join("\n"), cta, titulo: gancho.slice(0, 90) };
+  }
+
+  function roteirosFiltrados() {
+    const b = estadoRot.busca.toLowerCase().replace(/^@/, "");
+    return dados.roteiros.filter((r) => {
+      if (estadoRot.filtro === "outras" && r.de_quem !== "outra") return false;
+      if (estadoRot.filtro === "meus" && r.de_quem !== "meu") return false;
+      if (!b) return true;
+      return [r.titulo, r.perfil, r.transcricao, r.notas, r.gancho, r.etiquetas].some((c) => String(c || "").toLowerCase().includes(b));
+    });
+  }
+
+  function desenharRoteiros() {
+    const sec = $("#aba-roteiros");
+    if (!$("#rot-novo")) {
+      sec.innerHTML = `
+        <div class="rot-faixa">
+          <p class="rot-faixa-sub">Cole o link de um vídeo do Instagram, TikTok ou YouTube. Ele fica salvo aqui com o vídeo tocando ao lado, o roteiro e as suas notas.</p>
+          <form class="rot-novo" id="rot-novo">
+            <input class="entrada" type="url" id="rot-link" placeholder="Cole aqui: instagram.com/reel/... · tiktok.com/... · youtube.com/..." aria-label="Link do vídeo" required>
+            <select class="entrada" id="rot-dequem" aria-label="De quem é o vídeo"><option value="outra">De outra pessoa</option><option value="meu">Meu</option></select>
+            <button class="btn btn-principal" type="submit">${ICONE.mais}Adicionar</button>
+          </form>
+          <button class="btn-texto" type="button" id="rot-mao">ou escrever um roteiro na mão</button>
+        </div>
+        <div class="ferramentas">
+          <input class="entrada" type="search" id="rot-busca" placeholder="Buscar no texto, no perfil ou nas suas notas" aria-label="Buscar roteiros">
+          <div class="chips" role="group" aria-label="Filtrar roteiros" id="rot-chips"></div>
+        </div>
+        <div id="rot-lista"></div>`;
+      $("#rot-novo").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const link = $("#rot-link").value.trim();
+        if (!/^https?:\/\//i.test(link)) { avisar("Cole o link completo do vídeo, começando com https://", true); return; }
+        formRoteiro(null, { link, de_quem: $("#rot-dequem").value, origem: origemDoLink(link), perfil: perfilDoLink(link) });
+        $("#rot-link").value = "";
+      });
+      $("#rot-mao").addEventListener("click", () => formRoteiro(null, { de_quem: "meu", origem: "outro" }));
+      $("#rot-busca").addEventListener("input", (e) => { estadoRot.busca = e.target.value.trim(); desenharListaRoteiros(); });
+    }
+    desenharListaRoteiros();
+  }
+
+  function desenharListaRoteiros() {
+    const total = dados.roteiros.length;
+    const outras = dados.roteiros.filter((r) => r.de_quem === "outra").length;
+    $("#rot-chips").innerHTML = [["todos", `Todos ${total}`], ["outras", `De outras ${outras}`], ["meus", `Meus ${total - outras}`]]
+      .map(([v, t]) => `<button type="button" class="chip${estadoRot.filtro === v ? " ativo" : ""}" data-f="${v}">${t}</button>`).join("");
+    $$("#rot-chips .chip").forEach((c) => c.addEventListener("click", () => { estadoRot.filtro = c.dataset.f; desenharListaRoteiros(); }));
+    const caixa = $("#rot-lista");
+    if (faltando.roteiros) { caixa.innerHTML = `<p class="vazio">${esc(faltando.roteiros)}</p>`; return; }
+    const lista = roteirosFiltrados();
+    if (!lista.length) { caixa.innerHTML = `<p class="vazio">${total ? "Nenhum roteiro encontrado com essa busca." : "Nenhum roteiro ainda. Cole o link de um vídeo lá em cima."}</p>`; return; }
+    caixa.innerHTML = lista.map((r) => {
+      const capa = capaDoLink(r.link);
+      return `<article class="rot-card" data-id="${r.id}" tabindex="0">
+        <div class="rot-capa rot-${esc(r.origem)}">${capa ? `<img src="${capa}" alt="" loading="lazy">` : `<span>${esc(nomeOrigem(r.origem))}</span>`}</div>
+        <div class="rot-info">
+          <div class="rot-topo">
+            <span class="pilula ${r.de_quem === "meu" ? "p-cliente" : "p-st0"}">${r.de_quem === "meu" ? "meu" : "de outra"}</span>
+            ${r.perfil ? `<b>@${esc(String(r.perfil).replace(/^@/, ""))}</b>` : ""}
+            ${exemploTag(r)}
+            ${embedDoLink(r.link) ? `<button type="button" class="btn btn-mini" data-tocar>▶ tocar aqui</button>` : ""}
+            <span class="rot-meta">${esc(nomeOrigem(r.origem))}${r.data_post ? " · " + fmtData(r.data_post) : ""}</span>
+            ${r.link ? `<a class="link-mini rot-ver" href="${esc(r.link)}" target="_blank" rel="noopener">ver vídeo ↗</a>` : ""}
+          </div>
+          <h3 class="rot-titulo">${esc(r.titulo || "Sem título")}</h3>
+          ${r.transcricao ? `<p class="rot-trecho">${esc(String(r.transcricao).slice(0, 260))}${String(r.transcricao).length > 260 ? "..." : ""}</p>` : `<p class="rot-trecho rot-falta">Ainda sem transcrição. Clique para colar o texto do vídeo.</p>`}
+          ${r.gancho ? `<p class="rot-gancho"><b>${esc((r.gancho_tipo || "gancho").toUpperCase())}</b>${esc(r.gancho)}</p>` : ""}
+          ${r.notas ? `<p class="rot-nota">✎ ${esc(r.notas)}</p>` : ""}
+        </div>
+      </article>`;
+    }).join("");
+    $$(".rot-card", caixa).forEach((card) => {
+      const abrir = (tocar) => { const r = dados.roteiros.find((x) => String(x.id) === card.dataset.id); if (r) formRoteiro(r, null, tocar); };
+      card.addEventListener("click", (e) => { if (e.target.closest("a")) return; abrir(Boolean(e.target.closest("[data-tocar]"))); });
+      card.addEventListener("keydown", (e) => { if (e.key === "Enter") abrir(false); });
+    });
+  }
+
+  function blocoEstrutura(r) {
+    const passos = linhas(r.desenvolvimento);
+    const exprs = listaVirgula(r.expressoes);
+    const tags = listaVirgula(r.etiquetas);
+    if (!r.gancho && !passos.length && !r.cta && !exprs.length && !r.por_que) {
+      return `<p class="rot-vazio-estrutura">Cole a transcrição embaixo e clique em <b>Montar estrutura</b>, ou preencha os campos da estrutura à mão.</p>`;
+    }
+    return `
+      ${tags.length ? `<div class="rot-linha"><span class="rot-rotulo">A estrutura</span>${tags.map((t) => `<span class="rot-tag">${esc(t)}</span>`).join("")}</div>` : ""}
+      ${r.gancho ? `<div class="rot-parte"><span class="rot-rotulo">Gancho${r.gancho_tipo ? " · " + esc(r.gancho_tipo) : ""}</span><p class="rot-destaque">${esc(r.gancho)}</p></div>` : ""}
+      ${passos.length ? `<div class="rot-parte"><span class="rot-rotulo">Desenvolvimento</span><ol>${passos.map((p) => `<li>${esc(p)}</li>`).join("")}</ol></div>` : ""}
+      ${r.cta ? `<div class="rot-parte"><span class="rot-rotulo">CTA</span><p class="rot-caixa">${esc(r.cta)}</p></div>` : ""}
+      ${exprs.length ? `<div class="rot-parte"><span class="rot-rotulo">Expressões que usa</span><div>${exprs.map((t) => `<span class="rot-tag">${esc(t)}</span>`).join("")}</div></div>` : ""}
+      ${r.por_que ? `<div class="rot-parte"><span class="rot-rotulo">Por que prende</span><p class="rot-caixa rot-porque">${esc(r.por_que)}</p></div>` : ""}`;
+  }
+
+  function formRoteiro(r, inicial, tocar) {
+    const novo = !r;
+    r = r || Object.assign({ de_quem: "outra", origem: "instagram" }, inicial || {});
+    const embed = embedDoLink(r.link);
+    abrirJanela({
+      sobretitulo: novo ? "Novo roteiro" : "Editar roteiro",
+      titulo: "Roteiro",
+      extraLarga: true,
+      corpo: `
+        <div class="rot-janela">
+          <div class="rot-esq">
+            ${campo({ nome: "titulo", rotulo: "Título (do que é esse roteiro)", valor: r.titulo })}
+            <div class="linha-campos tres">
+              ${campo({ nome: "de_quem", rotulo: "De quem é", tipo: "select", valor: r.de_quem, opcoes: [{ v: "outra", t: "De outra pessoa" }, { v: "meu", t: "Meu" }] })}
+              ${campo({ nome: "perfil", rotulo: "Perfil (sem @)", valor: String(r.perfil || "").replace(/^@/, "") })}
+              ${campo({ nome: "data_post", rotulo: "Data do post", tipo: "date", valor: r.data_post || "" })}
+            </div>
+            <div class="linha-campos">
+              ${campo({ nome: "origem", rotulo: "Origem", tipo: "select", valor: r.origem, opcoes: ORIGENS })}
+              ${campo({ nome: "etiquetas", rotulo: "Etiquetas (separe por vírgula)", valor: r.etiquetas, dica: "Ex.: tutorial, beleza, unboxing" })}
+            </div>
+            ${campo({ nome: "link", rotulo: "Link do vídeo", valor: r.link })}
+            <div class="rot-estrutura" id="rot-estrutura">${blocoEstrutura(r)}</div>
+            <details class="rot-editar"${novo ? "" : ""}>
+              <summary>Editar a estrutura (gancho, passos, CTA...)</summary>
+              <div class="linha-campos">
+                ${campo({ nome: "gancho", rotulo: "Gancho", valor: r.gancho })}
+                ${campo({ nome: "gancho_tipo", rotulo: "Tipo de gancho", valor: r.gancho_tipo, lista: TIPOS_GANCHO })}
+              </div>
+              ${campo({ nome: "desenvolvimento", rotulo: "Desenvolvimento (um passo por linha)", tipo: "textarea", valor: r.desenvolvimento })}
+              ${campo({ nome: "cta", rotulo: "CTA (a chamada do final)", valor: r.cta })}
+              ${campo({ nome: "expressoes", rotulo: "Expressões que a pessoa usa (separe por vírgula)", valor: r.expressoes })}
+              ${campo({ nome: "por_que", rotulo: "Por que prende", tipo: "textarea", valor: r.por_que })}
+            </details>
+            <div class="campo">
+              <div class="rot-rotulo-linha"><label for="f-transcricao">Roteiro / transcrição</label>
+                <button class="btn btn-mini" type="button" id="rot-montar">Montar estrutura</button></div>
+              <textarea id="f-transcricao" name="transcricao" class="rot-texto" placeholder="Cole aqui o texto falado no vídeo.">${esc(r.transcricao)}</textarea>
+              <small class="rot-dica">Como pegar o texto: no YouTube, abra o vídeo, clique em "...mais" na descrição e depois em "Mostrar transcrição". No Instagram e no TikTok, ligue as legendas automáticas e copie, ou use o ditado do celular enquanto o vídeo toca.</small>
+            </div>
+            ${campo({ nome: "notas", rotulo: "Suas notas (o que te chamou atenção)", tipo: "textarea", valor: r.notas })}
+            ${r.exemplo ? marcaCheck("exemplo", "É linha de exemplo", true) : ""}
+          </div>
+          <div class="rot-dir">
+            <span class="rot-rotulo">O vídeo</span>
+            <div class="rot-player" id="rot-player">${embed ? `<iframe src="${embed}" title="Vídeo do roteiro" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen loading="lazy"></iframe>` : `<p>Cole o link do vídeo ao lado para ele aparecer aqui.${r.link ? "<br><br>Esse link não pode tocar aqui dentro (links curtos do TikTok, por exemplo). Use o link completo do vídeo, ou abra pelo botão abaixo." : ""}</p>`}</div>
+            ${r.link ? `<a class="link-mini" href="${esc(r.link)}" target="_blank" rel="noopener">abrir no ${esc(nomeOrigem(r.origem))} ↗</a>` : ""}
+          </div>
+        </div>`,
+      botoes: [
+        ...(novo ? [] : [{ texto: ICONE.apagar + "Apagar", classe: "btn-perigo", acao: async () => {
+          if (await confirmar(`Apagar o roteiro "${r.titulo || "sem título"}"?`) && await apagar("roteiros", r.id)) { avisar("Roteiro apagado"); await recarregar("roteiros"); }
+        } }]),
+        { texto: "Cancelar" },
+        { texto: "✓ Salvar", classe: "btn-principal", acao: async () => {
+          const f = lerFormulario();
+          if (!f.titulo && !f.link && !f.transcricao) { avisar("Preencha pelo menos o título, o link ou a transcrição.", true); return false; }
+          const linha = { titulo: f.titulo || (f.gancho || "").slice(0, 90) || "Roteiro sem título", de_quem: f.de_quem, perfil: nulo(f.perfil.replace(/^@/, "")), data_post: nulo(f.data_post),
+            origem: f.origem, link: nulo(f.link), etiquetas: nulo(f.etiquetas), gancho: nulo(f.gancho), gancho_tipo: nulo(f.gancho_tipo), desenvolvimento: nulo(f.desenvolvimento),
+            cta: nulo(f.cta), expressoes: nulo(f.expressoes), por_que: nulo(f.por_que), transcricao: nulo(f.transcricao), notas: nulo(f.notas) };
+          if ("exemplo" in f) linha.exemplo = f.exemplo;
+          if (!(await gravar("roteiros", linha, novo ? null : r.id))) return false;
+          avisar(novo ? "Roteiro salvo" : "Roteiro atualizado");
+          await recarregar("roteiros");
+        } }
+      ],
+      aoAbrir: (corpo) => {
+        const atualizarEstrutura = () => {
+          const f = lerFormulario();
+          $("#rot-estrutura", corpo).innerHTML = blocoEstrutura(f);
+        };
+        $$('[name="gancho"],[name="gancho_tipo"],[name="desenvolvimento"],[name="cta"],[name="expressoes"],[name="por_que"],[name="etiquetas"]', corpo)
+          .forEach((el) => el.addEventListener("input", atualizarEstrutura));
+        $("#rot-montar", corpo).addEventListener("click", () => {
+          const texto = $("#f-transcricao", corpo).value;
+          const m = montarEstrutura(texto);
+          if (!m) { avisar("Cole o texto do vídeo no campo de transcrição primeiro.", true); return; }
+          const temAlgo = ["gancho", "desenvolvimento", "cta"].some((k) => $(`[name="${k}"]`, corpo).value.trim());
+          if (temAlgo && !window.confirm("Trocar o gancho, os passos e o CTA que já estão preenchidos?")) return;
+          ["gancho", "gancho_tipo", "desenvolvimento", "cta"].forEach((k) => { $(`[name="${k}"]`, corpo).value = m[k]; });
+          if (!$('[name="titulo"]', corpo).value.trim()) $('[name="titulo"]', corpo).value = m.titulo;
+          atualizarEstrutura();
+          $("details.rot-editar", corpo).open = true;
+          avisar("Estrutura montada. Confira e ajuste se precisar.");
+        });
+        // ao colar outro link, troca o vídeo, a origem e o perfil
+        $('[name="link"]', corpo).addEventListener("change", (e) => {
+          const link = e.target.value.trim();
+          const emb = embedDoLink(link);
+          $("#rot-player", corpo).innerHTML = emb ? `<iframe src="${emb}" title="Vídeo do roteiro" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen></iframe>` : "<p>Esse link não pode tocar aqui dentro. Use o link completo do vídeo.</p>";
+          if (link) $('[name="origem"]', corpo).value = origemDoLink(link);
+          const perfil = perfilDoLink(link);
+          if (perfil && !$('[name="perfil"]', corpo).value.trim()) $('[name="perfil"]', corpo).value = perfil;
+        });
+        if (tocar) $("#rot-player", corpo).scrollIntoView({ block: "center" });
+      }
+    });
+  }
+
   // =========================================================
   // 5. CHECKLIST PORTFÓLIO (conteúdo do js/biblioteca.js, sem mudar nada)
   // =========================================================
@@ -1065,14 +1317,16 @@
     marcas: () => desenhar("marcas", desenharMarcas),
     calendario: () => desenhar("calendario", desenharCalendario),
     campanhas: () => { desenhar("campanhas", desenharCampanhas); desenhar("calendario", desenharCalendario); },
-    marcados: () => desenhar("checklist", desenharChecklist)
+    marcados: () => desenhar("checklist", desenharChecklist),
+    roteiros: () => desenhar("roteiros", desenharRoteiros)
   };
   const CONSULTAS = {
     videos: (q) => q.order("ordem", { ascending: true }).order("id", { ascending: true }),
     marcas: (q) => q.order("criado_em", { ascending: false }),
     calendario: (q) => q.order("data", { ascending: true }),
     campanhas: (q) => q.order("id", { ascending: true }),
-    marcados: null
+    marcados: null,
+    roteiros: (q) => q.order("criado_em", { ascending: false })
   };
   async function recarregar(tabela) {
     if (tabela === "visitas") await carregarVisitas();
@@ -1096,6 +1350,6 @@
   mostrarAba((location.hash || "").replace("#", "") || "portfolio");
   // Desenha logo de cara (vazio) e vai preenchendo conforme os dados chegam
   Object.values(DESENHOS).forEach((d) => d());
-  await Promise.all(["marcas", "calendario", "campanhas", "marcados"].map((t) => recarregar(t)));
+  await Promise.all(["marcas", "calendario", "campanhas", "marcados", "roteiros"].map((t) => recarregar(t)));
   await atualizarPortfolio(false);
 })();

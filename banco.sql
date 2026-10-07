@@ -250,9 +250,53 @@ where not exists (select 1 from public.campanhas);
 
 
 -- ---------------------------------------------------------------------
+-- 12b) ROTEIROS (aba de transcrição de vídeos do YouTube, Instagram e TikTok)
+-- de_quem: 'outra' (vídeo de outra pessoa) ou 'meu' (vídeo seu)
+-- origem: instagram, tiktok, youtube ou outro
+-- gancho_tipo: pergunta, promessa, dor, curiosidade, polêmica, número...
+-- desenvolvimento: um passo por linha
+-- expressoes e etiquetas: separadas por vírgula
+-- ---------------------------------------------------------------------
+create table if not exists public.roteiros (
+  id               bigint generated always as identity primary key,
+  titulo           text not null default '',
+  de_quem          text not null default 'outra' check (de_quem in ('outra', 'meu')),
+  perfil           text,
+  data_post        date,
+  origem           text not null default 'instagram' check (origem in ('instagram', 'tiktok', 'youtube', 'outro')),
+  link             text,
+  etiquetas        text,
+  gancho           text,
+  gancho_tipo      text,
+  desenvolvimento  text,
+  cta              text,
+  expressoes       text,
+  por_que          text,
+  transcricao      text,
+  notas            text,
+  exemplo          boolean not null default false,
+  criado_em        timestamptz not null default now()
+);
+alter table public.roteiros enable row level security;
+drop policy if exists "dona faz tudo" on public.roteiros;
+create policy "dona faz tudo" on public.roteiros
+  for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+insert into public.roteiros (titulo, de_quem, perfil, origem, link, etiquetas, gancho, gancho_tipo, desenvolvimento, cta, expressoes, por_que, transcricao, notas, exemplo)
+select 'Exemplo: como organizar a geladeira em 3 passos', 'outra', 'perfilexemplo', 'youtube', '',
+       'organização, tutorial', 'Sua geladeira também vira bagunça na quarta-feira?', 'pergunta',
+       E'Passo 1: tirar tudo e separar por categoria.\nPasso 2: potes iguais para cada tipo.\nPasso 3: etiquetas com a data.',
+       'Salva esse vídeo pra fazer no fim de semana.', 'bagunça, potes iguais, fim de semana',
+       'Abre com uma pergunta que a pessoa responde "sim" na cabeça e entrega passos curtos.',
+       E'Sua geladeira também vira bagunça na quarta-feira? Passo 1: tirar tudo e separar por categoria. Passo 2: potes iguais para cada tipo. Passo 3: etiquetas com a data. Salva esse vídeo pra fazer no fim de semana.',
+       'Linha de exemplo: pode apagar.', true
+where not exists (select 1 from public.roteiros);
+
+
+-- ---------------------------------------------------------------------
 -- 13) AVISA O SUPABASE QUE AS TABELAS NOVAS EXISTEM E CONFIRMA
 -- Se tudo deu certo, aparece embaixo, em "Results", a frase "Pronto!".
 -- ---------------------------------------------------------------------
 notify pgrst, 'reload schema';
 
-select 'Pronto! As 6 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;
+select 'Pronto! As 7 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;
