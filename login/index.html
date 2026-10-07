@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Esta página não deve aparecer no Google -->
+<meta name="robots" content="noindex, nofollow">
+<title>Entrar | Painel Mari Bonetto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/painel.css">
+<!-- Biblioteca oficial do Supabase (por CDN) e a ligação com o banco -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/banco.js"></script>
+</head>
+<body>
+<main class="login-pagina">
+  <div class="login-cartao">
+    <!-- ENTRAR -->
+    <form id="form-entrar" novalidate>
+      <h1>Painel da Mari</h1>
+      <p class="sub">Entre com seu e-mail e senha.</p>
+      <p class="faixa faixa-erro" id="erro-entrar" role="alert" hidden></p>
+      <p class="faixa faixa-ok" id="ok-entrar" role="status" hidden></p>
+      <div class="campo"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required></div>
+      <div class="campo"><label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-principal" type="submit" id="btn-entrar">Entrar</button>
+      <button class="login-link" type="button" id="btn-esqueci">Esqueci minha senha</button>
+    </form>
+
+    <!-- CRIAR SENHA NOVA (aparece quando a pessoa chega pelo e-mail de recuperação) -->
+    <form id="form-nova" novalidate hidden>
+      <h1>Criar senha nova</h1>
+      <p class="sub">Digite a senha nova duas vezes.</p>
+      <p class="faixa faixa-erro" id="erro-nova" role="alert" hidden></p>
+      <div class="campo"><label for="nova1">Senha nova</label><input id="nova1" type="password" autocomplete="new-password" minlength="6" required></div>
+      <div class="campo"><label for="nova2">Repita a senha nova</label><input id="nova2" type="password" autocomplete="new-password" minlength="6" required></div>
+      <button class="btn btn-principal" type="submit">Salvar senha e entrar</button>
+    </form>
+
+    <a class="login-voltar" href="../">Voltar para o portfólio</a>
+  </div>
+</main>
+
+<script>
+(function () {
+  const banco = window.banco;
+  const $ = (id) => document.getElementById(id);
+  const mostrar = (el, texto) => { el.textContent = texto; el.hidden = !texto; };
+  const irProAdmin = () => location.replace("../admin/");
+
+  if (!banco) {
+    mostrar($("erro-entrar"), "Não foi possível carregar o sistema de login. Confira sua internet e recarregue a página.");
+    return;
+  }
+
+  // Chegou pelo link do e-mail de "esqueci minha senha"?
+  const veioRecuperar = /type=recovery/.test(location.hash) || new URLSearchParams(location.search).has("recuperar");
+  let modoRecuperar = false;
+  function abrirNovaSenha() {
+    modoRecuperar = true;
+    $("form-entrar").hidden = true;
+    $("form-nova").hidden = false;
+    $("nova1").focus();
+  }
+  banco.auth.onAuthStateChange((evento) => { if (evento === "PASSWORD_RECOVERY") abrirNovaSenha(); });
+
+  // Se já tem sessão aberta, vai direto pro painel
+  banco.auth.getSession().then(({ data }) => {
+    if (veioRecuperar) { if (data && data.session) abrirNovaSenha(); return; }
+    if (data && data.session && !modoRecuperar) irProAdmin();
+  });
+
+  // Entrar
+  $("form-entrar").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    mostrar($("erro-entrar"), ""); mostrar($("ok-entrar"), "");
+    const email = $("email").value.trim(), senha = $("senha").value;
+    if (!email || !senha) { mostrar($("erro-entrar"), "Preencha o e-mail e a senha."); return; }
+    const botao = $("btn-entrar");
+    botao.disabled = true; botao.textContent = "Entrando...";
+    try {
+      const { error } = await banco.auth.signInWithPassword({ email, password: senha });
+      if (error) {
+        const msg = String(error.message || "").toLowerCase();
+        if (msg.includes("not confirmed")) mostrar($("erro-entrar"), "Esse e-mail ainda não foi confirmado. Confirme pelo link que chegou no seu e-mail.");
+        else if (error.status === 0 || msg.includes("fetch")) mostrar($("erro-entrar"), "Sem conexão com o servidor. Confira sua internet e tente de novo.");
+        else mostrar($("erro-entrar"), "E-mail ou senha incorretos");
+      } else {
+        irProAdmin();
+        return;
+      }
+    } catch (err) {
+      mostrar($("erro-entrar"), "Sem conexão com o servidor. Confira sua internet e tente de novo.");
+    }
+    botao.disabled = false; botao.textContent = "Entrar";
+  });
+
+  // Esqueci minha senha
+  $("btn-esqueci").addEventListener("click", async () => {
+    mostrar($("erro-entrar"), ""); mostrar($("ok-entrar"), "");
+    const email = $("email").value.trim();
+    if (!email) { mostrar($("erro-entrar"), "Digite seu e-mail no campo acima e clique de novo em \"Esqueci minha senha\"."); $("email").focus(); return; }
+    try {
+      const volta = location.origin + location.pathname + "?recuperar=1";
+      const { error } = await banco.auth.resetPasswordForEmail(email, { redirectTo: volta });
+      if (error && error.status === 429) { mostrar($("erro-entrar"), "Muitos pedidos seguidos. Espere alguns minutos e tente de novo."); return; }
+      mostrar($("ok-entrar"), "Se esse e-mail for o do painel, chega em instantes um link para criar uma senha nova. Olhe também o spam.");
+    } catch (err) {
+      mostrar($("erro-entrar"), "Sem conexão com o servidor. Confira sua internet e tente de novo.");
+    }
+  });
+
+  // Salvar senha nova
+  $("form-nova").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    mostrar($("erro-nova"), "");
+    const a = $("nova1").value, b = $("nova2").value;
+    if (a.length < 6) { mostrar($("erro-nova"), "A senha precisa ter pelo menos 6 caracteres."); return; }
+    if (a !== b) { mostrar($("erro-nova"), "As duas senhas não estão iguais."); return; }
+    const { error } = await banco.auth.updateUser({ password: a });
+    if (error) { mostrar($("erro-nova"), "Não foi possível salvar a senha. Peça um link novo em \"Esqueci minha senha\"."); return; }
+    irProAdmin();
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="conferindo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Painel | Mari Bonetto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/painel.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/banco.js"></script>
+<script>
+// PRIMEIRA COISA: conferir a sessão. Sem sessão, vai para o login.
+// A página só aparece depois dessa conferência (antes ela fica escondida).
+window.sessaoPronta = (async function () {
+  const irProLogin = () => { location.replace("../login/"); return null; };
+  if (!window.banco) return irProLogin();
+  try {
+    const { data } = await window.banco.auth.getSession();
+    const sessao = data && data.session;
+    if (!sessao) return irProLogin();
+    if (sessao.user && sessao.user.email !== window.BANCO_EMAIL_DONA) {
+      await window.banco.auth.signOut();
+      return irProLogin();
+    }
+    return sessao;
+  } catch (e) {
+    return irProLogin();
+  }
+})();
+</script>
+</head>
+<body>
+<div class="painel" id="painel">
+  <!-- MENU LATERAL -->
+  <aside class="menu" id="menu" aria-label="Menu do painel">
+    <div class="menu-marca">Mari Bonetto<span>painel</span></div>
+
+    <div class="menu-grupo">meu site</div>
+    <button class="menu-item" data-aba="portfolio" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2.5"/><path d="M10 9.2v5.6l4.6-2.8z"/><path d="M8 21h8"/></svg>Portfólio</button>
+    <button class="menu-item" data-aba="marcas" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7"/><path d="M3 12.5h18"/></svg>Marcas</button>
+
+    <div class="menu-grupo">minha rotina</div>
+    <button class="menu-item" data-aba="calendario" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Calendário</button>
+    <button class="menu-item" data-aba="campanhas" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>Campanhas</button>
+    <button class="menu-item" data-aba="checklist" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17"/></svg>Checklist</button>
+
+    <div class="menu-rodape">
+      <div class="menu-email" id="menu-email"></div>
+      <button class="btn" id="btn-sair" type="button">
+        <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></svg>Sair</button>
+    </div>
+  </aside>
+  <div class="menu-fundo" id="menu-fundo"></div>
+
+  <!-- CONTEÚDO -->
+  <main class="conteudo">
+    <div class="topo">
+      <button class="icone-btn" id="btn-menu" type="button" aria-label="Abrir menu">
+        <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <h1 id="titulo-aba">Portfólio</h1>
+    </div>
+    <div id="avisos" aria-live="polite"></div>
+
+    <section class="aba" id="aba-portfolio"></section>
+    <section class="aba" id="aba-marcas" hidden></section>
+    <section class="aba" id="aba-calendario" hidden></section>
+    <section class="aba" id="aba-campanhas" hidden></section>
+    <section class="aba" id="aba-checklist" hidden></section>
+  </main>
+</div>
+
+<!-- Janela usada por todos os formulários -->
+<dialog class="janela" id="janela">
+  <form method="dialog" id="janela-form" novalidate>
+    <div class="janela-cabeca"><h2 id="janela-titulo"></h2>
+      <button class="icone-btn" type="button" id="janela-fechar" aria-label="Fechar">
+        <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="janela-corpo" id="janela-corpo"></div>
+    <div class="janela-rodape" id="janela-rodape"></div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="../js/biblioteca.js"></script>
+<script src="../js/admin.js"></script>
+</body>
+</html>

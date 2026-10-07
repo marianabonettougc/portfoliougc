@@ -1,0 +1,249 @@
+-- =====================================================================
+-- BANCO DE DADOS DO PAINEL DA MARI BONETTO
+-- Onde colar: Supabase > seu projeto > menu da esquerda "SQL Editor" >
+-- botão "New query" > cole TUDO isto > clique em "Run".
+-- Pode rodar mais de uma vez sem estragar nada: ele só cria o que ainda não existe.
+-- =====================================================================
+
+
+-- ---------------------------------------------------------------------
+-- 1) QUEM É A DONA
+-- Uma função pequena que responde "sim" só quando quem está logado
+-- é o e-mail da Mari. Todas as regras de segurança usam ela.
+-- ---------------------------------------------------------------------
+create or replace function public.e_a_dona()
+returns boolean
+language sql
+stable
+as $$
+  select coalesce(auth.jwt() ->> 'email', '') = 'marianabonettougc@gmail.com'
+$$;
+
+
+-- ---------------------------------------------------------------------
+-- 2) VÍDEOS DO PORTFÓLIO
+-- O site lê daqui os vídeos que aparecem em "Meus cases de sucesso".
+-- destaque = texto das visualizações, ex.: "+470k"
+-- ordem = posição no site (menor aparece primeiro)
+-- visivel = se aparece no site ou fica escondido
+-- exemplo = linha de exemplo, só para mostrar o formato (pode apagar)
+-- ---------------------------------------------------------------------
+create table if not exists public.videos (
+  id          bigint generated always as identity primary key,
+  titulo      text not null default '',
+  link        text not null default '',
+  nicho       text,
+  formato     text,
+  marca       text,
+  destaque    text,
+  ordem       integer not null default 0,
+  visivel     boolean not null default true,
+  exemplo     boolean not null default false,
+  criado_em   timestamptz not null default now()
+);
+
+
+-- ---------------------------------------------------------------------
+-- 3) MARCAS (sua base de contatos de empresa)
+-- situacao: lead, conversando, cliente ou parada
+-- Quem manda o formulário do site entra aqui como "lead".
+-- ---------------------------------------------------------------------
+create table if not exists public.marcas (
+  id              bigint generated always as identity primary key,
+  nome            text not null default '',
+  instagram       text,
+  email           text,
+  telefone        text,
+  situacao        text not null default 'lead'
+                  check (situacao in ('lead', 'conversando', 'cliente', 'parada')),
+  obs             text,
+  ultimo_contato  date,
+  exemplo         boolean not null default false,
+  criado_em       timestamptz not null default now()
+);
+
+
+-- ---------------------------------------------------------------------
+-- 4) CALENDÁRIO
+-- tipo: gravar, editar ou postar
+-- status: a fazer ou feito
+-- ---------------------------------------------------------------------
+create table if not exists public.calendario (
+  id         bigint generated always as identity primary key,
+  titulo     text not null default '',
+  marca      text,
+  tipo       text not null default 'gravar'
+             check (tipo in ('gravar', 'editar', 'postar')),
+  data       date not null default current_date,
+  status     text not null default 'a fazer'
+             check (status in ('a fazer', 'feito')),
+  exemplo    boolean not null default false,
+  criado_em  timestamptz not null default now()
+);
+
+
+-- ---------------------------------------------------------------------
+-- 5) CAMPANHAS
+-- tipo: Conteúdo ou Publicidade
+-- status, na ordem do funil: Briefing, Roteiro, Aprovação Roteiro,
+-- Gravação, Edição, Aprovado, Entregue
+-- pagamento: pendente ou pago
+-- ---------------------------------------------------------------------
+create table if not exists public.campanhas (
+  id         bigint generated always as identity primary key,
+  campanha   text not null default '',
+  cliente    text,
+  tipo       text not null default 'Conteúdo'
+             check (tipo in ('Conteúdo', 'Publicidade')),
+  status     text not null default 'Briefing'
+             check (status in ('Briefing', 'Roteiro', 'Aprovação Roteiro', 'Gravação', 'Edição', 'Aprovado', 'Entregue')),
+  qtd        integer not null default 1,
+  valor      numeric(12,2) not null default 0,
+  prazo      date,
+  pagamento  text not null default 'pendente'
+             check (pagamento in ('pendente', 'pago')),
+  ativa      boolean not null default true,
+  favorita   boolean not null default false,
+  exemplo    boolean not null default false,
+  criado_em  timestamptz not null default now()
+);
+
+
+-- ---------------------------------------------------------------------
+-- 6) MARCADOS (o que você já marcou no checklist)
+-- chave = um texto que identifica cada item do checklist
+-- ---------------------------------------------------------------------
+create table if not exists public.marcados (
+  chave          text primary key,
+  marcado        boolean not null default true,
+  atualizado_em  timestamptz not null default now()
+);
+
+
+-- ---------------------------------------------------------------------
+-- 7) VISITAS (métricas do portfólio)
+-- Cada vez que alguém abre o portfólio, entra uma linha aqui.
+-- pagina = qual página foi aberta
+-- origem = de onde a pessoa veio (Instagram, Google, direto...)
+-- Não guarda nome, e-mail, IP nem nada da pessoa.
+-- ---------------------------------------------------------------------
+create table if not exists public.visitas (
+  id      bigint generated always as identity primary key,
+  data    timestamptz not null default now(),
+  pagina  text,
+  origem  text
+);
+
+
+-- ---------------------------------------------------------------------
+-- 8) A TRANCA: RLS (Row Level Security) LIGADO EM TODAS AS TABELAS
+-- Com o RLS ligado, ninguém lê nem escreve nada, a não ser o que as
+-- regras abaixo deixarem.
+-- ---------------------------------------------------------------------
+alter table public.videos     enable row level security;
+alter table public.marcas     enable row level security;
+alter table public.calendario enable row level security;
+alter table public.campanhas  enable row level security;
+alter table public.marcados   enable row level security;
+alter table public.visitas    enable row level security;
+
+
+-- ---------------------------------------------------------------------
+-- 9) REGRAS: SÓ A MARI LOGADA LÊ E ESCREVE
+-- Para cada tabela, uma regra que libera tudo (ler, criar, editar,
+-- apagar) somente para a dona logada. Quem não está logado não vê nada.
+-- O "drop policy if exists" só serve para poder rodar de novo sem erro.
+-- ---------------------------------------------------------------------
+drop policy if exists "dona faz tudo" on public.videos;
+create policy "dona faz tudo" on public.videos
+  for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+drop policy if exists "dona faz tudo" on public.marcas;
+create policy "dona faz tudo" on public.marcas
+  for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+drop policy if exists "dona faz tudo" on public.calendario;
+create policy "dona faz tudo" on public.calendario
+  for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+drop policy if exists "dona faz tudo" on public.campanhas;
+create policy "dona faz tudo" on public.campanhas
+  for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+drop policy if exists "dona faz tudo" on public.marcados;
+create policy "dona faz tudo" on public.marcados
+  for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+drop policy if exists "dona faz tudo" on public.visitas;
+create policy "dona faz tudo" on public.visitas
+  for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+
+-- ---------------------------------------------------------------------
+-- 10) AS DUAS ÚNICAS EXCEÇÕES (qualquer pessoa, mesmo sem login)
+-- a) INSERIR em marcas, vindo do formulário do site: só pode entrar
+--    como "lead" e não pode se marcar como exemplo.
+-- b) INSERIR em visitas.
+-- Nas duas, a pessoa só GRAVA. Ler continua sendo só você.
+-- ---------------------------------------------------------------------
+drop policy if exists "formulario do site cria lead" on public.marcas;
+create policy "formulario do site cria lead" on public.marcas
+  for insert to anon, authenticated
+  with check (situacao = 'lead' and exemplo = false);
+
+drop policy if exists "qualquer um registra visita" on public.visitas;
+create policy "qualquer um registra visita" on public.visitas
+  for insert to anon, authenticated
+  with check (true);
+
+
+-- ---------------------------------------------------------------------
+-- 11) O SITE PRECISA VER OS VÍDEOS QUE ESTÃO NO AR
+-- Para o portfólio mostrar os vídeos sem ninguém logado, criamos uma
+-- "vitrine": uma função que devolve SÓ os vídeos visíveis e que não são
+-- exemplo, e SÓ as colunas que o site usa. A tabela videos continua
+-- trancada: ninguém de fora lê a tabela em si.
+-- ---------------------------------------------------------------------
+create or replace function public.videos_no_ar()
+returns table (titulo text, link text, nicho text, formato text, marca text, destaque text, ordem integer)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select titulo, link, nicho, formato, marca, destaque, ordem
+  from public.videos
+  where visivel = true and exemplo = false
+  order by ordem, id
+$$;
+revoke all on function public.videos_no_ar() from public;
+grant execute on function public.videos_no_ar() to anon, authenticated;
+
+
+-- ---------------------------------------------------------------------
+-- 12) PRIMEIROS DADOS
+-- Os 3 vídeos que já estão no seu site hoje (para o site não ficar vazio)
+-- e UMA linha de exemplo em cada lista, marcada como exemplo, para você
+-- entender o formato e apagar depois. Só entra se a tabela estiver vazia.
+-- ---------------------------------------------------------------------
+insert into public.videos (titulo, link, marca, destaque, ordem, visivel, exemplo)
+select * from (values
+  ('Unicesumar', 'https://www.youtube.com/shorts/vIAAHLv0V18', 'Unicesumar', '+5,5 mi', 1, true, false),
+  ('Vídeo 02', 'https://youtu.be/x3cTwB7OKOY', null, '+470k', 2, true, false),
+  ('Piccadilly', 'https://youtube.com/shorts/MFT4boPq418', 'Piccadilly', '+55k', 3, true, false),
+  ('Exemplo: título do vídeo', 'https://www.youtube.com/shorts/COLE_O_LINK_AQUI', 'Marca exemplo', '+0 views', 99, false, true)
+) as v(titulo, link, marca, destaque, ordem, visivel, exemplo)
+where not exists (select 1 from public.videos);
+
+insert into public.marcas (nome, instagram, email, telefone, situacao, obs, ultimo_contato, exemplo)
+select 'Marca exemplo', '@marcaexemplo', 'contato@marcaexemplo.com', '11999999999', 'lead',
+       'Linha de exemplo: pode apagar.', current_date, true
+where not exists (select 1 from public.marcas);
+
+insert into public.calendario (titulo, marca, tipo, data, status, exemplo)
+select 'Exemplo: gravar vídeo', 'Marca exemplo', 'gravar', current_date, 'a fazer', true
+where not exists (select 1 from public.calendario);
+
+insert into public.campanhas (campanha, cliente, tipo, status, qtd, valor, prazo, pagamento, ativa, favorita, exemplo)
+select 'Campanha exemplo', 'Marca exemplo', 'Conteúdo', 'Briefing', 1, 0, current_date + 7, 'pendente', true, false, true
+where not exists (select 1 from public.campanhas);

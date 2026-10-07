@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Serif+Display:ital@0;1&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Banco de dados (Supabase): o site lê os vídeos, salva os contatos e conta as visitas -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="js/banco.js" defer></script>
 <style>
   /* =========================================================
      IDENTIDADE: CARTÃO DE CAFETERIA PREMIUM
@@ -1197,7 +1200,10 @@ function cardVideo(d, chave) {
   const info = titulo || views ? `<div class="video-info">${titulo}${views}</div>` : "";
   return `<div class="video-midia${id ? "" : " sem-video"}" data-chave="${chave}">${capa}${marca}${play}${info}</div>`;
 }
-$("#videos-grid").innerHTML = destaques.map((d, i) => `<li class="video-card revelar">${cardVideo(d, i)}</li>`).join("");
+function desenharDestaques(jaVisivel) {
+  $("#videos-grid").innerHTML = destaques.map((d, i) => `<li class="video-card revelar${jaVisivel ? " visivel" : ""}">${cardVideo(d, i)}</li>`).join("");
+}
+desenharDestaques(false);
 
 const caseEl = $("#case-destaque");
 caseEl.innerHTML = `
@@ -1211,11 +1217,14 @@ caseEl.innerHTML = `
   </div>`;
 
 // miniaturas: se a imagem não existir (ou vier o quadradinho cinza de 120px do YouTube), tenta a próxima
-document.querySelectorAll("img.capa-img.auto").forEach((img) => {
-  img.addEventListener("error", () => proximaMiniatura(img));
-  img.addEventListener("load", () => { if (img.naturalWidth <= 120) proximaMiniatura(img); });
-  if (img.complete && img.naturalWidth && img.naturalWidth <= 120) proximaMiniatura(img);
-});
+function ligarMiniaturas(raiz) {
+  raiz.querySelectorAll("img.capa-img.auto").forEach((img) => {
+    img.addEventListener("error", () => proximaMiniatura(img));
+    img.addEventListener("load", () => { if (img.naturalWidth <= 120) proximaMiniatura(img); });
+    if (img.complete && img.naturalWidth && img.naturalWidth <= 120) proximaMiniatura(img);
+  });
+}
+ligarMiniaturas(document);
 
 // Vídeos rodam dentro do portfólio (player oficial do YouTube incorporado, nunca abre o YouTube)
 const dadosDoCard = (midia) => (midia.dataset.chave === "case" ? caseDestaque : destaques[Number(midia.dataset.chave)]);
@@ -1224,8 +1233,9 @@ const permissoes = "accelerometer; autoplay; clipboard-write; encrypted-media; g
 const temMouse = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
 // 1) Passar o mouse: o vídeo começa a rodar SEM SOM, em loop, sem controles
-if (temMouse && !reduzMovimento) {
-  document.querySelectorAll(".video-midia").forEach((midia) => {
+function ligarPrevias(raiz) {
+  if (!temMouse || reduzMovimento) return;
+  raiz.querySelectorAll(".video-midia").forEach((midia) => {
     const id = idDoYoutube(dadosDoCard(midia).link);
     if (!id) return;
     let espera = null;
@@ -1250,6 +1260,7 @@ if (temMouse && !reduzMovimento) {
     });
   });
 }
+ligarPrevias(document);
 
 // 2) Clicar no card: o vídeo abre numa janela grande AQUI NO SITE, com som, num player limpo (sem nada do YouTube por cima)
 const ICONES = {"play": "<svg viewBox=\"0 0 24 24\"><path d=\"M8 5v14l11-7z\"/></svg>", "pausa": "<svg viewBox=\"0 0 24 24\"><path d=\"M7 5h4v14H7zM13 5h4v14h-4z\"/></svg>", "som": "<svg viewBox=\"0 0 24 24\"><path d=\"M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z\"/></svg>", "mudo": "<svg viewBox=\"0 0 24 24\"><path d=\"M4 9v6h4l5 4V5L8 9H4zm12.6 3 2.7-2.7-1.4-1.4-2.7 2.7-2.7-2.7-1.4 1.4 2.7 2.7-2.7 2.7 1.4 1.4 2.7-2.7 2.7 2.7 1.4-1.4z\"/></svg>"};
@@ -1433,7 +1444,8 @@ document.addEventListener("click", (e) => {
   abrirPlayer(d);
 });
 // o card inteiro é clicável
-document.querySelectorAll(".video-midia").forEach((m) => { if (idDoYoutube(dadosDoCard(m).link)) m.style.cursor = "pointer"; });
+const marcarClicaveis = (raiz) => raiz.querySelectorAll(".video-midia").forEach((m) => { if (idDoYoutube(dadosDoCard(m).link)) m.style.cursor = "pointer"; });
+marcarClicaveis(document);
 
 // ---------- Mural de fotos ----------
 // Para trocar uma foto: salve o arquivo na pasta "fotos" e coloque o caminho em "src".
@@ -1652,7 +1664,7 @@ if (reduzMovimento || !("IntersectionObserver" in window)) {
 // ---------- Formulários ----------
 const emailValido = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 // Envia para o e-mail da Mari. Devolve true se o envio deu certo.
-async function enviarDados(dados) {
+async function enviarDados(dados, jaSalvoNoBanco) {
   if (!ENDERECO_FORMULARIO) return true;
   const assunto = `Nova mensagem do portfólio: ${dados.nome}${dados.marca ? " (" + dados.marca + ")" : ""}`;
   const corpo = {
@@ -1672,18 +1684,40 @@ async function enviarDados(dados) {
     const texto = Object.entries(corpo).filter(([k]) => !k.startsWith("_")).map(([k, v]) => `${k}: ${v}`).join("\n");
     window.location.href = `mailto:${CONTATO.email}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(texto)}`;
   };
-  if (location.protocol === "file:") { abrirEmailPreenchido(); return "email"; }
+  if (location.protocol === "file:") { if (jaSalvoNoBanco) return true; abrirEmailPreenchido(); return "email"; }
   try {
     const resp = await fetch(ENDERECO_FORMULARIO, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(corpo) });
     const json = await resp.json().catch(() => ({}));
     console.info("FormSubmit:", resp.status, json);
     if (resp.ok && String(json.success) !== "false") return true;
     // Antes da ativação o FormSubmit responde pedindo para ativar o formulário (e manda o e-mail de ativação)
+    // Se o contato já ficou salvo no painel, não precisa abrir o e-mail: a mensagem não se perdeu.
+    if (jaSalvoNoBanco) return true;
     abrirEmailPreenchido(); return "email";
   } catch (e) {
     console.warn("FormSubmit falhou:", e);
+    if (jaSalvoNoBanco) return true;
     abrirEmailPreenchido(); return "email";
   }
+}
+// Salva o contato na base de Marcas do painel, como "lead". Devolve true se salvou.
+async function salvarLead(d) {
+  const banco = await bancoPronto();
+  if (!banco) return false;
+  const partes = [`Contato pelo site: ${d.nome}`];
+  if (d.orcamento) partes.push(`Orçamento: ${d.orcamento}`);
+  if (d.mensagem) partes.push(`Mensagem: ${d.mensagem}`);
+  try {
+    const { error } = await banco.from("marcas").insert({
+      nome: d.marca || d.nome,
+      email: d.email,
+      situacao: "lead",
+      obs: partes.join(" | "),
+      ultimo_contato: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })()
+    });
+    if (error) { console.warn("Banco (marcas):", error.message); return false; }
+    return true;
+  } catch (e) { console.warn("Banco (marcas):", e); return false; }
 }
 $("#form-contato").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -1698,7 +1732,9 @@ $("#form-contato").addEventListener("submit", async (e) => {
   const textoBotao = botao.innerHTML;
   botao.disabled = true;
   botao.textContent = "Enviando...";
-  const enviado = await enviarDados({ tipo: "contato", nome, email, marca, orcamento, mensagem });
+  const dadosForm = { tipo: "contato", nome, email, marca, orcamento, mensagem };
+  const salvo = await salvarLead(dadosForm);
+  const enviado = await enviarDados(dadosForm, salvo);
   botao.disabled = false;
   botao.innerHTML = textoBotao;
   if (!enviado) {
@@ -1713,7 +1749,84 @@ $("#form-contato").addEventListener("submit", async (e) => {
   ok.focus();
 });
 
+// =========================================================
+// LIGAÇÃO COM O PAINEL (Supabase)
+// O banco carrega depois da página (sem atrasar nada). Se não responder,
+// o site continua com a lista de vídeos que está acima.
+// =========================================================
+function bancoPronto() {
+  if (window.banco) return Promise.resolve(window.banco);
+  return new Promise((ok) => {
+    const testar = () => ok(window.banco || null);
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", testar, { once: true });
+    else window.addEventListener("load", testar, { once: true });
+  });
+}
 
+// Logo da marca para a bolinha do vídeo, pelo nome digitado no painel
+const normalizarNome = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+const LOGOS_POR_NOME = Object.assign(
+  Object.fromEntries(marcasGrade.map((m) => [normalizarNome(m.nome), m.logo])),
+  { unicesumar: "logos/parceiros/unicesumar.webp", piccadilly: "logos/parceiros/piccadilly.webp", shein: "logos/parceiros/shein.webp", wap: "logos/parceiros/wap.webp",
+    paguemenos: "logos/parceiros/pague-menos.webp", segurosunimed: "logos/parceiros/seguros-unimed.webp" }
+);
+
+// 1) Vídeos: lê do painel (só os visíveis) e redesenha os cards
+async function carregarVideosDoPainel() {
+  const banco = await bancoPronto();
+  if (!banco) return;
+  try {
+    const { data, error } = await banco.rpc("videos_no_ar");
+    if (error) { console.info("Vídeos do painel indisponíveis, usando a lista do site:", error.message); return; }
+    const lista = (data || []).filter((v) => idDoYoutube(v.link));
+    if (!lista.length) return;
+    destaques.splice(0, destaques.length, ...lista.map((v) => ({
+      link: v.link,
+      capa: "",
+      marca: v.marca || "",
+      logo: LOGOS_POR_NOME[normalizarNome(v.marca)] || "",
+      titulo: v.titulo || v.marca || "",
+      categoria: v.nicho || "",
+      resultado: v.destaque || ""
+    })));
+    desenharDestaques(true);
+    const grade = $("#videos-grid");
+    ligarMiniaturas(grade);
+    ligarPrevias(grade);
+    marcarClicaveis(grade);
+  } catch (e) {
+    console.info("Vídeos do painel indisponíveis, usando a lista do site.", e);
+  }
+}
+
+// 2) Visitas: grava data, página e de onde a pessoa veio. Nada sobre a pessoa.
+function deOndeVeio() {
+  const params = new URLSearchParams(location.search);
+  const utm = (params.get("utm_source") || params.get("ref") || "").toLowerCase().slice(0, 40);
+  let host = utm;
+  if (!host) {
+    try { host = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, "") : ""; } catch (e) {}
+    if (!host || host === location.hostname) return "Direto";
+  }
+  const conhecidos = [["instagram", "Instagram"], ["facebook", "Facebook"], ["fb.", "Facebook"], ["google", "Google"], ["tiktok", "TikTok"], ["whatsapp", "WhatsApp"], ["wa.me", "WhatsApp"],
+    ["youtube", "YouTube"], ["youtu.be", "YouTube"], ["linkedin", "LinkedIn"], ["lnkd", "LinkedIn"], ["bing", "Bing"], ["t.co", "X (Twitter)"], ["twitter", "X (Twitter)"], ["x.com", "X (Twitter)"], ["linktr", "Linktree"], ["pinterest", "Pinterest"]];
+  const achado = conhecidos.find(([pedaco]) => host.includes(pedaco));
+  return achado ? achado[1] : (utm ? utm.charAt(0).toUpperCase() + utm.slice(1) : host);
+}
+async function registrarVisita() {
+  if (location.protocol === "file:") return;
+  try {
+    if (localStorage.getItem("mb_nao_contar_visita")) return;     // a própria Mari (entrou no painel neste navegador)
+    if (sessionStorage.getItem("mb_visita")) return;              // conta uma vez por visita, não a cada recarregar
+    sessionStorage.setItem("mb_visita", "1");
+  } catch (e) {}
+  const banco = await bancoPronto();
+  if (!banco) return;
+  try { await banco.from("visitas").insert({ pagina: location.pathname || "/", origem: deOndeVeio() }); } catch (e) {}
+}
+
+carregarVideosDoPainel();
+registrarVisita();
 </script>
 </body>
 </html>
