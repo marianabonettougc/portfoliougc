@@ -247,3 +247,12 @@ where not exists (select 1 from public.calendario);
 insert into public.campanhas (campanha, cliente, tipo, status, qtd, valor, prazo, pagamento, ativa, favorita, exemplo)
 select 'Campanha exemplo', 'Marca exemplo', 'Conteúdo', 'Briefing', 1, 0, current_date + 7, 'pendente', true, false, true
 where not exists (select 1 from public.campanhas);
+
+
+-- ---------------------------------------------------------------------
+-- 13) AVISA O SUPABASE QUE AS TABELAS NOVAS EXISTEM E CONFIRMA
+-- Se tudo deu certo, aparece embaixo, em "Results", a frase "Pronto!".
+-- ---------------------------------------------------------------------
+notify pgrst, 'reload schema';
+
+select 'Pronto! As 6 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;
