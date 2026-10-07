@@ -14,8 +14,18 @@
   const banco = window.banco;
   const BIB = window.Biblioteca || null;
 
-  // Visitas feitas por você no portfólio, neste navegador, não entram nas métricas
-  try { localStorage.setItem("mb_nao_contar_visita", "1"); } catch (e) {}
+  // Visitas feitas por você no portfólio, neste navegador, não entram nas métricas.
+  // Dá para ligar a contagem na aba Portfólio (útil para testar).
+  const CHAVE_CONTAR = "mb_contar_minhas_visitas";
+  const contarMinhas = () => { try { return localStorage.getItem(CHAVE_CONTAR) === "1"; } catch (e) { return false; } };
+  function aplicarContagem() {
+    try {
+      if (contarMinhas()) localStorage.removeItem("mb_nao_contar_visita");
+      else localStorage.setItem("mb_nao_contar_visita", "1");
+    } catch (e) {}
+  }
+  aplicarContagem();
+  let atualizadoEm = null;
 
   // ---------------------------------------------------------
   // AJUDANTES
@@ -289,7 +299,16 @@
     const maior = Math.max(0, ...dias.map((d) => d.n));
 
     const topoOrigem = origens.length ? origens[0][0] : "";
+    const hora = atualizadoEm ? atualizadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
     sec.innerHTML = `
+      <div class="ferramentas" style="margin-bottom:10px">
+        <span style="font-size:11.5px;color:var(--suave)">${hora ? `Atualizado às ${hora}. Os números se atualizam sozinhos a cada minuto.` : "Carregando os números..."}</span>
+        <div class="direita">
+          <label class="check-linha" style="margin:0;font-size:11.5px;color:var(--suave)" title="Desligado: quando você abre o seu portfólio neste navegador, a visita não entra na conta.">
+            <input type="checkbox" id="contar-minhas"${contarMinhas() ? " checked" : ""}> Contar minhas visitas neste navegador</label>
+          <button class="btn" type="button" id="btn-atualizar">Atualizar</button>
+        </div>
+      </div>
       <div class="numeros">
         <div class="numero"><small>Visitas em 14 dias</small><strong>${total}</strong></div>
         <div class="numero"><small>Visitas hoje</small><strong>${deHoje}</strong></div>
@@ -338,6 +357,12 @@
       </div>`;
 
     $("#video-novo").addEventListener("click", () => formVideo());
+    $("#btn-atualizar").addEventListener("click", () => atualizarPortfolio(true));
+    $("#contar-minhas").addEventListener("change", (e) => {
+      try { localStorage.setItem(CHAVE_CONTAR, e.target.checked ? "1" : "0"); } catch (er) {}
+      aplicarContagem();
+      avisar(e.target.checked ? "Pronto: suas visitas ao portfólio neste navegador vão contar." : "Suas visitas neste navegador não vão mais contar.");
+    });
     const tabela = $("#tabela-videos");
     if (!tabela) return;
     tabela.addEventListener("click", async (e) => {
@@ -1041,8 +1066,20 @@
     DESENHOS[tabela]();
   }
 
+  // Atualiza os números do Portfólio
+  async function atualizarPortfolio(manual) {
+    await Promise.all([carregarVisitas(), carregar("videos", CONSULTAS.videos)]);
+    atualizadoEm = new Date();
+    desenhar("portfolio", desenharPortfolio);
+    if (manual) avisar("Números atualizados");
+  }
+  // sozinho a cada minuto, só quando a aba do navegador está aberta na frente
+  setInterval(() => { if (!document.hidden && !janela.open) atualizarPortfolio(false); }, 60000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) atualizarPortfolio(false); });
+
   mostrarAba((location.hash || "").replace("#", "") || "portfolio");
   // Desenha logo de cara (vazio) e vai preenchendo conforme os dados chegam
   Object.values(DESENHOS).forEach((d) => d());
-  await Promise.all(["videos", "visitas", "marcas", "calendario", "campanhas", "marcados"].map((t) => recarregar(t)));
+  await Promise.all(["marcas", "calendario", "campanhas", "marcados"].map((t) => recarregar(t)));
+  await atualizarPortfolio(false);
 })();
