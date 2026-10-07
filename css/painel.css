@@ -251,7 +251,13 @@ details.secao summary .conta .progresso{margin-top:4px}
 .ref{border:1px solid var(--linha);background:var(--cartao);border-radius:var(--raio);overflow:hidden;cursor:pointer;text-align:left;padding:0}
 .ref:hover{box-shadow:var(--sombra)}
 .ref-capa{aspect-ratio:9/14;display:flex;align-items:center;justify-content:center;font-size:40px;position:relative}
-.ref-capa .dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.45);color:#fff;font-size:10.5px;padding:1px 7px;border-radius:999px}
+.ref-capa{overflow:hidden}
+.ref-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ref-play{position:relative;width:42px;height:42px;border-radius:50%;background:rgba(107,74,53,.88);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.ref-play svg{width:18px;height:18px;fill:#fff;margin-left:2px}
+.ref-video{width:min(280px,100%);aspect-ratio:9/16;margin:0 auto 14px;border-radius:var(--raio);overflow:hidden;background:#000}
+.ref-video iframe{width:100%;height:100%;border:0;display:block}
+.ref-capa .dur{z-index:1;position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.45);color:#fff;font-size:10.5px;padding:1px 7px;border-radius:999px}
 .ref-info{padding:9px 10px}
 .ref-info b{display:block;font-size:12.5px;font-weight:600;line-height:1.3}
 .ref-info small{color:var(--suave);font-size:11px}

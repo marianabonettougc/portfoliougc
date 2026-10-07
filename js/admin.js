@@ -163,6 +163,8 @@
   const janela = $("#janela");
   $("#janela-fechar").addEventListener("click", () => janela.close());
   janela.addEventListener("click", (e) => { if (e.target === janela) janela.close(); });
+  // ao fechar, tira vídeos que estavam tocando dentro da janela
+  janela.addEventListener("close", () => $$("#janela-corpo iframe").forEach((f) => f.remove()));
   function abrirJanela({ titulo, corpo, botoes = [], larga = false, aoAbrir }) {
     $("#janela-titulo").textContent = titulo;
     $("#janela-corpo").innerHTML = corpo;
@@ -966,24 +968,38 @@
 
   function subReferencias(alvo) {
     const refs = BIB.REFERENCIAS || [];
-    alvo.innerHTML = `<div class="refs">${refs.map((r, i) => `
+    // capa = miniatura do próprio vídeo no YouTube (tenta a vertical, depois as outras)
+    const capas = (id) => ["oardefault", "maxresdefault", "sddefault", "hqdefault"].map((t) => `https://i.ytimg.com/vi/${id}/${t}.jpg`);
+    alvo.innerHTML = `<div class="refs">${refs.map((r, i) => {
+      const id = idYoutube(r.youtube);
+      const [primeira, ...resto] = id ? capas(id) : [];
+      return `
       <button type="button" class="ref" data-ref="${i}">
-        <div class="ref-capa cor-${esc(r.cor)}"><span aria-hidden="true">${r.emoji}</span><span class="dur">${esc(r.duracao)}</span></div>
+        <div class="ref-capa cor-${esc(r.cor)}">${id ? `<img class="ref-img" src="${primeira}" data-resto='${JSON.stringify(resto)}' alt="Capa do vídeo ${esc(r.titulo)}" loading="lazy">` : ""}
+          <span class="ref-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span><span class="dur">${esc(r.duracao)}</span></div>
         <div class="ref-info"><b>${esc(r.titulo)}</b><small>${esc(r.estilo)} · ${esc(r.marca)}</small></div>
-      </button>`).join("")}</div>`;
+      </button>`;
+    }).join("")}</div>`;
+    // se a capa não existir (ou vier o quadradinho cinza de 120px do YouTube), tenta a próxima
+    $$(".ref-img", alvo).forEach((img) => {
+      const proxima = () => { const resto = JSON.parse(img.dataset.resto || "[]"); if (!resto.length) { img.remove(); return; } img.src = resto.shift(); img.dataset.resto = JSON.stringify(resto); };
+      img.addEventListener("error", proxima);
+      img.addEventListener("load", () => { if (img.naturalWidth <= 120) proxima(); });
+    });
     $$("[data-ref]", alvo).forEach((b) => b.addEventListener("click", () => {
       const r = refs[Number(b.dataset.ref)];
       abrirJanela({
-        titulo: `${r.emoji} ${r.titulo}`,
+        titulo: r.titulo,
         larga: true,
         corpo: `
+          ${idYoutube(r.youtube) ? `<div class="ref-video"><iframe src="https://www.youtube-nocookie.com/embed/${idYoutube(r.youtube)}?rel=0&modestbranding=1&playsinline=1" title="Vídeo: ${esc(r.titulo)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>` : ""}
           <p style="margin:0 0 12px;color:var(--suave);font-size:12px">${esc(r.estilo)} · ${esc(r.duracao)} · ${esc(r.marca)}</p>
           <div class="ficha-campo"><b>Gancho</b><p>${esc(r.gancho)}</p></div>
           <div class="ficha-campo"><b>Por que funciona</b><p>${esc(r.porque)}</p></div>
           <div class="ficha-campo"><b>O diferencial</b><p>${esc(r.diferencial)}</p></div>
           <div class="ficha-campo"><b>Erro comum</b><p>${esc(r.erro)}</p></div>
           <div class="ficha-campo"><b>Roteiro</b><ul class="blocos-tempo">${(r.roteiro || []).map((p) => `<li><span class="tempo">${esc(p.t)}</span><span>${p.o}</span></li>`).join("")}</ul></div>`,
-        botoes: [{ texto: "Fechar" }, { texto: "Assistir", classe: "btn-principal", acao: () => { window.open(r.youtube, "_blank", "noopener"); return false; } }]
+        botoes: [{ texto: "Fechar" }, { texto: "Abrir no YouTube", classe: "btn-principal", acao: () => { window.open(r.youtube, "_blank", "noopener"); return false; } }]
       });
     }));
   }
