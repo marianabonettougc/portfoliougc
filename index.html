@@ -1001,7 +1001,7 @@ const destaques = [
 // ================================
 const caseDestaque = {
   titulo: ["Case: Pantene", "Biotinamina"],
-  link: "",                                                        // TROCAR: LINK DO VÍDEO DO CASE PANTENE
+  link: "https://youtube.com/shorts/ntAA0AWlDbM",                 // LINK DO VÍDEO DO CASE PANTENE
   capa: "",                                                        // CAPA DO VÍDEO
   marca: "Pantene",                                                // NOME DA MARCA
   logo: "logos/parceiros/pantene.webp",                            // LOGO DA MARCA NA BOLINHA
@@ -1016,7 +1016,7 @@ const caseDestaque = {
 };
 
 // ================================
-// NICHOS (botões de filtro, nesta ordem). O primeiro já abre selecionado.
+// NICHOS (botões de filtro, nesta ordem). A aba "Todos" vem antes deles e já abre selecionada.
 // ================================
 const nichos = ["Maternidade", "Cabelo", "Autoestima | Beleza | Moda", "Tech | Apps | Cursos", "Casa e decoração", "Diversos | Bem Estar | Fit", "Fotos"];
 
@@ -1220,7 +1220,7 @@ function cardVideo(d, chave) {
   const marca = d.logo
     ? `<span class="video-logo"><img src="${escapar(d.logo)}" alt="" loading="lazy"></span>`
     : d.marca ? `<span class="video-marca">${escapar(d.marca)}</span>` : "";
-  const nome = d.titulo || d.marca || "vídeo";
+  const nome = (Array.isArray(d.titulo) ? d.titulo.join(" ") : d.titulo) || d.marca || "vídeo";
   const play = id
     ? `<button class="play" type="button" aria-label="Assistir ${escapar(nome)} aqui no site"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></button>`
     : "";
@@ -1518,18 +1518,18 @@ const degrades = [
   "linear-gradient(160deg,#e3d3c0,#b98f72)",
   "linear-gradient(160deg,#f1e5d6,#d6b9a0)"
 ];
-$("#filtros").innerHTML = nichos
+$("#filtros").innerHTML = ["Todos", ...nichos]
   .map((n, i) => `<button class="filtro" type="button" data-nicho="${escapar(n)}" aria-pressed="${i === 0}">${escapar(n)}</button>`).join("");
 
 $("#trabalhos-grid").innerHTML = trabalhos.map((t, i) => t.link ? `
-  <li class="trabalho cartao trabalho-video" data-nicho="${escapar(t.nicho)}"${t.nicho === nichos[0] ? "" : " hidden"}>
+  <li class="trabalho cartao trabalho-video" data-nicho="${escapar(t.nicho)}">
     ${cardVideo({ ...t, titulo: "" }, "t" + i)}
     <div class="trabalho-legenda">
       ${t.formato ? `<h3>${escapar(t.formato)}</h3>` : ""}
       <p>${escapar(t.titulo)}</p>
     </div>
   </li>` : `
-  <li class="trabalho cartao" data-nicho="${escapar(t.nicho)}"${t.nicho === nichos[0] ? "" : " hidden"}>
+  <li class="trabalho cartao" data-nicho="${escapar(t.nicho)}">
     <div class="img">${t.imagem
       ? `<img src="${escapar(t.imagem)}" alt="${escapar(t.titulo)}" loading="lazy">`
       : `<div class="vazio-img" style="height:100%;background:${degrades[i % degrades.length]}" role="img" aria-label="Espaço para a imagem: ${escapar(t.titulo)}"><span>foto 4:5</span></div>`}
@@ -1548,7 +1548,7 @@ $("#filtros").addEventListener("click", (e) => {
   const botao = e.target.closest(".filtro");
   if (!botao) return;
   const escolhido = botao.dataset.nicho;
-  const pertence = (c) => c.dataset.nicho === escolhido;
+  const pertence = (c) => escolhido === "Todos" || c.dataset.nicho === escolhido;
   document.querySelectorAll(".filtro").forEach((b) => b.setAttribute("aria-pressed", String(b === botao)));
   const cards = [...document.querySelectorAll(".trabalho")];
   const espera = reduzMovimento ? 0 : 220;
