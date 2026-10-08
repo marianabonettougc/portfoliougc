@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610080542"></script>
+<script src="../../js/banco.js?v=202610080547"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -2445,7 +2445,7 @@ function Financeiro({state, updateState, go, pessoal}){
       </div>
 
       <div className="tabs" style={{marginBottom:18, flexWrap:"wrap"}}>
-        {(pessoal ? ["Transações","Histórico Financeiro","Previsão","Evolução"] : ["Transações","Histórico Financeiro","Previsão","Evolução","Contabilidade"]).map(t=>
+        {(pessoal ? ["Transações","Histórico Financeiro","Previsão","Evolução"] : ["Transações","Histórico Financeiro","Previsão","Evolução","Performance","Contabilidade"]).map(t=>
           <div key={t} className={"tab "+(pageTab===t?"active":"")} onClick={()=>setPageTab(t)}>{t}</div>
         )}
       </div>
@@ -2700,6 +2700,7 @@ function Financeiro({state, updateState, go, pessoal}){
         );
       })()}
 
+      {pageTab==="Performance" && !pessoal && <Performance state={state} updateState={updateState} embutido/>}
       {pageTab==="Contabilidade" && (()=>{
         const anoAtual = now.getFullYear();
         const faturamentoAno = state.transacoes.filter(t=>{
@@ -3209,7 +3210,7 @@ function HBarList({items, max}){
   );
 }
 
-function Performance({state, updateState}){
+function Performance({state, updateState, embutido}){
   const hoje = new Date();
   const [selMonth,setSelMonth] = useState(hoje.getMonth());
   const [selYear,setSelYear] = useState(hoje.getFullYear());
@@ -3295,10 +3296,10 @@ function Performance({state, updateState}){
   return (
     <div>
       <div className="page-head">
-        <div>
+        {embutido ? <div/> : <div>
           <h1 className="page-title">Performance</h1>
           <p className="page-sub">Acompanhe sua evolução como criadora</p>
-        </div>
+        </div>}
         <div style={{display:"flex", gap:10}}>
           <select value={selMonth} onChange={e=>setSelMonth(Number(e.target.value))} style={{padding:"9px 12px", borderRadius:10, border:"1px solid var(--line)"}}>
             {monthNames.map((m,i)=><option key={m} value={i}>{m}</option>)}
@@ -5945,7 +5946,7 @@ function App({session}){
   // Cada página do aplicativo é uma aba do painel (página do aplicativo: aba do painel)
   const ABAS_DO_PAINEL = {dashboard:"dashboard", planner:"calendario", jobs:"campanhas", trafego:"trafego", followups:"followups",
     roteiros:"quadro", prospeccao:"prospeccao", candidaturas:"candidaturas", financeiro:"financeiro",
-    performance:"performance", tiktokshop:"tiktokshop", config:"config", financeirocpf:"financeirocpf"};
+    performance:"financeiro", tiktokshop:"tiktokshop", config:"config", financeirocpf:"financeirocpf"};
   const [page, setPage] = useState(parametros.get("pagina") || "dashboard");
   const [soUma, setSoUma] = useState(parametros.get("so") === "1");
   const [ocultar, setOcultar] = useState(window.OCULTAR_VALORES);
