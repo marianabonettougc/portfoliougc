@@ -2,6 +2,7 @@
 // ASSISTENTE UGC (Edge Function do Supabase)
 // Usada pelo Dashboard do aplicativo Gestão UGC:
 // - acao "logo": descobre o site oficial de uma marca pelo nome e devolve o ícone/logo dela
+// - acao "miniaturas": pega a capa dos vídeos de referência (TikTok, YouTube e, quando dá, Instagram)
 // - acao "ideias": cria ideias de conteúdo a partir dos perfis concorrentes que a Mari cadastrou
 //   e das referências que ela já transcreveu na aba Roteiros (tabela roteiros)
 // Usa o Groq com a chave guardada no Supabase (segredo GROQ_API_KEY), nunca no site.
@@ -122,6 +123,32 @@ Regras: português do Brasil, frases simples, nunca use travessão (—), não i
   return { ideias: lista, referencias: (refs || []).length };
 }
 
+// ---------- capas dos vídeos de referência (para os cards de inspiração) ----------
+async function miniaturas(links: string[]) {
+  const saida: Record<string, { imagem: string | null; autor?: string | null }> = {};
+  await Promise.all(links.slice(0, 30).map(async (link) => {
+    try {
+      if (/tiktok\.com/i.test(link)) {
+        const r = await abrir(`https://www.tiktok.com/oembed?url=${encodeURIComponent(link)}`, 6000);
+        const j = await r.json();
+        saida[link] = { imagem: j.thumbnail_url || null, autor: j.author_unique_id || null };
+      } else if (/youtube\.com|youtu\.be/i.test(link)) {
+        const id = link.match(/(?:shorts\/|v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/)?.[1];
+        saida[link] = { imagem: id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null };
+      } else if (/instagram\.com/i.test(link)) {
+        // o Instagram costuma bloquear servidores; quando deixa, pega a imagem de prévia da página
+        const r = await abrir(link, 6000);
+        const html = await r.text();
+        const m = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i) || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image/i);
+        saida[link] = { imagem: m ? m[1].replace(/&amp;/g, "&") : null };
+      } else saida[link] = { imagem: null };
+    } catch {
+      saida[link] = { imagem: null };
+    }
+  }));
+  return { miniaturas: saida };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return resposta({ erro: "Use POST." }, 405);
@@ -139,6 +166,7 @@ Deno.serve(async (req) => {
       return resposta(await logoDaMarca(chave, marca));
     }
     if (corpo.acao === "ideias") return resposta(await ideias(chave, supa, corpo));
+    if (corpo.acao === "miniaturas") return resposta(await miniaturas((Array.isArray(corpo.links) ? corpo.links : []).map(String).filter((l: string) => /^https?:\/\//.test(l))));
     return resposta({ erro: "Ação desconhecida." }, 400);
   } catch (e) {
     console.error(e);
