@@ -1320,6 +1320,20 @@
             </div>
             ${campo({ nome: "notas", rotulo: "Suas notas (o que te chamou atenção)", tipo: "textarea", valor: r.notas })}
             ${r.exemplo ? marcaCheck("exemplo", "É linha de exemplo", true) : ""}
+            ${r.de_quem === "meu" ? "" : `
+            <section class="rot-inspirar" id="rot-inspirar">
+              <h4>✨ Se inspirar nesse roteiro</h4>
+              <p>Conte quais produtos você tem e o que você sabe deles. Eu pesquiso os produtos na internet e crio o seu roteiro UGC em cima desse vídeo, no tom das criadoras que você mais admira.</p>
+              <textarea id="rot-insp-produtos" rows="3" placeholder="Ex.: Shampoo e condicionador Lumina Natura liso prolongado (uso há 2 meses, meu cabelo é oleoso na raiz). Um produto por linha. Pode colar o link do produto também."></textarea>
+              <div class="rot-insp-opcoes">
+                <label>Nicho<select id="rot-insp-nicho"><option value="">A IA escolhe</option>${["Beleza", "Autocuidado", "Casa", "Moda", "Maternidade", "Alimentação", "Life Fit", "Pet", "Eletrônicos"].map((n) => `<option>${n}</option>`).join("")}</select></label>
+                <label>Onde vai postar<select id="rot-insp-plataforma">${["Reels", "TikTok", "Stories"].map((n) => `<option>${n}</option>`).join("")}</select></label>
+                <label>Quantos roteiros<select id="rot-insp-qtd"><option>1</option><option selected>2</option><option>3</option></select></label>
+              </div>
+              <button class="btn btn-principal" type="button" id="rot-insp-criar">✨ Criar meu roteiro UGC</button>
+              <p class="rot-status" id="rot-insp-status" role="status" hidden></p>
+              <div id="rot-insp-res"></div>
+            </section>`}
           </div>
           <div class="rot-dir">
             <span class="rot-rotulo">O vídeo</span>
@@ -1413,6 +1427,72 @@
           $("details.rot-editar", corpo).open = true;
           avisar("Estrutura montada. Confira e ajuste se precisar.");
         });
+        // "Se inspirar nesse roteiro": cria o roteiro UGC dela em cima desse vídeo (Edge Function gerar-roteiro)
+        if ($("#rot-insp-criar", corpo)) {
+          const st = $("#rot-insp-status", corpo);
+          const statusInsp = (t, erro) => { st.textContent = t; st.hidden = !t; st.classList.toggle("erro", Boolean(erro)); };
+          const anteriores = [];
+          const cena = (p) => esc(p.fala || "") + (p.visual ? `<em>${esc(p.visual)}</em>` : "");
+          const textoRoteiro = (x) => [
+            `TIPO DE CONTEÚDO UGC: ${x.tipo_ugc || "-"}\nTIPO DE FUNIL: ${x.funil || "-"}\nNICHO: ${x.nicho || "-"}${x.formato ? "\nFORMATO: " + x.formato : ""}`,
+            `HOOK${x.gancho_tipo ? " (" + x.gancho_tipo + ")" : ""}:\n${x.hook.fala}${x.hook.visual ? "\n[" + x.hook.visual + "]" : ""}`,
+            x.desenrolar.length ? "DESENROLAR:\n" + x.desenrolar.map((p, i) => `${i + 1}. ${p.fala}${p.visual ? " [" + p.visual + "]" : ""}`).join("\n") : "",
+            `CTA:\n${x.cta.fala}${x.cta.visual ? "\n[" + x.cta.visual + "]" : ""}`,
+            x.legenda || x.hashtags ? `LEGENDA:\n${x.legenda || ""}${x.hashtags ? "\n" + x.hashtags : ""}` : "",
+            x.outros_ganchos.length ? "OUTRAS IDEIAS DE GANCHO:\n" + x.outros_ganchos.map((g) => `- (${g.tipo}) ${g.texto}`).join("\n") : "",
+            x.outros_tipos_ugc.length ? "OUTROS TIPOS DE UGC:\n" + x.outros_tipos_ugc.map((g) => `- ${g.tipo}: ${g.ideia}`).join("\n") : "",
+          ].filter(Boolean).join("\n\n");
+          const mostrar = (lista, pesquisa) => {
+            $("#rot-insp-res", corpo).innerHTML = (pesquisa ? `<details class="rot-insp-pesquisa"><summary>O que eu encontrei sobre os produtos</summary><pre>${esc(pesquisa)}</pre></details>` : "") + lista.map((x, i) => `
+              <article class="rot-insp-card">
+                <div class="rot-insp-topo"><span><small>Tipo de conteúdo UGC</small><b>${esc(x.tipo_ugc || "-")}</b></span><span><small>Tipo de funil</small><b>${esc(x.funil || "-")}</b></span><span><small>Nicho</small><b>${esc(x.nicho || "-")}</b></span></div>
+                <h5>${esc(x.titulo)}</h5>
+                ${x.formato ? `<p class="rot-insp-formato">${esc(x.formato)}${x.funil_por_que ? " · " + esc(x.funil_por_que) : ""}</p>` : ""}
+                <div class="rot-parte"><span class="rot-rotulo">Hook${x.gancho_tipo ? " · " + esc(x.gancho_tipo) : ""}</span><p class="rot-destaque">${cena(x.hook)}</p></div>
+                ${x.desenrolar.length ? `<div class="rot-parte"><span class="rot-rotulo">Desenrolar</span><ol>${x.desenrolar.map((p) => `<li>${cena(p)}</li>`).join("")}</ol></div>` : ""}
+                <div class="rot-parte"><span class="rot-rotulo">CTA</span><p class="rot-caixa">${cena(x.cta)}</p></div>
+                ${x.legenda || x.hashtags ? `<div class="rot-parte"><span class="rot-rotulo">Legenda</span><p>${esc(x.legenda || "")}${x.hashtags ? `<br><span class="rot-insp-hash">${esc(x.hashtags)}</span>` : ""}</p></div>` : ""}
+                ${x.por_que_funciona ? `<p class="rot-insp-porque">${esc(x.por_que_funciona)}</p>` : ""}
+                ${x.outros_ganchos.length ? `<div class="rot-parte"><span class="rot-rotulo">Outras ideias de gancho</span><ul>${x.outros_ganchos.map((g) => `<li><span class="rot-tag">${esc(g.tipo)}</span> ${esc(g.texto)}</li>`).join("")}</ul></div>` : ""}
+                ${x.outros_tipos_ugc.length ? `<div class="rot-parte"><span class="rot-rotulo">Outros tipos de UGC para essa ideia</span><ul>${x.outros_tipos_ugc.map((g) => `<li><b>${esc(g.tipo)}:</b> ${esc(g.ideia)}</li>`).join("")}</ul></div>` : ""}
+                <div class="rot-insp-acoes"><button class="btn btn-principal btn-mini" type="button" data-salvar="${i}">Salvar nos meus roteiros</button><button class="btn btn-mini" type="button" data-copiar="${i}">Copiar</button></div>
+              </article>`).join("");
+            $$("[data-salvar]", corpo).forEach((b) => b.addEventListener("click", async () => {
+              const x = lista[Number(b.dataset.salvar)];
+              const ref = lerFormulario();
+              const ok = await gravar("roteiros", { titulo: x.titulo, de_quem: "meu", origem: /tiktok/i.test($("#rot-insp-plataforma", corpo).value) ? "tiktok" : "instagram",
+                etiquetas: [x.tipo_ugc, x.funil, x.nicho].filter(Boolean).join(", "), gancho: x.hook.fala, gancho_tipo: nulo(x.gancho_tipo),
+                desenvolvimento: x.desenrolar.map((p) => p.fala).join("\n"), cta: x.cta.fala, por_que: nulo(x.por_que_funciona), transcricao: textoRoteiro(x),
+                notas: "Inspirado em: " + (ref.titulo || ref.gancho || "roteiro de referência") + (ref.link ? " (" + ref.link + ")" : "") });
+              if (ok) { b.textContent = "✓ Salvo"; b.disabled = true; avisar("Roteiro salvo nos seus roteiros"); recarregar("roteiros"); }
+            }));
+            $$("[data-copiar]", corpo).forEach((b) => b.addEventListener("click", async () => {
+              try { await navigator.clipboard.writeText(textoRoteiro(lista[Number(b.dataset.copiar)])); avisar("Roteiro copiado"); } catch (e) { avisar("Não consegui copiar. Selecione o texto e copie.", true); }
+            }));
+          };
+          $("#rot-insp-criar", corpo).addEventListener("click", async () => {
+            const produtos = $("#rot-insp-produtos", corpo).value.trim();
+            const f = lerFormulario();
+            if (!produtos && !f.transcricao && !f.gancho) { statusInsp("Conte quais produtos você tem, ou transcreva o vídeo primeiro.", true); return; }
+            const botao = $("#rot-insp-criar", corpo);
+            botao.disabled = true; botao.classList.add("carregando");
+            statusInsp(produtos ? "Pesquisando seus produtos e escrevendo o roteiro... (leva uns 40 segundos)" : "Escrevendo o seu roteiro... (leva uns 20 segundos)");
+            try {
+              const { data, error } = await banco.functions.invoke("gerar-roteiro", { body: { modo: "ugc", produtos, nicho: $("#rot-insp-nicho", corpo).value, plataforma: $("#rot-insp-plataforma", corpo).value,
+                quantidade: Number($("#rot-insp-qtd", corpo).value), anteriores,
+                referencia: { titulo: f.titulo, gancho: f.gancho, gancho_tipo: f.gancho_tipo, desenvolvimento: f.desenvolvimento, cta: f.cta, por_que: f.por_que, transcricao: String(f.transcricao || "").slice(0, 2500) } } });
+              let msg = data && data.error;
+              if (error) { try { msg = (await error.context.json()).error; } catch (e) {} msg = msg || "Não consegui criar o roteiro agora. Tente de novo."; }
+              if (msg) throw new Error(msg);
+              if (!data.roteiros || !data.roteiros.length) throw new Error("A IA não devolveu o roteiro. Tente de novo.");
+              data.roteiros.forEach((x) => anteriores.push(x.hook.fala));
+              mostrar(data.roteiros, data.pesquisa);
+              statusInsp("Pronto! Confira e salve o que gostar. Clique de novo para outras versões.");
+              botao.textContent = "✨ Criar outras versões";
+            } catch (e) { statusInsp(e.message, true); }
+            botao.disabled = false; botao.classList.remove("carregando");
+          });
+        }
         // ao colar outro link, troca o vídeo, a origem e o perfil
         $('[name="link"]', corpo).addEventListener("change", (e) => {
           const link = e.target.value.trim();

@@ -391,4 +391,31 @@ revoke all on public.inspiracoes from anon;
 -- ---------------------------------------------------------------------
 notify pgrst, 'reload schema';
 
-select 'Pronto! As 10 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;
+
+-- ===== 11 e 12. Treino de estilo UGC (vídeos de referência e guia de estilo) =====
+create table if not exists public.estilo_videos (
+  id bigint generated always as identity primary key,
+  criadora text not null,
+  marca text,
+  categoria text,          -- beleza, casa, moda... "depoimento" = feedback de cliente (fica fora do treino)
+  link text not null unique,
+  transcricao text,
+  criado_em timestamptz not null default now()
+);
+alter table public.estilo_videos enable row level security;
+drop policy if exists "dona faz tudo" on public.estilo_videos;
+create policy "dona faz tudo" on public.estilo_videos for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+revoke all on public.estilo_videos from anon;
+
+create table if not exists public.estilo_ugc (
+  id int primary key default 1 check (id = 1),
+  guia text,                 -- guia de estilo (cópia em supabase/estilo/guia-estilo-ugc.txt)
+  exemplos jsonb not null default '[]'::jsonb,
+  atualizado_em timestamptz not null default now()
+);
+alter table public.estilo_ugc enable row level security;
+drop policy if exists "dona faz tudo" on public.estilo_ugc;
+create policy "dona faz tudo" on public.estilo_ugc for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+revoke all on public.estilo_ugc from anon;
+
+select 'Pronto! As 12 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;

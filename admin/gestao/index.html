@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610082207"></script>
+<script src="../../js/banco.js?v=202610082320"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -274,6 +274,8 @@
   .cr-porque{ font-size:12.5px; color:var(--db-suave); margin:12px 0 0; padding-top:10px; border-top:1px dashed var(--db-linha2); }
   .cr-extras{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:12px; }
   .cr-extras ul{ margin:4px 0 0; padding-left:16px; font-size:13px; line-height:1.55; } .cr-extras li{ margin-bottom:5px; }
+  .cr-pesquisa{ font-size:12px; color:var(--db-suave); } .cr-pesquisa summary{ cursor:pointer; }
+  .cr-pesquisa pre{ white-space:pre-wrap; font:inherit; background:var(--db-creme); border-radius:10px; padding:10px 12px; margin:6px 0 0; }
   .cr-ok{ font-size:13px; color:var(--db-verde); font-weight:500; }
   .cr-ajuste{ display:flex; gap:8px; flex-wrap:wrap; } .cr-ajuste input{ flex:1; min-width:200px; }
   @media (max-width:640px){ .cr-grade, .cr-topo, .cr-extras{ grid-template-columns:minmax(0,1fr); } }
@@ -1356,6 +1358,7 @@ function CriarRoteiroUGC({referencia, ideiaInicial, nichos, onClose, onSalvar, o
   const [salvos,setSalvos] = useState({});
   const [ajuste,setAjuste] = useState("");
   const [anteriores,setAnteriores] = useState([]);
+  const [pesquisa,setPesquisa] = useState("");
   const gravador = useRef(null);
   const listaNichos = [...new Set([...(nichos||[]), ...NICHOS_INSP, ...NICHOS_DEFAULT.filter(n=>n!=="Outro")])];
 
@@ -1394,12 +1397,12 @@ function CriarRoteiroUGC({referencia, ideiaInicial, nichos, onClose, onSalvar, o
     setCriando(true); setErro("");
     try{
       const ref = referencia ? {gancho:referencia.gancho, gancho_tipo:referencia.gancho_tipo, desenvolvimento:referencia.desenvolvimento, cta:referencia.cta, por_que:referencia.por_que, transcricao:String(referencia.transcricao||"").slice(0,2500)} : null;
-      const { data, error } = await supabaseClient.functions.invoke("gerar-roteiro", {body:{modo:"ugc", ...f, imagens, referencia:ref, ajuste: comAjuste ? ajuste : "", anteriores}});
+      const { data, error } = await supabaseClient.functions.invoke("gerar-roteiro", {body:{modo:"ugc", ...f, produtos: f.produto, imagens, referencia:ref, ajuste: comAjuste ? ajuste : "", anteriores}});
       let msg = data && data.error;
       if(error){ try{ msg = (await error.context.json()).error; }catch(x){} msg = msg || "Não consegui criar os roteiros agora. Tente de novo."; }
       if(msg) throw new Error(msg);
       if(!data.roteiros || !data.roteiros.length) throw new Error("A IA não devolveu roteiros. Tente de novo.");
-      setRoteiros(data.roteiros); setSalvos({}); setAjuste("");
+      setRoteiros(data.roteiros); setSalvos({}); setAjuste(""); setPesquisa(data.pesquisa || "");
       setAnteriores(a=>[...a, ...data.roteiros.map(r=>r.hook && r.hook.fala).filter(Boolean)].slice(-9));
     }catch(e){ setErro(String(e.message||e)); }
     setCriando(false);
@@ -1426,7 +1429,7 @@ function CriarRoteiroUGC({referencia, ideiaInicial, nichos, onClose, onSalvar, o
         {imagens.length>0 && <div className="cr-imagens">{imagens.map((src,i)=><span key={i}><img src={src} alt={"Imagem "+(i+1)}/><button type="button" onClick={()=>setImagens(l=>l.filter((_,k)=>k!==i))} aria-label="Tirar imagem">×</button></span>)}</div>}
 
         <div className="cr-grade">
-          <label className="cr-campo">Produto ou marca<input value={f.produto} onChange={e=>set("produto", e.target.value)} placeholder="Opcional"/></label>
+          <label className="cr-campo">Seus produtos (eu pesquiso na internet)<input value={f.produto} onChange={e=>set("produto", e.target.value)} placeholder="Ex.: Shampoo Lumina Natura; pode colar o link"/></label>
           <label className="cr-campo">Nicho<select value={f.nicho} onChange={e=>set("nicho", e.target.value)}><option value="">A IA escolhe</option>{listaNichos.map(n=><option key={n}>{n}</option>)}</select></label>
           <label className="cr-campo">Tipo de conteúdo UGC<select value={f.tipo} onChange={e=>set("tipo", e.target.value)}><option value="">A IA escolhe</option>{TIPOS_UGC.map(n=><option key={n}>{n}</option>)}</select></label>
           <label className="cr-campo">Tipo de funil<select value={f.funil} onChange={e=>set("funil", e.target.value)}><option value="">A IA escolhe</option>{TIPOS_FUNIL.map(n=><option key={n}>{n}</option>)}</select></label>
@@ -1434,8 +1437,9 @@ function CriarRoteiroUGC({referencia, ideiaInicial, nichos, onClose, onSalvar, o
           <label className="cr-campo">Quantos roteiros<select value={f.quantidade} onChange={e=>set("quantidade", Number(e.target.value))}>{[1,2,3].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
         </div>
         {erro && <p className="db-dica db-dica-erro">{erro}</p>}
-        <button className="db-btn-escuro cr-criar" onClick={()=>criar(false)} disabled={criando || gravando || ouvindo}>{criando ? "Criando seus roteiros..." : roteiros.length ? "Criar outros roteiros" : "Criar roteiros"}<DbIcone tipo="brilho" tam={16}/></button>
+        <button className="db-btn-escuro cr-criar" onClick={()=>criar(false)} disabled={criando || gravando || ouvindo}>{criando ? (f.produto.trim() ? "Pesquisando o produto e criando..." : "Criando seus roteiros...") : roteiros.length ? "Criar outros roteiros" : "Criar roteiros"}<DbIcone tipo="brilho" tam={16}/></button>
 
+        {pesquisa && roteiros.length>0 && <details className="cr-pesquisa"><summary>O que eu encontrei sobre o produto</summary><pre>{pesquisa}</pre></details>}
         {roteiros.map((r,i)=>(
           <article key={i} className="cr-roteiro">
             <div className="cr-topo">

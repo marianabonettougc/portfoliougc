@@ -1,0 +1,43 @@
+GUIA DE ESTILO UGC (estudo de 153 vídeos de Lara Dam e Isabelly Gervasio, out/2026)
+
+TOM DE VOZ
+Fala de amiga contando uma descoberta, nunca de marca vendendo. Primeira pessoa ("eu", "a gente") e conversa direta com "você" e "amiga".
+Frases curtas, faladas, com respiro: "Parece loucura, mas é real." "Sim, é isso mesmo que você ouviu." "Mas calma que eu te explico."
+Vulnerabilidade real antes do produto: "Quase fiquei careca tentando ter um loiro platinado sem saber cuidar." "Meu corpo é normal, tenho dobrinha, celulite, flacidez."
+Humor leve e cenas da vida real (marido, namorado, amiga, avó, pet, casa): "Quando eu sinto o cheiro do meu shampoo vindo do banheiro, já sei que é meu marido."
+Opinião sincera, às vezes contra a corrente: "Comprei essa bendita cinta que tá viralizando e eu não gostei. Porque eu não preciso ficar me matando pra vestir ela."
+
+COMO ABRIR (os 2 primeiros segundos)
+Nunca abre apresentando a marca. Abre com tensão, curiosidade, número ou cena. Padrões que mais aparecem:
+1. Pergunta que a pessoa responde na cabeça: "Você já fez uma viagem incrível e não postou foto nenhuma porque odiou como ficou nelas?" "Será que é pedir demais um biquíni que sirva no meu corpo e ainda assim seja bonito?"
+2. "Imagina se...": "Imagina se no lugar de um tripé gigante, você pudesse ter um tripé dentro da sua garrafa de água."
+3. Antes e depois com número: "Eu gastei menos de 6 reais pra sair disso pra isso." "Esse foi o segredo que me fez sair do 73 kg pro 66."
+4. Preço ou oferta que choca: "Cinema VIP por R$27. Sim, você ouviu certo." "Cheiro de rica por menos de 100 reais."
+5. Mito quebrado / opinião forte: "Mentira que você ainda acha que pré-treino é tudo igual." "Se você não tá esfoliando sua pele, desculpa, mas você tá fazendo skincare errado." "Você acha que deixar a máscara mais tempo faz ela agir melhor, né? Errou."
+6. Dor do dia a dia descrita com detalhe: "Quebra na escova, na passada de mão e até no travesseiro. Não é normal, sabia?" "Camisola que mal cobre o busto, alça tão fina que desfaz com qualquer movimento."
+7. Cena ou diálogo encenado (casal, amiga): "Você viu que a conta de luz esse mês veio R$700?" "Amiga, não apaga a luz ainda que eu vou começar meu skincare."
+8. Desafio ao público: "Uma dessas aqui não é real. Consegue descobrir qual?" "Tá, eu preciso saber uma coisa. Qual desses quatro você escolheria?"
+9. Segredo / "ninguém te conta": "Ninguém te conta o segredo pra sair das pontas ralas pra um cabelo volumoso, mas eu te conto."
+10. Hype a ser testado: "Eu tô vendo um grande hype desse macacão. Mas será que é tudo isso mesmo?"
+Frases ponte logo depois do gancho, para segurar: "Vem que eu te mostro." "Fica nesse vídeo." "Se você ficou por aqui é porque ficou curiosa, né? Relaxa que eu te conto."
+
+COMO DESENVOLVER
+Ordem típica: dor ou situação real, descoberta do produto, produto em cena sendo usado, benefício concreto, quebra de objeção, prova.
+Produto sempre na mão ou em uso, com o que a câmera vê descrito: textura, aplicação, montagem, antes e depois lado a lado ("Desse lado... Já desse lado aqui...").
+Benefício com número ou detalhe verificável: "15 gramas de proteína", "do 36 ao 54", "em minutos", "menos de R$300", "reduz os danos em 50%".
+Quebra a objeção falando por quem assiste: "Ah, mas é caro? Não é." "E não, amiga, não é mega hair." "Achei que ia marcar, mas zero marcação."
+Comparação com o comum: "Essa daqui é uma toalha normal e essa daqui é a toalha da Home." "Numa calça comum, tudo marca."
+Ritmo rápido: uma ideia por frase, listas curtas ("Trabalho, rotina, filhos, celular..."), perguntas retóricas no meio ("Será que é porque...?").
+Elogio sensorial sincero, sem adjetivo vazio: "some na pele", "cheirinho que fica", "não marca", "seca de verdade".
+
+COMO FECHAR (CTA)
+CTA curto, natural, como continuação da conversa, com motivo para agir agora:
+"Corre no link que tá com desconto." "Clica no link e garante o seu." "Usa meu cupom que ainda dá desconto." "Salva esse vídeo pra não esquecer." "Comenta qual você escolheria."
+Fechamento com sentimento ou resultado: "E é por isso que eu não troco mais." "Juro que depois dele você não volta pros outros."
+Nunca terminar sem direção. Nunca misturar CTA de compra com "marcas, me contratem".
+
+EXPRESSÕES QUE ELAS REALMENTE USAM
+"amiga", "gente", "sério", "juro", "olha isso", "olha essa diferença", "vem comigo", "vem que eu te mostro", "relaxa que eu te conto", "mas calma que eu te explico", "sim, você ouviu certo", "parece loucura, mas é real", "tá uma febre", "tá viralizando", "achadinho", "queridinho do Brasil", "doida pra testar", "precisava testar", "vou ser sincera", "fica em paz", "para tudo", "vixi".
+
+O QUE EVITAR
+Abrir com "Oi, gente, hoje vou falar do produto X". Linguagem de propaganda ("revolucionário", "incrível", "o melhor do mercado") sem prova. Frases longas e explicativas. Lista de características sem uso real. Lifestyle genérico sem produto. CTA vago ou ausente. Emojis, asteriscos e travessão no roteiro.

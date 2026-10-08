@@ -432,3 +432,28 @@ button.menu-grupo:hover{color:var(--texto)}
   body.aba-dashboard .topo{display:none}
   body.aba-dashboard .so-planner .gestao-app{height:calc(100vh - 40px)}
 }
+
+/* ===== Se inspirar nesse roteiro (janela da transcrição) ===== */
+.rot-inspirar{margin-top:18px;padding:16px;border-radius:14px;background:var(--fundo);border:1px solid var(--linha)}
+.rot-inspirar h4{margin:0 0 4px;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:20px;color:var(--texto)}
+.rot-inspirar > p{margin:0 0 10px;font-size:12.5px;color:var(--suave);line-height:1.5}
+.rot-inspirar textarea, .rot-insp-opcoes select{width:100%;border:1px solid var(--linha-forte);border-radius:10px;background:var(--cartao);padding:9px 11px;font:inherit;font-size:13px;color:var(--texto)}
+.rot-insp-opcoes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 12px}
+.rot-insp-opcoes label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--suave)}
+.rot-insp-opcoes select{height:38px;padding:0 8px}
+.rot-insp-pesquisa{margin-top:12px;font-size:12px;color:var(--suave)}
+.rot-insp-pesquisa summary{cursor:pointer}
+.rot-insp-pesquisa pre{white-space:pre-wrap;font:inherit;background:var(--cartao);border-radius:10px;padding:10px 12px;margin:6px 0 0}
+.rot-insp-card{margin-top:12px;padding:14px;border-radius:12px;background:var(--cartao);border:1px solid var(--linha)}
+.rot-insp-topo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;background:var(--bege);border-radius:10px;padding:9px 11px;margin-bottom:10px}
+.rot-insp-topo small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--suave)}
+.rot-insp-topo b{font-size:12.5px;font-weight:600}
+.rot-insp-card h5{margin:0 0 2px;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:18px}
+.rot-insp-formato{margin:0 0 10px;font-size:12px;color:var(--suave)}
+.rot-insp-card em{display:block;font-style:normal;font-size:11.5px;color:var(--terracota);font-weight:400;margin-top:2px}
+.rot-insp-card ul{margin:0;padding-left:18px;font-size:12.5px}
+.rot-insp-card li{margin-bottom:4px}
+.rot-insp-hash{color:var(--terracota);font-size:12px}
+.rot-insp-porque{font-size:12px;color:var(--suave);margin:8px 0 10px;padding-top:8px;border-top:1px dashed var(--linha-forte)}
+.rot-insp-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+@media (max-width:640px){.rot-insp-opcoes,.rot-insp-topo{grid-template-columns:minmax(0,1fr)}}

@@ -6,6 +6,10 @@
 //   conteúdo UGC, tipo de funil, nicho, outras ideias de gancho e outros tipos de UGC
 // - envio de áudio (multipart, campo "audio"): transcreve a ideia falada dela
 // - { prompt }: modo antigo, texto livre
+// Treino de estilo: o guia (tabela estilo_ugc) e exemplos reais (tabela estilo_videos, transcrições de
+// 153 vídeos de Lara Dam e Isabelly Gervasio) entram no pedido para a IA escrever no mesmo tom delas.
+// Pesquisa de produto: com "produtos" (o que ela tem), busca os produtos no Google pelo Apify (segredo APIFY_TOKEN;
+// os buscadores bloqueiam servidor) e lê os links que ela colar. Sem Apify, tenta o Bing.
 // Usa o Groq com a chave guardada no Supabase (segredo GROQ_API_KEY), nunca no site.
 // Só a dona do painel pode usar.
 // =========================================================
@@ -42,12 +46,12 @@ async function modelos(chave: string) {
   return { texto, audio, visao };
 }
 // conversa com o Groq e devolve o texto da resposta (tenta de novo sem o modo JSON se o modelo não aceitar)
-async function conversarGroq(chave: string, mensagens: unknown[], opcoes: { json?: boolean; temperatura?: number; max?: number } = {}) {
+async function conversarGroq(chave: string, mensagens: unknown[], opcoes: { json?: boolean; temperatura?: number; max?: number; leve?: boolean } = {}) {
   const { texto: modelo } = await modelos(chave);
   const pedir = async (comJson: boolean) => fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: modelo, temperature: opcoes.temperatura ?? 0.2, ...(opcoes.max ? { max_tokens: opcoes.max } : {}), ...(comJson ? { response_format: { type: "json_object" } } : {}), messages: mensagens }),
+    body: JSON.stringify({ model: modelo, temperature: opcoes.temperatura ?? 0.2, ...(opcoes.max ? { max_tokens: opcoes.max } : {}), ...(opcoes.leve && /gpt-oss/.test(modelo) ? { reasoning_effort: "low" } : {}), ...(comJson ? { response_format: { type: "json_object" } } : {}), messages: mensagens }),
   });
   let r = await pedir(!!opcoes.json);
   let j = await r.json().catch(() => ({}));
@@ -92,6 +96,80 @@ async function descreverImagens(chave: string, imagens: string[]) {
   return String(j.choices?.[0]?.message?.content || "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 }
 
+// ---------- pesquisa dos produtos dela (Google pelo Apify, Bing de reserva e links que ela colar) ----------
+const NAVEGADOR = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+const limparHtml = (h: string) => h.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ")
+  .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
+  .replace(/&nbsp;|&ensp;/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
+async function abrir(url: string, ms = 6000) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), ms);
+  try { return await fetch(url, { headers: { "User-Agent": NAVEGADOR, "Accept-Language": "pt-BR,pt;q=0.9" }, redirect: "follow", signal: ctl.signal }); } finally { clearTimeout(t); }
+}
+async function buscarBing(termo: string) {
+  try {
+    const html = await (await abrir("https://www.bing.com/search?setlang=pt-BR&cc=BR&q=" + encodeURIComponent(termo))).text();
+    return html.split('<li class="b_algo"').slice(1, 6).map((b) => {
+      const titulo = limparHtml(b.match(/<h2[^>]*>([\s\S]*?)<\/h2>/)?.[1] || "");
+      const trecho = limparHtml(b.match(/<p[^>]*>([\s\S]*?)<\/p>/)?.[1] || "");
+      return titulo || trecho ? `- ${titulo}: ${trecho}` : "";
+    }).filter(Boolean).join("\n").slice(0, 900);
+  } catch { return ""; }
+}
+async function lerPagina(url: string) {
+  try {
+    const html = (await (await abrir(url)).text()).slice(0, 400000);
+    const meta = (p: string) => html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${p}["'][^>]+content=["']([^"']+)`, "i"))?.[1] || "";
+    const titulo = limparHtml(meta("og:title") || html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "");
+    const desc = limparHtml(meta("og:description") || meta("description"));
+    const ld = [...html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1]).join(" ");
+    const descLd = limparHtml(ld.match(/"description"\s*:\s*"([^"]{20,1500})"/)?.[1] || "");
+    const preco = ld.match(/"price"\s*:\s*"?([\d.,]+)/)?.[1] || "";
+    return `- ${titulo}${preco ? " (preço R$ " + preco + ")" : ""}: ${desc} ${descLd}`.slice(0, 900);
+  } catch { return ""; }
+}
+// Google pelo Apify: um run só para todos os produtos (uns 25 segundos)
+async function buscarGoogle(nomes: string[]) {
+  const token = Deno.env.get("APIFY_TOKEN") || "";
+  if (!token) return null;
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 55000);
+    const r = await fetch(`https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items?token=${token}&timeout=50`, { method: "POST", signal: ctl.signal,
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ queries: nomes.join("\n"), countryCode: "br", languageCode: "pt-BR", searchLanguage: "pt", resultsPerPage: 10, maxPagesPerQuery: 1 }) });
+    clearTimeout(t);
+    const itens = await r.json().catch(() => null);
+    if (!Array.isArray(itens) || !itens.length) return null;
+    return itens.map((it: any) => {
+      const ia = it.aiOverview?.content ? limparHtml(String(it.aiOverview.content)).slice(0, 700) : "";
+      const org = (it.organicResults || []).filter((o: any) => !/instagram\.com|tiktok\.com|youtube\.com/.test(o.url || "")).slice(0, 4)
+        .map((o: any) => `- ${limparHtml(String(o.title || ""))}: ${limparHtml(String(o.description || ""))}`).join("\n");
+      return `Sobre "${it.searchQuery?.term || ""}":\n${ia ? "Resumo do Google: " + ia + "\n" : ""}${org}`.slice(0, 1300);
+    }).join("\n");
+  } catch { return null; }
+}
+async function pesquisarProdutos(texto: string) {
+  const links = [...new Set((texto.match(/https?:\/\/[^\s)]+/g) || []))].slice(0, 2);
+  const nomes = texto.replace(/https?:\/\/[^\s)]+/g, " ").split(/\n|;/).map((l) => l.split(/[(:]| - /)[0].trim()).filter((l) => l.length > 3 && l.length < 90).slice(0, 3);
+  const [paginas, google] = await Promise.all([Promise.all(links.map(lerPagina)), nomes.length ? buscarGoogle(nomes) : Promise.resolve("")]);
+  const busca = google !== null ? google : (await Promise.all(nomes.map(async (n) => { const r = await buscarBing(n); return r ? `Sobre "${n}":\n${r}` : ""; }))).join("\n");
+  return [...paginas, busca].filter(Boolean).join("\n").slice(0, 2400);
+}
+
+// ---------- treino de estilo (guia + exemplos reais das criadoras referência) ----------
+const CATEGORIAS: Record<string, string[]> = { beleza: ["beleza"], autocuidado: ["beleza", "saude"], casa: ["casa"], moda: ["moda"], "alimentação": ["food", "gastronomia"], alimentos: ["food", "gastronomia"],
+  "life fit": ["saude", "food"], fitness: ["saude"], maternidade: ["casa", "outro"], pet: ["casa", "outro"], "eletrônicos": ["tech"], infantil: ["casa", "outro"] };
+async function estilo(supa: any, nicho: string, curto: boolean) {
+  try {
+    const { data: g } = await supa.from("estilo_ugc").select("guia").eq("id", 1).maybeSingle();
+    const cats = CATEGORIAS[String(nicho || "").toLowerCase()] || [];
+    let q = supa.from("estilo_videos").select("transcricao, criadora, marca").neq("categoria", "depoimento").limit(40);
+    if (cats.length) q = q.in("categoria", cats);
+    const { data: vids } = await q;
+    const lista = (vids || []).filter((v: any) => String(v.transcricao || "").length > 200).sort(() => Math.random() - 0.5).slice(0, 1);
+    const exemplos = lista.map((v: any, i: number) => `Exemplo ${i + 1} (${v.criadora === "laradam" ? "Lara Dam" : "Isabelly Gervasio"}${v.marca ? ", " + v.marca : ""}): "${String(v.transcricao).replace(/\[música\]|Música/gi, "").replace(/\s+/g, " ").trim().slice(0, curto ? 400 : 600)}"`).join("\n");
+    return { guia: String(g?.guia || "").slice(0, curto ? 2200 : 5000), exemplos };
+  } catch { return { guia: "", exemplos: "" }; }
+}
+
 const GANCHOS = `1. Problema / Identificação: gera conexão com quem assiste.
 2. Antes e depois: mostra contraste e resultado.
 3. Promessa: abre com o que mais chama atenção.
@@ -103,11 +181,16 @@ const GANCHOS = `1. Problema / Identificação: gera conexão com quem assiste.
 9. Urgência: cria aquele "quero agora".`;
 const TIPOS_UGC = "Review sincero, Unboxing, Tutorial ou passo a passo, Antes e depois, Problema e solução, Rotina (arrume-se comigo), POV, Comparativo, Mitos e verdades, Lista, Reação, Produto no dia a dia, Falando para a câmera, Teste ou desafio, Storytelling, ASMR, Bastidores";
 
-async function roteirosUgc(chave: string, c: any) {
+async function roteirosUgc(chave: string, c: any, supa: any, curto = false): Promise<any> {
   const ref = c.referencia || null;
-  const imagens = Array.isArray(c.imagens) ? c.imagens.map(String) : [];
-  const descricao = imagens.length ? await descreverImagens(chave, imagens) : "";
   const qtd = Math.min(3, Math.max(1, Number(c.quantidade) || 2));
+  if (qtd === 3) curto = true; // 3 roteiros ocupam mais espaço na resposta: manda o guia mais curto
+  const imagens = Array.isArray(c.imagens) ? c.imagens.map(String) : [];
+  const [descricao, pesquisa, est] = await Promise.all([
+    c._descricao !== undefined ? c._descricao : imagens.length ? descreverImagens(chave, imagens) : "",
+    c._pesquisa !== undefined ? c._pesquisa : c.produtos ? pesquisarProdutos(String(c.produtos)) : "",
+    estilo(supa, c.nicho, curto),
+  ]);
   const pedido = `Você é roteirista de UGC de uma criadora brasileira que é contratada por marcas para produzir vídeos curtos (Reels, TikTok e Stories).
 Todo roteiro precisa passar em dois testes ao mesmo tempo:
 1) Para o scroll de quem não a segue (hook forte nos primeiros 1 a 3 segundos, nunca começa explicando o produto).
@@ -121,7 +204,12 @@ ${GANCHOS}
 Tipos de conteúdo UGC: ${TIPOS_UGC}.
 Tipos de funil: Topo de funil (descoberta, atrai quem não conhece), Meio de funil (consideração, educa e tira dúvidas), Fundo de funil (conversão, leva a comprar).
 
+${est.guia ? "COMO ESCREVER (guia de estilo tirado do estudo dos vídeos de Lara Dam e Isabelly Gervasio, as referências de UGC que ela admira; escreva no mesmo tom e nível delas, sem copiar frases inteiras):\n" + est.guia : ""}
+${est.exemplos ? "TRANSCRIÇÕES REAIS DELAS PARA SENTIR O TOM:\n" + est.exemplos : ""}
+
 O QUE ELA QUER
+${c.produtos ? "Produtos que ela tem e informações dela (use os produtos dela, com nome, e as experiências reais que ela contar): " + txt(c.produtos, 1500) : ""}
+${pesquisa ? "O QUE ENCONTREI NA INTERNET SOBRE OS PRODUTOS (use só o que for coerente; não invente números, preços ou ativos que não estejam aqui ou no que ela contou):\n" + pesquisa : ""}
 Ideia dela: ${txt(c.ideia, 3000) || "não escreveu, use as outras informações"}
 Produto ou marca: ${txt(c.produto, 200) || "não informado (pode ser um produto genérico do nicho)"}
 Nicho: ${txt(c.nicho, 80) || "escolha o que mais combina"}
@@ -134,14 +222,24 @@ Gancho: "${txt(ref.gancho, 400)}" (tipo ${txt(ref.gancho_tipo, 40)})
 Estrutura: ${txt(String(ref.desenvolvimento || "").replace(/\n/g, " / "), 800)}
 CTA: "${txt(ref.cta, 300)}"
 Por que prende: ${txt(ref.por_que, 400)}
-Transcrição: ${txt(ref.transcricao, 2500)}` : ""}
+Transcrição: ${txt(ref.transcricao, curto ? 900 : 1500)}` : ""}
 ${c.ajuste ? "AJUSTE PEDIDO POR ELA: " + txt(c.ajuste, 600) : ""}
 ${Array.isArray(c.anteriores) && c.anteriores.length ? "Não repita estes hooks que já foram sugeridos: " + c.anteriores.map((x: unknown) => `"${txt(x, 160)}"`).join("; ") : ""}
 
 Crie ${qtd} roteiro(s) diferentes entre si. Responda SOMENTE um JSON assim:
 {"roteiros":[{"titulo":"até 6 palavras","tipo_ugc":"um dos tipos de UGC","funil":"Topo de funil | Meio de funil | Fundo de funil","funil_por_que":"1 frase","nicho":"nicho","formato":"ex.: Reels 30s, falando para a câmera","gancho_tipo":"um dos 9 tipos de gancho","hook":{"fala":"fala ou texto na tela","visual":"o que a câmera mostra"},"desenrolar":[{"fala":"...","visual":"..."}],"cta":{"fala":"...","visual":"..."},"legenda":"legenda curta","hashtags":"#... #...","por_que_funciona":"1 a 2 frases","outros_ganchos":[{"tipo":"um dos 9 tipos","texto":"outro hook pronto para a mesma ideia"}],"outros_tipos_ugc":[{"tipo":"outro tipo de UGC","ideia":"como essa ideia ficaria nesse formato"}]}]}
-Regras: português do Brasil, frases faladas naturais e curtas, 3 a 5 passos no desenrolar, 3 itens em outros_ganchos (tipos diferentes do usado), 2 itens em outros_tipos_ugc, nunca use travessão (—).`;
-  const j = lerJson(await conversarGroq(chave, [{ role: "user", content: pedido }], { json: true, temperatura: 0.8, max: 6000 }));
+Regras: português do Brasil, frases faladas naturais e curtas, 3 a 5 passos no desenrolar, 3 itens em outros_ganchos (tipos diferentes do usado), 2 itens em outros_tipos_ugc, nunca use travessão (—).
+NUNCA invente números, porcentagens, prazos ou resultados ("40% mais brilho", "dura 48h"). Use só números que ela contou ou que aparecem na pesquisa acima; sem número confiável, use o tempo de uso dela e detalhes que dá para ver e sentir (textura, cheiro, toque, antes e depois na câmera).
+Não invente cupom, desconto, frete grátis ou preço: se ela não contou e a pesquisa não mostrou, faça o CTA sem oferta (ex.: "o link tá aqui embaixo", "salva pra lembrar").
+gancho_tipo deve ser exatamente um destes nomes: Problema / Identificação, Antes e depois, Promessa, Comparativo, Lista / Curiosidade, Opinião forte, Objeção, Prova / Depoimento, Urgência.`;
+  let saida = "";
+  try { saida = await conversarGroq(chave, [{ role: "user", content: pedido }], { json: true, temperatura: 0.8, max: qtd === 3 ? 3800 : 3000, leve: true }); }
+  catch (e) {
+    // o plano grátis do Groq limita o tamanho do pedido: tenta de novo com menos exemplos
+    if (!c._curto && /too large|tokens per minute|TPM|413/i.test(String((e as Error).message))) return roteirosUgc(chave, { ...c, _curto: true, quantidade: Math.min(qtd, 2), _descricao: descricao, _pesquisa: pesquisa.slice(0, 900) }, supa, true);
+    throw e;
+  }
+  const j = lerJson(saida);
   const parte = (p: any) => ({ fala: txt(p?.fala, 500), visual: txt(p?.visual, 300) });
   const roteiros = (Array.isArray(j.roteiros) ? j.roteiros : []).slice(0, qtd).map((r: any) => ({
     titulo: txt(r.titulo, 60) || "Roteiro UGC", tipo_ugc: txt(r.tipo_ugc, 60), funil: txt(r.funil, 30), funil_por_que: txt(r.funil_por_que, 200),
@@ -151,7 +249,7 @@ Regras: português do Brasil, frases faladas naturais e curtas, 3 a 5 passos no 
     outros_ganchos: (Array.isArray(r.outros_ganchos) ? r.outros_ganchos : []).slice(0, 4).map((g: any) => ({ tipo: txt(g?.tipo, 40), texto: txt(g?.texto, 300) })).filter((g: any) => g.texto),
     outros_tipos_ugc: (Array.isArray(r.outros_tipos_ugc) ? r.outros_tipos_ugc : []).slice(0, 3).map((g: any) => ({ tipo: txt(g?.tipo, 40), ideia: txt(g?.ideia, 300) })).filter((g: any) => g.tipo),
   })).filter((r: any) => r.hook.fala);
-  return { roteiros, viuImagens: !!descricao };
+  return { roteiros, viuImagens: !!descricao, pesquisa: pesquisa || "" };
 }
 
 Deno.serve(async (req) => {
@@ -174,7 +272,7 @@ Deno.serve(async (req) => {
     }
     const corpo = await req.json().catch(() => ({}));
     if (corpo.modo === "ugc") {
-      try { return resposta(await roteirosUgc(chave, corpo)); }
+      try { return resposta(await roteirosUgc(chave, corpo, supa)); }
       catch (e) { console.error(e); return resposta({ error: "Não consegui criar os roteiros agora. Tente de novo em instantes." }, 502); }
     }
     const { prompt } = corpo;
