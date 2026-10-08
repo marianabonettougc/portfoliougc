@@ -291,7 +291,9 @@
   .trabalho-video .video-midia{border-radius:14px}
   .trabalho-video .video-logo{top:9px;left:9px;width:40px;height:40px}
   .trabalho-video .video-info{left:10px;right:10px;bottom:10px}
-  .trabalho-video .video-info strong{font-size:1.02rem}
+  .trabalho-legenda{text-align:center;padding:10px 4px 0}
+  .trabalho-legenda h3{margin:0;font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.01em;line-height:1.2}
+  .trabalho-legenda p{margin:3px 0 0;font-size:.85rem;line-height:1.3;color:var(--texto-suave)}
 
   /* =========================================================
      ALGUMAS MARCAS QUE JÁ TRABALHEI (painel marrom com grade de logos)
@@ -1013,9 +1015,9 @@ const caseDestaque = {
 };
 
 // ================================
-// NICHOS (botões de filtro, nesta ordem)
+// NICHOS (botões de filtro, nesta ordem). O primeiro já abre selecionado.
 // ================================
-const nichos = ["Beleza", "Skincare", "Moda", "Casa e decoração", "Fitness", "Maternidade", "Tech"];
+const nichos = ["Maternidade", "Cabelo", "Autoestima | Beleza | Moda", "Tech | Apps | Cursos", "Diversos | Bem Estar | Fit", "Fotos"];
 
 // ================================
 // TRABALHOS POR NICHO
@@ -1515,16 +1517,18 @@ const degrades = [
   "linear-gradient(160deg,#e3d3c0,#b98f72)",
   "linear-gradient(160deg,#f1e5d6,#d6b9a0)"
 ];
-$("#filtros").innerHTML = ["Todos", ...nichos]
-  .map((n) => `<button class="filtro" type="button" data-nicho="${escapar(n)}" aria-pressed="${n === "Todos"}">${escapar(n)}</button>`).join("");
+$("#filtros").innerHTML = nichos
+  .map((n, i) => `<button class="filtro" type="button" data-nicho="${escapar(n)}" aria-pressed="${i === 0}">${escapar(n)}</button>`).join("");
 
 $("#trabalhos-grid").innerHTML = trabalhos.map((t, i) => t.link ? `
-  <li class="trabalho cartao trabalho-video" data-nicho="${escapar(t.nicho)}">
-    ${cardVideo(t, "t" + i)}
-    <span class="tag">${escapar(t.nicho)}</span>
-    ${t.formato ? `<h3>${escapar(t.formato)}</h3>` : ""}
+  <li class="trabalho cartao trabalho-video" data-nicho="${escapar(t.nicho)}"${t.nicho === nichos[0] ? "" : " hidden"}>
+    ${cardVideo({ ...t, titulo: "" }, "t" + i)}
+    <div class="trabalho-legenda">
+      ${t.formato ? `<h3>${escapar(t.formato)}</h3>` : ""}
+      <p>${escapar(t.titulo)}</p>
+    </div>
   </li>` : `
-  <li class="trabalho cartao" data-nicho="${escapar(t.nicho)}">
+  <li class="trabalho cartao" data-nicho="${escapar(t.nicho)}"${t.nicho === nichos[0] ? "" : " hidden"}>
     <div class="img">${t.imagem
       ? `<img src="${escapar(t.imagem)}" alt="${escapar(t.titulo)}" loading="lazy">`
       : `<div class="vazio-img" style="height:100%;background:${degrades[i % degrades.length]}" role="img" aria-label="Espaço para a imagem: ${escapar(t.titulo)}"><span>foto 4:5</span></div>`}
@@ -1543,7 +1547,7 @@ $("#filtros").addEventListener("click", (e) => {
   const botao = e.target.closest(".filtro");
   if (!botao) return;
   const escolhido = botao.dataset.nicho;
-  const pertence = (c) => escolhido === "Todos" || c.dataset.nicho === escolhido;
+  const pertence = (c) => c.dataset.nicho === escolhido;
   document.querySelectorAll(".filtro").forEach((b) => b.setAttribute("aria-pressed", String(b === botao)));
   const cards = [...document.querySelectorAll(".trabalho")];
   const espera = reduzMovimento ? 0 : 220;
