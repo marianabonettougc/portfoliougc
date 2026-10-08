@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 // Atualiza sozinho: se existir uma versão mais nova do painel publicada, recarrega a página nova
-window.VERSAO_PAINEL = "202610080503";
+window.VERSAO_PAINEL = "202610080510";
 fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).then((j) => {
   if (j.versao && j.versao !== window.VERSAO_PAINEL) {
     const u = new URL(location.href);
@@ -19,9 +19,9 @@ fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/painel.css?v=202610080503">
+<link rel="stylesheet" href="../css/painel.css?v=202610080510">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/banco.js?v=202610080503"></script>
+<script src="../js/banco.js?v=202610080510"></script>
 <script>
 // PRIMEIRA COISA: conferir a sessão. Sem sessão, vai para o login.
 // A página só aparece depois dessa conferência (antes ela fica escondida).
@@ -61,7 +61,7 @@ window.sessaoPronta = (async function () {
     <button class="menu-item" data-aba="calendario" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Planner</button>
     <button class="menu-item" data-aba="campanhas" type="button">
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>Campanhas</button>
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6.5" width="12.5" height="11" rx="2.5"/><path d="M15.5 10.5l5-3v9l-5-3z"/></svg>UGC's &amp; Publis</button>
     <button class="menu-item" data-aba="roteiros" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5M10 12h6M10 15.5h6M10 19h3.5"/></svg>Roteiros</button>
     <button class="menu-item" data-aba="checklist" type="button">
@@ -106,7 +106,7 @@ window.sessaoPronta = (async function () {
 </dialog>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="../js/biblioteca.js?v=202610080503"></script>
-<script src="../js/admin.js?v=202610080503"></script>
+<script src="../js/biblioteca.js?v=202610080510"></script>
+<script src="../js/admin.js?v=202610080510"></script>
 </body>
 </html>

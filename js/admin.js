@@ -252,27 +252,29 @@
   // ---------------------------------------------------------
   // MENU E ABAS
   // ---------------------------------------------------------
-  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "Campanhas", roteiros: "Roteiros", checklist: "Checklist portfólio", gestao: "Gestão UGC" };
+  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Roteiros", checklist: "Checklist portfólio", gestao: "Gestão UGC" };
+  const PAGINAS_APP = { calendario: "planner", campanhas: "jobs" };
   let abaAtual = "portfolio";
   function mostrarAba(nome) {
     if (!TITULOS[nome]) nome = "portfolio";
     abaAtual = nome;
-    // o Planner (antigo Calendário) é a página de planner do aplicativo Gestão UGC
-    const secao = nome === "calendario" ? "gestao" : nome;
+    // Planner (antigo Calendário) e UGC's & Publis (antiga Campanhas) são páginas do aplicativo Gestão UGC
+    const paginaApp = PAGINAS_APP[nome] || "";
+    const secao = paginaApp ? "gestao" : nome;
     $$(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + secao; });
     $$(".menu-item").forEach((b) => { b.classList.toggle("ativo", b.dataset.aba === nome); b.setAttribute("aria-current", b.dataset.aba === nome ? "page" : "false"); });
     $("#titulo-aba").textContent = TITULOS[nome];
     document.title = TITULOS[nome] + " | Painel Mari Bonetto";
     if (location.hash !== "#" + nome) history.replaceState(null, "", "#" + nome);
     $("#painel").classList.remove("menu-aberto");
-    if (secao === "gestao") abrirGestao(nome === "calendario" ? "planner" : "");
+    if (secao === "gestao") abrirGestao(paginaApp);
   }
   // Aplicativo de gestão UGC: abre dentro do painel, com o mesmo login e o mesmo banco
   // Uma cópia só do aplicativo serve as duas abas (Gestão UGC e Planner), assim uma nunca
   // apaga o que a outra salvou. Trocar de aba só troca a página dentro dele.
   function abrirGestao(pagina) {
     const sec = $("#aba-gestao");
-    sec.classList.toggle("so-planner", pagina === "planner");
+    sec.classList.toggle("so-planner", Boolean(pagina));
     const quadro = sec.querySelector("iframe");
     if (quadro) {
       if (pagina) quadro.contentWindow.postMessage({ pagina, so: true }, location.origin);
@@ -1514,7 +1516,7 @@
     visitas: () => desenhar("portfolio", desenharPortfolio),
     marcas: () => desenhar("marcas", desenharMarcas),
     calendario: () => {},
-    campanhas: () => desenhar("campanhas", desenharCampanhas),
+    campanhas: () => {},
     marcados: () => desenhar("checklist", desenharChecklist),
     roteiros: () => desenhar("roteiros", desenharRoteiros)
   };
