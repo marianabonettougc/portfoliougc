@@ -254,12 +254,11 @@
   // ---------------------------------------------------------
   const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
     prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Quadro de roteiros",
-    financeiro: "Financeiro", performance: "Performance", simulador: "Simulador de preço", organizacao: "Organização", tiktokshop: "TikTok Shop",
-    trabalhos: "Portfólio de trabalhos", config: "Configurações" };
+    financeiro: "Financeiro", performance: "Performance", tiktokshop: "TikTok Shop", config: "Configurações" };
   // Abas do painel que são páginas do aplicativo Gestão UGC (aba do painel: página do aplicativo)
   const PAGINAS_APP = { dashboard: "dashboard", calendario: "planner", campanhas: "jobs", prospeccao: "prospeccao", followups: "followups",
     candidaturas: "candidaturas", trafego: "trafego", quadro: "roteiros", financeiro: "financeiro", performance: "performance",
-    simulador: "simulador", organizacao: "organizacao", tiktokshop: "tiktokshop", trabalhos: "portfolio", config: "config" };
+    tiktokshop: "tiktokshop", config: "config" };
   let abaAtual = "portfolio";
   function mostrarAba(nome) {
     if (nome === "gestao") nome = "dashboard"; // a antiga aba Gestão UGC virou várias abas

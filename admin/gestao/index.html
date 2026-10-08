@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610080529"></script>
+<script src="../../js/banco.js?v=202610080531"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5931,8 +5931,8 @@ function App({session}){
   const NO_PAINEL = (()=>{ try{ return window.parent !== window && window.parent.location.origin === location.origin; }catch(e){ return false; } })();
   // Cada página do aplicativo é uma aba do painel (página do aplicativo: aba do painel)
   const ABAS_DO_PAINEL = {dashboard:"dashboard", planner:"calendario", jobs:"campanhas", trafego:"trafego", followups:"followups",
-    roteiros:"quadro", prospeccao:"prospeccao", candidaturas:"candidaturas", portfolio:"trabalhos", financeiro:"financeiro",
-    performance:"performance", simulador:"simulador", organizacao:"organizacao", tiktokshop:"tiktokshop", config:"config"};
+    roteiros:"quadro", prospeccao:"prospeccao", candidaturas:"candidaturas", financeiro:"financeiro",
+    performance:"performance", tiktokshop:"tiktokshop", config:"config"};
   const [page, setPage] = useState(parametros.get("pagina") || "dashboard");
   const [soUma, setSoUma] = useState(parametros.get("so") === "1");
   // Dentro do painel, ir para uma página que é aba do painel troca a aba do painel
