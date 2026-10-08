@@ -4,13 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Cache-Control" content="no-cache">
+<script>
+// Atualiza sozinho: se existir uma versão mais nova do painel publicada, recarrega a página nova
+window.VERSAO_PAINEL = "202610080044";
+fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).then((j) => {
+  if (j.versao && j.versao !== window.VERSAO_PAINEL) {
+    const u = new URL(location.href);
+    if (u.searchParams.get("v") !== j.versao) { u.searchParams.set("v", j.versao); location.replace(u.toString()); }
+  }
+}).catch(() => {});
+</script>
 <title>Painel | Mari Bonetto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/painel.css?v=202610080027">
+<link rel="stylesheet" href="../css/painel.css?v=202610080044">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/banco.js?v=202610080027"></script>
+<script src="../js/banco.js?v=202610080044"></script>
 <script>
 // PRIMEIRA COISA: conferir a sessão. Sem sessão, vai para o login.
 // A página só aparece depois dessa conferência (antes ela fica escondida).
@@ -92,7 +103,7 @@ window.sessaoPronta = (async function () {
 </dialog>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="../js/biblioteca.js?v=202610080027"></script>
-<script src="../js/admin.js?v=202610080027"></script>
+<script src="../js/biblioteca.js?v=202610080044"></script>
+<script src="../js/admin.js?v=202610080044"></script>
 </body>
 </html>
