@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610080552"></script>
+<script src="../../js/banco.js?v=202610080606"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -685,7 +685,7 @@ function LineChart({data, width, height}){
   );
 }
 
-function Dashboard({state, updateState, go, openRoteirosAI}){
+function Dashboard({ocultar, alternarOcultar, state, updateState, go, openRoteirosAI}){
   const pendentes = state.jobs.filter(j=>!JOB_FINISHED.includes(j.status)).length;
   const entregues = state.jobs.filter(j=>j.status==="Conteúdo Entregue" || j.status==="Finalizado").length;
   const aReceberPorMoeda = {};
@@ -792,6 +792,7 @@ function Dashboard({state, updateState, go, openRoteirosAI}){
           <h1 className="page-title">{saudacao}, {state.profile.name}! {urgentesHead.length>0 && `Foco nos ${urgentesHead.length} prazos urgentes`}</h1>
           <p className="page-sub">{urgentesHead.length>0 ? `Você tem ${urgentesHead.length} entrega${urgentesHead.length>1?'s':''} urgente${urgentesHead.length>1?'s':''}.` : (pendentes===0 ? "Nenhuma pendência, que orgulho!" : `Você tem ${pendentes} job${pendentes>1?'s':''} em andamento.`)}</p>
         </div>
+        {alternarOcultar && <button className="btn btn-ghost" onClick={alternarOcultar} aria-pressed={ocultar}><Icon name={ocultar ? "visibility" : "visibility_off"} size={17}/>{ocultar ? "Mostrar valores" : "Ocultar valores"}</button>}
       </div>
 
       {prioridade && (
@@ -6020,7 +6021,14 @@ function App({session}){
   const allItems = NAV.flatMap(s=>s.items);
   const currentLabel = (allItems.find(i=>i.key===page)||{}).label || "Dashboard";
 
-  const pageProps = {state, updateState, go:irPara};
+  // olho dos valores: o mesmo do topo do painel (os dois ficam sempre iguais)
+  function alternarOcultar(){
+    const novo = !ocultar;
+    try{ localStorage.setItem("ocultarValores", novo ? "1" : "0"); }catch(e){}
+    setOcultar(novo);
+    if(NO_PAINEL) window.parent.postMessage({ocultarValores: novo}, location.origin);
+  }
+  const pageProps = {state, updateState, go:irPara, ocultar, alternarOcultar};
   let PageComp;
   switch(page){
     case "dashboard": PageComp = <Dashboard {...pageProps} openRoteirosAI={openRoteirosAI}/>; break;

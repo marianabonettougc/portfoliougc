@@ -398,6 +398,8 @@
   }));
   // o aplicativo pede para trocar de aba quando você clica num atalho dele (ex.: do Dashboard para UGC's & Publis)
   window.addEventListener("message", (e) => {
+    // o olho de dentro do aplicativo (Dashboard) avisa o painel para o botão do topo ficar igual
+    if (e.origin === location.origin && e.data && "ocultarValores" in e.data && !e.data.aba) { ocultoAgora = Boolean(e.data.ocultarValores); pintarOlho(); return; }
     if (e.origin !== location.origin || !e.data || !e.data.aba || !TITULOS[e.data.aba]) return;
     mostrarAba(e.data.aba);
   });
