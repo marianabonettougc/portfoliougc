@@ -980,6 +980,35 @@
     });
   }
 
+  // Chama o programa "transcrever" do Supabase e devolve a resposta (ou um erro com a mensagem em português)
+  async function chamarTranscrever(corpo) {
+    const { data, error } = await banco.functions.invoke("transcrever", { body: corpo });
+    if (error) {
+      let msg = "";
+      try { msg = (await error.context.json()).erro; } catch (e) {}
+      throw new Error(msg || "Não consegui falar com o programa de transcrição. Tente de novo.");
+    }
+    if (data && data.erro) throw new Error(data.erro);
+    return data || {};
+  }
+  let tokscriptConectado = null;
+  async function atualizarStatusTokscript(forcar) {
+    if (forcar !== undefined) tokscriptConectado = forcar;
+    else { try { tokscriptConectado = Boolean((await chamarTranscrever({ acao: "tokscript_status" })).conectado); } catch (e) { tokscriptConectado = null; } }
+    const el = $("#rot-ts");
+    if (!el) return;
+    if (tokscriptConectado) {
+      el.innerHTML = `<span class="rot-ts-ok">● TokScript conectado</span> <button class="btn-texto" type="button" id="rot-ts-sair">desconectar</button>`;
+      $("#rot-ts-sair").addEventListener("click", async () => {
+        if (!window.confirm("Desconectar o TokScript do painel?")) return;
+        try { await chamarTranscrever({ acao: "tokscript_sair" }); atualizarStatusTokscript(false); avisar("TokScript desconectado"); } catch (e) { avisar(e.message, true); }
+      });
+    } else {
+      el.innerHTML = `<button class="btn btn-mini rot-ts-btn" type="button" id="rot-ts-conectar">Conectar TokScript</button>`;
+      $("#rot-ts-conectar").addEventListener("click", () => { $("#rot-conectar").hidden = false; $("#rot-conectar").scrollIntoView({ behavior: "smooth", block: "center" }); });
+    }
+  }
+
   function desenharRoteiros() {
     const sec = $("#aba-roteiros");
     if (!$("#rot-novo")) {
@@ -991,7 +1020,22 @@
             <select class="entrada" id="rot-dequem" aria-label="De quem é o vídeo"><option value="outra">De outra pessoa</option><option value="meu">Meu</option></select>
             <button class="btn btn-principal" type="submit">Transcrever</button>
           </form>
-          <button class="btn-texto" type="button" id="rot-mao">ou escrever um roteiro na mão</button>
+          <div class="rot-faixa-rodape">
+            <button class="btn-texto" type="button" id="rot-mao">ou escrever um roteiro na mão</button>
+            <span class="rot-ts" id="rot-ts"></span>
+          </div>
+        </div>
+        <div class="bloco rot-conectar" id="rot-conectar" hidden>
+          <div class="bloco-titulo"><h2>Conectar o TokScript (só uma vez)</h2><button class="icone-btn" type="button" id="rot-conectar-fechar" aria-label="Fechar">×</button></div>
+          <ol class="rot-passos">
+            <li>Clique em <button class="btn btn-mini btn-principal" type="button" id="rot-ts-abrir">Abrir o login do TokScript ↗</button> e entre com a sua conta.</li>
+            <li>Depois de entrar, o navegador mostra uma página de erro (<i>"não é possível acessar esse site"</i>). <b>Isso é normal.</b></li>
+            <li>Copie o endereço inteiro da barra lá em cima (começa com <code>http://localhost:3000/callback?code=</code>) e cole aqui:</li>
+          </ol>
+          <div class="rot-novo">
+            <input class="entrada" type="text" id="rot-ts-url" placeholder="Cole aqui o endereço da página de erro" aria-label="Endereço da página de erro">
+            <button class="btn btn-principal" type="button" id="rot-ts-concluir">Concluir</button>
+          </div>
         </div>
         <div class="ferramentas">
           <input class="entrada" type="search" id="rot-busca" placeholder="Buscar no texto, no perfil ou nas suas notas" aria-label="Buscar roteiros">
@@ -1007,6 +1051,31 @@
         $("#rot-link").value = "";
       });
       $("#rot-mao").addEventListener("click", () => formRoteiro(null, { de_quem: "meu", origem: "outro" }));
+      $("#rot-conectar-fechar").addEventListener("click", () => { $("#rot-conectar").hidden = true; });
+      $("#rot-ts-abrir").addEventListener("click", async (e) => {
+        const btn = e.currentTarget; btn.classList.add("carregando");
+        const janelaLogin = window.open("about:blank", "_blank");
+        try {
+          const r = await chamarTranscrever({ acao: "tokscript_inicio" });
+          if (janelaLogin) janelaLogin.location.href = r.url; else window.open(r.url, "_blank");
+        } catch (er) { if (janelaLogin) janelaLogin.close(); avisar(er.message, true); }
+        btn.classList.remove("carregando");
+      });
+      $("#rot-ts-concluir").addEventListener("click", async (e) => {
+        const texto = $("#rot-ts-url").value.trim();
+        let code = "", state = "";
+        try { const u = new URL(texto); code = u.searchParams.get("code") || ""; state = u.searchParams.get("state") || ""; } catch (er) {}
+        if (!code) { avisar("Esse endereço não tem o código do login. Copie o endereço inteiro da página de erro.", true); return; }
+        const btn = e.currentTarget; btn.classList.add("carregando");
+        try {
+          await chamarTranscrever({ acao: "tokscript_finalizar", code, state });
+          $("#rot-conectar").hidden = true; $("#rot-ts-url").value = "";
+          avisar("TokScript conectado! Agora é só colar o link e clicar em Transcrever.");
+          atualizarStatusTokscript(true);
+        } catch (er) { avisar(er.message, true); }
+        btn.classList.remove("carregando");
+      });
+      atualizarStatusTokscript();
       $("#rot-busca").addEventListener("input", (e) => { estadoRot.busca = e.target.value.trim(); desenharListaRoteiros(); });
     }
     desenharListaRoteiros();
@@ -1178,14 +1247,8 @@
               if (arquivo.size > 25 * 1024 * 1024) throw new Error("O arquivo é grande demais (máximo 25 MB). Use um vídeo mais curto.");
               corpoPedido = new FormData(); corpoPedido.append("arquivo", arquivo); corpoPedido.append("link", link);
             } else corpoPedido = { link };
-            const { data, error } = await banco.functions.invoke("transcrever", { body: corpoPedido });
-            if (error) {
-              let msg = "";
-              try { msg = (await error.context.json()).erro; } catch (e) {}
-              if (!msg && /not found|404/i.test(String(error.message))) msg = "O programa de transcrição não está no Supabase.";
-              throw new Error(msg || "Não consegui transcrever agora. Tente de novo ou envie o arquivo do vídeo.");
-            }
-            if (!data || !data.transcricao) throw new Error((data && data.erro) || "Não veio nenhuma transcrição.");
+            const data = await chamarTranscrever(corpoPedido);
+            if (!data.transcricao) throw new Error("Não veio nenhuma transcrição.");
             preencher(data);
             $("details.rot-editar", corpo).open = true;
             mostrarStatus(data.campos ? "Pronto! Transcrevi e preenchi os campos. Confira e clique em Salvar." : "Transcrevi! Separei gancho, passos e CTA do meu jeito. Confira e clique em Salvar.");
