@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610080606"></script>
+<script src="../../js/banco.js?v=202610080620"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -100,6 +100,170 @@
   .main{ flex:1; min-width:0; }
   .so-uma .sidebar, .so-uma .topbar, .so-uma .scrim{ display:none !important; }
   .so-uma .content{ max-width:none; }
+  /* ===== DASHBOARD (board novo) ===== */
+  .db{ --db-cartao:#fffdf9; --db-borda:rgba(107,74,53,.11); --db-amarelo:#e3a23b; --db-amarelo-suave:#fbecc8; --db-prio:#fcefd2; --db-escuro:#2a1f19; --db-suave:#7a6355;
+    display:flex; flex-direction:column; gap:18px; color:var(--graphite); }
+  .db button{ font-family:inherit; color:inherit; }
+  .db h2{ display:flex; align-items:center; gap:10px; margin:0; font-size:19px; font-weight:600; }
+  .db h2 small{ font-size:14px; font-weight:400; color:var(--db-suave); margin-left:4px; }
+  .db-bloco{ background:var(--db-cartao); border:1px solid var(--db-borda); border-radius:20px; padding:20px 22px; box-shadow:0 4px 16px rgba(61,43,32,.04); min-width:0; }
+  .db-bloco-topo{ display:flex; align-items:center; justify-content:space-between; gap:6px 10px; flex-wrap:wrap; margin-bottom:14px; }
+  .db-link{ display:inline-flex; align-items:center; gap:4px; border:0; background:none; cursor:pointer; font-size:13px; text-decoration:underline; text-underline-offset:3px; }
+  .db-vazio{ color:var(--db-suave); font-size:14px; margin:6px 0; }
+
+  /* cabeçalho */
+  .db-cabeca{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .db-ola{ display:flex; align-items:center; gap:14px; }
+  .db-sol{ width:46px; height:46px; fill:none; stroke:var(--db-amarelo); stroke-width:2.4; stroke-linecap:round; flex-shrink:0; }
+  .db-ola h1{ font-family:"DM Serif Display",Georgia,serif; font-weight:400; font-size:36px; line-height:1.1; margin:0; }
+  .db-ola p{ margin:2px 0 0; color:var(--db-suave); font-size:16px; }
+  .db-acoes{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .db-busca{ position:relative; display:flex; align-items:center; gap:8px; width:320px; max-width:100%; height:46px; padding:0 16px; border-radius:999px; background:var(--db-cartao); border:1px solid var(--db-borda); color:var(--db-suave); }
+  .db-busca input{ flex:1; min-width:0; border:0; outline:0; background:transparent; font:inherit; font-size:14px; color:var(--graphite); }
+  .db-redondo{ position:relative; width:46px; height:46px; border-radius:50%; border:1px solid var(--db-borda); background:var(--db-cartao); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+  .db-ponto{ position:absolute; top:10px; right:11px; width:9px; height:9px; border-radius:50%; background:#e0533d; border:2px solid var(--db-cartao); }
+  .db-btn-escuro{ display:inline-flex; align-items:center; justify-content:center; gap:10px; height:48px; padding:0 26px; border-radius:999px; border:0; background:var(--db-escuro); color:#fffdf9 !important; font-size:15px; font-weight:500; cursor:pointer; white-space:nowrap; }
+  .db-btn-escuro:hover{ background:#3d2b20; }
+  .db-sino-caixa{ position:relative; }
+  .db-pop{ position:absolute; z-index:20; top:calc(100% + 8px); right:0; width:300px; max-width:86vw; background:var(--db-cartao); border:1px solid var(--db-borda); border-radius:16px; box-shadow:0 14px 34px rgba(61,43,32,.16); padding:8px; }
+  .db-pop-busca{ left:0; right:auto; width:100%; min-width:260px; }
+  .db-pop button{ display:block; width:100%; text-align:left; border:0; background:none; padding:9px 10px; border-radius:10px; cursor:pointer; }
+  .db-pop button:hover{ background:var(--sand); }
+  .db-pop b{ display:block; font-size:14px; }
+  .db-pop small{ display:block; font-size:12px; color:var(--db-suave); }
+  .db-pop-titulo{ padding:6px 10px; }
+
+  /* cartões */
+  .db-cartoes{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+  .db-cartao{ display:flex; align-items:flex-start; gap:14px; text-align:left; background:var(--db-cartao); border:1px solid var(--db-borda); border-radius:20px; padding:18px 16px 16px 18px; cursor:pointer; box-shadow:0 4px 16px rgba(61,43,32,.04); transition:transform .15s ease, box-shadow .15s ease; min-width:0; }
+  .db-cartao:hover{ transform:translateY(-2px); box-shadow:0 10px 22px rgba(61,43,32,.08); }
+  .db-icone{ width:48px; height:48px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .db-icone-amarelo{ background:var(--db-amarelo-suave); color:#c98a26; }
+  .db-icone-verde{ background:#e3eedf; color:#4f7a54; }
+  .db-icone-rosa{ background:#f8e2dc; color:#c0563f; }
+  .db-cartao-txt{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .db-cartao-txt b{ font-size:clamp(19px,2.1vw,28px); font-weight:600; line-height:1.15; white-space:nowrap; }
+  .db-cartao-txt span{ font-size:14px; margin-top:2px; }
+  .db-cartao-txt small{ font-size:13px; color:var(--db-suave); margin-top:10px; }
+
+  /* linhas */
+  .db-linha{ display:grid; gap:18px; }
+  .db-linha-1{ grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); }
+  .db-linha-2{ grid-template-columns:minmax(0,1.45fr) minmax(0,1fr); }
+  .db-linha-3{ grid-template-columns:minmax(0,1.45fr) minmax(0,1fr); }
+
+  /* prioridade */
+  .db-prioridade{ background:var(--db-prio); border-color:rgba(227,162,59,.25); }
+  .db-prioridade h2{ font-size:22px; margin-bottom:18px; }
+  .db-prioridade h2 .material-symbols-outlined{ color:var(--db-amarelo); }
+  .db-prio-corpo{ display:flex; gap:22px; align-items:stretch; flex-wrap:wrap; }
+  .db-mini{ width:138px; height:138px; border-radius:16px; flex-shrink:0; background:linear-gradient(140deg,#ecd9c6,#a87058); display:flex; align-items:center; justify-content:center; box-shadow:inset 0 0 0 1px rgba(255,255,255,.35); }
+  .db-mini span{ font-family:"DM Serif Display",Georgia,serif; font-size:56px; color:#fffdf9; }
+  .db-prio-info{ flex:1; min-width:180px; display:flex; flex-direction:column; gap:12px; }
+  .db-prio-nome{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:4px; }
+  .db-prio-nome b{ font-size:21px; font-weight:600; }
+  .db-selo{ background:#f7d98e; color:#6b4a12; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; padding:5px 11px; border-radius:8px; }
+  .db-check{ display:flex; align-items:center; gap:12px; cursor:pointer; font-size:15px; min-width:0; }
+  .db-check input{ position:absolute; opacity:0; width:1px; height:1px; }
+  .db-caixinha{ width:22px; height:22px; border-radius:6px; border:1.6px solid rgba(61,43,32,.45); display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; background:#fffdf9; }
+  .db-caixinha .material-symbols-outlined{ opacity:0; color:#fffdf9; font-variation-settings:'wght' 600; }
+  .db-check.ok .db-caixinha, .db-tarefa.ok .db-caixinha{ background:var(--db-escuro); border-color:var(--db-escuro); }
+  .db-check.ok .db-caixinha .material-symbols-outlined, .db-tarefa.ok .db-caixinha .material-symbols-outlined{ opacity:1; }
+  .db-check input:focus-visible + .db-caixinha{ outline:2px solid var(--db-amarelo); outline-offset:2px; }
+  .db-prio-prazo{ display:flex; flex-direction:column; gap:6px; padding-left:22px; border-left:1px solid rgba(107,74,53,.15); min-width:190px; }
+  .db-prio-prazo small{ font-size:13px; color:var(--db-suave); }
+  .db-prio-prazo b{ display:flex; align-items:center; gap:8px; font-size:18px; font-weight:600; }
+  .db-prio-prazo > span{ font-size:13px; color:var(--db-suave); padding-left:28px; }
+  .db-prio-prazo .db-btn-escuro{ margin-top:auto; height:52px; font-size:16px; }
+
+  /* hoje */
+  .db-tarefa{ display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid var(--db-borda); }
+  .db-tarefa:first-of-type{ border-top:0; }
+  .db-tarefa .db-check{ flex:1; }
+  .db-tarefa-txt{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .db-tarefa.ok .db-tarefa-txt{ text-decoration:line-through; color:var(--db-suave); }
+  .db-seta{ border:0; background:none; cursor:pointer; padding:2px; display:inline-flex; color:var(--db-suave); }
+  .db-tag{ font-size:12.5px; padding:4px 12px; border-radius:8px; white-space:nowrap; flex-shrink:0; }
+  .db-tag-amarelo{ background:var(--db-amarelo-suave); color:#8a5a12; }
+  .db-tag-vermelho{ background:#f8e0da; color:#b8473a; }
+  .db-tag-verde{ background:#e3eedf; color:#3f6a45; }
+  .db-tag-cinza{ background:#efe8df; color:#5e4a3d; }
+
+  /* meus jobs */
+  .db-abas{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .db-abas button{ display:inline-flex; align-items:center; gap:10px; border:0; background:none; padding:8px 18px; border-radius:999px; cursor:pointer; font-size:14px; }
+  .db-abas button span{ background:#efe8df; border-radius:999px; font-size:12px; min-width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; padding:0 6px; }
+  .db-abas button.ativa{ background:var(--db-amarelo-suave); font-weight:600; }
+  .db-abas button.ativa span{ background:#f7d98e; }
+  .db-job{ width:100%; display:grid; grid-template-columns:auto minmax(90px,.8fr) minmax(290px,2.4fr) auto; align-items:center; gap:14px; text-align:left; border:1px solid var(--db-borda); background:var(--db-cartao); border-radius:16px; padding:10px 18px 10px 10px; margin-top:10px; cursor:pointer; }
+  .db-job:hover{ background:#fffaf2; }
+  .db-job .db-mini{ width:82px; height:82px; border-radius:12px; }
+  .db-job .db-mini span{ font-size:34px; }
+  .db-job-nome{ display:flex; flex-direction:column; min-width:0; }
+  .db-job-nome b{ font-size:16px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .db-job-nome small{ font-size:13px; color:var(--db-suave); }
+  .db-etapas{ display:grid; grid-template-columns:repeat(5,1fr); }
+  .db-etapa{ position:relative; display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .db-etapa::before{ content:""; position:absolute; top:7px; left:-50%; width:100%; height:2px; background:#e7ddd0; z-index:0; }
+  .db-etapa:first-child::before{ display:none; }
+  .db-etapa.feita::before{ background:#f0c35a; }
+  .db-etapa i{ position:relative; z-index:1; width:16px; height:16px; border-radius:50%; border:2px solid #ddd2c5; background:#fffdf9; }
+  .db-etapa.feita i{ border-color:var(--db-amarelo); background:#f7d98e; box-shadow:inset 0 0 0 3px #fffdf9; }
+  .db-etapa small{ font-size:10.5px; color:var(--db-suave); white-space:nowrap; letter-spacing:-.01em; }
+  .db-job-prazo{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; min-width:104px; }
+  .db-job-prazo small{ font-size:12px; color:var(--db-suave); }
+  .db-job-prazo b{ font-size:16px; font-weight:600; }
+  .db-pilula{ margin-top:6px; background:var(--db-amarelo-suave); color:#8a5a12; font-size:12.5px; padding:4px 12px; border-radius:8px; }
+
+  /* calendário da semana */
+  .db-semana{ display:grid; grid-template-columns:repeat(7,1fr); background:#f6efe6; border-radius:14px; padding:4px; gap:2px; }
+  .db-semana button{ position:relative; border:0; background:none; border-radius:11px; padding:10px 0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .db-semana small{ font-size:11.5px; color:var(--db-suave); }
+  .db-semana b{ font-size:19px; font-weight:500; }
+  .db-semana button.sel{ background:var(--db-amarelo-suave); }
+  .db-semana button.hoje b{ font-weight:700; }
+  .db-semana button i{ position:absolute; bottom:5px; width:5px; height:5px; border-radius:50%; background:var(--db-amarelo); }
+  .db-agenda{ margin-top:12px; position:relative; }
+  .db-agenda-item{ position:relative; width:100%; display:grid; grid-template-columns:62px 1fr auto; align-items:center; gap:14px; border:0; border-bottom:1px solid var(--db-borda); background:none; padding:12px 0 12px 22px; text-align:left; cursor:pointer; }
+  .db-agenda-item::before{ content:""; position:absolute; left:4px; top:50%; width:8px; height:8px; margin-top:-4px; border-radius:50%; border:2px solid var(--db-amarelo); background:#fffdf9; }
+  .db-agenda-item:last-child{ border-bottom:0; }
+  .db-agenda-quando{ font-size:14px; color:var(--graphite); }
+  .db-agenda-txt{ font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* ideias rápidas */
+  .db-ideias{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+  .db-ideia{ display:flex; gap:12px; align-items:stretch; border:1px solid var(--db-borda); background:var(--db-cartao); border-radius:16px; padding:8px; text-align:left; cursor:pointer; min-width:0; }
+  .db-ideia img{ width:76px; height:92px; object-fit:cover; border-radius:11px; flex-shrink:0; }
+  .db-ideia span{ display:flex; flex-direction:column; gap:4px; min-width:0; padding:4px 2px; }
+  .db-ideia b{ font-size:15px; font-weight:600; }
+  .db-ideia small{ font-size:12px; color:var(--db-suave); line-height:1.35; }
+  .db-ideia .material-symbols-outlined{ margin-top:auto; align-self:flex-end; }
+
+  /* ferramentas */
+  .db-ferramentas{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .db-ferramentas button{ display:flex; align-items:center; gap:9px; border:1px solid var(--db-borda); background:var(--db-cartao); border-radius:14px; padding:10px 11px; text-align:left; cursor:pointer; font-size:13px; line-height:1.3; min-height:62px; }
+  .db-ferramentas button:hover, .db-ideia:hover{ background:#fffaf2; }
+
+  /* telas menores */
+  @media (max-width:1180px){
+    .db-cartoes{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .db-linha-1, .db-linha-2, .db-linha-3{ grid-template-columns:minmax(0,1fr); }
+  }
+  @media (max-width:700px){
+    .db-ola h1{ font-size:28px; }
+    .db-acoes{ width:100%; }
+    .db-busca{ flex:1 1 100%; width:auto; }
+    .db-btn-escuro{ flex:1; }
+    .db-cartoes{ grid-template-columns:minmax(0,1fr); }
+    .db-prio-prazo{ border-left:0; padding-left:0; width:100%; }
+    .db-job{ grid-template-columns:auto 1fr; }
+    .db-etapas, .db-job-prazo{ grid-column:1 / -1; }
+    .db-job-prazo{ flex-direction:row; align-items:center; gap:10px; flex-wrap:wrap; }
+    .db-pilula{ margin-top:0; }
+    .db-ideias{ grid-template-columns:minmax(0,1fr); }
+    .db-ferramentas{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .db-bloco{ padding:16px; }
+  }
   /* valores escondidos: campos de número ficam embaçados até você clicar neles */
   .valores-ocultos input[type=number]:not(:focus){ filter:blur(5px); }
   .topbar{
@@ -685,260 +849,309 @@ function LineChart({data, width, height}){
   );
 }
 
-function Dashboard({ocultar, alternarOcultar, state, updateState, go, openRoteirosAI}){
-  const pendentes = state.jobs.filter(j=>!JOB_FINISHED.includes(j.status)).length;
-  const entregues = state.jobs.filter(j=>j.status==="Conteúdo Entregue" || j.status==="Finalizado").length;
-  const aReceberPorMoeda = {};
-  state.transacoes.filter(t=>t.tipo==="receita" && t.status!=="Confirmado").forEach(t=>{
-    const m = t.moeda || "BRL";
-    aReceberPorMoeda[m] = (aReceberPorMoeda[m]||0) + Number(t.valor||0);
-  });
-  const aReceber = aReceberPorMoeda["BRL"] || 0;
-  const outrasMoedasPendentes = Object.keys(aReceberPorMoeda).filter(m=>m!=="BRL" && aReceberPorMoeda[m]>0);
-  const hoje = new Date();
-  const hora = hoje.getHours();
+/* ---------- DASHBOARD (board novo, igual ao modelo da Mari) ---------- */
+const ETAPAS_JOB = ["Briefing","Gravação","Edição","Aprovação","Entrega"];
+const etapaDoJob = (s) => ({"Em Produção":1, "Gravado":2, "Aguardando Aprovação":3, "Conteúdo Entregue":4, "Finalizado":4})[s] ?? 0;
+const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const diasAte = (iso) => { const h = new Date(); h.setHours(0,0,0,0); return Math.round((new Date(iso+"T00:00:00") - h)/86400000); };
+const dataBR = (iso) => iso ? iso.split("-").reverse().join("/") : "";
+const TAG_TOM = {"Produção":"amarelo","Urgente":"vermelho","Comunicação":"vermelho","Financeiro":"verde","Planejamento":"cinza","Geral":"cinza","Edição":"cinza","Entrega":"amarelo"};
+const DIAS_SEMANA = ["SEG","TER","QUA","QUI","SEX","SÁB","DOM"];
+const MESES_EXT = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+const IDEIAS_RAPIDAS = [
+  {titulo:"Unboxing", texto:"Mostre a experiência real com o produto", foto:"../../fotos/foto-03.jpg"},
+  {titulo:"Rotina real", texto:"Use no seu dia a dia de forma natural", foto:"../../fotos/foto-07.jpg"},
+  {titulo:"Dica de amiga", texto:"Indique como você realmente usaria", foto:"../../fotos/foto-16.webp"},
+];
+
+function DbTag({texto}){
+  return <span className={"db-tag db-tag-"+(TAG_TOM[texto]||"cinza")}>{texto}</span>;
+}
+function DbMiniatura({job}){
+  const letra = (job.marca||"?").trim().charAt(0).toUpperCase();
+  return <div className="db-mini" aria-hidden="true"><span>{letra}</span></div>;
+}
+
+function Dashboard({ocultar, alternarOcultar, abrirAba, state, updateState, go, openRoteirosAI}){
+  const hojeD = new Date(); hojeD.setHours(0,0,0,0);
+  const hoje = isoLocal(hojeD);
+  const hora = new Date().getHours();
   const saudacao = hora<12 ? "Bom dia" : hora<18 ? "Boa tarde" : "Boa noite";
-  const proximos = state.jobs.filter(j=>{
-    if(!j.prazoEntrega) return false;
-    const d = new Date(j.prazoEntrega+"T00:00:00");
-    const diff = (d-hoje)/(1000*60*60*24);
-    return diff>=0 && diff<=14 && !JOB_FINISHED.includes(j.status);
-  }).sort((a,b)=>new Date(a.prazoEntrega)-new Date(b.prazoEntrega));
-  const urgentesHead = proximos.filter(j=>{ const d=new Date(j.prazoEntrega+"T00:00:00"); return (d-hoje)/(1000*60*60*24)<=3; });
-  const prioridade = urgentesHead[0] || proximos[0] || null;
+  const nome = String(state.profile.name||"").trim() || "Mari";
+  const jobs = state.jobs || [];
+  const planner = state.planner || [];
+  const followups = state.followups || [];
+  const ativos = jobs.filter(j=>!JOB_FINISHED.includes(j.status));
 
-  /* Alertas inteligentes: gerados a partir dos dados reais */
-  const alertasBase = [];
-  proximos.slice(0,5).forEach(j=>{
-    const dias = Math.round((new Date(j.prazoEntrega+"T00:00:00")-hoje)/(1000*60*60*24));
-    alertasBase.push({icon:"schedule", tone:"wine", titulo:"Prazo se aproximando",
-      texto: `"${j.marca}${j.tipo?" | "+j.tipo:""}" vence em ${dias<=0?"hoje":dias+" dia(s)"}.`});
-  });
-  state.jobs.filter(j=>{
-    if(!j.dataPagamento) return false;
-    const d = new Date(j.dataPagamento+"T00:00:00");
-    return d < hoje && j.status!=="Cancelado" && (!j.pagamento || j.pagamento.status!=="Pago");
-  }).forEach(j=>{
-    const diasAtraso = Math.round((hoje-new Date(j.dataPagamento+"T00:00:00"))/(1000*60*60*24));
-    alertasBase.push({icon:"error", tone:"wine", titulo:"Pagamento atrasado",
-      texto: `"${j.marca}" deveria ter sido pago há ${diasAtraso} dia(s) (${fmtMoneyCur(j.valor,j.moeda)}).`});
-  });
-  const semPrazo = state.jobs.filter(j=>!j.prazoEntrega && !JOB_FINISHED.includes(j.status));
-  if(semPrazo.length>0) alertasBase.push({icon:"help", tone:"yellow", titulo:"Prazo indefinido", texto:`${semPrazo.length} job(s) sem prazo de entrega definido.`});
-  const negociacoes = state.jobs.filter(j=>j.status==="Em Negociação").length;
-  if(negociacoes>=3) alertasBase.push({icon:"forum", tone:"blue", titulo:"Follow-up pendente", texto:`Você tem ${negociacoes} negociações em aberto.`});
-  const trafegoVencendo = state.jobs.filter(j=>{
-    if(!j.trafegoPago || !j.trafegoPago.ativo || !j.trafegoPago.dataFim) return false;
-    const d = new Date(j.trafegoPago.dataFim+"T00:00:00");
-    const diff = (d-hoje)/(1000*60*60*24);
-    return diff>=0 && diff<=30;
-  });
-  trafegoVencendo.forEach(j=>{
-    alertasBase.push({icon:"campaign", tone:"yellow", titulo:"Tráfego pago vencendo", texto:`Direito de uso de "${j.marca}" vence em breve.`});
-  });
+  // ----- cartões do topo -----
+  const andamento = ativos.filter(j=>!["Aguardando Aprovação","Conteúdo Entregue"].includes(j.status));
+  const precisaAtencao = ativos.filter(j=>!j.prazoEntrega || diasAte(j.prazoEntrega)<=3 || (j.dataPagamento && diasAte(j.dataPagamento)<0 && (!j.pagamento || j.pagamento.status!=="Pago"))).length;
+  const inicioSemana = new Date(hojeD); inicioSemana.setDate(hojeD.getDate() - ((hojeD.getDay()+6)%7));
+  const diasDaSemana = Array.from({length:7}, (_,i)=>{ const d = new Date(inicioSemana); d.setDate(inicioSemana.getDate()+i); return d; });
+  const fimSemanaIso = isoLocal(diasDaSemana[6]), inicioSemanaIso = isoLocal(diasDaSemana[0]);
+  const entregasSemana = ativos.filter(j=>j.prazoEntrega && j.prazoEntrega>=inicioSemanaIso && j.prazoEntrega<=fimSemanaIso);
+  const aReceberLista = (state.transacoes||[]).filter(t=>t.tipo==="receita" && t.status!=="Confirmado" && (t.moeda||"BRL")==="BRL");
+  const aReceber = aReceberLista.reduce((a,t)=>a+Number(t.valor||0),0);
+  const proximos = ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)>=0).sort((a,b)=>a.prazoEntrega.localeCompare(b.prazoEntrega));
+  const proximoPrazo = proximos[0];
 
-  const [alertasLimpos,setAlertasLimpos] = useState(false);
-  const alertas = alertasLimpos ? [] : alertasBase;
+  // ----- minha prioridade -----
+  const prioridade = proximos[0] || andamento[0] || ativos[0] || null;
+  const PASSOS = [["gravar","Gravar vídeos"],["editar","Editar"],["enviar","Enviar para aprovação"]];
+  function marcarPasso(job, chave){
+    const passos = {...(job.passosDashboard||{}), [chave]: !(job.passosDashboard||{})[chave]};
+    updateState({...state, jobs: jobs.map(j=>j.id===job.id ? {...j, passosDashboard: passos} : j)});
+  }
 
-  /* Diagnóstico mensal (navegável) */
-  const [diagCursor,setDiagCursor] = useState({y:hoje.getFullYear(), m:hoje.getMonth()});
-  const jobsFechadosMes = state.jobs.filter(j=>{
-    if(!j.criadoEm) return false;
-    const d = new Date(j.criadoEm+"T00:00:00");
-    return d.getMonth()===diagCursor.m && d.getFullYear()===diagCursor.y;
-  }).length;
-  const marcasMes = new Set(state.jobs.filter(j=>{
-    if(!j.criadoEm) return false;
-    const d = new Date(j.criadoEm+"T00:00:00");
-    return d.getMonth()===diagCursor.m && d.getFullYear()===diagCursor.y;
-  }).map(j=>j.marca)).size;
-  const faturamentoMes = state.transacoes.filter(t=>{
-    const d = new Date(t.data+"T00:00:00");
-    return t.tipo==="receita" && t.status==="Confirmado" && d.getMonth()===diagCursor.m && d.getFullYear()===diagCursor.y;
-  }).reduce((a,b)=>a+Number(b.valor||0),0);
-  const ticketMedioMes = jobsFechadosMes>0 ? faturamentoMes/jobsFechadosMes : 0;
+  // ----- hoje -----
+  const itensDoDia = (iso) => {
+    const lista = [];
+    planner.filter(p=>p.data===iso).forEach(p=>lista.push({id:"p-"+p.id, texto:p.titulo||"Conteúdo", sub:p.formato||p.plataforma||"", tag: p.status==="Planejado" ? "Planejamento" : p.status==="Gravado" ? "Edição" : (p.status||"Geral"), pagina:"planner"}));
+    ativos.filter(j=>j.prazoEntrega===iso).forEach(j=>lista.push({id:"e-"+j.id, texto:`Entregar conteúdo de ${j.marca}`, sub:"Prazo", tag: iso===hoje ? "Urgente" : "Entrega", pagina:"jobs"}));
+    jobs.filter(j=>j.dataPagamento===iso && j.status!=="Cancelado" && (!j.pagamento || j.pagamento.status!=="Pago")).forEach(j=>lista.push({id:"g-"+j.id, texto:`Conferir pagamento ${j.marca}`, sub:"Pagto", tag:"Financeiro", pagina:"financeiro"}));
+    return lista;
+  };
+  const tarefasHoje = [
+    ...itensDoDia(hoje),
+    ...followups.filter(f=>f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje).map(f=>({id:"f-"+f.id, texto:`Fazer follow-up com ${f.marca}`, tag:"Comunicação", pagina:"followups"})),
+  ];
+  const feitos = state.dashFeitos || {};
+  function marcarTarefa(id){
+    const chave = hoje+"|"+id;
+    const novo = {};
+    Object.keys(feitos).forEach(k=>{ if(k.startsWith(hoje+"|")) novo[k] = feitos[k]; }); // só guarda o dia de hoje
+    novo[chave] = !feitos[chave];
+    updateState({...state, dashFeitos: novo});
+  }
 
-  /* Progresso: em andamento vs pagos, jobs criados este mês (calendário atual) */
-  const mesAtual = hoje.getMonth(), anoAtual = hoje.getFullYear();
-  const jobsMesAtual = state.jobs.filter(j=>{
-    if(!j.criadoEm) return false;
-    const d = new Date(j.criadoEm+"T00:00:00");
-    return d.getMonth()===mesAtual && d.getFullYear()===anoAtual && j.status!=="Cancelado";
-  });
-  const pagosMes = jobsMesAtual.filter(j=>j.pagamento && j.pagamento.status==="Pago").length;
-  const andamentoMes = jobsMesAtual.length - pagosMes;
+  // ----- meus jobs -----
+  const [abaJobs,setAbaJobs] = useState("andamento");
+  const gruposJobs = {
+    andamento: andamento,
+    aguardando: jobs.filter(j=>j.status==="Aguardando Aprovação"),
+    concluidos: jobs.filter(j=>["Conteúdo Entregue","Finalizado"].includes(j.status)),
+  };
+  const listaJobs = [...gruposJobs[abaJobs]].sort((a,b)=>(a.prazoEntrega||"9999").localeCompare(b.prazoEntrega||"9999")).slice(0,3);
+  const descricaoJob = (j) => {
+    const e = j.entregaveis || {};
+    const partes = [];
+    const nv = (e.videos||[]).length, nf = (e.fotos||[]).length, ns = (e.stories||[]).length;
+    if(nv) partes.push(`${nv} vídeo${nv>1?"s":""}`);
+    if(nf) partes.push(`${nf} foto${nf>1?"s":""}`);
+    if(ns) partes.push(`${ns} stories`);
+    if(j.tipo) partes.push(j.tipo);
+    return partes.join(" • ") || (j.categoria || "Job");
+  };
 
-  const [progressoView,setProgressoView] = useState("donut");
-  const progressoTrend = (()=>{
-    const meses = [];
-    for(let i=5;i>=0;i--){
-      const d = new Date(anoAtual, mesAtual-i, 1);
-      meses.push({label: monthNames[d.getMonth()].slice(0,3).toLowerCase(), y:d.getFullYear(), m:d.getMonth()});
-    }
-    return meses.map(mo=>{
-      const value = state.jobs.filter(j=>{
-        if(!j.pagamento || j.pagamento.status!=="Pago" || !j.pagamento.dataPagamento) return false;
-        const d = new Date(j.pagamento.dataPagamento+"T00:00:00");
-        return d.getMonth()===mo.m && d.getFullYear()===mo.y;
-      }).length;
-      return {label:mo.label, value};
-    });
-  })();
+  // ----- calendário da semana -----
+  const [diaSel,setDiaSel] = useState(hoje);
+  const itensDiaSel = itensDoDia(diaSel);
+
+  // ----- busca e alertas -----
+  const [busca,setBusca] = useState("");
+  const [sinoAberto,setSinoAberto] = useState(false);
+  const termo = busca.trim().toLowerCase();
+  const resultados = !termo ? [] : [
+    ...jobs.filter(j=>(j.marca||"").toLowerCase().includes(termo)).map(j=>({id:"j"+j.id, texto:j.marca, sub:"Job • "+j.status, pagina:"jobs"})),
+    ...planner.filter(p=>(p.titulo||"").toLowerCase().includes(termo) || (p.marca||"").toLowerCase().includes(termo)).map(p=>({id:"p"+p.id, texto:p.titulo, sub:"Planner • "+dataBR(p.data), pagina:"planner"})),
+    ...(state.prospeccoes||[]).filter(p=>(p.marca||"").toLowerCase().includes(termo)).map(p=>({id:"r"+p.id, texto:p.marca, sub:"Prospecção • "+(p.status||""), pagina:"prospeccao"})),
+  ].slice(0,7);
+  const alertas = [];
+  proximos.filter(j=>diasAte(j.prazoEntrega)<=3).forEach(j=>alertas.push({titulo:"Prazo chegando", texto:`${j.marca} vence ${diasAte(j.prazoEntrega)===0?"hoje":"em "+diasAte(j.prazoEntrega)+" dia(s)"}.`, pagina:"jobs"}));
+  jobs.filter(j=>j.dataPagamento && diasAte(j.dataPagamento)<0 && j.status!=="Cancelado" && (!j.pagamento || j.pagamento.status!=="Pago")).forEach(j=>alertas.push({titulo:"Pagamento atrasado", texto:`${j.marca} (${fmtMoneyCur(j.valor,j.moeda)})`, pagina:"financeiro"}));
+  const semPrazo = ativos.filter(j=>!j.prazoEntrega).length;
+  if(semPrazo) alertas.push({titulo:"Prazo indefinido", texto:`${semPrazo} job(s) sem prazo de entrega.`, pagina:"jobs"});
+
+  function novaCampanha(){ window.__abrirNovoJob = true; go("jobs"); }
+
+  const FERRAMENTAS = [
+    {icone:"auto_awesome", texto:"Gerar roteiro com IA", acao:()=>openRoteirosAI && openRoteirosAI()},
+    {icone:"fact_check", texto:"Checklist de gravação", acao:()=>abrirAba && abrirAba("checklist")},
+    {icone:"subject", texto:"Templates de legendas", acao:()=>go("roteiros")},
+    {icone:"bolt", texto:"Ideias de hooks", acao:()=>go("roteiros")},
+    {icone:"music_note", texto:"Banco de sons (Trending)", acao:()=>window.open("https://ads.tiktok.com/business/creativecenter/inspiration/popular/music/pc/pt", "_blank", "noopener")},
+    {icone:"description", texto:"Modelos de propostas", acao:()=>go("prospeccao")},
+  ];
 
   return (
-    <div>
-      <div className="page-head">
-        <div>
-          <h1 className="page-title">{saudacao}, {state.profile.name}! {urgentesHead.length>0 && `Foco nos ${urgentesHead.length} prazos urgentes`}</h1>
-          <p className="page-sub">{urgentesHead.length>0 ? `Você tem ${urgentesHead.length} entrega${urgentesHead.length>1?'s':''} urgente${urgentesHead.length>1?'s':''}.` : (pendentes===0 ? "Nenhuma pendência, que orgulho!" : `Você tem ${pendentes} job${pendentes>1?'s':''} em andamento.`)}</p>
-        </div>
-        {alternarOcultar && <button className="btn btn-ghost" onClick={alternarOcultar} aria-pressed={ocultar}><Icon name={ocultar ? "visibility" : "visibility_off"} size={17}/>{ocultar ? "Mostrar valores" : "Ocultar valores"}</button>}
-      </div>
-
-      {prioridade && (
-        <div className="card" style={{marginBottom:18, background:"var(--sand)", border:"1px solid var(--line)", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:14}}>
+    <div className="db">
+      {/* cabeçalho */}
+      <div className="db-cabeca">
+        <div className="db-ola">
+          <svg className="db-sol" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="8.5"/><path d="M24 4v6M24 38v6M4 24h6M38 24h6M9.9 9.9l4.2 4.2M33.9 33.9l4.2 4.2M9.9 38.1l4.2-4.2M33.9 14.1l4.2-4.2"/></svg>
           <div>
-            <div style={{fontSize:12, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"var(--wine)", display:"flex", alignItems:"center", gap:6, marginBottom:6}}>
-              <Icon name="bolt" size={15}/>Sua prioridade agora
-            </div>
-            <div style={{fontFamily:"Poppins", fontSize:19, fontWeight:700}}>{prioridade.marca} {prioridade.tipo && "| "+prioridade.tipo}</div>
-            <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:2}}>
-              {prioridade.tipo || "Conteúdo"} · {(() => { const d=Math.round((new Date(prioridade.prazoEntrega+"T00:00:00")-hoje)/(1000*60*60*24)); return d<=0 ? "Hoje!" : `em ${d} dia(s)`; })()}
-            </div>
+            <h1>{saudacao}, {nome}!</h1>
+            <p>Vamos criar conteúdos incríveis hoje?</p>
           </div>
-          <button className="btn btn-primary" onClick={()=>go("jobs")}>Resolver agora</button>
         </div>
-      )}
-
-      <div className="grid grid-4" style={{marginBottom:18}}>
-        <StatCard label="UGCs pendentes" value={pendentes} icon="pending_actions"/>
-        <StatCard label="UGCs entregues" value={entregues} icon="task_alt"/>
-        <StatCard label="A receber" value={fmtMoney(aReceber)} icon="payments"/>
-        <StatCard label="Próximos prazos" value={proximos.length} icon="event"/>
+        <div className="db-acoes">
+          <div className="db-busca">
+            <Icon name="search" size={19}/>
+            <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar campanha, marca ou conteúdo..." aria-label="Buscar"/>
+            {termo && <div className="db-pop db-pop-busca">
+              {resultados.length ? resultados.map(r=><button key={r.id} onClick={()=>{setBusca(""); go(r.pagina);}}><b>{r.texto}</b><small>{r.sub}</small></button>)
+                : <p className="db-vazio">Nada encontrado.</p>}
+            </div>}
+          </div>
+          {alternarOcultar && <button className="db-redondo" onClick={alternarOcultar} aria-pressed={ocultar} title={ocultar ? "Mostrar valores" : "Ocultar valores"} aria-label={ocultar ? "Mostrar valores" : "Ocultar valores"}><Icon name={ocultar ? "visibility_off" : "visibility"} size={20}/></button>}
+          <div className="db-sino-caixa">
+            <button className="db-redondo" onClick={()=>setSinoAberto(a=>!a)} aria-label="Alertas"><Icon name="notifications" size={20}/>{alertas.length>0 && <span className="db-ponto"/>}</button>
+            {sinoAberto && <div className="db-pop db-pop-sino">
+              <b className="db-pop-titulo">Alertas</b>
+              {alertas.length ? alertas.map((a,i)=><button key={i} onClick={()=>{setSinoAberto(false); go(a.pagina);}}><b>{a.titulo}</b><small>{a.texto}</small></button>)
+                : <p className="db-vazio">Tudo em ordem por aqui!</p>}
+            </div>}
+          </div>
+          <button className="db-btn-escuro" onClick={novaCampanha}><Icon name="add" size={20}/>Nova campanha</button>
+        </div>
       </div>
-      {outrasMoedasPendentes.length>0 && (
-        <p style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:-12, marginBottom:16}}>
-          + {outrasMoedasPendentes.map(m=>fmtMoneyCur(aReceberPorMoeda[m], m)).join(" · ")} pendente(s) em outras moedas
-        </p>
-      )}
 
-      <div className="grid" style={{gridTemplateColumns:"1fr", gap:16, marginBottom:16}}>
-        <div className="card">
-          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14}}>
-            <h3 style={{margin:0, display:"flex", alignItems:"center", gap:8}}>
-              <Icon name="notifications_active"/>Alertas inteligentes
-              {alertas.length>0 && <span style={{background:"var(--wine)", color:"#fff", borderRadius:"50%", width:20, height:20, fontSize:12, fontWeight:700, display:"inline-flex", alignItems:"center", justifyContent:"center"}}>{alertas.length}</span>}
-            </h3>
-            <div style={{display:"flex", alignItems:"center", gap:12}}>
-              <button className="icon-btn" style={{width:30,height:30}} onClick={()=>setAlertasLimpos(false)} title="Atualizar"><Icon name="refresh" size={16}/></button>
-              <span onClick={()=>setAlertasLimpos(true)} style={{fontSize:13.5, color:"var(--graphite-soft)", cursor:"pointer"}}>Limpar todos</span>
-            </div>
-          </div>
-          {alertas.length===0 ? (
-            <div style={{display:"flex", gap:10, alignItems:"center", background:"var(--warm-white)", border:"1px solid var(--line)", borderRadius:12, padding:"12px 14px"}}>
-              <Icon name="check_circle" size={18} style={{color:"var(--moss)"}}/>
-              <span style={{fontSize:15}}>Tudo em ordem por aqui! Nenhum alerta no momento.</span>
-            </div>
-          ) : alertas.map((a,i)=>(
-            <div key={i} style={{display:"flex", gap:10, alignItems:"flex-start", background:"var(--warm-white)", border:"1px solid var(--line)", borderRadius:12, padding:"10px 12px", marginBottom: i<alertas.length-1 ? 8 : 0}}>
-              <Icon name={a.icon} size={18} style={{color: a.tone==="wine"?"var(--wine)":a.tone==="yellow"?"var(--butter)":a.tone==="green"?"var(--moss)":"var(--graphite-soft)", flexShrink:0, marginTop:1}}/>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:600, fontSize:15}}>{a.titulo}</div>
-                <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:1}}>{a.texto}</div>
-              </div>
-              <span style={{width:6,height:6,borderRadius:"50%", background:"var(--wine)", marginTop:6, flexShrink:0}}></span>
-            </div>
-          ))}
-        </div>
+      {/* cartões */}
+      <div className="db-cartoes">
+        <button className="db-cartao" onClick={()=>go("jobs")}>
+          <span className="db-icone db-icone-amarelo"><Icon name="description" size={24}/></span>
+          <span className="db-cartao-txt"><b>{andamento.length}</b><span>Jobs em andamento</span><small>{precisaAtencao ? `${precisaAtencao} precisa${precisaAtencao>1?"m":""} de atenção` : "Tudo em dia"}</small></span>
+          <Icon name="arrow_forward" size={17} style={{alignSelf:"flex-end"}}/>
+        </button>
+        <button className="db-cartao" onClick={()=>go("planner")}>
+          <span className="db-icone db-icone-verde"><Icon name="check_circle" size={24}/></span>
+          <span className="db-cartao-txt"><b>{entregasSemana.length}</b><span>Entregas esta semana</span><small>Ver entregas</small></span>
+          <Icon name="arrow_forward" size={17} style={{alignSelf:"flex-end"}}/>
+        </button>
+        <button className="db-cartao" onClick={()=>go("financeiro")}>
+          <span className="db-icone db-icone-amarelo"><Icon name="paid" size={24}/></span>
+          <span className="db-cartao-txt"><b>{fmtMoney(aReceber)}</b><span>A receber</span><small>{aReceberLista.length} pagamento{aReceberLista.length===1?"":"s"}</small></span>
+          <Icon name="arrow_forward" size={17} style={{alignSelf:"flex-end"}}/>
+        </button>
+        <button className="db-cartao" onClick={()=>go("jobs")}>
+          <span className="db-icone db-icone-rosa"><Icon name="calendar_month" size={24}/></span>
+          <span className="db-cartao-txt"><b>{proximos.length}</b><span>{proximos.length===1 ? "Próximo prazo" : "Próximos prazos"}</span><small>{proximoPrazo ? (diasAte(proximoPrazo.prazoEntrega)===0 ? "hoje" : `em ${diasAte(proximoPrazo.prazoEntrega)} dia${diasAte(proximoPrazo.prazoEntrega)>1?"s":""}`) : "sem prazos marcados"}</small></span>
+          <Icon name="arrow_forward" size={17} style={{alignSelf:"flex-end"}}/>
+        </button>
+      </div>
 
-        <div className="card">
-          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14}}>
-            <h3 style={{margin:0, display:"flex", alignItems:"center", gap:8}}><Icon name="query_stats"/>Diagnóstico mensal</h3>
-            <div style={{display:"flex", alignItems:"center", gap:10}}>
-              <button className="icon-btn" style={{width:28,height:28}} onClick={()=>setDiagCursor(c=>{const m=c.m-1; return m<0?{y:c.y-1,m:11}:{y:c.y,m};})}><Icon name="chevron_left" size={16}/></button>
-              <span style={{fontSize:14.5, color:"var(--graphite-soft)", minWidth:90, textAlign:"center"}}>{monthNames[diagCursor.m]} {diagCursor.y}</span>
-              <button className="icon-btn" style={{width:28,height:28}} onClick={()=>setDiagCursor(c=>{const m=c.m+1; return m>11?{y:c.y+1,m:0}:{y:c.y,m};})}><Icon name="chevron_right" size={16}/></button>
-            </div>
-          </div>
-          <div className="grid grid-4">
-            {[
-              ["task_alt","Jobs fechados", jobsFechadosMes],
-              ["apartment","Marcas", marcasMes],
-              ["payments","Faturamento", fmtMoney(faturamentoMes)],
-              ["sell","Ticket médio", fmtMoney(ticketMedioMes)]
-            ].map(([icon,label,val])=>(
-              <div key={label} style={{background:"var(--warm-white)", border:"1px solid var(--line)", borderRadius:12, padding:"12px 14px"}}>
-                <div style={{fontSize:13, color:"var(--graphite-soft)", display:"flex", alignItems:"center", gap:6}}><Icon name={icon} size={16}/>{label}</div>
-                <div style={{fontFamily:"Poppins", fontSize:20, fontWeight:700, marginTop:6}}>{val}</div>
+      {/* prioridade + hoje */}
+      <div className="db-linha db-linha-1">
+        <section className="db-bloco db-prioridade">
+          <h2><Icon name="adjust" size={26}/>Minha prioridade</h2>
+          {prioridade ? (
+            <div className="db-prio-corpo">
+              <DbMiniatura job={prioridade}/>
+              <div className="db-prio-info">
+                <div className="db-prio-nome"><b>{prioridade.marca}</b><span className="db-selo">{prioridade.status}</span></div>
+                {PASSOS.map(([chave,texto])=>{
+                  const ok = !!(prioridade.passosDashboard||{})[chave];
+                  return <label key={chave} className={"db-check"+(ok?" ok":"")}><input type="checkbox" checked={ok} onChange={()=>marcarPasso(prioridade, chave)}/><span className="db-caixinha"><Icon name="check" size={16}/></span>{texto}</label>;
+                })}
               </div>
+              <div className="db-prio-prazo">
+                <small>Prazo de entrega</small>
+                {prioridade.prazoEntrega ? <>
+                  <b><Icon name="calendar_month" size={20}/>{dataBR(prioridade.prazoEntrega)}</b>
+                  <span>{diasAte(prioridade.prazoEntrega)===0 ? "é hoje" : diasAte(prioridade.prazoEntrega)<0 ? `${-diasAte(prioridade.prazoEntrega)} dias atrasado` : `${diasAte(prioridade.prazoEntrega)} dias`}</span>
+                </> : <span>Sem prazo definido</span>}
+                <button className="db-btn-escuro" onClick={()=>go("jobs")}>Continuar<Icon name="arrow_forward" size={20}/></button>
+              </div>
+            </div>
+          ) : <p className="db-vazio">Nenhum job ativo agora. Que tal criar uma nova campanha?</p>}
+        </section>
+
+        <section className="db-bloco db-hoje">
+          <div className="db-bloco-topo">
+            <h2>Hoje <small>{hojeD.getDate()} de {MESES_EXT[hojeD.getMonth()]}</small></h2>
+            <button className="db-link" onClick={()=>go("planner")}>Ver todas<Icon name="arrow_forward" size={16}/></button>
+          </div>
+          {tarefasHoje.length ? tarefasHoje.slice(0,6).map(t=>{
+            const ok = !!feitos[hoje+"|"+t.id];
+            return (
+              <div key={t.id} className={"db-tarefa"+(ok?" ok":"")}>
+                <label className="db-check"><input type="checkbox" checked={ok} onChange={()=>marcarTarefa(t.id)}/><span className="db-caixinha"><Icon name="check" size={16}/></span><span className="db-tarefa-txt">{t.texto}</span></label>
+                <DbTag texto={t.tag}/>
+                <button className="db-seta" onClick={()=>go(t.pagina)} aria-label="Abrir"><Icon name="chevron_right" size={20}/></button>
+              </div>
+            );
+          }) : <p className="db-vazio">Nada marcado para hoje. Agende no Planner!</p>}
+        </section>
+      </div>
+
+      {/* meus jobs + calendário */}
+      <div className="db-linha db-linha-2">
+        <section className="db-bloco">
+          <div className="db-bloco-topo">
+            <h2><Icon name="calendar_view_week" size={24}/>Meus jobs</h2>
+            <button className="db-link" onClick={()=>go("jobs")}>Ver todos<Icon name="arrow_forward" size={16}/></button>
+          </div>
+          <div className="db-abas">
+            {[["andamento","Em andamento"],["aguardando","Aguardando aprovação"],["concluidos","Concluídos"]].map(([k,t])=>
+              <button key={k} className={abaJobs===k?"ativa":""} onClick={()=>setAbaJobs(k)}>{t}<span>{gruposJobs[k].length}</span></button>)}
+          </div>
+          {listaJobs.length ? listaJobs.map(j=>{
+            const etapa = etapaDoJob(j.status);
+            const d = j.prazoEntrega ? diasAte(j.prazoEntrega) : null;
+            return (
+              <button key={j.id} className="db-job" onClick={()=>go("jobs")}>
+                <DbMiniatura job={j}/>
+                <span className="db-job-nome"><b>{j.marca}</b><small>{descricaoJob(j)}</small></span>
+                <span className="db-etapas">
+                  {ETAPAS_JOB.map((e,i)=><span key={e} className={"db-etapa"+(i<=etapa?" feita":"")+(i===etapa?" atual":"")}><i/><small>{e}</small></span>)}
+                </span>
+                <span className="db-job-prazo"><small>Prazo</small><b>{j.prazoEntrega ? dataBR(j.prazoEntrega) : "Sem prazo"}</b>{d!==null && <span className="db-pilula">{d===0 ? "hoje" : d<0 ? `${-d} dias atrás` : `${d} dias`}</span>}</span>
+              </button>
+            );
+          }) : <p className="db-vazio">Nenhum job aqui.</p>}
+        </section>
+
+        <section className="db-bloco">
+          <div className="db-bloco-topo">
+            <h2><Icon name="schedule" size={24}/>Calendário da semana</h2>
+            <button className="db-link" onClick={()=>go("planner")}>Ver calendário<Icon name="arrow_forward" size={16}/></button>
+          </div>
+          <div className="db-semana">
+            {diasDaSemana.map((d,i)=>{
+              const iso = isoLocal(d);
+              const tem = itensDoDia(iso).length>0;
+              return <button key={iso} className={(iso===diaSel?"sel ":"")+(iso===hoje?"hoje":"")} onClick={()=>setDiaSel(iso)}><small>{DIAS_SEMANA[i]}</small><b>{String(d.getDate()).padStart(2,"0")}</b>{tem && <i/>}</button>;
+            })}
+          </div>
+          <div className="db-agenda">
+            {itensDiaSel.length ? itensDiaSel.map(t=>(
+              <button key={t.id} className="db-agenda-item" onClick={()=>go(t.pagina)}>
+                <span className="db-agenda-quando">{t.sub || "Dia"}</span>
+                <span className="db-agenda-txt">{t.texto}</span>
+                <DbTag texto={t.tag}/>
+              </button>
+            )) : <p className="db-vazio">Nada agendado neste dia.</p>}
+          </div>
+        </section>
+      </div>
+
+      {/* ideias + ferramentas */}
+      <div className="db-linha db-linha-3">
+        <section className="db-bloco">
+          <div className="db-bloco-topo">
+            <h2><Icon name="lightbulb" size={24}/>Ideias rápidas</h2>
+            <button className="db-link" onClick={()=>go("roteiros")}>Ver todas<Icon name="arrow_forward" size={16}/></button>
+          </div>
+          <div className="db-ideias">
+            {IDEIAS_RAPIDAS.map(i=>(
+              <button key={i.titulo} className="db-ideia" onClick={()=>go("roteiros")}>
+                <img src={i.foto} alt=""/>
+                <span><b>{i.titulo}</b><small>{i.texto}</small><Icon name="arrow_forward" size={17}/></span>
+              </button>
             ))}
           </div>
-          <button className="btn btn-ghost btn-sm" style={{marginTop:12}} onClick={()=>setDiagCursor({y:hoje.getFullYear(), m:hoje.getMonth()})}>
-            <Icon name="refresh" size={14}/>Atualizar diagnóstico
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-3">
-        <div className="card">
-          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10}}>
-            <h3 style={{margin:0, display:"flex", alignItems:"center", gap:8}}><Icon name="donut_large"/>Progresso</h3>
-            <div style={{display:"flex", gap:4, background:"var(--sand)", padding:3, borderRadius:999}}>
-              <button onClick={()=>setProgressoView("donut")} style={{width:28,height:28, borderRadius:"50%", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background: progressoView==="donut" ? "var(--card-bg)" : "transparent", boxShadow: progressoView==="donut" ? "var(--shadow)" : "none"}}>
-                <Icon name="donut_large" size={16} style={{color:"var(--wine)"}}/>
-              </button>
-              <button onClick={()=>setProgressoView("linha")} style={{width:28,height:28, borderRadius:"50%", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background: progressoView==="linha" ? "var(--card-bg)" : "transparent", boxShadow: progressoView==="linha" ? "var(--shadow)" : "none"}}>
-                <Icon name="trending_up" size={16} style={{color:"var(--wine)"}}/>
-              </button>
-            </div>
+        </section>
+        <section className="db-bloco">
+          <div className="db-bloco-topo"><h2><Icon name="bolt" size={24}/>Ferramentas UGC</h2></div>
+          <div className="db-ferramentas">
+            {FERRAMENTAS.map(f=><button key={f.texto} onClick={f.acao}><Icon name={f.icone} size={21}/><span>{f.texto}</span></button>)}
           </div>
-          {jobsMesAtual.length===0 && progressoView==="donut" ? (
-            <p style={{color:"var(--graphite-soft)", fontSize:15}}>Nenhum job registrado este mês ainda.</p>
-          ) : progressoView==="donut" ? (
-            <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
-              <DonutChart size={130} data={[
-                {value:andamentoMes, color:"var(--sand)"},
-                {value:pagosMes, color:"var(--wine)"}
-              ]}/>
-              <div style={{display:"flex", gap:14, fontSize:13.5}}>
-                <span style={{display:"flex", alignItems:"center", gap:5}}><span style={{width:8,height:8,borderRadius:"50%", background:"var(--sand)", border:"1px solid var(--line)", display:"inline-block"}}></span>Em andamento {andamentoMes}</span>
-                <span style={{display:"flex", alignItems:"center", gap:5}}><span style={{width:8,height:8,borderRadius:"50%", background:"var(--wine)", display:"inline-block"}}></span>Pagos {pagosMes}</span>
-              </div>
-            </div>
-          ) : (
-            <LineChart data={progressoTrend} width={380} height={200}/>
-          )}
-        </div>
-        <div className="card">
-          <h3 style={{margin:"0 0 10px", display:"flex", alignItems:"center", gap:8}}><Icon name="event"/>Próximos prazos</h3>
-          {proximos.length===0 ? (
-            <p style={{color:"var(--graphite-soft)", fontSize:15}}>Nenhum prazo próximo.</p>
-          ) : proximos.slice(0,3).map((j,i)=>(
-            <div key={j.id} style={{display:"flex", justifyContent:"space-between", background:"var(--warm-white)", border:"1px solid var(--line)", borderRadius:12, padding:"9px 12px", fontSize:15, marginBottom: i<Math.min(proximos.length,3)-1 ? 8 : 0}}>
-              <span>{j.marca}</span>
-              <span style={{color:"var(--graphite-soft)"}}>{new Date(j.prazoEntrega+"T00:00:00").toLocaleDateString('pt-BR')}</span>
-            </div>
-          ))}
-        </div>
-        <div className="card">
-          <h3 style={{margin:"0 0 10px", display:"flex", alignItems:"center", gap:8}}><Icon name="tips_and_updates"/>Dicas rápidas</h3>
-          {[
-            ["Roteiros com IA","Use a IA para criar roteiros criativos em segundos.", ()=>openRoteirosAI()],
-            ["Organize suas finanças","Acompanhe pagamentos e recebimentos no Financeiro.", ()=>go("financeiro")],
-            ["Prospecte mais marcas","Use templates prontos para contatar marcas.", ()=>go("prospeccao")]
-          ].map(([t,s,action], i, arr)=>(
-            <div key={t} onClick={action} style={{cursor:"pointer", background:"var(--warm-white)", border:"1px solid var(--line)", borderRadius:12, padding:"9px 12px", marginBottom: i<arr.length-1 ? 8 : 0}}>
-              <div style={{fontWeight:600, fontSize:15}}>{t}</div>
-              <div style={{fontSize:13, color:"var(--graphite-soft)"}}>{s}</div>
-            </div>
-          ))}
-        </div>
+        </section>
       </div>
     </div>
   );
 }
 
-/* ================= PLANNER ================= */
 function PlannerModal({onClose, onSave, initial, defaultDate}){
   const [f,setF] = useState(initial || {titulo:"",plataforma:"Instagram",formato:"Reels",status:"Planejado",data:defaultDate||todayISO(),marca:"",notas:"",categoria:"Conteúdos"});
   const set = (k,v)=>setF(prev=>({...prev,[k]:v}));
@@ -1842,7 +2055,8 @@ function JobCard({j, onEdit, onDelete, onMarkPaid, onDuplicate, draggable, onDra
 }
 
 function Jobs({state, updateState}){
-  const [modal,setModal] = useState(false);
+  // "Nova campanha" no Dashboard abre o formulário de novo job direto
+  const [modal,setModal] = useState(()=>{ if(window.__abrirNovoJob){ window.__abrirNovoJob = false; return true; } return false; });
   const [editing,setEditing] = useState(null);
   const [query,setQuery] = useState("");
   const [view,setView] = useState("Lista");
@@ -6028,7 +6242,8 @@ function App({session}){
     setOcultar(novo);
     if(NO_PAINEL) window.parent.postMessage({ocultarValores: novo}, location.origin);
   }
-  const pageProps = {state, updateState, go:irPara, ocultar, alternarOcultar};
+  const abrirAba = (aba) => { if(NO_PAINEL) window.parent.postMessage({aba}, location.origin); };
+  const pageProps = {state, updateState, go:irPara, ocultar, alternarOcultar, abrirAba};
   let PageComp;
   switch(page){
     case "dashboard": PageComp = <Dashboard {...pageProps} openRoteirosAI={openRoteirosAI}/>; break;

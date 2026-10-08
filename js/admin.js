@@ -278,7 +278,8 @@
     if (location.hash !== "#" + nome) history.replaceState(null, "", "#" + nome);
     $("#painel").classList.remove("menu-aberto");
     if (secao === "gestao") abrirGestao(paginaApp, nome === "config");
-    $("#btn-olho").hidden = secao !== "gestao";
+    $("#btn-olho").hidden = secao !== "gestao" || nome === "dashboard"; // o Dashboard tem o próprio olho
+    document.body.classList.toggle("aba-dashboard", nome === "dashboard");
   }
   // Aplicativo de gestão UGC: abre dentro do painel, com o mesmo login e o mesmo banco
   // Uma cópia só do aplicativo serve as duas abas (Gestão UGC e Planner), assim uma nunca

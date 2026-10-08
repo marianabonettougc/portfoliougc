@@ -425,3 +425,10 @@ button.menu-grupo:hover{color:var(--texto)}
 .menu-grupo .menu-seta{transform:rotate(90deg)}
 .menu-secao.fechada .menu-grupo .menu-seta{transform:none}
 .menu-secao.fechada .menu-secao-itens{display:none}
+/* Abas do aplicativo: sem moldura em volta (o aplicativo já tem os próprios cartões) */
+.so-planner .gestao-app{border:0;border-radius:0;background:transparent}
+/* Dashboard: o board ocupa a tela toda, sem o título do painel em cima (no celular o botão do menu continua) */
+@media (min-width:901px){
+  body.aba-dashboard .topo{display:none}
+  body.aba-dashboard .so-planner .gestao-app{height:calc(100vh - 40px)}
+}
