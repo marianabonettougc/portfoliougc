@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610080620"></script>
+<script src="../../js/banco.js?v=202610081717"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -157,8 +157,6 @@
   .db-prioridade h2{ font-size:22px; margin-bottom:18px; }
   .db-prioridade h2 .material-symbols-outlined{ color:var(--db-amarelo); }
   .db-prio-corpo{ display:flex; gap:22px; align-items:stretch; flex-wrap:wrap; }
-  .db-mini{ width:138px; height:138px; border-radius:16px; flex-shrink:0; background:linear-gradient(140deg,#ecd9c6,#a87058); display:flex; align-items:center; justify-content:center; box-shadow:inset 0 0 0 1px rgba(255,255,255,.35); }
-  .db-mini span{ font-family:"DM Serif Display",Georgia,serif; font-size:56px; color:#fffdf9; }
   .db-prio-info{ flex:1; min-width:180px; display:flex; flex-direction:column; gap:12px; }
   .db-prio-nome{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:4px; }
   .db-prio-nome b{ font-size:21px; font-weight:600; }
@@ -175,6 +173,39 @@
   .db-prio-prazo b{ display:flex; align-items:center; gap:8px; font-size:18px; font-weight:600; }
   .db-prio-prazo > span{ font-size:13px; color:var(--db-suave); padding-left:28px; }
   .db-prio-prazo .db-btn-escuro{ margin-top:auto; height:52px; font-size:16px; }
+
+  /* ícones finos e logos */
+  .db-ic{ width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+  .db-prioridade h2 .db-ic{ color:#c98a26; }
+  .db h2 .db-ic{ color:#c98a26; }
+  .db-logo{ width:46px; height:46px; border-radius:12px; background:#fff; border:1px solid var(--db-borda); display:inline-flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
+  .db-logo img{ width:72%; height:72%; object-fit:contain; }
+  .db-logo-vazio{ background:#f6efe6; color:#a88a75; }
+  .db-logo-vazio .db-ic{ width:20px; height:20px; }
+  .db-prio-nome .db-logo{ border-radius:10px; }
+  .db-topo-acoes{ display:inline-flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .db-link:disabled{ opacity:.55; cursor:default; }
+  .db-dica{ font-size:13px; color:var(--db-suave); margin:0 0 12px; line-height:1.45; }
+  .db-dica .db-link{ font-size:13px; padding:0; }
+  .db-dica-erro{ color:#b8473a; }
+  .db-ideias.carregando{ opacity:.55; pointer-events:none; }
+  .db-ideia em{ font-style:normal; font-size:11.5px; color:#a87058; }
+  .db-ideia-detalhe small{ display:block; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--graphite-soft); margin-top:12px; }
+  .db-ideia-detalhe p, .db-ideia-detalhe ol{ margin:4px 0 0; font-size:15px; line-height:1.5; }
+  .db-ideia-detalhe ol{ padding-left:20px; }
+  .db-gancho{ font-family:"DM Serif Display",Georgia,serif; font-size:19px !important; }
+  .db-ideia-detalhe .db-btn-escuro{ margin-top:20px; width:100%; }
+  .db-ideias-lista{ display:flex; flex-direction:column; gap:8px; }
+  .db-ideias-lista button{ text-align:left; border:1px solid rgba(107,74,53,.12); background:#fffdf9; border-radius:12px; padding:12px 14px; cursor:pointer; font-family:inherit; display:flex; flex-direction:column; gap:2px; }
+  .db-ideias-lista b{ font-size:15px; } .db-ideias-lista small{ font-size:13px; color:var(--graphite-soft); } .db-ideias-lista em{ font-style:normal; font-size:12px; color:#a87058; }
+  .db-conc-form{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .db-conc-form select, .db-conc-form input{ height:44px; border-radius:12px; border:1px solid rgba(107,74,53,.18); padding:0 12px; font:inherit; font-size:14px; background:#fffdf9; }
+  .db-conc-form input{ flex:1; min-width:160px; }
+  .db-conc-form .db-btn-escuro{ height:44px; padding:0 18px; }
+  .db-conc-lista{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  .db-conc{ display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid rgba(107,74,53,.12); border-radius:12px; }
+  .db-conc a{ flex:1; color:inherit; font-size:14px; }
+  .db-conc button{ border:0; background:none; cursor:pointer; color:var(--graphite-soft); display:inline-flex; }
 
   /* hoje */
   .db-tarefa{ display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid var(--db-borda); }
@@ -197,10 +228,8 @@
   .db-abas button.ativa span{ background:#f7d98e; }
   .db-job{ width:100%; display:grid; grid-template-columns:auto minmax(90px,.8fr) minmax(290px,2.4fr) auto; align-items:center; gap:14px; text-align:left; border:1px solid var(--db-borda); background:var(--db-cartao); border-radius:16px; padding:10px 18px 10px 10px; margin-top:10px; cursor:pointer; }
   .db-job:hover{ background:#fffaf2; }
-  .db-job .db-mini{ width:82px; height:82px; border-radius:12px; }
-  .db-job .db-mini span{ font-size:34px; }
   .db-job-nome{ display:flex; flex-direction:column; min-width:0; }
-  .db-job-nome b{ font-size:16px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .db-job-nome b{ font-size:16px; font-weight:600; line-height:1.25; overflow-wrap:anywhere; }
   .db-job-nome small{ font-size:13px; color:var(--db-suave); }
   .db-etapas{ display:grid; grid-template-columns:repeat(5,1fr); }
   .db-etapa{ position:relative; display:flex; flex-direction:column; align-items:center; gap:8px; }
@@ -867,12 +896,64 @@ const IDEIAS_RAPIDAS = [
 function DbTag({texto}){
   return <span className={"db-tag db-tag-"+(TAG_TOM[texto]||"cinza")}>{texto}</span>;
 }
-function DbMiniatura({job}){
-  const letra = (job.marca||"?").trim().charAt(0).toUpperCase();
-  return <div className="db-mini" aria-hidden="true"><span>{letra}</span></div>;
+// ícones finos desenhados à mão (mais minimalistas que os do Google)
+function DbIcone({tipo}){
+  const d = {
+    bandeira: <><path d="M5.5 21V4"/><path d="M5.5 4.5h11.5l-2.2 4 2.2 4H5.5"/></>,
+    brilho: <><path d="M12 3.5c.7 4.4 2.9 6.6 7.5 8-4.6 1.4-6.8 3.6-7.5 8-.7-4.4-2.9-6.6-7.5-8 4.6-1.4 6.8-3.6 7.5-8z"/><path d="M19 3.5v3M17.5 5h3"/></>,
+    maleta: <><rect x="3.5" y="7.5" width="17" height="12" rx="2.5"/><path d="M9 7.5V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v1.5"/></>,
+  }[tipo];
+  return <svg className="db-ic" viewBox="0 0 24 24" aria-hidden="true">{d}</svg>;
+}
+const chaveMarca = (m) => String(m||"").trim().toLowerCase();
+// logo pequenininha da marca (descoberta sozinha pelo nome); sem logo, um ícone neutro
+function DbLogo({marca, logos, tamanho}){
+  const info = logos[chaveMarca(marca)];
+  const [falhou,setFalhou] = useState(false);
+  const estilo = tamanho ? {width:tamanho, height:tamanho} : null;
+  if(info && info.logo && !falhou) return <span className="db-logo" style={estilo}><img src={info.logo} alt={"Logo "+marca} onError={()=>setFalhou(true)}/></span>;
+  return <span className="db-logo db-logo-vazio" style={estilo}><DbIcone tipo="maleta"/></span>;
+}
+const FOTOS_IDEIAS = ["../../fotos/foto-03.jpg","../../fotos/foto-07.jpg","../../fotos/foto-16.webp","../../fotos/foto-05.webp","../../fotos/foto-14.webp","../../fotos/foto-08.jpg"];
+const linkPerfil = (c) => c.rede==="tiktok" ? `https://www.tiktok.com/@${c.usuario}` : `https://www.instagram.com/${c.usuario}/`;
+
+// janela para cadastrar os perfis concorrentes (Instagram e TikTok)
+function DbConcorrentes({lista, onSalvar, onFechar, abrirAba}){
+  const [usuario,setUsuario] = useState("");
+  const [rede,setRede] = useState("instagram");
+  function adicionar(e){
+    e.preventDefault();
+    // aceita @perfil ou o link inteiro do perfil
+    let u = usuario.trim().replace(/^https?:\/\/(www\.)?(instagram\.com|tiktok\.com)\/@?/i, "").replace(/[/?#].*$/, "").replace(/^@/, "");
+    const r = /tiktok\.com/i.test(usuario) ? "tiktok" : /instagram\.com/i.test(usuario) ? "instagram" : rede;
+    if(!u) return;
+    if(lista.some(c=>c.usuario.toLowerCase()===u.toLowerCase() && c.rede===r)){ setUsuario(""); return; }
+    onSalvar([...lista, {id:uid(), rede:r, usuario:u}]);
+    setUsuario("");
+  }
+  return (
+    <Modal title="Concorrentes" onClose={onFechar}>
+      <p className="db-dica" style={{marginTop:0}}>Coloque os perfis que você acompanha. Eu uso esses perfis e os vídeos que você transcreve na aba Roteiros para sugerir ideias que você pode reproduzir.</p>
+      <form className="db-conc-form" onSubmit={adicionar}>
+        <select value={rede} onChange={e=>setRede(e.target.value)} aria-label="Rede"><option value="instagram">Instagram</option><option value="tiktok">TikTok</option></select>
+        <input value={usuario} onChange={e=>setUsuario(e.target.value)} placeholder="@perfil ou link do perfil" aria-label="Perfil"/>
+        <button className="db-btn-escuro" type="submit">Adicionar</button>
+      </form>
+      <div className="db-conc-lista">
+        {lista.length ? lista.map(c=>(
+          <div key={c.id} className="db-conc">
+            <span className="db-tag db-tag-cinza">{c.rede==="tiktok" ? "TikTok" : "Instagram"}</span>
+            <a href={linkPerfil(c)} target="_blank" rel="noopener">@{c.usuario}</a>
+            <button onClick={()=>onSalvar(lista.filter(x=>x.id!==c.id))} aria-label={"Tirar @"+c.usuario}><Icon name="close" size={18}/></button>
+          </div>
+        )) : <p className="db-vazio">Nenhum perfil ainda.</p>}
+      </div>
+      {abrirAba && <p className="db-dica">Dica: viu um vídeo bom de um concorrente? Cole o link na aba <button className="db-link" onClick={()=>{onFechar(); abrirAba("roteiros");}}>Roteiros</button> para transcrever. As próximas ideias vão usar esse vídeo como referência.</p>}
+    </Modal>
+  );
 }
 
-function Dashboard({ocultar, alternarOcultar, abrirAba, state, updateState, go, openRoteirosAI}){
+function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateState, go, openRoteirosAI}){
   const hojeD = new Date(); hojeD.setHours(0,0,0,0);
   const hoje = isoLocal(hojeD);
   const hora = new Date().getHours();
@@ -964,6 +1045,68 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, state, updateState, go, 
 
   function novaCampanha(){ window.__abrirNovoJob = true; go("jobs"); }
 
+  // ----- logos das marcas: descobre sozinho pelo nome (uma vez por marca) -----
+  const logos = state.logosMarcas || {};
+  useEffect(()=>{
+    const semanaAtras = Date.now() - 7*86400000;
+    const faltando = [...new Set(jobs.filter(j=>j.status!=="Cancelado" && j.marca).map(j=>chaveMarca(j.marca)))]
+      .filter(k=>{ const i = logos[k]; return !i || (!i.logo && (i.tentadoEm||0) < semanaAtras); }).slice(0,5);
+    if(!faltando.length || !mudar) return;
+    let parar = false;
+    (async ()=>{
+      for(const k of faltando){
+        if(parar) return;
+        const marca = (jobs.find(j=>chaveMarca(j.marca)===k)||{}).marca || k;
+        let info = {logo:null, dominio:null, tentadoEm:Date.now()};
+        try{
+          const { data, error } = await supabaseClient.functions.invoke("assistente-ugc", {body:{acao:"logo", marca}});
+          if(!error && data) info = {logo:data.logo||null, dominio:data.dominio||null, tentadoEm:Date.now()};
+        }catch(e){ /* tenta de novo outro dia */ }
+        mudar(s=>({...s, logosMarcas:{...(s.logosMarcas||{}), [k]:info}}));
+      }
+    })();
+    return ()=>{ parar = true; };
+  }, [jobs.map(j=>j.marca).join("|")]);
+
+  // ----- ideias rápidas a partir dos concorrentes -----
+  const concorrentes = state.concorrentes || [];
+  const ideiasSalvas = state.ideiasRapidas || null;
+  const [gerandoIdeias,setGerandoIdeias] = useState(false);
+  const [erroIdeias,setErroIdeias] = useState("");
+  const [ideiaAberta,setIdeiaAberta] = useState(null);
+  const [verTodasIdeias,setVerTodasIdeias] = useState(false);
+  const [editandoConc,setEditandoConc] = useState(false);
+  async function gerarIdeias(){
+    if(gerandoIdeias) return;
+    setGerandoIdeias(true); setErroIdeias("");
+    try{
+      const nichos = [...new Set(jobs.map(j=>j.nicho).filter(Boolean))];
+      const { data, error } = await supabaseClient.functions.invoke("assistente-ugc", {body:{acao:"ideias", concorrentes: (stateAtual().concorrentes||[]), nichos}});
+      if(error || !data || !Array.isArray(data.ideias) || !data.ideias.length) throw new Error((data && data.erro) || "sem ideias");
+      mudar(s=>({...s, ideiasRapidas:{geradoEm:Date.now(), itens:data.ideias, referencias:data.referencias||0}}));
+    }catch(e){ setErroIdeias("Não consegui buscar ideias agora. Tente de novo em instantes."); }
+    setGerandoIdeias(false);
+  }
+  const stateAtual = () => window.__estadoAtual ? window.__estadoAtual() : state;
+  useEffect(()=>{
+    const velhas = !ideiasSalvas || (Date.now() - (ideiasSalvas.geradoEm||0)) > 3*86400000;
+    if(concorrentes.length && velhas) gerarIdeias();
+  }, [concorrentes.length]);
+  const ideias = (ideiasSalvas && ideiasSalvas.itens && ideiasSalvas.itens.length)
+    ? ideiasSalvas.itens
+    : IDEIAS_RAPIDAS.map(i=>({titulo:i.titulo, descricao:i.texto, gancho:"", passos:[], formato:"", inspirado_em:"", link:""}));
+  function criarRoteiro(ideia){
+    const conteudo = [
+      ideia.gancho ? "GANCHO:\n" + ideia.gancho : "",
+      ideia.passos && ideia.passos.length ? "DESENVOLVIMENTO:\n" + ideia.passos.map(p=>"- "+p).join("\n") : "",
+      ideia.inspirado_em ? "INSPIRAÇÃO: " + ideia.inspirado_em + (ideia.link ? " (" + ideia.link + ")" : "") : "",
+    ].filter(Boolean).join("\n\n");
+    mudar(s=>({...s, roteiros:[{id:uid(), titulo:ideia.titulo, plataforma:"Instagram", status:"Em aberto", finalidade:"Conteúdos", etapa:"Ideias", dataPublicacao:"", conteudo}, ...(s.roteiros||[])]}));
+    setIdeiaAberta(null); setVerTodasIdeias(false);
+    go("roteiros");
+  }
+  function salvarConcorrentes(lista){ mudar(s=>({...s, concorrentes:lista})); }
+
   const FERRAMENTAS = [
     {icone:"auto_awesome", texto:"Gerar roteiro com IA", acao:()=>openRoteirosAI && openRoteirosAI()},
     {icone:"fact_check", texto:"Checklist de gravação", acao:()=>abrirAba && abrirAba("checklist")},
@@ -1033,12 +1176,11 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, state, updateState, go, 
       {/* prioridade + hoje */}
       <div className="db-linha db-linha-1">
         <section className="db-bloco db-prioridade">
-          <h2><Icon name="adjust" size={26}/>Minha prioridade</h2>
+          <h2><DbIcone tipo="bandeira"/>Minha prioridade</h2>
           {prioridade ? (
             <div className="db-prio-corpo">
-              <DbMiniatura job={prioridade}/>
               <div className="db-prio-info">
-                <div className="db-prio-nome"><b>{prioridade.marca}</b><span className="db-selo">{prioridade.status}</span></div>
+                <div className="db-prio-nome"><DbLogo marca={prioridade.marca} logos={logos} tamanho={34}/><b>{prioridade.marca}</b><span className="db-selo">{prioridade.status}</span></div>
                 {PASSOS.map(([chave,texto])=>{
                   const ok = !!(prioridade.passosDashboard||{})[chave];
                   return <label key={chave} className={"db-check"+(ok?" ok":"")}><input type="checkbox" checked={ok} onChange={()=>marcarPasso(prioridade, chave)}/><span className="db-caixinha"><Icon name="check" size={16}/></span>{texto}</label>;
@@ -1090,7 +1232,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, state, updateState, go, 
             const d = j.prazoEntrega ? diasAte(j.prazoEntrega) : null;
             return (
               <button key={j.id} className="db-job" onClick={()=>go("jobs")}>
-                <DbMiniatura job={j}/>
+                <DbLogo marca={j.marca} logos={logos}/>
                 <span className="db-job-nome"><b>{j.marca}</b><small>{descricaoJob(j)}</small></span>
                 <span className="db-etapas">
                   {ETAPAS_JOB.map((e,i)=><span key={e} className={"db-etapa"+(i<=etapa?" feita":"")+(i===etapa?" atual":"")}><i/><small>{e}</small></span>)}
@@ -1125,18 +1267,42 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, state, updateState, go, 
         </section>
       </div>
 
+      {ideiaAberta && <Modal title={ideiaAberta.titulo} onClose={()=>setIdeiaAberta(null)}>
+        <div className="db-ideia-detalhe">
+          {ideiaAberta.descricao && <p>{ideiaAberta.descricao}</p>}
+          {ideiaAberta.gancho && <><small>Gancho</small><p className="db-gancho">“{ideiaAberta.gancho}”</p></>}
+          {ideiaAberta.formato && <><small>Formato</small><p>{ideiaAberta.formato}</p></>}
+          {ideiaAberta.passos && ideiaAberta.passos.length>0 && <><small>Como fazer</small><ol>{ideiaAberta.passos.map((p,k)=><li key={k}>{p}</li>)}</ol></>}
+          {ideiaAberta.inspirado_em && <><small>Inspiração</small><p>{ideiaAberta.inspirado_em}{ideiaAberta.link && <> · <a href={ideiaAberta.link} target="_blank" rel="noopener">ver o vídeo de referência</a></>}</p></>}
+          <button className="db-btn-escuro" onClick={()=>criarRoteiro(ideiaAberta)}>Criar roteiro no quadro<Icon name="arrow_forward" size={20}/></button>
+        </div>
+      </Modal>}
+      {verTodasIdeias && <Modal title="Ideias rápidas" onClose={()=>setVerTodasIdeias(false)}>
+        <div className="db-ideias-lista">
+          {ideias.map((i,n)=><button key={i.titulo+n} onClick={()=>{setVerTodasIdeias(false); setIdeiaAberta(i);}}><b>{i.titulo}</b><small>{i.descricao}</small>{i.inspirado_em && <em>inspirado em {i.inspirado_em}</em>}</button>)}
+          {ideiasSalvas && ideiasSalvas.geradoEm && <p className="db-dica">Ideias de {new Date(ideiasSalvas.geradoEm).toLocaleDateString("pt-BR")}, com base em {concorrentes.length} concorrente(s) e {ideiasSalvas.referencias||0} vídeo(s) que você transcreveu na aba Roteiros.</p>}
+        </div>
+      </Modal>}
+      {editandoConc && <DbConcorrentes lista={concorrentes} onSalvar={salvarConcorrentes} onFechar={()=>setEditandoConc(false)} abrirAba={abrirAba}/>}
+
       {/* ideias + ferramentas */}
       <div className="db-linha db-linha-3">
         <section className="db-bloco">
           <div className="db-bloco-topo">
-            <h2><Icon name="lightbulb" size={24}/>Ideias rápidas</h2>
-            <button className="db-link" onClick={()=>go("roteiros")}>Ver todas<Icon name="arrow_forward" size={16}/></button>
+            <h2><DbIcone tipo="brilho"/>Ideias rápidas</h2>
+            <span className="db-topo-acoes">
+              <button className="db-link" onClick={()=>setEditandoConc(true)}>Concorrentes{concorrentes.length ? ` (${concorrentes.length})` : ""}</button>
+              {concorrentes.length>0 && <button className="db-link" onClick={gerarIdeias} disabled={gerandoIdeias}>{gerandoIdeias ? "Buscando..." : "Novas ideias"}</button>}
+              <button className="db-link" onClick={()=>setVerTodasIdeias(true)}>Ver todas<Icon name="arrow_forward" size={16}/></button>
+            </span>
           </div>
-          <div className="db-ideias">
-            {IDEIAS_RAPIDAS.map(i=>(
-              <button key={i.titulo} className="db-ideia" onClick={()=>go("roteiros")}>
-                <img src={i.foto} alt=""/>
-                <span><b>{i.titulo}</b><small>{i.texto}</small><Icon name="arrow_forward" size={17}/></span>
+          {!concorrentes.length && <p className="db-dica">Cadastre perfis de concorrentes do Instagram e do TikTok em <button className="db-link" onClick={()=>setEditandoConc(true)}>Concorrentes</button> e eu trago ideias de conteúdo com base neles.</p>}
+          {erroIdeias && <p className="db-dica db-dica-erro">{erroIdeias}</p>}
+          <div className={"db-ideias"+(gerandoIdeias?" carregando":"")}>
+            {ideias.slice(0,3).map((i,n)=>(
+              <button key={i.titulo+n} className="db-ideia" onClick={()=>setIdeiaAberta(i)}>
+                <img src={FOTOS_IDEIAS[n % FOTOS_IDEIAS.length]} alt=""/>
+                <span><b>{i.titulo}</b><small>{i.descricao}</small>{i.inspirado_em && <em>inspirado em {i.inspirado_em}</em>}<Icon name="arrow_forward" size={17}/></span>
               </button>
             ))}
           </div>
@@ -6243,7 +6409,10 @@ function App({session}){
     if(NO_PAINEL) window.parent.postMessage({ocultarValores: novo}, location.origin);
   }
   const abrirAba = (aba) => { if(NO_PAINEL) window.parent.postMessage({aba}, location.origin); };
-  const pageProps = {state, updateState, go:irPara, ocultar, alternarOcultar, abrirAba};
+  // muda o estado a partir do valor mais recente (para buscas que terminam depois, como as logos)
+  function mudar(fn){ const next = fn(stateRef.current); stateRef.current = next; updateState(next); }
+  window.__estadoAtual = () => stateRef.current;
+  const pageProps = {state, updateState, go:irPara, ocultar, alternarOcultar, abrirAba, mudar};
   let PageComp;
   switch(page){
     case "dashboard": PageComp = <Dashboard {...pageProps} openRoteirosAI={openRoteirosAI}/>; break;
