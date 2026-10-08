@@ -378,3 +378,5 @@ details.rot-editar[open] summary{margin-bottom:10px}
   .rot-card{grid-template-columns:84px minmax(0,1fr);gap:10px}
   .linha-campos.tres{grid-template-columns:1fr}
 }
+.rot-botoes{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.rot-rotulo-linha{flex-wrap:wrap;margin-bottom:4px}

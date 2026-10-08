@@ -1100,9 +1100,13 @@
             </details>
             <div class="campo">
               <div class="rot-rotulo-linha"><label for="f-transcricao">Roteiro / transcrição</label>
-                <button class="btn btn-mini" type="button" id="rot-montar">Montar estrutura</button></div>
+                <span class="rot-botoes">
+                  <button class="btn btn-mini btn-principal" type="button" id="rot-tokscript" title="Copia o link do vídeo e abre o TokScript numa aba nova">1. Transcrever no TokScript ↗</button>
+                  <button class="btn btn-mini" type="button" id="rot-colar">2. Colar texto</button>
+                  <button class="btn btn-mini" type="button" id="rot-montar">3. Montar estrutura</button>
+                </span></div>
               <textarea id="f-transcricao" name="transcricao" class="rot-texto" placeholder="Cole aqui o texto falado no vídeo.">${esc(r.transcricao)}</textarea>
-              <small class="rot-dica">Como pegar o texto: no YouTube, abra o vídeo, clique em "...mais" na descrição e depois em "Mostrar transcrição". No Instagram e no TikTok, ligue as legendas automáticas e copie, ou use o ditado do celular enquanto o vídeo toca.</small>
+              <small class="rot-dica">Como fazer: clique em <b>1</b> (o link do vídeo já vai copiado), cole o link no TokScript e copie a transcrição que ele gerar. Volte aqui e clique em <b>2</b> para colar, depois em <b>3</b> para separar gancho, passos e CTA. Se tiver a extensão do TokScript no Chrome, também pode usar direto no vídeo.</small>
             </div>
             ${campo({ nome: "notas", rotulo: "Suas notas (o que te chamou atenção)", tipo: "textarea", valor: r.notas })}
             ${r.exemplo ? marcaCheck("exemplo", "É linha de exemplo", true) : ""}
@@ -1137,6 +1141,30 @@
         };
         $$('[name="gancho"],[name="gancho_tipo"],[name="desenvolvimento"],[name="cta"],[name="expressoes"],[name="por_que"],[name="etiquetas"]', corpo)
           .forEach((el) => el.addEventListener("input", atualizarEstrutura));
+        // TokScript: copia o link e abre a página certa para a rede do vídeo
+        $("#rot-tokscript", corpo).addEventListener("click", async () => {
+          const link = $('[name="link"]', corpo).value.trim();
+          const origem = link ? origemDoLink(link) : $('[name="origem"]', corpo).value;
+          const pagina = origem === "instagram" ? "https://tokscript.com/instagram-transcript-generator" : "https://tokscript.com";
+          window.open(pagina, "_blank", "noopener");
+          if (link) {
+            try { await navigator.clipboard.writeText(link); avisar("Link copiado. No TokScript, é só colar (Ctrl+V)."); }
+            catch (e) { avisar("Abri o TokScript. Copie o link do vídeo do campo \"Link do vídeo\" e cole lá."); }
+          } else avisar("Abri o TokScript. Cole o link do vídeo no campo \"Link do vídeo\" para ele ir copiado da próxima vez.");
+        });
+        $("#rot-colar", corpo).addEventListener("click", async () => {
+          const caixa = $("#f-transcricao", corpo);
+          try {
+            const texto = (await navigator.clipboard.readText()).trim();
+            if (!texto) { avisar("Não tem texto copiado. Copie a transcrição no TokScript primeiro.", true); return; }
+            if (/^https?:\/\/\S+$/.test(texto)) { avisar("O que está copiado é um link, não a transcrição. Copie o texto no TokScript.", true); return; }
+            caixa.value = caixa.value.trim() ? caixa.value.trim() + "\n\n" + texto : texto;
+            avisar("Transcrição colada. Agora clique em 3. Montar estrutura.");
+          } catch (e) {
+            caixa.focus();
+            avisar("O navegador não deixou colar pelo botão. Clique no campo e aperte Ctrl+V.", true);
+          }
+        });
         $("#rot-montar", corpo).addEventListener("click", () => {
           const texto = $("#f-transcricao", corpo).value;
           const m = montarEstrutura(texto);
