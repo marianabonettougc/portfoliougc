@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610082100"></script>
+<script src="../../js/banco.js?v=202610082102"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -278,6 +278,14 @@
   .db-logo-vazio{ background:var(--db-bege); color:var(--db-cafe); font-family:var(--db-serif); font-size:18px; }
   .db-salvar{ border:0; background:none; cursor:pointer; padding:2px; color:var(--db-texto) !important; display:inline-flex; flex-shrink:0; }
   .db-salvar.ok .db-ic{ fill:var(--db-escuro); }
+  .db-esqueleto{ cursor:default; background:linear-gradient(110deg,#efe5d8 30%,#f6efe6 50%,#efe5d8 70%); background-size:220% 100%; animation:db-brilho 1.6s ease-in-out infinite; }
+  .db-esqueleto::after{ display:none; }
+  .db-esqueleto .db-insp-rede{ color:var(--db-cafe2); }
+  .db-linha-esq{ display:block; height:10px; border-radius:6px; background:var(--db-bege); margin-top:4px; }
+  .db-linha-esq.curta{ width:55%; }
+  .db-dica-centro{ text-align:center; margin:12px 0 0; }
+  @keyframes db-brilho{ from{ background-position:120% 0; } to{ background-position:-120% 0; } }
+  @media (prefers-reduced-motion:reduce){ .db-esqueleto{ animation:none; } }
   .db-insp-vazio{ border:1px dashed var(--db-linha2); border-radius:14px; padding:22px; text-align:center; color:var(--db-suave); }
   .db-insp-vazio p{ margin:0 0 12px; }
   .db-perfis-links{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:12px; }
@@ -1425,7 +1433,6 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                 </div>}
               </div>
             </div>
-            {buscaInfo && buscaInfo.semToken && perfis.length>0 && <p className="db-dica">Para os vídeos novos dos perfis aparecerem aqui sozinhos, falta ligar a busca automática (Apify) no Supabase.</p>}
             {msgTrans && transcrevendoId===null && msgTrans.erro && <p className="db-dica db-dica-erro">{msgTrans.texto}</p>}
             {novosFiltrados.length || refsFiltradas.length ? (
               <div className="db-trilho" ref={trilho}>
@@ -1469,10 +1476,21 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                 })}
               </div>
             ) : (
-              <div className="db-insp-vazio">
-                <p>{refs.length || novos.length ? "Nenhuma inspiração com esses filtros." : perfis.length ? (buscaInfo && buscaInfo.rodando ? "Buscando os vídeos novos dos perfis que você acompanha. Eles aparecem aqui em alguns minutos." : "Assim que os perfis que você acompanha postarem vídeos novos, eles aparecem aqui.") : "Ainda não tem inspirações. Cole o link de um vídeo que você gostou e ele aparece aqui, já analisado."}</p>
-                {!refs.length && !novos.length && <button className="db-btn-escuro" onClick={()=>setAbaInsp("transcrever")}>Transcrever um vídeo</button>}
-              </div>
+              // ainda sem vídeos: os quadradinhos ficam no lugar, esperando os vídeos dos perfis chegarem
+              <>
+                <div className="db-trilho db-trilho-vazio" aria-hidden="true">
+                  {[0,1,2,3,4].map(i=>(
+                    <article key={i} className="db-insp-card">
+                      <span className="db-insp-capa db-esqueleto"><span className="db-insp-rede"><DbIcone tipo={i%2?"tiktok":"instagram"} tam={17}/></span></span>
+                      <span className="db-linha-esq"/><span className="db-linha-esq curta"/>
+                    </article>
+                  ))}
+                </div>
+                <p className="db-dica db-dica-centro">{refs.length || novos.length ? "Nenhuma inspiração com esses filtros."
+                  : buscaInfo && buscaInfo.rodando ? "Buscando os vídeos novos dos perfis que você acompanha. Eles aparecem aqui em alguns minutos."
+                  : buscaInfo && buscaInfo.semToken ? "Os vídeos dos perfis que você acompanha aparecem aqui assim que a busca automática (Apify) for ligada no Supabase."
+                  : "Os vídeos novos dos perfis que você acompanha aparecem aqui."}</p>
+              </>
             )}
           </>}
 
