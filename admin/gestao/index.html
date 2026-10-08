@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610080538"></script>
+<script src="../../js/banco.js?v=202610080542"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -2356,7 +2356,14 @@ function TransModal({onClose, onSave, initial}){
   );
 }
 
-function Financeiro({state, updateState, go}){
+// Financeiro CPF: a mesma tela do Financeiro, mas com registros próprios (state.transacoesCpf),
+// sem misturar com a empresa e sem ligação com os jobs
+function FinanceiroCPF({state, updateState}){
+  const visao = {...state, transacoes: state.transacoesCpf || [], jobs: []};
+  const salvar = (next) => updateState({...state, transacoesCpf: next.transacoes || []});
+  return <Financeiro state={visao} updateState={salvar} pessoal/>;
+}
+function Financeiro({state, updateState, go, pessoal}){
   const [modal,setModal] = useState(false);
   const [editing,setEditing] = useState(null);
   const now = new Date();
@@ -2431,14 +2438,14 @@ function Financeiro({state, updateState, go}){
     <div>
       <div className="page-head">
         <div>
-          <h1 className="page-title">Financeiro</h1>
-          <p className="page-sub">Controle seus ganhos e pagamentos</p>
+          <h1 className="page-title">{pessoal ? "Financeiro CPF" : "Financeiro CNPJ"}</h1>
+          <p className="page-sub">{pessoal ? "Suas contas pessoais, separadas da empresa" : "Controle seus ganhos e pagamentos"}</p>
         </div>
         <button className="btn btn-primary" onClick={()=>setModal(true)}><Icon name="add" size={17}/>Novo Registro</button>
       </div>
 
       <div className="tabs" style={{marginBottom:18, flexWrap:"wrap"}}>
-        {["Transações","Histórico Financeiro","Previsão","Evolução","Contabilidade"].map(t=>
+        {(pessoal ? ["Transações","Histórico Financeiro","Previsão","Evolução"] : ["Transações","Histórico Financeiro","Previsão","Evolução","Contabilidade"]).map(t=>
           <div key={t} className={"tab "+(pageTab===t?"active":"")} onClick={()=>setPageTab(t)}>{t}</div>
         )}
       </div>
@@ -2468,7 +2475,7 @@ function Financeiro({state, updateState, go}){
                 </>
               )}
             </div>
-            <button className="btn btn-ghost" onClick={gerarRecorrentes}><Icon name="autorenew" size={16}/>Gerar recorrentes</button>
+            {!pessoal && <button className="btn btn-ghost" onClick={gerarRecorrentes}><Icon name="autorenew" size={16}/>Gerar recorrentes</button>}
           </div>
 
           <div className="grid" style={{gridTemplateColumns:"repeat(5,1fr)", gap:16, marginBottom:18}}>
@@ -5938,7 +5945,7 @@ function App({session}){
   // Cada página do aplicativo é uma aba do painel (página do aplicativo: aba do painel)
   const ABAS_DO_PAINEL = {dashboard:"dashboard", planner:"calendario", jobs:"campanhas", trafego:"trafego", followups:"followups",
     roteiros:"quadro", prospeccao:"prospeccao", candidaturas:"candidaturas", financeiro:"financeiro",
-    performance:"performance", tiktokshop:"tiktokshop", config:"config"};
+    performance:"performance", tiktokshop:"tiktokshop", config:"config", financeirocpf:"financeirocpf"};
   const [page, setPage] = useState(parametros.get("pagina") || "dashboard");
   const [soUma, setSoUma] = useState(parametros.get("so") === "1");
   const [ocultar, setOcultar] = useState(window.OCULTAR_VALORES);
@@ -6025,6 +6032,7 @@ function App({session}){
     case "candidaturas": PageComp = <Candidaturas {...pageProps}/>; break;
     case "portfolio": PageComp = <Portfolio {...pageProps}/>; break;
     case "financeiro": PageComp = <Financeiro {...pageProps}/>; break;
+    case "financeirocpf": PageComp = <FinanceiroCPF {...pageProps}/>; break;
     case "performance": PageComp = <Performance {...pageProps}/>; break;
     case "simulador": PageComp = <Simulador/>; break;
     case "organizacao": PageComp = <Organizacao {...pageProps}/>; break;
