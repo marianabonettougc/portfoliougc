@@ -396,3 +396,8 @@ details.rot-editar[open] summary{margin-bottom:10px}
 .rot-passos code{background:var(--fundo);padding:1px 6px;border-radius:6px;font-size:11.5px}
 .rot-conectar .rot-novo .entrada{border-color:var(--linha-forte)}
 .rot-conectar .rot-novo .btn-principal{background:var(--principal);color:#fff;border-color:var(--principal)}
+
+/* Aba Gestão UGC (aplicativo dentro do painel) */
+.gestao-barra{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;font-size:14px;color:var(--suave)}
+.gestao-app{display:block;width:100%;height:calc(100vh - 150px);min-height:520px;border:1px solid var(--linha);border-radius:var(--raio);background:var(--cartao)}
+@media (max-width:860px){.gestao-app{height:calc(100vh - 130px)}}

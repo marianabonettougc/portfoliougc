@@ -252,7 +252,7 @@
   // ---------------------------------------------------------
   // MENU E ABAS
   // ---------------------------------------------------------
-  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Calendário", campanhas: "Campanhas", roteiros: "Roteiros", checklist: "Checklist portfólio" };
+  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Calendário", campanhas: "Campanhas", roteiros: "Roteiros", checklist: "Checklist portfólio", gestao: "Gestão UGC" };
   let abaAtual = "portfolio";
   function mostrarAba(nome) {
     if (!TITULOS[nome]) nome = "portfolio";
@@ -263,6 +263,14 @@
     document.title = TITULOS[nome] + " | Painel Mari Bonetto";
     if (location.hash !== "#" + nome) history.replaceState(null, "", "#" + nome);
     $("#painel").classList.remove("menu-aberto");
+    if (nome === "gestao") abrirGestao();
+  }
+  // Aplicativo de gestão UGC: abre dentro do painel, com o mesmo login e o mesmo banco
+  function abrirGestao() {
+    const sec = $("#aba-gestao");
+    if (sec.querySelector("iframe")) return;
+    sec.innerHTML = `<div class="gestao-barra"><span>Seu aplicativo de gestão, com jobs, financeiro, planner e mais.</span><a class="btn" href="gestao/" target="_blank" rel="noopener">Abrir em tela cheia</a></div>
+      <iframe class="gestao-app" src="gestao/?v=${encodeURIComponent(window.VERSAO_PAINEL || "")}" title="Gestão UGC"></iframe>`;
   }
   $$(".menu-item").forEach((b) => b.addEventListener("click", () => mostrarAba(b.dataset.aba)));
   window.addEventListener("hashchange", () => { const h = location.hash.replace("#", ""); if (h && h !== abaAtual) mostrarAba(h); });

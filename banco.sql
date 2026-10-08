@@ -295,9 +295,28 @@ where not exists (select 1 from public.roteiros);
 
 
 -- ---------------------------------------------------------------------
+-- 12c) GESTÃO UGC (o aplicativo de gestão que abre dentro do painel)
+-- Guarda tudo do aplicativo (jobs, financeiro, planner...) em uma linha só.
+-- Só a dona do painel lê e grava.
+-- ---------------------------------------------------------------------
+create table if not exists public.app_state (
+  user_id    uuid primary key references auth.users(id) on delete cascade,
+  data       jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.app_state enable row level security;
+drop policy if exists "dona faz tudo" on public.app_state;
+create policy "dona faz tudo" on public.app_state
+  for all to authenticated
+  using (public.e_a_dona() and auth.uid() = user_id)
+  with check (public.e_a_dona() and auth.uid() = user_id);
+revoke all on public.app_state from anon;
+
+
+-- ---------------------------------------------------------------------
 -- 13) AVISA O SUPABASE QUE AS TABELAS NOVAS EXISTEM E CONFIRMA
 -- Se tudo deu certo, aparece embaixo, em "Results", a frase "Pronto!".
 -- ---------------------------------------------------------------------
 notify pgrst, 'reload schema';
 
-select 'Pronto! As 7 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;
+select 'Pronto! As 8 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;
