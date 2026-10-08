@@ -12,7 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="../../js/banco.js?v=202610080510"></script>
+<script src="../../js/banco.js?v=202610080515"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5923,19 +5923,32 @@ function App({session}){
   const [loaded, setLoaded] = useState(false);
   // Dentro do painel: ?pagina=planner&so=1 abre direto numa página, sem o menu do aplicativo
   const parametros = new URLSearchParams(location.search);
-  const [page, setPage] = useState(parametros.get("pagina") || "dashboard");
+  // Páginas que viraram abas do próprio painel (somem do menu do aplicativo quando ele está dentro do painel)
+  const NO_PAINEL = (()=>{ try{ return window.parent !== window && window.parent.location.origin === location.origin; }catch(e){ return false; } })();
+  const ABAS_DO_PAINEL = {dashboard:"dashboard", planner:"calendario", jobs:"campanhas"};
+  const [page, setPage] = useState(parametros.get("pagina") || (NO_PAINEL ? "trafego" : "dashboard"));
   const [soUma, setSoUma] = useState(parametros.get("so") === "1");
+  // Dentro do painel, ir para uma página que é aba do painel troca a aba do painel
+  function irPara(k){
+    if(NO_PAINEL){
+      const abaAlvo = ABAS_DO_PAINEL[k] || "gestao";
+      const abaAgora = soUma ? (ABAS_DO_PAINEL[page] || "gestao") : "gestao";
+      if(abaAlvo !== abaAgora){ window.parent.postMessage({aba:abaAlvo, pagina:k}, location.origin); return; }
+    }
+    setPage(k);
+  }
   useEffect(()=>{
     function ouvir(e){
-      if(e.origin !== location.origin || !e.data || typeof e.data !== "object") return;
+      if(e.origin !== location.origin || !e.data || typeof e.data !== "object" || e.data.aba) return;
       if(e.data.pagina) setPage(e.data.pagina);
+      else if(NO_PAINEL && e.data.so === false) setPage(p => ABAS_DO_PAINEL[p] ? "trafego" : p);
       if("so" in e.data) setSoUma(Boolean(e.data.so));
     }
     window.addEventListener("message", ouvir);
     return ()=>window.removeEventListener("message", ouvir);
   },[]);
   const [pendingRoteiroAI, setPendingRoteiroAI] = useState(false);
-  const openRoteirosAI = () => { setPage("roteiros"); setPendingRoteiroAI(true); };
+  const openRoteirosAI = () => { irPara("roteiros"); setPendingRoteiroAI(true); };
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | retrying | saved | error
@@ -5988,7 +6001,7 @@ function App({session}){
   const allItems = NAV.flatMap(s=>s.items);
   const currentLabel = (allItems.find(i=>i.key===page)||{}).label || "Dashboard";
 
-  const pageProps = {state, updateState, go:setPage};
+  const pageProps = {state, updateState, go:irPara};
   let PageComp;
   switch(page){
     case "dashboard": PageComp = <Dashboard {...pageProps} openRoteirosAI={openRoteirosAI}/>; break;
@@ -6018,7 +6031,7 @@ function App({session}){
           <div className="brand-name">Mari Bonetto UGC</div>
         </div>
         <div className="nav-scroll">
-          {NAV.map(sec=>(
+          {NAV.map(sec=>({...sec, items: sec.items.filter(item=>!(NO_PAINEL && ABAS_DO_PAINEL[item.key]))})).filter(sec=>sec.items.length).map(sec=>(
             <div key={sec.section}>
               <div className="nav-section-label">{sec.section}</div>
               {sec.items.map(item=>(
