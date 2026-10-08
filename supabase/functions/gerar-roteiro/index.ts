@@ -46,8 +46,11 @@ async function modelos(chave: string) {
   return { texto, audio, visao };
 }
 // conversa com o Groq e devolve o texto da resposta (tenta de novo sem o modo JSON se o modelo não aceitar)
-async function conversarGroq(chave: string, mensagens: unknown[], opcoes: { json?: boolean; temperatura?: number; max?: number; leve?: boolean } = {}) {
-  const { texto: modelo } = await modelos(chave);
+// conta por que a última resposta terminou ("length" = cortada por falta de espaço)
+let ultimoFim = "";
+const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
+async function conversarGroq(chave: string, mensagens: unknown[], opcoes: { json?: boolean; temperatura?: number; max?: number; leve?: boolean; modelo?: string } = {}) {
+  const modelo = opcoes.modelo || (await modelos(chave)).texto;
   const pedir = async (comJson: boolean) => fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
@@ -55,11 +58,15 @@ async function conversarGroq(chave: string, mensagens: unknown[], opcoes: { json
   });
   let r = await pedir(!!opcoes.json);
   let j = await r.json().catch(() => ({}));
-  if (!r.ok && opcoes.json) { r = await pedir(false); j = await r.json().catch(() => ({})); }
-  if (!r.ok) { if (r.status === 404 || /model/i.test(j?.error?.message || "")) modelosGroq = null; throw new Error(j?.error?.message || "Groq respondeu " + r.status); }
+  // limite por minuto do plano grátis: espera o tempo que o Groq pedir (até 20 s) e tenta de novo
+  const espera = r.status === 429 ? Number(String(j?.error?.message || "").match(/try again in ([\d.]+)s/)?.[1] || 0) : 0;
+  if (espera && espera <= 20) { await esperar(espera * 1000 + 300); r = await pedir(!!opcoes.json); j = await r.json().catch(() => ({})); }
+  if (!r.ok && opcoes.json && r.status !== 429) { r = await pedir(false); j = await r.json().catch(() => ({})); }
+  if (!r.ok) { if (r.status === 404 || /model .*(does not exist|decommissioned)/i.test(j?.error?.message || "")) modelosGroq = null; throw new Error(j?.error?.message || "Groq respondeu " + r.status); }
+  ultimoFim = String(j.choices?.[0]?.finish_reason || "");
   return String(j.choices?.[0]?.message?.content || "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 }
-const lerJson = (t: string) => { try { return JSON.parse(t); } catch { const m = t.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : {}; } };
+const lerJson = (t: string) => { try { return JSON.parse(t); } catch { const m = t.match(/\{[\s\S]*\}/); try { return m ? JSON.parse(m[0]) : {}; } catch { return {}; } } };
 
 const semTravessao = (t: unknown) => String(t ?? "").replace(/\s*—\s*/g, ", ").trim();
 const txt = (x: unknown, n = 800) => semTravessao(x).slice(0, n);
@@ -159,14 +166,14 @@ const CATEGORIAS: Record<string, string[]> = { beleza: ["beleza"], autocuidado: 
   "life fit": ["saude", "food"], fitness: ["saude"], maternidade: ["casa", "outro"], pet: ["casa", "outro"], "eletrônicos": ["tech"], infantil: ["casa", "outro"] };
 async function estilo(supa: any, nicho: string, curto: boolean) {
   try {
-    const { data: g } = await supa.from("estilo_ugc").select("guia").eq("id", 1).maybeSingle();
+    const { data: g } = await supa.from("estilo_ugc").select("guia, guia_curto").eq("id", 1).maybeSingle();
     const cats = CATEGORIAS[String(nicho || "").toLowerCase()] || [];
     let q = supa.from("estilo_videos").select("transcricao, criadora, marca").neq("categoria", "depoimento").limit(40);
     if (cats.length) q = q.in("categoria", cats);
     const { data: vids } = await q;
     const lista = (vids || []).filter((v: any) => String(v.transcricao || "").length > 200).sort(() => Math.random() - 0.5).slice(0, 1);
     const exemplos = lista.map((v: any, i: number) => `Exemplo ${i + 1} (${v.criadora === "laradam" ? "Lara Dam" : "Isabelly Gervasio"}${v.marca ? ", " + v.marca : ""}): "${String(v.transcricao).replace(/\[música\]|Música/gi, "").replace(/\s+/g, " ").trim().slice(0, curto ? 400 : 600)}"`).join("\n");
-    return { guia: String(g?.guia || "").slice(0, curto ? 2200 : 5000), exemplos };
+    return { guia: String(g?.guia_curto || g?.guia || "").slice(0, curto ? 1500 : 2400), exemplos: curto ? "" : exemplos };
   } catch { return { guia: "", exemplos: "" }; }
 }
 
@@ -188,7 +195,7 @@ async function roteirosUgc(chave: string, c: any, supa: any, curto = false): Pro
   const imagens = Array.isArray(c.imagens) ? c.imagens.map(String) : [];
   const [descricao, pesquisa, est] = await Promise.all([
     c._descricao !== undefined ? c._descricao : imagens.length ? descreverImagens(chave, imagens) : "",
-    c._pesquisa !== undefined ? c._pesquisa : c.produtos ? pesquisarProdutos(String(c.produtos)) : "",
+    c._pesquisa !== undefined ? c._pesquisa : c.produtos ? pesquisarProdutos(String(c.produtos)).then((p) => p.slice(0, 1700)) : "",
     estilo(supa, c.nicho, curto),
   ]);
   const pedido = `Você é roteirista de UGC de uma criadora brasileira que é contratada por marcas para produzir vídeos curtos (Reels, TikTok e Stories).
@@ -209,7 +216,7 @@ ${est.exemplos ? "TRANSCRIÇÕES REAIS DELAS PARA SENTIR O TOM:\n" + est.exemplo
 
 O QUE ELA QUER
 ${c.produtos ? "Produtos que ela tem e informações dela (use os produtos dela, com nome, e as experiências reais que ela contar): " + txt(c.produtos, 1500) : ""}
-${pesquisa ? "O QUE ENCONTREI NA INTERNET SOBRE OS PRODUTOS (use só o que for coerente; não invente números, preços ou ativos que não estejam aqui ou no que ela contou):\n" + pesquisa : ""}
+${pesquisa ? "O QUE ENCONTREI NA INTERNET SOBRE OS PRODUTOS (use só o que for coerente; não invente números, preços ou ativos que não estejam aqui ou no que ela contou):\n" + (curto ? pesquisa.slice(0, 900) : pesquisa) : ""}
 Ideia dela: ${txt(c.ideia, 3000) || "não escreveu, use as outras informações"}
 Produto ou marca: ${txt(c.produto, 200) || "não informado (pode ser um produto genérico do nicho)"}
 Nicho: ${txt(c.nicho, 80) || "escolha o que mais combina"}
@@ -222,7 +229,7 @@ Gancho: "${txt(ref.gancho, 400)}" (tipo ${txt(ref.gancho_tipo, 40)})
 Estrutura: ${txt(String(ref.desenvolvimento || "").replace(/\n/g, " / "), 800)}
 CTA: "${txt(ref.cta, 300)}"
 Por que prende: ${txt(ref.por_que, 400)}
-Transcrição: ${txt(ref.transcricao, curto ? 900 : 1500)}` : ""}
+Transcrição: ${txt(ref.transcricao, curto ? 600 : 1000)}` : ""}
 ${c.ajuste ? "AJUSTE PEDIDO POR ELA: " + txt(c.ajuste, 600) : ""}
 ${Array.isArray(c.anteriores) && c.anteriores.length ? "Não repita estes hooks que já foram sugeridos: " + c.anteriores.map((x: unknown) => `"${txt(x, 160)}"`).join("; ") : ""}
 
@@ -232,14 +239,24 @@ Regras: português do Brasil, frases faladas naturais e curtas, 3 a 5 passos no 
 NUNCA invente números, porcentagens, prazos ou resultados ("40% mais brilho", "dura 48h"). Use só números que ela contou ou que aparecem na pesquisa acima; sem número confiável, use o tempo de uso dela e detalhes que dá para ver e sentir (textura, cheiro, toque, antes e depois na câmera).
 Não invente cupom, desconto, frete grátis ou preço: se ela não contou e a pesquisa não mostrou, faça o CTA sem oferta (ex.: "o link tá aqui embaixo", "salva pra lembrar").
 gancho_tipo deve ser exatamente um destes nomes: Problema / Identificação, Antes e depois, Promessa, Comparativo, Lista / Curiosidade, Opinião forte, Objeção, Prova / Depoimento, Urgência.`;
-  let saida = "";
-  try { saida = await conversarGroq(chave, [{ role: "user", content: pedido }], { json: true, temperatura: 0.8, max: qtd === 3 ? 3800 : 3000, leve: true }); }
+  // gpt-oss pensa antes de responder e isso também gasta o espaço da resposta: max generoso, dentro do limite de 8000 por minuto
+  let saida = "", j: any = {};
+  const tentar = async (opcoes: any) => { saida = await conversarGroq(chave, [{ role: "user", content: pedido }], { json: true, temperatura: 0.8, leve: true, ...opcoes }); j = lerJson(saida); return Array.isArray(j.roteiros) && j.roteiros.some((r: any) => r?.hook?.fala); };
+  let ok = false;
+  try { ok = await tentar({ max: qtd === 3 ? 4800 : 4200 }); }
   catch (e) {
-    // o plano grátis do Groq limita o tamanho do pedido: tenta de novo com menos exemplos
-    if (!c._curto && /too large|tokens per minute|TPM|413/i.test(String((e as Error).message))) return roteirosUgc(chave, { ...c, _curto: true, quantidade: Math.min(qtd, 2), _descricao: descricao, _pesquisa: pesquisa.slice(0, 900) }, supa, true);
-    throw e;
+    const msg = String((e as Error).message);
+    // pedido grande demais para o plano grátis: refaz mais curto
+    if (!c._curto && /too large|tokens per minute|TPM|413/i.test(msg)) return roteirosUgc(chave, { ...c, _curto: true, quantidade: Math.min(qtd, 2), _descricao: descricao, _pesquisa: pesquisa.slice(0, 900) }, supa, true);
+    console.error("gpt-oss falhou:", msg);
   }
-  const j = lerJson(saida);
+  if (!ok) {
+    // resposta cortada ou vazia: tenta com o outro modelo do Groq (Qwen, que tem a sua própria cota por minuto)
+    console.error("Sem roteiros na 1ª tentativa. fim:", ultimoFim, "tamanho:", saida.length);
+    const { visao } = await modelos(chave);
+    try { ok = await tentar({ modelo: visao, max: 4500, leve: false }); } catch (e) { console.error("Qwen falhou:", String((e as Error).message)); }
+  }
+  if (!ok) throw new Error("sem roteiros (fim: " + ultimoFim + ")");
   const parte = (p: any) => ({ fala: txt(p?.fala, 500), visual: txt(p?.visual, 300) });
   const roteiros = (Array.isArray(j.roteiros) ? j.roteiros : []).slice(0, qtd).map((r: any) => ({
     titulo: txt(r.titulo, 60) || "Roteiro UGC", tipo_ugc: txt(r.tipo_ugc, 60), funil: txt(r.funil, 30), funil_por_que: txt(r.funil_por_que, 200),

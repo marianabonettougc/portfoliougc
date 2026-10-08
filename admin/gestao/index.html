@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610082320"></script>
+<script src="../../js/banco.js?v=202610082348"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -1437,7 +1437,7 @@ function CriarRoteiroUGC({referencia, ideiaInicial, nichos, onClose, onSalvar, o
           <label className="cr-campo">Quantos roteiros<select value={f.quantidade} onChange={e=>set("quantidade", Number(e.target.value))}>{[1,2,3].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
         </div>
         {erro && <p className="db-dica db-dica-erro">{erro}</p>}
-        <button className="db-btn-escuro cr-criar" onClick={()=>criar(false)} disabled={criando || gravando || ouvindo}>{criando ? (f.produto.trim() ? "Pesquisando o produto e criando..." : "Criando seus roteiros...") : roteiros.length ? "Criar outros roteiros" : "Criar roteiros"}<DbIcone tipo="brilho" tam={16}/></button>
+        <button className="db-btn-escuro cr-criar" onClick={()=>criar(false)} disabled={criando || gravando || ouvindo}>{criando ? (f.produto.trim() ? "Pesquisando e criando (até 1 minuto)..." : "Criando seus roteiros...") : roteiros.length ? "Criar outros roteiros" : "Criar roteiros"}<DbIcone tipo="brilho" tam={16}/></button>
 
         {pesquisa && roteiros.length>0 && <details className="cr-pesquisa"><summary>O que eu encontrei sobre o produto</summary><pre>{pesquisa}</pre></details>}
         {roteiros.map((r,i)=>(
