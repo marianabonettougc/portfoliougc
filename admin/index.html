@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 // Atualiza sozinho: se existir uma versão mais nova do painel publicada, recarrega a página nova
-window.VERSAO_PAINEL = "202610080550";
+window.VERSAO_PAINEL = "202610080552";
 fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).then((j) => {
   if (j.versao && j.versao !== window.VERSAO_PAINEL) {
     const u = new URL(location.href);
@@ -19,9 +19,9 @@ fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/painel.css?v=202610080550">
+<link rel="stylesheet" href="../css/painel.css?v=202610080552">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/banco.js?v=202610080550"></script>
+<script src="../js/banco.js?v=202610080552"></script>
 <script>
 // PRIMEIRA COISA: conferir a sessão. Sem sessão, vai para o login.
 // A página só aparece depois dessa conferência (antes ela fica escondida).
@@ -49,15 +49,23 @@ window.sessaoPronta = (async function () {
   <aside class="menu" id="menu" aria-label="Menu do painel">
     <div class="menu-marca">Mari Bonetto<span>painel</span></div>
 
-    <div class="menu-grupo">meu site</div>
+    <div class="menu-secao" data-secao="meu-site">
+      <button class="menu-grupo" type="button" aria-expanded="true">meu site<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
     <button class="menu-item" data-aba="portfolio" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2.5"/><path d="M10 9.2v5.6l4.6-2.8z"/><path d="M8 21h8"/></svg>Portfólio</button>
-
-    <div class="menu-grupo">minha rotina</div>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="minha-rotina">
+      <button class="menu-grupo" type="button" aria-expanded="true">minha rotina<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
     <button class="menu-item" data-aba="dashboard" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5L12 5l8 6.5"/><path d="M6 10v9.5h12V10"/><path d="M10 19.5v-5h4v5"/></svg>Dashboard</button>
-
-    <div class="menu-grupo">organização</div>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="organizacao">
+      <button class="menu-grupo" type="button" aria-expanded="true">organização<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
     <button class="menu-item" data-aba="calendario" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Planner</button>
     <button class="menu-item" data-aba="campanhas" type="button">
@@ -76,22 +84,33 @@ window.sessaoPronta = (async function () {
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3L10.5 13.5"/><path d="M21 3l-6.5 18-4-7.5L3 9.5z"/></svg>Candidaturas</button>
     <button class="menu-item sub" data-aba="trafego" data-pai="marcas" type="button" hidden>
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>Tráfego Pago</button>
-
-    <div class="menu-grupo">financeiro CNPJ</div>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="financeiro-cnpj">
+      <button class="menu-grupo" type="button" aria-expanded="true">financeiro CNPJ<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
     <button class="menu-item" data-aba="financeiro" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9.5v5M17.5 9.5v5"/></svg>Geral</button>
     <button class="menu-item" data-aba="tiktokshop" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9l1.5-4.5h13L20 9"/><path d="M4 9h16v2.5a2.7 2.7 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0A2.7 2.7 0 0 1 4 11.5z"/><path d="M5.5 13.5v6.5h13v-6.5"/></svg>TikTok Shop</button>
-
-    <div class="menu-grupo">financeiro CPF</div>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="financeiro-cpf">
+      <button class="menu-grupo" type="button" aria-expanded="true">financeiro CPF<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
     <button class="menu-item" data-aba="financeirocpf" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20.5c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>Financeiro CPF</button>
-
-    <div class="menu-grupo">geral</div>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="geral">
+      <button class="menu-grupo" type="button" aria-expanded="true">geral<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
     <button class="menu-item" data-aba="checklist" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17"/></svg>Checklist</button>
     <button class="menu-item" data-aba="config" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>Configurações</button>
+      </div>
+    </div>
 
     <div class="menu-rodape">
       <div class="menu-email" id="menu-email"></div>
@@ -136,7 +155,7 @@ window.sessaoPronta = (async function () {
 </dialog>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="../js/biblioteca.js?v=202610080550"></script>
-<script src="../js/admin.js?v=202610080550"></script>
+<script src="../js/biblioteca.js?v=202610080552"></script>
+<script src="../js/admin.js?v=202610080552"></script>
 </body>
 </html>

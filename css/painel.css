@@ -419,3 +419,9 @@ details.rot-editar[open] summary{margin-bottom:10px}
 .olho-valores .olho-fechado,.olho-valores.oculto .olho-aberto{display:none}
 .olho-valores.oculto .olho-fechado{display:inline}
 .olho-valores[hidden]{display:none}
+/* Títulos do menu que abrem e fecham */
+button.menu-grupo{display:flex;align-items:center;width:100%;border:0;background:transparent;cursor:pointer;text-align:left;font-family:inherit;border-radius:var(--raio-p)}
+button.menu-grupo:hover{color:var(--texto)}
+.menu-grupo .menu-seta{transform:rotate(90deg)}
+.menu-secao.fechada .menu-grupo .menu-seta{transform:none}
+.menu-secao.fechada .menu-secao-itens{display:none}

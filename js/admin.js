@@ -271,6 +271,7 @@
     $$(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + secao; });
     $$(".menu-item").forEach((b) => { b.classList.toggle("ativo", b.dataset.aba === nome); b.setAttribute("aria-current", b.dataset.aba === nome ? "page" : "false"); });
     const botao = $(`.menu-item[data-aba="${nome}"]`);
+    if (botao) abrirSecao(botao.closest(".menu-secao"), true);
     abrirGrupo(botao && botao.dataset.pai ? botao.dataset.pai : (botao && botao.classList.contains("tem-sub") ? nome : ""));
     $("#titulo-aba").textContent = TITULOS[nome];
     document.title = TITULOS[nome] + " | Painel Mari Bonetto";
@@ -366,6 +367,22 @@
     if (quadro) quadro.contentWindow.postMessage({ ocultarValores: oculto }, location.origin);
   });
   pintarOlho();
+
+  // Títulos do menu (meu site, minha rotina...) abrem e fecham; fica lembrado neste navegador.
+  // A seção da página aberta sempre fica aberta.
+  let secoesAbertas = {};
+  try { secoesAbertas = JSON.parse(localStorage.getItem("menuSecoes") || "{}"); } catch (e) { secoesAbertas = {}; }
+  function abrirSecao(secao, aberta) {
+    if (!secao) return;
+    secao.classList.toggle("fechada", !aberta);
+    secao.querySelector(".menu-grupo").setAttribute("aria-expanded", aberta ? "true" : "false");
+    secoesAbertas[secao.dataset.secao] = aberta;
+    try { localStorage.setItem("menuSecoes", JSON.stringify(secoesAbertas)); } catch (e) { /* segue sem lembrar */ }
+  }
+  $$(".menu-secao").forEach((secao) => {
+    if (secoesAbertas[secao.dataset.secao] !== true) abrirSecao(secao, false); // começa fechada até você abrir
+    secao.querySelector(".menu-grupo").addEventListener("click", () => abrirSecao(secao, secao.classList.contains("fechada")));
+  });
 
   // Grupos do menu (Marcas, Roteiros): as páginas ligadas a eles só aparecem quando o grupo está aberto
   let grupoAberto = "";
