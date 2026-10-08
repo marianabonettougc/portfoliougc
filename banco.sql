@@ -373,9 +373,11 @@ create table if not exists public.inspiracoes (
   visualizacoes bigint,
   publicado_em  timestamptz,
   transcrito    boolean not null default false,
+  oculto        boolean not null default false,  -- ela escondeu o vídeo do Dashboard
   criado_em     timestamptz not null default now(),
   unique (rede, post_id)
 );
+alter table public.inspiracoes add column if not exists oculto boolean not null default false;
 alter table public.inspiracoes enable row level security;
 drop policy if exists "dona faz tudo" on public.inspiracoes;
 create policy "dona faz tudo" on public.inspiracoes

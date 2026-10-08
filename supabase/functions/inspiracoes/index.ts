@@ -5,7 +5,7 @@
 // O Instagram e o TikTok bloqueiam servidores, então a busca é feita pelo
 // Apify (serviço próprio para isso). A chave fica só no Supabase, no
 // segredo APIFY_TOKEN, nunca no site.
-// Como funciona: o Dashboard chama esta função ao abrir. Se já passaram 6 horas
+// Como funciona: o Dashboard chama esta função ao abrir. Se já passaram 12 horas
 // desde a última busca, ela pede ao Apify uma busca nova; na próxima vez que o
 // Dashboard abrir (ou no botão Buscar agora), ela recolhe o resultado.
 // Só a dona do painel pode usar.
@@ -14,8 +14,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const EMAIL_DONA = "marianabonettougc@gmail.com";
 const APIFY = "https://api.apify.com/v2";
-const INTERVALO = 6 * 3600 * 1000; // busca nova no máximo a cada 6 horas
-const POR_PERFIL = 3; // últimos posts de cada perfil
+const INTERVALO = 12 * 3600 * 1000; // busca nova no máximo a cada 12 horas (o plano grátis do Apify dá conta)
+const POR_PERFIL = 4; // últimos posts de cada perfil (os antigos continuam guardados)
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -109,8 +109,8 @@ Deno.serve(async (req) => {
       await salvarEstado(estado);
     }
 
-    const { data: itens } = await supa.from("inspiracoes").select("*").in("perfil", [...todos].length ? [...todos] : ["-"])
-      .order("publicado_em", { ascending: false, nullsFirst: false }).limit(40);
+    const { data: itens } = await supa.from("inspiracoes").select("*").in("perfil", [...todos].length ? [...todos] : ["-"]).eq("oculto", false)
+      .order("publicado_em", { ascending: false, nullsFirst: false }).limit(80);
     return resposta({ itens: itens || [], semToken: !token, rodando, ultimaBusca: estado.iniciadoEm || null, aviso: aviso || estado.erro || "" });
   } catch (e) {
     console.error(e);

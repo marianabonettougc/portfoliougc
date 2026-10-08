@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610082102"></script>
+<script src="../../js/banco.js?v=202610082143"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -253,6 +253,37 @@
   .db-filtros .db-menu-caixa{ margin-left:auto; }
   .db-trilho{ display:grid; grid-auto-flow:column; grid-auto-columns:minmax(170px,calc((100% - 48px)/5)); gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:4px; scrollbar-width:none; }
   .db-trilho::-webkit-scrollbar{ display:none; }
+  .db-barra{ position:relative; height:16px; margin-top:6px; cursor:pointer; touch-action:none; }
+  .db-barra::before{ content:""; position:absolute; left:0; right:0; top:6px; height:4px; border-radius:99px; background:#efe5d8; }
+  .db-barra span{ position:absolute; top:4px; height:8px; border-radius:99px; background:#cdb8a4; cursor:grab; transition:background .15s; }
+  .db-barra:hover span, .db-barra.arrastando span{ background:var(--db-cafe2); }
+  .db-barra.arrastando span{ cursor:grabbing; }
+  .db-ideia-detalhe a{ color:var(--db-cafe); }
+  .db-card-icones{ display:inline-flex; align-items:center; gap:4px; flex-shrink:0; }
+  .db-card-icones .db-salvar:first-child{ opacity:.55; } .db-card-icones .db-salvar:first-child:hover{ opacity:1; }
+  .db-subtitulo{ font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.08em; color:var(--db-suave); margin:4px 0 10px; }
+  .db-planos{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; margin-bottom:18px; }
+  .db-plano-card{ text-align:left; border:1px solid var(--db-linha); background:var(--db-papel); border-radius:12px; padding:12px 14px; cursor:pointer; display:flex; flex-direction:column; gap:6px; }
+  .db-plano-card:hover{ background:var(--db-creme); }
+  .db-plano-card b{ font-size:14px; font-weight:500; } .db-plano-card small{ font-size:12px; color:var(--db-suave); }
+  .db-plano-passos{ display:flex; gap:4px; } .db-plano-passos i{ flex:1; height:4px; border-radius:99px; background:var(--db-linha2); } .db-plano-passos i.ok{ background:var(--db-verde); }
+  .db-versao{ margin-top:18px; padding-top:14px; border-top:1px solid var(--db-linha); }
+  .db-versao ul{ margin:4px 0 0; padding-left:18px; font-size:14px; line-height:1.6; }
+  .db-porque{ margin:6px 0 0; display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:13.5px; line-height:1.55; }
+  .db-porque dt{ font-weight:500; color:var(--db-cafe); } .db-porque dd{ margin:0; }
+  .db-datas-plano, .db-metricas-plano{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px; margin-top:6px; }
+  .db-datas-plano label, .db-metricas-plano label, .db-notas-plano, .db-pasta-campo{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--db-suave); }
+  .db-datas-plano input, .db-metricas-plano input, .db-notas-plano textarea, .db-pasta-campo select, .db-plano-etapa input[type=date]{ height:38px; border-radius:10px; border:1px solid var(--db-linha2); padding:0 10px; font:inherit; font-size:13px; background:var(--db-papel); color:var(--db-texto); }
+  .db-notas-plano{ margin-top:8px; } .db-notas-plano textarea{ height:auto; padding:8px 10px; resize:vertical; }
+  .db-pasta-campo{ margin-top:12px; max-width:260px; }
+  .db-versao-acoes{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:18px; }
+  .db-versao-acoes .db-btn-escuro{ margin-top:0 !important; }
+  .db-plano-etapas{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
+  .db-plano-etapa{ display:flex; flex-direction:column; gap:6px; border:1px solid var(--db-linha); border-radius:12px; padding:10px; }
+  .db-plano-etapa.feita{ background:var(--db-creme); }
+  .db-plano-etapa .db-check{ align-items:center; gap:8px; font-size:13px; }
+  .db-plano .db-btn-escuro{ margin-top:12px; }
+  .db-resultado{ margin-top:16px; padding:4px 14px 14px; border-radius:12px; background:var(--db-creme); }
   .db-insp-card{ scroll-snap-align:start; display:flex; flex-direction:column; gap:6px; min-width:0; }
   .db-insp-capa{ position:relative; aspect-ratio:16/10; border:0; border-radius:12px; overflow:hidden; cursor:pointer; padding:0; background:linear-gradient(150deg,#efe5d8,#d9c4ae); }
   .db-insp-capa img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
@@ -1033,6 +1064,205 @@ function DbPerfis({lista, onSalvar, onFechar}){
   );
 }
 
+// ----- plano de conteúdo: a versão dela em cima de um vídeo de referência -----
+const ETAPAS_PLANO = [["roteiro","Roteirização","Roteirizar"],["gravacao","Gravação","Gravar"],["postagem","Postagem","Postar"],["metricas","Análise de métricas","Analisar métricas"]];
+const somaDias = (n) => { const d = new Date(); d.setDate(d.getDate()+n); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const CAMPOS_METRICAS = [["visualizacoes","Visualizações"],["curtidas","Curtidas"],["comentarios","Comentários"],["salvamentos","Salvamentos"],["compartilhamentos","Compartilhamentos"],["seguidores","Seguidores novos"],["retencao","Retenção média (%)"]];
+const resumoReferencia = (r) => ({ id:r.id, titulo:r.titulo||"", perfil:r.perfil||"", origem:r.origem||"", link:r.link||"", gancho:r.gancho||"", gancho_tipo:r.gancho_tipo||"",
+  desenvolvimento:r.desenvolvimento||"", cta:r.cta||"", por_que:r.por_que||"", transcricao:String(r.transcricao||"").slice(0,3500), visualizacoes:r.visualizacoes||null });
+
+// coloca as datas do plano no Planner (e a postagem no roteiro do quadro)
+function planejarNoPlanner(s, plano){
+  const plataforma = plano.referencia.origem==="tiktok" ? "TikTok" : "Instagram";
+  const titulo = plano.versao.titulo || "Minha versão";
+  let roteiros = s.roteiros || [];
+  let roteiro = roteiros.find(r=>r.id===plano.roteiroId);
+  if(roteiro){ roteiro = {...roteiro, dataPublicacao: plano.datas.postagem || ""}; roteiros = roteiros.map(r=>r.id===roteiro.id?roteiro:r); }
+  let planner = syncPlannerFromRoteiro({...s, planner:s.planner||[]}, roteiro || {id:"-", dataPublicacao:""});
+  planner = planner.filter(p=>p.planoId!==plano.id);
+  ETAPAS_PLANO.filter(([k])=>k!=="postagem").forEach(([k,,verbo])=>{
+    if(plano.datas[k]) planner.push({id:uid(), planoId:plano.id, planoEtapa:k, titulo:`${verbo}: ${titulo}`, plataforma, formato:"Reels",
+      status: plano.feitos && plano.feitos[k] ? "Entregue" : "Planejado", data:plano.datas[k], marca:"", notas:"Plano de conteúdo inspirado em uma referência", categoria:"Conteúdos"});
+  });
+  return {...s, roteiros, planner};
+}
+
+function DbMinhaVersao({referencia, plano, nichos, onCriar, onAbrirPlano}){
+  const [sugestao,setSugestao] = useState(null);
+  const [carregando,setCarregando] = useState(false);
+  const [erro,setErro] = useState("");
+  const [datas,setDatas] = useState({roteiro:somaDias(1), gravacao:somaDias(3), postagem:somaDias(5), metricas:somaDias(12)});
+  if(plano) return (
+    <div className="db-versao">
+      <small>Minha versão</small>
+      <p><b>{plano.versao.titulo}</b>. Já está no seu planejamento.</p>
+      <button className="db-btn-claro" onClick={onAbrirPlano}>Ver meu plano</button>
+    </div>
+  );
+  async function gerar(){
+    setCarregando(true); setErro("");
+    try{
+      const { data, error } = await supabaseClient.functions.invoke("assistente-ugc", {body:{acao:"adaptar", referencia: resumoReferencia(referencia), nichos}});
+      if(error || !data || !data.minha_versao) throw new Error("x");
+      setSugestao(data);
+    }catch(e){ setErro("Não consegui criar a sua versão agora. Tente de novo em instantes."); }
+    setCarregando(false);
+  }
+  if(!sugestao) return (
+    <div className="db-versao">
+      <small>Fazer o meu em cima desse</small>
+      <p>Eu explico por que esse vídeo funcionou (gancho, desenvolvimento e CTA), o que dá para melhorar, e crio a sua versão com datas para roteirizar, gravar, postar e analisar.</p>
+      {erro && <p className="db-dica db-dica-erro">{erro}</p>}
+      <button className="db-btn-escuro" onClick={gerar} disabled={carregando}>{carregando ? "Criando sua versão..." : "Criar minha versão"}<DbIcone tipo="brilho" tam={16}/></button>
+    </div>
+  );
+  const f = sugestao.funcionou || {}, v = sugestao.minha_versao || {};
+  return (
+    <div className="db-versao">
+      <small>Por que funcionou para ela</small>
+      {f.geral && <p>{f.geral}</p>}
+      <dl className="db-porque">
+        {f.gancho && <><dt>Gancho</dt><dd>{f.gancho}</dd></>}
+        {f.desenvolvimento && <><dt>Desenvolvimento</dt><dd>{f.desenvolvimento}</dd></>}
+        {f.cta && <><dt>CTA</dt><dd>{f.cta}</dd></>}
+      </dl>
+      {sugestao.melhorar && sugestao.melhorar.length>0 && <><small>Como fazer melhor</small><ul>{sugestao.melhorar.map((m,k)=><li key={k}>{m}</li>)}</ul></>}
+      <small>Minha versão: {v.titulo}</small>
+      {v.ideia && <p>{v.ideia}</p>}
+      {v.gancho && <p className="db-gancho">“{v.gancho}”</p>}
+      {v.roteiro && v.roteiro.length>0 && <ol>{v.roteiro.map((p,k)=><li key={k}>{p}</li>)}</ol>}
+      {v.cta && <p><b>CTA:</b> {v.cta}</p>}
+      {v.formato && <p><b>Formato:</b> {v.formato}</p>}
+      <small>Datas</small>
+      <div className="db-datas-plano">
+        {ETAPAS_PLANO.map(([k,nome])=><label key={k}>{nome}<input type="date" value={datas[k]} onChange={e=>setDatas(d=>({...d,[k]:e.target.value}))}/></label>)}
+      </div>
+      <div className="db-versao-acoes">
+        <button className="db-btn-escuro" onClick={()=>onCriar({id:uid(), refId:referencia.id, criadoEm:Date.now(), referencia:resumoReferencia(referencia),
+          analise:{funcionou:f, melhorar:sugestao.melhorar||[]}, versao:v, datas, feitos:{}, metricas:{}, notas:"", resultado:null})}>Colocar no meu planejamento<DbIcone tipo="seta" tam={16}/></button>
+        <button className="db-btn-claro" onClick={gerar} disabled={carregando}>{carregando ? "Criando..." : "Outra versão"}</button>
+      </div>
+    </div>
+  );
+}
+
+function DbPlano({plano, onMudar, onTirar, onFechar, irRoteiros}){
+  const [analisando,setAnalisando] = useState(false);
+  const [erro,setErro] = useState("");
+  const v = plano.versao || {}, f = (plano.analise && plano.analise.funcionou) || {}, res = plano.resultado;
+  const m = plano.metricas || {};
+  const set = (patch) => onMudar({...plano, ...patch});
+  const temMetricas = Object.values(m).some(x=>String(x||"").trim());
+  async function analisar(){
+    setAnalisando(true); setErro("");
+    try{
+      const dias = plano.datas.postagem ? Math.max(1, Math.round((Date.now()-new Date(plano.datas.postagem+"T12:00").getTime())/86400000)) : null;
+      const { data, error } = await supabaseClient.functions.invoke("assistente-ugc", {body:{acao:"resultado", plano:{...plano, metricas:{...m, dias}}}});
+      if(error || !data || !data.resumo) throw new Error("x");
+      set({resultado:{...data, em:Date.now()}, feitos:{...(plano.feitos||{}), metricas:true}});
+    }catch(e){ setErro("Não consegui analisar agora. Tente de novo em instantes."); }
+    setAnalisando(false);
+  }
+  return (
+    <Modal title={v.titulo || "Meu plano"} onClose={onFechar}>
+      <div className="db-ideia-detalhe db-plano">
+        <div className="db-plano-etapas">
+          {ETAPAS_PLANO.map(([k,nome])=>(
+            <div key={k} className={"db-plano-etapa"+(plano.feitos && plano.feitos[k]?" feita":"")}>
+              <label className="db-check"><input type="checkbox" checked={!!(plano.feitos && plano.feitos[k])} onChange={e=>set({feitos:{...(plano.feitos||{}), [k]:e.target.checked}})}/><span className="db-caixinha"><Icon name="check" size={13}/></span>{nome}</label>
+              <input type="date" value={plano.datas[k]||""} onChange={e=>set({datas:{...plano.datas, [k]:e.target.value}})} aria-label={"Data de "+nome}/>
+            </div>
+          ))}
+        </div>
+
+        <small>Minha versão</small>
+        {v.ideia && <p>{v.ideia}</p>}
+        {v.gancho && <p className="db-gancho">“{v.gancho}”</p>}
+        {v.roteiro && v.roteiro.length>0 && <ol>{v.roteiro.map((p,k)=><li key={k}>{p}</li>)}</ol>}
+        {v.cta && <p><b>CTA:</b> {v.cta}</p>}
+        {v.formato && <p><b>Formato:</b> {v.formato}</p>}
+        {v.dicas_gravacao && v.dicas_gravacao.length>0 && <><small>Dicas para gravar</small><ul>{v.dicas_gravacao.map((d,k)=><li key={k}>{d}</li>)}</ul></>}
+
+        <small>Por que funcionou para ela</small>
+        {f.geral && <p>{f.geral}</p>}
+        <dl className="db-porque">
+          {f.gancho && <><dt>Gancho</dt><dd>{f.gancho}</dd></>}
+          {f.desenvolvimento && <><dt>Desenvolvimento</dt><dd>{f.desenvolvimento}</dd></>}
+          {f.cta && <><dt>CTA</dt><dd>{f.cta}</dd></>}
+        </dl>
+        {plano.analise && plano.analise.melhorar && plano.analise.melhorar.length>0 && <><small>Como fazer melhor</small><ul>{plano.analise.melhorar.map((x,k)=><li key={k}>{x}</li>)}</ul></>}
+        {plano.referencia && plano.referencia.link && <p><a href={plano.referencia.link} target="_blank" rel="noopener">Ver o vídeo de referência</a></p>}
+
+        <small>Minhas métricas</small>
+        <p className="db-dica" style={{margin:"4px 0 8px"}}>Depois de postar, coloque os números do seu vídeo. Eu analiso por que funcionou (ou não) para você.</p>
+        <div className="db-metricas-plano">
+          {CAMPOS_METRICAS.map(([k,nome])=><label key={k}>{nome}<input inputMode="numeric" value={m[k]||""} onChange={e=>set({metricas:{...m, [k]:e.target.value.replace(/[^\d.,]/g,"")}})}/></label>)}
+        </div>
+        <label className="db-notas-plano">O que mudou na hora de gravar (opcional)<textarea rows={2} value={plano.notas||""} onChange={e=>set({notas:e.target.value})}/></label>
+        {erro && <p className="db-dica db-dica-erro">{erro}</p>}
+        <button className="db-btn-escuro" onClick={analisar} disabled={analisando || !temMetricas}>{analisando ? "Analisando..." : res ? "Analisar de novo" : "Analisar meu resultado"}</button>
+
+        {res && <div className="db-resultado">
+          <small>Resultado{res.veredito ? ": "+res.veredito : ""}</small>
+          {res.resumo && <p>{res.resumo}</p>}
+          <dl className="db-porque">
+            {res.pra_mim && res.pra_mim.gancho && <><dt>Gancho</dt><dd>{res.pra_mim.gancho}</dd></>}
+            {res.pra_mim && res.pra_mim.desenvolvimento && <><dt>Desenvolvimento</dt><dd>{res.pra_mim.desenvolvimento}</dd></>}
+            {res.pra_mim && res.pra_mim.cta && <><dt>CTA</dt><dd>{res.pra_mim.cta}</dd></>}
+          </dl>
+          {res.comparando && <><small>Comparando com a referência</small><p>{res.comparando}</p></>}
+          {res.melhorar && res.melhorar.length>0 && <><small>Como melhorar no próximo</small><ul>{res.melhorar.map((x,k)=><li key={k}>{x}</li>)}</ul></>}
+          {res.proximo_video && <><small>Próximo vídeo</small><p>{res.proximo_video}</p></>}
+        </div>}
+
+        <div className="db-versao-acoes">
+          <button className="db-btn-claro" onClick={irRoteiros}>Ver o roteiro no quadro</button>
+          <button className="db-link db-sublinhado" onClick={onTirar}>Tirar do planejamento</button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// barrinha para rolar os vídeos para o lado (aparece em qualquer computador)
+function DbBarraRolagem({alvo, deps}){
+  const [pos,setPos] = useState({largura:1, inicio:0});
+  const [arrastando,setArrastando] = useState(false);
+  const barra = useRef(null);
+  useEffect(()=>{
+    const el = alvo.current; if(!el) return;
+    const medir = () => { const total = el.scrollWidth, vis = el.clientWidth; const largura = total>0 ? Math.min(1, vis/total) : 1;
+      setPos({largura, inicio: total>vis ? (el.scrollLeft/(total-vis))*(1-largura) : 0}); };
+    medir();
+    el.addEventListener("scroll", medir, {passive:true}); window.addEventListener("resize", medir);
+    const t = setTimeout(medir, 400);
+    return ()=>{ el.removeEventListener("scroll", medir); window.removeEventListener("resize", medir); clearTimeout(t); };
+  }, [alvo.current, deps]);
+  if(pos.largura>=0.999) return null;
+  function irPara(clientX, desloc){
+    const el = alvo.current, b = barra.current; if(!el || !b) return;
+    const r = b.getBoundingClientRect();
+    const frac = Math.max(0, Math.min(1, ((clientX - r.left)/r.width - desloc) / (1-pos.largura)));
+    el.scrollLeft = frac * (el.scrollWidth - el.clientWidth);
+  }
+  function apertar(e){
+    const b = barra.current; if(!b) return;
+    const r = b.getBoundingClientRect();
+    const x = (e.clientX - r.left)/r.width;
+    const naAlca = x>=pos.inicio && x<=pos.inicio+pos.largura;
+    const desloc = naAlca ? x-pos.inicio : pos.largura/2;
+    const el = alvo.current; const snap = el.style.scrollSnapType; el.style.scrollSnapType = "none";
+    setArrastando(true); irPara(e.clientX, desloc);
+    const mover = (ev) => irPara(ev.clientX, desloc);
+    const soltar = () => { setArrastando(false); el.style.scrollSnapType = snap; window.removeEventListener("pointermove", mover); window.removeEventListener("pointerup", soltar); };
+    window.addEventListener("pointermove", mover); window.addEventListener("pointerup", soltar);
+    e.preventDefault();
+  }
+  return <div className={"db-barra"+(arrastando?" arrastando":"")} ref={barra} onPointerDown={apertar} role="scrollbar" aria-orientation="horizontal" aria-label="Rolar os vídeos"
+    aria-valuenow={Math.round(pos.largura<1 ? pos.inicio/(1-pos.largura)*100 : 0)} aria-valuemin={0} aria-valuemax={100}>
+    <span style={{left:(pos.inicio*100)+"%", width:(pos.largura*100)+"%"}}/></div>;
+}
+
 function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateState, go, openRoteirosAI}){
   const hojeD = new Date(); hojeD.setHours(0,0,0,0);
   const hoje = isoLocal(hojeD);
@@ -1178,23 +1408,85 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const [refAberta,setRefAberta] = useState(null);
   const [editandoPerfis,setEditandoPerfis] = useState(false);
   const salvos = state.inspSalvas || {};
+  const ocultas = state.inspOcultas || {};
+  const pastas = state.pastasInsp || [];
+  const refPasta = state.refPasta || {};
+  const [filtroPasta,setFiltroPasta] = useState("");
   const textoRef = (r) => [r.titulo, r.etiquetas, r.gancho, r.transcricao].filter(Boolean).join(" ");
   const refsFiltradas = refs.filter(r=>
     (!rede || r.origem===rede) &&
     (nicho==="Todos" || PALAVRAS_NICHO[nicho].test(textoRef(r))) &&
     (!filtroPerfil || chaveMarca(r.perfil)===chaveMarca(filtroPerfil)) &&
-    (!soSalvos || salvos[r.id]));
+    (!soSalvos || salvos[r.id]) && !ocultas[r.id] &&
+    (!filtroPasta || refPasta[r.id]===filtroPasta));
   const novosFiltrados = novos.filter(n=>
     (!rede || n.rede===rede) &&
     (nicho==="Todos" || PALAVRAS_NICHO[nicho].test(n.legenda||"")) &&
     (!filtroPerfil || chaveMarca(n.perfil)===chaveMarca(filtroPerfil)) &&
-    (!soSalvos || salvos["n"+n.id]));
+    (!soSalvos || salvos["n"+n.id]) && !filtroPasta);
   const trilho = useRef(null);
   const rolar = (dir) => { if(trilho.current) trilho.current.scrollBy({left: dir*trilho.current.clientWidth*0.8, behavior:"smooth"}); };
   const ultimaAtualizacao = (buscaInfo && buscaInfo.ultimaBusca) || refsEm;
   const minAtras = ultimaAtualizacao ? Math.max(0, Math.round((agora-ultimaAtualizacao)/60000)) : null;
   const tempoAtras = minAtras===null ? "" : minAtras<1 ? "agora" : minAtras<60 ? `há ${minAtras} min` : minAtras<1440 ? `há ${Math.round(minAtras/60)} h` : `há ${Math.round(minAtras/1440)} dia(s)`;
   function alternarSalvo(id){ mudar(s=>({...s, inspSalvas:{...(s.inspSalvas||{}), [id]:!(s.inspSalvas||{})[id]}})); }
+  // ocultar um vídeo: ele some e o próximo entra no lugar
+  async function ocultarNovo(n){
+    setNovos(l=>l.filter(x=>x.id!==n.id));
+    try{ await supabaseClient.from("inspiracoes").update({oculto:true}).eq("id", n.id); }catch(e){}
+  }
+  function ocultarRef(r){ mudar(s=>({...s, inspOcultas:{...(s.inspOcultas||{}), [r.id]:true}})); }
+  async function mostrarOcultos(){
+    setFiltrosAbertos(false);
+    mudar(s=>({...s, inspOcultas:{}}));
+    try{ await supabaseClient.from("inspiracoes").update({oculto:false}).eq("oculto", true); }catch(e){}
+    carregarNovos(false);
+  }
+  function criarPasta(nome){
+    nome = String(nome||"").trim().slice(0,40);
+    if(!nome) return "";
+    const existente = pastas.find(p=>p.nome.toLowerCase()===nome.toLowerCase());
+    if(existente) return existente.id;
+    const id = uid();
+    mudar(s=>({...s, pastasInsp:[...(s.pastasInsp||[]), {id, nome}]}));
+    return id;
+  }
+  function moverParaPasta(refId, pastaId){ mudar(s=>({...s, refPasta:{...(s.refPasta||{}), [refId]:pastaId||undefined}})); }
+
+  // planos: a versão dela em cima de uma referência, com datas e análise de métricas
+  const planos = state.planosInsp || [];
+  const [planoAberto,setPlanoAberto] = useState(null);
+  const planoAtual = planoAberto && planos.find(p=>p.id===planoAberto);
+  function criarPlano(plano){
+    const v = plano.versao;
+    const conteudo = [
+      v.gancho ? "GANCHO:\n" + v.gancho : "",
+      v.roteiro && v.roteiro.length ? "ROTEIRO:\n" + v.roteiro.map(p=>"- "+p).join("\n") : "",
+      v.cta ? "CTA:\n" + v.cta : "",
+      v.formato ? "FORMATO: " + v.formato : "",
+      "REFERÊNCIA: " + (plano.referencia.link || ""),
+    ].filter(Boolean).join("\n\n");
+    const roteiroId = uid();
+    const p = {...plano, roteiroId};
+    mudar(s=>planejarNoPlanner({...s,
+      roteiros:[{id:roteiroId, titulo:"Inspirado: "+(v.titulo||"minha versão"), plataforma: p.referencia.origem==="tiktok"?"TikTok":"Instagram", status:"Em aberto", finalidade:"Conteúdos", etapa:"Ideias", dataPublicacao:"", conteudo}, ...(s.roteiros||[])],
+      planosInsp:[p, ...(s.planosInsp||[])]}, p));
+    setRefAberta(null); setAbaInsp("analise"); setPlanoAberto(p.id);
+  }
+  function mudarPlano(p){
+    mudar(s=>{
+      const antes = (s.planosInsp||[]).find(x=>x.id===p.id) || {};
+      const novo = {...s, planosInsp:(s.planosInsp||[]).map(x=>x.id===p.id?p:x)};
+      return JSON.stringify(antes.datas)!==JSON.stringify(p.datas) || JSON.stringify(antes.feitos)!==JSON.stringify(p.feitos) ? planejarNoPlanner(novo, p) : novo;
+    });
+  }
+  function tirarPlano(p){
+    if(!window.confirm("Tirar este vídeo do planejamento? As datas de roteirizar, gravar e analisar saem do Planner. O roteiro e a data de postagem continuam no quadro.")) return;
+    mudar(s=>({...s, planosInsp:(s.planosInsp||[]).filter(x=>x.id!==p.id), planner:(s.planner||[]).filter(x=>x.planoId!==p.id)}));
+    setPlanoAberto(null);
+  }
+  const proximaEtapa = (p) => ETAPAS_PLANO.find(([k])=>!(p.feitos && p.feitos[k]));
+
   function salvarPerfis(lista){ mudar(s=>({...s, concorrentes:lista})); }
 
   // transcrever um vídeo de referência (vira inspiração)
@@ -1202,6 +1494,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const [transcrevendo,setTranscrevendo] = useState(false);
   const [msgTrans,setMsgTrans] = useState(null);
   const [transcrevendoId,setTranscrevendoId] = useState(null);
+  const [pastaTrans,setPastaTrans] = useState("");
+  const [nomeNovaPasta,setNomeNovaPasta] = useState("");
   async function transcrever(e, linkPronto, novo){
     if(e) e.preventDefault();
     const link = (linkPronto || linkTrans).trim();
@@ -1218,11 +1512,15 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
       const linha = { titulo: c.titulo || "Referência", de_quem:"outra", perfil: data.perfil || null, origem, link, data_post: data.data_post || null,
         etiquetas: c.etiquetas || null, gancho: c.gancho || null, gancho_tipo: c.gancho_tipo || null, desenvolvimento: c.desenvolvimento || null,
         cta: c.cta || null, expressoes: c.expressoes || null, por_que: c.por_que || null, transcricao: data.transcricao || null };
-      const { error: e2 } = await supabaseClient.from("roteiros").insert(linha);
+      const { data: salva, error: e2 } = await supabaseClient.from("roteiros").insert(linha).select("*").single();
       if(e2) throw new Error("Transcrevi, mas não consegui salvar: " + e2.message);
+      const pastaId = !novo && (pastaTrans==="nova" ? criarPasta(nomeNovaPasta) : pastaTrans);
+      if(pastaId && salva) moverParaPasta(salva.id, pastaId);
+      if(pastaTrans==="nova"){ setNomeNovaPasta(""); setPastaTrans(pastaId||""); }
       if(novo){ await supabaseClient.from("inspiracoes").update({transcrito:true}).eq("id", novo.id); setNovos(l=>l.filter(x=>x.id!==novo.id)); }
       setLinkTrans(""); setMsgTrans({texto:"Pronto! O vídeo foi transcrito e analisado. Está aqui nas inspirações e também na aba Roteiros."});
-      await carregarRefs(); setAbaInsp(novo ? "analise" : "inspiracoes");
+      await carregarRefs(); setAbaInsp("inspiracoes");
+      if(salva) setRefAberta({...salva, visualizacoes: novo ? novo.visualizacoes : null});
     }catch(err){ setMsgTrans({erro:true, texto:String(err.message||err)}); if(novo) setAbaInsp("transcrever"); }
     setTranscrevendo(false); setTranscrevendoId(null);
   }
@@ -1425,9 +1723,11 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                 {["Todos", ...NICHOS_INSP].map(n=><button key={n} className={nicho===n?"ativo":""} onClick={()=>setNicho(n)}>{n}</button>)}
               </span>
               <div className="db-menu-caixa">
-                <button className={"db-filtro-rede db-filtro-icone"+(filtroPerfil||soSalvos?" ativo":"")} onClick={()=>setFiltrosAbertos(a=>!a)} aria-label="Filtros" title="Filtros"><DbIcone tipo="filtro" tam={17}/></button>
+                <button className={"db-filtro-rede db-filtro-icone"+(filtroPerfil||soSalvos||filtroPasta?" ativo":"")} onClick={()=>setFiltrosAbertos(a=>!a)} aria-label="Filtros" title="Filtros"><DbIcone tipo="filtro" tam={17}/></button>
                 {filtrosAbertos && <div className="db-pop db-pop-filtros">
                   <label className="db-check"><input type="checkbox" checked={soSalvos} onChange={e=>setSoSalvos(e.target.checked)}/><span className="db-caixinha"><Icon name="check" size={13}/></span>Só os salvos</label>
+                  {pastas.length>0 && <label>Pasta<select value={filtroPasta} onChange={e=>setFiltroPasta(e.target.value)}><option value="">Todas</option>{pastas.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>}
+                  <button className="db-link db-sublinhado" onClick={mostrarOcultos}>Mostrar os vídeos que ocultei</button>
                   {perfis.length>0 && <button className="db-link db-sublinhado" onClick={()=>{ setFiltrosAbertos(false); carregarNovos(true); }}>Buscar vídeos novos agora</button>}
                   <button className="db-link db-sublinhado" onClick={()=>setEditandoPerfis(true)}>Perfis que eu acompanho</button>
                 </div>}
@@ -1435,7 +1735,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             </div>
             {msgTrans && transcrevendoId===null && msgTrans.erro && <p className="db-dica db-dica-erro">{msgTrans.texto}</p>}
             {novosFiltrados.length || refsFiltradas.length ? (
-              <div className="db-trilho" ref={trilho}>
+              <><div className="db-trilho" ref={trilho}>
                 {novosFiltrados.map(n=>{
                   const recente = n.publicado_em && (Date.now()-new Date(n.publicado_em).getTime()) < 3*86400000;
                   const legenda = String(n.legenda||"").split("\n")[0].trim();
@@ -1451,7 +1751,10 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                       <span className="db-insp-perfil">{n.publicado_em ? "Postado em "+new Date(n.publicado_em).toLocaleDateString("pt-BR") : "Vídeo novo"}</span>
                       <div className="db-insp-rodape">
                         <button className="db-btn-mini" onClick={()=>transcrever(null, n.link, n)} disabled={transcrevendo}>{transcrevendoId===n.id ? "Transcrevendo..." : "Transcrever"}</button>
-                        <button className={"db-salvar"+(salvos["n"+n.id]?" ok":"")} onClick={()=>alternarSalvo("n"+n.id)} aria-pressed={!!salvos["n"+n.id]} aria-label="Salvar"><DbIcone tipo="marcador" tam={17}/></button>
+                        <span className="db-card-icones">
+                          <button className="db-salvar" onClick={()=>ocultarNovo(n)} aria-label="Ocultar este vídeo" title="Ocultar este vídeo"><DbIcone tipo="olhoFechado" tam={17}/></button>
+                          <button className={"db-salvar"+(salvos["n"+n.id]?" ok":"")} onClick={()=>alternarSalvo("n"+n.id)} aria-pressed={!!salvos["n"+n.id]} aria-label="Salvar" title="Salvar"><DbIcone tipo="marcador" tam={17}/></button>
+                        </span>
                       </div>
                     </article>
                   );
@@ -1469,12 +1772,17 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                       <span className="db-insp-perfil">{r.gancho_tipo ? "Gancho de "+r.gancho_tipo : "Transcrito"}</span>
                       <div className="db-insp-rodape">
                         <span>{etiquetas(r).map(t=><span key={t} className="db-tag">{t}</span>)}</span>
-                        <button className={"db-salvar"+(salvos[r.id]?" ok":"")} onClick={()=>alternarSalvo(r.id)} aria-pressed={!!salvos[r.id]} aria-label="Salvar"><DbIcone tipo="marcador" tam={17}/></button>
+                        <span className="db-card-icones">
+                          <button className="db-salvar" onClick={()=>ocultarRef(r)} aria-label="Ocultar este vídeo" title="Ocultar este vídeo"><DbIcone tipo="olhoFechado" tam={17}/></button>
+                          <button className={"db-salvar"+(salvos[r.id]?" ok":"")} onClick={()=>alternarSalvo(r.id)} aria-pressed={!!salvos[r.id]} aria-label="Salvar" title="Salvar"><DbIcone tipo="marcador" tam={17}/></button>
+                        </span>
                       </div>
                     </article>
                   );
                 })}
               </div>
+              <DbBarraRolagem alvo={trilho} deps={novosFiltrados.length+"-"+refsFiltradas.length}/>
+              </>
             ) : (
               // ainda sem vídeos: os quadradinhos ficam no lugar, esperando os vídeos dos perfis chegarem
               <>
@@ -1496,9 +1804,15 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
 
           {abaInsp==="transcrever" && (
             <div className="db-painel-aba">
-              <p className="db-dica">Viu um vídeo bom? Cole o link aqui. Eu transcrevo, separo gancho, estrutura e CTA, e ele vira inspiração.</p>
+              <p className="db-dica">Viu um vídeo bom ou salvou algum no seu Instagram? Copie o link (no Instagram: ⋯ e depois Copiar link), cole aqui e escolha a pasta. Eu transcrevo, separo gancho, estrutura e CTA, e ele vira inspiração.</p>
               <form className="db-conc-form" onSubmit={transcrever}>
                 <input value={linkTrans} onChange={e=>setLinkTrans(e.target.value)} placeholder="Link do vídeo do Instagram, TikTok ou YouTube" aria-label="Link do vídeo" disabled={transcrevendo}/>
+                <select value={pastaTrans} onChange={e=>setPastaTrans(e.target.value)} aria-label="Pasta" disabled={transcrevendo}>
+                  <option value="">Sem pasta</option>
+                  {pastas.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}
+                  <option value="nova">+ Nova pasta</option>
+                </select>
+                {pastaTrans==="nova" && <input value={nomeNovaPasta} onChange={e=>setNomeNovaPasta(e.target.value)} placeholder="Nome da pasta (ex.: Ganchos, Skincare)" aria-label="Nome da nova pasta" disabled={transcrevendo} style={{flex:"0 1 220px", minWidth:160}}/>}
                 <button className="db-btn-escuro" type="submit" disabled={transcrevendo}>{transcrevendo ? "Transcrevendo..." : "Transcrever"}</button>
               </form>
               {msgTrans && <p className={"db-dica"+(msgTrans.erro?" db-dica-erro":"")}>{msgTrans.texto}</p>}
@@ -1507,6 +1821,22 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
 
           {abaInsp==="analise" && (
             <div className="db-painel-aba">
+              {planos.length>0 && <>
+                <h3 className="db-subtitulo">Meus vídeos inspirados</h3>
+                <div className="db-planos">
+                  {planos.map(p=>{
+                    const prox = proximaEtapa(p);
+                    return (
+                      <button key={p.id} className="db-plano-card" onClick={()=>setPlanoAberto(p.id)}>
+                        <b>{p.versao.titulo}</b>
+                        <span className="db-plano-passos">{ETAPAS_PLANO.map(([k,nome])=><i key={k} className={p.feitos && p.feitos[k]?"ok":""} title={nome+(p.datas[k]?" · "+dataBR(p.datas[k]):"")}/>)}</span>
+                        <small>{prox ? `Próximo: ${prox[1]}${p.datas[prox[0]] ? " · "+dataBR(p.datas[prox[0]]) : ""}` : p.resultado && p.resultado.veredito ? "Resultado: "+p.resultado.veredito : "Tudo feito"}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+                <h3 className="db-subtitulo">Vídeos analisados</h3>
+              </>}
               {refs.length ? refs.slice(0,6).map(r=>(
                 <button key={r.id} className="db-analise" onClick={()=>setRefAberta(r)}>
                   <span className="db-analise-topo"><DbIcone tipo={iconeRede(r.origem)} tam={15}/>{r.origem==="tiktok" ? "TikTok" : r.origem==="youtube" ? "YouTube" : "Instagram"}{r.gancho_tipo && <span className="db-tag">gancho de {r.gancho_tipo}</span>}</span>
@@ -1551,12 +1881,20 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           {refAberta.cta && <><small>CTA</small><p>{refAberta.cta}</p></>}
           {refAberta.por_que && <><small>Por que prende</small><p>{refAberta.por_que}</p></>}
           {refAberta.link && <p style={{marginTop:12}}><a href={refAberta.link} target="_blank" rel="noopener">Ver o vídeo original</a></p>}
-          <button className="db-btn-escuro" onClick={()=>criarRoteiro("Inspirado: "+(refAberta.titulo||"referência").slice(0,50), [
+          {refAberta.id && <label className="db-pasta-campo">Pasta
+            <select value={refPasta[refAberta.id]||""} onChange={e=>{ let id = e.target.value; if(id==="nova"){ id = criarPasta(window.prompt("Nome da nova pasta:")||""); } moverParaPasta(refAberta.id, id); }}>
+              <option value="">Sem pasta</option>
+              {pastas.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}
+              <option value="nova">+ Nova pasta</option>
+            </select></label>}
+          <DbMinhaVersao key={refAberta.id} referencia={refAberta} plano={planos.find(p=>p.refId===refAberta.id)} nichos={[...new Set(jobs.map(j=>j.nicho).filter(Boolean))]}
+            onCriar={criarPlano} onAbrirPlano={()=>{ const p = planos.find(x=>x.refId===refAberta.id); setRefAberta(null); setAbaInsp("analise"); if(p) setPlanoAberto(p.id); }}/>
+          <button className="db-btn-claro" style={{marginTop:14}} onClick={()=>criarRoteiro("Inspirado: "+(refAberta.titulo||"referência").slice(0,50), [
             refAberta.gancho ? "GANCHO (adaptar ao seu jeito):\n" + refAberta.gancho : "",
             refAberta.desenvolvimento ? "ESTRUTURA:\n" + String(refAberta.desenvolvimento).split("\n").filter(Boolean).map(p=>"- "+p).join("\n") : "",
             refAberta.cta ? "CTA:\n" + refAberta.cta : "",
             "REFERÊNCIA: " + (refAberta.link || ""),
-          ])}>Criar roteiro parecido<DbIcone tipo="seta" tam={16}/></button>
+          ])}>Só copiar a estrutura para o quadro</button>
         </div>
       </Modal>}
       {ideiaAberta && <Modal title={ideiaAberta.titulo} onClose={()=>setIdeiaAberta(null)}>
@@ -1573,6 +1911,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           ])}>Criar roteiro no quadro<DbIcone tipo="seta" tam={16}/></button>
         </div>
       </Modal>}
+      {planoAtual && <DbPlano plano={planoAtual} onMudar={mudarPlano} onTirar={()=>tirarPlano(planoAtual)} onFechar={()=>setPlanoAberto(null)} irRoteiros={()=>{ setPlanoAberto(null); go("roteiros"); }}/>}
       {editandoPerfis && <DbPerfis lista={perfis} onSalvar={salvarPerfis} onFechar={()=>setEditandoPerfis(false)}/>}
     </div>
   );

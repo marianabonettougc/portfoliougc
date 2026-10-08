@@ -5,6 +5,9 @@
 // - acao "miniaturas": pega a capa dos vídeos de referência (TikTok, YouTube e, quando dá, Instagram)
 // - acao "ideias": cria ideias de conteúdo a partir dos perfis concorrentes que a Mari cadastrou
 //   e das referências que ela já transcreveu na aba Roteiros (tabela roteiros)
+// - acao "adaptar": analisa um vídeo de referência (por que funcionou: gancho, desenvolvimento e CTA,
+//   e como melhorar) e cria a versão da Mari em cima dele
+// - acao "resultado": depois que ela posta, analisa as métricas do vídeo dela comparando com a referência
 // Usa o Groq com a chave guardada no Supabase (segredo GROQ_API_KEY), nunca no site.
 // Só a dona do painel pode usar.
 // =========================================================
@@ -123,6 +126,70 @@ Regras: português do Brasil, frases simples, nunca use travessão (—), não i
   return { ideias: lista, referencias: (refs || []).length };
 }
 
+// ---------- minha versão de um vídeo de referência ----------
+const lista = (x: unknown, n = 6) => (Array.isArray(x) ? x : []).map(semTravessao).filter(Boolean).slice(0, n);
+const texto = (x: unknown, n = 600) => semTravessao(x).slice(0, n);
+function resumoRef(r: any) {
+  return `Perfil: ${r.perfil ? "@" + String(r.perfil).replace(/^@/, "") : "não informado"} (${r.origem || ""})
+Título: ${r.titulo || ""}
+Gancho: "${r.gancho || ""}" (tipo: ${r.gancho_tipo || "?"})
+Desenvolvimento: ${String(r.desenvolvimento || "").replace(/\n/g, " / ")}
+CTA: "${r.cta || ""}"
+Por que prende (análise anterior): ${r.por_que || ""}
+Visualizações da referência: ${r.visualizacoes || "não informado"}
+Transcrição: ${String(r.transcricao || "").slice(0, 3500)}`;
+}
+async function adaptar(chave: string, corpo: any) {
+  const r = corpo.referencia || {};
+  const nichos = (Array.isArray(corpo.nichos) ? corpo.nichos : []).slice(0, 10).join(", ");
+  const pedido = `Você é estrategista de conteúdo de uma criadora UGC brasileira (vídeos curtos para Reels e TikTok).
+Ela quer pegar este vídeo de outra criadora como inspiração e fazer o vídeo dela em cima dele, sem copiar.
+Nichos em que ela trabalha: ${nichos || "beleza, autocuidado, casa, maternidade"}.
+
+VÍDEO DE REFERÊNCIA
+${resumoRef(r)}
+
+Responda SOMENTE um JSON assim:
+{"funcionou":{"gancho":"por que o gancho prende (1 a 2 frases)","desenvolvimento":"por que o meio segura a atenção (1 a 2 frases)","cta":"por que o CTA funciona ou falha (1 frase)","geral":"resumo em 1 frase do motivo do vídeo ter dado certo para ela"},
+"melhorar":["o que dá para fazer melhor que a referência", "..."],
+"minha_versao":{"titulo":"até 5 palavras","ideia":"1 frase explicando o vídeo dela em cima desse","gancho":"frase de abertura pronta para falar","roteiro":["cena ou fala 1","cena 2","cena 3","cena 4"],"cta":"frase final pronta","formato":"ex.: Reels 30s, falando para a câmera","dicas_gravacao":["dica 1","dica 2"]}}
+Regras: português do Brasil, frases simples e diretas, nunca use travessão (—), 3 a 4 itens em "melhorar".`;
+  const j = await perguntarGroq(chave, pedido, 0.6);
+  const f = j.funcionou || {}, v = j.minha_versao || {};
+  return {
+    funcionou: { gancho: texto(f.gancho), desenvolvimento: texto(f.desenvolvimento), cta: texto(f.cta), geral: texto(f.geral) },
+    melhorar: lista(j.melhorar, 5),
+    minha_versao: { titulo: texto(v.titulo, 50) || "Minha versão", ideia: texto(v.ideia, 300), gancho: texto(v.gancho, 300), roteiro: lista(v.roteiro, 8),
+      cta: texto(v.cta, 300), formato: texto(v.formato, 80), dicas_gravacao: lista(v.dicas_gravacao, 4) },
+  };
+}
+async function resultado(chave: string, corpo: any) {
+  const p = corpo.plano || {}, m = p.metricas || {}, v = p.versao || {};
+  const pedido = `Você é estrategista de conteúdo de uma criadora UGC brasileira. Ela gravou um vídeo inspirado em um vídeo de outra criadora e já tem as métricas.
+Analise o resultado dela, comparando com a referência.
+
+VÍDEO DE REFERÊNCIA (da outra criadora)
+${resumoRef(p.referencia || {})}
+
+VÍDEO DELA
+Título: ${v.titulo || ""}
+Gancho: "${v.gancho || ""}"
+Roteiro: ${(v.roteiro || []).join(" / ")}
+CTA: "${v.cta || ""}"
+O que mudou na hora de gravar (anotação dela): ${p.notas || "nada informado"}
+
+MÉTRICAS DELA (${m.dias || "?"} dias depois de postar)
+Visualizações: ${m.visualizacoes || 0}. Curtidas: ${m.curtidas || 0}. Comentários: ${m.comentarios || 0}. Salvamentos: ${m.salvamentos || 0}. Compartilhamentos: ${m.compartilhamentos || 0}. Seguidores novos: ${m.seguidores || 0}. Retenção média: ${m.retencao || "não informado"}.
+
+Responda SOMENTE um JSON assim:
+{"veredito":"funcionou | funcionou em parte | não funcionou","resumo":"1 a 2 frases simples sobre o resultado","pra_mim":{"gancho":"como o gancho dela se saiu e por quê","desenvolvimento":"como o meio se saiu e por quê","cta":"como o CTA se saiu e por quê"},"comparando":"1 a 2 frases comparando com a referência","melhorar":["o que fazer no próximo vídeo","..."],"proximo_video":"1 ideia de próximo vídeo para repetir o que deu certo"}
+Regras: português do Brasil, frases simples, nunca use travessão (—), 3 a 4 itens em "melhorar". Seja honesta, sem exagerar elogios.`;
+  const j = await perguntarGroq(chave, pedido, 0.4);
+  const pm = j.pra_mim || {};
+  return { veredito: texto(j.veredito, 40), resumo: texto(j.resumo), pra_mim: { gancho: texto(pm.gancho), desenvolvimento: texto(pm.desenvolvimento), cta: texto(pm.cta) },
+    comparando: texto(j.comparando), melhorar: lista(j.melhorar, 5), proximo_video: texto(j.proximo_video, 300) };
+}
+
 // ---------- capas dos vídeos de referência (para os cards de inspiração) ----------
 async function miniaturas(links: string[]) {
   const saida: Record<string, { imagem: string | null; autor?: string | null }> = {};
@@ -166,6 +233,8 @@ Deno.serve(async (req) => {
       return resposta(await logoDaMarca(chave, marca));
     }
     if (corpo.acao === "ideias") return resposta(await ideias(chave, supa, corpo));
+    if (corpo.acao === "adaptar") return resposta(await adaptar(chave, corpo));
+    if (corpo.acao === "resultado") return resposta(await resultado(chave, corpo));
     if (corpo.acao === "miniaturas") return resposta(await miniaturas((Array.isArray(corpo.links) ? corpo.links : []).map(String).filter((l: string) => /^https?:\/\//.test(l))));
     return resposta({ erro: "Ação desconhecida." }, 400);
   } catch (e) {
