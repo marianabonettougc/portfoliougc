@@ -287,6 +287,11 @@
   .trabalho .img img{width:100%;height:100%;object-fit:cover}
   .trabalho .tag{display:inline-block;margin:9px 4px 0;font-size:.74rem;font-weight:700;color:var(--verde);background:rgba(79,122,84,.12);padding:2px 10px;border-radius:999px}
   .trabalho h3{font-size:.92rem;margin:5px 4px 0;font-weight:700}
+  /* Card de vídeo dentro dos nichos (mesmo player dos destaques, em tamanho menor) */
+  .trabalho-video .video-midia{border-radius:14px}
+  .trabalho-video .video-logo{top:9px;left:9px;width:40px;height:40px}
+  .trabalho-video .video-info{left:10px;right:10px;bottom:10px}
+  .trabalho-video .video-info strong{font-size:1.02rem}
 
   /* =========================================================
      ALGUMAS MARCAS QUE JÁ TRABALHEI (painel marrom com grade de logos)
@@ -1016,6 +1021,7 @@ const nichos = ["Beleza", "Skincare", "Moda", "Casa e decoração", "Fitness", "
 // TRABALHOS POR NICHO
 // nicho: precisa ser igual a um nome da lista "nichos".
 // imagem: TROCAR AQUI pelo caminho da foto do trabalho (ex.: "trabalhos/beleza-01.jpg"). Vazio = bloco com degradê.
+// link: se tiver link do YouTube, o card vira vídeo (abre no player do site). logo: bolinha da marca. formato: aparece embaixo do card.
 // ================================
 const trabalhos = [
   { nicho: "Beleza",           titulo: "Trabalho de beleza 01",      imagem: "" },
@@ -1024,8 +1030,15 @@ const trabalhos = [
   { nicho: "Skincare",         titulo: "Trabalho de skincare 02",    imagem: "" },
   { nicho: "Moda",             titulo: "Trabalho de moda 01",        imagem: "" },
   { nicho: "Moda",             titulo: "Trabalho de moda 02",        imagem: "" },
-  { nicho: "Casa e decoração", titulo: "Trabalho de casa 01",        imagem: "" },
-  { nicho: "Casa e decoração", titulo: "Trabalho de casa 02",        imagem: "" },
+  // Casa e decoração: vídeos (link do YouTube + logo da marca na bolinha + formato embaixo)
+  { nicho: "Casa e decoração", titulo: "Sabão líquido",          formato: "Educacional",        marca: "Omo",          logo: "logos/parceiros/omo.webp",          link: "https://youtube.com/shorts/gv9PVkXk3nQ" },
+  { nicho: "Casa e decoração", titulo: "Robô aspirador",         formato: "Storytelling",       marca: "WAP",          logo: "logos/parceiros/wap.webp",          link: "https://youtube.com/shorts/biSgvk8Fd60" },
+  { nicho: "Casa e decoração", titulo: "Triturador elétrico",    formato: "Problema x solução", marca: "Shopee",       logo: "logos/parceiros/shopee.webp",       link: "https://youtube.com/shorts/7WiVpAIXzrM" },
+  { nicho: "Casa e decoração", titulo: "Mini máquina de bolo",   formato: "Problema x solução", marca: "Shopee",       logo: "logos/parceiros/shopee.webp",       link: "https://youtu.be/XyYvVPYbioY" },
+  { nicho: "Casa e decoração", titulo: "Pote de armazenamento",  formato: "Problema x solução", marca: "Shopee",       logo: "logos/parceiros/shopee.webp",       link: "https://youtube.com/shorts/Uf1279M3Vr0" },
+  { nicho: "Casa e decoração", titulo: "Mini liquidificador",    formato: "Review",             marca: "Shopee",       logo: "logos/parceiros/shopee.webp",       link: "https://youtu.be/wZjDZ8ONyHw" },
+  { nicho: "Casa e decoração", titulo: "Caixa de som",           formato: "Review",             marca: "WAAW by Alok", logo: "logos/parceiros/waaw-by-alok.webp", link: "https://youtube.com/shorts/2Jn1q8S5bEo" },
+  { nicho: "Casa e decoração", titulo: "Sabão em pó",            formato: "Problema x solução", marca: "Omo",          logo: "logos/parceiros/omo.webp",          link: "https://youtu.be/oZqzCVZje3k" },
   { nicho: "Fitness",          titulo: "Trabalho de fitness 01",     imagem: "" },
   { nicho: "Fitness",          titulo: "Trabalho de fitness 02",     imagem: "" },
   { nicho: "Maternidade",      titulo: "Trabalho de maternidade 01", imagem: "" },
@@ -1241,7 +1254,12 @@ function ligarMiniaturas(raiz) {
 ligarMiniaturas(document);
 
 // Vídeos rodam dentro do portfólio (player oficial do YouTube incorporado, nunca abre o YouTube)
-const dadosDoCard = (midia) => (midia.dataset.chave === "case" ? caseDestaque : destaques[Number(midia.dataset.chave)]);
+const dadosDoCard = (midia) => {
+  const c = midia.dataset.chave;
+  if (c === "case") return caseDestaque;
+  if (c && c[0] === "t") return trabalhos[Number(c.slice(1))];
+  return destaques[Number(c)];
+};
 const urlEmbed = (id, extra) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3${extra}`;
 const permissoes = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
 const temMouse = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -1500,7 +1518,12 @@ const degrades = [
 $("#filtros").innerHTML = ["Todos", ...nichos]
   .map((n) => `<button class="filtro" type="button" data-nicho="${escapar(n)}" aria-pressed="${n === "Todos"}">${escapar(n)}</button>`).join("");
 
-$("#trabalhos-grid").innerHTML = trabalhos.map((t, i) => `
+$("#trabalhos-grid").innerHTML = trabalhos.map((t, i) => t.link ? `
+  <li class="trabalho cartao trabalho-video" data-nicho="${escapar(t.nicho)}">
+    ${cardVideo(t, "t" + i)}
+    <span class="tag">${escapar(t.nicho)}</span>
+    ${t.formato ? `<h3>${escapar(t.formato)}</h3>` : ""}
+  </li>` : `
   <li class="trabalho cartao" data-nicho="${escapar(t.nicho)}">
     <div class="img">${t.imagem
       ? `<img src="${escapar(t.imagem)}" alt="${escapar(t.titulo)}" loading="lazy">`
@@ -1509,6 +1532,11 @@ $("#trabalhos-grid").innerHTML = trabalhos.map((t, i) => `
     <span class="tag">${escapar(t.nicho)}</span>
     <h3>${escapar(t.titulo)}</h3>
   </li>`).join("");
+
+const gradeTrabalhos = $("#trabalhos-grid");
+ligarMiniaturas(gradeTrabalhos);
+ligarPrevias(gradeTrabalhos);
+marcarClicaveis(gradeTrabalhos);
 
 let filtroTimer = null;
 $("#filtros").addEventListener("click", (e) => {
