@@ -270,6 +270,8 @@
     const secao = paginaApp ? "gestao" : nome;
     $$(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + secao; });
     $$(".menu-item").forEach((b) => { b.classList.toggle("ativo", b.dataset.aba === nome); b.setAttribute("aria-current", b.dataset.aba === nome ? "page" : "false"); });
+    const botao = $(`.menu-item[data-aba="${nome}"]`);
+    abrirGrupo(botao && botao.dataset.pai ? botao.dataset.pai : (botao && botao.classList.contains("tem-sub") ? nome : ""));
     $("#titulo-aba").textContent = TITULOS[nome];
     document.title = TITULOS[nome] + " | Painel Mari Bonetto";
     if (location.hash !== "#" + nome) history.replaceState(null, "", "#" + nome);
@@ -345,7 +347,18 @@
       }
     });
   }
-  $$(".menu-item").forEach((b) => b.addEventListener("click", () => mostrarAba(b.dataset.aba)));
+  // Grupos do menu (Marcas, Roteiros): as páginas ligadas a eles só aparecem quando o grupo está aberto
+  let grupoAberto = "";
+  function abrirGrupo(pai) {
+    grupoAberto = pai;
+    $$(".menu-item.sub").forEach((b) => { b.hidden = b.dataset.pai !== pai; });
+    $$(".menu-item.tem-sub").forEach((b) => { const aberto = b.dataset.aba === pai; b.classList.toggle("aberto", aberto); b.setAttribute("aria-expanded", aberto ? "true" : "false"); });
+  }
+  $$(".menu-item").forEach((b) => b.addEventListener("click", () => {
+    // clicar de novo no grupo que já está aberto fecha a lista
+    if (b.classList.contains("tem-sub") && abaAtual === b.dataset.aba && grupoAberto === b.dataset.aba) { abrirGrupo(""); return; }
+    mostrarAba(b.dataset.aba);
+  }));
   // o aplicativo pede para trocar de aba quando você clica num atalho dele (ex.: do Dashboard para UGC's & Publis)
   window.addEventListener("message", (e) => {
     if (e.origin !== location.origin || !e.data || !e.data.aba || !TITULOS[e.data.aba]) return;
