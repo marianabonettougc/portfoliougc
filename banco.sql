@@ -357,9 +357,36 @@ create trigger copiar_antes_de_salvar before update on public.app_state
 
 
 -- ---------------------------------------------------------------------
+-- 12d) INSPIRAÇÕES (vídeos novos dos perfis que a Mari acompanha)
+-- A Edge Function "inspiracoes" busca pelo Apify (segredo APIFY_TOKEN) e guarda aqui.
+-- Só a dona do painel lê e mexe.
+-- ---------------------------------------------------------------------
+create table if not exists public.inspiracoes (
+  id            bigint generated always as identity primary key,
+  rede          text not null check (rede in ('instagram','tiktok')),
+  perfil        text not null,
+  post_id       text not null,
+  link          text not null,
+  legenda       text,
+  capa          text,
+  video         boolean not null default true,
+  visualizacoes bigint,
+  publicado_em  timestamptz,
+  transcrito    boolean not null default false,
+  criado_em     timestamptz not null default now(),
+  unique (rede, post_id)
+);
+alter table public.inspiracoes enable row level security;
+drop policy if exists "dona faz tudo" on public.inspiracoes;
+create policy "dona faz tudo" on public.inspiracoes
+  for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+revoke all on public.inspiracoes from anon;
+
+
+-- ---------------------------------------------------------------------
 -- 13) AVISA O SUPABASE QUE AS TABELAS NOVAS EXISTEM E CONFIRMA
 -- Se tudo deu certo, aparece embaixo, em "Results", a frase "Pronto!".
 -- ---------------------------------------------------------------------
 notify pgrst, 'reload schema';
 
-select 'Pronto! As 9 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;
+select 'Pronto! As 10 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;

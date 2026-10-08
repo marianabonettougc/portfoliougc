@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610081943"></script>
+<script src="../../js/banco.js?v=202610082010"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -267,6 +267,15 @@
   .db-insp-rodape{ display:flex; align-items:center; justify-content:space-between; gap:6px; margin-top:2px; }
   .db-insp-rodape > span{ display:flex; gap:4px; flex-wrap:nowrap; overflow:hidden; min-width:0; }
   .db-tag{ font-size:11px; padding:2px 8px; border-radius:6px; background:var(--db-bege2); color:var(--db-texto); white-space:nowrap; }
+  .db-btn-mini{ height:28px; padding:0 12px; border-radius:999px; border:1px solid var(--db-linha2); background:var(--db-papel); cursor:pointer; font-size:12px !important; white-space:nowrap; }
+  .db-btn-mini:hover{ background:var(--db-escuro); border-color:var(--db-escuro); color:#fffdf9 !important; }
+  .db-btn-mini:disabled{ opacity:.6; cursor:default; }
+  .db-novo{ position:absolute; z-index:1; top:8px; left:8px; background:var(--db-papel); color:var(--db-texto); font-size:10.5px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:999px; }
+  a.db-insp-capa{ display:block; }
+  a.db-insp-txt{ color:inherit; text-decoration:none; }
+  .db-logo{ width:38px; height:38px; border-radius:50%; background:#fff; border:1px solid var(--db-linha); display:inline-flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; box-shadow:0 1px 4px rgba(61,43,32,.08); }
+  .db-logo img{ width:100%; height:100%; object-fit:cover; }
+  .db-logo-vazio{ background:var(--db-bege); color:var(--db-cafe); font-family:var(--db-serif); font-size:18px; }
   .db-salvar{ border:0; background:none; cursor:pointer; padding:2px; color:var(--db-texto) !important; display:inline-flex; flex-shrink:0; }
   .db-salvar.ok .db-ic{ fill:var(--db-escuro); }
   .db-insp-vazio{ border:1px dashed var(--db-linha2); border-radius:14px; padding:22px; text-align:center; color:var(--db-suave); }
@@ -933,6 +942,14 @@ const PALAVRAS_NICHO = {
   "Casa":/casa|cozinha|organiza|limpeza|decora/i, "Moda":/moda|look|roupa|estilo|outfit/i, "Alimentação":/comida|receita|alimenta|lanche|gastronomia|bebida/i,
 };
 const chaveMarca = (m) => String(m||"").trim().toLowerCase();
+// bolinha com a logo da marca (descoberta sozinha pelo nome); sem logo, a inicial
+function DbLogo({marca, logos}){
+  const info = logos[chaveMarca(marca)];
+  const [falhou,setFalhou] = useState(false);
+  if(info && info.logo && !falhou) return <span className="db-logo"><img src={info.logo} alt={"Logo "+marca} onError={()=>setFalhou(true)}/></span>;
+  return <span className="db-logo db-logo-vazio">{String(marca||"?").trim().charAt(0).toUpperCase()}</span>;
+}
+const fmtNum = (n) => { n = Number(n)||0; return n>=1e6 ? (n/1e6).toFixed(1).replace(".",",").replace(",0","")+"M" : n>=1e3 ? Math.round(n/1e3)+"K" : String(n); };
 const linkPerfil = (c) => c.rede==="tiktok" ? `https://www.tiktok.com/@${c.usuario}` : `https://www.instagram.com/${c.usuario}/`;
 
 // ícones de traço fino, todos no mesmo estilo
@@ -1118,6 +1135,17 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     })();
   }, [refs.map(r=>r.link).join("|")]);
 
+  const [novos,setNovos] = useState([]);
+  const [buscaInfo,setBuscaInfo] = useState(null);
+  async function carregarNovos(forcar){
+    const lista = perfis;
+    if(!lista.length){ setNovos([]); setBuscaInfo(null); return; }
+    try{
+      const { data, error } = await supabaseClient.functions.invoke("inspiracoes", {body:{perfis:lista, forcar:!!forcar}});
+      if(!error && data && !data.erro){ setNovos((data.itens||[]).filter(x=>!x.transcrito)); setBuscaInfo(data); }
+    }catch(e){}
+  }
+  useEffect(()=>{ carregarNovos(false); }, [perfis.map(p=>p.rede+p.usuario).join("|")]);
   const [abaInsp,setAbaInsp] = useState("inspiracoes");
   const [rede,setRede] = useState("");
   const [nicho,setNicho] = useState("Todos");
@@ -1133,9 +1161,16 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     (nicho==="Todos" || PALAVRAS_NICHO[nicho].test(textoRef(r))) &&
     (!filtroPerfil || chaveMarca(r.perfil)===chaveMarca(filtroPerfil)) &&
     (!soSalvos || salvos[r.id]));
+  const novosFiltrados = novos.filter(n=>
+    (!rede || n.rede===rede) &&
+    (nicho==="Todos" || PALAVRAS_NICHO[nicho].test(n.legenda||"")) &&
+    (!filtroPerfil || chaveMarca(n.perfil)===chaveMarca(filtroPerfil)) &&
+    (!soSalvos || salvos["n"+n.id]));
   const trilho = useRef(null);
   const rolar = (dir) => { if(trilho.current) trilho.current.scrollBy({left: dir*trilho.current.clientWidth*0.8, behavior:"smooth"}); };
-  const minAtras = refsEm ? Math.max(0, Math.round((agora-refsEm)/60000)) : null;
+  const ultimaAtualizacao = (buscaInfo && buscaInfo.ultimaBusca) || refsEm;
+  const minAtras = ultimaAtualizacao ? Math.max(0, Math.round((agora-ultimaAtualizacao)/60000)) : null;
+  const tempoAtras = minAtras===null ? "" : minAtras<1 ? "agora" : minAtras<60 ? `há ${minAtras} min` : minAtras<1440 ? `há ${Math.round(minAtras/60)} h` : `há ${Math.round(minAtras/1440)} dia(s)`;
   function alternarSalvo(id){ mudar(s=>({...s, inspSalvas:{...(s.inspSalvas||{}), [id]:!(s.inspSalvas||{})[id]}})); }
   function salvarPerfis(lista){ mudar(s=>({...s, concorrentes:lista})); }
 
@@ -1143,9 +1178,11 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const [linkTrans,setLinkTrans] = useState("");
   const [transcrevendo,setTranscrevendo] = useState(false);
   const [msgTrans,setMsgTrans] = useState(null);
-  async function transcrever(e){
-    e.preventDefault();
-    const link = linkTrans.trim();
+  const [transcrevendoId,setTranscrevendoId] = useState(null);
+  async function transcrever(e, linkPronto, novo){
+    if(e) e.preventDefault();
+    const link = (linkPronto || linkTrans).trim();
+    if(novo) setTranscrevendoId(novo.id);
     if(!/^https?:\/\//i.test(link)){ setMsgTrans({erro:true, texto:"Cole o link completo do vídeo (Instagram, TikTok ou YouTube)."}); return; }
     setTranscrevendo(true); setMsgTrans({texto:"Transcrevendo o vídeo e analisando o roteiro. Pode levar até um minuto..."});
     try{
@@ -1160,10 +1197,11 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         cta: c.cta || null, expressoes: c.expressoes || null, por_que: c.por_que || null, transcricao: data.transcricao || null };
       const { error: e2 } = await supabaseClient.from("roteiros").insert(linha);
       if(e2) throw new Error("Transcrevi, mas não consegui salvar: " + e2.message);
-      setLinkTrans(""); setMsgTrans({texto:"Pronto! O vídeo virou inspiração e também está salvo na aba Roteiros."});
-      await carregarRefs(); setAbaInsp("inspiracoes");
-    }catch(err){ setMsgTrans({erro:true, texto:String(err.message||err)}); }
-    setTranscrevendo(false);
+      if(novo){ await supabaseClient.from("inspiracoes").update({transcrito:true}).eq("id", novo.id); setNovos(l=>l.filter(x=>x.id!==novo.id)); }
+      setLinkTrans(""); setMsgTrans({texto:"Pronto! O vídeo foi transcrito e analisado. Está aqui nas inspirações e também na aba Roteiros."});
+      await carregarRefs(); setAbaInsp(novo ? "analise" : "inspiracoes");
+    }catch(err){ setMsgTrans({erro:true, texto:String(err.message||err)}); if(novo) setAbaInsp("transcrever"); }
+    setTranscrevendo(false); setTranscrevendoId(null);
   }
 
   // ideias de roteiro (IA, a partir dos perfis e das referências)
@@ -1176,7 +1214,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     setGerandoIdeias(true); setErroIdeias("");
     try{
       const nichos = [...new Set(jobs.map(j=>j.nicho).filter(Boolean))];
-      const { data, error } = await supabaseClient.functions.invoke("assistente-ugc", {body:{acao:"ideias", concorrentes: (window.__estadoAtual ? window.__estadoAtual() : state).concorrentes || [], nichos}});
+      const { data, error } = await supabaseClient.functions.invoke("assistente-ugc", {body:{acao:"ideias", concorrentes: perfis, nichos}});
       if(error || !data || !Array.isArray(data.ideias) || !data.ideias.length) throw new Error("sem ideias");
       mudar(s=>({...s, ideiasRapidas:{geradoEm:Date.now(), itens:data.ideias, referencias:data.referencias||0}}));
     }catch(e){ setErroIdeias("Não consegui criar ideias agora. Tente de novo em instantes."); }
@@ -1265,7 +1303,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             {prioridade ? (
               <div className="db-prio-corpo">
                 <div className="db-prio-info">
-                  <div className="db-prio-nome"><b>{prioridade.marca}</b><span className="db-selo">{prioridade.status}</span></div>
+                  <div className="db-prio-nome"><DbLogo marca={prioridade.marca} logos={logos}/><b>{prioridade.marca}</b><span className="db-selo">{prioridade.status}</span></div>
                   <p className="db-prio-sub">{descricaoJob(prioridade)}</p>
                   <div className="db-etapas db-etapas-grande">
                     {ETAPAS_JOB.map((e,i)=>{ const at = etapaDoJob(prioridade.status); return <span key={e} className={"db-etapa"+(i<=at?" feita":"")+(i===at?" atual":"")}><i/><small>{e}</small></span>; })}
@@ -1344,10 +1382,10 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           <div className="db-bloco-topo db-insp-topo">
             <div>
               <h2>Inspirações de conteúdo</h2>
-              <p className="db-sub">Conteúdos dos perfis que você acompanha no Instagram e no TikTok · <button className="db-link db-sublinhado" onClick={()=>setEditandoPerfis(true)}>{perfis.length ? `${perfis.length} ${perfis.length>1?"perfis":"perfil"}` : "adicionar perfis"}</button></p>
+              <p className="db-sub">Conteúdos em alta no Instagram e TikTok para você se inspirar</p>
             </div>
             <div className="db-insp-direita">
-              {minAtras!==null && <span className="db-atualizado"><i/>Atualizado {minAtras<1 ? "agora" : `há ${minAtras} min`}</span>}
+              {minAtras!==null && <span className="db-atualizado"><i/>{buscaInfo && buscaInfo.rodando ? "Buscando vídeos novos..." : "Atualizado "+tempoAtras}</span>}
               {abaInsp==="inspiracoes" && <><button className="db-redondo db-redondo-p" onClick={()=>rolar(-1)} aria-label="Anteriores"><DbIcone tipo="esq" tam={16}/></button><button className="db-redondo db-redondo-p" onClick={()=>rolar(1)} aria-label="Próximas"><DbIcone tipo="dir" tam={16}/></button></>}
             </div>
           </div>
@@ -1366,17 +1404,36 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
               <div className="db-menu-caixa">
                 <button className={"db-filtro-rede db-filtro-icone"+(filtroPerfil||soSalvos?" ativo":"")} onClick={()=>setFiltrosAbertos(a=>!a)} aria-label="Filtros" title="Filtros"><DbIcone tipo="filtro" tam={17}/></button>
                 {filtrosAbertos && <div className="db-pop db-pop-filtros">
-                  <label>Perfil<select value={filtroPerfil} onChange={e=>setFiltroPerfil(e.target.value)}>
-                    <option value="">Todos os perfis</option>
-                    {[...new Set([...perfis.map(p=>p.usuario), ...refs.map(r=>r.perfil).filter(Boolean)])].map(u=><option key={u} value={u}>@{u}</option>)}
-                  </select></label>
                   <label className="db-check"><input type="checkbox" checked={soSalvos} onChange={e=>setSoSalvos(e.target.checked)}/><span className="db-caixinha"><Icon name="check" size={13}/></span>Só os salvos</label>
+                  {perfis.length>0 && <button className="db-link db-sublinhado" onClick={()=>{ setFiltrosAbertos(false); carregarNovos(true); }}>Buscar vídeos novos agora</button>}
                   <button className="db-link db-sublinhado" onClick={()=>setEditandoPerfis(true)}>Perfis que eu acompanho</button>
                 </div>}
               </div>
             </div>
-            {refsFiltradas.length ? (
+            {buscaInfo && buscaInfo.semToken && perfis.length>0 && <p className="db-dica">Para os vídeos novos dos perfis aparecerem aqui sozinhos, falta ligar a busca automática (Apify) no Supabase.</p>}
+            {msgTrans && transcrevendoId===null && msgTrans.erro && <p className="db-dica db-dica-erro">{msgTrans.texto}</p>}
+            {novosFiltrados.length || refsFiltradas.length ? (
               <div className="db-trilho" ref={trilho}>
+                {novosFiltrados.map(n=>{
+                  const recente = n.publicado_em && (Date.now()-new Date(n.publicado_em).getTime()) < 3*86400000;
+                  const legenda = String(n.legenda||"").split("\n")[0].trim();
+                  return (
+                    <article key={"n"+n.id} className="db-insp-card">
+                      <a className="db-insp-capa" href={n.link} target="_blank" rel="noopener" aria-label="Assistir o vídeo">
+                        {n.capa ? <img src={n.capa} alt="" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.style.display="none";}}/> : null}
+                        {recente && <span className="db-novo">novo</span>}
+                        <span className="db-insp-rede"><DbIcone tipo={n.rede==="tiktok"?"tiktok":"instagram"} tam={17}/></span>
+                        <span className="db-insp-play"><DbIcone tipo="play" tam={13}/>{n.visualizacoes ? fmtNum(n.visualizacoes) : "assistir"}</span>
+                      </a>
+                      <a className="db-insp-txt" href={n.link} target="_blank" rel="noopener"><b>“{(legenda || "Vídeo novo").slice(0,80)}”</b></a>
+                      <span className="db-insp-perfil">{n.publicado_em ? "Postado em "+new Date(n.publicado_em).toLocaleDateString("pt-BR") : "Vídeo novo"}</span>
+                      <div className="db-insp-rodape">
+                        <button className="db-btn-mini" onClick={()=>transcrever(null, n.link, n)} disabled={transcrevendo}>{transcrevendoId===n.id ? "Transcrevendo..." : "Transcrever"}</button>
+                        <button className={"db-salvar"+(salvos["n"+n.id]?" ok":"")} onClick={()=>alternarSalvo("n"+n.id)} aria-pressed={!!salvos["n"+n.id]} aria-label="Salvar"><DbIcone tipo="marcador" tam={17}/></button>
+                      </div>
+                    </article>
+                  );
+                })}
                 {refsFiltradas.map(r=>{
                   const capa = r.link && capas[r.link] && capas[r.link].imagem;
                   return (
@@ -1387,7 +1444,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                         <span className="db-insp-play"><DbIcone tipo="play" tam={13}/>{r.gancho_tipo || "ver"}</span>
                       </button>
                       <button className="db-insp-txt" onClick={()=>setRefAberta(r)}><b>“{(r.gancho || r.titulo || "").slice(0,80)}”</b></button>
-                      {r.perfil && <a className="db-insp-perfil" href={linkPerfil({rede:r.origem, usuario:r.perfil})} target="_blank" rel="noopener">@{r.perfil}</a>}
+                      <span className="db-insp-perfil">{r.gancho_tipo ? "Gancho de "+r.gancho_tipo : "Transcrito"}</span>
                       <div className="db-insp-rodape">
                         <span>{etiquetas(r).map(t=><span key={t} className="db-tag">{t}</span>)}</span>
                         <button className={"db-salvar"+(salvos[r.id]?" ok":"")} onClick={()=>alternarSalvo(r.id)} aria-pressed={!!salvos[r.id]} aria-label="Salvar"><DbIcone tipo="marcador" tam={17}/></button>
@@ -1398,22 +1455,20 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
               </div>
             ) : (
               <div className="db-insp-vazio">
-                <p>{refs.length ? "Nenhuma inspiração com esses filtros." : "Ainda não tem inspirações. Cole o link de um vídeo de um perfil que você acompanha e ele aparece aqui, já analisado."}</p>
-                {!refs.length && <button className="db-btn-escuro" onClick={()=>setAbaInsp("transcrever")}>Transcrever um vídeo</button>}
-                {perfis.length>0 && <div className="db-perfis-links">{perfis.map(p=><a key={p.id} href={linkPerfil(p)} target="_blank" rel="noopener"><DbIcone tipo={p.rede==="tiktok"?"tiktok":"instagram"} tam={14}/>@{p.usuario}</a>)}</div>}
+                <p>{refs.length || novos.length ? "Nenhuma inspiração com esses filtros." : perfis.length ? (buscaInfo && buscaInfo.rodando ? "Buscando os vídeos novos dos perfis que você acompanha. Eles aparecem aqui em alguns minutos." : "Assim que os perfis que você acompanha postarem vídeos novos, eles aparecem aqui.") : "Ainda não tem inspirações. Cole o link de um vídeo que você gostou e ele aparece aqui, já analisado."}</p>
+                {!refs.length && !novos.length && <button className="db-btn-escuro" onClick={()=>setAbaInsp("transcrever")}>Transcrever um vídeo</button>}
               </div>
             )}
           </>}
 
           {abaInsp==="transcrever" && (
             <div className="db-painel-aba">
-              <p className="db-dica">Viu um vídeo bom de um perfil que você acompanha? Cole o link aqui. Eu transcrevo, separo gancho, estrutura e CTA, e ele vira inspiração.</p>
+              <p className="db-dica">Viu um vídeo bom? Cole o link aqui. Eu transcrevo, separo gancho, estrutura e CTA, e ele vira inspiração.</p>
               <form className="db-conc-form" onSubmit={transcrever}>
                 <input value={linkTrans} onChange={e=>setLinkTrans(e.target.value)} placeholder="Link do vídeo do Instagram, TikTok ou YouTube" aria-label="Link do vídeo" disabled={transcrevendo}/>
                 <button className="db-btn-escuro" type="submit" disabled={transcrevendo}>{transcrevendo ? "Transcrevendo..." : "Transcrever"}</button>
               </form>
               {msgTrans && <p className={"db-dica"+(msgTrans.erro?" db-dica-erro":"")}>{msgTrans.texto}</p>}
-              {perfis.length>0 && <div className="db-perfis-links">{perfis.map(p=><a key={p.id} href={linkPerfil(p)} target="_blank" rel="noopener"><DbIcone tipo={p.rede==="tiktok"?"tiktok":"instagram"} tam={14}/>@{p.usuario}</a>)}</div>}
             </div>
           )}
 
@@ -1421,7 +1476,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             <div className="db-painel-aba">
               {refs.length ? refs.slice(0,6).map(r=>(
                 <button key={r.id} className="db-analise" onClick={()=>setRefAberta(r)}>
-                  <span className="db-analise-topo"><DbIcone tipo={iconeRede(r.origem)} tam={15}/>{r.perfil ? "@"+r.perfil : "Referência"}{r.gancho_tipo && <span className="db-tag">gancho de {r.gancho_tipo}</span>}</span>
+                  <span className="db-analise-topo"><DbIcone tipo={iconeRede(r.origem)} tam={15}/>{r.origem==="tiktok" ? "TikTok" : r.origem==="youtube" ? "YouTube" : "Instagram"}{r.gancho_tipo && <span className="db-tag">gancho de {r.gancho_tipo}</span>}</span>
                   <b>“{r.gancho || r.titulo}”</b>
                   {r.por_que && <small>{r.por_que}</small>}
                 </button>
@@ -1455,7 +1510,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
       </div>
 
       {/* janelas */}
-      {refAberta && <Modal title={refAberta.perfil ? "@"+refAberta.perfil : "Referência"} onClose={()=>setRefAberta(null)}>
+      {refAberta && <Modal title="Análise do vídeo" onClose={()=>setRefAberta(null)}>
         <div className="db-ideia-detalhe">
           {refAberta.titulo && <p>{refAberta.titulo}</p>}
           {refAberta.gancho && <><small>Gancho{refAberta.gancho_tipo ? " · "+refAberta.gancho_tipo : ""}</small><p className="db-gancho">“{refAberta.gancho}”</p></>}
@@ -1463,7 +1518,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           {refAberta.cta && <><small>CTA</small><p>{refAberta.cta}</p></>}
           {refAberta.por_que && <><small>Por que prende</small><p>{refAberta.por_que}</p></>}
           {refAberta.link && <p style={{marginTop:12}}><a href={refAberta.link} target="_blank" rel="noopener">Ver o vídeo original</a></p>}
-          <button className="db-btn-escuro" onClick={()=>criarRoteiro("Inspirado em @"+(refAberta.perfil||"referência"), [
+          <button className="db-btn-escuro" onClick={()=>criarRoteiro("Inspirado: "+(refAberta.titulo||"referência").slice(0,50), [
             refAberta.gancho ? "GANCHO (adaptar ao seu jeito):\n" + refAberta.gancho : "",
             refAberta.desenvolvimento ? "ESTRUTURA:\n" + String(refAberta.desenvolvimento).split("\n").filter(Boolean).map(p=>"- "+p).join("\n") : "",
             refAberta.cta ? "CTA:\n" + refAberta.cta : "",
