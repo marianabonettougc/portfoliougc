@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610082054"></script>
+<script src="../../js/banco.js?v=202610082100"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -2182,9 +2182,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
 
       <div className="field-row" style={{marginTop:10}}>
         <Field label="Prazo de entrega"><input type="date" value={f.prazoEntrega} onChange={e=>set("prazoEntrega",e.target.value)}/></Field>
-        <Field label="Data de entrega real"><input type="date" value={f.dataEntregaReal} onChange={e=>set("dataEntregaReal",e.target.value)}/></Field>
       </div>
-      <p style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-10, marginBottom:14}}>Quando o conteúdo foi de fato entregue.</p>
 
       <div className="field-row">
         <Field label="Data prevista de pagamento"><input type="date" value={f.dataPagamento} onChange={e=>set("dataPagamento",e.target.value)}/></Field>
@@ -3903,8 +3901,10 @@ function Performance({state, updateState, embutido}){
   const maxTipo = Math.max(1, ...topTipos.map(m=>m[1]));
 
   const entreguesMes = state.jobs.filter(j=>{
-    if(!j.dataEntregaReal) return false;
-    const d = new Date(j.dataEntregaReal+"T00:00:00");
+    // entregues: conteúdo já entregue, no mês da entrega (o campo "data de entrega real" saiu; usa o prazo)
+    const quando = j.dataEntregaReal || ((j.status==="Conteúdo Entregue" || j.status==="Finalizado") ? j.prazoEntrega : "");
+    if(!quando) return false;
+    const d = new Date(quando+"T00:00:00");
     return d.getMonth()===selMonth && d.getFullYear()===selYear;
   }).length;
   const marcasAtendidas = new Set(state.jobs.filter(j=>{
