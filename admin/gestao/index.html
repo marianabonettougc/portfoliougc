@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610082023"></script>
+<script src="../../js/banco.js?v=202610082054"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -436,10 +436,10 @@
     overflow:hidden; text-overflow:ellipsis; white-space:normal; word-break:break-word; line-height:1.3;
   }
 
-  .bar-chart{ display:flex; align-items:flex-end; gap:10px; height:140px; padding-top:10px; }
+  .bar-chart{ display:flex; align-items:flex-end; gap:6px; height:140px; padding-top:10px; }
   .bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
   .bar{ width:100%; border-radius:6px 6px 0 0; background:var(--butter); min-height:3px; }
-  .bar-month{ font-size:11px; color:var(--graphite-soft); }
+  .bar-month{ font-size:10px; color:var(--graphite-soft); white-space:nowrap; }
 
   .kanban{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
   @media(max-width:900px){ .kanban{grid-template-columns:1fr;} }
@@ -815,6 +815,9 @@ function syncTransacaoFromJob(transacoes, job){
   if(idx>=0) transacoes[idx] = item; else transacoes.push(item);
   return transacoes;
 }
+
+// mês em que a ação foi fechada: usa a data de fechamento; se não tiver, o dia em que foi cadastrada
+const dataFechamentoJob = (j) => j.dataFechamento || j.criadoEm || "";
 
 function syncAllJobTransacoes(state){
   let transacoes = [...state.transacoes];
@@ -2007,7 +2010,7 @@ function defaultJobObj(){
     id: uid(),
     marca:"", tipo:"", nicho:"", categoria:"UGC",
     entregaveis: emptyEntregaveis(),
-    prazoEntrega:"", dataEntregaReal:"",
+    prazoEntrega:"", dataEntregaReal:"", dataFechamento:todayISO(),
     dataPagamento:"", formaPagamento:"PIX",
     tipoJob:"Pago", valor:"", moeda:"BRL",
     tipoPagamento:"unico", divisaoParcelas:"50-50", parcelasPersonalizadas:[],
@@ -2026,6 +2029,8 @@ function mergeJobWithDefaults(initial){
   const d = defaultJobObj();
   return {
     ...d, ...initial,
+    // job antigo sem data de fechamento: usa o dia em que foi cadastrado (não o dia de hoje)
+    dataFechamento: initial.dataFechamento || initial.criadoEm || "",
     entregaveis: { videos:[], fotos:[], stories:[], ...(initial.entregaveis||{}) },
     recorrencia: { ...d.recorrencia, ...(initial.recorrencia||{}) },
     nf: { ...d.nf, ...(initial.nf||{}) },
@@ -2164,6 +2169,16 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
       <EntregavelBlock tipo="fotos" label="Fotos" icon="photo_camera" items={f.entregaveis.fotos} onChange={(v)=>setNested("entregaveis","fotos",v)} publi={f.categoria==="Publi"}/>
       <EntregavelBlock tipo="stories" label="Stories" icon="auto_stories" items={f.entregaveis.stories} onChange={(v)=>setNested("entregaveis","stories",v)} publi={f.categoria==="Publi"}/>
       </Collapsible>
+
+      <div className="field-row" style={{marginTop:10}}>
+        <Field label="Data de fechamento"><input type="date" value={f.dataFechamento || f.criadoEm || ""} onChange={e=>set("dataFechamento",e.target.value)}/></Field>
+        <Field label="Data em que recebeu"><input type="date" value={(f.pagamento && f.pagamento.dataPagamento) || ""} onChange={e=>{
+          const v = e.target.value;
+          // com a data preenchida (até hoje), o job conta como pago nas métricas
+          setF(prev=>({...prev, pagamento:{...(prev.pagamento||{}), dataPagamento:v, status: v && v<=todayISO() ? "Pago" : ((prev.pagamento||{}).status==="Pago" && !v ? "Em aberto" : (prev.pagamento||{}).status)}}));
+        }}/></Field>
+      </div>
+      <p style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-10, marginBottom:14}}>Para ações antigas, coloque quando foi fechada e quando o dinheiro caiu. É isso que conta nas métricas de cada mês.</p>
 
       <div className="field-row" style={{marginTop:10}}>
         <Field label="Prazo de entrega"><input type="date" value={f.prazoEntrega} onChange={e=>set("prazoEntrega",e.target.value)}/></Field>
@@ -3845,7 +3860,7 @@ function Performance({state, updateState, embutido}){
   const [metasModal,setMetasModal] = useState(false);
 
   const months = [];
-  for(let i=5;i>=0;i--){
+  for(let i=11;i>=0;i--){
     const d = new Date(selYear, selMonth-i, 1);
     months.push({label: monthNames[d.getMonth()].slice(0,3)+"/"+String(d.getFullYear()).slice(2), y:d.getFullYear(), m:d.getMonth()});
   }
@@ -3868,8 +3883,8 @@ function Performance({state, updateState, embutido}){
 
   const jobsPorMes = months.map(mo=>{
     const total = state.jobs.filter(j=>{
-      if(!j.criadoEm) return false;
-      const d=new Date(j.criadoEm+"T00:00:00");
+      if(!dataFechamentoJob(j)) return false;
+      const d=new Date(dataFechamentoJob(j)+"T00:00:00");
       return d.getMonth()===mo.m && d.getFullYear()===mo.y;
     }).length;
     return {...mo, total};
@@ -3893,17 +3908,17 @@ function Performance({state, updateState, embutido}){
     return d.getMonth()===selMonth && d.getFullYear()===selYear;
   }).length;
   const marcasAtendidas = new Set(state.jobs.filter(j=>{
-    if(!j.criadoEm) return false;
-    const d = new Date(j.criadoEm+"T00:00:00");
+    if(!dataFechamentoJob(j)) return false;
+    const d = new Date(dataFechamentoJob(j)+"T00:00:00");
     return d.getMonth()===selMonth && d.getFullYear()===selYear;
   }).map(j=>j.marca)).size;
   const totalJobsMes = state.jobs.filter(j=>{
-    if(!j.criadoEm) return false;
-    const d = new Date(j.criadoEm+"T00:00:00");
+    if(!dataFechamentoJob(j)) return false;
+    const d = new Date(dataFechamentoJob(j)+"T00:00:00");
     return d.getMonth()===selMonth && d.getFullYear()===selYear;
   }).length;
   const ticketMedioMes = totalJobsMes>0 ? state.jobs.filter(j=>{
-    const d = new Date(j.criadoEm+"T00:00:00");
+    const d = new Date(dataFechamentoJob(j)+"T00:00:00");
     return d.getMonth()===selMonth && d.getFullYear()===selYear;
   }).reduce((a,b)=>a+Number(b.valor||0),0)/totalJobsMes : 0;
   const mesAnteriorD = new Date(selYear, selMonth-1, 1);
@@ -3916,10 +3931,14 @@ function Performance({state, updateState, embutido}){
   const metaKey = `${selYear}-${String(selMonth+1).padStart(2,"0")}`;
   const meta = (state.metas||{})[metaKey];
   const jobsFechadosMetaMes = state.jobs.filter(j=>{
-    if(!j.criadoEm) return false;
-    const d = new Date(j.criadoEm+"T00:00:00");
+    if(!dataFechamentoJob(j)) return false;
+    const d = new Date(dataFechamentoJob(j)+"T00:00:00");
     return d.getMonth()===selMonth && d.getFullYear()===selYear;
   }).length;
+
+  // melhores meses (fechamento e pagamento) dentro dos últimos 12
+  const melhorFech = jobsPorMes.reduce((m,x)=>x.total>(m?m.total:0)?x:m, null);
+  const melhorPag = receitaPorMes.reduce((m,x)=>x.recebido>(m?m.recebido:0)?x:m, null);
 
   return (
     <div>
@@ -4010,22 +4029,24 @@ function Performance({state, updateState, embutido}){
 
       <div className="grid grid-2">
         <div className="card">
-          <h3 style={{marginTop:0}}>Jobs por Mês</h3>
+          <h3 style={{marginTop:0, marginBottom:4}}>Fechamentos por mês</h3>
+          <p style={{margin:"0 0 10px", fontSize:13, color:"var(--graphite-soft)"}}>{melhorFech ? `Mês com mais ações fechadas: ${melhorFech.label} (${melhorFech.total})` : "Nenhuma ação fechada nos últimos 12 meses."}</p>
           <div className="bar-chart">
             {jobsPorMes.map(m=>(
               <div className="bar-col" key={m.label}>
-                <div className="bar" style={{height: (m.total/maxJobs*110)+"px"}}></div>
+                <div className="bar" style={{height: (m.total/maxJobs*110)+"px"}} title={`${m.label}: ${m.total} ação(ões) fechada(s)`}></div>
                 <div className="bar-month">{m.label}</div>
               </div>
             ))}
           </div>
         </div>
         <div className="card">
-          <h3 style={{marginTop:0}}>Receita por Mês</h3>
+          <h3 style={{marginTop:0, marginBottom:4}}>Pagamentos recebidos por mês</h3>
+          <p style={{margin:"0 0 10px", fontSize:13, color:"var(--graphite-soft)"}}>{melhorPag ? `Mês que mais recebeu: ${melhorPag.label} (${fmtMoney(melhorPag.recebido)})` : "Nenhum pagamento recebido nos últimos 12 meses."}</p>
           <div className="bar-chart">
             {receitaPorMes.map(m=>(
               <div className="bar-col" key={m.label}>
-                <div className="bar" style={{height: (m.recebido/maxReceitaMes*110)+"px", background:"var(--moss)"}}></div>
+                <div className="bar" style={{height: (m.recebido/maxReceitaMes*110)+"px", background:"var(--moss)"}} title={`${m.label}: ${fmtMoney(m.recebido)}`}></div>
                 <div className="bar-month">{m.label}</div>
               </div>
             ))}
