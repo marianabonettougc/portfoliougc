@@ -171,6 +171,41 @@ const resposta = (corpo: unknown, status = 200) =>
   new Response(JSON.stringify(corpo), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 class Aviso extends Error {}
 
+// ---------- Groq: escolhe sozinho um modelo que ainda existe ----------
+// O Groq aposenta modelos de tempos em tempos. Em vez de fixar um nome,
+// pergunta a lista de modelos ativos e usa o melhor disponível.
+let modelosGroq: { texto: string; audio: string } | null = null;
+async function modelos(chave: string) {
+  if (modelosGroq) return modelosGroq;
+  let ids: string[] = [];
+  try {
+    const r = await fetch("https://api.groq.com/openai/v1/models", { headers: { Authorization: `Bearer ${chave}` } });
+    const j = await r.json();
+    ids = (j.data || []).filter((m: any) => m.active !== false).map((m: any) => String(m.id));
+  } catch { /* usa os nomes padrão abaixo */ }
+  const preferidos = ["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "moonshotai/kimi-k2-instruct-0905", "moonshotai/kimi-k2-instruct", "meta-llama/llama-4-maverick-17b-128e-instruct", "qwen/qwen3-32b", "openai/gpt-oss-20b", "llama-3.1-8b-instant"];
+  const texto = preferidos.find((p) => ids.includes(p)) || ids.find((id) => !/whisper|guard|tts|playai|orpheus|compound|prompt|distil/i.test(id)) || "openai/gpt-oss-120b";
+  const audio = ["whisper-large-v3-turbo", "whisper-large-v3"].find((p) => ids.includes(p)) || ids.find((id) => /whisper/i.test(id)) || "whisper-large-v3-turbo";
+  console.log("Modelos do Groq em uso:", texto, audio);
+  if (ids.length) modelosGroq = { texto, audio };
+  return { texto, audio };
+}
+// conversa com o Groq e devolve o texto da resposta (tenta de novo sem o modo JSON se o modelo não aceitar)
+async function conversarGroq(chave: string, mensagens: unknown[], opcoes: { json?: boolean; temperatura?: number; max?: number } = {}) {
+  const { texto: modelo } = await modelos(chave);
+  const pedir = async (comJson: boolean) => fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: modelo, temperature: opcoes.temperatura ?? 0.2, ...(opcoes.max ? { max_tokens: opcoes.max } : {}), ...(comJson ? { response_format: { type: "json_object" } } : {}), messages: mensagens }),
+  });
+  let r = await pedir(!!opcoes.json);
+  let j = await r.json().catch(() => ({}));
+  if (!r.ok && opcoes.json) { r = await pedir(false); j = await r.json().catch(() => ({})); }
+  if (!r.ok) { if (r.status === 404 || /model/i.test(j?.error?.message || "")) modelosGroq = null; throw new Error(j?.error?.message || "Groq respondeu " + r.status); }
+  return String(j.choices?.[0]?.message?.content || "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+}
+const lerJson = (t: string) => { try { return JSON.parse(t); } catch { const m = t.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : {}; } };
+
 // ---------- quem é a rede do link ----------
 function origemDoLink(link: string) {
   if (/instagram\.com/i.test(link)) return "instagram";
@@ -278,7 +313,7 @@ async function transcreverAudio(audio: Blob, chave: string) {
   if (audio.size > LIMITE_ARQUIVO) throw new Aviso("O vídeo é grande demais para transcrever (máximo 25 MB). Envie um vídeo mais curto.");
   const form = new FormData();
   form.append("file", new File([audio], "video.mp4", { type: audio.type || "video/mp4" }));
-  form.append("model", "whisper-large-v3-turbo");
+  form.append("model", (await modelos(chave)).audio);
   form.append("response_format", "json");
   form.append("temperature", "0");
   const r = await fetch(`${GROQ}/audio/transcriptions`, { method: "POST", headers: { Authorization: `Bearer ${chave}` }, body: form });
@@ -309,20 +344,14 @@ Regras: não invente nada que não esteja no vídeo. Nunca use travessão (—).
 Transcrição:
 """${texto.slice(0, 12000)}"""
 ${legenda ? `\nLegenda do post (só para contexto):\n"""${legenda.slice(0, 1500)}"""` : ""}`;
-  const r = await fetch(`${GROQ}/chat/completions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [{ role: "user", content: pedido }],
-    }),
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) return null; // a transcrição continua valendo mesmo sem os campos
+  let c: any;
   try {
-    const c = JSON.parse(j.choices?.[0]?.message?.content || "{}");
+    c = lerJson(await conversarGroq(chave, [{ role: "user", content: pedido }], { json: true, temperatura: 0.2 }));
+  } catch (e) {
+    console.error("Groq não preencheu os campos:", e);
+    return null; // a transcrição continua valendo mesmo sem os campos
+  }
+  try {
     const lista = (v: unknown) => (Array.isArray(v) ? v.map(String) : String(v || "").split(/\n|,/)).map((x) => x.replace(/—/g, ",").trim()).filter(Boolean);
     const limpo = (v: unknown) => String(v || "").replace(/\s*—\s*/g, ", ").trim();
     return {
