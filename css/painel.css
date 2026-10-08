@@ -414,3 +414,8 @@ details.rot-editar[open] summary{margin-bottom:10px}
 .menu-item[hidden]{display:none}
 .menu-seta{width:14px!important;height:14px!important;margin-left:auto;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease}
 .menu-item.aberto .menu-seta{transform:rotate(90deg)}
+.olho-valores{margin-left:auto}
+.olho-valores svg{width:16px;height:16px}
+.olho-valores .olho-fechado,.olho-valores.oculto .olho-aberto{display:none}
+.olho-valores.oculto .olho-fechado{display:inline}
+.olho-valores[hidden]{display:none}

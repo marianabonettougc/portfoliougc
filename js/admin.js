@@ -276,6 +276,7 @@
     if (location.hash !== "#" + nome) history.replaceState(null, "", "#" + nome);
     $("#painel").classList.remove("menu-aberto");
     if (secao === "gestao") abrirGestao(paginaApp, nome === "config");
+    $("#btn-olho").hidden = secao !== "gestao";
   }
   // Aplicativo de gestão UGC: abre dentro do painel, com o mesmo login e o mesmo banco
   // Uma cópia só do aplicativo serve as duas abas (Gestão UGC e Planner), assim uma nunca
@@ -346,6 +347,25 @@
       }
     });
   }
+  // Olho dos valores: esconde e mostra os valores em reais do aplicativo (fica lembrado neste navegador)
+  function lerOcultar() { try { return localStorage.getItem("ocultarValores") === "1"; } catch (e) { return false; } }
+  let ocultoAgora = lerOcultar();
+  function pintarOlho() {
+    const oculto = ocultoAgora;
+    const b = $("#btn-olho");
+    b.classList.toggle("oculto", oculto);
+    b.setAttribute("aria-pressed", oculto ? "true" : "false");
+    $("#olho-texto").textContent = oculto ? "Mostrar valores" : "Ocultar valores";
+  }
+  $("#btn-olho").addEventListener("click", () => {
+    const oculto = ocultoAgora = !ocultoAgora;
+    try { localStorage.setItem("ocultarValores", oculto ? "1" : "0"); } catch (e) { /* segue só nesta tela */ }
+    pintarOlho();
+    const quadro = $("#aba-gestao iframe");
+    if (quadro) quadro.contentWindow.postMessage({ ocultarValores: oculto }, location.origin);
+  });
+  pintarOlho();
+
   // Grupos do menu (Marcas, Roteiros): as páginas ligadas a eles só aparecem quando o grupo está aberto
   let grupoAberto = "";
   function abrirGrupo(pai) {

@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610080534"></script>
+<script src="../../js/banco.js?v=202610080538"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -100,6 +100,8 @@
   .main{ flex:1; min-width:0; }
   .so-uma .sidebar, .so-uma .topbar, .so-uma .scrim{ display:none !important; }
   .so-uma .content{ max-width:none; }
+  /* valores escondidos: campos de número ficam embaçados até você clicar neles */
+  .valores-ocultos input[type=number]:not(:focus){ filter:blur(5px); }
   .topbar{
     display:flex; align-items:center; gap:14px; padding:16px 28px; position:sticky; top:0; z-index:20;
     background:rgba(250,246,238,0.85); backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
@@ -266,7 +268,11 @@ async function saveData(data, userId, onStatus){
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
 const todayISO = () => new Date().toISOString().slice(0,10);
-const fmtMoney = (v) => "R$ " + (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+// Valores podem ficar escondidos (botão do olho no topo do painel)
+const lerOcultar = () => { try{ return localStorage.getItem("ocultarValores") === "1"; }catch(e){ return false; } };
+window.OCULTAR_VALORES = lerOcultar();
+const VALOR_OCULTO = "•••••";
+const fmtMoney = (v) => "R$ " + (window.OCULTAR_VALORES ? VALOR_OCULTO : (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2}));
 const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const dowShort = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 
@@ -439,7 +445,7 @@ const PAYMENT_METHODS = ["PIX","Transferência","Boleto","Cartão","PayPal","Out
 const MOEDAS = [{code:"BRL",symbol:"R$"},{code:"USD",symbol:"US$"},{code:"EUR",symbol:"€"}];
 const fmtMoneyCur = (v, moeda) => {
   const m = MOEDAS.find(m=>m.code===moeda) || MOEDAS[0];
-  return m.symbol + " " + (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+  return m.symbol + " " + (window.OCULTAR_VALORES ? VALOR_OCULTO : (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2}));
 };
 const NICHOS_DEFAULT = ["Beleza","Maternidade","Pet","Casa","Moda","Eletrônicos","Alimentos","Infantil","Fitness","Outro"];
 const ROTEIRO_STATUS_OPTIONS = ["Roteiro pendente","Roteiro pronto","Gravado","Editado","Entregue"];
@@ -5935,6 +5941,8 @@ function App({session}){
     performance:"performance", tiktokshop:"tiktokshop", config:"config"};
   const [page, setPage] = useState(parametros.get("pagina") || "dashboard");
   const [soUma, setSoUma] = useState(parametros.get("so") === "1");
+  const [ocultar, setOcultar] = useState(window.OCULTAR_VALORES);
+  window.OCULTAR_VALORES = ocultar;
   // Dentro do painel, ir para uma página que é aba do painel troca a aba do painel
   function irPara(k){
     if(NO_PAINEL && k !== page && ABAS_DO_PAINEL[k]){ window.parent.postMessage({aba:ABAS_DO_PAINEL[k]}, location.origin); return; }
@@ -5944,6 +5952,7 @@ function App({session}){
     function ouvir(e){
       if(e.origin !== location.origin || !e.data || typeof e.data !== "object" || e.data.aba) return;
       if(e.data.pagina) setPage(e.data.pagina);
+      if("ocultarValores" in e.data) setOcultar(Boolean(e.data.ocultarValores));
       if("so" in e.data) setSoUma(Boolean(e.data.so));
     }
     window.addEventListener("message", ouvir);
@@ -6025,7 +6034,7 @@ function App({session}){
   }
 
   return (
-    <div className={"app-shell" + (soUma ? " so-uma" : "")}>
+    <div className={"app-shell" + (soUma ? " so-uma" : "") + (ocultar ? " valores-ocultos" : "")}>
       {mobileOpen && <div className="scrim" onClick={()=>setMobileOpen(false)}></div>}
       <div className={"sidebar " + (collapsed?"collapsed ":"") + (mobileOpen?"mobile-open":"")}>
         <div className="brand">
