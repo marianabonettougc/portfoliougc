@@ -194,13 +194,13 @@
     const primeiro = $("#janela-corpo input:not([type=checkbox]), #janela-corpo select, #janela-corpo textarea");
     if (primeiro) setTimeout(() => primeiro.focus(), 30);
   }
-  function confirmar(texto) {
+  function confirmar(texto, rotulo = "Apagar", classe = "btn-perigo") {
     return new Promise((ok) => {
       let resposta = false;
       abrirJanela({
         titulo: "Confirmar",
         corpo: `<p style="margin:0">${esc(texto)}</p>`,
-        botoes: [{ texto: "Cancelar" }, { texto: "Apagar", classe: "btn-perigo", acao: () => { resposta = true; } }]
+        botoes: [{ texto: "Cancelar" }, { texto: rotulo, classe, acao: () => { resposta = true; } }]
       });
       janela.addEventListener("close", () => ok(resposta), { once: true });
     });
@@ -269,8 +269,62 @@
   function abrirGestao() {
     const sec = $("#aba-gestao");
     if (sec.querySelector("iframe")) return;
-    sec.innerHTML = `<div class="gestao-barra"><span>Seu aplicativo de gestão, com jobs, financeiro, planner e mais.</span><a class="btn" href="gestao/" target="_blank" rel="noopener">Abrir em tela cheia</a></div>
+    sec.innerHTML = `<div class="gestao-barra"><span>Seu aplicativo de gestão, com jobs, financeiro, planner e mais.</span><span class="gestao-acoes"><button class="btn" type="button" id="gestao-copias">Cópias de segurança</button><a class="btn" href="gestao/" target="_blank" rel="noopener">Abrir em tela cheia</a></span></div>
       <iframe class="gestao-app" src="gestao/?v=${encodeURIComponent(window.VERSAO_PAINEL || "")}" title="Gestão UGC"></iframe>`;
+    $("#gestao-copias").addEventListener("click", abrirCopias);
+  }
+  // Cópias de segurança do aplicativo: o banco guarda uma cópia sozinho (a cada 30 min de uso
+  // e sempre antes de uma mudança grande). Aqui dá para ver, baixar e voltar para uma delas.
+  async function abrirCopias() {
+    const uid = sessao.user.id;
+    const [{ data: copias, error }, { data: atual }] = await Promise.all([
+      banco.from("app_state_copias").select("id, motivo, criado_em").eq("user_id", uid).order("criado_em", { ascending: false }).limit(200),
+      banco.from("app_state").select("updated_at").eq("user_id", uid).maybeSingle()
+    ]);
+    if (error) { avisar("Não consegui abrir as cópias: " + error.message, true); return; }
+    const quando = (d) => new Date(d).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const linhas = (copias || []).map((c) => `<li class="copia-linha"><span><b>${esc(quando(c.criado_em))}</b><small>${esc(c.motivo)}</small></span>
+        <span class="gestao-acoes"><button class="btn" type="button" data-baixar="${c.id}">Baixar</button><button class="btn" type="button" data-voltar="${c.id}">Voltar para esta</button></span></li>`).join("");
+    abrirJanela({
+      titulo: "Cópias de segurança",
+      sobretitulo: "Gestão UGC",
+      corpo: `<p class="copia-intro">O banco guarda uma cópia de tudo sozinho: a cada 30 minutos de uso e sempre antes de uma mudança grande (por exemplo, se muita coisa sumir de uma vez). ${atual ? "Última vez que o aplicativo salvou: <b>" + esc(quando(atual.updated_at)) + "</b>." : ""}</p>
+        <p><button class="btn" type="button" id="copia-agora">Fazer uma cópia agora</button></p>
+        ${linhas ? `<ul class="copia-lista">${linhas}</ul>` : '<p class="vazio">Ainda não tem nenhuma cópia. A primeira aparece depois que você usar o aplicativo.</p>'}`,
+      botoes: [{ texto: "Fechar" }],
+      larga: true,
+      aoAbrir: (corpo) => {
+        corpo.querySelector("#copia-agora").addEventListener("click", async () => {
+          const { data: a } = await banco.from("app_state").select("data").eq("user_id", uid).maybeSingle();
+          if (!a) { avisar("Ainda não tem nada salvo no aplicativo.", true); return; }
+          const { error: e } = await banco.from("app_state_copias").insert({ user_id: uid, data: a.data, motivo: "feita por você" });
+          if (e) { avisar("Não consegui fazer a cópia: " + e.message, true); return; }
+          avisar("Cópia feita!"); abrirCopias();
+        });
+        corpo.querySelectorAll("[data-baixar]").forEach((b) => b.addEventListener("click", async () => {
+          const { data: c, error: e } = await banco.from("app_state_copias").select("data, criado_em").eq("id", b.dataset.baixar).single();
+          if (e) { avisar("Não consegui baixar: " + e.message, true); return; }
+          const url = URL.createObjectURL(new Blob([JSON.stringify(c.data, null, 2)], { type: "application/json" }));
+          const a = document.createElement("a");
+          a.href = url; a.download = "gestao-ugc-copia-" + c.criado_em.slice(0, 16).replace(/[T:]/g, "-") + ".json";
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 2000);
+        }));
+        corpo.querySelectorAll("[data-voltar]").forEach((b) => b.addEventListener("click", async () => {
+          if (!(await confirmar("Voltar o aplicativo para esta cópia? O que está lá agora também fica guardado como cópia, então dá para desfazer.", "Voltar para esta cópia", "btn-principal"))) { abrirCopias(); return; }
+          const { data: c, error: e } = await banco.from("app_state_copias").select("data").eq("id", b.dataset.voltar).single();
+          if (e) { avisar("Não consegui ler a cópia: " + e.message, true); return; }
+          const { data: a } = await banco.from("app_state").select("data").eq("user_id", uid).maybeSingle();
+          if (a) await banco.from("app_state_copias").insert({ user_id: uid, data: a.data, motivo: "antes de voltar uma cópia" });
+          const { error: e2 } = await banco.from("app_state").upsert({ user_id: uid, data: c.data, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+          if (e2) { avisar("Não consegui voltar a cópia: " + e2.message, true); return; }
+          const quadro = $("#aba-gestao iframe");
+          if (quadro) quadro.src = quadro.src;
+          janela.close();
+          avisar("Pronto! O aplicativo voltou para a cópia escolhida.");
+        }));
+      }
+    });
   }
   $$(".menu-item").forEach((b) => b.addEventListener("click", () => mostrarAba(b.dataset.aba)));
   window.addEventListener("hashchange", () => { const h = location.hash.replace("#", ""); if (h && h !== abaAtual) mostrarAba(h); });

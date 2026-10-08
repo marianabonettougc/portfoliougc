@@ -6,13 +6,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Gestão UGC | Painel Mari Bonetto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="../../js/banco.js?v=202610080131"></script>
+<script src="../../js/banco.js?v=202610080456"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -29,16 +29,16 @@
 </script>
 <style>
   :root{
-    --graphite:#2B1B14;
-    --graphite-soft:#8A6E5C;
-    --butter:#E8A0AC;
-    --butter-soft:#F3CBD3;
-    --sand:#FBEFF0;
-    --warm-white:#FFF8F8;
-    --wine:#8B3A4A;
-    --moss:#6B4E3D;
-    --line:#EDD9D6;
-    --card-bg:#FFFFFF;
+    --graphite:#3d2b20;
+    --graphite-soft:#6e5646;
+    --butter:#a87058;
+    --butter-soft:#ecd9c6;
+    --sand:#efe5d8;
+    --warm-white:#f6efe6;
+    --wine:#6b4a35;
+    --moss:#4f7a54;
+    --line:rgba(107,74,53,.16);
+    --card-bg:#fffdf9;
     --radius-lg:20px;
     --radius-md:14px;
     --radius-sm:9px;
@@ -48,13 +48,13 @@
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    font-family:'DM Sans',sans-serif;
+    font-family:'Poppins',sans-serif;
     font-weight:400;
     background:var(--warm-white);
     color:var(--graphite);
     -webkit-font-smoothing:antialiased;
   }
-  h1,h2,h3,.serif{ font-family:'DM Sans', sans-serif; font-weight:600; font-size:17px; }
+  h1,h2,h3,.serif{ font-family:'Poppins',sans-serif; font-weight:600; font-size:17px; }
   .material-symbols-outlined{
     font-variation-settings: 'FILL' 0, 'wght' 250, 'GRAD' -25, 'opsz' 22;
     font-weight:300;
@@ -75,9 +75,9 @@
   .brand{ display:flex; align-items:center; gap:10px; padding:0 8px 22px 8px; }
   .brand-mark{
     width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--butter),var(--wine));
-    display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-weight:700;color:#fff;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-family:'Poppins',sans-serif;font-weight:700;color:#fff;flex-shrink:0;
   }
-  .brand-name{ font-family:'DM Sans',sans-serif; font-size:19px; font-weight:700; white-space:nowrap; overflow:hidden; }
+  .brand-name{ font-family:'Poppins',sans-serif; font-size:19px; font-weight:700; white-space:nowrap; overflow:hidden; }
   .sidebar.collapsed .brand-name, .sidebar.collapsed .nav-label, .sidebar.collapsed .nav-section-label{ display:none; }
 
   .nav-scroll{ flex:1; overflow-y:auto; margin:0 -4px; padding:0 4px;}
@@ -87,7 +87,7 @@
     color:var(--graphite-soft); font-size:14.5px; font-weight:500; margin-bottom:2px; white-space:nowrap; overflow:hidden;
     transition:background .15s, color .15s;
   }
-  .nav-item:hover{ background:rgba(124,52,72,0.07); color:var(--graphite); }
+  .nav-item:hover{ background:rgba(107,74,53,0.08); color:var(--graphite); }
   .nav-item.active{ background:var(--butter); color:#fff; font-weight:600; }
   .nav-item .material-symbols-outlined{ font-size:20px; flex-shrink:0; }
   .sidebar-foot{ border-top:1px solid var(--line); padding-top:12px; margin-top:10px; }
@@ -105,15 +105,15 @@
   .content{ padding:26px 28px 60px; max-width:1240px; }
 
   .page-head{ display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:22px; flex-wrap:wrap; }
-  .page-title{ font-size:37px; font-weight:700; margin:0 0 4px; }
+  .page-title{ font-family:"DM Serif Display",Georgia,serif; font-size:37px; font-weight:400; margin:0 0 4px; }
   .page-sub{ color:var(--graphite-soft); font-size:19px; font-weight:400; margin:0; }
 
   .btn{
-    font-family:'DM Sans',sans-serif; border:none; cursor:pointer; border-radius:999px; font-weight:600; font-size:17px;
+    font-family:'Poppins',sans-serif; border:none; cursor:pointer; border-radius:999px; font-weight:600; font-size:17px;
     padding:10px 20px; display:inline-flex; align-items:center; gap:8px; transition:transform .12s, box-shadow .12s;
   }
   .btn:active{ transform:scale(.97); }
-  .btn-primary{ background:linear-gradient(135deg,var(--butter),var(--butter-soft)); color:var(--graphite); box-shadow:var(--shadow); }
+  .btn-primary{ background:var(--wine); color:#fffdf9; box-shadow:var(--shadow); }
   .btn-primary:hover{ box-shadow:var(--shadow-lift); }
   .btn-ghost{ background:var(--card-bg); color:var(--graphite); border:1px solid var(--line); }
   .btn-ghost:hover{ background:var(--sand); }
@@ -129,7 +129,7 @@
 
   .card{ background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius-lg); padding:20px; box-shadow:var(--shadow); }
   .stat-label{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--graphite-soft); text-transform:uppercase; letter-spacing:.04em; margin-bottom:10px; }
-  .stat-card .stat-value{ font-family:'DM Sans',sans-serif; font-size:31px; font-weight:700; color:var(--graphite); }
+  .stat-card .stat-value{ font-family:'Poppins',sans-serif; font-size:31px; font-weight:700; color:var(--graphite); }
   .stat-icon{ width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px; }
 
   .tabs{ display:flex; gap:6px; background:var(--sand); padding:4px; border-radius:12px; width:fit-content; flex-wrap:wrap; }
@@ -142,11 +142,11 @@
   .empty-sub{ color:var(--graphite-soft); font-size:14px; margin-bottom:16px; }
 
   .search{ display:flex; align-items:center; gap:10px; background:var(--card-bg); border:1px solid var(--line); border-radius:12px; padding:10px 14px; }
-  .search input{ border:none; outline:none; flex:1; font-family:'DM Sans'; font-size:14px; background:transparent; }
+  .search input{ border:none; outline:none; flex:1; font-family:'Poppins'; font-size:14px; background:transparent; }
 
   .field label{ font-size:14px; font-weight:600; color:var(--graphite-soft); display:block; margin-bottom:6px; }
   .field input, .field select, .field textarea{
-    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line); font-family:'DM Sans'; font-size:14px;
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line); font-family:'Poppins'; font-size:14px;
     background:var(--warm-white); color:var(--graphite); outline:none;
   }
   .field input:focus, .field select:focus, .field textarea:focus{ border-color:var(--butter); background:var(--card-bg); }
@@ -157,10 +157,10 @@
   .badge{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:999px; text-transform:uppercase; letter-spacing:.03em; }
   .badge-yellow{ background:#F6E3C6; color:#8A5A20; }
   .badge-green{ background:#DCEBDD; color:#2F6B3E; }
-  .badge-wine{ background:#F3D9DE; color:var(--wine); }
-  .badge-gray{ background:#F3E7E5; color:var(--graphite-soft); }
-  .badge-blue{ background:#EADCE0; color:#7A4B58; }
-  .badge-pink{ background:#F8DEE3; color:#B5495C; }
+  .badge-wine{ background:#ecdccd; color:var(--wine); }
+  .badge-gray{ background:#efe5d8; color:var(--graphite-soft); }
+  .badge-blue{ background:#e2e9f1; color:#4a6a8a; }
+  .badge-pink{ background:#f6e0dc; color:#b8473a; }
 
   .row-item{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border:1px solid var(--line); border-radius:var(--radius-md); background:var(--card-bg); margin-bottom:10px; gap:12px; flex-wrap:wrap; }
   .row-item:hover{ box-shadow:var(--shadow); }
@@ -378,7 +378,7 @@ function MessageModal({title, text, onClose}){
     <Modal title={title || "Mensagem"} onClose={onClose}>
       <p style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-6}}>Toque em copiar, ou selecione o texto manualmente abaixo se preferir.</p>
       <textarea readOnly rows="10" value={text} onClick={(e)=>e.target.select()}
-        style={{width:"100%", fontFamily:"DM Sans", fontSize:14, padding:"10px 12px", borderRadius:10, border:"1px solid var(--line)", background:"var(--warm-white)", color:"var(--graphite)", marginBottom:14}}/>
+        style={{width:"100%", fontFamily:"Poppins", fontSize:14, padding:"10px 12px", borderRadius:10, border:"1px solid var(--line)", background:"var(--warm-white)", color:"var(--graphite)", marginBottom:14}}/>
       <button className="btn btn-primary" style={{width:"100%", justifyContent:"center"}} onClick={handleCopy}>
         <Icon name={copyState==="ok"?"check":copyState==="fail"?"error":"content_copy"} size={16}/>
         {copyState==="ok" ? "Copiado!" : copyState==="fail" ? "Não copiou sozinho — selecione o texto acima" : "Copiar mensagem"}
@@ -788,7 +788,7 @@ function Dashboard({state, updateState, go, openRoteirosAI}){
             <div style={{fontSize:12, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"var(--wine)", display:"flex", alignItems:"center", gap:6, marginBottom:6}}>
               <Icon name="bolt" size={15}/>Sua prioridade agora
             </div>
-            <div style={{fontFamily:"DM Sans", fontSize:19, fontWeight:700}}>{prioridade.marca} {prioridade.tipo && "| "+prioridade.tipo}</div>
+            <div style={{fontFamily:"Poppins", fontSize:19, fontWeight:700}}>{prioridade.marca} {prioridade.tipo && "| "+prioridade.tipo}</div>
             <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:2}}>
               {prioridade.tipo || "Conteúdo"} · {(() => { const d=Math.round((new Date(prioridade.prazoEntrega+"T00:00:00")-hoje)/(1000*60*60*24)); return d<=0 ? "Hoje!" : `em ${d} dia(s)`; })()}
             </div>
@@ -856,7 +856,7 @@ function Dashboard({state, updateState, go, openRoteirosAI}){
             ].map(([icon,label,val])=>(
               <div key={label} style={{background:"var(--warm-white)", border:"1px solid var(--line)", borderRadius:12, padding:"12px 14px"}}>
                 <div style={{fontSize:13, color:"var(--graphite-soft)", display:"flex", alignItems:"center", gap:6}}><Icon name={icon} size={16}/>{label}</div>
-                <div style={{fontFamily:"DM Sans", fontSize:20, fontWeight:700, marginTop:6}}>{val}</div>
+                <div style={{fontFamily:"Poppins", fontSize:20, fontWeight:700, marginTop:6}}>{val}</div>
               </div>
             ))}
           </div>
@@ -2083,7 +2083,7 @@ Beijos`;
           {key==="12m" && <Badge tone="yellow">10% off</Badge>}
         </label>
       ))}
-      <Field label="Mensagem (editável)"><textarea rows="10" value={mensagem} onChange={e=>setMensagem(e.target.value)} style={{fontFamily:"DM Sans", fontSize:14.5}}/></Field>
+      <Field label="Mensagem (editável)"><textarea rows="10" value={mensagem} onChange={e=>setMensagem(e.target.value)} style={{fontFamily:"Poppins", fontSize:14.5}}/></Field>
       {copyState==="fail" && <p style={{fontSize:13, color:"var(--wine)", marginTop:-8}}>Não copiou automaticamente — selecione o texto acima e copie manualmente.</p>}
       <div style={{display:"flex", gap:10, justifyContent:"flex-end"}}>
         <button className="btn btn-ghost" onClick={handleCopy}><Icon name={copyState==="ok"?"check":"content_copy"} size={15}/>{copyState==="ok"?"Copiado!":"Copiar mensagem"}</button>
@@ -2464,7 +2464,7 @@ function Financeiro({state, updateState, go}){
               ["Previsto", previsto, "trending_up", "#E7E1F3", "#6B4E8A"],
               ["Recebido", recebido, "check_circle", "#DCEBDD", "#2F6B3E"],
               ["Pendente", pendente, "hourglass_top", "#F6E3C6", "#8A5A20"],
-              ["Despesas", despesas, "trending_down", "#F8DEE3", "#B5495C"],
+              ["Despesas", despesas, "trending_down", "#f6e0dc", "#b8473a"],
               ["Lucro Líquido", lucro, "account_balance_wallet", "#DCEBDD", "#2F6B3E"]
             ].map(([label,val,icon,bg,fg])=>(
               <div key={label} className="card" style={{padding:16}}>
@@ -2472,7 +2472,7 @@ function Financeiro({state, updateState, go}){
                   <span style={{width:30,height:30, borderRadius:9, background:bg, color:fg, display:"flex", alignItems:"center", justifyContent:"center"}}><Icon name={icon} size={16}/></span>
                   <span style={{fontSize:13, color:"var(--graphite-soft)"}}>{label}</span>
                 </div>
-                <div style={{fontFamily:"DM Sans", fontSize:22, fontWeight:700, color: label==="Recebido"||label==="Lucro Líquido" ? "#2F6B3E" : "var(--graphite)"}}>{fmtMoney(val)}</div>
+                <div style={{fontFamily:"Poppins", fontSize:22, fontWeight:700, color: label==="Recebido"||label==="Lucro Líquido" ? "#2F6B3E" : "var(--graphite)"}}>{fmtMoney(val)}</div>
               </div>
             ))}
           </div>
@@ -2543,7 +2543,7 @@ function Financeiro({state, updateState, go}){
               ].map(([label,val,color])=>(
                 <div key={label} className="card" style={{padding:16}}>
                   <div style={{fontSize:13, color:"var(--graphite-soft)", marginBottom:6}}>{label}</div>
-                  <div style={{fontFamily:"DM Sans", fontSize:22, fontWeight:700, color}}>{fmtMoney(val)}</div>
+                  <div style={{fontFamily:"Poppins", fontSize:22, fontWeight:700, color}}>{fmtMoney(val)}</div>
                 </div>
               ))}
             </div>
@@ -2640,7 +2640,7 @@ function Financeiro({state, updateState, go}){
                 return (
                   <div key={mo.label} style={{background:"var(--warm-white)", border:"1px solid var(--line)", borderRadius:12, padding:16}}>
                     <div style={{fontSize:13, color:"var(--graphite-soft)", marginBottom:6}}>{mo.label}</div>
-                    <div style={{fontFamily:"DM Sans", fontSize:22, fontWeight:700}}>{fmtMoney(total)}</div>
+                    <div style={{fontFamily:"Poppins", fontSize:22, fontWeight:700}}>{fmtMoney(total)}</div>
                   </div>
                 );
               })}
@@ -3474,7 +3474,7 @@ function Simulador(){
           ) : (
             <div>
               <div style={{fontSize:14.5, color:"var(--graphite-soft)", marginBottom:6}}>Valor recomendado</div>
-              <div style={{fontFamily:"DM Sans", fontSize:34, fontWeight:700}}>{fmtMoney(calcular())}</div>
+              <div style={{fontFamily:"Poppins", fontSize:34, fontWeight:700}}>{fmtMoney(calcular())}</div>
               <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:8}}>Faixa sugerida: {fmtMoney(calcular()*0.85)} – {fmtMoney(calcular()*1.2)}</div>
               {!(f.plataforma && f.duracao && f.direitos && f.prazo && f.nivel) && (
                 <div style={{fontSize:12.5, color:"var(--butter)", marginTop:12}}>Preencha os demais campos para refinar o valor.</div>
@@ -4727,15 +4727,15 @@ function AssinaturasTab({state, updateState}){
 
       <div className="grid grid-3" style={{marginBottom:20}}>
         <div className="card" style={{textAlign:"center"}}>
-          <div style={{fontFamily:"DM Sans", fontSize:28, fontWeight:700}}>{fmtMoney(totalMes)}</div>
+          <div style={{fontFamily:"Poppins", fontSize:28, fontWeight:700}}>{fmtMoney(totalMes)}</div>
           <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Investimento/mês</div>
         </div>
         <div className="card" style={{textAlign:"center"}}>
-          <div style={{fontFamily:"DM Sans", fontSize:28, fontWeight:700}}>{fmtMoney(totalAno)}</div>
+          <div style={{fontFamily:"Poppins", fontSize:28, fontWeight:700}}>{fmtMoney(totalAno)}</div>
           <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Investimento/ano</div>
         </div>
         <div className="card" style={{textAlign:"center"}}>
-          <div style={{fontFamily:"DM Sans", fontSize:28, fontWeight:700}}>{assinaturas.length}</div>
+          <div style={{fontFamily:"Poppins", fontSize:28, fontWeight:700}}>{assinaturas.length}</div>
           <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Ferramentas ativas</div>
         </div>
       </div>
@@ -4917,7 +4917,7 @@ function Organizacao({state, updateState}){
                   </div>
                 </div>
               ) : (
-                <div style={{fontFamily:"DM Sans", textAlign:"center", padding:"40px 10px", color:"var(--graphite-soft)"}}>
+                <div style={{fontFamily:"Poppins", textAlign:"center", padding:"40px 10px", color:"var(--graphite-soft)"}}>
                   <Icon name="description" size={34}/>
                   <div className="empty-title">Preencha os campos</div>
                   <div className="empty-sub">Crie contratos profissionais para proteger suas entregas</div>
@@ -5880,7 +5880,7 @@ function LoginScreen(){
       <form onSubmit={handleLogin} className="card" style={{width:"100%", maxWidth:380}}>
         <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:22}}>
           <div className="brand-mark">C</div>
-          <div style={{fontFamily:"DM Sans", fontSize:19, fontWeight:700}}>Mari Bonetto UGC</div>
+          <div style={{fontFamily:"Poppins", fontSize:19, fontWeight:700}}>Mari Bonetto UGC</div>
         </div>
         <Field label="Email">
           <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com"/>
@@ -5907,7 +5907,7 @@ function AuthGate({children}){
   },[]);
 
   if(session===undefined){
-    return <div style={{display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", fontFamily:"DM Sans", fontSize:18, fontWeight:600, color:"var(--graphite-soft)"}}>Carregando...</div>;
+    return <div style={{display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", fontFamily:"Poppins", fontSize:18, fontWeight:600, color:"var(--graphite-soft)"}}>Carregando...</div>;
   }
   if(!session){
     return <LoginScreen/>;
@@ -5968,7 +5968,7 @@ function App({session}){
   }
 
   if(!loaded){
-    return <div style={{display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", fontFamily:"DM Sans", fontSize:20, fontWeight:600, color:"var(--graphite-soft)"}}>Carregando seu estúdio...</div>;
+    return <div style={{display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", fontFamily:"Poppins", fontSize:20, fontWeight:600, color:"var(--graphite-soft)"}}>Carregando seu estúdio...</div>;
   }
 
   const allItems = NAV.flatMap(s=>s.items);
@@ -6029,7 +6029,7 @@ function App({session}){
         <div className="topbar">
           <button className="icon-btn mobile-toggle" onClick={()=>setMobileOpen(true)}><Icon name="menu"/></button>
           <button className="icon-btn" onClick={()=>setCollapsed(c=>!c)} style={{display: window.innerWidth<860 ? "none":"flex"}}><Icon name="dock_to_right"/></button>
-          <strong style={{fontFamily:"DM Sans", fontSize:16, fontWeight:700}}>{currentLabel}</strong>
+          <strong style={{fontFamily:"Poppins", fontSize:16, fontWeight:700}}>{currentLabel}</strong>
         </div>
         <div className="content">
           {PageComp}
@@ -6047,9 +6047,9 @@ class ErrorBoundary extends React.Component{
   render(){
     if(this.state.hasError){
       return (
-        <div style={{display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100vh", padding:20, textAlign:"center", fontFamily:"DM Sans"}}>
+        <div style={{display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100vh", padding:20, textAlign:"center", fontFamily:"Poppins"}}>
           <span className="material-symbols-outlined" style={{fontSize:40, color:"var(--wine)"}}>error</span>
-          <h2 style={{fontFamily:"DM Sans", fontWeight:700, margin:"14px 0 6px"}}>Algo deu errado</h2>
+          <h2 style={{fontFamily:"Poppins", fontWeight:700, margin:"14px 0 6px"}}>Algo deu errado</h2>
           <p style={{color:"var(--graphite-soft)", fontSize:14, maxWidth:360}}>Ocorreu um erro inesperado nesta tela. Seus dados estão salvos. Recarregue a página para continuar.</p>
           <button className="btn btn-primary" style={{marginTop:16}} onClick={()=>window.location.reload()}>Recarregar</button>
         </div>

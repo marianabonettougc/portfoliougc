@@ -312,6 +312,49 @@ create policy "dona faz tudo" on public.app_state
   with check (public.e_a_dona() and auth.uid() = user_id);
 revoke all on public.app_state from anon;
 
+-- Cópias de segurança automáticas do aplicativo (para nunca perder dados).
+-- O banco guarda uma cópia sozinho: a cada 30 minutos de uso e sempre antes
+-- de uma mudança grande (quando muita coisa some de uma vez).
+-- No painel: aba Gestão UGC > Cópias de segurança (ver, baixar e voltar).
+create table if not exists public.app_state_copias (
+  id        bigint generated always as identity primary key,
+  user_id   uuid not null references auth.users(id) on delete cascade,
+  data      jsonb not null,
+  motivo    text not null default 'automática',
+  criado_em timestamptz not null default now()
+);
+create index if not exists app_state_copias_user_data on public.app_state_copias (user_id, criado_em desc);
+alter table public.app_state_copias enable row level security;
+drop policy if exists "dona le" on public.app_state_copias;
+create policy "dona le" on public.app_state_copias for select to authenticated
+  using (public.e_a_dona() and auth.uid() = user_id);
+drop policy if exists "dona guarda" on public.app_state_copias;
+create policy "dona guarda" on public.app_state_copias for insert to authenticated
+  with check (public.e_a_dona() and auth.uid() = user_id);
+revoke all on public.app_state_copias from anon;
+
+create or replace function public.copiar_app_state()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op <> 'UPDATE' then
+    insert into app_state_copias (user_id, data, motivo) values (old.user_id, old.data, 'antes de apagar');
+    return old;
+  end if;
+  if new.data is not distinct from old.data or old.data = '{}'::jsonb then
+    return new;
+  end if;
+  if length(new.data::text) < length(old.data::text) * 0.6 then
+    insert into app_state_copias (user_id, data, motivo) values (old.user_id, old.data, 'antes de uma mudança grande');
+  elsif not exists (select 1 from app_state_copias where user_id = old.user_id and criado_em > now() - interval '30 minutes') then
+    insert into app_state_copias (user_id, data, motivo) values (old.user_id, old.data, 'automática');
+  end if;
+  return new;
+end $$;
+revoke execute on function public.copiar_app_state() from public, anon, authenticated;
+drop trigger if exists copiar_antes_de_salvar on public.app_state;
+create trigger copiar_antes_de_salvar before update on public.app_state
+  for each row execute function public.copiar_app_state();
+
 
 -- ---------------------------------------------------------------------
 -- 13) AVISA O SUPABASE QUE AS TABELAS NOVAS EXISTEM E CONFIRMA
@@ -319,4 +362,4 @@ revoke all on public.app_state from anon;
 -- ---------------------------------------------------------------------
 notify pgrst, 'reload schema';
 
-select 'Pronto! As 8 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;
+select 'Pronto! As 9 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;

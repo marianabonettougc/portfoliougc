@@ -401,3 +401,9 @@ details.rot-editar[open] summary{margin-bottom:10px}
 .gestao-barra{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;font-size:14px;color:var(--suave)}
 .gestao-app{display:block;width:100%;height:calc(100vh - 150px);min-height:520px;border:1px solid var(--linha);border-radius:var(--raio);background:var(--cartao)}
 @media (max-width:860px){.gestao-app{height:calc(100vh - 130px)}}
+.gestao-acoes{display:flex;gap:8px;flex-wrap:wrap}
+.copia-intro{color:var(--suave);margin-top:0}
+.copia-lista{list-style:none;margin:0;padding:0;max-height:52vh;overflow:auto;border:1px solid var(--linha);border-radius:var(--raio-p)}
+.copia-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;border-top:1px solid var(--linha)}
+.copia-linha:first-child{border-top:0}
+.copia-linha small{display:block;color:var(--suave)}
