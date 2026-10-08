@@ -252,10 +252,17 @@
   // ---------------------------------------------------------
   // MENU E ABAS
   // ---------------------------------------------------------
-  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Roteiros", checklist: "Checklist portfólio", gestao: "Gestão UGC", dashboard: "Dashboard" };
-  const PAGINAS_APP = { dashboard: "dashboard", calendario: "planner", campanhas: "jobs" };
+  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
+    prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Quadro de roteiros",
+    financeiro: "Financeiro", performance: "Performance", simulador: "Simulador de preço", organizacao: "Organização", tiktokshop: "TikTok Shop",
+    trabalhos: "Portfólio de trabalhos", config: "Configurações" };
+  // Abas do painel que são páginas do aplicativo Gestão UGC (aba do painel: página do aplicativo)
+  const PAGINAS_APP = { dashboard: "dashboard", calendario: "planner", campanhas: "jobs", prospeccao: "prospeccao", followups: "followups",
+    candidaturas: "candidaturas", trafego: "trafego", quadro: "roteiros", financeiro: "financeiro", performance: "performance",
+    simulador: "simulador", organizacao: "organizacao", tiktokshop: "tiktokshop", trabalhos: "portfolio", config: "config" };
   let abaAtual = "portfolio";
-  function mostrarAba(nome, paginaPedida) {
+  function mostrarAba(nome) {
+    if (nome === "gestao") nome = "dashboard"; // a antiga aba Gestão UGC virou várias abas
     if (!TITULOS[nome]) nome = "portfolio";
     abaAtual = nome;
     // Planner (antigo Calendário) e UGC's & Publis (antiga Campanhas) são páginas do aplicativo Gestão UGC
@@ -267,21 +274,21 @@
     document.title = TITULOS[nome] + " | Painel Mari Bonetto";
     if (location.hash !== "#" + nome) history.replaceState(null, "", "#" + nome);
     $("#painel").classList.remove("menu-aberto");
-    if (secao === "gestao") abrirGestao(paginaApp || paginaPedida || "", Boolean(paginaApp));
+    if (secao === "gestao") abrirGestao(paginaApp, nome === "config");
   }
   // Aplicativo de gestão UGC: abre dentro do painel, com o mesmo login e o mesmo banco
   // Uma cópia só do aplicativo serve as duas abas (Gestão UGC e Planner), assim uma nunca
   // apaga o que a outra salvou. Trocar de aba só troca a página dentro dele.
-  function abrirGestao(pagina, so) {
+  function abrirGestao(pagina, comBarra) {
     const sec = $("#aba-gestao");
-    sec.classList.toggle("so-planner", so);
+    sec.classList.toggle("so-planner", !comBarra);
     const quadro = sec.querySelector("iframe");
     if (quadro) {
-      quadro.contentWindow.postMessage(pagina ? { pagina, so } : { so }, location.origin);
+      quadro.contentWindow.postMessage({ pagina, so: true }, location.origin);
       return;
     }
-    const extra = (pagina ? `&pagina=${pagina}` : "") + (so ? "&so=1" : "");
-    sec.innerHTML = `<div class="gestao-barra"><span>Seu aplicativo de gestão, com jobs, financeiro, planner e mais.</span><span class="gestao-acoes"><button class="btn" type="button" id="gestao-copias">Cópias de segurança</button><a class="btn" href="gestao/" target="_blank" rel="noopener">Abrir em tela cheia</a></span></div>
+    const extra = `&pagina=${pagina}&so=1`;
+    sec.innerHTML = `<div class="gestao-barra"><span>Tudo do seu aplicativo fica salvo no Supabase, com cópias de segurança automáticas.</span><span class="gestao-acoes"><button class="btn" type="button" id="gestao-copias">Cópias de segurança</button></span></div>
       <iframe class="gestao-app" src="gestao/?v=${encodeURIComponent(window.VERSAO_PAINEL || "")}${extra}" title="Gestão UGC"></iframe>`;
     $("#gestao-copias").addEventListener("click", abrirCopias);
   }
@@ -342,7 +349,7 @@
   // o aplicativo pede para trocar de aba quando você clica num atalho dele (ex.: do Dashboard para UGC's & Publis)
   window.addEventListener("message", (e) => {
     if (e.origin !== location.origin || !e.data || !e.data.aba || !TITULOS[e.data.aba]) return;
-    mostrarAba(e.data.aba, e.data.pagina);
+    mostrarAba(e.data.aba);
   });
   window.addEventListener("hashchange", () => { const h = location.hash.replace("#", ""); if (h && h !== abaAtual) mostrarAba(h); });
   $("#btn-menu").addEventListener("click", () => $("#painel").classList.add("menu-aberto"));

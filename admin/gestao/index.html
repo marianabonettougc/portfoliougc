@@ -12,7 +12,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="../../js/banco.js?v=202610080515"></script>
+<script>
+  // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
+  if (window.top === window.self) location.replace("../#dashboard");
+</script>
+<script src="../../js/banco.js?v=202610080525"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5925,23 +5929,21 @@ function App({session}){
   const parametros = new URLSearchParams(location.search);
   // Páginas que viraram abas do próprio painel (somem do menu do aplicativo quando ele está dentro do painel)
   const NO_PAINEL = (()=>{ try{ return window.parent !== window && window.parent.location.origin === location.origin; }catch(e){ return false; } })();
-  const ABAS_DO_PAINEL = {dashboard:"dashboard", planner:"calendario", jobs:"campanhas"};
-  const [page, setPage] = useState(parametros.get("pagina") || (NO_PAINEL ? "trafego" : "dashboard"));
+  // Cada página do aplicativo é uma aba do painel (página do aplicativo: aba do painel)
+  const ABAS_DO_PAINEL = {dashboard:"dashboard", planner:"calendario", jobs:"campanhas", trafego:"trafego", followups:"followups",
+    roteiros:"quadro", prospeccao:"prospeccao", candidaturas:"candidaturas", portfolio:"trabalhos", financeiro:"financeiro",
+    performance:"performance", simulador:"simulador", organizacao:"organizacao", tiktokshop:"tiktokshop", config:"config"};
+  const [page, setPage] = useState(parametros.get("pagina") || "dashboard");
   const [soUma, setSoUma] = useState(parametros.get("so") === "1");
   // Dentro do painel, ir para uma página que é aba do painel troca a aba do painel
   function irPara(k){
-    if(NO_PAINEL){
-      const abaAlvo = ABAS_DO_PAINEL[k] || "gestao";
-      const abaAgora = soUma ? (ABAS_DO_PAINEL[page] || "gestao") : "gestao";
-      if(abaAlvo !== abaAgora){ window.parent.postMessage({aba:abaAlvo, pagina:k}, location.origin); return; }
-    }
+    if(NO_PAINEL && k !== page && ABAS_DO_PAINEL[k]){ window.parent.postMessage({aba:ABAS_DO_PAINEL[k]}, location.origin); return; }
     setPage(k);
   }
   useEffect(()=>{
     function ouvir(e){
       if(e.origin !== location.origin || !e.data || typeof e.data !== "object" || e.data.aba) return;
       if(e.data.pagina) setPage(e.data.pagina);
-      else if(NO_PAINEL && e.data.so === false) setPage(p => ABAS_DO_PAINEL[p] ? "trafego" : p);
       if("so" in e.data) setSoUma(Boolean(e.data.so));
     }
     window.addEventListener("message", ouvir);

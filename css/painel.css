@@ -79,7 +79,7 @@ html.conferindo body{visibility:hidden}
 
 .painel{display:flex;min-height:100vh}
 /* Menu lateral fixo */
-.menu{position:fixed;inset:0 auto 0 0;width:224px;background:var(--cartao);border-right:1px solid var(--linha);display:flex;flex-direction:column;padding:18px 12px;z-index:40}
+.menu{position:fixed;inset:0 auto 0 0;width:224px;overflow-y:auto;background:var(--cartao);border-right:1px solid var(--linha);display:flex;flex-direction:column;padding:18px 12px;z-index:40}
 .menu-marca{padding:4px 10px 16px;font-weight:600;font-size:14px}
 .menu-marca span{display:block;font-weight:400;font-size:11.5px;color:var(--suave)}
 .menu-grupo{font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--suave);padding:14px 10px 6px}
@@ -409,3 +409,5 @@ details.rot-editar[open] summary{margin-bottom:10px}
 .copia-linha small{display:block;color:var(--suave)}
 .so-planner .gestao-barra{display:none}
 .so-planner .gestao-app{height:calc(100vh - 100px)}
+.menu-item.sub{height:32px;padding-left:22px;font-size:12.5px}
+.menu-item.sub svg{width:15px;height:15px}
