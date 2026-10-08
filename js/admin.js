@@ -294,7 +294,7 @@
     }
     const extra = `&pagina=${pagina}&so=1`;
     sec.innerHTML = `<div class="gestao-barra"><span>Tudo do seu aplicativo fica salvo no Supabase, com cópias de segurança automáticas.</span><span class="gestao-acoes"><button class="btn" type="button" id="gestao-copias">Cópias de segurança</button></span></div>
-      <iframe class="gestao-app" src="gestao/?v=${encodeURIComponent(window.VERSAO_PAINEL || "")}${extra}" title="Gestão UGC"></iframe>`;
+      <iframe class="gestao-app" src="gestao/?v=${encodeURIComponent(window.VERSAO_PAINEL || "")}${extra}" title="Gestão UGC" allow="microphone; clipboard-write"></iframe>`;
     $("#gestao-copias").addEventListener("click", abrirCopias);
   }
   // Cópias de segurança do aplicativo: o banco guarda uma cópia sozinho (a cada 30 min de uso
