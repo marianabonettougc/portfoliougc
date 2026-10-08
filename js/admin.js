@@ -985,11 +985,11 @@
     if (!$("#rot-novo")) {
       sec.innerHTML = `
         <div class="rot-faixa">
-          <p class="rot-faixa-sub">Cole o link de um vídeo do Instagram, TikTok ou YouTube. Ele fica salvo aqui com o vídeo tocando ao lado, o roteiro e as suas notas.</p>
+          <p class="rot-faixa-sub">Cole o link de um vídeo do Instagram, TikTok ou YouTube. O painel transcreve, preenche o roteiro e deixa salvo com o vídeo tocando ao lado e as suas notas.</p>
           <form class="rot-novo" id="rot-novo">
             <input class="entrada" type="url" id="rot-link" placeholder="Cole aqui: instagram.com/reel/... · tiktok.com/... · youtube.com/..." aria-label="Link do vídeo" required>
             <select class="entrada" id="rot-dequem" aria-label="De quem é o vídeo"><option value="outra">De outra pessoa</option><option value="meu">Meu</option></select>
-            <button class="btn btn-principal" type="submit">${ICONE.mais}Adicionar</button>
+            <button class="btn btn-principal" type="submit">Transcrever</button>
           </form>
           <button class="btn-texto" type="button" id="rot-mao">ou escrever um roteiro na mão</button>
         </div>
@@ -1002,7 +1002,8 @@
         e.preventDefault();
         const link = $("#rot-link").value.trim();
         if (!/^https?:\/\//i.test(link)) { avisar("Cole o link completo do vídeo, começando com https://", true); return; }
-        formRoteiro(null, { link, de_quem: $("#rot-dequem").value, origem: origemDoLink(link), perfil: perfilDoLink(link) });
+        const origemLink = origemDoLink(link);
+        formRoteiro(null, { link, de_quem: $("#rot-dequem").value, origem: origemLink, perfil: perfilDoLink(link) }, false, origemLink !== "outro");
         $("#rot-link").value = "";
       });
       $("#rot-mao").addEventListener("click", () => formRoteiro(null, { de_quem: "meu", origem: "outro" }));
@@ -1064,7 +1065,7 @@
       ${r.por_que ? `<div class="rot-parte"><span class="rot-rotulo">Por que prende</span><p class="rot-caixa rot-porque">${esc(r.por_que)}</p></div>` : ""}`;
   }
 
-  function formRoteiro(r, inicial, tocar) {
+  function formRoteiro(r, inicial, tocar, autoTranscrever) {
     const novo = !r;
     r = r || Object.assign({ de_quem: "outra", origem: "instagram" }, inicial || {});
     const embed = embedDoLink(r.link);
@@ -1101,12 +1102,13 @@
             <div class="campo">
               <div class="rot-rotulo-linha"><label for="f-transcricao">Roteiro / transcrição</label>
                 <span class="rot-botoes">
-                  <button class="btn btn-mini btn-principal" type="button" id="rot-tokscript" title="Copia o link do vídeo e abre o TokScript numa aba nova">1. Transcrever no TokScript ↗</button>
-                  <button class="btn btn-mini" type="button" id="rot-colar">2. Colar texto</button>
-                  <button class="btn btn-mini" type="button" id="rot-montar">3. Montar estrutura</button>
+                  <button class="btn btn-mini btn-principal" type="button" id="rot-transcrever">✨ Transcrever e preencher</button>
+                  <label class="btn btn-mini" for="rot-arquivo" title="Use se o link não puder ser baixado">Enviar o arquivo do vídeo</label>
+                  <input type="file" id="rot-arquivo" accept="video/*,audio/*" hidden>
                 </span></div>
+              <p class="rot-status" id="rot-status" role="status" hidden></p>
               <textarea id="f-transcricao" name="transcricao" class="rot-texto" placeholder="Cole aqui o texto falado no vídeo.">${esc(r.transcricao)}</textarea>
-              <small class="rot-dica">Como fazer: clique em <b>1</b> (o link do vídeo já vai copiado), cole o link no TokScript e copie a transcrição que ele gerar. Volte aqui e clique em <b>2</b> para colar, depois em <b>3</b> para separar gancho, passos e CTA. Se tiver a extensão do TokScript no Chrome, também pode usar direto no vídeo.</small>
+              <small class="rot-dica">O painel baixa o vídeo pelo link, transcreve e preenche sozinho o título, o perfil, o gancho, os passos, o CTA, as expressões e por que prende. Se a rede não deixar baixar (perfil privado, por exemplo), salve o vídeo no celular ou no computador e use <b>Enviar o arquivo do vídeo</b>. Você também pode colar um texto aqui e clicar em <button class="btn-link" type="button" id="rot-montar">separar gancho, passos e CTA</button>.</small>
             </div>
             ${campo({ nome: "notas", rotulo: "Suas notas (o que te chamou atenção)", tipo: "textarea", valor: r.notas })}
             ${r.exemplo ? marcaCheck("exemplo", "É linha de exemplo", true) : ""}
@@ -1141,30 +1143,62 @@
         };
         $$('[name="gancho"],[name="gancho_tipo"],[name="desenvolvimento"],[name="cta"],[name="expressoes"],[name="por_que"],[name="etiquetas"]', corpo)
           .forEach((el) => el.addEventListener("input", atualizarEstrutura));
-        // TokScript: copia o link e abre a página certa para a rede do vídeo
-        $("#rot-tokscript", corpo).addEventListener("click", async () => {
-          const link = $('[name="link"]', corpo).value.trim();
-          const origem = link ? origemDoLink(link) : $('[name="origem"]', corpo).value;
-          const pagina = origem === "instagram" ? "https://tokscript.com/instagram-transcript-generator" : "https://tokscript.com";
-          window.open(pagina, "_blank", "noopener");
-          if (link) {
-            try { await navigator.clipboard.writeText(link); avisar("Link copiado. No TokScript, é só colar (Ctrl+V)."); }
-            catch (e) { avisar("Abri o TokScript. Copie o link do vídeo do campo \"Link do vídeo\" e cole lá."); }
-          } else avisar("Abri o TokScript. Cole o link do vídeo no campo \"Link do vídeo\" para ele ir copiado da próxima vez.");
-        });
-        $("#rot-colar", corpo).addEventListener("click", async () => {
-          const caixa = $("#f-transcricao", corpo);
-          try {
-            const texto = (await navigator.clipboard.readText()).trim();
-            if (!texto) { avisar("Não tem texto copiado. Copie a transcrição no TokScript primeiro.", true); return; }
-            if (/^https?:\/\/\S+$/.test(texto)) { avisar("O que está copiado é um link, não a transcrição. Copie o texto no TokScript.", true); return; }
-            caixa.value = caixa.value.trim() ? caixa.value.trim() + "\n\n" + texto : texto;
-            avisar("Transcrição colada. Agora clique em 3. Montar estrutura.");
-          } catch (e) {
-            caixa.focus();
-            avisar("O navegador não deixou colar pelo botão. Clique no campo e aperte Ctrl+V.", true);
+        // Transcrição automática (Edge Function "transcrever" no Supabase, com o Groq)
+        const status = $("#rot-status", corpo);
+        const mostrarStatus = (t, erro) => { status.textContent = t; status.hidden = !t; status.classList.toggle("erro", Boolean(erro)); };
+        const preencher = (res) => {
+          const pos = (nome, valor, sobrescrever) => { const el = $(`[name="${nome}"]`, corpo); if (el && valor && (sobrescrever || !el.value.trim())) el.value = valor; };
+          pos("transcricao", res.transcricao, true);
+          pos("perfil", res.perfil, false);
+          pos("data_post", res.data_post, false);
+          if (res.origem && res.origem !== "outro") pos("origem", res.origem, true);
+          const c = res.campos;
+          if (c) {
+            pos("titulo", c.titulo, false);
+            ["gancho", "gancho_tipo", "desenvolvimento", "cta", "expressoes", "por_que"].forEach((k) => pos(k, c[k], true));
+            pos("etiquetas", c.etiquetas, false);
+          } else {
+            const m = montarEstrutura(res.transcricao);
+            if (m) { ["gancho", "gancho_tipo", "desenvolvimento", "cta"].forEach((k) => pos(k, m[k], true)); pos("titulo", m.titulo, false); }
           }
-        });
+          atualizarEstrutura();
+        };
+        async function transcrever(arquivo) {
+          const link = $('[name="link"]', corpo).value.trim();
+          if (!arquivo && !/^https?:\/\//i.test(link)) { mostrarStatus("Cole o link do vídeo no campo \"Link do vídeo\" ou envie o arquivo.", true); return; }
+          const temTexto = $("#f-transcricao", corpo).value.trim();
+          if (temTexto && !window.confirm("Já tem uma transcrição. Trocar pela nova?")) return;
+          const botoes = $$("#rot-transcrever, label[for=rot-arquivo]", corpo);
+          botoes.forEach((b) => b.classList.add("carregando"));
+          $("#rot-transcrever", corpo).disabled = true;
+          mostrarStatus(arquivo ? "Enviando o vídeo e transcrevendo... (pode levar até 1 minuto)" : "Baixando o vídeo e transcrevendo... (pode levar até 1 minuto)");
+          try {
+            let corpoPedido;
+            if (arquivo) {
+              if (arquivo.size > 25 * 1024 * 1024) throw new Error("O arquivo é grande demais (máximo 25 MB). Use um vídeo mais curto.");
+              corpoPedido = new FormData(); corpoPedido.append("arquivo", arquivo); corpoPedido.append("link", link);
+            } else corpoPedido = { link };
+            const { data, error } = await banco.functions.invoke("transcrever", { body: corpoPedido });
+            if (error) {
+              let msg = "";
+              try { msg = (await error.context.json()).erro; } catch (e) {}
+              if (!msg && /not found|404/i.test(String(error.message))) msg = "O programa de transcrição não está no Supabase.";
+              throw new Error(msg || "Não consegui transcrever agora. Tente de novo ou envie o arquivo do vídeo.");
+            }
+            if (!data || !data.transcricao) throw new Error((data && data.erro) || "Não veio nenhuma transcrição.");
+            preencher(data);
+            $("details.rot-editar", corpo).open = true;
+            mostrarStatus(data.campos ? "Pronto! Transcrevi e preenchi os campos. Confira e clique em Salvar." : "Transcrevi! Separei gancho, passos e CTA do meu jeito. Confira e clique em Salvar.");
+          } catch (e) {
+            mostrarStatus(e.message, true);
+          } finally {
+            botoes.forEach((b) => b.classList.remove("carregando"));
+            $("#rot-transcrever", corpo).disabled = false;
+          }
+        }
+        $("#rot-transcrever", corpo).addEventListener("click", () => transcrever(null));
+        $("#rot-arquivo", corpo).addEventListener("change", (e) => { const f = e.target.files[0]; if (f) transcrever(f); e.target.value = ""; });
+        if (autoTranscrever) setTimeout(() => transcrever(null), 50);
         $("#rot-montar", corpo).addEventListener("click", () => {
           const texto = $("#f-transcricao", corpo).value;
           const m = montarEstrutura(texto);

@@ -15,6 +15,7 @@ create or replace function public.e_a_dona()
 returns boolean
 language sql
 stable
+set search_path = public, auth
 as $$
   select coalesce(auth.jwt() ->> 'email', '') = 'marianabonettougc@gmail.com'
 $$;
