@@ -252,25 +252,36 @@
   // ---------------------------------------------------------
   // MENU E ABAS
   // ---------------------------------------------------------
-  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Calendário", campanhas: "Campanhas", roteiros: "Roteiros", checklist: "Checklist portfólio", gestao: "Gestão UGC" };
+  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "Campanhas", roteiros: "Roteiros", checklist: "Checklist portfólio", gestao: "Gestão UGC" };
   let abaAtual = "portfolio";
   function mostrarAba(nome) {
     if (!TITULOS[nome]) nome = "portfolio";
     abaAtual = nome;
-    $$(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + nome; });
+    // o Planner (antigo Calendário) é a página de planner do aplicativo Gestão UGC
+    const secao = nome === "calendario" ? "gestao" : nome;
+    $$(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + secao; });
     $$(".menu-item").forEach((b) => { b.classList.toggle("ativo", b.dataset.aba === nome); b.setAttribute("aria-current", b.dataset.aba === nome ? "page" : "false"); });
     $("#titulo-aba").textContent = TITULOS[nome];
     document.title = TITULOS[nome] + " | Painel Mari Bonetto";
     if (location.hash !== "#" + nome) history.replaceState(null, "", "#" + nome);
     $("#painel").classList.remove("menu-aberto");
-    if (nome === "gestao") abrirGestao();
+    if (secao === "gestao") abrirGestao(nome === "calendario" ? "planner" : "");
   }
   // Aplicativo de gestão UGC: abre dentro do painel, com o mesmo login e o mesmo banco
-  function abrirGestao() {
+  // Uma cópia só do aplicativo serve as duas abas (Gestão UGC e Planner), assim uma nunca
+  // apaga o que a outra salvou. Trocar de aba só troca a página dentro dele.
+  function abrirGestao(pagina) {
     const sec = $("#aba-gestao");
-    if (sec.querySelector("iframe")) return;
+    sec.classList.toggle("so-planner", pagina === "planner");
+    const quadro = sec.querySelector("iframe");
+    if (quadro) {
+      if (pagina) quadro.contentWindow.postMessage({ pagina, so: true }, location.origin);
+      else quadro.contentWindow.postMessage({ so: false }, location.origin);
+      return;
+    }
+    const extra = pagina ? `&pagina=${pagina}&so=1` : "";
     sec.innerHTML = `<div class="gestao-barra"><span>Seu aplicativo de gestão, com jobs, financeiro, planner e mais.</span><span class="gestao-acoes"><button class="btn" type="button" id="gestao-copias">Cópias de segurança</button><a class="btn" href="gestao/" target="_blank" rel="noopener">Abrir em tela cheia</a></span></div>
-      <iframe class="gestao-app" src="gestao/?v=${encodeURIComponent(window.VERSAO_PAINEL || "")}" title="Gestão UGC"></iframe>`;
+      <iframe class="gestao-app" src="gestao/?v=${encodeURIComponent(window.VERSAO_PAINEL || "")}${extra}" title="Gestão UGC"></iframe>`;
     $("#gestao-copias").addEventListener("click", abrirCopias);
   }
   // Cópias de segurança do aplicativo: o banco guarda uma cópia sozinho (a cada 30 min de uso
@@ -1502,8 +1513,8 @@
     videos: () => desenhar("portfolio", desenharPortfolio),
     visitas: () => desenhar("portfolio", desenharPortfolio),
     marcas: () => desenhar("marcas", desenharMarcas),
-    calendario: () => desenhar("calendario", desenharCalendario),
-    campanhas: () => { desenhar("campanhas", desenharCampanhas); desenhar("calendario", desenharCalendario); },
+    calendario: () => {},
+    campanhas: () => desenhar("campanhas", desenharCampanhas),
     marcados: () => desenhar("checklist", desenharChecklist),
     roteiros: () => desenhar("roteiros", desenharRoteiros)
   };

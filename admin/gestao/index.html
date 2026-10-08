@@ -12,7 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="../../js/banco.js?v=202610080456"></script>
+<script src="../../js/banco.js?v=202610080503"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -94,6 +94,8 @@
 
   /* MAIN */
   .main{ flex:1; min-width:0; }
+  .so-uma .sidebar, .so-uma .topbar, .so-uma .scrim{ display:none !important; }
+  .so-uma .content{ max-width:none; }
   .topbar{
     display:flex; align-items:center; gap:14px; padding:16px 28px; position:sticky; top:0; z-index:20;
     background:rgba(250,246,238,0.85); backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
@@ -425,9 +427,9 @@ const jobStatusTone = (s) => ({
   "Finalizado":"green","Cancelado":"gray"
 }[s] || "gray");
 const KANBAN_COLORS = {
-  "Lead":"#2B1B14","Em Negociação":"#8B3A4A","Fechado":"#E8A0AC","Aguardando Aprovação":"#8A6E5C","Aguardando Produto":"#6B4E3D",
-  "Aprovado":"#E8A0AC","Planejado":"#2B1B14","Em Produção":"#8B3A4A","Gravado":"#8A6E5C","Conteúdo Entregue":"#E8A0AC",
-  "Finalizado":"#6B4E3D","Cancelado":"#8A6E5C"
+  "Lead":"#3d2b20","Em Negociação":"#6b4a35","Fechado":"#a87058","Aguardando Aprovação":"#8a634b","Aguardando Produto":"#6B4E3D",
+  "Aprovado":"#a87058","Planejado":"#3d2b20","Em Produção":"#6b4a35","Gravado":"#8a634b","Conteúdo Entregue":"#a87058",
+  "Finalizado":"#6B4E3D","Cancelado":"#8a634b"
 };
 const PAYMENT_METHODS = ["PIX","Transferência","Boleto","Cartão","PayPal","Outro"];
 const MOEDAS = [{code:"BRL",symbol:"R$"},{code:"USD",symbol:"US$"},{code:"EUR",symbol:"€"}];
@@ -441,7 +443,7 @@ const FOTO_STATUS_OPTIONS = ["A planejar","Planejada","Tirada","Editado","Entreg
 const STATUS_OPTIONS_BY_TIPO = {videos:ROTEIRO_STATUS_OPTIONS, fotos:FOTO_STATUS_OPTIONS, stories:ROTEIRO_STATUS_OPTIONS};
 const TIPO_CONTEUDO_OPTIONS = ["Reels","Stories","Feed","Carrossel","Shorts","TikTok"];
 const FINALIDADES = ["Publi","UGC","Conteúdos"];
-const FINALIDADE_COLOR = {Publi:"#8B3A4A", UGC:"#E8A0AC", "Conteúdos":"#6B4E3D"};
+const FINALIDADE_COLOR = {Publi:"#6b4a35", UGC:"#a87058", "Conteúdos":"#6B4E3D"};
 const FINALIDADE_TONE = {Publi:"wine", UGC:"pink", "Conteúdos":"gray"};
 const ROTEIRO_ETAPAS = ["Ideias","Roteirização","Revisão","Gravação","Edição","Pronto p/ Postar"];
 const ROTEIRO_TEMPLATES = {
@@ -5919,7 +5921,19 @@ function App({session}){
   const userId = session.user.id;
   const [state, setState] = useState(initialState);
   const [loaded, setLoaded] = useState(false);
-  const [page, setPage] = useState("dashboard");
+  // Dentro do painel: ?pagina=planner&so=1 abre direto numa página, sem o menu do aplicativo
+  const parametros = new URLSearchParams(location.search);
+  const [page, setPage] = useState(parametros.get("pagina") || "dashboard");
+  const [soUma, setSoUma] = useState(parametros.get("so") === "1");
+  useEffect(()=>{
+    function ouvir(e){
+      if(e.origin !== location.origin || !e.data || typeof e.data !== "object") return;
+      if(e.data.pagina) setPage(e.data.pagina);
+      if("so" in e.data) setSoUma(Boolean(e.data.so));
+    }
+    window.addEventListener("message", ouvir);
+    return ()=>window.removeEventListener("message", ouvir);
+  },[]);
   const [pendingRoteiroAI, setPendingRoteiroAI] = useState(false);
   const openRoteirosAI = () => { setPage("roteiros"); setPendingRoteiroAI(true); };
   const [collapsed, setCollapsed] = useState(false);
@@ -5996,7 +6010,7 @@ function App({session}){
   }
 
   return (
-    <div className="app-shell">
+    <div className={"app-shell" + (soUma ? " so-uma" : "")}>
       {mobileOpen && <div className="scrim" onClick={()=>setMobileOpen(false)}></div>}
       <div className={"sidebar " + (collapsed?"collapsed ":"") + (mobileOpen?"mobile-open":"")}>
         <div className="brand">

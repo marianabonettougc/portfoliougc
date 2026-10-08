@@ -407,3 +407,5 @@ details.rot-editar[open] summary{margin-bottom:10px}
 .copia-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;border-top:1px solid var(--linha)}
 .copia-linha:first-child{border-top:0}
 .copia-linha small{display:block;color:var(--suave)}
+.so-planner .gestao-barra{display:none}
+.so-planner .gestao-app{height:calc(100vh - 100px)}

@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 // Atualiza sozinho: se existir uma versão mais nova do painel publicada, recarrega a página nova
-window.VERSAO_PAINEL = "202610080456";
+window.VERSAO_PAINEL = "202610080503";
 fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).then((j) => {
   if (j.versao && j.versao !== window.VERSAO_PAINEL) {
     const u = new URL(location.href);
@@ -19,9 +19,9 @@ fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/painel.css?v=202610080456">
+<link rel="stylesheet" href="../css/painel.css?v=202610080503">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/banco.js?v=202610080456"></script>
+<script src="../js/banco.js?v=202610080503"></script>
 <script>
 // PRIMEIRA COISA: conferir a sessão. Sem sessão, vai para o login.
 // A página só aparece depois dessa conferência (antes ela fica escondida).
@@ -59,7 +59,7 @@ window.sessaoPronta = (async function () {
     <button class="menu-item" data-aba="gestao" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/></svg>Gestão UGC</button>
     <button class="menu-item" data-aba="calendario" type="button">
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Calendário</button>
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Planner</button>
     <button class="menu-item" data-aba="campanhas" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>Campanhas</button>
     <button class="menu-item" data-aba="roteiros" type="button">
@@ -106,7 +106,7 @@ window.sessaoPronta = (async function () {
 </dialog>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="../js/biblioteca.js?v=202610080456"></script>
-<script src="../js/admin.js?v=202610080456"></script>
+<script src="../js/biblioteca.js?v=202610080503"></script>
+<script src="../js/admin.js?v=202610080503"></script>
 </body>
 </html>
