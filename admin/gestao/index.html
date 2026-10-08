@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610082010"></script>
+<script src="../../js/banco.js?v=202610082023"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -410,6 +410,9 @@
   .badge-blue{ background:#e2e9f1; color:#4a6a8a; }
   .badge-pink{ background:#f6e0dc; color:#b8473a; }
 
+  .entregavel-datas{ flex-basis:100%; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; padding:4px 0 2px 30px; }
+  .entregavel-datas label{ display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--graphite-soft); }
+  .entregavel-datas input{ font-size:13px; padding:6px 8px; }
   .row-item{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border:1px solid var(--line); border-radius:var(--radius-md); background:var(--card-bg); margin-bottom:10px; gap:12px; flex-wrap:wrap; }
   .row-item:hover{ box-shadow:var(--shadow); }
 
@@ -1063,6 +1066,15 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     tarefas.filter(t=>t.data===iso).forEach(t=>lista.push({id:"t-"+t.id, tarefa:t, hora:t.hora||"", texto:t.titulo, sub:t.sub||"", feito:!!t.feito}));
     planner.filter(p=>p.data===iso).forEach(p=>lista.push({id:"p-"+p.id, hora:"", texto:p.titulo||"Conteúdo", sub:[p.formato, p.marca].filter(Boolean).join(" · "), pagina:"planner"}));
     ativos.filter(j=>j.prazoEntrega===iso).forEach(j=>lista.push({id:"e-"+j.id, hora:"", texto:`Entregar ${j.marca}`, sub:descricaoJob(j), pagina:"jobs"}));
+    // datas de cada conteúdo do job (roteiro, conteúdo e postagem da Publi)
+    ativos.forEach(j=>{
+      const e = j.entregaveis || {};
+      ["videos","fotos","stories"].forEach(t=>(e[t]||[]).forEach(it=>{
+        if(it.prazoRoteiro===iso) lista.push({id:"r-"+it.id, hora:"", texto:`Entregar roteiro: ${it.label}`, sub:j.marca, pagina:"jobs"});
+        if(it.prazoConteudo===iso) lista.push({id:"c-"+it.id, hora:"", texto:`Entregar conteúdo: ${it.label}`, sub:j.marca, pagina:"jobs"});
+        if(j.categoria==="Publi" && it.prazoPostagem===iso) lista.push({id:"o-"+it.id, hora:"", texto:`Postar: ${it.label}`, sub:j.marca+" · Publi", pagina:"jobs"});
+      }));
+    });
     jobs.filter(j=>j.dataPagamento===iso && j.status!=="Cancelado" && (!j.pagamento || j.pagamento.status!=="Pago")).forEach(j=>lista.push({id:"g-"+j.id, hora:"", texto:`Conferir pagamento ${j.marca}`, sub:"Financeiro", pagina:"financeiro"}));
     if(iso===hoje) followups.filter(f=>f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje).forEach(f=>lista.push({id:"f-"+f.id, hora:"", texto:`Follow-up com ${f.marca}`, sub:"Mandar mensagem para a marca", pagina:"followups"}));
     return lista.sort((a,b)=>(a.hora||"99").localeCompare(b.hora||"99"));
@@ -1878,12 +1890,15 @@ function NichoModal({state, updateState, onClose}){
   );
 }
 
-function EntregavelBlock({tipo, label, icon, items, onChange}){
+function EntregavelBlock({tipo, label, icon, items, onChange, publi}){
   const concluidos = items.filter(i=>i.concluido).length;
   function addItem(){ onChange([...items, novoEntregavelItem(tipo, items.length+1)]); }
   function removeItem(id){ onChange(items.filter(i=>i.id!==id)); }
   function toggleConcluido(id){ onChange(items.map(i=>i.id===id?{...i,concluido:!i.concluido}:i)); }
   function setRoteiroStatus(id, val){ onChange(items.map(i=>i.id===id?{...i,roteiroStatus:val}:i)); }
+  // cada conteúdo tem as próprias datas; a data de postagem só existe quando é Publi
+  function setData(id, campo, val){ onChange(items.map(i=>i.id===id?{...i,[campo]:val}:i)); }
+  const temRoteiro = tipo!=="fotos";
   return (
     <div style={{marginBottom:14}}>
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8}}>
@@ -1900,6 +1915,11 @@ function EntregavelBlock({tipo, label, icon, items, onChange}){
             {(STATUS_OPTIONS_BY_TIPO[tipo]||ROTEIRO_STATUS_OPTIONS).map(o=><option key={o}>{o}</option>)}
           </select>
           <button className="icon-btn" style={{width:30,height:30}} onClick={()=>removeItem(it.id)}><Icon name="delete" size={15}/></button>
+          <div className="entregavel-datas">
+            {temRoteiro && <label>Prazo do roteiro<input type="date" value={it.prazoRoteiro||""} onChange={e=>setData(it.id,"prazoRoteiro",e.target.value)}/></label>}
+            <label>Prazo do conteúdo<input type="date" value={it.prazoConteudo||""} onChange={e=>setData(it.id,"prazoConteudo",e.target.value)}/></label>
+            {publi && <label>Data de postagem<input type="date" value={it.prazoPostagem||""} onChange={e=>setData(it.id,"prazoPostagem",e.target.value)}/></label>}
+          </div>
         </div>
       ))}
     </div>
@@ -2140,9 +2160,9 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
       }}>
         <Icon name="calendar_month" size={15}/>Distribuir no Planner (escolher datas)
       </button>
-      <EntregavelBlock tipo="videos" label="Vídeos" icon="videocam" items={f.entregaveis.videos} onChange={(v)=>setNested("entregaveis","videos",v)}/>
-      <EntregavelBlock tipo="fotos" label="Fotos" icon="photo_camera" items={f.entregaveis.fotos} onChange={(v)=>setNested("entregaveis","fotos",v)}/>
-      <EntregavelBlock tipo="stories" label="Stories" icon="auto_stories" items={f.entregaveis.stories} onChange={(v)=>setNested("entregaveis","stories",v)}/>
+      <EntregavelBlock tipo="videos" label="Vídeos" icon="videocam" items={f.entregaveis.videos} onChange={(v)=>setNested("entregaveis","videos",v)} publi={f.categoria==="Publi"}/>
+      <EntregavelBlock tipo="fotos" label="Fotos" icon="photo_camera" items={f.entregaveis.fotos} onChange={(v)=>setNested("entregaveis","fotos",v)} publi={f.categoria==="Publi"}/>
+      <EntregavelBlock tipo="stories" label="Stories" icon="auto_stories" items={f.entregaveis.stories} onChange={(v)=>setNested("entregaveis","stories",v)} publi={f.categoria==="Publi"}/>
       </Collapsible>
 
       <div className="field-row" style={{marginTop:10}}>
