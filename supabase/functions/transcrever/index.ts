@@ -136,11 +136,23 @@ async function transcreverTokscript(link: string, origem: string): Promise<Midia
     const nomes = Object.keys(def.inputSchema.properties);
     campoLink = nomes.find((n) => /url|link/i.test(n)) || (def.inputSchema.required || [])[0] || nomes[0] || "url";
   }
-  const { msg } = await mcp(token, sessao, { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: ferramenta, arguments: { [campoLink]: link } } });
-  if (msg?.error) throw new Aviso("O TokScript não conseguiu transcrever: " + (msg.error.message || "erro"));
-  const res = msg?.result || {};
-  const bruto = res.structuredContent ?? (res.content || []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n");
-  if (res.isError) throw new Aviso("O TokScript não conseguiu transcrever: " + String(acharTexto(bruto) || bruto).slice(0, 300));
+  // tenta até 2 vezes: o serviço do TokScript às vezes demora ou fica instável por alguns minutos
+  let res: any = {}, bruto: any = "";
+  for (let tentativa = 1; tentativa <= 2; tentativa++) {
+    const { msg } = await mcp(token, sessao, { jsonrpc: "2.0", id: 2 + tentativa, method: "tools/call", params: { name: ferramenta, arguments: { [campoLink]: link } } });
+    if (msg?.error) throw new Aviso("O TokScript não conseguiu transcrever: " + (msg.error.message || "erro"));
+    res = msg?.result || {};
+    bruto = res.structuredContent ?? (res.content || []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n");
+    const erroTxt = res.isError ? String(acharTexto(bruto) || bruto) : "";
+    if (!res.isError) break;
+    const instavel = /timed out|temporarily unavailable|try again later|timeout|503|502/i.test(erroTxt);
+    if (instavel && tentativa < 2) { await new Promise((r) => setTimeout(r, 3000)); continue; }
+    const rede = origem === "instagram" ? "Instagram" : origem === "tiktok" ? "TikTok" : "YouTube";
+    if (instavel) throw new Aviso(`O serviço de ${rede} do TokScript está instável agora (problema do lado deles). Tente de novo em alguns minutos, ou use "Enviar o arquivo do vídeo".`);
+    if (/limit|quota|upgrade|subscription|per day/i.test(erroTxt)) throw new Aviso("Você chegou ao limite do plano grátis do TokScript (5 vídeos por dia). Amanhã libera de novo, ou use \"Enviar o arquivo do vídeo\".");
+    if (/private|not found|unavailable|no transcript/i.test(erroTxt)) throw new Aviso("O TokScript não encontrou fala nesse vídeo (pode ser privado, foto ou vídeo sem fala). Se tiver o arquivo, use \"Enviar o arquivo do vídeo\".");
+    throw new Aviso("O TokScript não conseguiu transcrever: " + erroTxt.slice(0, 300));
+  }
   const texto = acharTexto(bruto);
   if (!texto) throw new Aviso("O TokScript não encontrou fala nesse vídeo.");
   let meta: any = {};
