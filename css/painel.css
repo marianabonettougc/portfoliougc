@@ -457,3 +457,36 @@ button.menu-grupo:hover{color:var(--texto)}
 .rot-insp-porque{font-size:12px;color:var(--suave);margin:8px 0 10px;padding-top:8px;border-top:1px dashed var(--linha-forte)}
 .rot-insp-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 @media (max-width:640px){.rot-insp-opcoes,.rot-insp-topo{grid-template-columns:minmax(0,1fr)}}
+
+/* ===== Janela do roteiro em abas (Informações / Vídeo transcrito / Se inspire / Copiar) ===== */
+.rot-abas{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--linha);margin:-4px 0 16px;position:sticky;top:-1px;background:var(--cartao);z-index:2;padding-top:4px}
+.rot-aba{border:0;background:none;padding:10px 14px;font:inherit;font-size:13px;color:var(--suave);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:8px 8px 0 0}
+.rot-aba:hover{color:var(--texto);background:var(--fundo)}
+.rot-aba.ativa{color:var(--texto);font-weight:600;border-bottom-color:var(--principal)}
+.rot-painel[hidden]{display:none}
+.rot-mais{margin-top:8px;border-top:1px dashed var(--linha-forte);padding-top:8px}
+.rot-mais summary{cursor:pointer;font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--terracota);list-style:none}
+.rot-mais summary::-webkit-details-marker{display:none}
+.rot-mais summary::before{content:"+ ";font-weight:700}
+.rot-mais[open] summary::before{content:"− "}
+.rot-mais ol,.rot-mais ul{margin:6px 0 0;padding-left:20px;font-size:12.5px}
+.rot-mais > div,.rot-mais > p{margin-top:6px}
+.rot-board{padding:16px;border-radius:14px;background:var(--fundo);border:1px solid var(--linha)}
+.rot-board h4{margin:0 0 4px;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:21px;color:var(--texto)}
+.rot-board > p{margin:0 0 12px;font-size:12.5px;color:var(--suave);line-height:1.5}
+.rot-campo-board{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--suave);margin-bottom:10px}
+.rot-campo-board textarea,.rot-campo-board input,.rot-denovo input{width:100%;border:1px solid var(--linha-forte);border-radius:10px;background:var(--cartao);padding:9px 11px;font:inherit;font-size:13px;color:var(--texto)}
+.rot-campo-board input,.rot-denovo input{height:40px}
+.rot-midias{display:flex;gap:8px;flex-wrap:wrap;margin:-2px 0 10px}
+.rot-arquivo-btn{cursor:pointer}
+.btn.gravando{border-color:#c5533f;color:#c5533f}
+.rot-imagens{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.rot-imagens:empty{display:none}
+.rot-imagens span{position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;border:1px solid var(--linha)}
+.rot-imagens img{width:100%;height:100%;object-fit:cover}
+.rot-imagens button{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(61,43,32,.75);color:#fff;cursor:pointer;line-height:1}
+.rot-insp-editar{width:100%;min-height:340px;border:1px solid var(--linha-forte);border-radius:10px;padding:10px 12px;font:inherit;font-size:13px;line-height:1.55;background:#fff;color:var(--texto);resize:vertical}
+.rot-denovo{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.rot-denovo input{flex:1;min-width:200px}
+@media (max-width:640px){.rot-aba{padding:9px 10px;font-size:12px}.rot-janela{grid-template-columns:minmax(0,1fr)}.rot-dir{position:static}}
+@media (max-width:480px){.janela-rodape{flex-wrap:wrap;padding:10px 12px}.janela-rodape .btn{padding-left:12px;padding-right:12px}}

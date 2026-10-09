@@ -1267,10 +1267,35 @@
     return `
       ${tags.length ? `<div class="rot-linha"><span class="rot-rotulo">A estrutura</span>${tags.map((t) => `<span class="rot-tag">${esc(t)}</span>`).join("")}</div>` : ""}
       ${r.gancho ? `<div class="rot-parte"><span class="rot-rotulo">Gancho${r.gancho_tipo ? " · " + esc(r.gancho_tipo) : ""}</span><p class="rot-destaque">${esc(r.gancho)}</p></div>` : ""}
-      ${passos.length ? `<div class="rot-parte"><span class="rot-rotulo">Desenvolvimento</span><ol>${passos.map((p) => `<li>${esc(p)}</li>`).join("")}</ol></div>` : ""}
       ${r.cta ? `<div class="rot-parte"><span class="rot-rotulo">CTA</span><p class="rot-caixa">${esc(r.cta)}</p></div>` : ""}
-      ${exprs.length ? `<div class="rot-parte"><span class="rot-rotulo">Expressões que usa</span><div>${exprs.map((t) => `<span class="rot-tag">${esc(t)}</span>`).join("")}</div></div>` : ""}
-      ${r.por_que ? `<div class="rot-parte"><span class="rot-rotulo">Por que prende</span><p class="rot-caixa rot-porque">${esc(r.por_que)}</p></div>` : ""}`;
+      ${passos.length ? `<details class="rot-mais"><summary>Desenvolvimento</summary><ol>${passos.map((p) => `<li>${esc(p)}</li>`).join("")}</ol></details>` : ""}
+      ${exprs.length ? `<details class="rot-mais"><summary>Expressões que usa</summary><div>${exprs.map((t) => `<span class="rot-tag">${esc(t)}</span>`).join("")}</div></details>` : ""}
+      ${r.por_que ? `<details class="rot-mais"><summary>Por que prende</summary><p class="rot-caixa rot-porque">${esc(r.por_que)}</p></details>` : ""}`;
+  }
+
+  // opções dos quadros "Se inspire" e "Copiar roteiro"
+  function opcoesBoard(p) {
+    return `<div class="rot-insp-opcoes">
+      <label>Nicho<select data-op="nicho"><option value="">A IA escolhe</option>${["Beleza", "Autocuidado", "Casa", "Moda", "Maternidade", "Alimentação", "Life Fit", "Pet", "Eletrônicos"].map((n) => `<option>${n}</option>`).join("")}</select></label>
+      <label>Onde vai postar<select data-op="plataforma">${["Reels", "TikTok", "Stories"].map((n) => `<option>${n}</option>`).join("")}</select></label>
+      <label>Quantos roteiros<select data-op="quantidade"><option${p === "cop" ? " selected" : ""}>1</option><option${p === "ins" ? " selected" : ""}>2</option><option>3</option></select></label>
+    </div>`;
+  }
+  // diminui a imagem antes de mandar para a IA
+  const reduzirImagem = (arquivo) => new Promise((ok, falhou) => {
+    const leitor = new FileReader();
+    leitor.onload = () => { const img = new Image(); img.onload = () => {
+      const esc2 = Math.min(1, 1024 / Math.max(img.width, img.height)); const c = document.createElement("canvas");
+      c.width = Math.round(img.width * esc2); c.height = Math.round(img.height * esc2); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); ok(c.toDataURL("image/jpeg", 0.82)); };
+      img.onerror = falhou; img.src = leitor.result; };
+    leitor.onerror = falhou; leitor.readAsDataURL(arquivo);
+  });
+  async function chamarRoteiro(corpo) {
+    const { data, error } = await banco.functions.invoke("gerar-roteiro", { body: corpo });
+    let msg = data && data.error;
+    if (error) { try { msg = (await error.context.json()).error; } catch (e) {} msg = msg || "Não consegui falar com a IA agora. Tente de novo."; }
+    if (msg) throw new Error(msg);
+    return data || {};
   }
 
   function formRoteiro(r, inicial, tocar, autoTranscrever) {
@@ -1282,33 +1307,44 @@
       titulo: "Roteiro",
       extraLarga: true,
       corpo: `
-        <div class="rot-janela">
-          <div class="rot-esq">
-            ${campo({ nome: "titulo", rotulo: "Título (do que é esse roteiro)", valor: r.titulo })}
-            <div class="linha-campos tres">
-              ${campo({ nome: "de_quem", rotulo: "De quem é", tipo: "select", valor: r.de_quem, opcoes: [{ v: "outra", t: "De outra pessoa" }, { v: "meu", t: "Meu" }] })}
-              ${campo({ nome: "perfil", rotulo: "Perfil (sem @)", valor: String(r.perfil || "").replace(/^@/, "") })}
-              ${campo({ nome: "data_post", rotulo: "Data do post", tipo: "date", valor: r.data_post || "" })}
-            </div>
+        <div class="rot-abas" role="tablist">
+          <button type="button" class="rot-aba ativa" data-aba="info" role="tab">Informações do vídeo</button>
+          <button type="button" class="rot-aba" data-aba="video" role="tab">Vídeo transcrito</button>
+          <button type="button" class="rot-aba" data-aba="inspirar" role="tab">✨ Se inspire nesse roteiro</button>
+          <button type="button" class="rot-aba" data-aba="copiar" role="tab">Copiar roteiro</button>
+        </div>
+        <input type="hidden" name="de_quem" value="${esc(r.de_quem || "outra")}">
+        <input type="hidden" name="perfil" value="${esc(String(r.perfil || "").replace(/^@/, ""))}">
+        <input type="hidden" name="data_post" value="${esc(r.data_post || "")}">
+
+        <section class="rot-painel" data-painel="info">
+          ${campo({ nome: "titulo", rotulo: "Título (do que é esse roteiro)", valor: r.titulo })}
+          <div class="linha-campos">
+            ${campo({ nome: "origem", rotulo: "Origem", tipo: "select", valor: r.origem, opcoes: ORIGENS })}
+            ${campo({ nome: "etiquetas", rotulo: "Etiquetas (separe por vírgula)", valor: r.etiquetas, dica: "Ex.: tutorial, beleza, unboxing" })}
+          </div>
+          ${campo({ nome: "link", rotulo: "Link do vídeo", valor: r.link })}
+          <span class="rot-rotulo">Estrutura</span>
+          <div class="rot-estrutura" id="rot-estrutura">${blocoEstrutura(r)}</div>
+          <details class="rot-editar">
+            <summary>Editar a estrutura (gancho, passos, CTA...)</summary>
             <div class="linha-campos">
-              ${campo({ nome: "origem", rotulo: "Origem", tipo: "select", valor: r.origem, opcoes: ORIGENS })}
-              ${campo({ nome: "etiquetas", rotulo: "Etiquetas (separe por vírgula)", valor: r.etiquetas, dica: "Ex.: tutorial, beleza, unboxing" })}
+              ${campo({ nome: "gancho", rotulo: "Gancho", valor: r.gancho })}
+              ${campo({ nome: "gancho_tipo", rotulo: "Tipo de gancho", valor: r.gancho_tipo, lista: TIPOS_GANCHO })}
             </div>
-            ${campo({ nome: "link", rotulo: "Link do vídeo", valor: r.link })}
-            <div class="rot-estrutura" id="rot-estrutura">${blocoEstrutura(r)}</div>
-            <details class="rot-editar"${novo ? "" : ""}>
-              <summary>Editar a estrutura (gancho, passos, CTA...)</summary>
-              <div class="linha-campos">
-                ${campo({ nome: "gancho", rotulo: "Gancho", valor: r.gancho })}
-                ${campo({ nome: "gancho_tipo", rotulo: "Tipo de gancho", valor: r.gancho_tipo, lista: TIPOS_GANCHO })}
-              </div>
-              ${campo({ nome: "desenvolvimento", rotulo: "Desenvolvimento (um passo por linha)", tipo: "textarea", valor: r.desenvolvimento })}
-              ${campo({ nome: "cta", rotulo: "CTA (a chamada do final)", valor: r.cta })}
-              ${campo({ nome: "expressoes", rotulo: "Expressões que a pessoa usa (separe por vírgula)", valor: r.expressoes })}
-              ${campo({ nome: "por_que", rotulo: "Por que prende", tipo: "textarea", valor: r.por_que })}
-            </details>
+            ${campo({ nome: "desenvolvimento", rotulo: "Desenvolvimento (um passo por linha)", tipo: "textarea", valor: r.desenvolvimento })}
+            ${campo({ nome: "cta", rotulo: "CTA (a chamada do final)", valor: r.cta })}
+            ${campo({ nome: "expressoes", rotulo: "Expressões que a pessoa usa (separe por vírgula)", valor: r.expressoes })}
+            ${campo({ nome: "por_que", rotulo: "Por que prende", tipo: "textarea", valor: r.por_que })}
+          </details>
+          ${campo({ nome: "notas", rotulo: "Suas notas (o que te chamou atenção)", tipo: "textarea", valor: r.notas })}
+          ${r.exemplo ? marcaCheck("exemplo", "É linha de exemplo", true) : ""}
+        </section>
+
+        <section class="rot-painel" data-painel="video" hidden>
+          <div class="rot-janela">
             <div class="campo">
-              <div class="rot-rotulo-linha"><label for="f-transcricao">Roteiro / transcrição</label>
+              <div class="rot-rotulo-linha"><label for="f-transcricao">Roteiro transcrito</label>
                 <span class="rot-botoes">
                   <button class="btn btn-mini btn-principal" type="button" id="rot-transcrever">✨ Transcrever e preencher</button>
                   <label class="btn btn-mini" for="rot-arquivo" title="Use se o link não puder ser baixado">Enviar o arquivo do vídeo</label>
@@ -1316,31 +1352,43 @@
                 </span></div>
               <p class="rot-status" id="rot-status" role="status" hidden></p>
               <textarea id="f-transcricao" name="transcricao" class="rot-texto" placeholder="Cole aqui o texto falado no vídeo.">${esc(r.transcricao)}</textarea>
-              <small class="rot-dica">O painel baixa o vídeo pelo link, transcreve e preenche sozinho o título, o perfil, o gancho, os passos, o CTA, as expressões e por que prende. Se a rede não deixar baixar (perfil privado, por exemplo), salve o vídeo no celular ou no computador e use <b>Enviar o arquivo do vídeo</b>. Você também pode colar um texto aqui e clicar em <button class="btn-link" type="button" id="rot-montar">separar gancho, passos e CTA</button>.</small>
+              <small class="rot-dica">Eu baixo o vídeo pelo link, transcrevo e preencho a estrutura sozinha. Se a rede não deixar baixar, use <b>Enviar o arquivo do vídeo</b>. Também dá para colar um texto e clicar em <button class="btn-link" type="button" id="rot-montar">separar gancho, passos e CTA</button>.</small>
             </div>
-            ${campo({ nome: "notas", rotulo: "Suas notas (o que te chamou atenção)", tipo: "textarea", valor: r.notas })}
-            ${r.exemplo ? marcaCheck("exemplo", "É linha de exemplo", true) : ""}
-            ${r.de_quem === "meu" ? "" : `
-            <section class="rot-inspirar" id="rot-inspirar">
-              <h4>✨ Se inspirar nesse roteiro</h4>
-              <p>Conte quais produtos você tem e o que você sabe deles. Eu pesquiso os produtos na internet e crio o seu roteiro UGC em cima desse vídeo, no tom das criadoras que você mais admira.</p>
-              <textarea id="rot-insp-produtos" rows="3" placeholder="Ex.: Shampoo e condicionador Lumina Natura liso prolongado (uso há 2 meses, meu cabelo é oleoso na raiz). Um produto por linha. Pode colar o link do produto também."></textarea>
-              <div class="rot-insp-opcoes">
-                <label>Nicho<select id="rot-insp-nicho"><option value="">A IA escolhe</option>${["Beleza", "Autocuidado", "Casa", "Moda", "Maternidade", "Alimentação", "Life Fit", "Pet", "Eletrônicos"].map((n) => `<option>${n}</option>`).join("")}</select></label>
-                <label>Onde vai postar<select id="rot-insp-plataforma">${["Reels", "TikTok", "Stories"].map((n) => `<option>${n}</option>`).join("")}</select></label>
-                <label>Quantos roteiros<select id="rot-insp-qtd"><option>1</option><option selected>2</option><option>3</option></select></label>
-              </div>
-              <button class="btn btn-principal" type="button" id="rot-insp-criar">✨ Criar meu roteiro UGC</button>
-              <p class="rot-status" id="rot-insp-status" role="status" hidden></p>
-              <div id="rot-insp-res"></div>
-            </section>`}
+            <div class="rot-dir">
+              <span class="rot-rotulo">O vídeo</span>
+              <div class="rot-player" id="rot-player">${embed ? `<iframe src="${embed}" title="Vídeo do roteiro" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen loading="lazy"></iframe>` : `<p>Cole o link do vídeo na aba Informações para ele aparecer aqui.${r.link ? "<br><br>Esse link não pode tocar aqui dentro (links curtos do TikTok, por exemplo). Use o link completo do vídeo, ou abra pelo botão abaixo." : ""}</p>`}</div>
+              ${r.link ? `<a class="link-mini" href="${esc(r.link)}" target="_blank" rel="noopener">abrir no ${esc(nomeOrigem(r.origem))} ↗</a>` : ""}
+            </div>
           </div>
-          <div class="rot-dir">
-            <span class="rot-rotulo">O vídeo</span>
-            <div class="rot-player" id="rot-player">${embed ? `<iframe src="${embed}" title="Vídeo do roteiro" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen loading="lazy"></iframe>` : `<p>Cole o link do vídeo ao lado para ele aparecer aqui.${r.link ? "<br><br>Esse link não pode tocar aqui dentro (links curtos do TikTok, por exemplo). Use o link completo do vídeo, ou abra pelo botão abaixo." : ""}</p>`}</div>
-            ${r.link ? `<a class="link-mini" href="${esc(r.link)}" target="_blank" rel="noopener">abrir no ${esc(nomeOrigem(r.origem))} ↗</a>` : ""}
+        </section>
+
+        <section class="rot-painel rot-board" data-painel="inspirar" hidden>
+          <h4>✨ Se inspire nesse roteiro</h4>
+          <p>Conte a sua ideia para o vídeo (escrevendo, em áudio ou com imagens). Eu crio um roteiro novo seu, usando o que funcionou nesse vídeo.</p>
+          <label class="rot-campo-board">Minha ideia para o vídeo<textarea id="ins-ideia" rows="4" placeholder="Ex.: quero mostrar minha rotina da manhã com o sérum que comprei, falar que eu tinha manchas e que agora uso todo dia..."></textarea></label>
+          <div class="rot-midias">
+            <button type="button" class="btn btn-mini" data-gravar>🎙 Gravar áudio</button>
+            <label class="btn btn-mini rot-arquivo-btn">Enviar áudio<input type="file" accept="audio/*,.ogg,.opus,.m4a,.mp3,.wav" data-audio hidden></label>
+            <label class="btn btn-mini rot-arquivo-btn">Anexar imagens<input type="file" accept="image/*" multiple data-imagens hidden></label>
           </div>
-        </div>`,
+          <div class="rot-imagens" data-lista-imagens></div>
+          <label class="rot-campo-board">Produtos que vou usar (opcional, eu pesquiso na internet)<input id="ins-produtos" placeholder="Um por linha ou separados por ponto e vírgula. Pode colar o link."></label>
+          ${opcoesBoard("ins")}
+          <button class="btn btn-principal" type="button" data-gerar>✨ Gerar roteiro</button>
+          <p class="rot-status" data-status role="status" hidden></p>
+          <div data-resultado></div>
+        </section>
+
+        <section class="rot-painel rot-board" data-painel="copiar" hidden>
+          <h4>Copiar roteiro</h4>
+          <p>Coloque os seus produtos. Eu mantenho a mesma ideia, a mesma ordem e o mesmo jeito do vídeo transcrito, trocando só o produto e trazendo tudo para a sua realidade.</p>
+          <label class="rot-campo-board">Seus produtos<textarea id="cop-produtos" rows="3" placeholder="Ex.: Sérum vitamina C Principia; Protetor Bioré Aqua Rich. Um por linha. Pode colar o link do produto."></textarea></label>
+          <label class="rot-campo-board">Sua realidade com eles (opcional)<textarea id="cop-real" rows="2" placeholder="Ex.: uso há 3 semanas, minha pele é oleosa, comprei na farmácia, meu marido também usa..."></textarea></label>
+          ${opcoesBoard("cop")}
+          <button class="btn btn-principal" type="button" data-gerar>Copiar com os meus produtos</button>
+          <p class="rot-status" data-status role="status" hidden></p>
+          <div data-resultado></div>
+        </section>`,
       botoes: [
         ...(novo ? [] : [{ texto: ICONE.apagar + "Apagar", classe: "btn-perigo", acao: async () => {
           if (await confirmar(`Apagar o roteiro "${r.titulo || "sem título"}"?`) && await apagar("roteiros", r.id)) { avisar("Roteiro apagado"); await recarregar("roteiros"); }
@@ -1427,72 +1475,142 @@
           $("details.rot-editar", corpo).open = true;
           avisar("Estrutura montada. Confira e ajuste se precisar.");
         });
-        // "Se inspirar nesse roteiro": cria o roteiro UGC dela em cima desse vídeo (Edge Function gerar-roteiro)
-        if ($("#rot-insp-criar", corpo)) {
-          const st = $("#rot-insp-status", corpo);
-          const statusInsp = (t, erro) => { st.textContent = t; st.hidden = !t; st.classList.toggle("erro", Boolean(erro)); };
+        // abas da janela (uma ao lado da outra, como menu)
+        $$(".rot-aba", corpo).forEach((aba) => aba.addEventListener("click", () => {
+          $$(".rot-aba", corpo).forEach((x) => x.classList.toggle("ativa", x === aba));
+          $$(".rot-painel", corpo).forEach((p) => { p.hidden = p.dataset.painel !== aba.dataset.aba; });
+        }));
+        if (tocar) $('.rot-aba[data-aba="video"]', corpo).click();
+
+        // quadros "Se inspire nesse roteiro" e "Copiar roteiro" (Edge Function gerar-roteiro)
+        const cena = (p) => esc(p.fala || "") + (p.visual ? `<em>${esc(p.visual)}</em>` : "");
+        const textoRoteiro = (x) => [
+          `TIPO DE CONTEÚDO UGC: ${x.tipo_ugc || "-"}\nTIPO DE FUNIL: ${x.funil || "-"}\nNICHO: ${x.nicho || "-"}${x.formato ? "\nFORMATO: " + x.formato : ""}`,
+          `HOOK${x.gancho_tipo ? " (" + x.gancho_tipo + ")" : ""}:\n${x.hook.fala}${x.hook.visual ? "\n[" + x.hook.visual + "]" : ""}`,
+          x.desenrolar.length ? "DESENROLAR:\n" + x.desenrolar.map((p, i) => `${i + 1}. ${p.fala}${p.visual ? " [" + p.visual + "]" : ""}`).join("\n") : "",
+          `CTA:\n${x.cta.fala}${x.cta.visual ? "\n[" + x.cta.visual + "]" : ""}`,
+          x.legenda || x.hashtags ? `LEGENDA:\n${x.legenda || ""}${x.hashtags ? "\n" + x.hashtags : ""}` : "",
+          x.outros_ganchos.length ? "OUTRAS IDEIAS DE GANCHO:\n" + x.outros_ganchos.map((g) => `- (${g.tipo}) ${g.texto}`).join("\n") : "",
+          x.outros_tipos_ugc.length ? "OUTROS TIPOS DE UGC:\n" + x.outros_tipos_ugc.map((g) => `- ${g.tipo}: ${g.ideia}`).join("\n") : "",
+        ].filter(Boolean).join("\n\n");
+        function ligarBoard(painel, modo) {
+          const st = $("[data-status]", painel);
+          const status = (t, erro) => { st.textContent = t; st.hidden = !t; st.classList.toggle("erro", Boolean(erro)); };
           const anteriores = [];
-          const cena = (p) => esc(p.fala || "") + (p.visual ? `<em>${esc(p.visual)}</em>` : "");
-          const textoRoteiro = (x) => [
-            `TIPO DE CONTEÚDO UGC: ${x.tipo_ugc || "-"}\nTIPO DE FUNIL: ${x.funil || "-"}\nNICHO: ${x.nicho || "-"}${x.formato ? "\nFORMATO: " + x.formato : ""}`,
-            `HOOK${x.gancho_tipo ? " (" + x.gancho_tipo + ")" : ""}:\n${x.hook.fala}${x.hook.visual ? "\n[" + x.hook.visual + "]" : ""}`,
-            x.desenrolar.length ? "DESENROLAR:\n" + x.desenrolar.map((p, i) => `${i + 1}. ${p.fala}${p.visual ? " [" + p.visual + "]" : ""}`).join("\n") : "",
-            `CTA:\n${x.cta.fala}${x.cta.visual ? "\n[" + x.cta.visual + "]" : ""}`,
-            x.legenda || x.hashtags ? `LEGENDA:\n${x.legenda || ""}${x.hashtags ? "\n" + x.hashtags : ""}` : "",
-            x.outros_ganchos.length ? "OUTRAS IDEIAS DE GANCHO:\n" + x.outros_ganchos.map((g) => `- (${g.tipo}) ${g.texto}`).join("\n") : "",
-            x.outros_tipos_ugc.length ? "OUTROS TIPOS DE UGC:\n" + x.outros_tipos_ugc.map((g) => `- ${g.tipo}: ${g.ideia}`).join("\n") : "",
-          ].filter(Boolean).join("\n\n");
-          const mostrar = (lista, pesquisa) => {
-            $("#rot-insp-res", corpo).innerHTML = (pesquisa ? `<details class="rot-insp-pesquisa"><summary>O que eu encontrei sobre os produtos</summary><pre>${esc(pesquisa)}</pre></details>` : "") + lista.map((x, i) => `
-              <article class="rot-insp-card">
+          let imagens = [];
+          const op = (k) => $(`[data-op="${k}"]`, painel).value;
+          // áudio e imagens (só no "Se inspire")
+          const ideia = $("#ins-ideia", painel);
+          const mostrarImagens = () => {
+            const lista = $("[data-lista-imagens]", painel); if (!lista) return;
+            lista.innerHTML = imagens.map((src, i) => `<span><img src="${src}" alt="Imagem ${i + 1}"><button type="button" data-tirar="${i}" aria-label="Tirar imagem">×</button></span>`).join("");
+            $$("[data-tirar]", lista).forEach((b) => b.addEventListener("click", () => { imagens.splice(Number(b.dataset.tirar), 1); mostrarImagens(); }));
+          };
+          async function usarAudio(arquivo) {
+            status("Ouvindo o seu áudio...");
+            try { const corpoAudio = new FormData(); corpoAudio.append("audio", arquivo, arquivo.name || "ideia.webm");
+              const d = await chamarRoteiro(corpoAudio); if (d.texto) ideia.value = (ideia.value.trim() ? ideia.value.trim() + "\n\n" : "") + d.texto; status("Pronto! Coloquei o que você falou no campo da ideia."); }
+            catch (e) { status(e.message, true); }
+          }
+          if (ideia) {
+            let gravador = null;
+            const btnGravar = $("[data-gravar]", painel);
+            btnGravar.addEventListener("click", async () => {
+              if (gravador) { gravador.stop(); return; }
+              try {
+                const fluxo = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const rec = new MediaRecorder(fluxo); const partes = [];
+                rec.ondataavailable = (e) => { if (e.data && e.data.size) partes.push(e.data); };
+                rec.onstop = () => { fluxo.getTracks().forEach((t) => t.stop()); gravador = null; btnGravar.textContent = "🎙 Gravar áudio"; btnGravar.classList.remove("gravando");
+                  const tipo = rec.mimeType || "audio/webm"; const ext = /mp4|m4a|aac/.test(tipo) ? "m4a" : /ogg/.test(tipo) ? "ogg" : "webm";
+                  const blob = new Blob(partes, { type: tipo }); if (blob.size) usarAudio(new File([blob], "ideia." + ext, { type: tipo })); };
+                gravador = rec; rec.start(); btnGravar.textContent = "● Parar e usar o áudio"; btnGravar.classList.add("gravando");
+              } catch (e) { status("Não consegui usar o microfone. Libere o microfone no navegador ou envie um arquivo de áudio.", true); }
+            });
+            $("[data-audio]", painel).addEventListener("change", (e) => { const a = e.target.files[0]; e.target.value = ""; if (a) usarAudio(a); });
+            $("[data-imagens]", painel).addEventListener("change", async (e) => {
+              const lista = [...e.target.files].filter((a) => /^image\//.test(a.type)).slice(0, 4 - imagens.length); e.target.value = "";
+              try { imagens = [...imagens, ...(await Promise.all(lista.map(reduzirImagem)))].slice(0, 4); mostrarImagens(); } catch (er) { status("Não consegui abrir essa imagem. Tente JPG ou PNG.", true); }
+            });
+          }
+          function mostrar(lista, pesquisa) {
+            const res = $("[data-resultado]", painel);
+            res.innerHTML = (pesquisa ? `<details class="rot-insp-pesquisa"><summary>O que eu encontrei sobre os produtos</summary><pre>${esc(pesquisa)}</pre></details>` : "") + lista.map((x, i) => `
+              <article class="rot-insp-card" data-i="${i}">
                 <div class="rot-insp-topo"><span><small>Tipo de conteúdo UGC</small><b>${esc(x.tipo_ugc || "-")}</b></span><span><small>Tipo de funil</small><b>${esc(x.funil || "-")}</b></span><span><small>Nicho</small><b>${esc(x.nicho || "-")}</b></span></div>
                 <h5>${esc(x.titulo)}</h5>
                 ${x.formato ? `<p class="rot-insp-formato">${esc(x.formato)}${x.funil_por_que ? " · " + esc(x.funil_por_que) : ""}</p>` : ""}
-                <div class="rot-parte"><span class="rot-rotulo">Hook${x.gancho_tipo ? " · " + esc(x.gancho_tipo) : ""}</span><p class="rot-destaque">${cena(x.hook)}</p></div>
-                ${x.desenrolar.length ? `<div class="rot-parte"><span class="rot-rotulo">Desenrolar</span><ol>${x.desenrolar.map((p) => `<li>${cena(p)}</li>`).join("")}</ol></div>` : ""}
-                <div class="rot-parte"><span class="rot-rotulo">CTA</span><p class="rot-caixa">${cena(x.cta)}</p></div>
-                ${x.legenda || x.hashtags ? `<div class="rot-parte"><span class="rot-rotulo">Legenda</span><p>${esc(x.legenda || "")}${x.hashtags ? `<br><span class="rot-insp-hash">${esc(x.hashtags)}</span>` : ""}</p></div>` : ""}
-                ${x.por_que_funciona ? `<p class="rot-insp-porque">${esc(x.por_que_funciona)}</p>` : ""}
-                ${x.outros_ganchos.length ? `<div class="rot-parte"><span class="rot-rotulo">Outras ideias de gancho</span><ul>${x.outros_ganchos.map((g) => `<li><span class="rot-tag">${esc(g.tipo)}</span> ${esc(g.texto)}</li>`).join("")}</ul></div>` : ""}
-                ${x.outros_tipos_ugc.length ? `<div class="rot-parte"><span class="rot-rotulo">Outros tipos de UGC para essa ideia</span><ul>${x.outros_tipos_ugc.map((g) => `<li><b>${esc(g.tipo)}:</b> ${esc(g.ideia)}</li>`).join("")}</ul></div>` : ""}
-                <div class="rot-insp-acoes"><button class="btn btn-principal btn-mini" type="button" data-salvar="${i}">Salvar nos meus roteiros</button><button class="btn btn-mini" type="button" data-copiar="${i}">Copiar</button></div>
-              </article>`).join("");
-            $$("[data-salvar]", corpo).forEach((b) => b.addEventListener("click", async () => {
-              const x = lista[Number(b.dataset.salvar)];
-              const ref = lerFormulario();
-              const ok = await gravar("roteiros", { titulo: x.titulo, de_quem: "meu", origem: /tiktok/i.test($("#rot-insp-plataforma", corpo).value) ? "tiktok" : "instagram",
-                etiquetas: [x.tipo_ugc, x.funil, x.nicho].filter(Boolean).join(", "), gancho: x.hook.fala, gancho_tipo: nulo(x.gancho_tipo),
-                desenvolvimento: x.desenrolar.map((p) => p.fala).join("\n"), cta: x.cta.fala, por_que: nulo(x.por_que_funciona), transcricao: textoRoteiro(x),
-                notas: "Inspirado em: " + (ref.titulo || ref.gancho || "roteiro de referência") + (ref.link ? " (" + ref.link + ")" : "") });
-              if (ok) { b.textContent = "✓ Salvo"; b.disabled = true; avisar("Roteiro salvo nos seus roteiros"); recarregar("roteiros"); }
-            }));
-            $$("[data-copiar]", corpo).forEach((b) => b.addEventListener("click", async () => {
-              try { await navigator.clipboard.writeText(textoRoteiro(lista[Number(b.dataset.copiar)])); avisar("Roteiro copiado"); } catch (e) { avisar("Não consegui copiar. Selecione o texto e copie.", true); }
-            }));
-          };
-          $("#rot-insp-criar", corpo).addEventListener("click", async () => {
-            const produtos = $("#rot-insp-produtos", corpo).value.trim();
+                <div class="rot-insp-ver">
+                  <div class="rot-parte"><span class="rot-rotulo">Hook${x.gancho_tipo ? " · " + esc(x.gancho_tipo) : ""}</span><p class="rot-destaque">${cena(x.hook)}</p></div>
+                  ${x.desenrolar.length ? `<div class="rot-parte"><span class="rot-rotulo">Desenrolar</span><ol>${x.desenrolar.map((p) => `<li>${cena(p)}</li>`).join("")}</ol></div>` : ""}
+                  <div class="rot-parte"><span class="rot-rotulo">CTA</span><p class="rot-caixa">${cena(x.cta)}</p></div>
+                  ${x.legenda || x.hashtags ? `<div class="rot-parte"><span class="rot-rotulo">Legenda</span><p>${esc(x.legenda || "")}${x.hashtags ? `<br><span class="rot-insp-hash">${esc(x.hashtags)}</span>` : ""}</p></div>` : ""}
+                  ${x.por_que_funciona ? `<p class="rot-insp-porque">${esc(x.por_que_funciona)}</p>` : ""}
+                  ${x.outros_ganchos.length ? `<details class="rot-mais"><summary>Outras ideias de gancho</summary><ul>${x.outros_ganchos.map((g) => `<li><span class="rot-tag">${esc(g.tipo)}</span> ${esc(g.texto)}</li>`).join("")}</ul></details>` : ""}
+                  ${x.outros_tipos_ugc.length ? `<details class="rot-mais"><summary>Outros tipos de UGC para essa ideia</summary><ul>${x.outros_tipos_ugc.map((g) => `<li><b>${esc(g.tipo)}:</b> ${esc(g.ideia)}</li>`).join("")}</ul></details>` : ""}
+                </div>
+                <textarea class="rot-insp-editar" hidden aria-label="Editar roteiro">${esc(textoRoteiro(x))}</textarea>
+                <div class="rot-insp-acoes">
+                  <button class="btn btn-mini" type="button" data-acao="editar">✎ Editar</button>
+                  <button class="btn btn-mini" type="button" data-acao="copiar">Copiar</button>
+                  <button class="btn btn-principal btn-mini" type="button" data-acao="salvar">Salvar nos meus roteiros</button>
+                </div>
+              </article>`).join("") + `
+              <div class="rot-denovo">
+                <input data-ajuste placeholder="Não gostou? Diga o que mudar (opcional). Ex.: mais engraçado, gancho de objeção, mais curto">
+                <button class="btn" type="button" data-denovo>↻ Gerar de novo</button>
+              </div>`;
+            $$(".rot-insp-card", res).forEach((card) => {
+              const x = lista[Number(card.dataset.i)];
+              const area = $(".rot-insp-editar", card);
+              $('[data-acao="editar"]', card).addEventListener("click", (e) => {
+                const editando = area.hidden; area.hidden = !editando; $(".rot-insp-ver", card).hidden = editando;
+                e.target.textContent = editando ? "✓ Pronto" : "✎ Editar"; if (editando) area.focus();
+              });
+              $('[data-acao="copiar"]', card).addEventListener("click", async () => {
+                try { await navigator.clipboard.writeText(area.value); avisar("Roteiro copiado"); } catch (e) { avisar("Não consegui copiar. Toque em Editar, selecione o texto e copie.", true); }
+              });
+              $('[data-acao="salvar"]', card).addEventListener("click", async (e) => {
+                const b = e.target; const ref = lerFormulario();
+                const ok = await gravar("roteiros", { titulo: x.titulo, de_quem: "meu", origem: /tiktok/i.test(op("plataforma")) ? "tiktok" : "instagram",
+                  etiquetas: [x.tipo_ugc, x.funil, x.nicho].filter(Boolean).join(", "), gancho: x.hook.fala, gancho_tipo: nulo(x.gancho_tipo),
+                  desenvolvimento: x.desenrolar.map((p) => p.fala).join("\n"), cta: x.cta.fala, por_que: nulo(x.por_que_funciona), transcricao: area.value,
+                  notas: (modo === "copiar" ? "Copiado de: " : "Inspirado em: ") + (ref.titulo || ref.gancho || "roteiro de referência") + (ref.link ? " (" + ref.link + ")" : "") });
+                if (ok) { b.textContent = "✓ Salvo"; b.disabled = true; avisar("Roteiro salvo nos seus roteiros"); recarregar("roteiros"); }
+              });
+            });
+            $("[data-denovo]", res).addEventListener("click", () => gerar($("[data-ajuste]", res).value.trim()));
+          }
+          async function gerar(ajuste) {
             const f = lerFormulario();
-            if (!produtos && !f.transcricao && !f.gancho) { statusInsp("Conte quais produtos você tem, ou transcreva o vídeo primeiro.", true); return; }
-            const botao = $("#rot-insp-criar", corpo);
-            botao.disabled = true; botao.classList.add("carregando");
-            statusInsp(produtos ? "Pesquisando seus produtos e escrevendo o roteiro... (leva uns 40 segundos)" : "Escrevendo o seu roteiro... (leva uns 20 segundos)");
+            const referencia = { titulo: f.titulo, gancho: f.gancho, gancho_tipo: f.gancho_tipo, desenvolvimento: f.desenvolvimento, cta: f.cta, por_que: f.por_que, transcricao: String(f.transcricao || "").slice(0, 3500) };
+            let corpoPedido;
+            if (modo === "copiar") {
+              const produtos = $("#cop-produtos", painel).value.trim();
+              if (!produtos) { status("Coloque os seus produtos.", true); return; }
+              if (!referencia.transcricao && !referencia.gancho) { status("Esse vídeo ainda não tem transcrição. Transcreva na aba Vídeo transcrito primeiro.", true); return; }
+              corpoPedido = { modo: "copiar", produtos, realidade: $("#cop-real", painel).value.trim(), referencia };
+            } else {
+              const ideiaTxt = ideia.value.trim(), produtos = $("#ins-produtos", painel).value.trim();
+              if (!ideiaTxt && !produtos && !imagens.length) { status("Conte a sua ideia (escrevendo ou em áudio), anexe uma imagem ou diga o produto.", true); return; }
+              corpoPedido = { modo: "ugc", ideia: ideiaTxt, produtos, produto: produtos, imagens, referencia };
+            }
+            Object.assign(corpoPedido, { nicho: op("nicho"), plataforma: op("plataforma"), quantidade: Number(op("quantidade")), anteriores: anteriores.slice(-6), ajuste: ajuste || "" });
+            const botao = $("[data-gerar]", painel); botao.disabled = true; botao.classList.add("carregando");
+            status(corpoPedido.produtos ? "Pesquisando os produtos e escrevendo... (até 1 minuto)" : "Escrevendo o roteiro... (uns 30 segundos)");
             try {
-              const { data, error } = await banco.functions.invoke("gerar-roteiro", { body: { modo: "ugc", produtos, nicho: $("#rot-insp-nicho", corpo).value, plataforma: $("#rot-insp-plataforma", corpo).value,
-                quantidade: Number($("#rot-insp-qtd", corpo).value), anteriores,
-                referencia: { titulo: f.titulo, gancho: f.gancho, gancho_tipo: f.gancho_tipo, desenvolvimento: f.desenvolvimento, cta: f.cta, por_que: f.por_que, transcricao: String(f.transcricao || "").slice(0, 2500) } } });
-              let msg = data && data.error;
-              if (error) { try { msg = (await error.context.json()).error; } catch (e) {} msg = msg || "Não consegui criar o roteiro agora. Tente de novo."; }
-              if (msg) throw new Error(msg);
-              if (!data.roteiros || !data.roteiros.length) throw new Error("A IA não devolveu o roteiro. Tente de novo.");
-              data.roteiros.forEach((x) => anteriores.push(x.hook.fala));
-              mostrar(data.roteiros, data.pesquisa);
-              statusInsp("Pronto! Confira e salve o que gostar. Clique de novo para outras versões.");
-              botao.textContent = "✨ Criar outras versões";
-            } catch (e) { statusInsp(e.message, true); }
+              const d = await chamarRoteiro(corpoPedido);
+              if (!d.roteiros || !d.roteiros.length) throw new Error("A IA não devolveu o roteiro. Tente de novo.");
+              d.roteiros.forEach((x) => anteriores.push(x.hook.fala));
+              mostrar(d.roteiros, d.pesquisa);
+              status("Pronto! Se não gostar, peça de novo lá embaixo, ou edite antes de salvar.");
+            } catch (e) { status(e.message, true); }
             botao.disabled = false; botao.classList.remove("carregando");
-          });
+          }
+          $("[data-gerar]", painel).addEventListener("click", () => gerar(""));
         }
+        ligarBoard($('[data-painel="inspirar"]', corpo), "ugc");
+        ligarBoard($('[data-painel="copiar"]', corpo), "copiar");
         // ao colar outro link, troca o vídeo, a origem e o perfil
         $('[name="link"]', corpo).addEventListener("change", (e) => {
           const link = e.target.value.trim();
@@ -1502,7 +1620,6 @@
           const perfil = perfilDoLink(link);
           if (perfil && !$('[name="perfil"]', corpo).value.trim()) $('[name="perfil"]', corpo).value = perfil;
         });
-        if (tocar) $("#rot-player", corpo).scrollIntoView({ block: "center" });
       }
     });
   }

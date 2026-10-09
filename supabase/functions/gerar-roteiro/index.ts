@@ -5,6 +5,7 @@
 //   transcrito), de imagens (produto, prints) e de um vídeo de referência; cada roteiro vem com tipo de
 //   conteúdo UGC, tipo de funil, nicho, outras ideias de gancho e outros tipos de UGC
 // - envio de áudio (multipart, campo "audio"): transcreve a ideia falada dela
+// - modo "copiar": mantém a ideia, a ordem e o jeito do vídeo transcrito, trocando só o produto pelo dela
 // - { prompt }: modo antigo, texto livre
 // Treino de estilo: o guia (tabela estilo_ugc) e exemplos reais (tabela estilo_videos, transcrições de
 // 153 vídeos de Lara Dam e Isabelly Gervasio) entram no pedido para a IA escrever no mesmo tom delas.
@@ -196,14 +197,57 @@ async function roteirosUgc(chave: string, c: any, supa: any, curto = false): Pro
   const [descricao, pesquisa, est] = await Promise.all([
     c._descricao !== undefined ? c._descricao : imagens.length ? descreverImagens(chave, imagens) : "",
     c._pesquisa !== undefined ? c._pesquisa : c.produtos ? pesquisarProdutos(String(c.produtos)).then((p) => p.slice(0, 1700)) : "",
-    estilo(supa, c.nicho, curto),
+    c.modo === "copiar" ? Promise.resolve({ guia: "", exemplos: "" }) : estilo(supa, c.nicho, curto),
   ]);
+  const formato = `{"roteiros":[{"titulo":"até 6 palavras","tipo_ugc":"um dos tipos de UGC","funil":"Topo de funil | Meio de funil | Fundo de funil","funil_por_que":"1 frase","nicho":"nicho","formato":"ex.: Reels 30s, falando para a câmera","gancho_tipo":"um dos 9 tipos de gancho","hook":{"fala":"fala ou texto na tela","visual":"o que a câmera mostra"},"desenrolar":[{"fala":"...","visual":"..."}],"cta":{"fala":"...","visual":"..."},"legenda":"legenda curta","hashtags":"#... #...","por_que_funciona":"1 a 2 frases","outros_ganchos":[{"tipo":"um dos 9 tipos","texto":"outro hook pronto para a mesma ideia"}],"outros_tipos_ugc":[{"tipo":"outro tipo de UGC","ideia":"como essa ideia ficaria nesse formato"}]}]}`;
+  const regrasFatos = `NUNCA invente números, porcentagens, prazos ou resultados. Use só números que ela contou ou que aparecem na pesquisa; sem número confiável, use o tempo de uso dela e detalhes que dá para ver e sentir (textura, cheiro, toque, antes e depois na câmera).
+Não invente cupom, desconto, frete grátis ou preço: se ela não contou e a pesquisa não mostrou, faça o CTA sem oferta.
+gancho_tipo deve ser exatamente um destes: Problema / Identificação, Antes e depois, Promessa, Comparativo, Lista / Curiosidade, Opinião forte, Objeção, Prova / Depoimento, Urgência. Nunca use travessão (—).`;
+  if (c.modo === "copiar" && ref) {
+    const pedidoCopia = `Você vai COPIAR um vídeo UGC que deu muito certo, para uma criadora brasileira gravar a versão dela com os produtos dela.
+
+VÍDEO ORIGINAL (transcrição completa):
+"${txt(ref.transcricao, curto ? 2200 : 3500)}"
+${ref.gancho ? `Gancho original: "${txt(ref.gancho, 300)}" (${txt(ref.gancho_tipo, 40)})` : ""}
+${ref.desenvolvimento ? `Passos do original: ${txt(String(ref.desenvolvimento).replace(/\n/g, " / "), 600)}` : ""}
+${ref.cta ? `CTA original: "${txt(ref.cta, 300)}"` : ""}
+
+PRODUTOS DELA: ${txt(c.produtos, 800) || "não informou"}
+REALIDADE DELA COM OS PRODUTOS: ${txt(c.realidade, 800) || "não contou"}
+${pesquisa ? "O QUE ENCONTREI NA INTERNET SOBRE OS PRODUTOS DELA (use só o que for coerente):\n" + (curto ? pesquisa.slice(0, 900) : pesquisa) : ""}
+Onde vai postar: ${txt(c.plataforma, 40) || "Reels"}
+${c.ajuste ? "AJUSTE PEDIDO POR ELA: " + txt(c.ajuste, 500) : ""}
+${Array.isArray(c.anteriores) && c.anteriores.length ? "Já sugeri estas aberturas, faça diferente mantendo a fórmula: " + c.anteriores.map((x: unknown) => `"${txt(x, 140)}"`).join("; ") : ""}
+
+COMO COPIAR (é uma adaptação fiel, não um roteiro novo):
+1. Mesma fórmula de gancho: a primeira frase segue a mesma construção do original, só trocando o que for do produto ou da situação.
+2. Mesmos blocos na mesma ordem, com o mesmo número de falas (mais ou menos) e o mesmo tamanho de vídeo.
+3. Mesmo tom, mesmo ritmo, mesmas viradas e expressões de efeito do original (pode reaproveitar as expressões).
+4. Mesmo tipo de CTA.
+5. Troque só: o produto (com o nome dela), os benefícios e detalhes do produto (pelo que ela contou e pela pesquisa) e as situações pessoais para a realidade dela.
+6. Onde o original conta uma experiência pessoal que ela não contou, escreva algo plausível e marque entre colchetes para ela confirmar, ex.: "[confirme: você usa de manhã?]". Resultados também: nunca diga que algo sumiu, melhorou ou mudou se ela não contou; escreva o resultado entre colchetes, ex.: "[confirme: o que mudou na sua pele?]".
+7. Na lista "desenrolar", siga os blocos do original, um item por fala.
+
+Crie ${qtd} versão(ões). Responda SOMENTE um JSON neste formato:
+${formato}
+Em "por_que_funciona" explique em 1 frase o que foi mantido do original. Em "outros_ganchos" dê 3 variações da mesma fórmula de gancho. Português do Brasil, frases faladas.
+${regrasFatos}`;
+    return gerarERetornar(chave, pedidoCopia, qtd, descricao, pesquisa, () => c._curto ? null : roteirosUgc(chave, { ...c, _curto: true, quantidade: 1, _descricao: descricao, _pesquisa: pesquisa.slice(0, 900) }, supa, true), 0.5);
+  }
   const pedido = `Você é roteirista de UGC de uma criadora brasileira que é contratada por marcas para produzir vídeos curtos (Reels, TikTok e Stories).
 Todo roteiro precisa passar em dois testes ao mesmo tempo:
 1) Para o scroll de quem não a segue (hook forte nos primeiros 1 a 3 segundos, nunca começa explicando o produto).
 2) Teste do anúncio: se uma marca cortasse o vídeo e postasse como anúncio pago, funcionaria sem mudar o roteiro. O produto aparece em cena (na mão, embalagem visível, uso real), o benefício é específico (de preferência com número, tempo ou resultado) e o CTA é para quem compraria o produto. Nunca misture CTA de compra com "marcas, me contratem". Espontâneo, com cara de conteúdo real, mas com estrutura de venda por trás.
 
 ESTRUTURA OBRIGATÓRIA de cada roteiro: HOOK (forte, faz parar de rolar) → DESENROLAR (entrega o que o hook prometeu, mostra o produto em uso e transforma em benefício) → CTA (ação clara, nunca termina em "e foi isso").
+
+REGRA MAIS IMPORTANTE: PROIBIDO ROTEIRO GENÉRICO.
+- A ideia dela é o centro: use as palavras, situações, produtos e detalhes que ela contou.
+- Ganchos proibidos (são batidos e servem para qualquer produto): "Você já cansou de...?", "Você já acordou com...?", "Cansada de...?", "Sabia que...?", "Descobri o segredo...", "Chega de...", "Quer saber como...?", "3 passos simples...".
+- Todo hook tem um detalhe concreto que só existe nessa ideia: um objeto, uma cena real, uma frase de opinião dela, o nome do produto ou algo que ela contou.
+- Quando houver vídeo de referência, o PRIMEIRO roteiro usa a mesma construção da primeira frase da referência, trocando o assunto pela ideia dela (ex.: "Quase fiquei careca tentando ter um loiro platinado" vira "Quase desisti do meu protetor tentando esconder as manchas"). Os outros usam padrões de abertura diferentes do guia de estilo.
+- Cada fala do desenrolar diz algo que só serve para esse produto e essa ideia.
+- Não invente tempo de uso nem resultado que ela não contou. Se precisar, deixe entre colchetes para ela completar, ex.: "[há quanto tempo você usa?]".
 
 Tipos de gancho que ela usa (escolha um para cada roteiro e varie entre os roteiros):
 ${GANCHOS}
@@ -224,7 +268,7 @@ Tipo de UGC desejado: ${txt(c.tipo, 80) || "escolha o melhor"}
 Funil desejado: ${txt(c.funil, 40) || "escolha o melhor"}
 Plataforma: ${txt(c.plataforma, 40) || "Reels"}
 ${descricao ? "O que aparece nas imagens que ela mandou:\n" + descricao : ""}
-${ref ? `VÍDEO DE REFERÊNCIA (de outra criadora; crie algo parecido no estilo e na estrutura, sem copiar as falas)
+${ref ? `VÍDEO DE REFERÊNCIA (de outra criadora; use o que fez ele dar certo, a fórmula do gancho, a ordem dos blocos e o ritmo, aplicado à ideia dela, sem copiar as falas)
 Gancho: "${txt(ref.gancho, 400)}" (tipo ${txt(ref.gancho_tipo, 40)})
 Estrutura: ${txt(String(ref.desenvolvimento || "").replace(/\n/g, " / "), 800)}
 CTA: "${txt(ref.cta, 300)}"
@@ -239,15 +283,31 @@ Regras: português do Brasil, frases faladas naturais e curtas, 3 a 5 passos no 
 NUNCA invente números, porcentagens, prazos ou resultados ("40% mais brilho", "dura 48h"). Use só números que ela contou ou que aparecem na pesquisa acima; sem número confiável, use o tempo de uso dela e detalhes que dá para ver e sentir (textura, cheiro, toque, antes e depois na câmera).
 Não invente cupom, desconto, frete grátis ou preço: se ela não contou e a pesquisa não mostrou, faça o CTA sem oferta (ex.: "o link tá aqui embaixo", "salva pra lembrar").
 gancho_tipo deve ser exatamente um destes nomes: Problema / Identificação, Antes e depois, Promessa, Comparativo, Lista / Curiosidade, Opinião forte, Objeção, Prova / Depoimento, Urgência.`;
+  const refazer = () => c._curto ? null : roteirosUgc(chave, { ...c, _curto: true, quantidade: Math.min(qtd, 2), _descricao: descricao, _pesquisa: pesquisa.slice(0, 900) }, supa, true);
+  const res = await gerarERetornar(chave, pedido, qtd, descricao, pesquisa, refazer);
+  // checagem: se algum gancho saiu batido, pede para reescrever uma vez
+  const batidos = (res.roteiros || []).map((r: any) => r.hook.fala).filter((h: string) => GANCHO_BATIDO.test(h));
+  if (batidos.length && !c._reescrito) {
+    try {
+      const novo = await gerarERetornar(chave, pedido + `\n\nATENÇÃO: estes ganchos ficaram genéricos e estão proibidos: ${batidos.map((h: string) => `"${h}"`).join("; ")}. Reescreva os roteiros com ganchos concretos, tirados da ideia dela.`, qtd, descricao, pesquisa);
+      if ((novo.roteiros || []).length) return novo;
+    } catch (e) { console.error("Reescrita falhou:", String((e as Error).message)); }
+  }
+  return res;
+}
+const GANCHO_BATIDO = /^\s*(voc[eê] j[aá] (cansou|acordou|se sentiu|sofreu)|cansad[ao] de|sabia que|descobri o segredo|chega de|quer saber como|\d+ passos simples|j[aá] acordou|adeus)/i;
+
+// manda o pedido para a IA e arruma os roteiros que voltaram (com nova tentativa se vier cortado)
+async function gerarERetornar(chave: string, pedido: string, qtd: number, descricao: string, pesquisa: string, refazerCurto?: () => Promise<any> | null, temperatura = 0.8): Promise<any> {
   // gpt-oss pensa antes de responder e isso também gasta o espaço da resposta: max generoso, dentro do limite de 8000 por minuto
   let saida = "", j: any = {};
-  const tentar = async (opcoes: any) => { saida = await conversarGroq(chave, [{ role: "user", content: pedido }], { json: true, temperatura: 0.8, leve: true, ...opcoes }); j = lerJson(saida); return Array.isArray(j.roteiros) && j.roteiros.some((r: any) => r?.hook?.fala); };
+  const tentar = async (opcoes: any) => { saida = await conversarGroq(chave, [{ role: "user", content: pedido }], { json: true, temperatura, leve: true, ...opcoes }); j = lerJson(saida); return Array.isArray(j.roteiros) && j.roteiros.some((r: any) => r?.hook?.fala); };
   let ok = false;
   try { ok = await tentar({ max: qtd === 3 ? 4800 : 4200 }); }
   catch (e) {
     const msg = String((e as Error).message);
     // pedido grande demais para o plano grátis: refaz mais curto
-    if (!c._curto && /too large|tokens per minute|TPM|413/i.test(msg)) return roteirosUgc(chave, { ...c, _curto: true, quantidade: Math.min(qtd, 2), _descricao: descricao, _pesquisa: pesquisa.slice(0, 900) }, supa, true);
+    if (/too large|tokens per minute|TPM|413/i.test(msg)) { const r = refazerCurto && refazerCurto(); if (r) return r; }
     console.error("gpt-oss falhou:", msg);
   }
   if (!ok) {
@@ -261,7 +321,7 @@ gancho_tipo deve ser exatamente um destes nomes: Problema / Identificação, Ant
   const roteiros = (Array.isArray(j.roteiros) ? j.roteiros : []).slice(0, qtd).map((r: any) => ({
     titulo: txt(r.titulo, 60) || "Roteiro UGC", tipo_ugc: txt(r.tipo_ugc, 60), funil: txt(r.funil, 30), funil_por_que: txt(r.funil_por_que, 200),
     nicho: txt(r.nicho, 40), formato: txt(r.formato, 80), gancho_tipo: txt(r.gancho_tipo, 40), hook: parte(r.hook),
-    desenrolar: (Array.isArray(r.desenrolar) ? r.desenrolar : []).slice(0, 7).map(parte).filter((p: any) => p.fala || p.visual),
+    desenrolar: (Array.isArray(r.desenrolar) ? r.desenrolar : []).slice(0, 10).map(parte).filter((p: any) => p.fala || p.visual),
     cta: parte(r.cta), legenda: txt(r.legenda, 600), hashtags: txt(r.hashtags, 300), por_que_funciona: txt(r.por_que_funciona, 400),
     outros_ganchos: (Array.isArray(r.outros_ganchos) ? r.outros_ganchos : []).slice(0, 4).map((g: any) => ({ tipo: txt(g?.tipo, 40), texto: txt(g?.texto, 300) })).filter((g: any) => g.texto),
     outros_tipos_ugc: (Array.isArray(r.outros_tipos_ugc) ? r.outros_tipos_ugc : []).slice(0, 3).map((g: any) => ({ tipo: txt(g?.tipo, 40), ideia: txt(g?.ideia, 300) })).filter((g: any) => g.tipo),
@@ -288,7 +348,7 @@ Deno.serve(async (req) => {
       catch (e) { return resposta({ error: String((e as Error).message) }, 422); }
     }
     const corpo = await req.json().catch(() => ({}));
-    if (corpo.modo === "ugc") {
+    if (corpo.modo === "ugc" || corpo.modo === "copiar") {
       try { return resposta(await roteirosUgc(chave, corpo, supa)); }
       catch (e) { console.error(e); return resposta({ error: "Não consegui criar os roteiros agora. Tente de novo em instantes." }, 502); }
     }
