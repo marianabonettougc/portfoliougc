@@ -1148,6 +1148,94 @@
     }
   }
 
+  // ---------- Método de roteiro (skill roteiro-ugc da Lara) ----------
+  // Os arquivos da skill ficam no Supabase (tabela metodo_roteiro, só a dona lê); a IA usa o resumo em estilo_ugc.metodo.
+  const CHECKLIST_SKILL = ["O gancho para o dedo nos primeiros três segundos?", "Existe mudança perceptível do começo ao fim?", "O produto entra como consequência, não como anúncio jogado?",
+    "Tem prova real, e ela é verdadeira?", "O CTA tem uma ação só e diz o que a pessoa ganha?", "A palavra do gatilho é única e está igual no vídeo e na legenda?", "Soa como conversa, não como script decorado?",
+    "Nenhuma construção banida, nenhum travessão?", "Bate com todas as restrições do briefing, uma por uma?", "A duração fecha, calculada pelo seu ritmo?", "As falas obrigatórias estão literais?",
+    "Os campos que dependem de informação externa estão marcados?"];
+  const checklistSkill = () => `<details class="rot-mais rot-checklist"><summary>✔ Checklist da skill antes de gravar</summary><ul>${CHECKLIST_SKILL.map((t) => `<li><label><input type="checkbox"> ${esc(t)}</label></li>`).join("")}</ul></details>`;
+  function markdownSimples(md) {
+    const linhas = String(md || "").replace(/^---[\s\S]*?\n---\n/, "").split("\n");
+    const inline = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>");
+    let html = "", lista = "";
+    const fecharLista = () => { if (lista) { html += `</${lista}>`; lista = ""; } };
+    for (const l of linhas) {
+      let m;
+      if ((m = l.match(/^(#{1,3})\s+(.*)/))) { fecharLista(); html += `<h${m[1].length + 3}>${inline(m[2])}</h${m[1].length + 3}>`; }
+      else if ((m = l.match(/^\s*[-*]\s+(.*)/))) { if (lista !== "ul") { fecharLista(); html += "<ul>"; lista = "ul"; } html += `<li>${inline(m[1])}</li>`; }
+      else if ((m = l.match(/^\s*\d+\.\s+(.*)/))) { if (lista !== "ol") { fecharLista(); html += "<ol>"; lista = "ol"; } html += `<li>${inline(m[1])}</li>`; }
+      else if (!l.trim()) fecharLista();
+      else { fecharLista(); html += `<p>${inline(l)}</p>`; }
+    }
+    fecharLista();
+    return html;
+  }
+  const contarPalavras = (t) => String(t || "").replace(/\[[^\]]*\]/g, " ").split(/\s+/).filter((w) => /[\p{L}\d]/u.test(w)).length;
+  async function abrirMetodo() {
+    const [{ data: arquivos, error }, { data: est }] = await Promise.all([
+      banco.from("metodo_roteiro").select("arquivo, titulo, conteudo").order("ordem"),
+      banco.from("estilo_ugc").select("ritmo_fala").eq("id", 1).maybeSingle(),
+    ]);
+    if (error) { avisar("Não consegui abrir o método: " + error.message, true); return; }
+    const lista = arquivos || [];
+    let ritmo = Number(est && est.ritmo_fala) || 0;
+    abrirJanela({
+      titulo: "Método de roteiro UGC", sobretitulo: "Skill roteiro-ugc", extraLarga: true,
+      corpo: `
+        <p class="metodo-intro">Esse é o método que a IA segue quando cria os seus roteiros (Se inspire, Copiar roteiro e Criar com IA). Eu também uso quando você me pede roteiros no chat.</p>
+        <div class="rot-abas" role="tablist">
+          ${lista.map((a, i) => `<button type="button" class="rot-aba${i ? "" : " ativa"}" data-aba="m${i}" role="tab">${esc(a.titulo)}</button>`).join("")}
+          <button type="button" class="rot-aba" data-aba="tempo" role="tab">⏱ Calcular duração</button>
+        </div>
+        ${lista.map((a, i) => `<section class="rot-painel metodo-texto" data-painel="m${i}"${i ? " hidden" : ""}>${markdownSimples(a.conteudo)}</section>`).join("")}
+        <section class="rot-painel rot-board" data-painel="tempo" hidden>
+          <h4>⏱ Quanto tempo o roteiro vai durar</h4>
+          <p>Duração é cálculo: palavras faladas divididas pelo ritmo de fala. A média é 2,75 palavras por segundo; quem fala rápido chega perto de 3,7.</p>
+          <label class="rot-campo-board">Cole as falas do roteiro<textarea id="met-texto" rows="6" placeholder="Só o que você vai falar. O que estiver entre colchetes não conta."></textarea></label>
+          <p class="metodo-resultado" id="met-resultado">0 palavras</p>
+          <h4>Descobrir o seu ritmo</h4>
+          <p>Pegue um vídeo seu já gravado: cole aqui o que você falou e quantos segundos o vídeo tem.</p>
+          <label class="rot-campo-board">O que você falou no vídeo<textarea id="met-falado" rows="3"></textarea></label>
+          <div class="metodo-ritmo">
+            <label class="rot-campo-board">Segundos do vídeo<input id="met-seg" type="number" min="1" inputmode="numeric"></label>
+            <label class="rot-campo-board">Seu ritmo (palavras por segundo)<input id="met-ritmo" type="number" step="0.05" min="1" max="6" value="${ritmo || ""}" placeholder="2,75"></label>
+            <button class="btn btn-principal" type="button" id="met-salvar">Salvar meu ritmo</button>
+          </div>
+          <p class="rot-status" id="met-status" hidden></p>
+        </section>`,
+      aoAbrir: (corpo) => {
+        $$(".rot-aba", corpo).forEach((aba) => aba.addEventListener("click", () => {
+          $$(".rot-aba", corpo).forEach((x) => x.classList.toggle("ativa", x === aba));
+          $$(".rot-painel", corpo).forEach((p) => { p.hidden = p.dataset.painel !== aba.dataset.aba; });
+        }));
+        const fmt = (n) => String(n).replace(".", ",");
+        const calcular = () => {
+          const p = contarPalavras($("#met-texto", corpo).value);
+          const r = Number($("#met-ritmo", corpo).value) || ritmo;
+          $("#met-resultado", corpo).innerHTML = `<b>${p} palavras</b> · uns ${Math.round(p / 2.75)} s no ritmo médio · ${Math.round(p / 3.7)} s falando rápido${r ? ` · <b>${Math.round(p / r)} s no seu ritmo (${fmt(r)})</b>` : ""}`;
+        };
+        $("#met-texto", corpo).addEventListener("input", calcular);
+        $("#met-ritmo", corpo).addEventListener("input", calcular);
+        const medir = () => {
+          const p = contarPalavras($("#met-falado", corpo).value), seg = Number($("#met-seg", corpo).value);
+          if (p && seg) { $("#met-ritmo", corpo).value = (p / seg).toFixed(2); calcular(); }
+        };
+        $("#met-falado", corpo).addEventListener("input", medir);
+        $("#met-seg", corpo).addEventListener("input", medir);
+        $("#met-salvar", corpo).addEventListener("click", async () => {
+          const r = Number($("#met-ritmo", corpo).value);
+          const st = $("#met-status", corpo); st.hidden = false;
+          if (!(r > 1 && r < 6)) { st.textContent = "Coloque um ritmo entre 1 e 6 palavras por segundo."; st.classList.add("erro"); return; }
+          const { error: erro } = await banco.from("estilo_ugc").update({ ritmo_fala: r }).eq("id", 1);
+          st.classList.toggle("erro", Boolean(erro));
+          st.textContent = erro ? "Não consegui salvar: " + erro.message : "Salvo! A IA vai calcular a duração dos roteiros no seu ritmo.";
+          if (!erro) ritmo = r;
+        });
+      },
+    });
+  }
+
   function desenharRoteiros() {
     const sec = $("#aba-roteiros");
     if (!$("#rot-novo")) {
@@ -1160,7 +1248,8 @@
             <button class="btn btn-principal" type="submit">Transcrever</button>
           </form>
           <div class="rot-faixa-rodape">
-            <button class="btn-texto" type="button" id="rot-mao">ou escrever um roteiro na mão</button>
+            <span><button class="btn-texto" type="button" id="rot-mao">ou escrever um roteiro na mão</button>
+            <button class="btn btn-mini" type="button" id="rot-metodo">📘 Método de roteiro (skill)</button></span>
             <span class="rot-ts" id="rot-ts"></span>
           </div>
         </div>
@@ -1190,6 +1279,7 @@
         $("#rot-link").value = "";
       });
       $("#rot-mao").addEventListener("click", () => formRoteiro(null, { de_quem: "meu", origem: "outro" }));
+      $("#rot-metodo").addEventListener("click", abrirMetodo);
       $("#rot-conectar-fechar").addEventListener("click", () => { $("#rot-conectar").hidden = true; });
       $("#rot-ts-abrir").addEventListener("click", async (e) => {
         const btn = e.currentTarget; btn.classList.add("carregando");
@@ -1484,10 +1574,11 @@
 
         // quadros "Se inspire nesse roteiro" e "Copiar roteiro" (Edge Function gerar-roteiro)
         const cena = (p) => esc(p.fala || "") + (p.visual ? `<em>${esc(p.visual)}</em>` : "");
+        const duracaoTexto = (d) => `${d.palavras} palavras, uns ${d.seu || d.media} s${d.seu ? " no seu ritmo" : " no ritmo médio"}${d.seu ? "" : ` (${d.rapida} s falando rápido)`}`;
         const textoRoteiro = (x) => [
-          `TIPO DE CONTEÚDO UGC: ${x.tipo_ugc || "-"}\nTIPO DE FUNIL: ${x.funil || "-"}\nNICHO: ${x.nicho || "-"}${x.formato ? "\nFORMATO: " + x.formato : ""}`,
+          `TIPO DE CONTEÚDO UGC: ${x.tipo_ugc || "-"}\nTIPO DE FUNIL: ${x.funil || "-"}\nNICHO: ${x.nicho || "-"}${x.formato ? "\nFORMATO: " + x.formato : ""}${x.duracao ? "\nDURAÇÃO: " + duracaoTexto(x.duracao) : ""}`,
           `HOOK${x.gancho_tipo ? " (" + x.gancho_tipo + ")" : ""}:\n${x.hook.fala}${x.hook.visual ? "\n[" + x.hook.visual + "]" : ""}`,
-          x.desenrolar.length ? "DESENROLAR:\n" + x.desenrolar.map((p, i) => `${i + 1}. ${p.fala}${p.visual ? " [" + p.visual + "]" : ""}`).join("\n") : "",
+          x.desenrolar.length ? "DESENROLAR:\n" + x.desenrolar.map((p, i) => `${i + 1}. ${p.bloco ? "(" + p.bloco + ") " : ""}${p.fala}${p.visual ? " [" + p.visual + "]" : ""}`).join("\n") : "",
           `CTA:\n${x.cta.fala}${x.cta.visual ? "\n[" + x.cta.visual + "]" : ""}`,
           x.legenda || x.hashtags ? `LEGENDA:\n${x.legenda || ""}${x.hashtags ? "\n" + x.hashtags : ""}` : "",
           x.outros_ganchos.length ? "OUTRAS IDEIAS DE GANCHO:\n" + x.outros_ganchos.map((g) => `- (${g.tipo}) ${g.texto}`).join("\n") : "",
@@ -1540,9 +1631,10 @@
                 <div class="rot-insp-topo"><span><small>Tipo de conteúdo UGC</small><b>${esc(x.tipo_ugc || "-")}</b></span><span><small>Tipo de funil</small><b>${esc(x.funil || "-")}</b></span><span><small>Nicho</small><b>${esc(x.nicho || "-")}</b></span></div>
                 <h5>${esc(x.titulo)}</h5>
                 ${x.formato ? `<p class="rot-insp-formato">${esc(x.formato)}${x.funil_por_que ? " · " + esc(x.funil_por_que) : ""}</p>` : ""}
+                ${x.duracao ? `<p class="rot-insp-duracao">⏱ ${duracaoTexto(x.duracao)}</p>` : ""}
                 <div class="rot-insp-ver">
                   <div class="rot-parte"><span class="rot-rotulo">Hook${x.gancho_tipo ? " · " + esc(x.gancho_tipo) : ""}</span><p class="rot-destaque">${cena(x.hook)}</p></div>
-                  ${x.desenrolar.length ? `<div class="rot-parte"><span class="rot-rotulo">Desenrolar</span><ol>${x.desenrolar.map((p) => `<li>${cena(p)}</li>`).join("")}</ol></div>` : ""}
+                  ${x.desenrolar.length ? `<div class="rot-parte"><span class="rot-rotulo">Desenrolar</span><ol>${x.desenrolar.map((p) => `<li>${p.bloco ? `<span class="rot-tag">${esc(p.bloco)}</span> ` : ""}${cena(p)}</li>`).join("")}</ol></div>` : ""}
                   <div class="rot-parte"><span class="rot-rotulo">CTA</span><p class="rot-caixa">${cena(x.cta)}</p></div>
                   ${x.legenda || x.hashtags ? `<div class="rot-parte"><span class="rot-rotulo">Legenda</span><p>${esc(x.legenda || "")}${x.hashtags ? `<br><span class="rot-insp-hash">${esc(x.hashtags)}</span>` : ""}</p></div>` : ""}
                   ${x.por_que_funciona ? `<p class="rot-insp-porque">${esc(x.por_que_funciona)}</p>` : ""}
@@ -1556,6 +1648,7 @@
                   <button class="btn btn-principal btn-mini" type="button" data-acao="salvar">Salvar nos meus roteiros</button>
                 </div>
               </article>`).join("") + `
+              ${checklistSkill()}
               <div class="rot-denovo">
                 <input data-ajuste placeholder="Não gostou? Diga o que mudar (opcional). Ex.: mais engraçado, gancho de objeção, mais curto">
                 <button class="btn" type="button" data-denovo>↻ Gerar de novo</button>

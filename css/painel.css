@@ -490,3 +490,13 @@ button.menu-grupo:hover{color:var(--texto)}
 .rot-denovo input{flex:1;min-width:200px}
 @media (max-width:640px){.rot-aba{padding:9px 10px;font-size:12px}.rot-janela{grid-template-columns:minmax(0,1fr)}.rot-dir{position:static}}
 @media (max-width:480px){.janela-rodape{flex-wrap:wrap;padding:10px 12px}.janela-rodape .btn{padding-left:12px;padding-right:12px}}
+
+/* método de roteiro (skill) */
+.metodo-intro{margin:0 0 12px;color:var(--suave,#6b5b4e);font-size:14px}
+.metodo-texto h4{font-size:20px;margin:6px 0 10px}.metodo-texto h5{font-size:15px;margin:18px 0 6px}
+.metodo-texto p,.metodo-texto li{font-size:14px;line-height:1.6}.metodo-texto ul,.metodo-texto ol{padding-left:20px;margin:6px 0 10px}
+.metodo-texto code{background:var(--cartao);padding:1px 5px;border-radius:4px;font-size:12.5px}
+.metodo-resultado{background:var(--cartao);border:1px solid var(--linha);border-radius:10px;padding:10px 12px;font-size:14px}
+.metodo-ritmo{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}.metodo-ritmo .rot-campo-board{flex:1 1 160px;margin:0}
+.rot-insp-duracao{font-size:13px;margin:0 0 8px;color:var(--suave,#6b5b4e)}
+.rot-checklist ul{list-style:none;padding-left:0}.rot-checklist li{margin:4px 0;font-size:13.5px}.rot-checklist input{margin-right:6px}

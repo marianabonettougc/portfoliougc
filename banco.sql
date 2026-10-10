@@ -418,4 +418,19 @@ drop policy if exists "dona faz tudo" on public.estilo_ugc;
 create policy "dona faz tudo" on public.estilo_ugc for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
 revoke all on public.estilo_ugc from anon;
 
-select 'Pronto! As 12 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;
+-- método de roteiro (skill roteiro-ugc da Lara): os arquivos ficam só aqui no banco, não no GitHub
+create table if not exists public.metodo_roteiro (
+  arquivo text primary key,  -- SKILL.md, references/ganchos.md...
+  titulo text not null,
+  ordem int not null default 0,
+  conteudo text not null,
+  atualizado_em timestamptz not null default now()
+);
+alter table public.metodo_roteiro enable row level security;
+drop policy if exists "dona faz tudo" on public.metodo_roteiro;
+create policy "dona faz tudo" on public.metodo_roteiro for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+revoke all on public.metodo_roteiro from anon;
+alter table public.estilo_ugc add column if not exists metodo text;        -- resumo do método que a IA lê
+alter table public.estilo_ugc add column if not exists ritmo_fala numeric; -- palavras por segundo da Mari
+
+select 'Pronto! As 13 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;
