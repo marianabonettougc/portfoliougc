@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610100226"></script>
+<script src="../../js/banco.js?v=202610100243"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -547,6 +547,14 @@
   .kanban-col{ background:var(--sand); border-radius:var(--radius-lg); padding:12px; min-height:160px; }
   .kanban-col h4{ font-size:13px; margin:2px 6px 10px; text-transform:uppercase; letter-spacing:.04em; color:var(--graphite-soft); }
   .kanban-card{ background:var(--card-bg); border-radius:12px; padding:12px; margin-bottom:8px; box-shadow:var(--shadow); }
+  .quadros-barra{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .quadros-select{ min-width:200px; padding:9px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card-bg); font:inherit; font-size:14px; color:var(--graphite); }
+  .quadros-menu-caixa{ position:relative; }
+  .quadros-menu{ position:absolute; top:calc(100% + 6px); left:0; z-index:30; min-width:190px; background:var(--card-bg); border:1px solid var(--line); border-radius:12px; padding:6px; box-shadow:0 12px 30px rgba(61,43,32,.12); }
+  .quadros-menu button{ display:flex; align-items:center; gap:8px; width:100%; border:0; background:none; padding:9px 10px; border-radius:9px; font:inherit; font-size:13.5px; text-align:left; cursor:pointer; color:var(--graphite); }
+  .quadros-menu button:hover{ background:var(--sand); }
+  .titulo-quadro{ font-size:.55em; font-weight:400; color:var(--graphite-soft); }
+  @media (max-width:640px){ .quadros-select{ flex:1; min-width:0; } }
 
   .toggle{ width:42px; height:24px; border-radius:999px; background:var(--line); position:relative; cursor:pointer; flex-shrink:0; transition:background .15s; }
   .toggle.on{ background:var(--butter); }
@@ -5283,6 +5291,116 @@ function ImportRoteiroModal({onClose, onImport}){
   );
 }
 
+/* Quadros de roteiro: cada roteiro tem quadroId; os antigos ficam no quadro principal */
+const QUADRO_PRINCIPAL = {id:"principal", nome:"Quadro de roteiros"};
+const quadrosDe = (state) => (state.quadrosRoteiro && state.quadrosRoteiro.length) ? state.quadrosRoteiro : [QUADRO_PRINCIPAL];
+const quadroDo = (r) => r.quadroId || "principal";
+
+function QuadroNomeModal({titulo, texto, inicial, onClose, onSave}){
+  const [nome,setNome] = useState(inicial||"");
+  return (
+    <Modal title={titulo} onClose={onClose}>
+      <p style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:-4}}>{texto}</p>
+      <Field label="Nome do quadro"><input autoFocus value={nome} onChange={e=>setNome(e.target.value)} placeholder="Ex.: Campanhas de beleza" onKeyDown={e=>{ if(e.key==="Enter" && nome.trim()) onSave(nome.trim()); }}/></Field>
+      <div style={{display:"flex", justifyContent:"flex-end", gap:8}}>
+        <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+        <button className="btn btn-primary" disabled={!nome.trim()} onClick={()=>onSave(nome.trim())}>Salvar</button>
+      </div>
+    </Modal>
+  );
+}
+
+/* Importar do Google Docs: lê o documento pela Edge Function google-docs (documento compartilhado por link)
+   e liga o roteiro a um cliente da aba Marcas (tabela marcas) ou cadastra um cliente novo */
+function GoogleDocsModal({state, onClose, onSave}){
+  const [link,setLink] = useState("");
+  const [doc,setDoc] = useState(null); // {titulo, texto}
+  const [lendo,setLendo] = useState(false);
+  const [erro,setErro] = useState("");
+  const [clientes,setClientes] = useState([]);
+  const [clienteId,setClienteId] = useState("");
+  const [novo,setNovo] = useState(null); // {nome, instagram, email}
+  const [titulo,setTitulo] = useState("");
+  const [etapa,setEtapa] = useState("Ideias");
+  const [salvando,setSalvando] = useState(false);
+  useEffect(()=>{
+    supabaseClient.from("marcas").select("id, nome, situacao").order("nome").then(({data})=>{
+      const daTabela = (data||[]).filter(m=>m.nome).map(m=>({id:"m"+m.id, nome:m.nome, sub:m.situacao}));
+      const nomes = new Set(daTabela.map(c=>c.nome.toLowerCase()));
+      const dosJobs = [...new Set((state.jobs||[]).map(j=>String(j.marca||"").trim()).filter(Boolean))].filter(n=>!nomes.has(n.toLowerCase())).map(n=>({id:"j"+n, nome:n, sub:"UGC's & Publis"}));
+      setClientes([...daTabela, ...dosJobs].sort((a,b)=>a.nome.localeCompare(b.nome)));
+    });
+  },[]);
+  async function ler(){
+    setErro(""); setDoc(null);
+    if(!/docs\.google\.com\/document\/d\//.test(link)){ setErro("Cole o link de um documento do Google Docs (docs.google.com/document/d/...)."); return; }
+    setLendo(true);
+    try{
+      const { data, error } = await supabaseClient.functions.invoke("google-docs", {body:{url:link.trim()}});
+      let msg = data && data.error;
+      if(error){ try{ msg = (await error.context.json()).error; }catch(e){} msg = msg || "Não consegui falar com o Google Docs agora."; }
+      if(msg) throw new Error(msg);
+      setDoc(data); setTitulo(t=>t || data.titulo || "Roteiro do Google Docs");
+    }catch(e){ setErro(String(e.message||e)); }
+    setLendo(false);
+  }
+  async function salvar(){
+    if(!doc) return;
+    let cliente = null;
+    setSalvando(true); setErro("");
+    try{
+      if(novo){
+        if(!novo.nome.trim()) throw new Error("Escreva o nome do cliente novo.");
+        const { data, error } = await supabaseClient.from("marcas").insert({nome:novo.nome.trim(), instagram:novo.instagram.trim()||null, email:novo.email.trim()||null, situacao:"cliente"}).select().single();
+        if(error) throw new Error("Não consegui cadastrar o cliente: "+error.message);
+        cliente = {id:"m"+data.id, nome:data.nome};
+      } else if(clienteId){
+        const c = clientes.find(x=>x.id===clienteId); if(c) cliente = {id:c.id, nome:c.nome};
+      }
+      onSave({id:uid(), titulo:titulo.trim()||doc.titulo||"Roteiro do Google Docs", plataforma:"Instagram", status:"Em aberto", finalidade:cliente?"Publi":"Conteúdos",
+        etapa, dataPublicacao:"", conteudo:doc.texto, cliente:cliente?cliente.nome:"", clienteId:cliente?cliente.id:"", origem:"Google Docs", docUrl:link.trim()});
+    }catch(e){ setErro(String(e.message||e)); setSalvando(false); }
+  }
+  return (
+    <Modal title="Importar do Google Docs" onClose={onClose}>
+      <Field label="Link do documento">
+        <div style={{display:"flex", gap:8}}>
+          <input value={link} onChange={e=>setLink(e.target.value)} placeholder="https://docs.google.com/document/d/..." onKeyDown={e=>{ if(e.key==="Enter") ler(); }}/>
+          <button className="btn btn-ghost" onClick={ler} disabled={lendo||!link.trim()}>{lendo?"Lendo...":"Ler documento"}</button>
+        </div>
+      </Field>
+      <p style={{fontSize:12.5, color:"var(--graphite-soft)", marginTop:-8}}>O documento precisa estar compartilhado como <b>"Qualquer pessoa com o link: leitor"</b>. Documentos privados ainda não podem ser lidos: a conta Google não está conectada ao painel.</p>
+      {erro && <p style={{fontSize:13, color:"var(--danger, #b8473a)", background:"#f6e0dc", padding:"8px 12px", borderRadius:10}}>{erro}</p>}
+      {doc && <>
+        <div style={{border:"1px solid var(--line)", borderRadius:12, padding:"10px 12px", maxHeight:160, overflow:"auto", fontSize:13, whiteSpace:"pre-wrap", color:"var(--graphite-soft)", marginBottom:14}}>{doc.texto.slice(0,1500)}{doc.texto.length>1500?"...":""}</div>
+        <Field label="Título do roteiro"><input value={titulo} onChange={e=>setTitulo(e.target.value)}/></Field>
+        <Field label="Cliente">
+          {novo ? (
+            <div style={{display:"grid", gap:8}}>
+              <input autoFocus value={novo.nome} onChange={e=>setNovo({...novo, nome:e.target.value})} placeholder="Nome do cliente ou marca"/>
+              <div className="field-row" style={{margin:0}}>
+                <input value={novo.instagram} onChange={e=>setNovo({...novo, instagram:e.target.value})} placeholder="@instagram (opcional)"/>
+                <input value={novo.email} onChange={e=>setNovo({...novo, email:e.target.value})} placeholder="E-mail (opcional)"/>
+              </div>
+              <button type="button" className="btn btn-ghost btn-sm" style={{justifySelf:"start"}} onClick={()=>setNovo(null)}>Escolher um cliente que já existe</button>
+            </div>
+          ) : (
+            <div style={{display:"flex", gap:8}}>
+              <select value={clienteId} onChange={e=>setClienteId(e.target.value)}>
+                <option value="">Sem cliente</option>
+                {clientes.map(c=><option key={c.id} value={c.id}>{c.nome}{c.sub?` (${c.sub})`:""}</option>)}
+              </select>
+              <button type="button" className="btn btn-ghost" onClick={()=>setNovo({nome:"", instagram:"", email:""})}><Icon name="add" size={16}/>Novo cliente</button>
+            </div>
+          )}
+        </Field>
+        <Field label="Etapa no quadro"><select value={etapa} onChange={e=>setEtapa(e.target.value)}>{ROTEIRO_ETAPAS.map(p=><option key={p}>{p}</option>)}</select></Field>
+        <button className="btn btn-primary" style={{width:"100%", justifyContent:"center"}} disabled={salvando} onClick={salvar}>{salvando?"Salvando...":"Adicionar ao quadro"}</button>
+      </>}
+    </Modal>
+  );
+}
+
 function RoteiroModal({onClose, onSave, initial}){
   const [f,setF] = useState(initial || {titulo:"", plataforma:"Instagram", status:"Em aberto", finalidade:"Conteúdos", etapa:"Ideias", dataPublicacao:"", conteudo:""});
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
@@ -5323,6 +5441,7 @@ function RoteiroModal({onClose, onSave, initial}){
         </Field>
       </div>
       <Field label="Título"><input value={f.titulo} onChange={e=>set("titulo",e.target.value)} placeholder="Ex: Roteiro skincare noturno"/></Field>
+      <Field label="Cliente (opcional)"><input value={f.cliente||""} onChange={e=>set("cliente",e.target.value)} placeholder="Marca ou cliente deste roteiro"/></Field>
       <div className="field-row">
         <Field label="Plataforma">
           <select value={f.plataforma} onChange={e=>set("plataforma",e.target.value)}>
@@ -5360,6 +5479,34 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
   const [view,setView] = useState("Lista");
   const [onlyImported,setOnlyImported] = useState(false);
   const [dragOverCol,setDragOverCol] = useState(null);
+  const [docsModal,setDocsModal] = useState(false);
+  const [quadroModal,setQuadroModal] = useState(null); // "novo" | "renomear"
+  const [menuQuadro,setMenuQuadro] = useState(false);
+  const quadros = quadrosDe(state);
+  const [quadroId,setQuadroIdBruto] = useState(()=>{ try{ return localStorage.getItem("quadroRoteiro") || "principal"; }catch(e){ return "principal"; } });
+  const setQuadroId = (id) => { setQuadroIdBruto(id); try{ localStorage.setItem("quadroRoteiro", id); }catch(e){} };
+  const quadro = quadros.find(q=>q.id===quadroId) || quadros[0];
+  const doQuadro = (lista) => lista.filter(r=>quadroDo(r)===quadro.id);
+  function novoQuadro(nome){
+    const q = {id:uid(), nome};
+    mudar(s=>({...s, quadrosRoteiro:[...quadrosDe(s), q]}));
+    setQuadroId(q.id); setQuadroModal(null);
+  }
+  function renomearQuadro(nome){
+    // só o nome muda: os roteiros continuam ligados pelo id do quadro
+    mudar(s=>({...s, quadrosRoteiro:quadrosDe(s).map(q=>q.id===quadro.id?{...q, nome}:q)}));
+    setQuadroModal(null);
+  }
+  function excluirQuadro(){
+    setMenuQuadro(false);
+    if(quadros.length<=1){ alert("Esse é o seu único quadro. Crie outro antes de excluir este."); return; }
+    const destino = quadros.find(q=>q.id!==quadro.id);
+    const n = state.roteiros.filter(r=>quadroDo(r)===quadro.id).length;
+    const aviso = n===1 ? `\n\nO roteiro dele não será apagado: vai para o quadro "${destino.nome}".` : n>1 ? `\n\nOs ${n} roteiros dele não serão apagados: vão para o quadro "${destino.nome}".` : "";
+    if(!window.confirm(`Excluir o quadro "${quadro.nome}"?${aviso}`)) return;
+    mudar(s=>({...s, quadrosRoteiro:quadrosDe(s).filter(q=>q.id!==quadro.id), roteiros:(s.roteiros||[]).map(r=>quadroDo(r)===quadro.id?{...r, quadroId:destino.id}:r)}));
+    setQuadroId(destino.id);
+  }
 
   useEffect(()=>{
     if(pendingAI){ setAiModal(true); clearPendingAI(); }
@@ -5367,6 +5514,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
 
   function save(item){
     const exists = state.roteiros.some(i=>i.id===item.id);
+    if(!exists && !item.quadroId) item = {...item, quadroId:quadro.id};
     const roteiros = exists ? state.roteiros.map(i=>i.id===item.id?item:i) : [...state.roteiros, item];
     const planner = syncPlannerFromRoteiro({...state, roteiros}, item);
     updateState({...state, roteiros, planner});
@@ -5376,6 +5524,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
     updateState({...state, roteiros: state.roteiros.filter(i=>i.id!==id), planner: state.planner.filter(p=>p.roteiroId!==id)});
   }
   function onGenerated(roteiro){
+    roteiro = {...roteiro, quadroId:roteiro.quadroId||quadro.id};
     const roteiros = [...state.roteiros, roteiro];
     const planner = syncPlannerFromRoteiro({...state, roteiros}, roteiro);
     updateState({...state, roteiros, planner});
@@ -5387,7 +5536,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
       id:uid(), titulo:bankItem.titulo, plataforma:"Instagram", status:"Em aberto",
       finalidade: bankItem.tab==="Jobs" ? "Publi" : "Conteúdos", etapa:"Ideias", dataPublicacao:"",
       conteudo, dicas:bankItem.dicas, hashtags:bankItem.hashtags, duracao:bankItem.duracao,
-      importadoDe:bankItem.titulo
+      importadoDe:bankItem.titulo, quadroId:quadro.id
     };
     const roteiros = [...state.roteiros, roteiro];
     updateState({...state, roteiros});
@@ -5402,7 +5551,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
     updateState({...state, roteiros, planner});
   }
 
-  let shown = query ? state.roteiros.filter(i=>JSON.stringify(i).toLowerCase().includes(query.toLowerCase())) : state.roteiros;
+  let shown = query ? doQuadro(state.roteiros).filter(i=>JSON.stringify(i).toLowerCase().includes(query.toLowerCase())) : doQuadro(state.roteiros);
   if(onlyImported) shown = shown.filter(i=>i.importadoDe);
 
   function onDragStart(e, id){ e.dataTransfer.setData("text/plain", id); }
@@ -5415,14 +5564,29 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
 
   return (
     <div>
+      <div className="quadros-barra">
+        <select className="quadros-select" value={quadro.id} onChange={e=>setQuadroId(e.target.value)} aria-label="Quadro">
+          {quadros.map(q=><option key={q.id} value={q.id}>{q.nome}</option>)}
+        </select>
+        <button className="btn btn-ghost" onClick={()=>setQuadroModal("novo")}><Icon name="add" size={17}/>Novo quadro</button>
+        <div className="quadros-menu-caixa">
+          <button className="btn btn-ghost" aria-label="Opções do quadro" onClick={()=>setMenuQuadro(m=>!m)}><Icon name="more_horiz" size={18}/></button>
+          {menuQuadro && <div className="quadros-menu" onMouseLeave={()=>setMenuQuadro(false)}>
+            <button onClick={()=>{ setMenuQuadro(false); setQuadroModal("renomear"); }}><Icon name="edit" size={15}/>Renomear quadro</button>
+            <button onClick={excluirQuadro}><Icon name="delete" size={15}/>Excluir quadro</button>
+          </div>}
+        </div>
+        <span style={{flex:1}}/>
+        <button className="btn btn-ghost" onClick={()=>setDocsModal(true)}><Icon name="description" size={17}/>Importar do Google Docs</button>
+        <button className="btn btn-primary" onClick={()=>setAiModal(true)}><Icon name="auto_awesome" size={17}/>Criar com IA</button>
+      </div>
       <div className="page-head">
         <div>
-          <h1 className="page-title">Roteiros</h1>
+          <h1 className="page-title">Roteiros <span className="titulo-quadro">({quadro.nome})</span></h1>
           <p className="page-sub">Crie e organize seus roteiros de UGC</p>
         </div>
         <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
           <button className="btn btn-ghost" onClick={()=>setImportModal(true)}><Icon name="download" size={17}/>Importar Roteiro</button>
-          <button className="btn btn-primary" onClick={()=>setAiModal(true)}><Icon name="auto_awesome" size={17}/>Criar com IA</button>
           <button className="btn btn-ghost" onClick={()=>setModal(true)}><Icon name="add" size={17}/>Manual</button>
         </div>
       </div>
@@ -5436,7 +5600,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
         </div>
         {view==="Lista" && (
           <button className={"tab "+(onlyImported?"active":"")} style={{border:"none"}} onClick={()=>setOnlyImported(v=>!v)}>
-            <Icon name="download" size={14}/> Importados ({state.roteiros.filter(r=>r.importadoDe).length})
+            <Icon name="download" size={14}/> Importados ({doQuadro(state.roteiros).filter(r=>r.importadoDe).length})
           </button>
         )}
       </div>
@@ -5444,7 +5608,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
       {view==="Quadro" ? (
         <div style={{display:"flex", gap:14, overflowX:"auto", paddingBottom:10}}>
           {ROTEIRO_ETAPAS.map(etapa=>{
-            const colItems = state.roteiros.filter(r=>(r.etapa||"Ideias")===etapa && (!query || JSON.stringify(r).toLowerCase().includes(query.toLowerCase())));
+            const colItems = doQuadro(state.roteiros).filter(r=>(r.etapa||"Ideias")===etapa && (!query || JSON.stringify(r).toLowerCase().includes(query.toLowerCase())));
             return (
               <div key={etapa} onDragOver={(e)=>{e.preventDefault(); setDragOverCol(etapa);}} onDrop={(e)=>onDrop(e,etapa)}
                 style={{minWidth:250, flexShrink:0, background:"var(--sand)", borderRadius:16, padding:12, outline: dragOverCol===etapa ? "2px dashed var(--butter)":"none"}}>
@@ -5457,7 +5621,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
                     <Badge tone={FINALIDADE_TONE[item.finalidade]||"gray"}>{item.finalidade||"Conteúdos"}</Badge>
                     <div style={{fontWeight:600, fontSize:14, margin:"6px 0 3px"}}>{item.titulo}</div>
                     {(item.tipoUgc || item.funil) && <div style={{fontSize:12, color:"var(--graphite-soft)", marginBottom:4}}>{[item.tipoUgc, item.funil, item.nicho].filter(Boolean).join(" · ")}</div>}
-                    <div style={{fontSize:12.5, color:"var(--graphite-soft)", marginBottom:8}}>{item.plataforma}{item.dataPublicacao && " · "+new Date(item.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR')}</div>
+                    <div style={{fontSize:12.5, color:"var(--graphite-soft)", marginBottom:8}}>{item.plataforma}{item.cliente && " · "+item.cliente}{item.origem==="Google Docs" && " · Google Docs"}{item.dataPublicacao && " · "+new Date(item.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR')}</div>
                     <div style={{display:"flex", gap:6}}>
                       <button className="btn btn-ghost btn-sm" onClick={()=>setEditing(item)}>Editar</button>
                       <button className="icon-btn" style={{width:30,height:30}} onClick={()=>remove(item.id)}><Icon name="delete" size={14}/></button>
@@ -5482,7 +5646,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
               {(item.tipoUgc || item.funil || item.nicho) && <div className="rot-etiquetas">
                 {item.tipoUgc && <span><b>UGC</b> {item.tipoUgc}</span>}{item.funil && <span><b>Funil</b> {item.funil}</span>}{item.nicho && <span><b>Nicho</b> {item.nicho}</span>}
               </div>}
-              <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginBottom:6}}>{item.plataforma} · {item.etapa||"Ideias"}{item.dataPublicacao && " · "+new Date(item.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR')}</div>
+              <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginBottom:6}}>{item.plataforma} · {item.etapa||"Ideias"}{item.cliente && " · "+item.cliente}{item.origem==="Google Docs" && " · Google Docs"}{item.dataPublicacao && " · "+new Date(item.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR')}</div>
               {item.conteudo && <div style={{fontSize:14.5, whiteSpace:"pre-wrap", color:"var(--graphite-soft)", maxHeight:80, overflow:"hidden"}}>{item.conteudo}</div>}
             </div>
             <Badge tone={item.status==="Finalizado"?"green":"yellow"}>{item.status}</Badge>
@@ -5495,8 +5659,12 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
       )}
       {modal && <RoteiroModal onClose={()=>setModal(false)} onSave={save}/>}
       {editing && <RoteiroModal initial={editing} onClose={()=>setEditing(null)} onSave={save}/>}
-      {aiModal && <CriarRoteiroUGC nichos={(state.jobs||[]).map(j=>j.nicho).filter(Boolean)} onClose={()=>setAiModal(false)} onSalvar={(r)=>mudar(s=>({...s, roteiros:[r, ...(s.roteiros||[])]}))} onVerQuadro={()=>setAiModal(false)}/>}
+      {aiModal && <CriarRoteiroUGC nichos={(state.jobs||[]).map(j=>j.nicho).filter(Boolean)} onClose={()=>setAiModal(false)} onSalvar={(r)=>mudar(s=>({...s, roteiros:[{...r, quadroId:r.quadroId||quadro.id}, ...(s.roteiros||[])]}))} onVerQuadro={()=>setAiModal(false)}/>}
       {importModal && <ImportRoteiroModal onClose={()=>setImportModal(false)} onImport={onImport}/>}
+      {docsModal && <GoogleDocsModal state={state} onClose={()=>setDocsModal(false)} onSave={(r)=>{ mudar(s=>({...s, roteiros:[...(s.roteiros||[]), {...r, quadroId:quadro.id}]})); setDocsModal(false); }}/>}
+      {quadroModal && <QuadroNomeModal titulo={quadroModal==="novo"?"Novo quadro":"Renomear quadro"} inicial={quadroModal==="novo"?"":quadro.nome}
+        texto={quadroModal==="novo"?"Crie um quadro para organizar outra frente de trabalho.":"Só o nome muda: os roteiros continuam neste quadro."}
+        onClose={()=>setQuadroModal(null)} onSave={quadroModal==="novo"?novoQuadro:renomearQuadro}/>}
     </div>
   );
 }
@@ -7334,6 +7502,19 @@ function App({session}){
     window.addEventListener("message", ouvir);
     return ()=>window.removeEventListener("message", ouvir);
   },[]);
+  // o painel (Central de Referências) manda roteiros prontos para entrar no Quadro de roteiros
+  const mudarRef = useRef(null);
+  const carregadoRef = useRef(false);
+  useEffect(()=>{
+    function receberRoteiro(e){
+      if(e.origin !== location.origin || !e.data || !e.data.novoRoteiro) return;
+      const ok = Boolean(mudarRef.current && carregadoRef.current);
+      if(ok) mudarRef.current(s=>({...s, roteiros:[e.data.novoRoteiro, ...(s.roteiros||[])]}));
+      if(e.source) e.source.postMessage({roteiroRecebido:e.data.novoRoteiro.id, ok}, location.origin);
+    }
+    window.addEventListener("message", receberRoteiro);
+    return ()=>window.removeEventListener("message", receberRoteiro);
+  },[]);
   const [pendingRoteiroAI, setPendingRoteiroAI] = useState(false);
   const openRoteirosAI = () => { irPara("roteiros"); setPendingRoteiroAI(true); };
   const [collapsed, setCollapsed] = useState(false);
@@ -7398,6 +7579,8 @@ function App({session}){
   const abrirAba = (aba) => { if(NO_PAINEL) window.parent.postMessage({aba}, location.origin); };
   // muda o estado a partir do valor mais recente (para buscas que terminam depois, como as logos)
   function mudar(fn){ const next = fn(stateRef.current); stateRef.current = next; updateState(next); }
+  mudarRef.current = mudar;
+  carregadoRef.current = loaded;
   window.__estadoAtual = () => stateRef.current;
   const pageProps = {state, updateState, go:irPara, ocultar, alternarOcultar, abrirAba, mudar};
   let PageComp;
