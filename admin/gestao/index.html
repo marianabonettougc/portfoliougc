@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610100243"></script>
+<script src="../../js/banco.js?v=202610100253"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -553,6 +553,19 @@
   .quadros-menu{ position:absolute; top:calc(100% + 6px); left:0; z-index:30; min-width:190px; background:var(--card-bg); border:1px solid var(--line); border-radius:12px; padding:6px; box-shadow:0 12px 30px rgba(61,43,32,.12); }
   .quadros-menu button{ display:flex; align-items:center; gap:8px; width:100%; border:0; background:none; padding:9px 10px; border-radius:9px; font:inherit; font-size:13.5px; text-align:left; cursor:pointer; color:var(--graphite); }
   .quadros-menu button:hover{ background:var(--sand); }
+  .lista-topo{ display:flex; align-items:center; gap:6px; margin:2px 4px 10px; }
+  .lista-nome{ flex:1; min-width:0; text-align:left; border:0; background:none; padding:4px 6px; border-radius:8px; font:inherit; font-size:13.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--graphite-soft); cursor:text; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lista-nome:hover{ background:rgba(255,255,255,.55); }
+  .lista-nome-input{ flex:1; min-width:0; font:inherit; font-size:13.5px; font-weight:700; padding:4px 6px; border:1px solid var(--line); border-radius:8px; background:var(--card-bg); color:var(--graphite); }
+  .lista-conta{ font-size:13px; font-weight:700; color:var(--graphite-soft); }
+  .lista-mais{ border:0; background:none; width:28px; height:28px; border-radius:8px; display:grid; place-items:center; cursor:pointer; color:var(--graphite-soft); }
+  .lista-mais:hover{ background:rgba(255,255,255,.6); }
+  .lista-menu{ left:auto; right:0; }
+  .lista-nova{ min-width:250px; flex-shrink:0; }
+  .lista-nova-btn{ width:100%; display:flex; align-items:center; gap:8px; border:1.5px dashed var(--line); background:transparent; border-radius:16px; padding:14px; font:inherit; font-size:14px; color:var(--graphite-soft); cursor:pointer; }
+  .lista-nova-btn:hover{ background:var(--sand); }
+  .lista-nova-form{ background:var(--sand); border-radius:16px; padding:12px; display:grid; gap:8px; }
+  .lista-nova-form input{ padding:9px 10px; border:1px solid var(--line); border-radius:10px; font:inherit; font-size:14px; background:var(--card-bg); }
   .titulo-quadro{ font-size:.55em; font-weight:400; color:var(--graphite-soft); }
   @media (max-width:640px){ .quadros-select{ flex:1; min-width:0; } }
 
@@ -5295,6 +5308,10 @@ function ImportRoteiroModal({onClose, onImport}){
 const QUADRO_PRINCIPAL = {id:"principal", nome:"Quadro de roteiros"};
 const quadrosDe = (state) => (state.quadrosRoteiro && state.quadrosRoteiro.length) ? state.quadrosRoteiro : [QUADRO_PRINCIPAL];
 const quadroDo = (r) => r.quadroId || "principal";
+// colunas (listas) de cada quadro: dá para renomear, mover, excluir e criar, como no Trello
+const colunasDe = (q) => (q && Array.isArray(q.colunas) && q.colunas.length) ? q.colunas : ROTEIRO_ETAPAS;
+// roteiro com uma etapa que não existe mais no quadro aparece na primeira lista (nunca some)
+const etapaNoQuadro = (r, cols) => cols.includes(r.etapa) ? r.etapa : cols[0];
 
 function QuadroNomeModal({titulo, texto, inicial, onClose, onSave}){
   const [nome,setNome] = useState(inicial||"");
@@ -5312,7 +5329,7 @@ function QuadroNomeModal({titulo, texto, inicial, onClose, onSave}){
 
 /* Importar do Google Docs: lê o documento pela Edge Function google-docs (documento compartilhado por link)
    e liga o roteiro a um cliente da aba Marcas (tabela marcas) ou cadastra um cliente novo */
-function GoogleDocsModal({state, onClose, onSave}){
+function GoogleDocsModal({state, onClose, onSave, etapas=ROTEIRO_ETAPAS}){
   const [link,setLink] = useState("");
   const [doc,setDoc] = useState(null); // {titulo, texto}
   const [lendo,setLendo] = useState(false);
@@ -5321,7 +5338,7 @@ function GoogleDocsModal({state, onClose, onSave}){
   const [clienteId,setClienteId] = useState("");
   const [novo,setNovo] = useState(null); // {nome, instagram, email}
   const [titulo,setTitulo] = useState("");
-  const [etapa,setEtapa] = useState("Ideias");
+  const [etapa,setEtapa] = useState(etapas[0]);
   const [salvando,setSalvando] = useState(false);
   useEffect(()=>{
     supabaseClient.from("marcas").select("id, nome, situacao").order("nome").then(({data})=>{
@@ -5394,15 +5411,15 @@ function GoogleDocsModal({state, onClose, onSave}){
             </div>
           )}
         </Field>
-        <Field label="Etapa no quadro"><select value={etapa} onChange={e=>setEtapa(e.target.value)}>{ROTEIRO_ETAPAS.map(p=><option key={p}>{p}</option>)}</select></Field>
+        <Field label="Etapa no quadro"><select value={etapa} onChange={e=>setEtapa(e.target.value)}>{etapas.map(p=><option key={p}>{p}</option>)}</select></Field>
         <button className="btn btn-primary" style={{width:"100%", justifyContent:"center"}} disabled={salvando} onClick={salvar}>{salvando?"Salvando...":"Adicionar ao quadro"}</button>
       </>}
     </Modal>
   );
 }
 
-function RoteiroModal({onClose, onSave, initial}){
-  const [f,setF] = useState(initial || {titulo:"", plataforma:"Instagram", status:"Em aberto", finalidade:"Conteúdos", etapa:"Ideias", dataPublicacao:"", conteudo:""});
+function RoteiroModal({onClose, onSave, initial, etapas=ROTEIRO_ETAPAS}){
+  const [f,setF] = useState(initial ? {...initial, etapa: etapaNoQuadro(initial, etapas)} : {titulo:"", plataforma:"Instagram", status:"Em aberto", finalidade:"Conteúdos", etapa:etapas[0], dataPublicacao:"", conteudo:""});
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
   return (
     <Modal title={initial ? "Editar roteiro" : "Novo roteiro"} onClose={onClose}>
@@ -5450,7 +5467,7 @@ function RoteiroModal({onClose, onSave, initial}){
         </Field>
         <Field label="Etapa no quadro">
           <select value={f.etapa} onChange={e=>set("etapa",e.target.value)}>
-            {ROTEIRO_ETAPAS.map(p=><option key={p}>{p}</option>)}
+            {etapas.map(p=><option key={p}>{p}</option>)}
           </select>
         </Field>
       </div>
@@ -5487,6 +5504,48 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
   const setQuadroId = (id) => { setQuadroIdBruto(id); try{ localStorage.setItem("quadroRoteiro", id); }catch(e){} };
   const quadro = quadros.find(q=>q.id===quadroId) || quadros[0];
   const doQuadro = (lista) => lista.filter(r=>quadroDo(r)===quadro.id);
+  const colunas = colunasDe(quadro);
+  const [editandoCol,setEditandoCol] = useState(null); // nome da lista sendo renomeada
+  const [menuCol,setMenuCol] = useState(null);
+  const [novaLista,setNovaLista] = useState(null); // texto da lista nova
+  // muda as colunas deste quadro (e, se precisar, os roteiros dele) de uma vez só
+  function mudarColunas(novas, ajustarRoteiro){
+    mudar(s=>({...s,
+      quadrosRoteiro: quadrosDe(s).map(q=>q.id===quadro.id?{...q, colunas:novas}:q),
+      roteiros: ajustarRoteiro ? (s.roteiros||[]).map(r=>quadroDo(r)===quadro.id?ajustarRoteiro(r):r) : s.roteiros}));
+  }
+  function renomearColuna(antigo, nome){
+    setEditandoCol(null);
+    nome = String(nome||"").trim();
+    if(!nome || nome===antigo) return;
+    if(colunas.some(c=>c.toLowerCase()===nome.toLowerCase())){ alert(`Já existe uma lista chamada "${nome}" neste quadro.`); return; }
+    // os roteiros da lista acompanham o nome novo
+    mudarColunas(colunas.map(c=>c===antigo?nome:c), r=>etapaNoQuadro(r, colunas)===antigo?{...r, etapa:nome}:r);
+  }
+  function moverColuna(nome, passo){
+    setMenuCol(null);
+    const i = colunas.indexOf(nome), j = i+passo;
+    if(j<0 || j>=colunas.length) return;
+    const novas = [...colunas]; [novas[i], novas[j]] = [novas[j], novas[i]];
+    // a primeira lista recebe quem estava sem lista: fixa a etapa de todos antes de trocar a ordem
+    mudarColunas(novas, r=>({...r, etapa:etapaNoQuadro(r, colunas)}));
+  }
+  function excluirColuna(nome){
+    setMenuCol(null);
+    if(colunas.length<=1){ alert("O quadro precisa ter pelo menos uma lista."); return; }
+    const destino = colunas.find(c=>c!==nome);
+    const n = doQuadro(state.roteiros).filter(r=>etapaNoQuadro(r, colunas)===nome).length;
+    const aviso = n===1 ? `\n\nO roteiro dela não será apagado: vai para a lista "${destino}".` : n>1 ? `\n\nOs ${n} roteiros dela não serão apagados: vão para a lista "${destino}".` : "";
+    if(!window.confirm(`Excluir a lista "${nome}"?${aviso}`)) return;
+    mudarColunas(colunas.filter(c=>c!==nome), r=>etapaNoQuadro(r, colunas)===nome?{...r, etapa:destino}:r);
+  }
+  function criarLista(){
+    const nome = String(novaLista||"").trim();
+    if(!nome){ setNovaLista(null); return; }
+    if(colunas.some(c=>c.toLowerCase()===nome.toLowerCase())){ alert(`Já existe uma lista chamada "${nome}" neste quadro.`); return; }
+    mudarColunas([...colunas, nome], r=>({...r, etapa:etapaNoQuadro(r, colunas)}));
+    setNovaLista(null);
+  }
   function novoQuadro(nome){
     const q = {id:uid(), nome};
     mudar(s=>({...s, quadrosRoteiro:[...quadrosDe(s), q]}));
@@ -5607,13 +5666,29 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
 
       {view==="Quadro" ? (
         <div style={{display:"flex", gap:14, overflowX:"auto", paddingBottom:10}}>
-          {ROTEIRO_ETAPAS.map(etapa=>{
-            const colItems = doQuadro(state.roteiros).filter(r=>(r.etapa||"Ideias")===etapa && (!query || JSON.stringify(r).toLowerCase().includes(query.toLowerCase())));
+          {colunas.map((etapa, ci)=>{
+            const colItems = doQuadro(state.roteiros).filter(r=>etapaNoQuadro(r, colunas)===etapa && (!query || JSON.stringify(r).toLowerCase().includes(query.toLowerCase())));
             return (
               <div key={etapa} onDragOver={(e)=>{e.preventDefault(); setDragOverCol(etapa);}} onDrop={(e)=>onDrop(e,etapa)}
                 style={{minWidth:250, flexShrink:0, background:"var(--sand)", borderRadius:16, padding:12, outline: dragOverCol===etapa ? "2px dashed var(--butter)":"none"}}>
-                <div style={{fontSize:13.5, fontWeight:700, textTransform:"uppercase", letterSpacing:".03em", color:"var(--graphite-soft)", margin:"2px 6px 10px", display:"flex", justifyContent:"space-between"}}>
-                  {etapa} <span>{colItems.length}</span>
+                <div className="lista-topo">
+                  {editandoCol===etapa ? (
+                    <input className="lista-nome-input" autoFocus defaultValue={etapa} aria-label="Nome da lista"
+                      onBlur={e=>renomearColuna(etapa, e.target.value)}
+                      onKeyDown={e=>{ if(e.key==="Enter") e.target.blur(); if(e.key==="Escape") setEditandoCol(null); }}/>
+                  ) : (
+                    <button className="lista-nome" title="Clique para renomear" onClick={()=>setEditandoCol(etapa)}>{etapa}</button>
+                  )}
+                  <span className="lista-conta">{colItems.length}</span>
+                  <div className="quadros-menu-caixa">
+                    <button className="lista-mais" aria-label={"Opções da lista "+etapa} onClick={()=>setMenuCol(menuCol===etapa?null:etapa)}><Icon name="more_horiz" size={18}/></button>
+                    {menuCol===etapa && <div className="quadros-menu lista-menu" onMouseLeave={()=>setMenuCol(null)}>
+                      <button onClick={()=>{ setMenuCol(null); setEditandoCol(etapa); }}><Icon name="edit" size={15}/>Renomear lista</button>
+                      {ci>0 && <button onClick={()=>moverColuna(etapa,-1)}><Icon name="arrow_back" size={15}/>Mover para a esquerda</button>}
+                      {ci<colunas.length-1 && <button onClick={()=>moverColuna(etapa,1)}><Icon name="arrow_forward" size={15}/>Mover para a direita</button>}
+                      <button onClick={()=>excluirColuna(etapa)}><Icon name="delete" size={15}/>Excluir lista</button>
+                    </div>}
+                  </div>
                 </div>
                 {colItems.length===0 && <div style={{border:"1.5px dashed var(--line)", borderRadius:12, padding:"20px 10px", textAlign:"center", fontSize:13, color:"var(--graphite-soft)"}}>Arraste roteiros para cá</div>}
                 {colItems.map(item=>(
@@ -5631,6 +5706,16 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
               </div>
             );
           })}
+          <div className="lista-nova">
+            {novaLista===null ? (
+              <button className="lista-nova-btn" onClick={()=>setNovaLista("")}><Icon name="add" size={17}/>Adicionar lista</button>
+            ) : (
+              <div className="lista-nova-form">
+                <input autoFocus value={novaLista} onChange={e=>setNovaLista(e.target.value)} placeholder="Nome da lista" onKeyDown={e=>{ if(e.key==="Enter") criarLista(); if(e.key==="Escape") setNovaLista(null); }}/>
+                <div style={{display:"flex", gap:6}}><button className="btn btn-primary btn-sm" onClick={criarLista}>Adicionar</button><button className="btn btn-ghost btn-sm" onClick={()=>setNovaLista(null)}>Cancelar</button></div>
+              </div>
+            )}
+          </div>
         </div>
       ) : shown.length===0 ? (
         <EmptyState icon="description" title="Nenhum roteiro encontrado" sub="Crie seu primeiro roteiro." cta="Criar com IA" onClick={()=>setAiModal(true)}/>
@@ -5646,7 +5731,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
               {(item.tipoUgc || item.funil || item.nicho) && <div className="rot-etiquetas">
                 {item.tipoUgc && <span><b>UGC</b> {item.tipoUgc}</span>}{item.funil && <span><b>Funil</b> {item.funil}</span>}{item.nicho && <span><b>Nicho</b> {item.nicho}</span>}
               </div>}
-              <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginBottom:6}}>{item.plataforma} · {item.etapa||"Ideias"}{item.cliente && " · "+item.cliente}{item.origem==="Google Docs" && " · Google Docs"}{item.dataPublicacao && " · "+new Date(item.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR')}</div>
+              <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginBottom:6}}>{item.plataforma} · {etapaNoQuadro(item, colunas)}{item.cliente && " · "+item.cliente}{item.origem==="Google Docs" && " · Google Docs"}{item.dataPublicacao && " · "+new Date(item.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR')}</div>
               {item.conteudo && <div style={{fontSize:14.5, whiteSpace:"pre-wrap", color:"var(--graphite-soft)", maxHeight:80, overflow:"hidden"}}>{item.conteudo}</div>}
             </div>
             <Badge tone={item.status==="Finalizado"?"green":"yellow"}>{item.status}</Badge>
@@ -5657,11 +5742,11 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
           </div>
         ))}</div>
       )}
-      {modal && <RoteiroModal onClose={()=>setModal(false)} onSave={save}/>}
-      {editing && <RoteiroModal initial={editing} onClose={()=>setEditing(null)} onSave={save}/>}
+      {modal && <RoteiroModal etapas={colunas} onClose={()=>setModal(false)} onSave={save}/>}
+      {editing && <RoteiroModal etapas={colunas} initial={editing} onClose={()=>setEditing(null)} onSave={save}/>}
       {aiModal && <CriarRoteiroUGC nichos={(state.jobs||[]).map(j=>j.nicho).filter(Boolean)} onClose={()=>setAiModal(false)} onSalvar={(r)=>mudar(s=>({...s, roteiros:[{...r, quadroId:r.quadroId||quadro.id}, ...(s.roteiros||[])]}))} onVerQuadro={()=>setAiModal(false)}/>}
       {importModal && <ImportRoteiroModal onClose={()=>setImportModal(false)} onImport={onImport}/>}
-      {docsModal && <GoogleDocsModal state={state} onClose={()=>setDocsModal(false)} onSave={(r)=>{ mudar(s=>({...s, roteiros:[...(s.roteiros||[]), {...r, quadroId:quadro.id}]})); setDocsModal(false); }}/>}
+      {docsModal && <GoogleDocsModal state={state} etapas={colunas} onClose={()=>setDocsModal(false)} onSave={(r)=>{ mudar(s=>({...s, roteiros:[...(s.roteiros||[]), {...r, quadroId:quadro.id}]})); setDocsModal(false); }}/>}
       {quadroModal && <QuadroNomeModal titulo={quadroModal==="novo"?"Novo quadro":"Renomear quadro"} inicial={quadroModal==="novo"?"":quadro.nome}
         texto={quadroModal==="novo"?"Crie um quadro para organizar outra frente de trabalho.":"Só o nome muda: os roteiros continuam neste quadro."}
         onClose={()=>setQuadroModal(null)} onSave={quadroModal==="novo"?novoQuadro:renomearQuadro}/>}
