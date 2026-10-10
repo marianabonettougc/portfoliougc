@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610100258"></script>
+<script src="../../js/banco.js?v=202610100330"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -450,8 +450,8 @@
   .content{ padding:26px 28px 60px; max-width:1240px; }
 
   .page-head{ display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:22px; flex-wrap:wrap; }
-  .page-title{ font-family:"DM Serif Display",Georgia,serif; font-size:37px; font-weight:400; margin:0 0 4px; }
-  .page-sub{ color:var(--graphite-soft); font-size:19px; font-weight:400; margin:0; }
+  .page-title{ font-family:"DM Serif Display",Georgia,serif; font-size:37px; font-weight:400; line-height:1.25; letter-spacing:.015em; margin:0 0 10px; }
+  .page-sub{ color:var(--graphite-soft); font-size:19px; font-weight:400; line-height:1.55; letter-spacing:.01em; margin:0; }
 
   .btn{
     font-family:'Poppins',sans-serif; border:none; cursor:pointer; border-radius:999px; font-weight:600; font-size:17px;
@@ -5641,7 +5641,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
       </div>
       <div className="page-head">
         <div>
-          <h1 className="page-title">Roteiros <span className="titulo-quadro">({quadro.nome})</span></h1>
+          <h1 className="page-title">Roteiros</h1>
           <p className="page-sub">Crie e organize seus roteiros de UGC</p>
         </div>
         <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
