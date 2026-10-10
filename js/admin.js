@@ -252,8 +252,8 @@
   // ---------------------------------------------------------
   // MENU E ABAS
   // ---------------------------------------------------------
-  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
-    prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Quadro de roteiros",
+  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Central de Referências", checklist: "Checklist portfólio", dashboard: "Dashboard",
+    prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Quadro de roteiros", central: "Central de Referências", meusroteiros: "Meus roteiros", modelos: "Modelos", biblioteca: "Biblioteca de referências",
     financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações" };
   // Abas do painel que são páginas do aplicativo Gestão UGC (aba do painel: página do aplicativo)
   const PAGINAS_APP = { dashboard: "dashboard", calendario: "planner", campanhas: "jobs", prospeccao: "prospeccao", followups: "followups",
@@ -267,9 +267,10 @@
     abaAtual = nome;
     // Planner (antigo Calendário) e UGC's & Publis (antiga Campanhas) são páginas do aplicativo Gestão UGC
     const paginaApp = PAGINAS_APP[nome] || "";
-    const secao = paginaApp ? "gestao" : nome;
+    const secao = paginaApp ? "gestao" : VISTAS_ROTEIRO[nome] ? "roteiros" : nome;
     $$(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + secao; });
-    $$(".menu-item").forEach((b) => { b.classList.toggle("ativo", b.dataset.aba === nome); b.setAttribute("aria-current", b.dataset.aba === nome ? "page" : "false"); });
+    const marcado = nome === "roteiros" ? "central" : nome; // o grupo Roteiros abre a Central de Referências
+    $$(".menu-item").forEach((b) => { b.classList.toggle("ativo", b.dataset.aba === marcado); b.setAttribute("aria-current", b.dataset.aba === marcado ? "page" : "false"); });
     const botao = $(`.menu-item[data-aba="${nome}"]`);
     if (botao) abrirSecao(botao.closest(".menu-secao"), true);
     abrirGrupo(botao && botao.dataset.pai ? botao.dataset.pai : (botao && botao.classList.contains("tem-sub") ? nome : ""));
@@ -278,6 +279,7 @@
     if (location.hash !== "#" + nome) history.replaceState(null, "", "#" + nome);
     $("#painel").classList.remove("menu-aberto");
     if (secao === "gestao") abrirGestao(paginaApp, nome === "config");
+    if (VISTAS_ROTEIRO[nome]) { vistaRot = VISTAS_ROTEIRO[nome]; desenhar("roteiros", desenharRoteiros); }
     $("#btn-olho").hidden = secao !== "gestao" || nome === "dashboard"; // o Dashboard tem o próprio olho
     document.body.classList.toggle("aba-dashboard", nome === "dashboard");
   }
@@ -1172,7 +1174,7 @@
     return html;
   }
   const contarPalavras = (t) => String(t || "").replace(/\[[^\]]*\]/g, " ").split(/\s+/).filter((w) => /[\p{L}\d]/u.test(w)).length;
-  async function abrirMetodo() {
+  async function abrirMetodo(alvo) {
     const [{ data: arquivos, error }, { data: est }] = await Promise.all([
       banco.from("metodo_roteiro").select("arquivo, titulo, conteudo").order("ordem"),
       banco.from("estilo_ugc").select("ritmo_fala").eq("id", 1).maybeSingle(),
@@ -1180,7 +1182,7 @@
     if (error) { avisar("Não consegui abrir o método: " + error.message, true); return; }
     const lista = arquivos || [];
     let ritmo = Number(est && est.ritmo_fala) || 0;
-    abrirJanela({
+    const opcoes = {
       titulo: "Método de roteiro UGC", sobretitulo: "Skill roteiro-ugc", extraLarga: true,
       corpo: `
         <p class="metodo-intro">Esse é o método que a IA segue quando cria os seus roteiros (Se inspire, Copiar roteiro e Criar com IA). Eu também uso quando você me pede roteiros no chat.</p>
@@ -1233,93 +1235,581 @@
           if (!erro) ritmo = r;
         });
       },
-    });
+    };
+    if (alvo) { alvo.innerHTML = opcoes.corpo; opcoes.aoAbrir(alvo); } else abrirJanela(opcoes);
+  }
+
+  // =========================================================
+  // ROTEIROS: Central de Referências (5 passos), Meus roteiros, Modelos e Biblioteca de referências
+  // Passos: 1 importar (link, arquivo ou áudio, função transcrever), 2 transcrição (com os tempos),
+  // 3 análise e 4 ideias (função referencias), 5 roteiro com a skill (função gerar-roteiro, modo ugc).
+  // =========================================================
+  const IC = {
+    link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    arquivo: '<path d="M7 3.5h7L18.5 8v12.5H7z"/><path d="M14 3.5V8h4.5M10 13h5M10 16.5h3.5"/>',
+    subir: '<path d="M7 3.5h7L18.5 8v12.5H7z"/><path d="M14 3.5V8h4.5M12.75 17.5v-6M10.25 14l2.5-2.5 2.5 2.5"/>',
+    mic: '<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3"/>',
+    seta: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    chevron: '<path d="M9 6l6 6-6 6"/>',
+    copiar: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6A1.5 1.5 0 0 0 14 4.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>',
+    panorama: '<rect x="4" y="4.5" width="16" height="15" rx="2.5"/><path d="M4 9.5h16M9.5 9.5v10"/>',
+    lampada: '<path d="M9.5 18h5M10.5 21h3"/><path d="M12 3.5a5.5 5.5 0 0 0-3.3 9.9c.7.6 1.3 1.5 1.3 2.6h4c0-1.1.6-2 1.3-2.6A5.5 5.5 0 0 0 12 3.5z"/>',
+    estrela: '<path d="M12 4.5l2.3 4.7 5.2.7-3.8 3.6.9 5.1L12 16.2l-4.6 2.4.9-5.1-3.8-3.6 5.2-.7z"/>',
+    lista: '<path d="M9.5 7H20M9.5 12H20M9.5 17H20"/><path d="M4.5 7h1M4.5 12h1M4.5 17h1"/>',
+    imagem: '<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 15.5l-4.5-4.5-8 8"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    play: '<path d="M8.5 6v12l9.5-6z"/>',
+    marcador: '<path d="M7 4h10v16l-5-3.5L7 20z"/>',
+    gancho: '<path d="M14 4v8.5a4.5 4.5 0 1 1-9 0V11"/><path d="M14 4h3"/>',
+    brilho: '<path d="M12 4v3.5M12 16.5V20M4 12h3.5M16.5 12H20M6.7 6.7l2.4 2.4M14.9 14.9l2.4 2.4M6.7 17.3l2.4-2.4M14.9 9.1l2.4-2.4"/>',
+    refazer: '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.7h3.7"/>',
+    info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/>',
+    lapis: '<path d="M4.5 19.5l1-4L16 5a2 2 0 0 1 3 3L8.5 18.5z"/><path d="M14 7l3 3"/>',
+  };
+  const ic = (n, t = 18) => `<svg class="traco" width="${t}" height="${t}" viewBox="0 0 24 24" aria-hidden="true">${IC[n] || ""}</svg>`;
+  const PASSOS = ["Importar referência", "Transcrição", "Análise", "Inspiração", "Criar roteiro"];
+  const OBJETIVOS = ["Vender um produto", "Gerar engajamento", "Educar ou ensinar", "Mostrar resultado", "Divulgar a marca"];
+  const NICHOS = ["Beleza", "Autocuidado", "Casa", "Moda", "Maternidade", "Alimentação", "Life Fit", "Pet", "Eletrônicos"];
+  const FORMATOS_CR = ["Review / Opinião", "Tutorial ou passo a passo", "Unboxing", "Antes e depois", "Rotina (arrume-se comigo)", "Problema e solução", "POV", "Comparativo", "Lista", "Produto no dia a dia", "Storytelling"];
+  const TONS = ["Conversacional", "Sincero", "Divertido", "Emocional", "Profissional"];
+  const DURACOES = ["Até 15s", "Até 30s", "Até 60s", "Até 90s"];
+  const VISTAS_ROTEIRO = { roteiros: "central", central: "central", meusroteiros: "meus", modelos: "modelos", biblioteca: "biblioteca" };
+  let vistaRot = "central";
+  const central = { passo: 1, refId: "", ref: null, videoLocal: "", desenhado: "", ideiaEscolhida: null, ganchoEscolhido: "",
+    form: { produto: "", objetivo: OBJETIVOS[0], nicho: "", formato: FORMATOS_CR[0], tom: TONS[0], duracao: "Até 60s" },
+    material: { docs: [], audios: [], imagens: [] }, anteriores: [], ritmo: null };
+  try { central.refId = localStorage.getItem("centralRef") || ""; central.passo = Number(localStorage.getItem("centralPasso")) || 1; } catch (e) { /* começa do passo 1 */ }
+
+  const opcoesSelect = (lista, atual, vazio) => (vazio ? `<option value="">${vazio}</option>` : "") + lista.map((o) => `<option${o === atual ? " selected" : ""}>${esc(o)}</option>`).join("");
+  const mmss = (s) => `${String(Math.floor((Number(s) || 0) / 60)).padStart(2, "0")}:${String(Math.round((Number(s) || 0) % 60)).padStart(2, "0")}`;
+  // tempos da transcrição: os do vídeo quando existem; se não, uma estimativa pelo ritmo médio de fala (2,75 palavras por segundo)
+  function temposDaTranscricao(r) {
+    if (Array.isArray(r.segmentos) && r.segmentos.length) return { lista: r.segmentos, aproximado: false };
+    const frases = String(r.transcricao || "").replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s+/).filter(Boolean);
+    let t = 0;
+    return { aproximado: true, lista: frases.map((f) => { const item = { ini: Math.round(t), texto: f }; t += f.split(" ").length / 2.75; return item; }) };
+  }
+  function resumoReferencia(r) {
+    return { titulo: r.titulo, gancho: r.gancho, gancho_tipo: r.gancho_tipo, desenvolvimento: r.desenvolvimento, cta: r.cta, por_que: r.por_que,
+      transcricao: String(r.transcricao || "").slice(0, 3500), segmentos: r.segmentos || null, duracao: r.duracao || null, analise: r.analise || null };
+  }
+  async function chamarReferencias(corpo) {
+    const { data, error } = await banco.functions.invoke("referencias", { body: corpo });
+    let msg = data && data.error;
+    if (error) { try { msg = (await error.context.json()).error; } catch (e) {} msg = msg || "Não consegui falar com a IA agora. Tente de novo."; }
+    if (msg) throw new Error(msg);
+    return data || {};
+  }
+  function usarReferencia(r) {
+    central.ref = r; central.refId = r ? String(r.id) : "";
+    central.ideiaEscolhida = null; central.ganchoEscolhido = ""; central.anteriores = [];
+    try { localStorage.setItem("centralRef", central.refId); } catch (e) {}
+  }
+  async function atualizarReferencia(campos) {
+    if (!central.ref) return;
+    Object.assign(central.ref, campos);
+    const { error } = await banco.from("roteiros").update(campos).eq("id", central.ref.id);
+    if (error) avisar(traduzErro(error, "roteiros"), true);
+  }
+  function abrirNaCentral(r, passo) {
+    usarReferencia(r);
+    central.videoLocal = "";
+    central.passo = passo || 2;
+    mostrarAba("central");
   }
 
   function desenharRoteiros() {
     const sec = $("#aba-roteiros");
-    if (!$("#rot-novo")) {
-      sec.innerHTML = `
-        <div class="rot-faixa">
-          <p class="rot-faixa-sub">Cole o link de um vídeo do Instagram, TikTok ou YouTube. O painel transcreve, preenche o roteiro e deixa salvo com o vídeo tocando ao lado e as suas notas.</p>
-          <form class="rot-novo" id="rot-novo">
-            <input class="entrada" type="url" id="rot-link" placeholder="Cole aqui: instagram.com/reel/... · tiktok.com/... · youtube.com/..." aria-label="Link do vídeo" required>
-            <select class="entrada" id="rot-dequem" aria-label="De quem é o vídeo"><option value="outra">De outra pessoa</option><option value="meu">Meu</option></select>
-            <button class="btn btn-principal" type="submit">Transcrever</button>
-          </form>
-          <div class="rot-faixa-rodape">
-            <span><button class="btn-texto" type="button" id="rot-mao">ou escrever um roteiro na mão</button>
-            <button class="btn btn-mini" type="button" id="rot-metodo">📘 Método de roteiro (skill)</button></span>
-            <span class="rot-ts" id="rot-ts"></span>
-          </div>
-        </div>
-        <div class="bloco rot-conectar" id="rot-conectar" hidden>
-          <div class="bloco-titulo"><h2>Conectar o TokScript (só uma vez)</h2><button class="icone-btn" type="button" id="rot-conectar-fechar" aria-label="Fechar">×</button></div>
-          <ol class="rot-passos">
-            <li>Clique em <button class="btn btn-mini btn-principal" type="button" id="rot-ts-abrir">Abrir o login do TokScript ↗</button> e entre com a sua conta.</li>
-            <li>Depois de entrar, o navegador mostra uma página de erro (<i>"não é possível acessar esse site"</i>). <b>Isso é normal.</b></li>
-            <li>Copie o endereço inteiro da barra lá em cima (começa com <code>http://localhost:3000/callback?code=</code>) e cole aqui:</li>
-          </ol>
-          <div class="rot-novo">
-            <input class="entrada" type="text" id="rot-ts-url" placeholder="Cole aqui o endereço da página de erro" aria-label="Endereço da página de erro">
-            <button class="btn btn-principal" type="button" id="rot-ts-concluir">Concluir</button>
-          </div>
-        </div>
+    if (sec.dataset.vista !== vistaRot) { sec.dataset.vista = vistaRot; sec.innerHTML = ""; central.desenhado = ""; }
+    if (vistaRot === "central") return desenharCentral(sec);
+    if (vistaRot === "modelos") return desenharModelos(sec);
+    return desenharVistaLista(sec);
+  }
+
+  // ---------- páginas Meus roteiros e Biblioteca de referências ----------
+  function desenharVistaLista(sec) {
+    const meus = vistaRot === "meus";
+    estadoRot.filtro = meus ? "meus" : "outras";
+    if (!$("#rot-lista", sec)) {
+      sec.innerHTML = `<div class="cr-pagina">
+        <header class="cr-cabeca"><h2>${meus ? "Meus roteiros" : "Biblioteca de referências"}</h2>
+          <p>${meus ? "Os roteiros que você salvou ou escreveu. Clique para abrir, editar e gravar." : "Os vídeos que você importou. Clique em um para ver a transcrição, a análise e criar o seu roteiro."}</p></header>
         <div class="ferramentas">
-          <input class="entrada" type="search" id="rot-busca" placeholder="Buscar no texto, no perfil ou nas suas notas" aria-label="Buscar roteiros">
-          <div class="chips" role="group" aria-label="Filtrar roteiros" id="rot-chips"></div>
+          <input class="entrada" type="search" id="rot-busca" placeholder="Buscar no texto, no perfil ou nas suas notas" aria-label="Buscar">
+          ${meus ? `<button class="btn" type="button" id="rot-mao">${ic("lapis", 16)}Escrever um roteiro na mão</button>` : `<button class="btn btn-principal" type="button" id="rot-importar">${ic("link", 16)}Importar referência</button>`}
         </div>
-        <div id="rot-lista"></div>`;
-      $("#rot-novo").addEventListener("submit", (e) => {
-        e.preventDefault();
-        const link = $("#rot-link").value.trim();
-        if (!/^https?:\/\//i.test(link)) { avisar("Cole o link completo do vídeo, começando com https://", true); return; }
-        const origemLink = origemDoLink(link);
-        formRoteiro(null, { link, de_quem: $("#rot-dequem").value, origem: origemLink, perfil: perfilDoLink(link) }, false, origemLink !== "outro");
-        $("#rot-link").value = "";
-      });
-      $("#rot-mao").addEventListener("click", () => formRoteiro(null, { de_quem: "meu", origem: "outro" }));
-      $("#rot-metodo").addEventListener("click", abrirMetodo);
-      $("#rot-conectar-fechar").addEventListener("click", () => { $("#rot-conectar").hidden = true; });
-      $("#rot-ts-abrir").addEventListener("click", async (e) => {
-        const btn = e.currentTarget; btn.classList.add("carregando");
-        const janelaLogin = window.open("about:blank", "_blank");
-        try {
-          const r = await chamarTranscrever({ acao: "tokscript_inicio" });
-          if (janelaLogin) janelaLogin.location.href = r.url; else window.open(r.url, "_blank");
-        } catch (er) { if (janelaLogin) janelaLogin.close(); avisar(er.message, true); }
-        btn.classList.remove("carregando");
-      });
-      $("#rot-ts-concluir").addEventListener("click", async (e) => {
-        const texto = $("#rot-ts-url").value.trim();
-        let code = "", state = "";
-        try { const u = new URL(texto); code = u.searchParams.get("code") || ""; state = u.searchParams.get("state") || ""; } catch (er) {}
-        if (!code) { avisar("Esse endereço não tem o código do login. Copie o endereço inteiro da página de erro.", true); return; }
-        const btn = e.currentTarget; btn.classList.add("carregando");
-        try {
-          await chamarTranscrever({ acao: "tokscript_finalizar", code, state });
-          $("#rot-conectar").hidden = true; $("#rot-ts-url").value = "";
-          avisar("TokScript conectado! Agora é só colar o link e clicar em Transcrever.");
-          atualizarStatusTokscript(true);
-        } catch (er) { avisar(er.message, true); }
-        btn.classList.remove("carregando");
-      });
-      atualizarStatusTokscript();
-      $("#rot-busca").addEventListener("input", (e) => { estadoRot.busca = e.target.value.trim(); desenharListaRoteiros(); });
+        <div id="rot-lista"></div></div>`;
+      $("#rot-busca", sec).addEventListener("input", (e) => { estadoRot.busca = e.target.value.trim(); desenharListaRoteiros(); });
+      if (meus) $("#rot-mao", sec).addEventListener("click", () => formRoteiro(null, { de_quem: "meu", origem: "outro" }));
+      else $("#rot-importar", sec).addEventListener("click", () => { central.passo = 1; mostrarAba("central"); });
     }
     desenharListaRoteiros();
+  }
+
+  // ---------- página Modelos (método da skill e calculadora de duração) ----------
+  function desenharModelos(sec) {
+    if ($("#cr-metodo", sec)) return;
+    sec.innerHTML = `<div class="cr-pagina">
+      <header class="cr-cabeca"><h2>Modelos</h2><p>O método que a IA segue nos seus roteiros (skill roteiro-ugc) e a calculadora de duração.</p></header>
+      <section class="cr-card" id="cr-metodo"><p class="vazio">Abrindo o método...</p></section></div>`;
+    abrirMetodo($("#cr-metodo", sec));
+  }
+
+  // ---------- Central de Referências ----------
+  function desenharCentral(sec) {
+    if (!central.ref && central.refId) {
+      const r = dados.roteiros.find((x) => String(x.id) === central.refId);
+      if (r) central.ref = r; else if (dados.roteiros.length) { central.refId = ""; central.passo = 1; }
+    }
+    if (!central.ref && central.passo > 1) central.passo = 1;
+    if (!$(".cr-passos", sec)) {
+      sec.innerHTML = `<div class="cr-pagina">
+        <header class="cr-cabeca"><h2>Central de Referências</h2><p>Transcreva, analise, se inspire e crie roteiros com a sua Skill UGC.</p></header>
+        <nav class="cr-passos" aria-label="Passos">${PASSOS.map((t, i) => `<button type="button" class="cr-passo" data-p="${i + 1}"><span>${i + 1}</span>${t}</button>`).join("")}</nav>
+        <div class="cr-ref-atual" id="cr-ref-atual" hidden></div>
+        <div id="cr-conteudo"></div></div>`;
+      $$(".cr-passo", sec).forEach((b) => b.addEventListener("click", () => irPasso(Number(b.dataset.p))));
+    }
+    const chave = central.passo + "|" + (central.ref ? central.ref.id : "");
+    if (central.desenhado === chave) return; // os dados recarregaram, mas a tela do passo continua igual
+    central.desenhado = chave;
+    $$(".cr-passo", sec).forEach((b) => {
+      const p = Number(b.dataset.p);
+      b.classList.toggle("ativo", p === central.passo);
+      b.classList.toggle("feito", p < central.passo);
+      b.disabled = p > 1 && !central.ref;
+    });
+    const atual = $("#cr-ref-atual", sec);
+    atual.hidden = !central.ref || central.passo === 1;
+    if (central.ref) atual.innerHTML = `<span>${ic("marcador", 15)}Referência: <b>${esc(central.ref.titulo || "Sem título")}</b></span><button type="button" class="btn-texto" data-trocar>trocar</button>`;
+    const trocar = $("[data-trocar]", atual); if (trocar) trocar.addEventListener("click", () => irPasso(1));
+    const caixa = $("#cr-conteudo", sec);
+    try { localStorage.setItem("centralPasso", String(central.passo)); } catch (e) {}
+    ({ 1: passoImportar, 2: passoTranscricao, 3: passoAnalise, 4: passoInspiracao, 5: passoCriar })[central.passo](caixa);
+  }
+  function irPasso(n) {
+    if (n > 1 && !central.ref) { avisar("Importe uma referência primeiro.", true); return; }
+    central.passo = n; central.desenhado = "";
+    desenharCentral($("#aba-roteiros"));
+    $("#aba-roteiros").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  const statusEm = (el) => (t, erro) => { el.textContent = t || ""; el.hidden = !t; el.classList.toggle("erro", Boolean(erro)); };
+
+  // passo 1: importar referência
+  function passoImportar(caixa) {
+    caixa.innerHTML = `<section class="cr-card cr-importar">
+      <h3>Importar referência</h3>
+      <p class="cr-sub">Cole o link de um vídeo, envie um arquivo ou grave um áudio.</p>
+      <div class="cr-modos" role="group" aria-label="Como importar">
+        <button type="button" class="cr-modo ativo" data-modo="link">${ic("link")}Link de vídeo</button>
+        <button type="button" class="cr-modo" data-modo="arquivo">${ic("arquivo")}Enviar arquivo</button>
+        <button type="button" class="cr-modo" data-modo="audio">${ic("mic")}Gravar áudio</button>
+      </div>
+      <form class="cr-linha-link" id="cr-form-link">
+        <label class="cr-campo-icone">${ic("link", 17)}<input id="cr-link" type="url" placeholder="Cole o link do Instagram, TikTok ou YouTube aqui..." aria-label="Link do vídeo"></label>
+        <button class="btn btn-principal cr-btn" type="submit">Continuar${ic("seta", 16)}</button>
+      </form>
+      <div class="cr-ou"><span>ou</span></div>
+      <div class="cr-soltar-linha">
+        <label class="cr-soltar" id="cr-soltar">${ic("subir", 30)}<b>Arraste e solte um vídeo aqui</b><small>MP4, MOV ou áudio (até 25 MB)</small><input type="file" id="cr-arquivo" accept="video/*,audio/*" hidden></label>
+        <button type="button" class="cr-soltar cr-gravar" id="cr-gravar">${ic("mic", 30)}<b>Gravar áudio</b><small>até 10 minutos</small></button>
+      </div>
+      <p class="rot-status" id="cr-status" role="status" hidden></p>
+      <div class="cr-rodape-card">
+        <button type="button" class="cr-link-lista" id="cr-minhas">${ic("marcador", 17)}<span>Minhas referências</span>${ic("chevron", 16)}</button>
+        <span class="rot-ts" id="rot-ts"></span>
+      </div>
+    </section>
+    <div class="bloco rot-conectar" id="rot-conectar" hidden>
+      <div class="bloco-titulo"><h2>Conectar o TokScript (só uma vez)</h2><button class="icone-btn" type="button" id="rot-conectar-fechar" aria-label="Fechar">×</button></div>
+      <ol class="rot-passos">
+        <li>Clique em <button class="btn btn-mini btn-principal" type="button" id="rot-ts-abrir">Abrir o login do TokScript ↗</button> e entre com a sua conta.</li>
+        <li>Depois de entrar, o navegador mostra uma página de erro (<i>"não é possível acessar esse site"</i>). <b>Isso é normal.</b></li>
+        <li>Copie o endereço inteiro da barra lá em cima (começa com <code>http://localhost:3000/callback?code=</code>) e cole aqui:</li>
+      </ol>
+      <div class="rot-novo">
+        <input class="entrada" type="text" id="rot-ts-url" placeholder="Cole aqui o endereço da página de erro" aria-label="Endereço da página de erro">
+        <button class="btn btn-principal" type="button" id="rot-ts-concluir">Concluir</button>
+      </div>
+    </div>`;
+    const status = statusEm($("#cr-status", caixa));
+    let ocupado = false;
+    async function importar(corpo, extra) {
+      if (ocupado) return; ocupado = true;
+      $$("button, input", $(".cr-importar", caixa)).forEach((b) => { b.disabled = true; });
+      status(extra.mensagem || "Transcrevendo o vídeo... pode levar até 1 minuto.");
+      try {
+        const r = await chamarTranscrever(corpo);
+        const c = r.campos || {};
+        const linha = { titulo: (c.titulo || extra.titulo || "Referência sem título").slice(0, 120), de_quem: "outra", perfil: nulo(String(r.perfil || extra.perfil || "").replace(/^@/, "")),
+          data_post: nulo(r.data_post), origem: r.origem || extra.origem || "outro", link: nulo(extra.link), etiquetas: nulo(c.etiquetas), gancho: nulo(c.gancho),
+          gancho_tipo: nulo(c.gancho_tipo), desenvolvimento: nulo(c.desenvolvimento), cta: nulo(c.cta), expressoes: nulo(c.expressoes), por_que: nulo(c.por_que),
+          transcricao: r.transcricao, segmentos: Array.isArray(r.segmentos) && r.segmentos.length ? r.segmentos : null, duracao: r.duracao || null };
+        const { data, error } = await banco.from("roteiros").insert(linha).select().single();
+        if (error) throw new Error(traduzErro(error, "roteiros"));
+        usarReferencia(data);
+        central.videoLocal = extra.videoLocal || "";
+        dados.roteiros.unshift(data);
+        recarregar("roteiros");
+        avisar("Referência importada e salva na sua biblioteca");
+        irPasso(2);
+      } catch (e) {
+        status(e.message, true);
+        $$("button, input", $(".cr-importar", caixa)).forEach((b) => { b.disabled = false; });
+      }
+      ocupado = false;
+    }
+    const usarArquivo = (arq) => {
+      if (!arq) return;
+      if (arq.size > 25 * 1024 * 1024) { status("Esse arquivo passa de 25 MB, o limite da transcrição. Envie um vídeo mais curto ou o link.", true); return; }
+      const corpo = new FormData(); corpo.append("arquivo", arq, arq.name || "video.mp4"); corpo.append("link", "");
+      importar(corpo, { titulo: arq.name.replace(/\.[^.]+$/, ""), origem: "outro", videoLocal: /^video\//.test(arq.type) ? URL.createObjectURL(arq) : "" });
+    };
+    $("#cr-form-link", caixa).addEventListener("submit", (e) => {
+      e.preventDefault();
+      const link = $("#cr-link", caixa).value.trim();
+      if (!/^https?:\/\//i.test(link)) { status("Cole o link completo do vídeo, começando com https://", true); return; }
+      importar({ link }, { link, origem: origemDoLink(link), perfil: perfilDoLink(link) });
+    });
+    $("#cr-arquivo", caixa).addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; usarArquivo(f); });
+    const zona = $("#cr-soltar", caixa);
+    ["dragenter", "dragover"].forEach((ev) => zona.addEventListener(ev, (e) => { e.preventDefault(); zona.classList.add("arrastando"); }));
+    ["dragleave", "drop"].forEach((ev) => zona.addEventListener(ev, (e) => { e.preventDefault(); zona.classList.remove("arrastando"); }));
+    zona.addEventListener("drop", (e) => usarArquivo(e.dataTransfer.files[0]));
+    // gravar áudio (para importar uma ideia falada ou um vídeo tocando perto do microfone)
+    let gravador = null, limite = null;
+    const btnGravar = $("#cr-gravar", caixa);
+    btnGravar.addEventListener("click", async () => {
+      if (gravador) { gravador.stop(); return; }
+      try {
+        const fluxo = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const rec = new MediaRecorder(fluxo); const partes = [];
+        rec.ondataavailable = (e) => { if (e.data && e.data.size) partes.push(e.data); };
+        rec.onstop = () => {
+          clearTimeout(limite); fluxo.getTracks().forEach((t) => t.stop()); gravador = null;
+          btnGravar.classList.remove("gravando"); $("b", btnGravar).textContent = "Gravar áudio";
+          const tipo = rec.mimeType || "audio/webm"; const ext = /mp4|m4a|aac/.test(tipo) ? "m4a" : /ogg/.test(tipo) ? "ogg" : "webm";
+          const blob = new Blob(partes, { type: tipo });
+          if (blob.size) { const corpo = new FormData(); corpo.append("arquivo", new File([blob], "audio." + ext, { type: tipo })); corpo.append("link", ""); importar(corpo, { titulo: "Áudio gravado", origem: "outro", mensagem: "Transcrevendo o seu áudio..." }); }
+        };
+        gravador = rec; rec.start(); limite = setTimeout(() => rec.state === "recording" && rec.stop(), 10 * 60000);
+        btnGravar.classList.add("gravando"); $("b", btnGravar).textContent = "● Gravando... toque para parar";
+      } catch (e) { status("Não consegui usar o microfone. Libere o microfone no navegador ou envie um arquivo.", true); }
+    });
+    $$(".cr-modo", caixa).forEach((b) => b.addEventListener("click", () => {
+      $$(".cr-modo", caixa).forEach((x) => x.classList.toggle("ativo", x === b));
+      if (b.dataset.modo === "link") $("#cr-link", caixa).focus();
+      if (b.dataset.modo === "arquivo") $("#cr-arquivo", caixa).click();
+      if (b.dataset.modo === "audio") btnGravar.click();
+    }));
+    $("#cr-minhas", caixa).addEventListener("click", () => mostrarAba("biblioteca"));
+    // TokScript (para transcrever Instagram e TikTok)
+    $("#rot-conectar-fechar", caixa).addEventListener("click", () => { $("#rot-conectar").hidden = true; });
+    $("#rot-ts-abrir", caixa).addEventListener("click", async (e) => {
+      const btn = e.currentTarget; btn.classList.add("carregando");
+      const janelaLogin = window.open("about:blank", "_blank");
+      try { const r = await chamarTranscrever({ acao: "tokscript_inicio" }); if (janelaLogin) janelaLogin.location.href = r.url; else window.open(r.url, "_blank"); }
+      catch (er) { if (janelaLogin) janelaLogin.close(); avisar(er.message, true); }
+      btn.classList.remove("carregando");
+    });
+    $("#rot-ts-concluir", caixa).addEventListener("click", async (e) => {
+      const texto = $("#rot-ts-url").value.trim();
+      let code = "", state = "";
+      try { const u = new URL(texto); code = u.searchParams.get("code") || ""; state = u.searchParams.get("state") || ""; } catch (er) {}
+      if (!code) { avisar("Esse endereço não tem o código do login. Copie o endereço inteiro da página de erro.", true); return; }
+      const btn = e.currentTarget; btn.classList.add("carregando");
+      try {
+        await chamarTranscrever({ acao: "tokscript_finalizar", code, state });
+        $("#rot-conectar").hidden = true; $("#rot-ts-url").value = "";
+        avisar("TokScript conectado! Agora é só colar o link.");
+        atualizarStatusTokscript(true);
+      } catch (er) { avisar(er.message, true); }
+      btn.classList.remove("carregando");
+    });
+    atualizarStatusTokscript(tokscriptConectado === null ? undefined : tokscriptConectado);
+  }
+
+  // passo 2: transcrição
+  function passoTranscricao(caixa) {
+    const r = central.ref;
+    const emb = embedDoLink(r.link);
+    const player = central.videoLocal ? `<video src="${central.videoLocal}" controls playsinline></video>`
+      : emb ? `<iframe src="${emb}" title="Vídeo da referência" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen loading="lazy"></iframe>`
+      : `<div class="cr-sem-video">${ic("play", 34)}<small>${r.link ? "Esse link não toca aqui dentro." : "Vídeo enviado como arquivo"}</small></div>`;
+    const { lista, aproximado } = temposDaTranscricao(r);
+    caixa.innerHTML = `<div class="cr-duas cr-duas-video">
+      <section class="cr-card cr-video">
+        <div class="cr-player">${player}</div>
+        <div class="cr-info">
+          <h4>Informações do arquivo</h4>
+          <dl>
+            <dt>Origem</dt><dd>${esc(nomeOrigem(r.origem))}${r.perfil ? " · @" + esc(String(r.perfil).replace(/^@/, "")) : ""}</dd>
+            <dt>Duração</dt><dd>${r.duracao ? r.duracao + " segundos" : "-"}</dd>
+            <dt>Enviado em</dt><dd>${r.criado_em ? esc(new Date(r.criado_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })) : "-"}</dd>
+          </dl>
+          <div class="cr-info-acoes">
+            <button class="btn btn-mini" type="button" data-editar>${ic("lapis", 14)}Editar referência</button>
+            ${r.link ? `<a class="link-mini" href="${esc(r.link)}" target="_blank" rel="noopener">abrir no ${esc(nomeOrigem(r.origem))} ↗</a>` : ""}
+          </div>
+        </div>
+      </section>
+      <section class="cr-card">
+        <div class="cr-topo"><h3>Transcrição do vídeo</h3><button class="btn btn-mini" type="button" data-copiar>${ic("copiar", 15)}Copiar</button></div>
+        <div class="cr-abas" role="tablist">
+          <button type="button" class="cr-aba${aproximado ? " ativa" : ""}" data-t="texto">Texto completo</button>
+          <button type="button" class="cr-aba${aproximado ? "" : " ativa"}" data-t="tempo">Com marcação de tempo</button>
+        </div>
+        <div class="cr-transcricao" data-painel-t="texto"${aproximado ? "" : " hidden"}>${String(r.transcricao || "Sem transcrição.").split(/\n+/).map((p) => `<p>${esc(p)}</p>`).join("")}</div>
+        <div data-painel-t="tempo"${aproximado ? " hidden" : ""}>
+          ${aproximado ? `<p class="cr-nota">${ic("info", 14)}Esse vídeo não trouxe os tempos de cada fala; estes são aproximados pelo ritmo médio de fala.</p>` : ""}
+          <ol class="cr-tempos">${lista.map((s) => `<li><span>${mmss(s.ini)}</span><p>${esc(s.texto)}</p></li>`).join("")}</ol>
+        </div>
+        <div class="cr-avancar"><button class="btn btn-principal cr-btn" type="button" data-proximo>Analisar o vídeo${ic("seta", 16)}</button></div>
+      </section></div>`;
+    $$(".cr-aba", caixa).forEach((b) => b.addEventListener("click", () => {
+      $$(".cr-aba", caixa).forEach((x) => x.classList.toggle("ativa", x === b));
+      $$("[data-painel-t]", caixa).forEach((p) => { p.hidden = p.dataset.painelT !== b.dataset.t; });
+    }));
+    $("[data-copiar]", caixa).addEventListener("click", async () => {
+      const comTempo = !$('[data-painel-t="tempo"]', caixa).hidden;
+      const texto = comTempo ? lista.map((s) => `${mmss(s.ini)}  ${s.texto}`).join("\n") : String(r.transcricao || "");
+      try { await navigator.clipboard.writeText(texto); avisar("Transcrição copiada"); } catch (e) { avisar("Não consegui copiar. Selecione o texto e copie.", true); }
+    });
+    $("[data-editar]", caixa).addEventListener("click", () => formRoteiro(r));
+    $("[data-proximo]", caixa).addEventListener("click", () => irPasso(3));
+  }
+
+  // passo 3: análise
+  function passoAnalise(caixa) {
+    const r = central.ref;
+    const a = r.analise;
+    if (!a) {
+      caixa.innerHTML = `<section class="cr-card cr-carregando"><span class="cr-girando"></span><p>Analisando o vídeo: o que chama atenção, os pontos fortes e cada parte com o tempo... (uns 20 segundos)</p><p class="rot-status" id="cr-status" hidden></p></section>`;
+      const status = statusEm($("#cr-status", caixa));
+      chamarReferencias({ acao: "analise", referencia: resumoReferencia(r) })
+        .then(async (res) => { await atualizarReferencia({ analise: res }); if (central.passo === 3 && central.ref === r) { central.desenhado = ""; desenharCentral($("#aba-roteiros")); } })
+        .catch((e) => { status(e.message, true); $(".cr-girando", caixa).remove(); caixa.querySelector(".cr-carregando").insertAdjacentHTML("beforeend", `<button class="btn" type="button" data-tentar>${ic("refazer", 15)}Tentar de novo</button>`); $("[data-tentar]", caixa).addEventListener("click", () => passoAnalise(caixa)); });
+      return;
+    }
+    const itens = (l) => `<ul>${(l || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    const bloco = (icone, titulo, conteudo) => `<details class="cr-acordeao" open><summary><span class="cr-icone">${ic(icone, 19)}</span><b>${titulo}</b>${ic("chevron", 16)}</summary><div class="cr-acordeao-corpo">${conteudo}</div></details>`;
+    caixa.innerHTML = `<section class="cr-card cr-analise">
+      ${bloco("panorama", "Panorama geral", `<p>${esc(a.panorama || "")}</p>`)}
+      ${bloco("lampada", "Motivo de chamar atenção", itens(a.motivos))}
+      ${bloco("estrela", "Pontos fortes", itens(a.pontos_fortes))}
+      ${bloco("lista", "Desenvolvimento do vídeo", `<ol class="cr-partes">${(a.desenvolvimento || []).map((d, i) => `<li><span class="cr-num">${i + 1}</span><span class="cr-tempo">${esc(d.ini)}${d.fim ? " - " + esc(d.fim) : ""}</span><p><b>${esc(d.parte)}</b>${esc(d.texto)}</p></li>`).join("")}</ol>`)}
+      ${(a.melhorar || []).length ? bloco("brilho", "Como fazer melhor na sua versão", itens(a.melhorar)) : ""}
+      <div class="cr-avancar cr-avancar-duplo">
+        <button class="btn" type="button" data-refazer>${ic("refazer", 15)}Refazer análise</button>
+        <button class="btn btn-principal cr-btn" type="button" data-proximo>Criar ideias com essa referência${ic("seta", 16)}</button>
+      </div></section>`;
+    $("[data-refazer]", caixa).addEventListener("click", async () => { await atualizarReferencia({ analise: null }); passoAnalise(caixa); });
+    $("[data-proximo]", caixa).addEventListener("click", () => irPasso(4));
+  }
+
+  // material de apoio (passos 4 e 5): documento, áudio e imagens
+  const carregarScript = (src) => new Promise((ok, falhou) => {
+    if (document.querySelector(`script[src="${src}"]`)) { ok(); return; }
+    const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => falhou(new Error("Não consegui abrir o leitor de documentos."));
+    document.head.appendChild(s);
+  });
+  async function lerDocumento(arq) {
+    const nome = arq.name.toLowerCase();
+    if (/\.(txt|md|csv)$/.test(nome) || /^text\//.test(arq.type)) return arq.text();
+    if (/\.pdf$/.test(nome)) {
+      await carregarScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const doc = await window.pdfjsLib.getDocument({ data: await arq.arrayBuffer() }).promise;
+      let t = "";
+      for (let i = 1; i <= Math.min(doc.numPages, 15); i++) { const pg = await doc.getPage(i); t += (await pg.getTextContent()).items.map((x) => x.str).join(" ") + "\n"; }
+      return t;
+    }
+    if (/\.docx$/.test(nome)) {
+      await carregarScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js");
+      return (await window.mammoth.extractRawText({ arrayBuffer: await arq.arrayBuffer() })).value;
+    }
+    throw new Error("Esse tipo de documento eu ainda não leio. Use PDF, DOCX ou TXT.");
+  }
+  const textoMaterial = () => [...central.material.docs.map((d) => `Documento "${d.nome}": ${d.texto}`), ...central.material.audios.map((d) => `O que eu falei no áudio: ${d.texto}`)].join("\n").replace(/\s+\n/g, "\n").slice(0, 1800);
+  function htmlMaterial() {
+    const m = central.material;
+    return `<div class="cr-material">
+      <label class="cr-tile">${ic("arquivo", 20)}<b>Anexar documento</b><small>PDF, DOCX ou TXT (briefing)</small><input type="file" accept=".pdf,.docx,.txt,.md,.csv,text/plain,application/pdf" data-mat="doc" hidden></label>
+      <label class="cr-tile">${ic("mic", 20)}<b>Enviar áudio</b><small>até 10 minutos</small><input type="file" accept="audio/*,.ogg,.opus,.m4a,.mp3,.wav" data-mat="audio" hidden></label>
+      <label class="cr-tile">${ic("imagem", 20)}<b>Adicionar imagens</b><small>JPG ou PNG, até 4</small><input type="file" accept="image/*" multiple data-mat="img" hidden></label>
+    </div>
+    <div class="cr-anexos" data-anexos>${[
+      ...m.docs.map((d, i) => `<span class="cr-anexo">${ic("arquivo", 14)}${esc(d.nome)}<button type="button" data-tirar="docs:${i}" aria-label="Tirar">×</button></span>`),
+      ...m.audios.map((d, i) => `<span class="cr-anexo">${ic("mic", 14)}${esc(d.nome)}<button type="button" data-tirar="audios:${i}" aria-label="Tirar">×</button></span>`),
+      ...m.imagens.map((src, i) => `<span class="cr-anexo cr-anexo-img"><img src="${src}" alt=""><button type="button" data-tirar="imagens:${i}" aria-label="Tirar">×</button></span>`),
+    ].join("")}</div>`;
+  }
+  function ligarMaterial(area, status, redesenhar) {
+    $$("[data-tirar]", area).forEach((b) => b.addEventListener("click", () => { const [k, i] = b.dataset.tirar.split(":"); central.material[k].splice(Number(i), 1); redesenhar(); }));
+    $('[data-mat="doc"]', area).addEventListener("change", async (e) => {
+      const arq = e.target.files[0]; e.target.value = ""; if (!arq) return;
+      status("Lendo o documento...");
+      try { const t = (await lerDocumento(arq)).replace(/\s+/g, " ").trim(); if (!t) throw new Error("Não achei texto nesse documento."); central.material.docs.push({ nome: arq.name, texto: t.slice(0, 4000) }); status(""); redesenhar(); }
+      catch (er) { status(er.message, true); }
+    });
+    $('[data-mat="audio"]', area).addEventListener("change", async (e) => {
+      const arq = e.target.files[0]; e.target.value = ""; if (!arq) return;
+      status("Ouvindo o seu áudio...");
+      try { const f = new FormData(); f.append("audio", arq, arq.name || "audio.webm"); const d = await chamarRoteiro(f); if (!d.texto) throw new Error("Não entendi o áudio."); central.material.audios.push({ nome: arq.name || "Áudio", texto: d.texto }); status(""); redesenhar(); }
+      catch (er) { status(er.message, true); }
+    });
+    $('[data-mat="img"]', area).addEventListener("change", async (e) => {
+      const lista = [...e.target.files].filter((a) => /^image\//.test(a.type)).slice(0, 4 - central.material.imagens.length); e.target.value = "";
+      try { central.material.imagens = [...central.material.imagens, ...(await Promise.all(lista.map(reduzirImagem)))].slice(0, 4); redesenhar(); }
+      catch (er) { status("Não consegui abrir essa imagem. Tente JPG ou PNG.", true); }
+    });
+  }
+  function camposForm(caixa) {
+    $$("[data-f]", caixa).forEach((el) => el.addEventListener("input", () => { central.form[el.dataset.f] = el.value; }));
+  }
+
+  // passo 4: inspiração (ideias)
+  function passoInspiracao(caixa) {
+    const r = central.ref, f = central.form;
+    const ideias = r.ideias && Array.isArray(r.ideias.ideias) ? r.ideias : null;
+    caixa.innerHTML = `<p class="cr-intro-passo">Use essa referência para criar conteúdos parecidos, adaptando para os seus produtos ou objetivos.</p>
+    <div class="cr-duas">
+      <section class="cr-card">
+        <h3 class="cr-titulo-misto"><span>Criar novas ideias</span> com essa referência</h3>
+        <label class="cr-campo">Produto ou tema<input data-f="produto" value="${esc(f.produto)}" placeholder="Ex.: máscara capilar, produtos de casa..."></label>
+        <label class="cr-campo">Objetivo do conteúdo<select data-f="objetivo">${opcoesSelect(OBJETIVOS, f.objetivo)}</select></label>
+        <div class="cr-grade-2">
+          <label class="cr-campo">Nicho<select data-f="nicho">${opcoesSelect(NICHOS, f.nicho, "O mesmo da referência")}</select></label>
+          <label class="cr-campo">Formato<select data-f="formato">${opcoesSelect(FORMATOS_CR, f.formato)}</select></label>
+        </div>
+        <label class="cr-campo">Tom de voz<select data-f="tom">${opcoesSelect(TONS, f.tom)}</select></label>
+        <p class="cr-rotulo">Material de apoio (opcional)</p>
+        <div data-material>${htmlMaterial()}</div>
+        <p class="rot-status" id="cr-status" role="status" hidden></p>
+        <button class="btn btn-principal cr-btn cr-btn-largo" type="button" data-gerar>Gerar ideias${ic("seta", 16)}</button>
+      </section>
+      <section class="cr-card">
+        <h3>Ideias inspiradas nesta referência</h3>
+        <div data-ideias>${ideias ? "" : `<p class="cr-vazio">${ic("lampada", 26)}Preencha ao lado e clique em <b>Gerar ideias</b>. As ideias ficam salvas nesta referência.</p>`}</div>
+      </section>
+    </div>`;
+    const status = statusEm($("#cr-status", caixa));
+    camposForm(caixa);
+    const area = $("[data-material]", caixa);
+    const redesenhar = () => { area.innerHTML = htmlMaterial(); ligarMaterial(area, status, redesenhar); };
+    ligarMaterial(area, status, redesenhar);
+    function mostrarIdeias(lista) {
+      const el = $("[data-ideias]", caixa);
+      el.innerHTML = `<ol class="cr-ideias">${lista.ideias.map((i, n) => `<li><button type="button" data-ideia="${n}"><span class="cr-num">${n + 1}</span><span class="cr-ideia-txt"><b>${esc(i.titulo)}</b><small>${esc(i.descricao)}</small></span>${ic("chevron", 16)}</button></li>`).join("")}
+        ${lista.ganchos && lista.ganchos.length ? `<li class="cr-ganchos"><details><summary><span class="cr-num cr-num-icone">${ic("gancho", 15)}</span><span class="cr-ideia-txt"><b>Hooks alternativos</b><small>Outras formas de começar o vídeo</small></span>${ic("chevron", 16)}</summary>
+          <ul>${lista.ganchos.map((g, n) => `<li><button type="button" data-gancho="${n}">"${esc(g)}"${ic("seta", 14)}</button></li>`).join("")}</ul></details></li>` : ""}</ol>
+        <p class="cr-dica">Clique em uma ideia ou gancho para criar o roteiro com a sua Skill.</p>`;
+      $$("[data-ideia]", el).forEach((b) => b.addEventListener("click", () => { central.ideiaEscolhida = lista.ideias[Number(b.dataset.ideia)]; central.ganchoEscolhido = ""; irPasso(5); }));
+      $$("[data-gancho]", el).forEach((b) => b.addEventListener("click", () => { central.ganchoEscolhido = lista.ganchos[Number(b.dataset.gancho)]; central.ideiaEscolhida = null; irPasso(5); }));
+    }
+    if (ideias) mostrarIdeias(ideias);
+    $("[data-gerar]", caixa).addEventListener("click", async (e) => {
+      const btn = e.currentTarget; btn.disabled = true; btn.classList.add("carregando");
+      status("Criando ideias com base na referência... (uns 20 segundos)");
+      try {
+        const res = await chamarReferencias({ acao: "ideias", referencia: resumoReferencia(r), produto: f.produto, objetivo: f.objetivo, nicho: f.nicho, formato: f.formato, tom: f.tom,
+          material: textoMaterial(), imagens: central.material.imagens });
+        if (!res.ideias || !res.ideias.length) throw new Error("A IA não devolveu ideias. Tente de novo.");
+        await atualizarReferencia({ ideias: res });
+        mostrarIdeias(res); status("");
+      } catch (er) { status(er.message, true); }
+      btn.disabled = false; btn.classList.remove("carregando");
+    });
+  }
+
+  // passo 5: criar roteiro com a skill
+  async function ritmoDeFala() {
+    if (central.ritmo === null) {
+      try { const { data } = await banco.from("estilo_ugc").select("ritmo_fala").eq("id", 1).maybeSingle(); central.ritmo = Number(data && data.ritmo_fala) || 2.75; }
+      catch (e) { central.ritmo = 2.75; }
+    }
+    return central.ritmo;
+  }
+  function passoCriar(caixa) {
+    const r = central.ref, f = central.form;
+    const escolha = central.ideiaEscolhida ? `Ideia: <b>${esc(central.ideiaEscolhida.titulo)}</b>` : central.ganchoEscolhido ? `Gancho: <b>"${esc(central.ganchoEscolhido)}"</b>` : "";
+    caixa.innerHTML = `<div class="cr-duas cr-duas-criar">
+      <section class="cr-card">
+        <h3>Criar roteiro com a sua Skill UGC</h3>
+        <p class="cr-sub">Preencha as informações e gere um roteiro completo seguindo o seu método.</p>
+        ${escolha ? `<div class="cr-escolha">${ic("lampada", 16)}<span>${escolha}</span><button type="button" class="btn-texto" data-tirar-escolha>tirar</button></div>` : ""}
+        <div class="cr-grade-2 cr-grade-larga">
+          <label class="cr-campo">Produto / Tema<input data-f="produto" value="${esc(f.produto)}" placeholder="Ex.: máscara capilar, produtos de casa..."></label>
+          <label class="cr-campo">Objetivo<select data-f="objetivo">${opcoesSelect(OBJETIVOS, f.objetivo)}</select></label>
+        </div>
+        <div class="cr-grade-3">
+          <label class="cr-campo">Duração<select data-f="duracao">${opcoesSelect(DURACOES, f.duracao)}</select></label>
+          <label class="cr-campo">Formato<select data-f="formato">${opcoesSelect(FORMATOS_CR, f.formato)}</select></label>
+          <label class="cr-campo">Tom de voz<select data-f="tom">${opcoesSelect(TONS, f.tom)}</select></label>
+        </div>
+        <p class="cr-rotulo">Material de apoio (opcional)</p>
+        <div data-material>${htmlMaterial()}</div>
+      </section>
+      <aside class="cr-card cr-lateral">
+        <h4>O que será gerado?</h4>
+        <ul class="cr-checks">${["Mais de uma opção de gancho", "Roteiro completo e pronto para gravação", "Linguagem natural e dentro do seu método", "Duração calculada pelo seu ritmo de fala", "Texto pronto para copiar e enviar para a marca"].map((t) => `<li>${ic("check", 15)}${t}</li>`).join("")}</ul>
+        <p class="cr-nota">${ic("info", 14)}A sua Skill UGC é usada para gerar o roteiro com base nas informações desta página e na referência.</p>
+      </aside>
+    </div>
+    <p class="rot-status" id="cr-status" role="status" hidden></p>
+    <button class="btn btn-principal cr-btn cr-btn-largo cr-btn-gerar" type="button" data-gerar>Gerar roteiro com minha Skill${ic("seta", 16)}</button>
+    <div class="cr-resultado" data-resultado></div>`;
+    const status = statusEm($("#cr-status", caixa));
+    camposForm(caixa);
+    const area = $("[data-material]", caixa);
+    const redesenhar = () => { area.innerHTML = htmlMaterial(); ligarMaterial(area, status, redesenhar); };
+    ligarMaterial(area, status, redesenhar);
+    const tirar = $("[data-tirar-escolha]", caixa);
+    if (tirar) tirar.addEventListener("click", () => { central.ideiaEscolhida = null; central.ganchoEscolhido = ""; central.desenhado = ""; passoCriar(caixa); });
+    async function gerar(ajuste) {
+      const material = textoMaterial();
+      if (!f.produto.trim() && !central.ideiaEscolhida && !central.ganchoEscolhido && !material && !central.material.imagens.length) { status("Diga o produto ou tema, escolha uma ideia no passo 4 ou anexe um material.", true); return; }
+      const btn = $("[data-gerar]", caixa); btn.disabled = true; btn.classList.add("carregando");
+      status(f.produto ? "Pesquisando o produto e escrevendo com a sua Skill... (até 1 minuto)" : "Escrevendo com a sua Skill... (uns 30 segundos)");
+      try {
+        const ritmo = await ritmoDeFala();
+        const seg = Number(String(f.duracao).replace(/\D/g, "")) || 0;
+        const i = central.ideiaEscolhida;
+        const ideia = [
+          i ? `Ideia escolhida: ${i.titulo}. ${i.descricao}${i.gancho ? ` Gancho sugerido: "${i.gancho}"` : ""}` : "",
+          central.ganchoEscolhido ? `Quero começar o vídeo com este gancho: "${central.ganchoEscolhido}"` : "",
+          f.produto ? `Produto ou tema: ${f.produto}` : "",
+          `Objetivo do conteúdo: ${f.objetivo}`,
+          seg ? `Duração: até ${seg} segundos, então no máximo ${Math.round(seg * ritmo)} palavras faladas no total (hook, desenrolar e CTA).` : "",
+          `Tom de voz: ${f.tom}`,
+          material ? "Material de apoio que eu mandei:\n" + material : "",
+        ].filter(Boolean).join("\n");
+        const d = await chamarRoteiro({ modo: "ugc", ideia, produtos: f.produto, produto: f.produto, imagens: central.material.imagens, referencia: resumoReferencia(r),
+          nicho: f.nicho, tipo: f.formato, plataforma: "Reels", quantidade: 2, anteriores: central.anteriores.slice(-6), ajuste: ajuste || "" });
+        if (!d.roteiros || !d.roteiros.length) throw new Error("A IA não devolveu o roteiro. Tente de novo.");
+        d.roteiros.forEach((x) => central.anteriores.push(x.hook.fala));
+        mostrarCartoesRoteiro($("[data-resultado]", caixa), d.roteiros, d.pesquisa, {
+          salvar: (x, texto) => gravar("roteiros", { titulo: x.titulo, de_quem: "meu", origem: "instagram", etiquetas: [x.tipo_ugc, x.funil, x.nicho].filter(Boolean).join(", "),
+            gancho: x.hook.fala, gancho_tipo: nulo(x.gancho_tipo), desenvolvimento: x.desenrolar.map((p) => p.fala).join("\n"), cta: x.cta.fala, por_que: nulo(x.por_que_funciona),
+            transcricao: texto, notas: "Criado na Central de Referências a partir de: " + (r.titulo || "referência") + (r.link ? " (" + r.link + ")" : "") }),
+          denovo: (aj) => gerar(aj),
+        });
+        status("Pronto! Se não gostar, peça de novo lá embaixo, ou edite antes de salvar.");
+        $("[data-resultado]", caixa).scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (er) { status(er.message, true); }
+      btn.disabled = false; btn.classList.remove("carregando");
+    }
+    $("[data-gerar]", caixa).addEventListener("click", () => gerar(""));
   }
 
   function desenharListaRoteiros() {
     const total = dados.roteiros.length;
     const outras = dados.roteiros.filter((r) => r.de_quem === "outra").length;
-    $("#rot-chips").innerHTML = [["todos", `Todos ${total}`], ["outras", `De outras ${outras}`], ["meus", `Meus ${total - outras}`]]
-      .map(([v, t]) => `<button type="button" class="chip${estadoRot.filtro === v ? " ativo" : ""}" data-f="${v}">${t}</button>`).join("");
-    $$("#rot-chips .chip").forEach((c) => c.addEventListener("click", () => { estadoRot.filtro = c.dataset.f; desenharListaRoteiros(); }));
     const caixa = $("#rot-lista");
+    if (!caixa) return;
     if (faltando.roteiros) { caixa.innerHTML = `<p class="vazio">${esc(faltando.roteiros)}</p>`; return; }
     const lista = roteirosFiltrados();
-    if (!lista.length) { caixa.innerHTML = `<p class="vazio">${total ? "Nenhum roteiro encontrado com essa busca." : "Nenhum roteiro ainda. Cole o link de um vídeo lá em cima."}</p>`; return; }
+    if (!lista.length) { caixa.innerHTML = `<p class="vazio">${estadoRot.busca ? "Nada encontrado com essa busca." : estadoRot.filtro === "meus" ? "Você ainda não salvou nenhum roteiro. Crie um na Central de Referências." : "Nenhuma referência ainda. Importe um vídeo na Central de Referências."}</p>`; return; }
     caixa.innerHTML = lista.map((r) => {
       const capa = capaDoLink(r.link);
       return `<article class="rot-card" data-id="${r.id}" tabindex="0">
@@ -1341,7 +1831,7 @@
       </article>`;
     }).join("");
     $$(".rot-card", caixa).forEach((card) => {
-      const abrir = (tocar) => { const r = dados.roteiros.find((x) => String(x.id) === card.dataset.id); if (r) formRoteiro(r, null, tocar); };
+      const abrir = (tocar) => { const r = dados.roteiros.find((x) => String(x.id) === card.dataset.id); if (!r) return; if (r.de_quem === "outra" && !tocar) abrirNaCentral(r, 2); else formRoteiro(r, null, tocar); };
       card.addEventListener("click", (e) => { if (e.target.closest("a")) return; abrir(Boolean(e.target.closest("[data-tocar]"))); });
       card.addEventListener("keydown", (e) => { if (e.key === "Enter") abrir(false); });
     });
@@ -1386,6 +1876,66 @@
     if (error) { try { msg = (await error.context.json()).error; } catch (e) {} msg = msg || "Não consegui falar com a IA agora. Tente de novo."; }
     if (msg) throw new Error(msg);
     return data || {};
+  }
+
+  // ---------- cartões de roteiro criados pela IA (janela do roteiro e Central de Referências) ----------
+  const cena = (p) => esc(p.fala || "") + (p.visual ? `<em>${esc(p.visual)}</em>` : "");
+  const duracaoTexto = (d) => `${d.palavras} palavras, uns ${d.seu || d.media} s${d.seu ? " no seu ritmo" : " no ritmo médio"}${d.seu ? "" : ` (${d.rapida} s falando rápido)`}`;
+  const textoRoteiro = (x) => [
+    `TIPO DE CONTEÚDO UGC: ${x.tipo_ugc || "-"}\nTIPO DE FUNIL: ${x.funil || "-"}\nNICHO: ${x.nicho || "-"}${x.formato ? "\nFORMATO: " + x.formato : ""}${x.duracao ? "\nDURAÇÃO: " + duracaoTexto(x.duracao) : ""}`,
+    `HOOK${x.gancho_tipo ? " (" + x.gancho_tipo + ")" : ""}:\n${x.hook.fala}${x.hook.visual ? "\n[" + x.hook.visual + "]" : ""}`,
+    x.desenrolar.length ? "DESENROLAR:\n" + x.desenrolar.map((p, i) => `${i + 1}. ${p.bloco ? "(" + p.bloco + ") " : ""}${p.fala}${p.visual ? " [" + p.visual + "]" : ""}`).join("\n") : "",
+    `CTA:\n${x.cta.fala}${x.cta.visual ? "\n[" + x.cta.visual + "]" : ""}`,
+    x.legenda || x.hashtags ? `LEGENDA:\n${x.legenda || ""}${x.hashtags ? "\n" + x.hashtags : ""}` : "",
+    x.outros_ganchos.length ? "OUTRAS IDEIAS DE GANCHO:\n" + x.outros_ganchos.map((g) => `- (${g.tipo}) ${g.texto}`).join("\n") : "",
+    x.outros_tipos_ugc.length ? "OUTROS TIPOS DE UGC:\n" + x.outros_tipos_ugc.map((g) => `- ${g.tipo}: ${g.ideia}`).join("\n") : "",
+  ].filter(Boolean).join("\n\n");
+  // mostra os roteiros com Editar, Copiar, Salvar nos meus roteiros e Gerar de novo
+  function mostrarCartoesRoteiro(res, lista, pesquisa, acoes) {
+    res.innerHTML = (pesquisa ? `<details class="rot-insp-pesquisa"><summary>O que eu encontrei sobre os produtos</summary><pre>${esc(pesquisa)}</pre></details>` : "") + lista.map((x, i) => `
+              <article class="rot-insp-card" data-i="${i}">
+                <div class="rot-insp-topo"><span><small>Tipo de conteúdo UGC</small><b>${esc(x.tipo_ugc || "-")}</b></span><span><small>Tipo de funil</small><b>${esc(x.funil || "-")}</b></span><span><small>Nicho</small><b>${esc(x.nicho || "-")}</b></span></div>
+                <h5>${esc(x.titulo)}</h5>
+                ${x.formato ? `<p class="rot-insp-formato">${esc(x.formato)}${x.funil_por_que ? " · " + esc(x.funil_por_que) : ""}</p>` : ""}
+                ${x.duracao ? `<p class="rot-insp-duracao">⏱ ${duracaoTexto(x.duracao)}</p>` : ""}
+                <div class="rot-insp-ver">
+                  <div class="rot-parte"><span class="rot-rotulo">Hook${x.gancho_tipo ? " · " + esc(x.gancho_tipo) : ""}</span><p class="rot-destaque">${cena(x.hook)}</p></div>
+                  ${x.desenrolar.length ? `<div class="rot-parte"><span class="rot-rotulo">Desenrolar</span><ol>${x.desenrolar.map((p) => `<li>${p.bloco ? `<span class="rot-tag">${esc(p.bloco)}</span> ` : ""}${cena(p)}</li>`).join("")}</ol></div>` : ""}
+                  <div class="rot-parte"><span class="rot-rotulo">CTA</span><p class="rot-caixa">${cena(x.cta)}</p></div>
+                  ${x.legenda || x.hashtags ? `<div class="rot-parte"><span class="rot-rotulo">Legenda</span><p>${esc(x.legenda || "")}${x.hashtags ? `<br><span class="rot-insp-hash">${esc(x.hashtags)}</span>` : ""}</p></div>` : ""}
+                  ${x.por_que_funciona ? `<p class="rot-insp-porque">${esc(x.por_que_funciona)}</p>` : ""}
+                  ${x.outros_ganchos.length ? `<details class="rot-mais"><summary>Outras ideias de gancho</summary><ul>${x.outros_ganchos.map((g) => `<li><span class="rot-tag">${esc(g.tipo)}</span> ${esc(g.texto)}</li>`).join("")}</ul></details>` : ""}
+                  ${x.outros_tipos_ugc.length ? `<details class="rot-mais"><summary>Outros tipos de UGC para essa ideia</summary><ul>${x.outros_tipos_ugc.map((g) => `<li><b>${esc(g.tipo)}:</b> ${esc(g.ideia)}</li>`).join("")}</ul></details>` : ""}
+                </div>
+                <textarea class="rot-insp-editar" hidden aria-label="Editar roteiro">${esc(textoRoteiro(x))}</textarea>
+                <div class="rot-insp-acoes">
+                  <button class="btn btn-mini" type="button" data-acao="editar">✎ Editar</button>
+                  <button class="btn btn-mini" type="button" data-acao="copiar">Copiar</button>
+                  <button class="btn btn-principal btn-mini" type="button" data-acao="salvar">Salvar nos meus roteiros</button>
+                </div>
+              </article>`).join("") + `
+              ${checklistSkill()}
+              <div class="rot-denovo">
+                <input data-ajuste placeholder="Não gostou? Diga o que mudar (opcional). Ex.: mais engraçado, gancho de objeção, mais curto">
+                <button class="btn" type="button" data-denovo>↻ Gerar de novo</button>
+              </div>`;
+    $$(".rot-insp-card", res).forEach((card) => {
+      const x = lista[Number(card.dataset.i)];
+      const area = $(".rot-insp-editar", card);
+      $('[data-acao="editar"]', card).addEventListener("click", (e) => {
+        const editando = area.hidden; area.hidden = !editando; $(".rot-insp-ver", card).hidden = editando;
+        e.target.textContent = editando ? "✓ Pronto" : "✎ Editar"; if (editando) area.focus();
+      });
+      $('[data-acao="copiar"]', card).addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(area.value); avisar("Roteiro copiado"); } catch (e) { avisar("Não consegui copiar. Toque em Editar, selecione o texto e copie.", true); }
+      });
+      $('[data-acao="salvar"]', card).addEventListener("click", async (e) => {
+        const b = e.target;
+        const ok = await acoes.salvar(x, area.value);
+        if (ok) { b.textContent = "✓ Salvo"; b.disabled = true; avisar("Roteiro salvo nos seus roteiros"); recarregar("roteiros"); }
+      });
+    });
+    $("[data-denovo]", res).addEventListener("click", () => acoes.denovo($("[data-ajuste]", res).value.trim()));
   }
 
   function formRoteiro(r, inicial, tocar, autoTranscrever) {
@@ -1573,17 +2123,6 @@
         if (tocar) $('.rot-aba[data-aba="video"]', corpo).click();
 
         // quadros "Se inspire nesse roteiro" e "Copiar roteiro" (Edge Function gerar-roteiro)
-        const cena = (p) => esc(p.fala || "") + (p.visual ? `<em>${esc(p.visual)}</em>` : "");
-        const duracaoTexto = (d) => `${d.palavras} palavras, uns ${d.seu || d.media} s${d.seu ? " no seu ritmo" : " no ritmo médio"}${d.seu ? "" : ` (${d.rapida} s falando rápido)`}`;
-        const textoRoteiro = (x) => [
-          `TIPO DE CONTEÚDO UGC: ${x.tipo_ugc || "-"}\nTIPO DE FUNIL: ${x.funil || "-"}\nNICHO: ${x.nicho || "-"}${x.formato ? "\nFORMATO: " + x.formato : ""}${x.duracao ? "\nDURAÇÃO: " + duracaoTexto(x.duracao) : ""}`,
-          `HOOK${x.gancho_tipo ? " (" + x.gancho_tipo + ")" : ""}:\n${x.hook.fala}${x.hook.visual ? "\n[" + x.hook.visual + "]" : ""}`,
-          x.desenrolar.length ? "DESENROLAR:\n" + x.desenrolar.map((p, i) => `${i + 1}. ${p.bloco ? "(" + p.bloco + ") " : ""}${p.fala}${p.visual ? " [" + p.visual + "]" : ""}`).join("\n") : "",
-          `CTA:\n${x.cta.fala}${x.cta.visual ? "\n[" + x.cta.visual + "]" : ""}`,
-          x.legenda || x.hashtags ? `LEGENDA:\n${x.legenda || ""}${x.hashtags ? "\n" + x.hashtags : ""}` : "",
-          x.outros_ganchos.length ? "OUTRAS IDEIAS DE GANCHO:\n" + x.outros_ganchos.map((g) => `- (${g.tipo}) ${g.texto}`).join("\n") : "",
-          x.outros_tipos_ugc.length ? "OUTROS TIPOS DE UGC:\n" + x.outros_tipos_ugc.map((g) => `- ${g.tipo}: ${g.ideia}`).join("\n") : "",
-        ].filter(Boolean).join("\n\n");
         function ligarBoard(painel, modo) {
           const st = $("[data-status]", painel);
           const status = (t, erro) => { st.textContent = t; st.hidden = !t; st.classList.toggle("erro", Boolean(erro)); };
@@ -1625,54 +2164,16 @@
             });
           }
           function mostrar(lista, pesquisa) {
-            const res = $("[data-resultado]", painel);
-            res.innerHTML = (pesquisa ? `<details class="rot-insp-pesquisa"><summary>O que eu encontrei sobre os produtos</summary><pre>${esc(pesquisa)}</pre></details>` : "") + lista.map((x, i) => `
-              <article class="rot-insp-card" data-i="${i}">
-                <div class="rot-insp-topo"><span><small>Tipo de conteúdo UGC</small><b>${esc(x.tipo_ugc || "-")}</b></span><span><small>Tipo de funil</small><b>${esc(x.funil || "-")}</b></span><span><small>Nicho</small><b>${esc(x.nicho || "-")}</b></span></div>
-                <h5>${esc(x.titulo)}</h5>
-                ${x.formato ? `<p class="rot-insp-formato">${esc(x.formato)}${x.funil_por_que ? " · " + esc(x.funil_por_que) : ""}</p>` : ""}
-                ${x.duracao ? `<p class="rot-insp-duracao">⏱ ${duracaoTexto(x.duracao)}</p>` : ""}
-                <div class="rot-insp-ver">
-                  <div class="rot-parte"><span class="rot-rotulo">Hook${x.gancho_tipo ? " · " + esc(x.gancho_tipo) : ""}</span><p class="rot-destaque">${cena(x.hook)}</p></div>
-                  ${x.desenrolar.length ? `<div class="rot-parte"><span class="rot-rotulo">Desenrolar</span><ol>${x.desenrolar.map((p) => `<li>${p.bloco ? `<span class="rot-tag">${esc(p.bloco)}</span> ` : ""}${cena(p)}</li>`).join("")}</ol></div>` : ""}
-                  <div class="rot-parte"><span class="rot-rotulo">CTA</span><p class="rot-caixa">${cena(x.cta)}</p></div>
-                  ${x.legenda || x.hashtags ? `<div class="rot-parte"><span class="rot-rotulo">Legenda</span><p>${esc(x.legenda || "")}${x.hashtags ? `<br><span class="rot-insp-hash">${esc(x.hashtags)}</span>` : ""}</p></div>` : ""}
-                  ${x.por_que_funciona ? `<p class="rot-insp-porque">${esc(x.por_que_funciona)}</p>` : ""}
-                  ${x.outros_ganchos.length ? `<details class="rot-mais"><summary>Outras ideias de gancho</summary><ul>${x.outros_ganchos.map((g) => `<li><span class="rot-tag">${esc(g.tipo)}</span> ${esc(g.texto)}</li>`).join("")}</ul></details>` : ""}
-                  ${x.outros_tipos_ugc.length ? `<details class="rot-mais"><summary>Outros tipos de UGC para essa ideia</summary><ul>${x.outros_tipos_ugc.map((g) => `<li><b>${esc(g.tipo)}:</b> ${esc(g.ideia)}</li>`).join("")}</ul></details>` : ""}
-                </div>
-                <textarea class="rot-insp-editar" hidden aria-label="Editar roteiro">${esc(textoRoteiro(x))}</textarea>
-                <div class="rot-insp-acoes">
-                  <button class="btn btn-mini" type="button" data-acao="editar">✎ Editar</button>
-                  <button class="btn btn-mini" type="button" data-acao="copiar">Copiar</button>
-                  <button class="btn btn-principal btn-mini" type="button" data-acao="salvar">Salvar nos meus roteiros</button>
-                </div>
-              </article>`).join("") + `
-              ${checklistSkill()}
-              <div class="rot-denovo">
-                <input data-ajuste placeholder="Não gostou? Diga o que mudar (opcional). Ex.: mais engraçado, gancho de objeção, mais curto">
-                <button class="btn" type="button" data-denovo>↻ Gerar de novo</button>
-              </div>`;
-            $$(".rot-insp-card", res).forEach((card) => {
-              const x = lista[Number(card.dataset.i)];
-              const area = $(".rot-insp-editar", card);
-              $('[data-acao="editar"]', card).addEventListener("click", (e) => {
-                const editando = area.hidden; area.hidden = !editando; $(".rot-insp-ver", card).hidden = editando;
-                e.target.textContent = editando ? "✓ Pronto" : "✎ Editar"; if (editando) area.focus();
-              });
-              $('[data-acao="copiar"]', card).addEventListener("click", async () => {
-                try { await navigator.clipboard.writeText(area.value); avisar("Roteiro copiado"); } catch (e) { avisar("Não consegui copiar. Toque em Editar, selecione o texto e copie.", true); }
-              });
-              $('[data-acao="salvar"]', card).addEventListener("click", async (e) => {
-                const b = e.target; const ref = lerFormulario();
-                const ok = await gravar("roteiros", { titulo: x.titulo, de_quem: "meu", origem: /tiktok/i.test(op("plataforma")) ? "tiktok" : "instagram",
+            mostrarCartoesRoteiro($("[data-resultado]", painel), lista, pesquisa, {
+              salvar: async (x, texto) => {
+                const ref = lerFormulario();
+                return gravar("roteiros", { titulo: x.titulo, de_quem: "meu", origem: /tiktok/i.test(op("plataforma")) ? "tiktok" : "instagram",
                   etiquetas: [x.tipo_ugc, x.funil, x.nicho].filter(Boolean).join(", "), gancho: x.hook.fala, gancho_tipo: nulo(x.gancho_tipo),
-                  desenvolvimento: x.desenrolar.map((p) => p.fala).join("\n"), cta: x.cta.fala, por_que: nulo(x.por_que_funciona), transcricao: area.value,
+                  desenvolvimento: x.desenrolar.map((p) => p.fala).join("\n"), cta: x.cta.fala, por_que: nulo(x.por_que_funciona), transcricao: texto,
                   notas: (modo === "copiar" ? "Copiado de: " : "Inspirado em: ") + (ref.titulo || ref.gancho || "roteiro de referência") + (ref.link ? " (" + ref.link + ")" : "") });
-                if (ok) { b.textContent = "✓ Salvo"; b.disabled = true; avisar("Roteiro salvo nos seus roteiros"); recarregar("roteiros"); }
-              });
+              },
+              denovo: (ajuste) => gerar(ajuste),
             });
-            $("[data-denovo]", res).addEventListener("click", () => gerar($("[data-ajuste]", res).value.trim()));
           }
           async function gerar(ajuste) {
             const f = lerFormulario();

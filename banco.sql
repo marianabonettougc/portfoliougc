@@ -418,6 +418,12 @@ drop policy if exists "dona faz tudo" on public.estilo_ugc;
 create policy "dona faz tudo" on public.estilo_ugc for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
 revoke all on public.estilo_ugc from anon;
 
+-- Central de Referências: tempos da transcrição, duração, análise e ideias de cada referência
+alter table public.roteiros add column if not exists segmentos jsonb;
+alter table public.roteiros add column if not exists duracao integer;
+alter table public.roteiros add column if not exists analise jsonb;
+alter table public.roteiros add column if not exists ideias jsonb;
+
 -- método de roteiro (skill roteiro-ugc da Lara): os arquivos ficam só aqui no banco, não no GitHub
 create table if not exists public.metodo_roteiro (
   arquivo text primary key,  -- SKILL.md, references/ganchos.md...

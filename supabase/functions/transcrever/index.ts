@@ -122,6 +122,24 @@ function acharTexto(v: any): string {
   }
   return "";
 }
+// quando o TokScript manda a transcrição em trechos com tempo, guarda os tempos
+function acharSegmentos(v: any): Seg[] {
+  if (!v) return [];
+  if (typeof v === "string") { const t = v.trim(); if (/^[{[]/.test(t)) { try { return acharSegmentos(JSON.parse(t)); } catch { return []; } } return []; }
+  if (Array.isArray(v)) {
+    const chaveTempo = (x: any) => ["start", "offset", "timestamp", "time"].find((k) => x && typeof x === "object" && k in x);
+    if (v.length && v[0] && typeof v[0] === "object" && "text" in v[0] && chaveTempo(v[0])) {
+      const k = chaveTempo(v[0])!;
+      const tempos = v.map((x: any) => Number(String(x[k]).replace(",", ".")) || 0);
+      const emMs = Math.max(...tempos) > 3600; // alguns serviços mandam em milissegundos
+      return v.map((x: any, i: number) => ({ ini: Math.round(emMs ? tempos[i] / 1000 : tempos[i]), texto: String(x.text || "").trim() })).filter((x: Seg) => x.texto);
+    }
+    for (const x of v) { const r = acharSegmentos(x); if (r.length) return r; }
+    return [];
+  }
+  if (typeof v === "object") { for (const k of Object.keys(v)) { const r = acharSegmentos(v[k]); if (r.length) return r; } }
+  return [];
+}
 async function transcreverTokscript(link: string, origem: string): Promise<Midia | null> {
   const token = await tokenTokscript();
   if (!token) return null;
@@ -159,7 +177,9 @@ async function transcreverTokscript(link: string, origem: string): Promise<Midia
   try { meta = typeof bruto === "string" ? JSON.parse(bruto) : bruto; } catch { /* sem dados extras */ }
   const perfil = meta?.author?.username || meta?.username || meta?.author_username || meta?.owner?.username || meta?.creator || undefined;
   const legenda = meta?.caption || meta?.description || meta?.desc || undefined;
-  return { texto, perfil: typeof perfil === "string" ? perfil : undefined, legenda: typeof legenda === "string" ? legenda : undefined };
+  const segmentos = juntarSegmentos(acharSegmentos(bruto));
+  const ultimo = segmentos.length ? segmentos[segmentos.length - 1].ini : 0;
+  return { texto, perfil: typeof perfil === "string" ? perfil : undefined, legenda: typeof legenda === "string" ? legenda : undefined, segmentos, duracao: Number(meta?.duration) || undefined || (ultimo ? ultimo + 3 : undefined) };
 }
 
 const CORS = {
@@ -226,7 +246,8 @@ const dataIso = (seg?: number | string) => {
   return new Date(n * 1000).toISOString().slice(0, 10);
 };
 
-type Midia = { audio?: Blob; texto?: string; perfil?: string; legenda?: string; data_post?: string | null };
+type Seg = { ini: number; texto: string };
+type Midia = { audio?: Blob; texto?: string; perfil?: string; legenda?: string; data_post?: string | null; segmentos?: Seg[]; duracao?: number };
 
 // ---------- TikTok ----------
 async function midiaTiktok(link: string): Promise<Midia> {
@@ -296,25 +317,38 @@ async function midiaYoutube(link: string): Promise<Midia> {
   const perfil = det.author ? String(det.author).replace(/\s+/g, "") : undefined;
   if (!faixa) throw new Aviso("Esse vídeo do YouTube não tem legenda para eu ler. Use o botão \"Enviar o arquivo do vídeo\".");
   const xml = await (await fetch(faixa.baseUrl + "&fmt=json3")).text();
-  let texto = "";
+  let texto = "", segmentos: Seg[] = [], duracao = Number(det.lengthSeconds) || 0;
   try {
     const j = JSON.parse(xml);
     texto = (j.events || []).flatMap((e: any) => (e.segs || []).map((s: any) => s.utf8)).join("").replace(/\s+/g, " ").trim();
+    // marcação de tempo: cada trecho da legenda com o segundo em que começa
+    segmentos = (j.events || []).map((e: any) => ({ ini: Math.round((Number(e.tStartMs) || 0) / 1000), texto: (e.segs || []).map((s: any) => s.utf8).join("").replace(/\s+/g, " ").trim() })).filter((x: Seg) => x.texto);
   } catch {
     texto = xml.replace(/<[^>]+>/g, " ").replace(/&amp;#39;|&#39;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
   }
   if (!texto) throw new Aviso("Não consegui ler a legenda desse vídeo do YouTube. Use o botão \"Enviar o arquivo do vídeo\".");
-  return { texto, perfil, legenda: det.shortDescription };
+  return { texto, perfil, legenda: det.shortDescription, segmentos: juntarSegmentos(segmentos), duracao };
+}
+
+// junta trechos muito curtos para a transcrição com tempo ficar em frases (uns 6 segundos cada)
+function juntarSegmentos(lista: Seg[]) {
+  const saida: Seg[] = [];
+  for (const s of lista) {
+    const ult = saida[saida.length - 1];
+    if (ult && (s.ini - ult.ini < 5 || ult.texto.length < 25) && !/[.!?]$/.test(ult.texto)) ult.texto = (ult.texto + " " + s.texto).trim();
+    else saida.push({ ini: s.ini, texto: s.texto });
+  }
+  return saida.slice(0, 300);
 }
 
 // ---------- Groq: transcrição ----------
-async function transcreverAudio(audio: Blob, chave: string) {
+async function transcreverAudio(audio: Blob, chave: string): Promise<{ texto: string; segmentos: Seg[]; duracao: number }> {
   if (!chave) throw new Aviso("Falta guardar a chave do Groq no Supabase (segredo GROQ_API_KEY).");
   if (audio.size > LIMITE_ARQUIVO) throw new Aviso("O vídeo é grande demais para transcrever (máximo 25 MB). Envie um vídeo mais curto.");
   const form = new FormData();
   form.append("file", new File([audio], "video.mp4", { type: audio.type || "video/mp4" }));
   form.append("model", (await modelos(chave)).audio);
-  form.append("response_format", "json");
+  form.append("response_format", "verbose_json"); // traz os trechos com o tempo de cada fala
   form.append("temperature", "0");
   const r = await fetch(`${GROQ}/audio/transcriptions`, { method: "POST", headers: { Authorization: `Bearer ${chave}` }, body: form });
   const j = await r.json().catch(() => ({}));
@@ -323,7 +357,8 @@ async function transcreverAudio(audio: Blob, chave: string) {
     if (r.status === 429) throw new Aviso("O limite grátis do Groq de hoje acabou. Tente de novo mais tarde.");
     throw new Aviso("O Groq não conseguiu transcrever: " + (j?.error?.message || r.status));
   }
-  return String(j.text || "").trim();
+  const segmentos = juntarSegmentos((Array.isArray(j.segments) ? j.segments : []).map((x: any) => ({ ini: Math.round(Number(x.start) || 0), texto: String(x.text || "").trim() })).filter((x: Seg) => x.texto));
+  return { texto: String(j.text || "").trim(), segmentos, duracao: Math.round(Number(j.duration) || 0) };
 }
 
 // ---------- Groq: reconhece os campos do roteiro ----------
@@ -414,7 +449,8 @@ Deno.serve(async (req) => {
     }
 
     if (!midia) throw new Aviso("Não consegui pegar esse vídeo.");
-    const transcricao = midia.texto || (midia.audio ? await transcreverAudio(midia.audio, chave) : "");
+    let transcricao = midia.texto || "";
+    if (!transcricao && midia.audio) { const t = await transcreverAudio(midia.audio, chave); transcricao = t.texto; midia.segmentos = t.segmentos; midia.duracao = t.duracao; }
     if (!transcricao) throw new Aviso("Não encontrei fala nesse vídeo para transcrever.");
     const campos = await montarCampos(transcricao, midia.legenda, chave);
     return resposta({
@@ -422,6 +458,8 @@ Deno.serve(async (req) => {
       perfil: midia.perfil || null,
       data_post: midia.data_post || null,
       origem: link ? origemDoLink(link) : null,
+      segmentos: midia.segmentos || [],
+      duracao: midia.duracao || null,
       campos,
     });
   } catch (e) {
