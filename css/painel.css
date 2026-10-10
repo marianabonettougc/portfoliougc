@@ -84,7 +84,7 @@ html.conferindo body{visibility:hidden}
 .menu-marca span{display:block;font-weight:400;font-size:11.5px;color:var(--suave)}
 .menu-grupo{font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--suave);padding:14px 10px 6px}
 .menu-item{display:flex;align-items:center;gap:10px;width:100%;height:36px;padding:0 10px;border:0;border-radius:var(--raio-p);background:transparent;color:var(--texto);font-size:13px;cursor:pointer;text-align:left}
-.menu-item svg{width:17px;height:17px;color:var(--suave)}
+.menu-item svg{width:17px;height:17px;color:var(--suave);flex-shrink:0}
 .menu-item:hover{background:var(--bege)}
 .menu-item.ativo{background:var(--principal-suave);color:var(--principal);font-weight:600}
 .menu-item.ativo svg{color:var(--principal)}
@@ -409,7 +409,7 @@ details.rot-editar[open] summary{margin-bottom:10px}
 .copia-linha small{display:block;color:var(--suave)}
 .so-planner .gestao-barra{display:none}
 .so-planner .gestao-app{height:calc(100vh - 100px)}
-.menu-item.sub{height:32px;padding-left:22px;font-size:12.5px}
+.menu-item.sub{height:36px;padding-left:22px;font-size:13px;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .menu-item.sub svg{width:15px;height:15px}
 .menu-item[hidden]{display:none}
 .menu-seta{width:14px!important;height:14px!important;margin-left:auto;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease}

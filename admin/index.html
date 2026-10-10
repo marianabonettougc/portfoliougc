@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 // Atualiza sozinho: se existir uma versão mais nova do painel publicada, recarrega a página nova
-window.VERSAO_PAINEL = "202610100330";
+window.VERSAO_PAINEL = "202610100348";
 fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).then((j) => {
   if (j.versao && j.versao !== window.VERSAO_PAINEL) {
     const u = new URL(location.href);
@@ -19,9 +19,9 @@ fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/painel.css?v=202610100330">
+<link rel="stylesheet" href="../css/painel.css?v=202610100348">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/banco.js?v=202610100330"></script>
+<script src="../js/banco.js?v=202610100348"></script>
 <script>
 // PRIMEIRA COISA: conferir a sessão. Sem sessão, vai para o login.
 // A página só aparece depois dessa conferência (antes ela fica escondida).
@@ -77,11 +77,11 @@ window.sessaoPronta = (async function () {
     <button class="menu-item sub" data-aba="central" data-pai="roteiros" type="button" hidden>
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M10 9.5v5l4-2.5z"/></svg>Referências</button>
     <button class="menu-item sub" data-aba="transcricao" data-pai="roteiros" type="button" hidden>
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3"/></svg>Transcrição de vídeos</button>
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3"/></svg>Transcrever vídeo</button>
     <button class="menu-item sub" data-aba="analise" data-pai="roteiros" type="button" hidden>
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4M8.5 11h5"/></svg>Análise de transcrição</button>
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4M8.5 11h5"/></svg>Analisar vídeo</button>
     <button class="menu-item sub" data-aba="criar" data-pai="roteiros" type="button" hidden>
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v3.5M12 16.5V20M4 12h3.5M16.5 12H20M6.7 6.7l2.4 2.4M14.9 14.9l2.4 2.4M6.7 17.3l2.4-2.4M14.9 9.1l2.4-2.4"/></svg>Criar a partir de referência</button>
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v3.5M12 16.5V20M4 12h3.5M16.5 12H20M6.7 6.7l2.4 2.4M14.9 14.9l2.4 2.4M6.7 17.3l2.4-2.4M14.9 9.1l2.4-2.4"/></svg>Criar roteiro</button>
     <button class="menu-item tem-sub" data-aba="marcas" type="button" aria-expanded="false">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7"/><path d="M3 12.5h18"/></svg>Marcas<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
     <button class="menu-item sub" data-aba="prospeccao" data-pai="marcas" type="button" hidden>
@@ -163,7 +163,7 @@ window.sessaoPronta = (async function () {
 </dialog>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="../js/biblioteca.js?v=202610100330"></script>
-<script src="../js/admin.js?v=202610100330"></script>
+<script src="../js/biblioteca.js?v=202610100348"></script>
+<script src="../js/admin.js?v=202610100348"></script>
 </body>
 </html>
