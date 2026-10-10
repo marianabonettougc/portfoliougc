@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610100124"></script>
+<script src="../../js/banco.js?v=202610100137"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -211,6 +211,19 @@
   .db-tarefa::before{ content:""; position:absolute; left:3px; top:0; bottom:0; width:1px; background:var(--db-linha2); }
   .db-tarefa::after{ content:""; position:absolute; left:0; top:19px; width:7px; height:7px; border-radius:50%; background:var(--db-cafe2); }
   .db-tarefa:last-child{ border-bottom:0; }
+  .db-tarefa.apple::after{ background:#4e1629; }
+  .db-tarefa.apple .db-tarefa-txt small::before{ content:""; display:inline-block; width:7px; height:7px; border-radius:2px; background:#4e1629; margin-right:6px; vertical-align:1px; }
+  .db-iphone-caixa{ position:relative; margin-left:auto; }
+  .db-iphone{ display:inline-flex; align-items:center; gap:6px; border:1px solid var(--db-linha); background:var(--db-papel); color:var(--db-suave); border-radius:999px; padding:4px 10px; font-size:12px; cursor:pointer; font-family:inherit; }
+  .db-iphone i{ width:7px; height:7px; border-radius:50%; background:#b9a99a; }
+  .db-iphone.ok i{ background:#5f8f5a; }
+  .db-iphone.erro i{ background:#b5533c; }
+  .db-pop-iphone{ width:300px; padding:12px; }
+  .db-pop-iphone p{ font-size:12.5px; color:var(--db-suave); margin:4px 0 10px; line-height:1.45; }
+  .db-pop-iphone input{ width:100%; box-sizing:border-box; border:1px solid var(--db-linha); border-radius:9px; padding:8px 10px; font:inherit; font-size:12.5px; margin-bottom:8px; background:var(--db-creme); }
+  .db-pop-iphone .db-pop-acoes{ display:flex; gap:6px; flex-wrap:wrap; }
+  .db-pop-iphone .db-pop-acoes button{ width:auto; display:inline-block; border:1px solid var(--db-linha); font-size:12.5px; padding:6px 10px; }
+  .db-pop-iphone .db-erro{ color:#b5533c; }
   .db-hora{ font-size:13px; color:var(--db-suave); padding-top:1px; }
   .db-check{ display:flex; align-items:flex-start; gap:12px; cursor:pointer; min-width:0; }
   .db-check input{ position:absolute; opacity:0; width:1px; height:1px; }
@@ -558,7 +571,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
-const {useState, useEffect, useMemo, useRef} = React;
+const {useState, useEffect, useMemo, useRef, useCallback} = React;
 
 /* ---------- storage helpers (Supabase) ---------- */
 const supabaseClient = window.supabase.createClient(window.APP_CONFIG.SUPABASE_URL, window.APP_CONFIG.SUPABASE_ANON_KEY);
@@ -1528,8 +1541,48 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     });
     jobs.filter(j=>j.dataPagamento===iso && j.status!=="Cancelado" && (!j.pagamento || j.pagamento.status!=="Pago")).forEach(j=>lista.push({id:"g-"+j.id, hora:"", texto:`Conferir pagamento ${j.marca}`, sub:"Financeiro", pagina:"financeiro"}));
     if(iso===hoje) followups.filter(f=>f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje).forEach(f=>lista.push({id:"f-"+f.id, hora:"", texto:`Follow-up com ${f.marca}`, sub:"Mandar mensagem para a marca", pagina:"followups"}));
-    return lista.sort((a,b)=>(a.hora||"99").localeCompare(b.hora||"99"));
+    // eventos do calendário do iPhone
+    (apple.eventos||[]).filter(ev=>ev.data===iso).forEach(ev=>lista.push({id:"a-"+ev.id, apple:ev, hora:ev.hora||"", texto:ev.titulo,
+      sub:[ev.diaTodo ? "Dia todo" : (ev.fim && ev.fim!==ev.hora ? `${ev.hora} às ${ev.fim}` : ""), "iPhone", ev.local].filter(Boolean).join(" · ")}));
+    const chaveHora = (x) => x.hora || (x.apple && x.apple.diaTodo ? "00" : "99"); // dia inteiro do iPhone vai para o topo
+    return lista.sort((a,b)=>chaveHora(a).localeCompare(chaveHora(b)));
   };
+  // ----- calendário do iPhone (Edge Function calendario-apple, só leitura) -----
+  const lerCacheApple = () => { try { return JSON.parse(localStorage.getItem("calApple")||"null"); } catch(e){ return null; } };
+  const [apple,setApple] = useState(()=>({conectado:null, eventos:[], erro:"", ...(lerCacheApple()||{})}));
+  const [popIphone,setPopIphone] = useState(false);
+  const [linkIphone,setLinkIphone] = useState("");
+  const [salvandoIphone,setSalvandoIphone] = useState(false);
+  const carregarApple = useCallback(async ()=>{
+    const de = isoLocal(new Date(Date.now()-14*86400000)), ate = isoLocal(new Date(Date.now()+120*86400000));
+    try{
+      const { data, error } = await supabaseClient.functions.invoke("calendario-apple", {body:{acao:"eventos", de, ate}});
+      if(error || data?.error) throw new Error(data?.error || "Não consegui ler o calendário do iPhone agora.");
+      const novo = {conectado:!!data.conectado, nome:data.nome||"", eventos:data.eventos||[], atualizadoEm:data.atualizadoEm||new Date().toISOString(), erro:""};
+      setApple(novo);
+      try { localStorage.setItem("calApple", JSON.stringify(novo)); } catch(e){}
+    }catch(e){ setApple(a=>({...a, erro:String(e.message||e)})); }
+  },[]);
+  useEffect(()=>{
+    carregarApple();
+    const t = setInterval(carregarApple, 10*60000); // de 10 em 10 minutos enquanto o painel está aberto
+    const aoVoltar = () => { if(document.visibilityState==="visible") carregarApple(); };
+    document.addEventListener("visibilitychange", aoVoltar);
+    return ()=>{ clearInterval(t); document.removeEventListener("visibilitychange", aoVoltar); };
+  },[carregarApple]);
+  async function conectarIphone(remover){
+    setSalvandoIphone(true);
+    try{
+      const { data, error } = await supabaseClient.functions.invoke("calendario-apple", {body: remover ? {acao:"remover"} : {acao:"salvar", url:linkIphone.trim()}});
+      if(error || data?.error) throw new Error(data?.error || "Não consegui conectar.");
+      setLinkIphone("");
+      if(remover){ const vazio = {conectado:false, eventos:[], erro:""}; setApple(vazio); try { localStorage.setItem("calApple", JSON.stringify(vazio)); } catch(e){} }
+      else await carregarApple();
+    }catch(e){ setApple(a=>({...a, erro:String(e.message||e)})); }
+    setSalvandoIphone(false);
+  }
+  const horaAtualizada = apple.atualizadoEm ? new Date(apple.atualizadoEm).toLocaleTimeString("pt-BR",{hour:"2-digit", minute:"2-digit"}) : "";
+
   const [diaSel,setDiaSel] = useState(hoje);
   const diaSelD = new Date(diaSel+"T00:00:00");
   const agenda = itensDoDia(diaSel);
@@ -1876,12 +1929,36 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             <h2>{diaSel===hoje ? "Hoje" : DIAS_NOME[diaSelD.getDay()]} <small>· {String(diaSelD.getDate()).padStart(2,"0")} de {MESES_EXT[diaSelD.getMonth()]}</small></h2>
             <button className="db-link" onClick={()=>go("planner")}>Ver agenda<DbIcone tipo="seta" tam={15}/></button>
           </div>
-          {diaDeGravacao && <span className="db-chip-dia"><DbIcone tipo="camera" tam={16}/>Dia de gravação</span>}
+          <div style={{display:"flex", alignItems:"flex-start", gap:8, flexWrap:"wrap", marginBottom:diaDeGravacao?0:8}}>
+            {diaDeGravacao && <span className="db-chip-dia"><DbIcone tipo="camera" tam={16}/>Dia de gravação</span>}
+            <div className="db-iphone-caixa">
+              <button className={"db-iphone"+(apple.erro?" erro":apple.conectado?" ok":"")} onClick={()=>setPopIphone(p=>!p)}>
+                <i/>{apple.conectado ? "Calendário do iPhone" : apple.conectado===false ? "Conectar iPhone" : "iPhone..."}
+              </button>
+              {popIphone && <div className="db-pop db-pop-iphone">
+                {apple.conectado ? <>
+                  <b>Calendário do iPhone conectado{apple.nome ? ` (${apple.nome})` : ""}</b>
+                  <p>Tudo o que você marcar no calendário do iPhone aparece aqui. O painel confere sozinho a cada 10 minutos e quando você volta para a página. O iCloud pode levar alguns minutos para publicar um evento novo.{horaAtualizada ? ` Última conferência: ${horaAtualizada}.` : ""}</p>
+                </> : <>
+                  <b>Conectar o calendário do iPhone</b>
+                  <p>No iPhone: Calendário, toque em Calendários, no (i) do calendário, ligue "Calendário Público" e compartilhe o link. Cole aqui:</p>
+                  <input value={linkIphone} onChange={e=>setLinkIphone(e.target.value)} placeholder="webcal://p..-caldav.icloud.com/published/..." aria-label="Link do calendário do iPhone"/>
+                </>}
+                {apple.erro && <p className="db-erro">{apple.erro}</p>}
+                <div className="db-pop-acoes">
+                  {apple.conectado
+                    ? <><button onClick={carregarApple}>Atualizar agora</button><button onClick={()=>{ if(window.confirm("Desconectar o calendário do iPhone do painel?")) conectarIphone(true); }}>Desconectar</button></>
+                    : <button disabled={salvandoIphone || !linkIphone.trim()} onClick={()=>conectarIphone(false)}>{salvandoIphone ? "Conectando..." : "Conectar"}</button>}
+                  <button onClick={()=>setPopIphone(false)}>Fechar</button>
+                </div>
+              </div>}
+            </div>
+          </div>
           <div className="db-linha-tempo">
             {agenda.length ? agendaVisivel.map(it=>{
               const ok = estaFeito(it);
               return (
-                <div key={it.id} className={"db-tarefa"+(ok?" ok":"")}>
+                <div key={it.id} className={"db-tarefa"+(ok?" ok":"")+(it.apple?" apple":"")}>
                   <span className="db-hora">{it.hora}</span>
                   <label className="db-check"><input type="checkbox" checked={ok} onChange={()=>marcar(it)}/><span className="db-caixinha"><Icon name="check" size={13}/></span>
                     <span className="db-tarefa-txt"><b>{it.texto}</b>{it.sub && <small>{it.sub}</small>}</span></label>
@@ -1890,7 +1967,9 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                     {menuItem===it.id && <div className="db-pop db-pop-menu">
                       {it.tarefa
                         ? <button onClick={()=>{ setMenuItem(null); mudar(s=>({...s, tarefasDia:(s.tarefasDia||[]).filter(t=>t.id!==it.tarefa.id)})); }}><b>Excluir tarefa</b></button>
-                        : <button onClick={()=>{ setMenuItem(null); go(it.pagina); }}><b>Abrir</b></button>}
+                        : it.apple
+                          ? <button onClick={()=>{ setMenuItem(null); carregarApple(); }}><b>Atualizar do iPhone</b><small>Para mudar, edite no calendário do iPhone</small></button>
+                          : <button onClick={()=>{ setMenuItem(null); go(it.pagina); }}><b>Abrir</b></button>}
                     </div>}
                   </div>
                 </div>
