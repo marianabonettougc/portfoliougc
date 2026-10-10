@@ -666,7 +666,7 @@ button.menu-grupo:hover{color:var(--texto)}
 .cr-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
 .cr-ref{position:relative;display:flex;flex-direction:column;background:var(--cartao);border:1px solid var(--linha);border-radius:14px;overflow:visible;cursor:pointer;text-align:left;font:inherit;color:var(--texto);padding:0}
 .cr-ref:hover{border-color:var(--linha-forte);box-shadow:var(--sombra)}
-.cr-capa{position:relative;aspect-ratio:4/3;background:linear-gradient(135deg,var(--bege),var(--fundo));border-radius:13px 13px 0 0;overflow:hidden;display:grid;place-items:center;color:var(--principal)}
+.cr-capa{position:relative;aspect-ratio:16/10;background:linear-gradient(150deg,#efe5d8,#d9c4ae);border-radius:13px 13px 0 0;overflow:hidden;display:grid;place-items:center;color:var(--principal)}
 .cr-capa img{width:100%;height:100%;object-fit:cover}
 .cr-capa-play{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:rgba(255,253,249,.85)}
 .cr-capa-tempo{position:absolute;right:8px;bottom:8px;background:rgba(61,43,32,.78);color:#fff;font-size:11px;border-radius:6px;padding:2px 6px;font-variant-numeric:tabular-nums}
@@ -723,3 +723,16 @@ button.menu-grupo:hover{color:var(--texto)}
   .cr-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .cr-ref-escolhida{grid-template-columns:90px 1fr}
 }
+
+/* capa do vídeo como no Dashboard */
+.cr-capa.tem-imagem::after{content:"";position:absolute;inset:auto 0 0 0;height:50%;background:linear-gradient(180deg,transparent,rgba(30,20,14,.45));pointer-events:none}
+.cr-capa{cursor:pointer}
+.cr-capa img{position:absolute;inset:0}
+.cr-capa-assistir{position:absolute;z-index:1;left:9px;bottom:8px;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--principal)}
+.cr-capa-rede{position:absolute;z-index:1;right:9px;bottom:8px;display:inline-flex;color:var(--principal)}
+.cr-capa.tem-imagem .cr-capa-assistir,.cr-capa.tem-imagem .cr-capa-rede{color:#fff}
+.cr-capa.tem-imagem .cr-capa-assistir svg{fill:#fff}
+.cr-capa:not(.tem-imagem) .cr-capa-assistir{display:none}
+.cr-capa:hover img{transform:scale(1.03)}
+.cr-capa img{transition:transform .3s}
+.cr-player-janela{aspect-ratio:9/16;max-height:72vh;margin:0 auto}

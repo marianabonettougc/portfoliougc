@@ -253,8 +253,8 @@
   // MENU E ABAS
   // ---------------------------------------------------------
   const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Meus roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
-    prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Meus roteiros", central: "Central de referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar a partir de referência",
-    meusroteiros: "Central de referências", modelos: "Modelos", biblioteca: "Central de referências",
+    prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Meus roteiros", central: "Referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar a partir de referência",
+    meusroteiros: "Referências", modelos: "Modelos", biblioteca: "Referências",
     financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações" };
   // Abas do painel que são páginas do aplicativo Gestão UGC (aba do painel: página do aplicativo)
   const PAGINAS_APP = { dashboard: "dashboard", calendario: "planner", campanhas: "jobs", prospeccao: "prospeccao", followups: "followups",
@@ -1325,10 +1325,64 @@
   }
   const DATA_BR = (d) => d ? new Date(d).toLocaleDateString("pt-BR") : "";
   const iconeRede = (o) => o === "instagram" ? ic("insta", 15) : o === "tiktok" ? ic("tiktok", 15) : o === "youtube" ? ic("youtube", 15) : ic("play", 13);
-  const capaRef = (r, grande) => {
-    const capa = capaDoLink(r.link);
-    return `<div class="cr-capa${grande ? " cr-capa-grande" : ""}">${capa ? `<img src="${capa}" alt="" loading="lazy">` : `<span class="cr-capa-play">${ic("play", grande ? 26 : 18)}</span>`}${r.duracao ? `<span class="cr-capa-tempo">${mmss(r.duracao)}</span>` : ""}</div>`;
+  // capa do vídeo, igual aos cards do Dashboard: imagem guardada (coluna capa), rede e "assistir"
+  const capaRef = (r) => {
+    const capa = r.capa || capaDoLink(r.link);
+    return `<div class="cr-capa${capa ? " tem-imagem" : ""}" data-assistir="${r.id}" role="button" tabindex="0" aria-label="Assistir o vídeo">${capa ? `<img src="${capa}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="cr-capa-play">${ic("play", 18)}</span>`}
+      <span class="cr-capa-assistir">${ic("play", 12)}${r.duracao ? mmss(r.duracao) : "assistir"}</span><span class="cr-capa-rede">${iconeRede(r.origem)}</span></div>`;
   };
+  // tocar o vídeo numa janela (o mesmo player da Análise)
+  function assistir(r) {
+    const emb = embedDoLink(r.link);
+    if (!emb) { if (r.link) window.open(r.link, "_blank", "noopener"); else avisar("Esse vídeo foi enviado como arquivo: ele toca na Análise logo depois de enviar.", true); return; }
+    abrirJanela({ titulo: r.titulo || "Vídeo de referência", sobretitulo: nomeOrigem(r.origem), corpo: `<div class="cr-player cr-player-janela"><iframe src="${emb}" title="Vídeo" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen></iframe></div>`, botoes: [{ texto: "Fechar" }] });
+  }
+  function ligarAssistir(caixa) {
+    $$("[data-assistir]", caixa).forEach((el) => {
+      const abrir = (e) => { e.stopPropagation(); const r = dados.roteiros.find((x) => String(x.id) === el.dataset.assistir); if (r) assistir(r); };
+      el.addEventListener("click", abrir);
+      el.addEventListener("keydown", (e) => { if (e.key === "Enter") abrir(e); });
+    });
+  }
+  // diminui a imagem da capa antes de guardar no banco (uns 20 KB)
+  const capaPequena = (src) => new Promise((ok) => {
+    const img = new Image();
+    img.onload = () => { const l = Math.min(1, 420 / img.width); const c = document.createElement("canvas"); c.width = Math.round(img.width * l); c.height = Math.round(img.height * l);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); try { ok(c.toDataURL("image/jpeg", 0.72)); } catch (e) { ok(""); } };
+    img.onerror = () => ok(""); img.src = src;
+  });
+  // vídeo enviado do computador: a capa é um quadro do próprio vídeo
+  const capaDoArquivo = (arq) => new Promise((ok) => {
+    if (!/^video\//.test(arq.type)) { ok(""); return; }
+    const v = document.createElement("video"); const url = URL.createObjectURL(arq);
+    let feito = false; const fim = (x) => { if (feito) return; feito = true; URL.revokeObjectURL(url); ok(x); };
+    v.muted = true; v.playsInline = true; v.preload = "metadata"; v.src = url;
+    v.onloadeddata = () => { try { v.currentTime = Math.min(1, (v.duration || 2) / 3); } catch (e) { fim(""); } };
+    v.onseeked = () => { const l = Math.min(1, 420 / (v.videoWidth || 420)); const c = document.createElement("canvas"); c.width = Math.round((v.videoWidth || 420) * l); c.height = Math.round((v.videoHeight || 560) * l);
+      try { c.getContext("2d").drawImage(v, 0, 0, c.width, c.height); fim(c.toDataURL("image/jpeg", 0.72)); } catch (e) { fim(""); } };
+    v.onerror = () => fim(""); setTimeout(() => fim(""), 8000);
+  });
+  // busca as capas que faltam (uma por vez) e guarda no banco; não tenta de novo a mesma na mesma visita
+  const capaTentada = new Set();
+  let buscandoCapas = false;
+  async function buscarCapas() {
+    if (buscandoCapas) return; buscandoCapas = true;
+    try {
+      for (const r of dados.roteiros.filter((x) => x.link && !x.capa && !capaTentada.has(x.id)).slice(0, 12)) {
+        capaTentada.add(r.id);
+        try {
+          const { data } = await banco.functions.invoke("capa-video", { body: { link: r.link } });
+          const capa = data && data.imagem ? await capaPequena(data.imagem) : "";
+          if (!capa) continue;
+          const { error } = await banco.from("roteiros").update({ capa }).eq("id", r.id);
+          if (error) continue;
+          r.capa = capa;
+          $$(`[data-assistir="${r.id}"]`).forEach((el) => { el.outerHTML = capaRef(r); });
+          ligarAssistir(document);
+        } catch (e) { /* segue sem capa */ }
+      }
+    } finally { buscandoCapas = false; }
+  }
   const cabecalho = (titulo, sub, extra) => `<header class="cr-cabeca cr-cabeca-linha"><div><h2>${titulo}</h2><p>${sub}</p></div>${extra || ""}</header>`;
   const referencias = () => dados.roteiros.filter((r) => r.transcricao || r.link);
 
@@ -1348,7 +1402,7 @@
   function paginaCentral(sec) {
     if (!$("#cr-grade", sec)) {
       sec.innerHTML = `<div class="cr-pagina">
-        ${cabecalho("Central de referências", "Salve e organize vídeos de referência para se inspirar.", `<button class="btn btn-principal cr-btn" type="button" data-adicionar>${ic("mais", 16)}Adicionar referência</button>`)}
+        ${cabecalho("Referências", "Salve e organize vídeos de referência para se inspirar.", `<button class="btn btn-principal cr-btn" type="button" data-adicionar>${ic("mais", 16)}Adicionar referência</button>`)}
         <label class="cr-busca">${ic("busca", 17)}<input type="search" id="cr-busca" placeholder="Buscar por título, perfil, tema ou etiqueta..." aria-label="Buscar referências"></label>
         <div class="cr-filtros">
           <div class="cr-chips" role="group" aria-label="Filtrar">${[["todos", "Todos"], ["instagram", "Instagram"], ["tiktok", "TikTok"], ["youtube", "YouTube"], ["outro", "Outras"], ["meus", "Meus vídeos"]].map(([v, t]) => `<button type="button" class="cr-chip${estadoCentral.filtro === v ? " ativo" : ""}" data-filtro="${v}">${t}</button>`).join("")}</div>
@@ -1395,6 +1449,8 @@
       });
     });
     $("[data-adicionar]", grade).addEventListener("click", () => mostrarAba("transcricao"));
+    ligarAssistir(grade);
+    buscarCapas();
   }
 
   // ---------- Transcrição de vídeos ----------
@@ -1452,6 +1508,8 @@
         <div class="cr-ref-menu"><button type="button" class="cr-mais" data-menu aria-label="Opções">${ic("pontos", 16)}</button>
           <div class="cr-menu" hidden><button type="button" data-criar>Criar roteiro</button><button type="button" data-editar>Editar</button><button type="button" data-apagar>Excluir</button></div></div>
       </div>`).join("") : `<p class="cr-vazio">${ic("arquivo", 24)}Suas transcrições aparecem aqui.</p>`;
+    ligarAssistir(caixa);
+    buscarCapas();
     $$(".cr-recente", caixa).forEach((linha) => {
       const r = dados.roteiros.find((x) => String(x.id) === linha.dataset.id);
       const menu = $(".cr-menu", linha);
@@ -1479,24 +1537,27 @@
         const linha = { titulo: (c.titulo || extra.titulo || "Referência sem título").slice(0, 120), de_quem: "outra", perfil: nulo(String(r.perfil || extra.perfil || "").replace(/^@/, "")),
           data_post: nulo(r.data_post), origem: r.origem || extra.origem || "outro", link: nulo(extra.link), etiquetas: nulo(c.etiquetas), gancho: nulo(c.gancho),
           gancho_tipo: nulo(c.gancho_tipo), desenvolvimento: nulo(c.desenvolvimento), cta: nulo(c.cta), expressoes: nulo(c.expressoes), por_que: nulo(c.por_que),
-          transcricao: r.transcricao, segmentos: Array.isArray(r.segmentos) && r.segmentos.length ? r.segmentos : null, duracao: r.duracao || null };
+          transcricao: r.transcricao, segmentos: Array.isArray(r.segmentos) && r.segmentos.length ? r.segmentos : null, duracao: r.duracao || null,
+          capa: extra.capa || null };
         const { data, error } = await banco.from("roteiros").insert(linha).select().single();
         if (error) throw new Error(traduzErro(error, "roteiros"));
         dados.roteiros.unshift(data);
+        if (!data.capa && data.link) buscarCapas(); // capa do link (Instagram, TikTok, YouTube)
         usarReferencia(data);
         central.videoLocal = extra.videoLocal || "";
         recarregar("roteiros");
-        avisar("Transcrição pronta e salva na Central de referências");
+        avisar("Transcrição pronta e salva em Referências");
         mostrarAba("analise");
       } catch (e) { status(e.message, true); }
       controles().forEach((b) => { b.disabled = false; });
       ocupado = false;
     }
-    const usarArquivo = (arq) => {
+    const usarArquivo = async (arq) => {
       if (!arq) return;
       if (arq.size > 25 * 1024 * 1024) { status("Esse arquivo passa de 25 MB, o limite da transcrição. Envie um arquivo menor ou o link.", true); return; }
       const corpo = new FormData(); corpo.append("arquivo", arq, arq.name || "video.mp4"); corpo.append("link", "");
-      importar(corpo, { titulo: arq.name.replace(/\.[^.]+$/, ""), origem: "outro", videoLocal: /^video\//.test(arq.type) ? URL.createObjectURL(arq) : "" });
+      const capa = await capaDoArquivo(arq);
+      importar(corpo, { titulo: arq.name.replace(/\.[^.]+$/, ""), origem: "outro", capa, videoLocal: /^video\//.test(arq.type) ? URL.createObjectURL(arq) : "" });
     };
     $("#cr-form-link", caixa).addEventListener("submit", (e) => {
       e.preventDefault();
