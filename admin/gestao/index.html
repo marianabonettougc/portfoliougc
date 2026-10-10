@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610100137"></script>
+<script src="../../js/banco.js?v=202610100142"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -1486,6 +1486,32 @@ function CriarRoteiroUGC({referencia, ideiaInicial, nichos, onClose, onSalvar, o
   );
 }
 
+// ----- calendário do iPhone (Edge Function calendario-apple, só leitura): usado no Dashboard e no Planner -----
+// busca os eventos do período, guarda uma cópia no navegador para abrir rápido e confere de novo
+// a cada 10 minutos e quando a aba volta a ficar visível
+function useCalApple(de, ate, chaveCache){
+  const lerCache = () => { try { return JSON.parse(localStorage.getItem(chaveCache)||"null"); } catch(e){ return null; } };
+  const [apple,setApple] = useState(()=>({conectado:null, eventos:[], erro:"", ...(lerCache()||{})}));
+  const carregar = useCallback(async ()=>{
+    try{
+      const { data, error } = await supabaseClient.functions.invoke("calendario-apple", {body:{acao:"eventos", de, ate}});
+      if(error || data?.error) throw new Error(data?.error || "Não consegui ler o calendário do iPhone agora.");
+      const novo = {conectado:!!data.conectado, nome:data.nome||"", eventos:data.eventos||[], atualizadoEm:data.atualizadoEm||new Date().toISOString(), erro:""};
+      setApple(novo);
+      try { localStorage.setItem(chaveCache, JSON.stringify(novo)); } catch(e){}
+    }catch(e){ setApple(a=>({...a, erro:String(e.message||e)})); }
+  },[de, ate, chaveCache]);
+  useEffect(()=>{
+    const c = lerCache(); if(c) setApple(a=>({...a, ...c}));
+    carregar();
+    const t = setInterval(carregar, 10*60000);
+    const aoVoltar = () => { if(document.visibilityState==="visible") carregar(); };
+    document.addEventListener("visibilitychange", aoVoltar);
+    return ()=>{ clearInterval(t); document.removeEventListener("visibilitychange", aoVoltar); };
+  },[carregar]);
+  return [apple, setApple, carregar];
+}
+
 function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateState, go, openRoteirosAI}){
   const hojeD = new Date(); hojeD.setHours(0,0,0,0);
   const hoje = isoLocal(hojeD);
@@ -1548,28 +1574,10 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     return lista.sort((a,b)=>chaveHora(a).localeCompare(chaveHora(b)));
   };
   // ----- calendário do iPhone (Edge Function calendario-apple, só leitura) -----
-  const lerCacheApple = () => { try { return JSON.parse(localStorage.getItem("calApple")||"null"); } catch(e){ return null; } };
-  const [apple,setApple] = useState(()=>({conectado:null, eventos:[], erro:"", ...(lerCacheApple()||{})}));
+  const [apple,setApple,carregarApple] = useCalApple(isoLocal(new Date(Date.now()-14*86400000)), isoLocal(new Date(Date.now()+120*86400000)), "calApple");
   const [popIphone,setPopIphone] = useState(false);
   const [linkIphone,setLinkIphone] = useState("");
   const [salvandoIphone,setSalvandoIphone] = useState(false);
-  const carregarApple = useCallback(async ()=>{
-    const de = isoLocal(new Date(Date.now()-14*86400000)), ate = isoLocal(new Date(Date.now()+120*86400000));
-    try{
-      const { data, error } = await supabaseClient.functions.invoke("calendario-apple", {body:{acao:"eventos", de, ate}});
-      if(error || data?.error) throw new Error(data?.error || "Não consegui ler o calendário do iPhone agora.");
-      const novo = {conectado:!!data.conectado, nome:data.nome||"", eventos:data.eventos||[], atualizadoEm:data.atualizadoEm||new Date().toISOString(), erro:""};
-      setApple(novo);
-      try { localStorage.setItem("calApple", JSON.stringify(novo)); } catch(e){}
-    }catch(e){ setApple(a=>({...a, erro:String(e.message||e)})); }
-  },[]);
-  useEffect(()=>{
-    carregarApple();
-    const t = setInterval(carregarApple, 10*60000); // de 10 em 10 minutos enquanto o painel está aberto
-    const aoVoltar = () => { if(document.visibilityState==="visible") carregarApple(); };
-    document.addEventListener("visibilitychange", aoVoltar);
-    return ()=>{ clearInterval(t); document.removeEventListener("visibilitychange", aoVoltar); };
-  },[carregarApple]);
   async function conectarIphone(remover){
     setSalvandoIphone(true);
     try{
@@ -2324,7 +2332,7 @@ function PlannerLegend({state, monthItems}){
   );
 }
 
-function DayModal({iso, items, onClose, onAdd, onEdit, onDelete}){
+function DayModal({iso, items, doIphone=[], onClose, onAdd, onEdit, onDelete}){
   const d = new Date(iso+"T00:00:00");
   const dateLabel = d.toLocaleDateString('pt-BR', {day:"numeric", month:"long", year:"numeric"});
   return (
@@ -2349,6 +2357,20 @@ function DayModal({iso, items, onClose, onAdd, onEdit, onDelete}){
           </div>
         </div>
       ))}
+      {doIphone.length>0 && <>
+        <div style={{display:"flex", alignItems:"center", gap:6, fontSize:13.5, fontWeight:600, color:"#4e1629", margin:"14px 0 8px"}}>
+          <Icon name="event" size={16}/>Calendário do iPhone ({doIphone.length})
+        </div>
+        {doIphone.map(ev=>(
+          <div className="row-item" key={ev.id}>
+            <div style={{flex:1}}>
+              <strong style={{fontSize:14}}>{ev.titulo}</strong>
+              <div style={{fontSize:12.5, color:"var(--graphite-soft)", marginTop:4}}>{[ev.diaTodo ? "Dia todo" : (ev.fim && ev.fim!==ev.hora ? `${ev.hora} às ${ev.fim}` : ev.hora), ev.local].filter(Boolean).join(" · ")}</div>
+            </div>
+          </div>
+        ))}
+        <p style={{fontSize:12, color:"var(--graphite-soft)", margin:"6px 0 10px"}}>Para mudar esses eventos, edite no calendário do iPhone.</p>
+      </>}
       <button className="btn btn-primary" style={{width:"100%", justifyContent:"center", marginTop:6}} onClick={onAdd}><Icon name="add" size={17}/>Agendar</button>
     </Modal>
   );
@@ -2374,6 +2396,18 @@ function Planner({state, updateState}){
     state.planner.forEach(it=>{ (map[it.data] = map[it.data]||[]).push(it); });
     return map;
   },[state.planner]);
+  // eventos do calendário do iPhone no mês que está aberto
+  const [apple] = useCalApple(isoOf(1), isoOf(daysInMonth), `calApple-${cursor.y}-${cursor.m}`);
+  const appleByDate = useMemo(()=>{
+    const map = {};
+    (apple.eventos||[]).forEach(ev=>{ (map[ev.data] = map[ev.data]||[]).push(ev); });
+    return map;
+  },[apple.eventos]);
+  const todosByDate = useMemo(()=>{
+    const map = {...itemsByDate};
+    Object.keys(appleByDate).forEach(k=>{ map[k] = [...(map[k]||[]), ...appleByDate[k]]; });
+    return map;
+  },[itemsByDate, appleByDate]);
 
   const todayStr = todayISO();
 
@@ -2404,7 +2438,7 @@ function Planner({state, updateState}){
 
       <div className="planner-grid" style={{display:"grid", gridTemplateColumns:"250px 1fr", gap:16, alignItems:"start"}}>
         <div>
-          <MiniCalendar cursor={cursor} setCursor={setCursor} todayStr={todayStr} itemsByDate={itemsByDate} onPickDay={(iso)=>setDayModal(iso)}/>
+          <MiniCalendar cursor={cursor} setCursor={setCursor} todayStr={todayStr} itemsByDate={todosByDate} onPickDay={(iso)=>setDayModal(iso)}/>
           <PlannerLegend state={state} monthItems={monthItems}/>
         </div>
 
@@ -2424,6 +2458,9 @@ function Planner({state, updateState}){
                 if(d===null) return <div className="cal-cell empty-cell" key={"e"+idx}></div>;
                 const iso = isoOf(d);
                 const items = itemsByDate[iso]||[];
+                const doIphone = appleByDate[iso]||[];
+                const cabem = Math.max(0, 3-items.length);
+                const total = items.length + doIphone.length;
                 return (
                   <div className={"cal-cell " + (iso===todayStr?"today":"")} key={iso} onClick={()=>setDayModal(iso)} style={{cursor:"pointer"}}>
                     <div className="cal-daynum">{d}</div>
@@ -2433,7 +2470,13 @@ function Planner({state, updateState}){
                         <span className="cal-chip-text" style={{flex:1, minWidth:0}}>{it.titulo}</span>
                       </div>
                     ))}
-                    {items.length>3 && <div style={{fontSize:10.5, color:"var(--graphite-soft)"}}>+{items.length-3} mais</div>}
+                    {doIphone.slice(0,cabem).map(ev=>(
+                      <div key={ev.id} className="cal-chip" title={"iPhone: "+ev.titulo} style={{background:"#f3e6ea", color:"#4e1629", display:"flex", alignItems:"flex-start", gap:4}}>
+                        <span style={{width:5,height:5,borderRadius:1, background:"#4e1629", flexShrink:0, marginTop:4}}></span>
+                        <span className="cal-chip-text" style={{flex:1, minWidth:0}}>{ev.hora ? ev.hora+" " : ""}{ev.titulo}</span>
+                      </div>
+                    ))}
+                    {total>3 && <div style={{fontSize:10.5, color:"var(--graphite-soft)"}}>+{total-3} mais</div>}
                   </div>
                 );
               })}
@@ -2475,6 +2518,7 @@ function Planner({state, updateState}){
         <DayModal
           iso={dayModal}
           items={itemsByDate[dayModal]||[]}
+          doIphone={appleByDate[dayModal]||[]}
           onClose={()=>setDayModal(null)}
           onAdd={()=>{ setModal({defaultDate:dayModal}); setDayModal(null); }}
           onEdit={(it)=>{ setEditing(it); setDayModal(null); }}
