@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610121913"></script>
+<script src="../../js/banco.js?v=202610122005"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -176,7 +176,7 @@
   .db-prio-nome b{ font-family:var(--db-serif); font-weight:400; font-size:28px; line-height:1.15; }
   .db-selo{ background:var(--db-bege); color:var(--db-cafe); font-size:12px; font-weight:500; letter-spacing:.04em; text-transform:uppercase; padding:5px 12px; border-radius:8px; }
   .db-prio-sub{ margin:4px 0 0; font-size:15px; color:var(--db-suave); }
-  .db-etapas{ display:grid; grid-template-columns:repeat(5,1fr); }
+  .db-etapas{ display:grid; grid-template-columns:repeat(6,1fr); }
   .db-etapas-grande{ margin-top:20px; }
   .db-etapa{ position:relative; display:flex; flex-direction:column; align-items:center; gap:8px; }
   .db-etapa::before{ content:""; position:absolute; top:7px; left:-50%; width:100%; height:1.5px; background:var(--db-linha2); }
@@ -184,7 +184,7 @@
   .db-etapa.feita::before{ background:var(--db-escuro); }
   .db-etapa i{ position:relative; z-index:1; width:16px; height:16px; border-radius:50%; border:1.5px solid var(--db-linha2); background:var(--db-papel); }
   .db-etapa.feita i{ border-color:var(--db-escuro); background:var(--db-escuro); box-shadow:inset 0 0 0 3px var(--db-papel); }
-  .db-etapa small{ font-size:12.5px; color:var(--db-suave); white-space:nowrap; }
+  .db-etapa small{ font-size:12px; color:var(--db-suave); text-align:center; line-height:1.25; max-width:96px; }
   .db-etapa.feita small{ color:var(--db-texto); }
   .db-prio-prazo{ display:flex; flex-direction:column; justify-content:space-between; gap:18px; padding-left:24px; border-left:1px solid var(--db-linha); min-width:190px; }
   .db-prio-data{ display:flex; gap:12px; color:var(--db-suave); }
@@ -1085,8 +1085,20 @@ function LineChart({data, width, height}){
 }
 
 /* ---------- DASHBOARD (board novo, igual ao modelo da Mari) ---------- */
-const ETAPAS_JOB = ["Briefing","Gravação","Edição","Aprovação","Entrega"];
-const etapaDoJob = (s) => ({"Em Produção":1, "Gravado":2, "Aguardando Aprovação":3, "Conteúdo Entregue":4, "Finalizado":4})[s] ?? 0;
+const ETAPAS_JOB = ["Roteiro","Ag. aprovação de roteiro","Gravação","Edição","Aprovação","Entrega"];
+// etapa do job na "Minha prioridade": a mais adiantada entre o status do job e o andamento dos roteiros dele
+// (cartões do Quadro de roteiros do mesmo cliente; sem cartões, o status de cada vídeo do job). Conta o roteiro mais atrasado.
+const ETAPA_JOB_DO_STATUS = {"Em Produção":2, "Gravado":3, "Aguardando Aprovação":4, "Conteúdo Entregue":5, "Finalizado":5};
+const ETAPA_JOB_DO_QUADRO = {"Ideias":0, "Roteirização":0, "Revisão":0, "Em Aprovação":1, "Gravação":2, "Edição":3, "Pronto para postar":5, "Pronto p/ Postar":5, "Finalizado":5};
+const ETAPA_JOB_DO_VIDEO = {"Roteiro pendente":0, "Roteiro pronto":1, "Gravado":3, "Editado":4, "Entregue":5};
+const etapaDoJob = (job, roteiros) => {
+  const doStatus = ETAPA_JOB_DO_STATUS[job && job.status] ?? 0;
+  const marca = String((job && job.marca) || "").trim().toLowerCase();
+  const doQuadro = marca ? (roteiros||[]).filter(r=>String(r.cliente||"").trim().toLowerCase()===marca).map(r=>ETAPA_JOB_DO_QUADRO[r.etapa]).filter(n=>n!==undefined) : [];
+  const videos = [...((job && job.entregaveis && job.entregaveis.videos)||[]), ...((job && job.entregaveis && job.entregaveis.stories)||[])].map(v=>ETAPA_JOB_DO_VIDEO[v.status]).filter(n=>n!==undefined);
+  const lista = doQuadro.length ? doQuadro : videos;
+  return Math.max(doStatus, lista.length ? Math.min(...lista) : 0);
+};
 const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const diasAte = (iso) => { const h = new Date(); h.setHours(0,0,0,0); return Math.round((new Date(iso+"T00:00:00") - h)/86400000); };
 const dataBR = (iso) => iso ? iso.split("-").reverse().join("/") : "";
@@ -1970,7 +1982,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                   <div className="db-prio-nome"><DbLogo marca={prioridade.marca} logos={logos}/><b>{prioridade.marca}</b><span className="db-selo">{prioridade.status}</span></div>
                   <p className="db-prio-sub">{descricaoJob(prioridade)}</p>
                   <div className="db-etapas db-etapas-grande">
-                    {ETAPAS_JOB.map((e,i)=>{ const at = etapaDoJob(prioridade.status); return <span key={e} className={"db-etapa"+(i<=at?" feita":"")+(i===at?" atual":"")}><i/><small>{e}</small></span>; })}
+                    {ETAPAS_JOB.map((e,i)=>{ const at = etapaDoJob(prioridade, state.roteiros); return <span key={e} className={"db-etapa"+(i<=at?" feita":"")+(i===at?" atual":"")}><i/><small>{e}</small></span>; })}
                   </div>
                 </div>
                 <div className="db-prio-prazo">
