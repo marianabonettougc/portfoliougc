@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610100348"></script>
+<script src="../../js/banco.js?v=202610121913"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -564,6 +564,33 @@
   .lista-nova{ min-width:250px; flex-shrink:0; }
   .lista-nova-btn{ width:100%; display:flex; align-items:center; gap:8px; border:1.5px dashed var(--line); background:transparent; border-radius:16px; padding:14px; font:inherit; font-size:14px; color:var(--graphite-soft); cursor:pointer; }
   .lista-nova-btn:hover{ background:var(--sand); }
+  /* Importar do Google Docs: lista dos roteiros encontrados no documento */
+  .docs-lista-topo{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:4px 0 8px; font-size:13.5px; }
+  .docs-lista{ display:grid; gap:8px; max-height:300px; overflow:auto; margin-bottom:14px; padding-right:2px; }
+  .docs-item{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--card-bg); }
+  .docs-item.desmarcado{ opacity:.5; }
+  .docs-item input[type=checkbox]{ width:16px; height:16px; margin-top:8px; flex-shrink:0; accent-color:#6b4a35; }
+  .docs-item-titulo{ width:100%; border:none !important; background:transparent !important; padding:4px 0 !important; font-weight:600; font-size:14px; }
+  .docs-item-info{ font-size:12px; color:var(--graphite-soft); }
+  .docs-item-gancho{ font-size:12.5px; color:var(--graphite); margin-top:4px; font-style:italic; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  /* roteiro pronto para postar: data de postagem em destaque */
+  .postar-campo{ border:1.5px solid #c5533f; background:#fbefec; border-radius:12px; padding:10px 12px; margin-bottom:14px; }
+  .postar-campo label{ font-weight:600; color:#8a3a2b; }
+  .postar-data{ display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:600; border-radius:999px; padding:3px 9px; background:#f3e7dc; color:#6b4a35; }
+  .postar-data.hoje, .postar-data.atrasado{ background:#c5533f; color:#fff; }
+  .postar-data.sem-data{ background:#fbefec; color:#c5533f; border:1px dashed #c5533f; }
+  .rot-campos-doc{ display:grid; gap:4px; font-size:12.5px; color:var(--graphite-soft); margin:-4px 0 14px; background:var(--sand); border-radius:12px; padding:10px 12px; }
+  /* Dashboard: postagens dos roteiros prontos para postar */
+  .db-postagens{ border:1px solid #e6c9bf; background:#fbf3ef; border-radius:16px; padding:12px 16px; margin-bottom:16px; }
+  .db-postagens-topo{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .db-postagens-topo h2{ margin:0; font-size:15px; font-family:"DM Serif Display", serif; font-weight:400; color:#3d2b20; }
+  .db-postagens-topo .db-postagens-n{ background:#c5533f; color:#fff; border-radius:999px; font-size:11.5px; font-weight:600; padding:1px 8px; }
+  .db-postagens-lista{ display:flex; gap:8px; flex-wrap:wrap; }
+  .db-postagem{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; border:1px solid #ecd9cf; background:#fffdf9; border-radius:12px; padding:8px 12px; cursor:pointer; font:inherit; min-width:180px; max-width:300px; }
+  .db-postagem b{ font-size:13px; font-weight:600; color:#3d2b20; }
+  .db-postagem small{ font-size:12px; color:#6e5646; }
+  .db-postagem.atrasado, .db-postagem.hoje{ border-color:#c5533f; }
+  .db-postagem.atrasado small, .db-postagem.hoje small{ color:#c5533f; font-weight:600; }
   .lista-nova-form{ background:var(--sand); border-radius:16px; padding:12px; display:grid; gap:8px; }
   .lista-nova-form input{ padding:9px 10px; border:1px solid var(--line); border-radius:10px; font:inherit; font-size:14px; background:var(--card-bg); }
   .titulo-quadro{ font-size:.55em; font-weight:400; color:var(--graphite-soft); }
@@ -820,7 +847,11 @@ const TIPO_CONTEUDO_OPTIONS = ["Reels","Stories","Feed","Carrossel","Shorts","Ti
 const FINALIDADES = ["Publi","UGC","Conteúdos"];
 const FINALIDADE_COLOR = {Publi:"#6b4a35", UGC:"#a87058", "Conteúdos":"#6B4E3D"};
 const FINALIDADE_TONE = {Publi:"wine", UGC:"pink", "Conteúdos":"gray"};
-const ROTEIRO_ETAPAS = ["Ideias","Roteirização","Revisão","Gravação","Edição","Pronto p/ Postar"];
+const ROTEIRO_ETAPAS = ["Ideias","Roteirização","Revisão","Em Aprovação","Gravação","Edição","Pronto para postar","Finalizado"];
+const ETAPA_POSTAR = "Pronto para postar";
+const ETAPA_FINAL = "Finalizado";
+// nomes antigos das etapas que mudaram (out/2026): o roteiro continua na lista certa
+const ETAPA_ANTIGA = {"Pronto p/ Postar":"Pronto para postar"};
 const ROTEIRO_TEMPLATES = {
   "Review de Produto":"GANCHO:\n[Eu testei [PRODUTO] por [X] dias e preciso te contar o resultado...]\n\nDESENVOLVIMENTO:\n- Primeira impressão ao usar\n- 2-3 benefícios reais que notei no dia a dia\n- Um ponto de atenção, sendo honesta sobre prós e contras\n\nCTA:\n[Vale a pena? Comenta aqui embaixo se quer saber mais!]",
   "Unboxing":"GANCHO:\n[Acabou de chegar e eu não acredito no que veio dentro...]\n\nDESENVOLVIMENTO:\n- Primeira impressão da embalagem\n- Itens incluídos\n- O que mais me surpreendeu\n\nCTA:\n[Quer um igual? Link na bio!]",
@@ -1575,7 +1606,9 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const itensDoDia = (iso) => {
     const lista = [];
     tarefas.filter(t=>t.data===iso).forEach(t=>lista.push({id:"t-"+t.id, tarefa:t, hora:t.hora||"", texto:t.titulo, sub:t.sub||"", feito:!!t.feito}));
-    planner.filter(p=>p.data===iso).forEach(p=>lista.push({id:"p-"+p.id, hora:"", texto:p.titulo||"Conteúdo", sub:[p.formato, p.marca].filter(Boolean).join(" · "), pagina:"planner"}));
+    planner.filter(p=>p.data===iso).forEach(p=>lista.push({id:"p-"+p.id, hora:"", texto:(p.roteiroId && (state.roteiros||[]).some(r=>r.id===p.roteiroId && prontoParaPostar(r)) ? "Postar: " : "")+(p.titulo||"Conteúdo"), sub:[p.formato, p.marca].filter(Boolean).join(" · "), pagina:"planner"}));
+    // roteiro pronto para postar que ainda não está no Planner
+    (state.roteiros||[]).filter(r=>prontoParaPostar(r) && r.dataPublicacao===iso && !planner.some(p=>p.roteiroId===r.id)).forEach(r=>lista.push({id:"rp-"+r.id, hora:"", texto:`Postar: ${r.titulo}`, sub:[r.cliente, r.plataforma].filter(Boolean).join(" · "), pagina:"roteiros"}));
     ativos.filter(j=>j.prazoEntrega===iso).forEach(j=>lista.push({id:"e-"+j.id, hora:"", texto:`Entregar ${j.marca}`, sub:descricaoJob(j), pagina:"jobs"}));
     // datas de cada conteúdo do job (roteiro, conteúdo e postagem da Publi)
     ativos.forEach(j=>{
@@ -1858,6 +1891,11 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   jobs.filter(j=>j.dataPagamento && diasAte(j.dataPagamento)<0 && j.status!=="Cancelado" && (!j.pagamento || j.pagamento.status!=="Pago")).forEach(j=>alertas.push({titulo:"Pagamento atrasado", texto:`${j.marca} (${fmtMoneyCur(j.valor,j.moeda)})`, pagina:"financeiro"}));
   const semPrazo = ativos.filter(j=>!j.prazoEntrega).length;
   if(semPrazo) alertas.push({titulo:"Prazo indefinido", texto:`${semPrazo} job(s) sem prazo de entrega.`, pagina:"jobs"});
+  // roteiros prontos para postar (Quadro de roteiros): data de postagem como alerta
+  const paraPostar = (state.roteiros||[]).filter(prontoParaPostar).map(r=>({r, i:infoPostagem(r)}))
+    .sort((a,b)=>(a.r.dataPublicacao||"9999").localeCompare(b.r.dataPublicacao||"9999"));
+  paraPostar.filter(x=>x.i.dias===null || x.i.dias<=3).forEach(({r,i})=>alertas.unshift({titulo: i.dias===null ? "Roteiro sem data de postagem" : i.dias<0 ? "Postagem atrasada" : i.dias===0 ? "Postar hoje" : "Postagem chegando",
+    texto:`${r.titulo}${r.cliente?" · "+r.cliente:""}${i.dias!==null ? " · "+dataBR(r.dataPublicacao) : ""}`, pagina:"roteiros"}));
 
   const iconeRede = (o) => o==="tiktok" ? "tiktok" : o==="youtube" ? "youtube" : "instagram";
   const etiquetas = (r) => String(r.etiquetas||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,2);
@@ -1890,6 +1928,17 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           </div>
         </div>
       </div>
+
+      {/* postagens: roteiros prontos para postar */}
+      {paraPostar.length>0 && <section className="db-postagens">
+        <div className="db-postagens-topo"><DbIcone tipo="calendario" tam={17}/><h2>Pronto para postar</h2><span className="db-postagens-n">{paraPostar.length}</span>
+          <span style={{flex:1}}/><button className="db-seta" onClick={()=>go("roteiros")} aria-label="Ver roteiros"><DbIcone tipo="seta" tam={16}/></button></div>
+        <div className="db-postagens-lista">
+          {paraPostar.map(({r,i})=><button key={r.id} className={"db-postagem "+i.classe} onClick={()=>go("roteiros")}>
+            <b>{r.titulo}</b><small>{i.texto}{r.cliente ? " · "+r.cliente : ""}</small>
+          </button>)}
+        </div>
+      </section>}
 
       {/* números */}
       <div className="db-cartoes">
@@ -5211,7 +5260,7 @@ function syncPlannerFromRoteiro(state, roteiro){
     titulo: roteiro.titulo,
     plataforma: roteiro.plataforma || "Instagram",
     formato: "Reels",
-    status: roteiro.etapa==="Pronto p/ Postar" ? "Entregue" : (roteiro.etapa==="Gravação"||roteiro.etapa==="Edição") ? "Gravado" : "Planejado",
+    status: (prontoParaPostar(roteiro) || roteiro.etapa===ETAPA_FINAL) ? "Entregue" : (roteiro.etapa==="Gravação"||roteiro.etapa==="Edição") ? "Gravado" : "Planejado",
     data: roteiro.dataPublicacao,
     marca: "",
     notas: "Sincronizado automaticamente do Roteiro",
@@ -5311,7 +5360,9 @@ const quadroDo = (r) => r.quadroId || "principal";
 // colunas (listas) de cada quadro: dá para renomear, mover, excluir e criar, como no Trello
 const colunasDe = (q) => (q && Array.isArray(q.colunas) && q.colunas.length) ? q.colunas : ROTEIRO_ETAPAS;
 // roteiro com uma etapa que não existe mais no quadro aparece na primeira lista (nunca some)
-const etapaNoQuadro = (r, cols) => cols.includes(r.etapa) ? r.etapa : cols[0];
+const etapaNoQuadro = (r, cols) => { const e = ETAPA_ANTIGA[r.etapa] || r.etapa; return cols.includes(e) ? e : cols.includes(r.etapa) ? r.etapa : cols[0]; };
+// roteiro pronto para postar: precisa da data de postagem (aparece como alerta no Dashboard)
+const prontoParaPostar = (r) => (ETAPA_ANTIGA[r.etapa] || r.etapa) === ETAPA_POSTAR;
 
 function QuadroNomeModal({titulo, texto, inicial, onClose, onSave}){
   const [nome,setNome] = useState(inicial||"");
@@ -5327,18 +5378,102 @@ function QuadroNomeModal({titulo, texto, inicial, onClose, onSave}){
   );
 }
 
-/* Importar do Google Docs: lê o documento pela Edge Function google-docs (documento compartilhado por link)
-   e liga o roteiro a um cliente da aba Marcas (tabela marcas) ou cadastra um cliente novo */
+/* Google Docs com vários roteiros: separa cada "ROTEIRO 01 ...", "ROTEIRO 02 ..." em um roteiro do quadro
+   e preenche os campos que o documento traz (cliente, título, data, nicho, funil, tipo de UGC, objetivo,
+   formato, gancho, roteiro em cenas e falas, legenda, referência e observações). */
+const DOCS_ROTULOS = [
+  ["cliente", /^marca\s*\/\s*cliente$|^marca$|^cliente$/i],
+  ["creator", /^creator$|^criadora?$/i],
+  ["titulo", /^t[ií]tulo( do roteiro)?$/i],
+  ["data", /^data$/i],
+  ["nicho", /^nicho$/i],
+  ["funil", /^funil$|^tipo de funil$/i],
+  ["tipoUgc", /^tipo de ugc$|^tipo de conte[uú]do( ugc)?$/i],
+  ["objetivo", /^objetivo( do v[ií]deo)?$/i],
+  ["formato", /^formato( \/ plataforma)?$|^plataforma$/i],
+];
+const DOCS_SECOES = /^(LEGENDA( DO POST)?|POR QUE .+|REFER[ÊE]NCIA( DE CONTE[ÚU]DO| VISUAL)?|OBSERVA[ÇC][ÕO]ES|CENA \/ IMAGEM.*)$/i;
+function separarRoteirosDoDocs(textoBruto){
+  const texto = String(textoBruto||"").replace(/^﻿/, "").replace(/\r\n?/g, "\n");
+  const linhas = texto.split("\n");
+  // começo de cada roteiro: linha sem recuo que começa com "ROTEIRO 01" (o título dentro da tabela vem com recuo)
+  const inicios = [];
+  linhas.forEach((l,i)=>{ if(/^roteiro\s*\d+\b/i.test(l) && l.trim().length<200) inicios.push(i); });
+  const blocos = inicios.length ? inicios.map((ini,k)=>linhas.slice(ini, k+1<inicios.length ? inicios[k+1] : linhas.length)) : [linhas];
+  return blocos.map(b=>lerRoteiroDoDocs(b)).filter(r=>r.conteudo || r.titulo);
+}
+function lerRoteiroDoDocs(bloco){
+  const limpa = (l) => String(l||"").replace(/\t/g, " ").replace(/[  ]+/g, " ").trim();
+  const L = bloco.map(limpa);
+  const r = {cabecalho: /^roteiro\s*\d+/i.test(L[0]||"") ? L[0] : ""};
+  // campos da tabela: "Rótulo:" e o valor na próxima linha com texto (ou "Rótulo: valor" na mesma linha)
+  const proxima = (i) => { for(let j=i+1;j<L.length && j<i+4;j++){ if(L[j]) return L[j]; } return ""; };
+  L.forEach((l,i)=>{
+    const m = l.match(/^([^:]{2,30}):\s*(.*)$/);
+    if(!m) return;
+    const rot = DOCS_ROTULOS.find(([,re])=>re.test(m[1].trim()));
+    if(!rot || r[rot[0]]!==undefined) return;
+    let valor = m[2].trim();
+    if(!valor){ valor = proxima(i); if(DOCS_ROTULOS.some(([,re])=>re.test(valor.replace(/:$/,"")))) valor = ""; }
+    r[rot[0]] = valor;
+  });
+  // seções de texto corrido (legenda, por que, referência) e o corpo do roteiro (cenas e falas)
+  const secao = (re) => {
+    const i = L.findIndex(l=>re.test(l));
+    if(i<0) return "";
+    const fim = L.findIndex((l,j)=>j>i && (DOCS_SECOES.test(l) || /^_{5,}$/.test(l) || /^roteiro\s*\d+\b/i.test(l)));
+    return bloco.slice(i+1, fim<0 ? bloco.length : fim).map(l=>l.replace(/\t/g," ").trim()).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  };
+  r.legenda = secao(/^LEGENDA( DO POST)?$/i);
+  r.observacoes = secao(/^POR QUE .+$/i);
+  const refSecao = secao(/^REFER[ÊE]NCIA( DE CONTE[ÚU]DO)?$/i);
+  const refLinha = (L.find(l=>/^refer[êe]ncia[^:]*:\s*\S/i.test(l))||"").replace(/^[^:]*:\s*/, "");
+  r.referencia = [refLinha, refSecao].filter(Boolean).join("\n");
+  const iCorpo = L.findIndex(l=>/^CENA \/ IMAGEM/i.test(l));
+  const iFim = L.findIndex((l,j)=>j>iCorpo && (/^LEGENDA( DO POST)?$/i.test(l) || /^POR QUE .+$/i.test(l) || /^REFER[ÊE]NCIA( DE CONTE[ÚU]DO)?$/i.test(l) || /^_{5,}$/.test(l)));
+  let corpo = iCorpo>=0 ? L.slice(iCorpo+2, iFim<0 ? L.length : iFim) : L.slice(1);
+  corpo = corpo.filter(Boolean).filter(l=>!/^_{5,}$/.test(l)).map(l=>/^ETAPA\s*\d+/i.test(l) ? "\n"+l : l);
+  r.conteudo = corpo.join("\n").trim();
+  // gancho: a primeira fala (ou texto na tela) entre aspas
+  const fala = L.find(l=>/^(FALA|TEXTO NA TELA|VOZ|VOICE)[^:]*:\s*["“]/i.test(l));
+  r.gancho = fala ? fala.replace(/^[^:]*:\s*/, "").replace(/^["“]|["”]$/g, "").trim() : "";
+  // título: "ROTEIRO 01: Vale a pena..." vira "Roteiro 01: Vale a pena..."
+  r.titulo = String(r.titulo || r.cabecalho || "").replace(/^roteiro\s*(\d+)\s*[:·\-]?\s*/i, (_,n)=>`Roteiro ${n.padStart(2,"0")}: `).trim();
+  const mData = String(r.data||"").match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  r.dataRoteiro = mData ? `${mData[3]}-${mData[2].padStart(2,"0")}-${mData[1].padStart(2,"0")}` : "";
+  delete r.data;
+  return r;
+}
+
+// campos do documento -> roteiro do quadro (nicho e funil viram as opções fixas; o texto completo fica no "detalhe")
+function roteiroDoDocs(r, extra){
+  const tira = (t) => String(t||"").replace(/\s*\(.*\)\s*$/, "").trim();
+  const nichoTxt = String(r.nicho||"");
+  const nicho = [...NICHOS_DEFAULT, ...NICHOS_INSP].find(n=>nichoTxt.toLowerCase().startsWith(n.toLowerCase())) || (nichoTxt ? "Outro" : "");
+  const funilTxt = String(r.funil||"");
+  const funil = TIPOS_FUNIL.find(f=>funilTxt.toLowerCase().startsWith(f.toLowerCase())) || tira(funilTxt);
+  const formato = String(r.formato||"");
+  const plataforma = /tiktok/i.test(formato+r.cabecalho) ? "TikTok" : /youtube|shorts/i.test(formato+r.cabecalho) ? "YouTube" : "Instagram";
+  return {id:uid(), titulo:r.titulo || "Roteiro do Google Docs", plataforma, status:"Em aberto", dataPublicacao:"",
+    conteudo:r.conteudo, gancho:r.gancho||"", legenda:r.legenda||"", objetivo:r.objetivo||"", formato, referencia:r.referencia||"", observacoes:r.observacoes||"",
+    tipoUgc:r.tipoUgc||"", funil, funilDetalhe: funilTxt!==funil ? funilTxt : "", nicho, nichoDetalhe: nichoTxt!==nicho ? nichoTxt : "",
+    dataRoteiro:r.dataRoteiro||"", campanha:String(r.cliente||"").split("|").slice(1).join("|").trim(), descricaoDoc:r.cabecalho||"",
+    origem:"Google Docs", ...extra};
+}
+
+/* Importar do Google Docs: lê o documento pela Edge Function google-docs (documento compartilhado por link),
+   separa cada roteiro do documento (ROTEIRO 01, ROTEIRO 02...) em um cartão e preenche os campos.
+   Liga os roteiros a um cliente da aba Marcas (tabela marcas) ou cadastra um cliente novo. */
 function GoogleDocsModal({state, onClose, onSave, etapas=ROTEIRO_ETAPAS}){
   const [link,setLink] = useState("");
   const [doc,setDoc] = useState(null); // {titulo, texto}
+  const [itens,setItens] = useState([]); // roteiros encontrados no documento, com marcado
   const [lendo,setLendo] = useState(false);
   const [erro,setErro] = useState("");
   const [clientes,setClientes] = useState([]);
   const [clienteId,setClienteId] = useState("");
   const [novo,setNovo] = useState(null); // {nome, instagram, email}
-  const [titulo,setTitulo] = useState("");
-  const [etapa,setEtapa] = useState(etapas[0]);
+  const [etapa,setEtapa] = useState(etapas.includes("Roteirização") ? "Roteirização" : etapas[0]);
   const [salvando,setSalvando] = useState(false);
   useEffect(()=>{
     supabaseClient.from("marcas").select("id, nome, situacao").order("nome").then(({data})=>{
@@ -5348,8 +5483,15 @@ function GoogleDocsModal({state, onClose, onSave, etapas=ROTEIRO_ETAPAS}){
       setClientes([...daTabela, ...dosJobs].sort((a,b)=>a.nome.localeCompare(b.nome)));
     });
   },[]);
+  // cliente escrito no documento ("Ortobom | Ativação em Loja") já vem escolhido; se não existir, sugere cadastrar
+  function escolherClienteDoDoc(lista){
+    const nome = String((lista.find(r=>r.cliente)||{}).cliente||"").split("|")[0].trim();
+    if(!nome) return;
+    const achou = clientes.find(c=>c.nome.toLowerCase()===nome.toLowerCase()) || clientes.find(c=>c.nome.toLowerCase().includes(nome.toLowerCase()) || nome.toLowerCase().includes(c.nome.toLowerCase()));
+    if(achou){ setClienteId(achou.id); setNovo(null); } else { setClienteId(""); setNovo({nome, instagram:"", email:""}); }
+  }
   async function ler(){
-    setErro(""); setDoc(null);
+    setErro(""); setDoc(null); setItens([]);
     if(!/docs\.google\.com\/document\/d\//.test(link)){ setErro("Cole o link de um documento do Google Docs (docs.google.com/document/d/...)."); return; }
     setLendo(true);
     try{
@@ -5357,12 +5499,17 @@ function GoogleDocsModal({state, onClose, onSave, etapas=ROTEIRO_ETAPAS}){
       let msg = data && data.error;
       if(error){ try{ msg = (await error.context.json()).error; }catch(e){} msg = msg || "Não consegui falar com o Google Docs agora."; }
       if(msg) throw new Error(msg);
-      setDoc(data); setTitulo(t=>t || data.titulo || "Roteiro do Google Docs");
+      const lista = separarRoteirosDoDocs(data.texto);
+      if(!lista.length) throw new Error("Não encontrei nenhum roteiro nesse documento.");
+      setDoc(data);
+      setItens(lista.map(r=>({...r, marcado:true})));
+      escolherClienteDoDoc(lista);
     }catch(e){ setErro(String(e.message||e)); }
     setLendo(false);
   }
+  const marcados = itens.filter(r=>r.marcado);
   async function salvar(){
-    if(!doc) return;
+    if(!marcados.length) return;
     let cliente = null;
     setSalvando(true); setErro("");
     try{
@@ -5374,10 +5521,10 @@ function GoogleDocsModal({state, onClose, onSave, etapas=ROTEIRO_ETAPAS}){
       } else if(clienteId){
         const c = clientes.find(x=>x.id===clienteId); if(c) cliente = {id:c.id, nome:c.nome};
       }
-      onSave({id:uid(), titulo:titulo.trim()||doc.titulo||"Roteiro do Google Docs", plataforma:"Instagram", status:"Em aberto", finalidade:cliente?"Publi":"Conteúdos",
-        etapa, dataPublicacao:"", conteudo:doc.texto, cliente:cliente?cliente.nome:"", clienteId:cliente?cliente.id:"", origem:"Google Docs", docUrl:link.trim()});
+      onSave(marcados.map(r=>roteiroDoDocs(r, {etapa, finalidade:cliente?"Publi":"Conteúdos", cliente:cliente?cliente.nome:"", clienteId:cliente?cliente.id:"", docUrl:link.trim()})));
     }catch(e){ setErro(String(e.message||e)); setSalvando(false); }
   }
+  const mudarItem = (i, campo, valor) => setItens(l=>l.map((r,k)=>k===i?{...r, [campo]:valor}:r));
   return (
     <Modal title="Importar do Google Docs" onClose={onClose}>
       <Field label="Link do documento">
@@ -5386,15 +5533,29 @@ function GoogleDocsModal({state, onClose, onSave, etapas=ROTEIRO_ETAPAS}){
           <button className="btn btn-ghost" onClick={ler} disabled={lendo||!link.trim()}>{lendo?"Lendo...":"Ler documento"}</button>
         </div>
       </Field>
-      <p style={{fontSize:12.5, color:"var(--graphite-soft)", marginTop:-8}}>O documento precisa estar compartilhado como <b>"Qualquer pessoa com o link: leitor"</b>. Documentos privados ainda não podem ser lidos: a conta Google não está conectada ao painel.</p>
+      <p style={{fontSize:12.5, color:"var(--graphite-soft)", marginTop:-8}}>Cada roteiro do documento (ROTEIRO 01, ROTEIRO 02...) vira um cartão separado, com cliente, título, nicho, funil, tipo de UGC, objetivo, formato, gancho, cenas e falas, legenda e referência já preenchidos. O documento precisa estar compartilhado como <b>"Qualquer pessoa com o link: leitor"</b>.</p>
       {erro && <p style={{fontSize:13, color:"var(--danger, #b8473a)", background:"#f6e0dc", padding:"8px 12px", borderRadius:10}}>{erro}</p>}
       {doc && <>
-        <div style={{border:"1px solid var(--line)", borderRadius:12, padding:"10px 12px", maxHeight:160, overflow:"auto", fontSize:13, whiteSpace:"pre-wrap", color:"var(--graphite-soft)", marginBottom:14}}>{doc.texto.slice(0,1500)}{doc.texto.length>1500?"...":""}</div>
-        <Field label="Título do roteiro"><input value={titulo} onChange={e=>setTitulo(e.target.value)}/></Field>
+        <div className="docs-lista-topo">
+          <b>{itens.length} roteiro{itens.length===1?"":"s"} encontrado{itens.length===1?"":"s"}</b>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={()=>setItens(l=>l.map(r=>({...r, marcado:marcados.length!==l.length})))}>{marcados.length===itens.length?"Desmarcar todos":"Marcar todos"}</button>
+        </div>
+        <div className="docs-lista">
+          {itens.map((r,i)=>(
+            <div key={i} className={"docs-item"+(r.marcado?"":" desmarcado")}>
+              <input type="checkbox" checked={r.marcado} onChange={e=>mudarItem(i,"marcado",e.target.checked)} aria-label={"Importar "+r.titulo}/>
+              <div style={{flex:1, minWidth:0}}>
+                <input className="docs-item-titulo" value={r.titulo} onChange={e=>mudarItem(i,"titulo",e.target.value)} aria-label="Título do roteiro"/>
+                <div className="docs-item-info">{[r.funil && String(r.funil).replace(/\s*\(.*\)$/,""), r.nicho && String(r.nicho).split(/[:(]/)[0].trim(), r.formato && String(r.formato).split(/[.,]/)[0]].filter(Boolean).join(" · ")}</div>
+                {r.gancho && <div className="docs-item-gancho">“{r.gancho}”</div>}
+              </div>
+            </div>
+          ))}
+        </div>
         <Field label="Cliente">
           {novo ? (
             <div style={{display:"grid", gap:8}}>
-              <input autoFocus value={novo.nome} onChange={e=>setNovo({...novo, nome:e.target.value})} placeholder="Nome do cliente ou marca"/>
+              <input value={novo.nome} onChange={e=>setNovo({...novo, nome:e.target.value})} placeholder="Nome do cliente ou marca"/>
               <div className="field-row" style={{margin:0}}>
                 <input value={novo.instagram} onChange={e=>setNovo({...novo, instagram:e.target.value})} placeholder="@instagram (opcional)"/>
                 <input value={novo.email} onChange={e=>setNovo({...novo, email:e.target.value})} placeholder="E-mail (opcional)"/>
@@ -5411,16 +5572,33 @@ function GoogleDocsModal({state, onClose, onSave, etapas=ROTEIRO_ETAPAS}){
             </div>
           )}
         </Field>
-        <Field label="Etapa no quadro"><select value={etapa} onChange={e=>setEtapa(e.target.value)}>{etapas.map(p=><option key={p}>{p}</option>)}</select></Field>
-        <button className="btn btn-primary" style={{width:"100%", justifyContent:"center"}} disabled={salvando} onClick={salvar}>{salvando?"Salvando...":"Adicionar ao quadro"}</button>
+        <Field label="Status no quadro"><select value={etapa} onChange={e=>setEtapa(e.target.value)}>{etapas.map(p=><option key={p}>{p}</option>)}</select></Field>
+        <button className="btn btn-primary" style={{width:"100%", justifyContent:"center"}} disabled={salvando||!marcados.length} onClick={salvar}>{salvando?"Salvando...":`Adicionar ${marcados.length} roteiro${marcados.length===1?"":"s"} ao quadro`}</button>
       </>}
     </Modal>
   );
 }
 
+// selo com a data de postagem: "Postar hoje", "Postar em 3 dias", "Atrasado 2 dias" ou "Sem data"
+function infoPostagem(r){
+  if(!r.dataPublicacao) return {classe:"sem-data", texto:"Sem data de postagem", dias:null};
+  const h = new Date(); h.setHours(0,0,0,0);
+  const dias = Math.round((new Date(r.dataPublicacao+"T00:00:00") - h)/86400000);
+  const data = new Date(r.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR',{day:"2-digit", month:"2-digit"});
+  if(dias<0) return {classe:"atrasado", texto:`Postagem atrasada (${data})`, dias};
+  if(dias===0) return {classe:"hoje", texto:"Postar hoje", dias};
+  if(dias===1) return {classe:"", texto:`Postar amanhã (${data})`, dias};
+  return {classe:"", texto:`Postar em ${data}`, dias};
+}
+function SeloPostagem({roteiro, onClick}){
+  const i = infoPostagem(roteiro);
+  return <button type="button" className={"postar-data "+i.classe} style={{border:i.classe==="sem-data"?undefined:"none", cursor:"pointer"}} onClick={onClick} title="Mudar a data de postagem"><Icon name="event" size={13}/>{i.texto}</button>;
+}
+
 function RoteiroModal({onClose, onSave, initial, etapas=ROTEIRO_ETAPAS}){
   const [f,setF] = useState(initial ? {...initial, etapa: etapaNoQuadro(initial, etapas)} : {titulo:"", plataforma:"Instagram", status:"Em aberto", finalidade:"Conteúdos", etapa:etapas[0], dataPublicacao:"", conteudo:""});
-  const set=(k,v)=>setF(p=>({...p,[k]:v}));
+  const [erroForm,setErroForm] = useState("");
+  const set=(k,v)=>{ setErroForm(""); setF(p=>({...p,[k]:v})); };
   return (
     <Modal title={initial ? "Editar roteiro" : "Novo roteiro"} onClose={onClose}>
       <Field label="Finalidade">
@@ -5457,6 +5635,13 @@ function RoteiroModal({onClose, onSave, initial, etapas=ROTEIRO_ETAPAS}){
           </select>
         </Field>
       </div>
+      {(f.nichoDetalhe || f.funilDetalhe || f.dataRoteiro || f.docUrl || f.campanha) && <div className="rot-campos-doc">
+        {f.campanha && <span><b>Campanha:</b> {f.campanha}</span>}
+        {f.nichoDetalhe && <span><b>Nicho no documento:</b> {f.nichoDetalhe}</span>}
+        {f.funilDetalhe && <span><b>Funil no documento:</b> {f.funilDetalhe}</span>}
+        {f.dataRoteiro && <span><b>Data do roteiro:</b> {new Date(f.dataRoteiro+"T00:00:00").toLocaleDateString('pt-BR')}</span>}
+        {f.docUrl && <span><a href={f.docUrl} target="_blank" rel="noopener">Abrir no Google Docs</a></span>}
+      </div>}
       <Field label="Título"><input value={f.titulo} onChange={e=>set("titulo",e.target.value)} placeholder="Ex: Roteiro skincare noturno"/></Field>
       <Field label="Cliente (opcional)"><input value={f.cliente||""} onChange={e=>set("cliente",e.target.value)} placeholder="Marca ou cliente deste roteiro"/></Field>
       <div className="field-row">
@@ -5465,23 +5650,35 @@ function RoteiroModal({onClose, onSave, initial, etapas=ROTEIRO_ETAPAS}){
             {["Instagram","TikTok","YouTube","Outra"].map(p=><option key={p}>{p}</option>)}
           </select>
         </Field>
-        <Field label="Etapa no quadro">
+        <Field label="Status">
           <select value={f.etapa} onChange={e=>set("etapa",e.target.value)}>
             {etapas.map(p=><option key={p}>{p}</option>)}
           </select>
         </Field>
       </div>
-      <Field label="Data de publicação (opcional)"><input type="date" value={f.dataPublicacao} onChange={e=>set("dataPublicacao",e.target.value)}/></Field>
-      <p style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-10}}>Se preenchida, aparece automaticamente no Planner.</p>
-      <Field label="Status">
-        <select value={f.status} onChange={e=>set("status",e.target.value)}>
-          <option>Em aberto</option><option>Finalizado</option>
-        </select>
-      </Field>
-      <Field label="Conteúdo do roteiro"><textarea rows="6" value={f.conteudo} onChange={e=>set("conteudo",e.target.value)} placeholder="Escreva seu roteiro aqui..."/></Field>
+      {f.etapa===ETAPA_POSTAR ? (
+        <div className="postar-campo">
+          <Field label="Data de postagem (obrigatória)"><input type="date" value={f.dataPublicacao||""} onChange={e=>set("dataPublicacao",e.target.value)}/></Field>
+          <p style={{fontSize:12.5, color:"#8a3a2b", margin:"-8px 0 0"}}>Essa data aparece como alerta no Dashboard e entra no Planner.</p>
+        </div>
+      ) : <>
+        <Field label="Data de postagem (opcional)"><input type="date" value={f.dataPublicacao||""} onChange={e=>set("dataPublicacao",e.target.value)}/></Field>
+        <p style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-10}}>Se preenchida, aparece automaticamente no Planner.</p>
+      </>}
+      <div className="field-row">
+        <Field label="Formato"><input value={f.formato||""} onChange={e=>set("formato",e.target.value)} placeholder="Ex.: Reels vertical (9:16), até 60s"/></Field>
+        <Field label="Referência (link)"><input value={f.referencia||""} onChange={e=>set("referencia",e.target.value)} placeholder="https://..."/></Field>
+      </div>
+      <Field label="Objetivo do vídeo"><textarea rows="2" value={f.objetivo||""} onChange={e=>set("objetivo",e.target.value)}/></Field>
+      <Field label="Gancho"><textarea rows="2" value={f.gancho||""} onChange={e=>set("gancho",e.target.value)}/></Field>
+      <Field label="Conteúdo do roteiro"><textarea rows="10" value={f.conteudo} onChange={e=>set("conteudo",e.target.value)} placeholder="Escreva seu roteiro aqui..."/></Field>
+      <Field label="Legenda do post"><textarea rows="4" value={f.legenda||""} onChange={e=>set("legenda",e.target.value)}/></Field>
+      <Field label="Observações"><textarea rows="3" value={f.observacoes||""} onChange={e=>set("observacoes",e.target.value)}/></Field>
+      {erroForm && <p style={{fontSize:13, color:"#c5533f", background:"#fbefec", padding:"8px 12px", borderRadius:10}}>{erroForm}</p>}
       <button className="btn btn-primary" style={{width:"100%", justifyContent:"center"}} onClick={()=>{
-        if(!f.titulo){ alert("Dê um título ao roteiro."); return; }
-        onSave({...f, id:f.id||uid()});
+        if(!f.titulo){ setErroForm("Dê um título ao roteiro."); return; }
+        if(f.etapa===ETAPA_POSTAR && !f.dataPublicacao){ setErroForm("Escolha a data de postagem: roteiros prontos para postar aparecem como alerta no Dashboard."); return; }
+        onSave({...f, id:f.id||uid(), status: f.etapa===ETAPA_FINAL ? "Finalizado" : "Em aberto"});
       }}>Salvar</button>
     </Modal>
   );
@@ -5499,6 +5696,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
   const [docsModal,setDocsModal] = useState(false);
   const [quadroModal,setQuadroModal] = useState(null); // "novo" | "renomear"
   const [menuQuadro,setMenuQuadro] = useState(false);
+  const [pedirData,setPedirData] = useState(null); // {id, data}: roteiro arrastado para "Pronto para postar" sem data de postagem
   const quadros = quadrosDe(state);
   const [quadroId,setQuadroIdBruto] = useState(()=>{ try{ return localStorage.getItem("quadroRoteiro") || "principal"; }catch(e){ return "principal"; } });
   const setQuadroId = (id) => { setQuadroIdBruto(id); try{ localStorage.setItem("quadroRoteiro", id); }catch(e){} };
@@ -5601,10 +5799,11 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
     updateState({...state, roteiros});
     setImportModal(false);
   }
-  function setEtapa(id, etapa){
+  function setEtapa(id, etapa, dataPostagem){
     const item = state.roteiros.find(r=>r.id===id);
     if(!item) return;
-    const updated = {...item, etapa};
+    if(etapa===ETAPA_POSTAR && !item.dataPublicacao && !dataPostagem){ setPedirData({id, data:""}); return; }
+    const updated = {...item, etapa, status: etapa===ETAPA_FINAL ? "Finalizado" : "Em aberto", ...(dataPostagem ? {dataPublicacao:dataPostagem} : {})};
     const roteiros = state.roteiros.map(r=>r.id===id?updated:r);
     const planner = syncPlannerFromRoteiro({...state, roteiros}, updated);
     updateState({...state, roteiros, planner});
@@ -5696,7 +5895,8 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
                     <Badge tone={FINALIDADE_TONE[item.finalidade]||"gray"}>{item.finalidade||"Conteúdos"}</Badge>
                     <div style={{fontWeight:600, fontSize:14, margin:"6px 0 3px"}}>{item.titulo}</div>
                     {(item.tipoUgc || item.funil) && <div style={{fontSize:12, color:"var(--graphite-soft)", marginBottom:4}}>{[item.tipoUgc, item.funil, item.nicho].filter(Boolean).join(" · ")}</div>}
-                    <div style={{fontSize:12.5, color:"var(--graphite-soft)", marginBottom:8}}>{item.plataforma}{item.cliente && " · "+item.cliente}{item.origem==="Google Docs" && " · Google Docs"}{item.dataPublicacao && " · "+new Date(item.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR')}</div>
+                    <div style={{fontSize:12.5, color:"var(--graphite-soft)", marginBottom:8}}>{item.plataforma}{item.cliente && " · "+item.cliente}{item.origem==="Google Docs" && " · Google Docs"}{item.dataPublicacao && !prontoParaPostar(item) && " · "+new Date(item.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR')}</div>
+                    {prontoParaPostar(item) && <div style={{marginBottom:8}}><SeloPostagem roteiro={item} onClick={()=>setPedirData({id:item.id, data:item.dataPublicacao||""})}/></div>}
                     <div style={{display:"flex", gap:6}}>
                       <button className="btn btn-ghost btn-sm" onClick={()=>setEditing(item)}>Editar</button>
                       <button className="icon-btn" style={{width:30,height:30}} onClick={()=>remove(item.id)}><Icon name="delete" size={14}/></button>
@@ -5731,10 +5931,10 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
               {(item.tipoUgc || item.funil || item.nicho) && <div className="rot-etiquetas">
                 {item.tipoUgc && <span><b>UGC</b> {item.tipoUgc}</span>}{item.funil && <span><b>Funil</b> {item.funil}</span>}{item.nicho && <span><b>Nicho</b> {item.nicho}</span>}
               </div>}
-              <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginBottom:6}}>{item.plataforma} · {etapaNoQuadro(item, colunas)}{item.cliente && " · "+item.cliente}{item.origem==="Google Docs" && " · Google Docs"}{item.dataPublicacao && " · "+new Date(item.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR')}</div>
+              <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginBottom:6}}>{item.plataforma}{item.cliente && " · "+item.cliente}{item.origem==="Google Docs" && " · Google Docs"}{item.dataPublicacao && " · "+new Date(item.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR')}</div>
               {item.conteudo && <div style={{fontSize:14.5, whiteSpace:"pre-wrap", color:"var(--graphite-soft)", maxHeight:80, overflow:"hidden"}}>{item.conteudo}</div>}
             </div>
-            <Badge tone={item.status==="Finalizado"?"green":"yellow"}>{item.status}</Badge>
+            {prontoParaPostar(item) ? <SeloPostagem roteiro={item} onClick={()=>setPedirData({id:item.id, data:item.dataPublicacao||""})}/> : <Badge tone={etapaNoQuadro(item, colunas)===ETAPA_FINAL?"green":"yellow"}>{etapaNoQuadro(item, colunas)}</Badge>}
             <div style={{display:"flex", gap:6}}>
               <button className="icon-btn" onClick={()=>setEditing(item)}><Icon name="edit" size={18}/></button>
               <button className="icon-btn" onClick={()=>remove(item.id)}><Icon name="delete" size={18}/></button>
@@ -5746,7 +5946,15 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
       {editing && <RoteiroModal etapas={colunas} initial={editing} onClose={()=>setEditing(null)} onSave={save}/>}
       {aiModal && <CriarRoteiroUGC nichos={(state.jobs||[]).map(j=>j.nicho).filter(Boolean)} onClose={()=>setAiModal(false)} onSalvar={(r)=>mudar(s=>({...s, roteiros:[{...r, quadroId:r.quadroId||quadro.id}, ...(s.roteiros||[])]}))} onVerQuadro={()=>setAiModal(false)}/>}
       {importModal && <ImportRoteiroModal onClose={()=>setImportModal(false)} onImport={onImport}/>}
-      {docsModal && <GoogleDocsModal state={state} etapas={colunas} onClose={()=>setDocsModal(false)} onSave={(r)=>{ mudar(s=>({...s, roteiros:[...(s.roteiros||[]), {...r, quadroId:quadro.id}]})); setDocsModal(false); }}/>}
+      {pedirData && <Modal title="Data de postagem" onClose={()=>setPedirData(null)}>
+        <p style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:-4}}>Quando esse roteiro vai ao ar? A data aparece como alerta no Dashboard e entra no Planner.</p>
+        <Field label="Data de postagem"><input type="date" autoFocus value={pedirData.data} onChange={e=>setPedirData({...pedirData, data:e.target.value})}/></Field>
+        <div style={{display:"flex", justifyContent:"flex-end", gap:8}}>
+          <button className="btn btn-ghost" onClick={()=>setPedirData(null)}>Cancelar</button>
+          <button className="btn btn-primary" disabled={!pedirData.data} onClick={()=>{ setEtapa(pedirData.id, ETAPA_POSTAR, pedirData.data); setPedirData(null); }}>Salvar</button>
+        </div>
+      </Modal>}
+      {docsModal && <GoogleDocsModal state={state} etapas={colunas} onClose={()=>setDocsModal(false)} onSave={(lista)=>{ mudar(s=>({...s, roteiros:[...(s.roteiros||[]), ...lista.map(r=>({...r, quadroId:quadro.id}))]})); setDocsModal(false); setView("Quadro"); }}/>}
       {quadroModal && <QuadroNomeModal titulo={quadroModal==="novo"?"Novo quadro":"Renomear quadro"} inicial={quadroModal==="novo"?"":quadro.nome}
         texto={quadroModal==="novo"?"Crie um quadro para organizar outra frente de trabalho.":"Só o nome muda: os roteiros continuam neste quadro."}
         onClose={()=>setQuadroModal(null)} onSave={quadroModal==="novo"?novoQuadro:renomearQuadro}/>}
