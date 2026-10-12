@@ -16,7 +16,7 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610122005"></script>
+<script src="../../js/banco.js?v=202610122018"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -186,6 +186,9 @@
   .db-etapa.feita i{ border-color:var(--db-escuro); background:var(--db-escuro); box-shadow:inset 0 0 0 3px var(--db-papel); }
   .db-etapa small{ font-size:12px; color:var(--db-suave); text-align:center; line-height:1.25; max-width:96px; }
   .db-etapa.feita small{ color:var(--db-texto); }
+  .db-etapa-clicavel{ cursor:pointer; }
+  .db-etapa-clicavel:hover i{ border-color:var(--db-escuro); transform:scale(1.15); }
+  .db-etapa-clicavel i{ transition:transform .15s; }
   .db-prio-prazo{ display:flex; flex-direction:column; justify-content:space-between; gap:18px; padding-left:24px; border-left:1px solid var(--db-linha); min-width:190px; }
   .db-prio-data{ display:flex; gap:12px; color:var(--db-suave); }
   .db-prio-data > span{ display:flex; flex-direction:column; color:var(--db-texto); }
@@ -840,7 +843,11 @@ const fmtMoneyCur = (v, moeda) => {
   return m.symbol + " " + (window.OCULTAR_VALORES ? VALOR_OCULTO : (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2}));
 };
 const NICHOS_DEFAULT = ["Beleza","Maternidade","Pet","Casa","Moda","Eletrônicos","Alimentos","Infantil","Fitness","Outro"];
-const ROTEIRO_STATUS_OPTIONS = ["Roteiro pendente","Roteiro pronto","Gravado","Editado","Entregue"];
+// status de cada vídeo/story do job: as mesmas etapas da "Minha prioridade" do Dashboard (a última é Entregue)
+const ROTEIRO_STATUS_OPTIONS = ["Roteiro","Ag. aprovação de roteiro","Gravação","Edição","Aprovação","Entregue"];
+// nomes antigos (antes de out/2026) -> nomes novos
+const STATUS_VIDEO_ANTIGO = {"Roteiro pendente":"Roteiro", "Roteiro pronto":"Ag. aprovação de roteiro", "Gravado":"Edição", "Editado":"Aprovação"};
+const statusDoItem = (it, tipo) => tipo==="fotos" ? (it.roteiroStatus||FOTO_STATUS_OPTIONS[0]) : (STATUS_VIDEO_ANTIGO[it.roteiroStatus] || it.roteiroStatus || ROTEIRO_STATUS_OPTIONS[0]);
 const FOTO_STATUS_OPTIONS = ["A planejar","Planejada","Tirada","Editado","Entregue"];
 const STATUS_OPTIONS_BY_TIPO = {videos:ROTEIRO_STATUS_OPTIONS, fotos:FOTO_STATUS_OPTIONS, stories:ROTEIRO_STATUS_OPTIONS};
 const TIPO_CONTEUDO_OPTIONS = ["Reels","Stories","Feed","Carrossel","Shorts","TikTok"];
@@ -1086,19 +1093,31 @@ function LineChart({data, width, height}){
 
 /* ---------- DASHBOARD (board novo, igual ao modelo da Mari) ---------- */
 const ETAPAS_JOB = ["Roteiro","Ag. aprovação de roteiro","Gravação","Edição","Aprovação","Entrega"];
-// etapa do job na "Minha prioridade": a mais adiantada entre o status do job e o andamento dos roteiros dele
-// (cartões do Quadro de roteiros do mesmo cliente; sem cartões, o status de cada vídeo do job). Conta o roteiro mais atrasado.
+// etapa do job na "Minha prioridade" (ordem de prioridade em etapaDoJob); as bolinhas são clicáveis (jobNaEtapa)
 const ETAPA_JOB_DO_STATUS = {"Em Produção":2, "Gravado":3, "Aguardando Aprovação":4, "Conteúdo Entregue":5, "Finalizado":5};
 const ETAPA_JOB_DO_QUADRO = {"Ideias":0, "Roteirização":0, "Revisão":0, "Em Aprovação":1, "Gravação":2, "Edição":3, "Pronto para postar":5, "Pronto p/ Postar":5, "Finalizado":5};
-const ETAPA_JOB_DO_VIDEO = {"Roteiro pendente":0, "Roteiro pronto":1, "Gravado":3, "Editado":4, "Entregue":5};
-const etapaDoJob = (job, roteiros) => {
-  const doStatus = ETAPA_JOB_DO_STATUS[job && job.status] ?? 0;
+const etapaDoJob = (job, roteiros) => Math.max(ETAPA_JOB_DO_STATUS[job && job.status] ?? 0, etapaDoAndamento(job, roteiros));
+// o status do job (Em Produção, Conteúdo Entregue...) é o mínimo; o andamento dos conteúdos pode estar mais adiantado
+const etapaDoAndamento = (job, roteiros) => {
+  // 1) status de cada vídeo/story do job (conta o mais atrasado)
+  const e = (job && job.entregaveis) || {};
+  const itens = [...(e.videos||[]), ...(e.stories||[])].map(it=>ROTEIRO_STATUS_OPTIONS.indexOf(statusDoItem(it, "videos"))).filter(n=>n>=0);
+  if(itens.length) return Math.min(...itens);
+  // 2) etapa escolhida clicando nas bolinhas (job sem vídeos/stories)
+  if(job && Number.isInteger(job.etapaManual)) return job.etapaManual;
+  // 3) cartões do Quadro de roteiros do mesmo cliente; 4) status do job
   const marca = String((job && job.marca) || "").trim().toLowerCase();
   const doQuadro = marca ? (roteiros||[]).filter(r=>String(r.cliente||"").trim().toLowerCase()===marca).map(r=>ETAPA_JOB_DO_QUADRO[r.etapa]).filter(n=>n!==undefined) : [];
-  const videos = [...((job && job.entregaveis && job.entregaveis.videos)||[]), ...((job && job.entregaveis && job.entregaveis.stories)||[])].map(v=>ETAPA_JOB_DO_VIDEO[v.status]).filter(n=>n!==undefined);
-  const lista = doQuadro.length ? doQuadro : videos;
-  return Math.max(doStatus, lista.length ? Math.min(...lista) : 0);
+  return doQuadro.length ? Math.min(...doQuadro) : 0;
 };
+// clicar numa bolinha: na atual anda para a próxima; em outra, vai direto para ela. Todos os vídeos/stories do job acompanham.
+function jobNaEtapa(job, i){
+  i = Math.max(0, Math.min(ETAPAS_JOB.length-1, i));
+  const st = ROTEIRO_STATUS_OPTIONS[i], fim = i===ROTEIRO_STATUS_OPTIONS.length-1;
+  const e = job.entregaveis || {};
+  const muda = (lista) => (lista||[]).map(it=>({...it, roteiroStatus:st, concluido: fim ? true : (statusDoItem(it,"videos")==="Entregue" ? false : it.concluido)}));
+  return {...job, etapaManual:i, entregaveis:{...e, videos:muda(e.videos), stories:muda(e.stories)}};
+}
 const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const diasAte = (iso) => { const h = new Date(); h.setHours(0,0,0,0); return Math.round((new Date(iso+"T00:00:00") - h)/86400000); };
 const dataBR = (iso) => iso ? iso.split("-").reverse().join("/") : "";
@@ -1982,7 +2001,11 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                   <div className="db-prio-nome"><DbLogo marca={prioridade.marca} logos={logos}/><b>{prioridade.marca}</b><span className="db-selo">{prioridade.status}</span></div>
                   <p className="db-prio-sub">{descricaoJob(prioridade)}</p>
                   <div className="db-etapas db-etapas-grande">
-                    {ETAPAS_JOB.map((e,i)=>{ const at = etapaDoJob(prioridade, state.roteiros); return <span key={e} className={"db-etapa"+(i<=at?" feita":"")+(i===at?" atual":"")}><i/><small>{e}</small></span>; })}
+                    {ETAPAS_JOB.map((e,i)=>{ const at = etapaDoJob(prioridade, state.roteiros);
+                      const ir = () => { const alvo = i===at ? at+1 : i; if(alvo>=ETAPAS_JOB.length) return; mudar(s=>({...s, jobs:(s.jobs||[]).map(j=>j.id===prioridade.id ? jobNaEtapa(j, alvo) : j)})); };
+                      return <span key={e} role="button" tabIndex={0} title={i===at ? (i<ETAPAS_JOB.length-1 ? `Concluir "${e}" e ir para "${ETAPAS_JOB[i+1]}"` : "Etapa final") : `Ir para "${e}"`}
+                        onClick={ir} onKeyDown={ev=>{ if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); ir(); } }}
+                        className={"db-etapa db-etapa-clicavel"+(i<=at?" feita":"")+(i===at?" atual":"")}><i/><small>{e}</small></span>; })}
                   </div>
                 </div>
                 <div className="db-prio-prazo">
@@ -2671,7 +2694,8 @@ function EntregavelBlock({tipo, label, icon, items, onChange, publi}){
   function addItem(){ onChange([...items, novoEntregavelItem(tipo, items.length+1)]); }
   function removeItem(id){ onChange(items.filter(i=>i.id!==id)); }
   function toggleConcluido(id){ onChange(items.map(i=>i.id===id?{...i,concluido:!i.concluido}:i)); }
-  function setRoteiroStatus(id, val){ onChange(items.map(i=>i.id===id?{...i,roteiroStatus:val}:i)); }
+  // status final (Entregue) marca o conteúdo como concluído; voltar o status desmarca
+  function setRoteiroStatus(id, val){ onChange(items.map(i=>i.id===id?{...i, roteiroStatus:val, concluido: val==="Entregue" ? true : (statusDoItem(i, tipo)==="Entregue" ? false : i.concluido)}:i)); }
   // cada conteúdo tem as próprias datas; a data de postagem só existe quando é Publi
   function setData(id, campo, val){ onChange(items.map(i=>i.id===id?{...i,[campo]:val}:i)); }
   const temRoteiro = tipo!=="fotos";
@@ -2687,7 +2711,7 @@ function EntregavelBlock({tipo, label, icon, items, onChange, publi}){
             {it.concluido && <Icon name="check" size={12} style={{color:"#fff"}}/>}
           </div>
           <span style={{flex:1, fontSize:15}}>{it.label}</span>
-          <select value={it.roteiroStatus} onChange={e=>setRoteiroStatus(it.id, e.target.value)} style={{fontSize:13.5, padding:"6px 8px", width:"auto"}}>
+          <select value={statusDoItem(it, tipo)} onChange={e=>setRoteiroStatus(it.id, e.target.value)} style={{fontSize:13.5, padding:"6px 8px", width:"auto"}}>
             {(STATUS_OPTIONS_BY_TIPO[tipo]||ROTEIRO_STATUS_OPTIONS).map(o=><option key={o}>{o}</option>)}
           </select>
           <button className="icon-btn" style={{width:30,height:30}} onClick={()=>removeItem(it.id)}><Icon name="delete" size={15}/></button>
