@@ -1266,7 +1266,7 @@ const dadosDoCard = (midia) => {
   if (c && c[0] === "t") return trabalhos[Number(c.slice(1))];
   return destaques[Number(c)];
 };
-const urlEmbed = (id, extra) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3${extra}`;
+const urlEmbed = (id, extra) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=pt${extra}`;
 const permissoes = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
 const temMouse = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
@@ -1349,6 +1349,13 @@ function carregarApiYoutube() {
   apiYoutube.catch(() => { apiYoutube = null; });
   return apiYoutube;
 }
+// o YouTube liga a legenda automática sozinho quando o vídeo toca sem som: isto desliga
+function semLegenda(p) {
+  if (!p) return;
+  try { p.setOption("captions", "track", {}); } catch (e) {}
+  try { p.unloadModule("captions"); } catch (e) {}
+  try { p.unloadModule("cc"); } catch (e) {}
+}
 function atualizarBotoes() {
   if (!player || !player.getPlayerState) return;
   const tocando = player.getPlayerState() === 1;
@@ -1370,17 +1377,18 @@ function atualizarTempo() {
 }
 function alternarPlay() {
   if (!player || !player.getPlayerState) return;
-  if (player.getPlayerState() === 1) player.pauseVideo(); else player.playVideo();
+  if (player.getPlayerState() === 1) player.pauseVideo(); else { player.playVideo(); semLegenda(player); }
 }
 function alternarSom() {
   if (!player || !player.isMuted) return;
   if (player.isMuted()) { player.unMute(); player.setVolume(100); } else player.mute();
+  semLegenda(player);
   setTimeout(atualizarBotoes, 150);
 }
 janela.querySelector(".player-escudo").addEventListener("click", alternarPlay);
 btnPlay.addEventListener("click", alternarPlay);
 btnSom.addEventListener("click", alternarSom);
-avisoSom.addEventListener("click", () => { if (player) { player.unMute(); player.setVolume(100); player.playVideo(); } setTimeout(atualizarBotoes, 150); });
+avisoSom.addEventListener("click", () => { if (player) { player.unMute(); player.setVolume(100); player.playVideo(); semLegenda(player); } setTimeout(atualizarBotoes, 150); });
 barra.addEventListener("click", (e) => {
   if (!player || !player.getDuration) return;
   const r = barra.getBoundingClientRect();
@@ -1439,7 +1447,7 @@ function abrirPlayer(d) {
     player = new YT.Player("player-alvo", {
       videoId: id,
       host: "https://www.youtube-nocookie.com",
-      playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1, loop: 1, playlist: id },
+      playerVars: { autoplay: 1, controls: 0, cc_load_policy: 0, cc_lang_pref: "pt", disablekb: 1, fs: 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1, loop: 1, playlist: id },
       events: {
         onReady: (e) => {
           const p = e.target;
@@ -1447,17 +1455,20 @@ function abrirPlayer(d) {
           janela.querySelectorAll(".player-carregando").forEach((el) => el.remove());
           iframe.title = `Vídeo: ${d.titulo || d.marca || "case"}`;
           iframe.tabIndex = -1;
+          semLegenda(p);
           p.unMute(); p.setVolume(100); p.playVideo();
           // se o navegador não deixar começar com som, começa sem som e mostra o aviso para ativar
           setTimeout(() => {
             if (!player || player !== p) return;
             if (p.getPlayerState() !== 1) { p.mute(); p.playVideo(); avisoSom.hidden = false; }
+            semLegenda(p);
             atualizarBotoes();
           }, 1300);
           clearInterval(relogio);
           relogio = setInterval(atualizarTempo, 250);
         },
-        onStateChange: atualizarBotoes
+        onStateChange: (e) => { if (e.data === 1 || e.data === 3) semLegenda(e.target); atualizarBotoes(); },
+        onApiChange: (e) => semLegenda(e.target)
       }
     });
   }).catch(() => { if (!janela.hidden) playerSimples(id, d); });
@@ -1819,6 +1830,18 @@ const LOGOS_POR_NOME = Object.assign(
     paguemenos: "logos/parceiros/pague-menos.webp", segurosunimed: "logos/parceiros/seguros-unimed.webp" }
 );
 
+// procura a logo pelo nome da marca; se não achar, pelo título do vídeo (ex.: título "Shein - vestido" acha a Shein)
+function logoDoVideo(v) {
+  if (v.logo) return v.logo;
+  const porMarca = LOGOS_POR_NOME[normalizarNome(v.marca)];
+  if (porMarca) return porMarca;
+  const titulo = normalizarNome(v.titulo);
+  if (!titulo) return "";
+  if (LOGOS_POR_NOME[titulo]) return LOGOS_POR_NOME[titulo];
+  const chave = Object.keys(LOGOS_POR_NOME).filter((k) => k.length >= 3 && titulo.includes(k)).sort((a, b) => b.length - a.length)[0];
+  return chave ? LOGOS_POR_NOME[chave] : "";
+}
+
 // 1) Vídeos: lê do painel (só os visíveis) e redesenha os cards
 async function carregarVideosDoPainel() {
   const banco = await bancoPronto();
@@ -1832,7 +1855,7 @@ async function carregarVideosDoPainel() {
       link: v.link,
       capa: "",
       marca: v.marca || "",
-      logo: LOGOS_POR_NOME[normalizarNome(v.marca)] || "",
+      logo: logoDoVideo(v),
       titulo: v.titulo || v.marca || "",
       categoria: v.nicho || "",
       resultado: v.destaque || ""
