@@ -1367,7 +1367,8 @@ function ligarPrevia(midia) {
           if (ev.data === 1) {                       // tocando: mostra o vídeo por cima da capa
             semLegenda(ev.target);
             const f = ev.target.getIframe();
-            setTimeout(() => f.isConnected && f.classList.add("pronta"), 300);
+            // espera o ícone de pausa do próprio YouTube sumir antes de mostrar o vídeo por cima da capa
+            setTimeout(() => f.isConnected && f.classList.add("pronta"), 2800);
             midia.classList.add("tocando-previa");
           }
           if (ev.data === 0) { ev.target.seekTo(0); ev.target.playVideo(); }   // acabou: volta pro começo (loop)
