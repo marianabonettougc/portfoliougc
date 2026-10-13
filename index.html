@@ -264,12 +264,14 @@
 
   /* Case em destaque */
   .case-destaque{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:28px;align-items:start;margin-top:30px}
+  /* case Pantene: só a foto (sem o botão de play por cima; clicar na foto continua abrindo o vídeo) */
+  .case-video .play span{display:none}
   .case-video{min-width:0}
   .case-titulo{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(2.2rem,4.2vw,3.4rem);line-height:1;letter-spacing:-.03em;color:#a87058;margin:0 0 18px}
-  .nota{max-width:470px;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(61,43,32,.16);padding:16px 22px 20px}
+  .nota{max-width:none;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(61,43,32,.16);padding:16px 22px 20px}
   .nota-topo{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:.9rem;color:var(--texto);padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid #eee5dc}
   .nota-topo span:last-child{font-size:1.1rem;color:var(--texto-suave)}
-  .nota p{font-size:.92rem;line-height:1.55;color:var(--texto);margin:0 0 10px}
+  .nota p{font-size:.8rem;line-height:1.5;color:var(--texto);margin:0 0 8px}
   .nota p:last-child{margin-bottom:0}
   .nota strong{font-weight:700}
   .nota em{font-style:italic;text-decoration:underline;text-decoration-color:rgba(168,124,90,.6);text-underline-offset:2px}
@@ -1010,7 +1012,8 @@ const destaques = [
 const caseDestaque = {
   titulo: ["Case: Pantene", "Biotinamina"],
   link: "https://youtube.com/shorts/ntAA0AWlDbM",                 // LINK DO VÍDEO DO CASE PANTENE
-  capa: "",                                                        // CAPA DO VÍDEO
+  capa: "capas/case-pantene-tufo.webp",                           // CAPA DO VÍDEO (foto do tufo de cabelo, igual ao Canva)
+  semPrevia: true,                                                 // só a foto: não roda prévia ao passar o mouse
   marca: "Pantene",                                                // NOME DA MARCA
   logo: "logos/parceiros/pantene.webp",                            // LOGO DA MARCA NA BOLINHA
   resultado: "+100 mil",                                           // VISUALIZAÇÕES
@@ -1281,8 +1284,9 @@ const temMouse = window.matchMedia("(hover: hover) and (pointer: fine)").matches
 function ligarPrevias(raiz) {
   if (!temMouse || reduzMovimento) return;
   raiz.querySelectorAll(".video-midia").forEach((midia) => {
-    const id = idDoYoutube(dadosDoCard(midia).link);
-    if (!id) return;
+    const dados = dadosDoCard(midia);
+    const id = idDoYoutube(dados.link);
+    if (!id || dados.semPrevia) return;
     let espera = null;
     midia.addEventListener("mouseenter", () => {
       espera = setTimeout(() => {
