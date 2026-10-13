@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1" id="viewport">
 <script>
-  // Celular e tablet: mostra o site com o mesmo visual do computador, só que reduzido para caber na tela (igual ao Canva)
+  // Celular e tablet: mostra o site com o mesmo visual do computador, reduzido para caber na tela (igual ao Canva).
+  // Usa uma largura menor (1040) e letras maiores (classe "miniatura") para dar para ler sem dar zoom.
   if (Math.min(screen.width, screen.height) < 1024) {
-    document.getElementById("viewport").setAttribute("content", "width=1280");
+    document.getElementById("viewport").setAttribute("content", "width=1040");
     document.documentElement.classList.add("miniatura");
   }
 </script>
@@ -250,6 +251,13 @@
   .player-fechar{position:absolute;top:14px;right:14px;z-index:101;width:46px;height:46px;border-radius:50%;border:0;background:#fffdf9;color:#3d2b20;font-size:1.6rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .player-fechar:hover{transform:scale(1.06)}
   /* site reduzido no celular: a janela do vídeo e o botão de fechar ficam do tamanho certo para o dedo */
+  /* site reduzido no celular: textos maiores (quase tudo é medido em rem, então cresce junto) */
+  html.miniatura{font-size:22px}
+  .miniatura .capa-menu{gap:20px}
+  .miniatura .capa-menu a{font-size:.62rem;letter-spacing:.08em}
+  .miniatura .capa-selo{font-size:.6rem;padding:8px 16px}
+  .miniatura .vazio-img span{font-size:.6rem;white-space:nowrap}
+  .miniatura .contato-lista a{font-size:.85rem;overflow-wrap:normal}
   .miniatura .player-janela{padding:60px}
   .miniatura .player-fechar{top:40px;right:40px;width:140px;height:140px;font-size:5rem}
   .miniatura .player-caixa{border-radius:40px}
