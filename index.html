@@ -6,7 +6,8 @@
 <script>
   // Celular e tablet: mostra o site com o mesmo visual do computador, reduzido para caber na tela (igual ao Canva).
   // Usa uma largura menor (1040) e letras maiores (classe "miniatura") para dar para ler sem dar zoom.
-  if (Math.min(screen.width, screen.height) < 1024) {
+  // Só em aparelho de toque (celular/tablet). Notebook com tela baixa (ex.: 1536x864) NÃO entra aqui.
+  if (window.matchMedia("(pointer: coarse)").matches && !window.matchMedia("(any-pointer: fine)").matches && Math.min(screen.width, screen.height) < 1024) {
     document.getElementById("viewport").setAttribute("content", "width=1040");
     document.documentElement.classList.add("miniatura");
   }
@@ -251,6 +252,45 @@
   .player-fechar{position:absolute;top:14px;right:14px;z-index:101;width:46px;height:46px;border-radius:50%;border:0;background:#fffdf9;color:#3d2b20;font-size:1.6rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .player-fechar:hover{transform:scale(1.06)}
   /* site reduzido no celular: a janela do vídeo e o botão de fechar ficam do tamanho certo para o dedo */
+  /* =========================================================
+     CARROSSEL (cases e categorias): uma fileira só, setinhas para ver mais
+     ========================================================= */
+  .carrossel{position:relative}
+  .carrossel > ul{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:calc((100% - 4 * var(--gap-car,12px)) / 5);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;align-items:start;padding-bottom:6px}
+  .carrossel > ul::-webkit-scrollbar{display:none}
+  .carrossel > ul > li{scroll-snap-align:start}
+  .carrossel.trabalhos-car{--gap-car:18px}
+  .seta{position:absolute;top:calc(50% - 26px);z-index:6;width:46px;height:46px;border-radius:50%;border:1px solid rgba(107,74,53,.22);background:var(--papel);color:var(--cafe);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 16px rgba(61,43,32,.16);transition:transform .2s,background .2s,opacity .2s}
+  .seta:hover{background:#fff;transform:scale(1.06)}
+  .seta svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .seta-esq{left:-20px}
+  .seta-dir{right:-20px}
+  .seta[hidden]{display:none}
+
+  /* =========================================================
+     COMPUTADOR: tudo um pouco menor, na proporção do site de referência (sem cara de zoom)
+     ========================================================= */
+  @media (min-width:1024px){
+    html:not(.miniatura){font-size:14.5px}
+    html:not(.miniatura) .capa-quadro{min-height:clamp(500px,min(44vw,80vh),660px)}
+    html:not(.miniatura) .capa-nome{font-size:clamp(3.6rem,5.4vw,5.6rem)}
+    html:not(.miniatura) .capa-frase{margin-top:22px;font-size:clamp(1.4rem,1.9vw,1.9rem)}
+    html:not(.miniatura) .capa-sub{font-size:1.05rem}
+    html:not(.miniatura) .rede-btn{width:44px;height:44px}
+    html:not(.miniatura) .rede-btn svg{width:20px;height:20px}
+    html:not(.miniatura) .sobre-titulo,html:not(.miniatura) .cases-titulo,html:not(.miniatura) .categorias-topo h2,html:not(.miniatura) .parceiros h2,
+    html:not(.miniatura) .feedbacks-titulo,html:not(.miniatura) .contato-secao h2,html:not(.miniatura) .criar-titulo,html:not(.miniatura) .cabecalho h2,
+    html:not(.miniatura) .fotos-titulo,html:not(.miniatura) .case-titulo{font-size:clamp(2.1rem,3.2vw,2.8rem)}
+    html:not(.miniatura) .sobre-grid{max-width:1240px;gap:44px}
+    html:not(.miniatura) .sobre-texto > p:not(.sobretitulo){font-size:1rem}
+    html:not(.miniatura) .numeros-faixa ul{max-width:1240px;padding:20px}
+    html:not(.miniatura) .numeros-faixa strong{font-size:clamp(1.8rem,2.6vw,2.4rem)}
+    html:not(.miniatura) .selo{width:86px;height:86px}
+    html:not(.miniatura) .verificado{width:24px;height:24px;right:2px;bottom:2px}
+    html:not(.miniatura) .faixa-trilho ul{gap:22px}
+    html:not(.miniatura) .play span{width:52px;height:52px}
+  }
+
   /* site reduzido no celular: textos maiores (quase tudo é medido em rem, então cresce junto) */
   html.miniatura{font-size:22px}
   .miniatura .capa-menu{gap:20px}
@@ -551,6 +591,7 @@
     .menu a{padding:12px 16px;font-size:1.05rem}
     .resultados{grid-template-columns:minmax(0,1fr)}
     .videos-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .carrossel > ul{grid-auto-columns:calc((100% - 2 * var(--gap-car,12px)) / 3)}
   }
   @media (max-width:620px){
     section.sobre-secao{padding:44px 0 16px}
@@ -593,6 +634,9 @@
     .servicos-grid,.depoimentos{grid-template-columns:minmax(0,1fr)}
     .metricas{gap:10px}
     .trabalhos-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .carrossel > ul{grid-auto-columns:62%}
+    .carrossel.trabalhos-car > ul{grid-auto-columns:46%}
+    .seta{display:none}
     section.parceiros-secao{padding:8px 10px 0}
     .parceiros{padding:26px 18px 34px;border-radius:0 0 40px 40px}
     .parceiros h2{margin-bottom:22px}
@@ -1276,9 +1320,22 @@ const dadosDoCard = (midia) => {
   if (c && c[0] === "t") return trabalhos[Number(c.slice(1))];
   return destaques[Number(c)];
 };
-const urlEmbed = (id, extra) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=pt${extra}`;
+const urlEmbed = (id, extra) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&cc_load_policy=0${extra}`;
 const permissoes = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
 const temMouse = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+// O YouTube liga a legenda automática quando o vídeo toca sem som: manda desligar algumas vezes enquanto a prévia começa
+function tirarLegendaDaPrevia(iframe) {
+  const mandar = (func, args) => { try { iframe.contentWindow.postMessage(JSON.stringify({ event: "command", func, args }), "*"); } catch (e) {} };
+  let vezes = 0;
+  const t = setInterval(() => {
+    if (!iframe.isConnected || ++vezes > 16) { clearInterval(t); return; }
+    try { iframe.contentWindow.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); } catch (e) {}
+    mandar("setOption", ["captions", "track", {}]);
+    mandar("unloadModule", ["captions"]);
+    mandar("unloadModule", ["cc"]);
+  }, 400);
+}
 
 // 1) Passar o mouse: o vídeo começa a rodar SEM SOM, em loop, sem controles
 function ligarPrevias(raiz) {
@@ -1292,12 +1349,12 @@ function ligarPrevias(raiz) {
       espera = setTimeout(() => {
         const previa = document.createElement("iframe");
         previa.className = "previa";
-        previa.src = urlEmbed(id, `&mute=1&controls=0&loop=1&playlist=${id}&disablekb=1&fs=0`);
+        previa.src = urlEmbed(id, `&mute=1&controls=0&loop=1&playlist=${id}&disablekb=1&fs=0&enablejsapi=1&origin=${encodeURIComponent(location.origin)}`);
         previa.title = "Prévia do vídeo sem som";
         previa.tabIndex = -1;
         previa.setAttribute("aria-hidden", "true");
         previa.allow = permissoes;
-        previa.addEventListener("load", () => setTimeout(() => previa.classList.add("pronta"), 350));
+        previa.addEventListener("load", () => { setTimeout(() => previa.classList.add("pronta"), 350); tirarLegendaDaPrevia(previa); });
         midia.appendChild(previa);
         midia.classList.add("tocando-previa");
       }, 250);
@@ -1458,7 +1515,7 @@ function abrirPlayer(d) {
     player = new YT.Player("player-alvo", {
       videoId: id,
       host: "https://www.youtube-nocookie.com",
-      playerVars: { autoplay: 1, controls: 0, cc_load_policy: 0, cc_lang_pref: "pt", disablekb: 1, fs: 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1, loop: 1, playlist: id },
+      playerVars: { autoplay: 1, controls: 0, cc_load_policy: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1, loop: 1, playlist: id },
       events: {
         onReady: (e) => {
           const p = e.target;
@@ -1576,6 +1633,7 @@ $("#filtros").addEventListener("click", (e) => {
   clearTimeout(filtroTimer);
   cards.forEach((c) => { if (!pertence(c)) c.classList.add("saindo"); });
   filtroTimer = setTimeout(() => {
+    gradeTrabalhos.scrollLeft = 0;
     cards.forEach((c) => {
       if (!pertence(c)) { c.hidden = true; return; }
       const estavaOculto = c.hidden;
@@ -1587,6 +1645,40 @@ $("#filtros").addEventListener("click", (e) => {
   const total = cards.filter(pertence).length;
   $("#aviso-filtro").textContent = `Mostrando ${total} ${total === 1 ? "trabalho" : "trabalhos"}.`;
 });
+
+// ---------- Carrossel: uma fileira só com setinhas (cases e categorias) ----------
+const setaSVG = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
+function ligarCarrossel(ul, extraClasse) {
+  const caixa = document.createElement("div");
+  caixa.className = "carrossel" + (extraClasse ? " " + extraClasse : "");
+  ul.parentNode.insertBefore(caixa, ul);
+  caixa.appendChild(ul);
+  caixa.insertAdjacentHTML("beforeend",
+    `<button class="seta seta-esq" type="button" aria-label="Ver anteriores" hidden>${setaSVG("M15 5l-7 7 7 7")}</button>` +
+    `<button class="seta seta-dir" type="button" aria-label="Ver mais" hidden>${setaSVG("M9 5l7 7-7 7")}</button>`);
+  const esq = caixa.querySelector(".seta-esq"), dir = caixa.querySelector(".seta-dir");
+  const atualizar = () => {
+    const max = ul.scrollWidth - ul.clientWidth;
+    esq.hidden = ul.scrollLeft <= 4;
+    dir.hidden = ul.scrollLeft >= max - 4;
+  };
+  const passo = () => {
+    const card = [...ul.children].find((li) => !li.hidden);
+    const gap = parseFloat(getComputedStyle(ul).columnGap) || 0;
+    const largura = card ? card.getBoundingClientRect().width + gap : ul.clientWidth;
+    return Math.max(largura, Math.floor(ul.clientWidth / largura) * largura);
+  };
+  esq.addEventListener("click", () => ul.scrollBy({ left: -passo() }));
+  dir.addEventListener("click", () => ul.scrollBy({ left: passo() }));
+  ul.addEventListener("scroll", atualizar, { passive: true });
+  window.addEventListener("resize", atualizar);
+  new MutationObserver(() => requestAnimationFrame(atualizar)).observe(ul, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] });
+  window.addEventListener("load", atualizar);
+  atualizar();
+  return atualizar;
+}
+ligarCarrossel($("#videos-grid"));
+ligarCarrossel($("#trabalhos-grid"), "trabalhos-car");
 
 // ---------- Algumas marcas que já trabalhei ----------
 $("#marcas-grade").innerHTML = marcasGrade.map((m) => `<li><img src="${escapar(m.logo)}" alt="${escapar(m.nome === "Marca parceira" ? "Logo de marca parceira" : "Logo " + m.nome)}" width="150" height="150" loading="lazy" decoding="async"></li>`).join("");
