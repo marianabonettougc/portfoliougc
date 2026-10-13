@@ -1864,33 +1864,14 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const [transcrevendoId,setTranscrevendoId] = useState(null);
   const [pastaTrans,setPastaTrans] = useState("");
   const [nomeNovaPasta,setNomeNovaPasta] = useState("");
-  async function transcrever(e, linkPronto, novo){
+  // a transcrição fica num lugar só: a página Transcrever vídeo do painel (js/roteiros-supadata.js).
+  // Daqui o Dashboard só manda o link para lá (e a página transcreve sozinha).
+  function transcrever(e, linkPronto){
     if(e) e.preventDefault();
-    const link = (linkPronto || linkTrans).trim();
-    if(novo) setTranscrevendoId(novo.id);
-    if(!/^https?:\/\//i.test(link)){ setMsgTrans({erro:true, texto:"Cole o link completo do vídeo (Instagram, TikTok ou YouTube)."}); return; }
-    setTranscrevendo(true); setMsgTrans({texto:"Transcrevendo o vídeo e analisando o roteiro. Pode levar até um minuto..."});
-    try{
-      const { data, error } = await supabaseClient.functions.invoke("transcrever", {body:{link}});
-      let erro = data && data.erro;
-      if(error){ try{ erro = (await error.context.json()).erro; }catch(x){} erro = erro || "Não consegui transcrever agora. Tente de novo."; }
-      if(erro) throw new Error(erro);
-      const c = data.campos || {};
-      const origem = ["instagram","tiktok","youtube"].includes(data.origem) ? data.origem : "outro";
-      const linha = { titulo: c.titulo || "Referência", de_quem:"outra", perfil: data.perfil || null, origem, link, data_post: data.data_post || null,
-        etiquetas: c.etiquetas || null, gancho: c.gancho || null, gancho_tipo: c.gancho_tipo || null, desenvolvimento: c.desenvolvimento || null,
-        cta: c.cta || null, expressoes: c.expressoes || null, por_que: c.por_que || null, transcricao: data.transcricao || null };
-      const { data: salva, error: e2 } = await supabaseClient.from("roteiros").insert(linha).select("*").single();
-      if(e2) throw new Error("Transcrevi, mas não consegui salvar: " + e2.message);
-      const pastaId = !novo && (pastaTrans==="nova" ? criarPasta(nomeNovaPasta) : pastaTrans);
-      if(pastaId && salva) moverParaPasta(salva.id, pastaId);
-      if(pastaTrans==="nova"){ setNomeNovaPasta(""); setPastaTrans(pastaId||""); }
-      if(novo){ await supabaseClient.from("inspiracoes").update({transcrito:true}).eq("id", novo.id); setNovos(l=>l.filter(x=>x.id!==novo.id)); }
-      setLinkTrans(""); setMsgTrans({texto:"Pronto! O vídeo foi transcrito e analisado. Está aqui nas inspirações e também na aba Roteiros."});
-      await carregarRefs(); setAbaInsp("inspiracoes");
-      if(salva) setRefAberta({...salva, visualizacoes: novo ? novo.visualizacoes : null});
-    }catch(err){ setMsgTrans({erro:true, texto:String(err.message||err)}); if(novo) setAbaInsp("transcrever"); }
-    setTranscrevendo(false); setTranscrevendoId(null);
+    const link = String(linkPronto || linkTrans || "").trim();
+    if(window.parent !== window) window.parent.postMessage({aba:"transcritos", link}, location.origin);
+    else setMsgTrans({erro:true, texto:"Abra pelo painel para transcrever."});
+    setLinkTrans("");
   }
 
   // ideias de roteiro (IA, a partir dos perfis e das referências)
@@ -2126,7 +2107,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           </div>
           <div className="db-abas db-abas-largas">
             {[["inspiracoes","Inspirações"],["transcrever","Transcrever"],["analise","Análise de conteúdo"],["ideia","Ideia de roteiro"]].map(([k,t])=>
-              <button key={k} className={abaInsp===k?"ativa":""} onClick={()=>setAbaInsp(k)}>{t}</button>)}
+              <button key={k} className={abaInsp===k?"ativa":""} onClick={()=>k==="transcrever" ? transcrever(null, "") : setAbaInsp(k)}>{t}</button>)}
           </div>
 
           {abaInsp==="inspiracoes" && <>
@@ -2164,7 +2145,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                       <a className="db-insp-txt" href={n.link} target="_blank" rel="noopener"><b>“{(legenda || "Vídeo novo").slice(0,80)}”</b></a>
                       <span className="db-insp-perfil">{n.publicado_em ? "Postado em "+new Date(n.publicado_em).toLocaleDateString("pt-BR") : "Vídeo novo"}</span>
                       <div className="db-insp-rodape">
-                        <button className="db-btn-mini" onClick={()=>transcrever(null, n.link, n)} disabled={transcrevendo}>{transcrevendoId===n.id ? "Transcrevendo..." : "Transcrever"}</button>
+                        <button className="db-btn-mini" onClick={()=>transcrever(null, n.link)}>Transcrever</button>
                         <span className="db-card-icones">
                           <button className="db-salvar" onClick={()=>ocultarNovo(n)} aria-label="Ocultar este vídeo" title="Ocultar este vídeo"><DbIcone tipo="olhoFechado" tam={17}/></button>
                           <button className={"db-salvar"+(salvos["n"+n.id]?" ok":"")} onClick={()=>alternarSalvo("n"+n.id)} aria-pressed={!!salvos["n"+n.id]} aria-label="Salvar" title="Salvar"><DbIcone tipo="marcador" tam={17}/></button>
@@ -2293,7 +2274,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             })}
           </div> : <p className="db-vazio">Os vídeos que você transcrever aparecem aqui.</p>}
           <div className="db-transc-acoes">
-            <button className="db-btn-claro" onClick={()=>abrirAba ? abrirAba("transcritos") : setAbaInsp("transcrever")}>Transcrever vídeo</button>
+            <button className="db-btn-claro" onClick={()=>transcrever(null, "")}>Transcrever vídeo</button>
             <button className="db-btn-escuro" onClick={()=>setRoteiroNovo({})}>Criar roteiro</button>
           </div>
         </section>
