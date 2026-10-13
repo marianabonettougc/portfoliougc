@@ -736,3 +736,89 @@ button.menu-grupo:hover{color:var(--texto)}
 .cr-capa:hover img{transform:scale(1.03)}
 .cr-capa img{transition:transform .3s}
 .cr-player-janela{aspect-ratio:9/16;max-height:72vh;margin:0 auto}
+
+/* =========================================================
+   ABA 📜 ROTEIROS (transcrição pela Supadata) · js/roteiros-supadata.js
+   ========================================================= */
+.menu-emoji{width:17px;text-align:center;font-size:14px;line-height:1;flex-shrink:0}
+.rs-pagina{max-width:1180px}
+.rs-cabeca{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.rs-cabeca h2{margin:0;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:30px;line-height:1.15}
+.rs-cabeca p{margin:4px 0 0;color:var(--suave);font-size:13.5px;max-width:620px}
+.rs-caixa{background:var(--cartao);border:1px solid var(--linha);border-radius:18px;padding:18px;box-shadow:var(--sombra);margin-bottom:26px}
+.rs-linha{display:flex;gap:8px;align-items:center}
+.rs-link{flex:1;min-width:0;height:42px;border-radius:12px}
+.rs-quem{width:auto;height:42px;border-radius:12px;padding-right:28px}
+.rs-linha .btn{height:42px;border-radius:12px}
+.rs-aviso{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding:11px 14px;border-radius:var(--raio-p);font-size:13px}
+.rs-aviso[hidden]{display:none}
+.rs-aviso-txt{flex:1;min-width:220px}
+.rs-aviso-botoes{display:flex;gap:6px;flex-wrap:wrap}
+.rs-aviso-andamento{background:var(--azul-suave);color:#2c4560}
+.rs-aviso-ok{background:var(--verde-suave);color:#2f5233}
+.rs-aviso-erro{background:var(--vermelho-suave);color:#7d2a20}
+.rs-aviso-aviso{background:var(--amarelo-suave);color:#6b4a0c}
+.rs-passos{margin:6px 0 0;padding-left:20px}
+.rs-passos li{margin-bottom:2px}
+.rs-chave{margin-top:14px;padding-top:14px;border-top:1px dashed var(--linha-forte);border-radius:4px;transition:background .3s}
+.rs-chave.rs-pisca{background:var(--amarelo-suave)}
+.rs-chave label{display:block;font-size:12px;font-weight:500;color:var(--suave);margin-bottom:5px}
+.rs-chave-linha{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rs-chave-linha .entrada{flex:1;min-width:200px;max-width:380px}
+.rs-saldo{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--suave)}
+.rs-saldo-erro{color:var(--vermelho)}
+.rs-barra{display:inline-block;width:70px;height:6px;border-radius:99px;background:var(--bege);overflow:hidden}
+.rs-barra i{display:block;height:100%;background:var(--terracota)}
+.rs-biblio-cabeca{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.rs-biblio-cabeca h3{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:22px}
+.rs-conta{color:var(--suave);font-size:12px}
+.rs-chips{margin-bottom:16px}
+.rs-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:14px;align-items:start}
+.rs-vazio{grid-column:1/-1}
+.rs-card{display:grid;grid-template-columns:132px minmax(0,1fr);gap:14px;background:var(--cartao);border:1px solid var(--linha);border-radius:16px;padding:12px;transition:box-shadow .2s,border-color .2s}
+.rs-card:hover{border-color:var(--linha-forte);box-shadow:var(--sombra)}
+.rs-card-tocando{grid-template-columns:minmax(0,326px) minmax(0,1fr)}
+.rs-capa{position:relative;aspect-ratio:9/16;border-radius:12px;overflow:hidden;background:linear-gradient(160deg,#efe5d8,#d9c4ae);display:grid;place-items:center}
+.rs-capa-instagram{background:linear-gradient(160deg,#f3e0d6,#d8b19c)}
+.rs-capa-tiktok{background:linear-gradient(160deg,#e9e2dc,#bfb0a4)}
+.rs-capa-youtube{background:linear-gradient(160deg,#f1dcd5,#cf9e8e)}
+.rs-capa img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.rs-capa-emoji{font-size:34px;opacity:.75}
+.rs-ver{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);white-space:nowrap;border:0;border-radius:999px;background:rgba(255,253,249,.94);color:var(--principal);font:inherit;font-size:11.5px;font-weight:600;padding:6px 11px;cursor:pointer;text-decoration:none;box-shadow:0 2px 8px rgba(61,43,32,.15)}
+.rs-ver:hover{background:#fff}
+.rs-tocando{aspect-ratio:auto;height:560px;background:#000}
+.rs-tocando iframe{width:100%;height:100%;border:0;background:#fff}
+.rs-tocando.rs-youtube{height:auto;aspect-ratio:9/16}
+.rs-info{display:flex;flex-direction:column;gap:5px;min-width:0}
+.rs-info h4{margin:2px 0 0;font-size:15px;font-weight:600;line-height:1.3}
+.rs-sem-titulo{color:var(--suave);font-weight:500;font-style:italic}
+.rs-topo-card{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--suave)}
+.rs-dono{padding:2px 9px;border-radius:999px;font-weight:600;font-size:11px}
+.rs-dono-meu{background:#f3dccf;color:#8a4a2c}
+.rs-dono-outra{background:var(--azul-suave);color:#3a5878}
+.rs-data{margin-left:auto}
+.rs-perfil{font-size:12.5px;color:var(--terracota);font-weight:500}
+.rs-tags{display:flex;gap:5px;flex-wrap:wrap}
+.rs-tag{font-size:11px;background:var(--fundo);border:1px solid var(--linha);border-radius:999px;padding:1px 8px;color:var(--suave)}
+.rs-trecho{margin:4px 0 0;font-size:12.5px;color:var(--texto);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.rs-vazio-txt{color:var(--suave);font-style:italic}
+.rs-estado{display:flex;gap:8px;align-items:flex-start;margin-top:4px;padding:8px 10px;border-radius:10px;font-size:12.5px}
+.rs-estado-proc{background:var(--azul-suave);color:#2c4560}
+.rs-estado-erro{background:var(--vermelho-suave);color:#7d2a20}
+.rs-relogio{display:inline-block;animation:rs-girar 2s linear infinite}
+@keyframes rs-girar{0%{transform:rotate(0)}45%{transform:rotate(180deg)}50%{transform:rotate(180deg)}95%{transform:rotate(360deg)}100%{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.rs-relogio{animation:none}}
+.rs-acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
+.rs-janela .rs-transcricao{min-height:240px}
+@media (max-width:1000px){.rs-lista{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){
+  .rs-cabeca h2{font-size:25px}
+  .rs-caixa{padding:14px}
+  .rs-linha{flex-direction:column;align-items:stretch}
+  .rs-quem{width:100%}
+  .rs-card{grid-template-columns:92px minmax(0,1fr);gap:10px;padding:10px}
+  .rs-card-tocando{grid-template-columns:minmax(0,1fr)}
+  .rs-ver{font-size:10.5px;padding:5px 8px}
+  .rs-chave-linha .entrada{max-width:none}
+  .rs-data{margin-left:0}
+}
