@@ -561,7 +561,7 @@
   /* =========================================================
      VALORES: só aparece em marianabonetto.com.br/valores (os preços ficam em valores/index.html, nunca aqui)
      ========================================================= */
-  .valores-secao{padding:10px 0 70px}
+  .valores-secao{padding:10px 0 0}
   .valores-secao[hidden]{display:none}
   /* Painel marrom "Investimentos UGC" (igual ao Canva: faixas alternadas, texto centralizado e espaçado) */
   /* faixa marrom de ponta a ponta + "aba" arredondada que desce embaixo (igual ao Canva) */
@@ -603,7 +603,6 @@
   .val-selo i{font-style:normal;font-size:.8rem;letter-spacing:.1em}
   .val-selo b{font-size:1.4rem;font-weight:700;letter-spacing:.02em}
   .val-selo em{font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:.9rem;letter-spacing:.04em}
-  .val-acao{text-align:center;margin-top:46px}
   /* celular (site reduzido): letras das tabelas menores para caber nas três colunas */
   .miniatura .val-coluna{padding:0 12px}
   .miniatura .val-lista li{font-size:.6rem;letter-spacing:.14em;gap:.8em}
@@ -2191,7 +2190,6 @@ async function testarBanco() {
     </div>
     <div class="container">
       <div class="val-pacotes revelar">${pacotes}</div>
-      <div class="val-acao"><a class="btn btn-cafe" href="${linkWhats}" target="_blank" rel="noopener">Entre em contato</a></div>
     </div>`;
   secao.hidden = false;
   secao.querySelectorAll(".revelar").forEach((el) => el.classList.add("visivel"));
