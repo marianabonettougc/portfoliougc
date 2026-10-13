@@ -231,54 +231,89 @@
   }
 
   // =========================================================
-  // TELA
+  // TELA (mesmo visual da Transcrição de vídeos: classes cr-* do painel)
   // =========================================================
+  const IC = {
+    link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    arquivo: '<path d="M7 3.5h7L18.5 8v12.5H7z"/><path d="M14 3.5V8h4.5M10 13h5M10 16.5h3.5"/>',
+    subir: '<path d="M7 3.5h7L18.5 8v12.5H7z"/><path d="M14 3.5V8h4.5M12.75 17.5v-6M10.25 14l2.5-2.5 2.5 2.5"/>',
+    mic: '<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3"/>',
+    seta: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    play: '<path d="M8.5 6v12l9.5-6z"/>',
+    insta: '<rect x="4" y="4" width="16" height="16" rx="4.5"/><circle cx="12" cy="12" r="3.6"/><path d="M16.8 7.2h.01"/>',
+    tiktok: '<path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 4c.4 2.4 2 4 4.5 4.3"/>',
+    youtube: '<rect x="3" y="6" width="18" height="12" rx="3.5"/><path d="M10.5 9.5v5l4-2.5z"/>',
+    busca: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>',
+    pontos: '<path d="M6 12h.01M12 12h.01M18 12h.01"/>',
+    chave: '<circle cx="8" cy="15" r="3.5"/><path d="M10.5 12.5L19 4M16 7l2.5 2.5"/>',
+    lampada: '<path d="M9.5 18h5M10.5 21h3"/><path d="M12 3.5a5.5 5.5 0 0 0-3.3 9.9c.7.6 1.3 1.5 1.3 2.6h4c0-1.1.6-2 1.3-2.6A5.5 5.5 0 0 0 12 3.5z"/>'
+  };
+  const ic = (n, t = 18) => `<svg class="traco" width="${t}" height="${t}" viewBox="0 0 24 24" aria-hidden="true">${IC[n] || ""}</svg>`;
+  const iconeRede = (o) => o === "instagram" ? ic("insta", 15) : o === "tiktok" ? ic("tiktok", 15) : o === "youtube" ? ic("youtube", 15) : ic("play", 13);
+  const mmss = (s) => `${String(Math.floor((Number(s) || 0) / 60)).padStart(2, "0")}:${String(Math.round((Number(s) || 0) % 60)).padStart(2, "0")}`;
+
   function montar() {
     const sec = st.sec;
     sec.innerHTML = `
-    <div class="rs-pagina">
-      <div class="rs-cabeca">
-        <div>
-          <h2>📜 Roteiros</h2>
-          <p>Cole o link de um reel e eu transcrevo. Serve pros seus e pros das outras, com etiqueta pra você separar.</p>
-        </div>
-        <button type="button" class="btn" id="rs-estudar">🧠 Estudar com o Claude</button>
-      </div>
+    <div class="cr-pagina rs-pagina">
+      <header class="cr-cabeca cr-cabeca-linha">
+        <div><h2>Roteiros</h2><p>Cole o link, envie um vídeo ou um áudio e receba a transcrição.</p></div>
+        <button type="button" class="btn rs-estudar" id="rs-estudar">${ic("lampada", 16)}Estudar com o Claude</button>
+      </header>
 
-      <div class="rs-caixa">
-        <div class="rs-linha">
-          <input class="entrada rs-link" id="rs-link" type="url" inputmode="url" autocomplete="off"
-            placeholder="Cole aqui: instagram.com/reel/... · tiktok.com/... · youtube.com/..." aria-label="Link do vídeo">
-          <select class="entrada rs-quem" id="rs-quem" aria-label="De quem é o vídeo">
-            <option value="outra">De outra pessoa</option>
-            <option value="meu">Meu</option>
-          </select>
-          <button type="button" class="btn btn-principal" id="rs-transcrever">🎧 Transcrever</button>
-          <button type="button" class="btn" id="rs-manual">+ Escrever na mão</button>
+      <section class="cr-card cr-importar">
+        <div class="rs-modos-linha">
+          <div class="cr-modos" role="tablist" aria-label="Como enviar">
+            <button type="button" class="cr-modo ativo" data-modo="link" role="tab">${ic("link")}Link de vídeo</button>
+            <button type="button" class="cr-modo" data-modo="arquivo" role="tab">${ic("arquivo")}Enviar arquivo</button>
+            <button type="button" class="cr-modo" data-modo="audio" role="tab">${ic("mic")}Gravar áudio</button>
+          </div>
         </div>
+        <div data-painel-modo="link">
+          <form class="cr-linha-link" id="rs-form-link">
+            <label class="cr-campo-icone">${ic("link", 17)}<input id="rs-link" type="url" inputmode="url" autocomplete="off" placeholder="Cole o link do Instagram, TikTok ou YouTube aqui..." aria-label="Link do vídeo"></label>
+            <button class="btn btn-principal cr-btn" type="submit" id="rs-transcrever">Transcrever${ic("seta", 16)}</button>
+          </form>
+        </div>
+        <div data-painel-modo="arquivo" hidden>
+          <label class="cr-soltar" id="rs-soltar">${ic("subir", 30)}<b>Arraste um vídeo ou áudio aqui, ou clique para escolher</b><small>Vídeo MP4, MOV ou AVI · áudio MP3, WAV ou M4A (até 25 MB)</small><input type="file" id="rs-arquivo" accept="video/*,audio/*,.m4a,.mp3,.wav,.ogg,.opus" hidden></label>
+        </div>
+        <div data-painel-modo="audio" hidden>
+          <button type="button" class="cr-soltar cr-gravar" id="rs-gravar">${ic("mic", 30)}<b>Toque para gravar</b><small>até 10 minutos · toque de novo para parar e transcrever</small></button>
+        </div>
+        <p class="cr-formatos">Formatos aceitos: vídeo MP4, MOV e AVI · áudio MP3, WAV, M4A e OGG · até 25 MB (limite da transcrição) · <button type="button" class="rs-link-btn" id="rs-manual">escrever na mão</button></p>
         <div id="rs-aviso" class="rs-aviso" aria-live="polite" hidden></div>
-        <div class="rs-chave" id="rs-chave"></div>
-      </div>
+        <div class="cr-rodape-card rs-rodape">
+          <label class="rs-quem-mini">Vídeo
+            <select id="rs-quem" aria-label="De quem é o vídeo"><option value="outra">de outra pessoa</option><option value="meu">meu</option></select>
+          </label>
+          <div class="rs-chave" id="rs-chave"></div>
+        </div>
+      </section>
 
       <div class="rs-biblio-cabeca">
-        <h3>📚 Biblioteca</h3>
+        <h3 class="cr-secao">Transcrições recentes</h3>
         <span class="rs-conta" id="rs-conta"></span>
       </div>
-      <div class="cr-busca rs-busca">
-        <svg class="traco" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg>
-        <input type="search" id="rs-busca" placeholder="Buscar na transcrição, no perfil, no título ou nas notas" aria-label="Buscar">
-      </div>
+      <label class="cr-busca rs-busca">${ic("busca", 17)}<input type="search" id="rs-busca" placeholder="Buscar por título, perfil, tag ou trecho da fala..." aria-label="Buscar"></label>
       <div class="cr-chips rs-chips" id="rs-chips"></div>
-      <div class="rs-lista" id="rs-lista"></div>
+      <div class="cr-recentes rs-lista" id="rs-lista"></div>
     </div>`;
 
     $("#rs-quem", sec).value = st.deQuem;
     $("#rs-quem", sec).addEventListener("change", (e) => { st.deQuem = e.target.value; });
-    $("#rs-link", sec).addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); clicouTranscrever(); } });
-    $("#rs-transcrever", sec).addEventListener("click", clicouTranscrever);
-    $("#rs-manual", sec).addEventListener("click", () => abrirEditor(null, { de_quem: st.deQuem }));
+    $("#rs-form-link", sec).addEventListener("submit", (e) => { e.preventDefault(); clicouTranscrever(); });
     $("#rs-estudar", sec).addEventListener("click", estudarComClaude);
+    $("#rs-manual", sec).addEventListener("click", () => abrirEditor(null, { de_quem: st.deQuem }));
     $("#rs-busca", sec).addEventListener("input", (e) => { st.busca = e.target.value; pintarLista(); });
+    $$(".cr-modo", sec).forEach((b) => b.addEventListener("click", () => {
+      $$(".cr-modo", sec).forEach((x) => x.classList.toggle("ativo", x === b));
+      $$("[data-painel-modo]", sec).forEach((p) => { p.hidden = p.dataset.painelModo !== b.dataset.modo; });
+      aviso(null);
+    }));
+    ligarArquivoEAudio(sec);
+    // fecha os menus ••• ao clicar fora
+    document.addEventListener("click", (e) => { if (!e.target.closest(".cr-ref-menu")) $$(".rs-lista .cr-menu").forEach((m) => { m.hidden = true; }); });
   }
 
   function aviso(tipo, html, botoes) {
@@ -291,26 +326,27 @@
     (botoes || []).forEach((b, i) => $(`[data-av="${i}"]`, a).addEventListener("click", b.acao));
   }
 
+  // chave da Supadata: uma linha discreta no rodapé do cartão; o campo só aparece sem chave ou ao clicar em "trocar"
+  let trocandoChave = false;
   function pintarChave() {
     const box = st.sec && $("#rs-chave", st.sec);
     if (!box) return;
     const fim = st.chave ? st.chave.slice(-4) : "";
-    let saldo = "";
-    if (st.chave && st.saldo && !st.saldo.erro) {
-      const pct = st.saldo.max ? Math.min(100, Math.round((st.saldo.usado / st.saldo.max) * 100)) : 0;
-      saldo = `<span class="rs-saldo" title="Plano ${esc(st.saldo.plano || "")}"><span class="rs-barra"><i style="width:${pct}%"></i></span>${st.saldo.usado} de ${st.saldo.max} créditos usados</span>`;
-    } else if (st.chave && st.saldo && st.saldo.erro) {
-      saldo = `<span class="rs-saldo rs-saldo-erro">${esc(st.saldo.erro)}</span>`;
-    } else if (st.chave) {
-      saldo = `<span class="rs-saldo">conferindo o saldo…</span>`;
+    if (st.chave && !trocandoChave) {
+      let saldo = "conferindo o saldo…";
+      let erro = false;
+      if (st.saldo && !st.saldo.erro) saldo = `${st.saldo.usado} de ${st.saldo.max} créditos usados`;
+      else if (st.saldo && st.saldo.erro) { saldo = st.saldo.erro; erro = true; }
+      box.innerHTML = `<span class="rs-chave-ok${erro ? " rs-chave-erro" : ""}"><i class="rs-bolinha" aria-hidden="true"></i>Supadata conectada · <span title="Chave terminada em ${esc(fim)}">${esc(saldo)}</span></span>
+        <button type="button" class="rs-link-btn" id="rs-chave-trocar">trocar chave</button>`;
+      $("#rs-chave-trocar", box).addEventListener("click", () => { trocandoChave = true; pintarChave(); const c = $("#rs-chave-campo", box); if (c) c.focus(); });
+      return;
     }
-    box.innerHTML = `
-      <label for="rs-chave-campo">🔑 Chave da Supadata</label>
-      <div class="rs-chave-linha">
-        <input class="entrada" id="rs-chave-campo" type="password" autocomplete="off" spellcheck="false"
-          placeholder="${st.chave ? "Salva: termina em " + esc(fim) + " (cole outra pra trocar)" : "Cole aqui a sua API key da Supadata"}">
-        <button type="button" class="btn" id="rs-chave-salvar">💾 Salvar</button>
-        ${saldo}
+    box.innerHTML = `<div class="rs-chave-linha">
+        <label class="cr-campo-icone rs-chave-campo">${ic("chave", 16)}<input id="rs-chave-campo" type="password" autocomplete="off" spellcheck="false"
+          placeholder="${st.chave ? "Cole a chave nova da Supadata" : "Cole aqui a sua chave (API key) da Supadata"}" aria-label="Chave da Supadata"></label>
+        <button type="button" class="btn btn-mini" id="rs-chave-salvar">Salvar</button>
+        ${st.chave ? `<button type="button" class="rs-link-btn" id="rs-chave-cancelar">cancelar</button>` : ""}
       </div>`;
     const campo = $("#rs-chave-campo", box);
     const salvar = async () => {
@@ -321,6 +357,7 @@
         await salvarChave(v);
         toast("Chave salva ✓");
         aviso(null);
+        trocandoChave = false;
         st.saldo = null;
         pintarChave();
         buscarSaldo();
@@ -328,17 +365,21 @@
     };
     $("#rs-chave-salvar", box).addEventListener("click", salvar);
     campo.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); salvar(); } });
+    const cancelar = $("#rs-chave-cancelar", box);
+    if (cancelar) cancelar.addEventListener("click", () => { trocandoChave = false; pintarChave(); });
   }
 
   function explicarChave() {
-    aviso("aviso", `<b>🔑 Falta a chave da Supadata.</b> É de graça e leva 2 minutos:
+    aviso("aviso", `<b>Falta a chave da Supadata.</b> É de graça e leva 2 minutos:
       <ol class="rs-passos">
-        <li>Crie uma conta grátis em <a href="https://supadata.ai" target="_blank" rel="noopener">supadata.ai</a> (100 créditos por mês, sem cartão).</li>
+        <li>Crie uma conta grátis em <a href="https://dash.supadata.ai" target="_blank" rel="noopener">dash.supadata.ai</a> (100 créditos por mês, sem cartão).</li>
         <li>No painel deles, copie a sua <b>API key</b>.</li>
-        <li>Cole no campo <b>Chave da Supadata</b> aqui embaixo e clique em Salvar.</li>
+        <li>Cole no campo da chave aqui embaixo e clique em Salvar.</li>
       </ol>`);
+    trocandoChave = true;
+    pintarChave();
     const c = $("#rs-chave-campo", st.sec);
-    if (c) { c.focus(); c.closest(".rs-chave").classList.add("rs-pisca"); setTimeout(() => c.closest(".rs-chave") && c.closest(".rs-chave").classList.remove("rs-pisca"), 1600); }
+    if (c) c.focus();
   }
 
   // ---------- filtros e lista ----------
@@ -350,7 +391,7 @@
       if (st.filtro === "outra" && r.de_quem === "meu") return false;
       if (st.filtro.startsWith("tag:") && !tagsDe(r).map((t) => t.toLowerCase()).includes(st.filtro.slice(4))) return false;
       if (b) {
-        const alvo = [r.transcricao, r.perfil, r.titulo, r.notas, r.legenda].join(" ").toLowerCase();
+        const alvo = [r.transcricao, r.perfil, r.titulo, r.notas, r.legenda, r.etiquetas].join(" ").toLowerCase();
         if (!alvo.includes(b)) return false;
       }
       return true;
@@ -359,90 +400,200 @@
   function pintarChips() {
     const box = $("#rs-chips", st.sec);
     const tags = [...new Set(st.lista.flatMap(tagsDe).map((t) => t.toLowerCase()))].sort();
-    const chips = [{ v: "todos", t: "Todos" }, { v: "meu", t: "💛 Meus" }, { v: "outra", t: "👀 De outras" }, ...tags.map((t) => ({ v: "tag:" + t, t: "#" + t }))];
+    const chips = [{ v: "todos", t: "Todos" }, { v: "outra", t: "De outras" }, { v: "meu", t: "Meus" }, ...tags.map((t) => ({ v: "tag:" + t, t: "#" + t }))];
     if (!chips.some((c) => c.v === st.filtro)) st.filtro = "todos";
     box.innerHTML = chips.map((c) => `<button type="button" class="cr-chip${st.filtro === c.v ? " ativo" : ""}" data-f="${esc(c.v)}">${esc(c.t)}</button>`).join("");
     $$("[data-f]", box).forEach((b) => b.addEventListener("click", () => { st.filtro = b.dataset.f; pintarChips(); pintarLista(); }));
   }
   function capaHtml(r) {
-    const fonte = r.origem || "outro";
-    const emb = embedDoLink(r.link);
-    if (st.tocando.has(r.id) && emb) {
-      return `<div class="rs-capa rs-tocando rs-${emb.tipo}"><iframe src="${esc(emb.src)}" title="Vídeo" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; clipboard-write" allowfullscreen></iframe></div>`;
-    }
     const yt = idYoutube(r.link);
-    let img = "";
-    if (yt) img = `https://i.ytimg.com/vi/${yt}/hqdefault.jpg`;
-    else if (r.capa && !/cdninstagram|fbcdn|tiktokcdn/i.test(r.capa)) img = r.capa;
-    const fundo = img ? `<img src="${esc(img)}" alt="" loading="lazy" onerror="this.remove()">` : `<span class="rs-capa-emoji">${EMOJI_FONTE[fonte] || "🎬"}</span>`;
-    const botao = emb ? `<button type="button" class="rs-ver" data-ver="${esc(r.id)}">▶ ver vídeo</button>`
-      : r.link ? `<a class="rs-ver" href="${esc(r.link)}" target="_blank" rel="noopener">↗ abrir link</a>` : "";
-    return `<div class="rs-capa rs-capa-${esc(fonte)}">${fundo}${botao}</div>`;
+    const capa = r.capa || (yt ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` : "");
+    return `<div class="cr-capa${capa ? " tem-imagem" : ""}" data-assistir="${esc(r.id)}" role="button" tabindex="0" aria-label="Assistir o vídeo">${capa ? `<img src="${esc(capa)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('tem-imagem');this.remove()">` : `<span class="cr-capa-play">${ic("play", 18)}</span>`}
+      <span class="cr-capa-assistir">${ic("play", 12)}${r.duracao ? mmss(r.duracao) : "assistir"}</span><span class="cr-capa-rede">${iconeRede(r.origem)}</span></div>`;
   }
-  function cardHtml(r) {
+  function linhaHtml(r) {
     const status = r.status || "pronto";
-    const meu = r.de_quem === "meu";
-    const linhas = String(r.transcricao || "").split(/(?<=[.!?])\s+|\n+/).filter(Boolean).slice(0, 3).join(" ");
-    const tags = tagsDe(r).map((t) => `<span class="rs-tag">#${esc(t)}</span>`).join("");
     const ativo = st.emAndamento.has(r.id);
-    let corpo;
-    if (status === "processando") {
-      corpo = `<div class="rs-estado rs-estado-proc"><span class="rs-relogio" aria-hidden="true">⏳</span>
-        <span>${ativo ? "Transcrevendo agora… pode continuar usando o painel." : "Essa transcrição ficou pela metade (a aba foi fechada no meio)."}</span></div>`;
-    } else if (status === "falhou") {
-      corpo = `<div class="rs-estado rs-estado-erro">⚠️ <span>${esc(r.erro || "Não deu certo dessa vez.")}</span></div>`;
-    } else {
-      corpo = linhas ? `<p class="rs-trecho">${esc(linhas)}</p>` : `<p class="rs-trecho rs-vazio-txt">Sem transcrição ainda. Clique em Editar pra escrever.</p>`;
-    }
-    const acoes = [];
-    if (status === "processando" && !ativo) acoes.push(`<button type="button" class="btn btn-mini" data-de-novo="${esc(r.id)}">🔁 Tentar de novo</button>`);
-    if (status === "falhou") {
-      acoes.push(`<button type="button" class="btn btn-mini" data-editar="${esc(r.id)}" data-assim="1">📝 Abrir mesmo assim</button>`);
-      if (r.link) acoes.push(`<button type="button" class="btn btn-mini" data-de-novo="${esc(r.id)}">🔁 Tentar de novo</button>`);
-    }
-    if (status === "pronto") {
-      acoes.push(`<button type="button" class="btn btn-mini" data-copiar="${esc(r.id)}"${r.transcricao ? "" : " disabled"}>📋 Copiar transcrição</button>`);
-      acoes.push(`<button type="button" class="btn btn-mini" data-editar="${esc(r.id)}">✏️ Editar</button>`);
-    }
-    if (!ativo) acoes.push(`<button type="button" class="btn btn-mini btn-perigo" data-apagar="${esc(r.id)}">🗑 Apagar</button>`);
-    return `<article class="rs-card${st.tocando.has(r.id) ? " rs-card-tocando" : ""}" data-id="${esc(r.id)}">
-      ${capaHtml(r)}
-      <div class="rs-info">
-        <div class="rs-topo-card">
-          <span class="rs-dono ${meu ? "rs-dono-meu" : "rs-dono-outra"}">${meu ? "💛 Meu" : "👀 De outra"}</span>
-          <span class="rs-fonte">${EMOJI_FONTE[r.origem] || "🎬"} ${esc(NOME_FONTE[r.origem] || "Outro")}</span>
-          <span class="rs-data">${esc(fmtData(r.data_post) || fmtData(r.criado_em))}</span>
-        </div>
-        <h4>${r.titulo ? esc(r.titulo) : '<span class="rs-sem-titulo">Sem título</span>'}</h4>
-        ${r.perfil ? `<div class="rs-perfil">${esc(r.perfil.startsWith("@") ? r.perfil : "@" + r.perfil)}</div>` : ""}
-        ${tags ? `<div class="rs-tags">${tags}</div>` : ""}
-        ${corpo}
-        <div class="rs-acoes">${acoes.join("")}</div>
-      </div>
-    </article>`;
+    const meta = [NOME_FONTE[r.origem] || "Outro", r.perfil ? (r.perfil.startsWith("@") ? r.perfil : "@" + r.perfil) : "", fmtData(r.data_post) || fmtData(r.criado_em)].filter(Boolean).join(" · ");
+    let estado = "";
+    if (status === "processando") estado = `<span class="rs-estado-mini">${ativo ? "Transcrevendo agora…" : "Ficou pela metade"}</span>`;
+    else if (status === "falhou") estado = `<span class="rs-estado-mini rs-estado-erro-mini">${esc(r.erro || "Não deu certo dessa vez.")}</span>`;
+    let principal;
+    if (status === "processando" && ativo) principal = `<button class="btn" type="button" disabled>Aguarde…</button>`;
+    else if (status !== "pronto" && r.link) principal = `<button class="btn" type="button" data-de-novo>Tentar de novo</button>`;
+    else principal = `<button class="btn" type="button" data-ver>Ver transcrição${ic("seta", 14)}</button>`;
+    return `<div class="cr-recente" data-id="${esc(r.id)}">
+        ${capaHtml(r)}
+        <div class="cr-recente-txt"><b>${esc(r.titulo || "Sem título")}</b><small>${esc(meta)}</small>${estado}</div>
+        ${principal}
+        <div class="cr-ref-menu"><button type="button" class="cr-mais" data-menu aria-label="Opções">${ic("pontos", 16)}</button>
+          <div class="cr-menu" hidden><button type="button" data-criar>Criar roteiro</button><button type="button" data-editar>Editar</button>${ativo ? "" : `<button type="button" data-apagar>Excluir</button>`}</div></div>
+      </div>`;
   }
   function pintarLista() {
     const box = $("#rs-lista", st.sec);
     if (!box) return;
     const lista = filtrados();
-    $("#rs-conta", st.sec).textContent = st.lista.length ? `${lista.length} de ${st.lista.length}` : "";
-    if (!st.lista.length) {
-      box.innerHTML = `<div class="vazio rs-vazio">🎬 Sua biblioteca ainda está vazia. Cole o link de um reel lá em cima e clique em Transcrever.</div>`;
-      return;
-    }
-    if (!lista.length) { box.innerHTML = `<div class="vazio rs-vazio">🔎 Nada encontrado com esse filtro.</div>`; return; }
-    box.innerHTML = lista.map(cardHtml).join("");
+    $("#rs-conta", st.sec).textContent = st.lista.length ? (lista.length === st.lista.length ? `${st.lista.length}` : `${lista.length} de ${st.lista.length}`) : "";
+    if (!st.lista.length) { box.innerHTML = `<p class="cr-vazio">${ic("arquivo", 24)}Suas transcrições aparecem aqui.</p>`; return; }
+    if (!lista.length) { box.innerHTML = `<p class="cr-vazio">${ic("busca", 24)}Nada encontrado com esse filtro.</p>`; return; }
+    box.innerHTML = lista.map(linhaHtml).join("");
     const acha = (id) => st.lista.find((r) => String(r.id) === String(id));
-    $$("[data-ver]", box).forEach((b) => b.addEventListener("click", () => { const r = acha(b.dataset.ver); st.tocando.add(r.id); pintarLista(); }));
-    $$("[data-copiar]", box).forEach((b) => b.addEventListener("click", async () => {
-      const r = acha(b.dataset.copiar);
-      if (await copiar(r.transcricao || "")) { b.textContent = "copiado ✓"; setTimeout(() => { b.textContent = "📋 Copiar transcrição"; }, 1800); }
-    }));
-    $$("[data-editar]", box).forEach((b) => b.addEventListener("click", () => abrirEditor(acha(b.dataset.editar), null, b.dataset.assim ? "Escreva o texto do vídeo na mão e salve." : "")));
-    $$("[data-apagar]", box).forEach((b) => b.addEventListener("click", () => apagarRoteiro(acha(b.dataset.apagar))));
-    $$("[data-de-novo]", box).forEach((b) => b.addEventListener("click", () => { const r = acha(b.dataset.deNovo); executar(r.link, r.de_quem, r); }));
+    $$(".cr-recente", box).forEach((linha) => {
+      const r = acha(linha.dataset.id);
+      const menu = $(".cr-menu", linha);
+      const ver = $("[data-ver]", linha);
+      if (ver) ver.addEventListener("click", () => irPara(r, "analise"));
+      const deNovo = $("[data-de-novo]", linha);
+      if (deNovo) deNovo.addEventListener("click", () => executar(r.link, r.de_quem, r));
+      $("[data-menu]", linha).addEventListener("click", (e) => { e.stopPropagation(); $$(".cr-menu", box).forEach((m) => { if (m !== menu) m.hidden = true; }); menu.hidden = !menu.hidden; });
+      $("[data-criar]", linha).addEventListener("click", () => { menu.hidden = true; irPara(r, "criar"); });
+      $("[data-editar]", linha).addEventListener("click", () => { menu.hidden = true; abrirEditor(r); });
+      const apagar = $("[data-apagar]", linha);
+      if (apagar) apagar.addEventListener("click", () => { menu.hidden = true; apagarRoteiro(r); });
+      const capa = $("[data-assistir]", linha);
+      capa.addEventListener("click", () => assistir(r));
+      capa.addEventListener("keydown", (e) => { if (e.key === "Enter") assistir(r); });
+    });
+    buscarCapas();
   }
   function pintarTudo() { pintarChips(); pintarLista(); }
+
+  // Ver transcrição e Criar roteiro abrem as páginas Analisar vídeo e Criar roteiro do painel (js/admin.js)
+  async function irPara(r, vista) {
+    if (!r) return;
+    if ((r.status || "pronto") !== "pronto" || !String(r.transcricao || "").trim()) { abrirEditor(r, null, "Esse vídeo ainda não tem transcrição. Escreva o texto na mão e salve."); return; }
+    if (window.painelRoteiros && window.painelRoteiros.abrir) { await window.painelRoteiros.abrir(r.id, vista); return; }
+    abrirEditor(r);
+  }
+
+  // tocar o vídeo numa janela
+  let dlgVideo = null;
+  function assistir(r) {
+    const emb = embedDoLink(r.link);
+    if (!emb) { if (r.link) window.open(r.link, "_blank", "noopener"); else toast("Esse vídeo foi enviado como arquivo, então não tem link pra tocar aqui.", true); return; }
+    if (!dlgVideo) {
+      dlgVideo = document.createElement("dialog");
+      dlgVideo.className = "janela rs-janela-video";
+      document.body.appendChild(dlgVideo);
+      dlgVideo.addEventListener("click", (e) => { if (e.target === dlgVideo || e.target.closest("[data-fechar]")) dlgVideo.close(); });
+      dlgVideo.addEventListener("close", () => { dlgVideo.innerHTML = ""; });
+    }
+    dlgVideo.innerHTML = `<div class="janela-cabeca"><div><small class="janela-sobretitulo">${esc(NOME_FONTE[r.origem] || "Vídeo")}</small><h2>${esc(r.titulo || "Vídeo")}</h2></div>
+        <button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div class="janela-corpo"><div class="cr-player cr-player-janela"><iframe src="${esc(emb.src)}" title="Vídeo" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen></iframe></div></div>`;
+    dlgVideo.showModal();
+  }
+
+  // capas: busca as que faltam pela função capa-video (uma por vez) e guarda no banco, igual às outras páginas
+  const capaTentada = new Set();
+  let buscandoCapas = false;
+  const capaPequena = (src) => new Promise((ok) => {
+    const img = new Image();
+    img.onload = () => { const l = Math.min(1, 420 / img.width); const c = document.createElement("canvas"); c.width = Math.round(img.width * l); c.height = Math.round(img.height * l);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); try { ok(c.toDataURL("image/jpeg", 0.72)); } catch (e) { ok(""); } };
+    img.onerror = () => ok(""); img.src = src;
+  });
+  const capaDoArquivo = (arq) => new Promise((ok) => {
+    if (!/^video\//.test(arq.type)) { ok(""); return; }
+    const v = document.createElement("video"); const url = URL.createObjectURL(arq);
+    let feito = false; const fim = (x) => { if (feito) return; feito = true; URL.revokeObjectURL(url); ok(x); };
+    v.muted = true; v.playsInline = true; v.preload = "metadata"; v.src = url;
+    v.onloadeddata = () => { try { v.currentTime = Math.min(1, (v.duration || 2) / 3); } catch (e) { fim(""); } };
+    v.onseeked = () => { const l = Math.min(1, 420 / (v.videoWidth || 420)); const c = document.createElement("canvas"); c.width = Math.round((v.videoWidth || 420) * l); c.height = Math.round((v.videoHeight || 560) * l);
+      try { c.getContext("2d").drawImage(v, 0, 0, c.width, c.height); fim(c.toDataURL("image/jpeg", 0.72)); } catch (e) { fim(""); } };
+    v.onerror = () => fim(""); setTimeout(() => fim(""), 8000);
+  });
+  async function buscarCapas() {
+    if (buscandoCapas) return; buscandoCapas = true;
+    try {
+      for (const r of st.lista.filter((x) => x.link && !x.capa && !idYoutube(x.link) && !capaTentada.has(x.id)).slice(0, 12)) {
+        capaTentada.add(r.id);
+        try {
+          const { data } = await banco().functions.invoke("capa-video", { body: { link: r.link } });
+          const capa = data && data.imagem ? await capaPequena(data.imagem) : "";
+          if (!capa) continue;
+          const { error } = await banco().from("roteiros").update({ capa }).eq("id", r.id);
+          if (error) continue;
+          r.capa = capa;
+          const el = st.sec && $(`.rs-lista [data-assistir="${r.id}"]`, st.sec);
+          if (el) { el.outerHTML = capaHtml(r); const novo = $(`.rs-lista [data-assistir="${r.id}"]`, st.sec); novo.addEventListener("click", () => assistir(r)); }
+        } catch (e) { /* segue sem capa */ }
+      }
+    } finally { buscandoCapas = false; }
+  }
+
+  // ---------- Enviar arquivo e Gravar áudio: função transcrever do Supabase (Whisper, até 25 MB) ----------
+  let ocupadoArquivo = false;
+  async function transcreverArquivo(arq, extra) {
+    if (ocupadoArquivo) return;
+    if (st.faltaSql) { aviso("erro", "Falta rodar o arquivo sql-roteiros.sql no Supabase (SQL Editor). Depois é só recarregar esta página."); return; }
+    if (arq.size > 25 * 1024 * 1024) { aviso("erro", "Esse arquivo passa de 25 MB, o limite da transcrição. Envie um arquivo menor ou cole o link."); return; }
+    ocupadoArquivo = true;
+    const botoes = $$("#rs-soltar, #rs-gravar, #rs-arquivo", st.sec);
+    botoes.forEach((b) => { b.classList.add("rs-ocupado"); });
+    const inicio = Date.now();
+    const atualizarAviso = () => aviso("andamento", `<b>${esc(extra.mensagem || "Transcrevendo o arquivo")}… ${tempoTxt(Math.round((Date.now() - inicio) / 1000))}.</b> Costuma levar menos de 1 minuto.`);
+    atualizarAviso();
+    const relogio = setInterval(atualizarAviso, 1000);
+    try {
+      const corpo = new FormData();
+      corpo.append("arquivo", arq, arq.name || "video.mp4");
+      corpo.append("link", "");
+      const capa = await capaDoArquivo(arq);
+      const { data, error } = await banco().functions.invoke("transcrever", { body: corpo });
+      let msg = data && data.erro;
+      if (error) { try { msg = (await error.context.json()).erro; } catch (e) { /* segue */ } msg = msg || "Não consegui falar com o programa de transcrição. Tente de novo."; }
+      if (msg) throw new Error(msg);
+      const c = (data && data.campos) || {};
+      const texto = String((data && data.transcricao) || "").trim();
+      if (!texto) throw new Error("Não achei fala nesse arquivo.");
+      const nulo = (v) => (v == null || String(v).trim() === "" ? null : v);
+      const linha = await inserir({
+        titulo: String(c.titulo || extra.titulo || "").slice(0, 120), de_quem: st.deQuem === "meu" ? "meu" : "outra", origem: "outro", link: null,
+        etiquetas: nulo(c.etiquetas), gancho: nulo(c.gancho), gancho_tipo: nulo(c.gancho_tipo), desenvolvimento: nulo(c.desenvolvimento), cta: nulo(c.cta),
+        expressoes: nulo(c.expressoes), por_que: nulo(c.por_que), transcricao: texto,
+        segmentos: Array.isArray(data.segmentos) && data.segmentos.length ? data.segmentos : null, duracao: data.duracao || null, capa: capa || null, status: "pronto"
+      });
+      clearInterval(relogio);
+      aviso("ok", "Pronto. Revisa, dá um nome e salva.");
+      pintarTudo();
+      abrirEditor(linha, null, "Pronto. Revisa, dá um nome e salva.");
+    } catch (e) {
+      clearInterval(relogio);
+      aviso("erro", esc(e.message || "Algo deu errado na transcrição. Tente de novo."));
+    }
+    botoes.forEach((b) => { b.classList.remove("rs-ocupado"); });
+    ocupadoArquivo = false;
+  }
+  function ligarArquivoEAudio(sec) {
+    const usar = (arq) => { if (arq) transcreverArquivo(arq, { titulo: (arq.name || "").replace(/\.[^.]+$/, ""), mensagem: "Transcrevendo o arquivo" }); };
+    $("#rs-arquivo", sec).addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; usar(f); });
+    const zona = $("#rs-soltar", sec);
+    ["dragenter", "dragover"].forEach((ev) => zona.addEventListener(ev, (e) => { e.preventDefault(); zona.classList.add("arrastando"); }));
+    ["dragleave", "drop"].forEach((ev) => zona.addEventListener(ev, (e) => { e.preventDefault(); zona.classList.remove("arrastando"); }));
+    zona.addEventListener("drop", (e) => usar(e.dataTransfer.files[0]));
+    let gravador = null, limite = null;
+    const btn = $("#rs-gravar", sec);
+    btn.addEventListener("click", async () => {
+      if (gravador) { gravador.stop(); return; }
+      if (ocupadoArquivo) return;
+      try {
+        const fluxo = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const rec = new MediaRecorder(fluxo); const partes = [];
+        rec.ondataavailable = (e) => { if (e.data && e.data.size) partes.push(e.data); };
+        rec.onstop = () => {
+          clearTimeout(limite); fluxo.getTracks().forEach((t) => t.stop()); gravador = null;
+          btn.classList.remove("gravando"); $("b", btn).textContent = "Toque para gravar";
+          const tipo = rec.mimeType || "audio/webm"; const ext = /mp4|m4a|aac/.test(tipo) ? "m4a" : /ogg/.test(tipo) ? "ogg" : "webm";
+          const blob = new Blob(partes, { type: tipo });
+          if (blob.size) transcreverArquivo(new File([blob], "audio." + ext, { type: tipo }), { titulo: "Áudio gravado", mensagem: "Transcrevendo o seu áudio" });
+        };
+        gravador = rec; rec.start(); limite = setTimeout(() => rec.state === "recording" && rec.stop(), 10 * 60000);
+        btn.classList.add("gravando"); $("b", btn).textContent = "● Gravando… toque para parar";
+      } catch (e) { aviso("erro", "Não consegui usar o microfone. Libere o microfone no navegador ou envie um arquivo."); }
+    });
+  }
 
   async function copiar(texto) {
     try { await navigator.clipboard.writeText(texto); return true; }
@@ -656,7 +807,7 @@ ${blocos}`;
     if (!st.pronto) {
       st.pronto = true;
       montar();
-      $("#rs-lista", st.sec).innerHTML = `<div class="vazio rs-vazio">⏳ Carregando a biblioteca…</div>`;
+      $("#rs-lista", st.sec).innerHTML = `<p class="cr-vazio">Carregando as transcrições…</p>`;
       await Promise.all([carregarLista(), carregarChave()]);
       pintarChave();
       pintarTudo();

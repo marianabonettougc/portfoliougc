@@ -1325,6 +1325,16 @@
     central.videoLocal = "";
     mostrarAba(vista || "analise");
   }
+  // a aba 📜 Roteiros (js/roteiros-supadata.js) usa isto para "Ver transcrição" (Analisar vídeo) e "Criar roteiro"
+  window.painelRoteiros = {
+    abrir: async (id, vista) => {
+      await recarregar("roteiros");
+      const r = dados.roteiros.find((x) => String(x.id) === String(id));
+      if (!r) { avisar("Não achei esse vídeo. Recarregue a página e tente de novo.", true); return; }
+      const sec = $("#aba-roteiros"); if (sec) sec.dataset.chave = "";
+      abrirNaCentral(r, vista);
+    }
+  };
   const DATA_BR = (d) => d ? new Date(d).toLocaleDateString("pt-BR") : "";
   const iconeRede = (o) => o === "instagram" ? ic("insta", 15) : o === "tiktok" ? ic("tiktok", 15) : o === "youtube" ? ic("youtube", 15) : ic("play", 13);
   // capa do vídeo, igual aos cards do Dashboard: imagem guardada (coluna capa), rede e "assistir"
