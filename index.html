@@ -330,6 +330,16 @@
   .filtro{padding:7px 14px;border-radius:999px;border:1px solid rgba(107,74,53,.22);background:#fbf8f3;font-weight:500;font-size:.85rem;color:var(--texto);cursor:pointer;transition:background .2s,color .2s,border-color .2s}
   .filtro:hover{border-color:var(--cafe)}
   .filtro[aria-pressed="true"]{background:var(--cafe);color:var(--papel);border-color:var(--cafe)}
+  a.filtro{text-decoration:none;display:inline-block}
+  .filtros{margin-bottom:34px}
+  /* Uma linha por nicho: título, quantidade e setinhas no canto direito */
+  .nicho-linha{margin-bottom:40px;scroll-margin-top:90px}
+  .nicho-topo{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px}
+  .nicho-titulo{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(1.6rem,2.4vw,2.1rem);line-height:1.1;color:#705548;letter-spacing:-.02em;margin:0}
+  .nicho-titulo sup{font-family:"Poppins",sans-serif;font-size:.8rem;font-weight:500;color:#a87058;margin-left:8px;vertical-align:super;letter-spacing:.04em}
+  .setas-topo{display:flex;gap:10px;flex-shrink:0}
+  .setas-topo .seta{position:static;width:44px;height:44px;box-shadow:none}
+  .setas-topo .seta[disabled]{opacity:.35;cursor:default;transform:none}
   .trabalhos-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px;list-style:none;margin:0;padding:0}
   .trabalho{padding:7px 7px 12px;transition:opacity .25s ease,transform .25s ease}
   .trabalho.saindo{opacity:0;transform:scale(.95)}
@@ -637,6 +647,7 @@
     .carrossel > ul{grid-auto-columns:62%}
     .carrossel.trabalhos-car > ul{grid-auto-columns:46%}
     .seta{display:none}
+    .setas-topo .seta{display:flex;width:38px;height:38px}
     section.parceiros-secao{padding:8px 10px 0}
     .parceiros{padding:26px 18px 34px;border-radius:0 0 40px 40px}
     .parceiros h2{margin-bottom:22px}
@@ -805,12 +816,12 @@
       <div class="categorias-topo revelar">
         <p class="sobretitulo">Categorias</p>
         <h2 id="titulo-trabalhos">Que tipo de <em>conteúdo</em> você precisa?</h2>
-        <p class="categorias-sub">Navegue pelos nichos. Escolha uma categoria para ver os trabalhos de cada especialidade.</p>
+        <p class="categorias-sub">Navegue pelos nichos. Cada linha é uma especialidade. Clique nas setinhas para ver mais.</p>
       </div>
-      <div class="filtros revelar" id="filtros" role="group" aria-label="Filtrar trabalhos por nicho"></div>
-      <!-- Os trabalhos vêm do array "trabalhos" no script -->
-      <ul class="trabalhos-grid" id="trabalhos-grid"></ul>
-      <p class="sr-only" id="aviso-filtro" aria-live="polite"></p>
+      <!-- Menu de nichos (leva até a linha do nicho) -->
+      <nav class="filtros revelar" id="filtros" aria-label="Nichos"></nav>
+      <!-- Uma linha por nicho, com setinhas. Os trabalhos vêm do array "trabalhos" no script -->
+      <div class="nichos-linhas" id="nichos-linhas"></div>
     </div>
   </section>
 
@@ -1324,46 +1335,70 @@ const urlEmbed = (id, extra) => `https://www.youtube-nocookie.com/embed/${id}?au
 const permissoes = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
 const temMouse = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-// O YouTube liga a legenda automática quando o vídeo toca sem som: manda desligar algumas vezes enquanto a prévia começa
-function tirarLegendaDaPrevia(iframe) {
-  const mandar = (func, args) => { try { iframe.contentWindow.postMessage(JSON.stringify({ event: "command", func, args }), "*"); } catch (e) {} };
-  let vezes = 0;
-  const t = setInterval(() => {
-    if (!iframe.isConnected || ++vezes > 16) { clearInterval(t); return; }
-    try { iframe.contentWindow.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); } catch (e) {}
-    mandar("setOption", ["captions", "track", {}]);
-    mandar("unloadModule", ["captions"]);
-    mandar("unloadModule", ["cc"]);
-  }, 400);
+// 1) Os vídeos rodam SOZINHOS, SEM SOM, em loop, enquanto aparecem na tela (igual ao site de referência).
+//    Clicar abre o vídeo grande, com som. Usa o player oficial do YouTube: sem legenda automática e sem botões por cima.
+const previas = new Map();            // card -> { p: player do YouTube, alvo }
+const MAX_PREVIAS = 6;                // no máximo 6 vídeos rodando juntos (para o site não ficar pesado)
+const cardsLigados = new WeakSet();
+const observadorPrevias = "IntersectionObserver" in window
+  ? new IntersectionObserver((entradas) => entradas.forEach((e) => (e.isIntersecting ? ligarPrevia(e.target) : desligarPrevia(e.target))), { threshold: 0.5 })
+  : null;
+function ligarPrevia(midia) {
+  if (previas.has(midia) || previas.size >= MAX_PREVIAS || !midia.isConnected) return;
+  const id = idDoYoutube(dadosDoCard(midia).link);
+  if (!id) return;
+  const item = { p: null, alvo: document.createElement("div") };
+  previas.set(midia, item);
+  carregarApiYoutube().then(() => {
+    if (previas.get(midia) !== item) return;
+    midia.appendChild(item.alvo);
+    item.p = new YT.Player(item.alvo, {
+      videoId: id,
+      host: "https://www.youtube-nocookie.com",
+      playerVars: { autoplay: 1, mute: 1, controls: 0, cc_load_policy: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1 },
+      events: {
+        onReady: (ev) => {
+          const f = ev.target.getIframe();
+          f.classList.add("previa"); f.tabIndex = -1; f.setAttribute("aria-hidden", "true"); f.title = "Prévia do vídeo sem som";
+          ev.target.mute(); semLegenda(ev.target);
+          if (janela.hidden) ev.target.playVideo();
+        },
+        onStateChange: (ev) => {
+          if (ev.data === 1) {                       // tocando: mostra o vídeo por cima da capa
+            semLegenda(ev.target);
+            const f = ev.target.getIframe();
+            setTimeout(() => f.isConnected && f.classList.add("pronta"), 300);
+            midia.classList.add("tocando-previa");
+          }
+          if (ev.data === 0) { ev.target.seekTo(0); ev.target.playVideo(); }   // acabou: volta pro começo (loop)
+        }
+      }
+    });
+    const f = item.p.getIframe && item.p.getIframe();
+    if (f) f.classList.add("previa");
+  }).catch(() => { if (previas.get(midia) === item) previas.delete(midia); });
 }
-
-// 1) Passar o mouse: o vídeo começa a rodar SEM SOM, em loop, sem controles
+function desligarPrevia(midia) {
+  const item = previas.get(midia);
+  if (!item) return;
+  previas.delete(midia);
+  try { if (item.p && item.p.destroy) item.p.destroy(); } catch (e) {}
+  midia.querySelectorAll("iframe.previa").forEach((el) => el.remove());
+  if (item.alvo.isConnected) item.alvo.remove();
+  midia.classList.remove("tocando-previa");
+}
+function pausarPrevias(pausar) {
+  previas.forEach((item) => { try { if (item.p) (pausar ? item.p.pauseVideo() : item.p.playVideo()); } catch (e) {} });
+}
 function ligarPrevias(raiz) {
-  if (!temMouse || reduzMovimento) return;
+  if (reduzMovimento || !observadorPrevias) return;
+  // cards que saíram da página (lista redesenhada): para o vídeo deles
+  previas.forEach((item, midia) => { if (!midia.isConnected) desligarPrevia(midia); });
   raiz.querySelectorAll(".video-midia").forEach((midia) => {
     const dados = dadosDoCard(midia);
-    const id = idDoYoutube(dados.link);
-    if (!id || dados.semPrevia) return;
-    let espera = null;
-    midia.addEventListener("mouseenter", () => {
-      espera = setTimeout(() => {
-        const previa = document.createElement("iframe");
-        previa.className = "previa";
-        previa.src = urlEmbed(id, `&mute=1&controls=0&loop=1&playlist=${id}&disablekb=1&fs=0&enablejsapi=1&origin=${encodeURIComponent(location.origin)}`);
-        previa.title = "Prévia do vídeo sem som";
-        previa.tabIndex = -1;
-        previa.setAttribute("aria-hidden", "true");
-        previa.allow = permissoes;
-        previa.addEventListener("load", () => { setTimeout(() => previa.classList.add("pronta"), 350); tirarLegendaDaPrevia(previa); });
-        midia.appendChild(previa);
-        midia.classList.add("tocando-previa");
-      }, 250);
-    });
-    midia.addEventListener("mouseleave", () => {
-      clearTimeout(espera);
-      midia.querySelectorAll("iframe.previa").forEach((el) => el.remove());
-      midia.classList.remove("tocando-previa");
-    });
+    if (!dados || !idDoYoutube(dados.link) || dados.semPrevia || cardsLigados.has(midia)) return;
+    cardsLigados.add(midia);
+    observadorPrevias.observe(midia);
   });
 }
 ligarPrevias(document);
@@ -1480,6 +1515,7 @@ function playerSimples(id, d) {
 }
 function fecharPlayer() {
   janela.hidden = true;
+  pausarPrevias(false);
   clearInterval(relogio);
   if (player && player.destroy) player.destroy();
   player = null;
@@ -1495,6 +1531,7 @@ function abrirPlayer(d) {
   const id = idDoYoutube(d.link);
   if (!id) return;
   focoAntes = document.activeElement;
+  pausarPrevias(true);
   // os vídeos da Mari são verticais: a janela abre em pé (para um vídeo deitado, use horizontal: true no bloco do vídeo)
   caixaPlayer.classList.toggle("horizontal", Boolean(d.horizontal));
   if (d.logo) caixaPlayer.insertAdjacentHTML("beforeend", `<span class="video-logo"><img src="${escapar(d.logo)}" alt=""></span>`);
@@ -1600,11 +1637,15 @@ const degrades = [
   "linear-gradient(160deg,#e3d3c0,#b98f72)",
   "linear-gradient(160deg,#f1e5d6,#d6b9a0)"
 ];
-// Sem a aba "Todos": abre mostrando tudo, sem nenhum nicho marcado. Clicar no nicho marcado de novo volta a mostrar tudo.
-$("#filtros").innerHTML = nichos
-  .map((n) => `<button class="filtro" type="button" data-nicho="${escapar(n)}" aria-pressed="false">${escapar(n)}</button>`).join("");
-
-$("#trabalhos-grid").innerHTML = trabalhos.map((t, i) => t.link ? `
+// Menu de nichos em cima + uma linha por nicho embaixo, cada uma com setinhas (igual ao site de referência).
+// Trabalhos com nicho antigo entram no nicho do menu que combina com ele:
+const NICHO_DO_MENU = {
+  "Beleza": "Autoestima | Beleza | Moda", "Skincare": "Autoestima | Beleza | Moda", "Moda": "Autoestima | Beleza | Moda",
+  "Fitness": "Diversos | Bem Estar | Fit", "Tech": "Tech | Apps | Cursos"
+};
+const nichoDoTrabalho = (t) => NICHO_DO_MENU[t.nicho] || t.nicho;
+const slugNicho = (n) => "nicho-" + n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const cardTrabalho = (t, i) => t.link ? `
   <li class="trabalho cartao trabalho-video" data-nicho="${escapar(t.nicho)}">
     ${cardVideo({ ...t, tipo: t.formato }, "t" + i)}
   </li>` : `
@@ -1615,51 +1656,41 @@ $("#trabalhos-grid").innerHTML = trabalhos.map((t, i) => t.link ? `
     </div>
     <span class="tag">${escapar(t.nicho)}</span>
     <h3>${escapar(t.titulo)}</h3>
-  </li>`).join("");
+  </li>`;
+// só aparecem os nichos que já têm trabalho
+const nichosComTrabalho = nichos.filter((n) => trabalhos.some((t) => nichoDoTrabalho(t) === n));
+$("#filtros").innerHTML = nichosComTrabalho
+  .map((n) => `<a class="filtro" href="#${slugNicho(n)}">${escapar(n)}</a>`).join("");
+$("#nichos-linhas").innerHTML = nichosComTrabalho.map((n) => {
+  const itens = trabalhos.map((t, i) => [t, i]).filter(([t]) => nichoDoTrabalho(t) === n);
+  return `<div class="nicho-linha revelar" id="${slugNicho(n)}">
+    <div class="nicho-topo"><h3 class="nicho-titulo">${escapar(n)}<sup>${String(itens.length).padStart(2, "0")}</sup></h3></div>
+    <ul class="trabalhos-grid">${itens.map(([t, i]) => cardTrabalho(t, i)).join("")}</ul>
+  </div>`;
+}).join("");
 
-const gradeTrabalhos = $("#trabalhos-grid");
+const gradeTrabalhos = $("#nichos-linhas");
 ligarMiniaturas(gradeTrabalhos);
 ligarPrevias(gradeTrabalhos);
 marcarClicaveis(gradeTrabalhos);
 
-let filtroTimer = null;
-$("#filtros").addEventListener("click", (e) => {
-  const botao = e.target.closest(".filtro");
-  if (!botao) return;
-  const escolhido = botao.getAttribute("aria-pressed") === "true" ? "Todos" : botao.dataset.nicho;
-  const pertence = (c) => escolhido === "Todos" || c.dataset.nicho === escolhido;
-  document.querySelectorAll(".filtro").forEach((b) => b.setAttribute("aria-pressed", String(b === botao && escolhido !== "Todos")));
-  const cards = [...document.querySelectorAll(".trabalho")];
-  const espera = reduzMovimento ? 0 : 220;
-  clearTimeout(filtroTimer);
-  cards.forEach((c) => { if (!pertence(c)) c.classList.add("saindo"); });
-  filtroTimer = setTimeout(() => {
-    gradeTrabalhos.scrollLeft = 0;
-    cards.forEach((c) => {
-      if (!pertence(c)) { c.hidden = true; return; }
-      const estavaOculto = c.hidden;
-      c.hidden = false;
-      if (estavaOculto) { c.classList.add("saindo"); requestAnimationFrame(() => requestAnimationFrame(() => c.classList.remove("saindo"))); }
-      else c.classList.remove("saindo");
-    });
-  }, espera);
-  const total = cards.filter(pertence).length;
-  $("#aviso-filtro").textContent = `Mostrando ${total} ${total === 1 ? "trabalho" : "trabalhos"}.`;
-});
-
 // ---------- Carrossel: uma fileira só com setinhas (cases e categorias) ----------
 const setaSVG = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
-function ligarCarrossel(ul, extraClasse) {
+// ondeSetas: se vier, as setinhas ficam ali (canto direito do título da linha), sempre visíveis e apagadinhas quando não dá para ir
+function ligarCarrossel(ul, extraClasse, ondeSetas) {
   const caixa = document.createElement("div");
   caixa.className = "carrossel" + (extraClasse ? " " + extraClasse : "");
   ul.parentNode.insertBefore(caixa, ul);
   caixa.appendChild(ul);
-  caixa.insertAdjacentHTML("beforeend",
-    `<button class="seta seta-esq" type="button" aria-label="Ver anteriores" hidden>${setaSVG("M15 5l-7 7 7 7")}</button>` +
-    `<button class="seta seta-dir" type="button" aria-label="Ver mais" hidden>${setaSVG("M9 5l7 7-7 7")}</button>`);
-  const esq = caixa.querySelector(".seta-esq"), dir = caixa.querySelector(".seta-dir");
+  const botoes = `<button class="seta seta-esq" type="button" aria-label="Ver anteriores"${ondeSetas ? "" : " hidden"}>${setaSVG("M15 5l-7 7 7 7")}</button>` +
+    `<button class="seta seta-dir" type="button" aria-label="Ver mais"${ondeSetas ? "" : " hidden"}>${setaSVG("M9 5l7 7-7 7")}</button>`;
+  const lugar = ondeSetas || caixa;
+  if (ondeSetas) ondeSetas.insertAdjacentHTML("beforeend", `<div class="setas-topo">${botoes}</div>`);
+  else caixa.insertAdjacentHTML("beforeend", botoes);
+  const esq = lugar.querySelector(".seta-esq"), dir = lugar.querySelector(".seta-dir");
   const atualizar = () => {
     const max = ul.scrollWidth - ul.clientWidth;
+    if (ondeSetas) { esq.disabled = ul.scrollLeft <= 4; dir.disabled = ul.scrollLeft >= max - 4; return; }
     esq.hidden = ul.scrollLeft <= 4;
     dir.hidden = ul.scrollLeft >= max - 4;
   };
@@ -1679,7 +1710,7 @@ function ligarCarrossel(ul, extraClasse) {
   return atualizar;
 }
 ligarCarrossel($("#videos-grid"));
-ligarCarrossel($("#trabalhos-grid"), "trabalhos-car");
+document.querySelectorAll(".nicho-linha").forEach((linha) => ligarCarrossel(linha.querySelector(".trabalhos-grid"), "trabalhos-car", linha.querySelector(".nicho-topo")));
 
 // ---------- Algumas marcas que já trabalhei ----------
 $("#marcas-grade").innerHTML = marcasGrade.map((m) => `<li><img src="${escapar(m.logo)}" alt="${escapar(m.nome === "Marca parceira" ? "Logo de marca parceira" : "Logo " + m.nome)}" width="150" height="150" loading="lazy" decoding="async"></li>`).join("");
