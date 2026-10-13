@@ -820,4 +820,10 @@ ${blocos}`;
     }
   }
   document.addEventListener("painel:aba", (e) => { if (e.detail === ABA) abrir(); });
+  // aberto direto pelo endereço (#transcritos) ou recarregado: o aviso do painel pode ter saído antes deste arquivo carregar
+  (function abrirSeJaEstiverNaAba(tentativas) {
+    if ((location.hash || "").replace("#", "") !== ABA || st.pronto) return;
+    if (window.banco && document.getElementById("aba-" + ABA)) { abrir(); return; }
+    if (tentativas > 0) setTimeout(() => abrirSeJaEstiverNaAba(tentativas - 1), 300);
+  })(30);
 })();
