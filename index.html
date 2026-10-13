@@ -364,8 +364,14 @@
   /* =========================================================
      MURAL DE FOTOS (mosaico com fotos de tamanhos diferentes)
      ========================================================= */
-  section.fotos-secao{padding:30px 0 34px}
+  section.fotos-secao{padding:20px 0 34px}
   .fotos-titulo{margin:0 0 18px}
+  /* menos espaço entre a última linha de nichos e o título Fotos */
+  .nicho-linha:last-child{margin-bottom:0}
+  section#trabalhos{padding-bottom:20px}
+  /* título Fotos um pouco maior que os outros (pedido da Mari) */
+  body .fotos-titulo{font-size:clamp(2.8rem,5.4vw,4.2rem)}
+  html:not(.miniatura) body .fotos-titulo{font-size:clamp(2.6rem,4vw,3.6rem)}
   /* Duas fileiras de fotos em pé, todas do mesmo tamanho, com os produtos à vista */
   .fotos-mural{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;list-style:none;padding:0;width:min(1400px,calc(100vw - 32px));margin:0 0 0 calc((100% - min(1400px,calc(100vw - 32px))) / 2)}
   .fotos-mural li{flex:0 0 calc((100% - 108px) / 10);aspect-ratio:2/3;border-radius:14px;overflow:hidden;background:#e9dccb;box-shadow:var(--sombra)}
