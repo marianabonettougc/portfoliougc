@@ -1655,7 +1655,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
       }));
     });
     jobs.filter(j=>j.dataPagamento===iso && j.status!=="Cancelado" && (!j.pagamento || j.pagamento.status!=="Pago")).forEach(j=>lista.push({id:"g-"+j.id, hora:"", texto:`Conferir pagamento ${j.marca}`, sub:"Financeiro", pagina:"financeiro"}));
-    if(iso===hoje) followups.filter(f=>f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje).forEach(f=>lista.push({id:"f-"+f.id, hora:"", texto:`Follow-up com ${f.marca}`, sub:"Mandar mensagem para a marca", pagina:"followups"}));
+    // follow-ups: os pendentes vencidos e os feitos hoje (ficam riscados até o fim do dia); marcar aqui muda o status na aba Follow-ups
+    if(iso===hoje) followups.filter(f=>(f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje) || (f.status==="Feito" && f.concluidoEm===hoje)).forEach(f=>lista.push({id:"f-"+f.id, followup:f, hora:"", texto:`Follow-up com ${f.marca}`, sub:"Mandar mensagem para a marca", pagina:"followups"}));
     // eventos do calendário do iPhone
     (apple.eventos||[]).filter(ev=>ev.data===iso).forEach(ev=>lista.push({id:"a-"+ev.id, apple:ev, hora:ev.hora||"", texto:ev.titulo,
       sub:[ev.diaTodo ? "Dia todo" : (ev.fim && ev.fim!==ev.hora ? `${ev.hora} às ${ev.fim}` : ""), "iPhone", ev.local].filter(Boolean).join(" · ")}));
@@ -1684,13 +1685,26 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const diaSelD = new Date(diaSel+"T00:00:00");
   const agenda = itensDoDia(diaSel);
   const feitos = state.dashFeitos || {};
-  const estaFeito = (it) => it.tarefa ? !!it.tarefa.feito : !!feitos[diaSel+"|"+it.id];
+  const estaFeito = (it) => it.tarefa ? !!it.tarefa.feito : it.followup ? it.followup.status==="Feito" : !!feitos[diaSel+"|"+it.id];
   const diaDeGravacao = agenda.some(it=>/grav/i.test(it.texto));
   function marcar(it){
     if(it.tarefa){ mudar(s=>({...s, tarefasDia:(s.tarefasDia||[]).map(t=>t.id===it.tarefa.id?{...t, feito:!t.feito}:t)})); return; }
+    if(it.followup){ mudar(s=>({...s, followups:(s.followups||[]).map(f=>f.id!==it.followup.id ? f : f.status==="Feito" ? {...f, status:"Pendente", concluidoEm:""} : {...f, status:"Feito", concluidoEm:hoje})})); return; }
     const chave = diaSel+"|"+it.id;
     mudar(s=>{ const f = {...(s.dashFeitos||{})}; f[chave] = !f[chave]; return {...s, dashFeitos:f}; });
   }
+  useEffect(()=>{
+    const marcados = Object.keys(state.dashFeitos||{}).filter(k=>state.dashFeitos[k] && /\|f-/.test(k));
+    if(!marcados.length) return;
+    // espera o painel terminar de carregar (o mudar lê o estado guardado, que só fica pronto depois da primeira pintura)
+    const t = setTimeout(()=>mudar(s=>{
+      if(!s || !s.dashFeitos) return s;
+      const f = {...(s.dashFeitos||{})}; const conc = {};
+      Object.keys(f).filter(k=>f[k] && /\|f-/.test(k)).forEach(k=>{ const [dia, id] = k.split("|f-"); conc[id] = dia; delete f[k]; });
+      return {...s, dashFeitos:f, followups:(s.followups||[]).map(x=>conc[String(x.id)] && x.status==="Pendente" ? {...x, status:"Feito", concluidoEm:conc[String(x.id)]} : x)};
+    }), 0);
+    return ()=>clearTimeout(t);
+  }, [state.dashFeitos]);
   const [menuItem,setMenuItem] = useState(null);
   const [agendaToda,setAgendaToda] = useState(false);
   const agendaVisivel = agendaToda ? agenda : agenda.slice(0,4);
@@ -3556,7 +3570,7 @@ Se tiver algum feedback ou quiser fechar mais alguma coisa, me chama 💛`;
   }
 
   function marcarFeito(id){
-    updateState({...state, followups: state.followups.map(f=>f.id===id?{...f, status:"Feito", concluidoEm:todayISO()}:f)});
+    updateState({...state, followups: state.followups.map(f=>f.id===id?{...f, status:"Feito", concluidoEm:isoLocal(new Date())}:f)});
   }
   function reabrir(id){
     updateState({...state, followups: state.followups.map(f=>f.id===id?{...f, status:"Pendente", concluidoEm:""}:f)});
