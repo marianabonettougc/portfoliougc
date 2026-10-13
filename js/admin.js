@@ -408,6 +408,7 @@
     // o olho de dentro do aplicativo (Dashboard) avisa o painel para o botão do topo ficar igual
     if (e.origin === location.origin && e.data && "ocultarValores" in e.data && !e.data.aba) { ocultoAgora = Boolean(e.data.ocultarValores); pintarOlho(); return; }
     if (e.origin !== location.origin || !e.data || !e.data.aba || !TITULOS[e.data.aba]) return;
+    if (e.data.link) window.linkParaTranscrever = String(e.data.link); // o Dashboard manda um vídeo para a página Transcrever vídeo
     mostrarAba(e.data.aba);
   });
   window.addEventListener("hashchange", () => { const h = location.hash.replace("#", ""); if (h && h !== abaAtual) mostrarAba(h); });

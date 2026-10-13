@@ -656,6 +656,8 @@
     try {
       const { texto, segmentos } = await transcreverNaSupadata(link, null);
       const pronto = await atualizar(linha.id, { transcricao: texto, segmentos: segmentos || null, status: "pronto", erro: null });
+      const cod = (String(link).match(/\/(?:reel|reels|p|tv|video)\/([A-Za-z0-9_-]+)/) || [])[1];
+      if (cod) banco().from("inspiracoes").update({ transcrito: true }).ilike("link", "%" + cod + "%").then(() => {}, () => {});
       st.emAndamento.delete(linha.id);
       clearInterval(relogio);
       aviso("ok", "Pronto. Revisa, dá um nome e salva.");
@@ -801,6 +803,18 @@ ${blocos}`;
   // =========================================================
   // ABRIR A ABA
   // =========================================================
+  function linkQueVeioDeFora() {
+    const l = window.linkParaTranscrever;
+    if (!l) return;
+    window.linkParaTranscrever = "";
+    const campo = $("#rs-link", st.sec);
+    if (!campo) return;
+    $$(".cr-modo", st.sec).forEach((x) => { if (x.dataset.modo === "link") x.click(); });
+    campo.value = l;
+    st.deQuem = "outra";
+    const q = $("#rs-quem", st.sec); if (q) q.value = "outra";
+    clicouTranscrever();
+  }
   async function abrir() {
     st.sec = document.getElementById("aba-" + ABA);
     if (!st.sec || !window.banco) return;
@@ -813,10 +827,12 @@ ${blocos}`;
       pintarTudo();
       if (st.faltaSql) aviso("erro", "Falta rodar o arquivo sql-roteiros.sql no Supabase (SQL Editor). Depois é só recarregar esta página.");
       buscarSaldo();
+      linkQueVeioDeFora();
     } else {
       // volta para a aba: atualiza a lista sem perder o que está em andamento
       await carregarLista();
       pintarTudo();
+      linkQueVeioDeFora();
     }
   }
   document.addEventListener("painel:aba", (e) => { if (e.detail === ABA) abrir(); });
