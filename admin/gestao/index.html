@@ -254,7 +254,11 @@
   .db-transc button{ display:flex; align-items:flex-start; gap:10px; border:0; border-bottom:1px solid var(--db-linha); background:none; padding:10px 2px; text-align:left; cursor:pointer; color:var(--db-texto); }
   .db-transc button:last-child{ border-bottom:0; }
   .db-transc button:hover b{ color:var(--db-cafe); }
-  .db-transc button .db-ic{ flex-shrink:0; margin-top:2px; color:var(--db-suave); }
+  .db-transc button{ align-items:center !important; gap:12px !important; }
+  .db-transc-capa{ position:relative; flex-shrink:0; width:64px; height:40px; border-radius:8px; overflow:hidden; display:grid; place-items:center; background:linear-gradient(150deg,#efe5d8,#d9c4ae); color:var(--db-cafe); }
+  .db-transc-capa img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .db-transc-capa.tem .db-ic{ position:absolute; right:4px; bottom:4px; color:#fff; }
+  .db-transc button b{ font-weight:500 !important; }
   .db-transc span{ display:flex; flex-direction:column; gap:2px; min-width:0; }
   .db-transc b{ font-weight:400; font-size:13px; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .db-transc small{ font-size:11.5px; color:var(--db-suave); }
@@ -1729,7 +1733,13 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     const { data, error } = await supabaseClient.from("roteiros").select("*").eq("de_quem","outra").eq("exemplo",false).order("criado_em",{ascending:false}).limit(40);
     if(!error){ setRefs(data||[]); setRefsEm(Date.now()); }
   }
-  useEffect(()=>{ carregarRefs(); },[]);
+  // bloco Transcrições: as mesmas da página Transcrever vídeo (todas, mais recentes primeiro)
+  const [recentesTrans,setRecentesTrans] = useState([]);
+  async function carregarRecentesTrans(){
+    const { data, error } = await supabaseClient.from("roteiros").select("*").not("transcricao","is",null).order("criado_em",{ascending:false}).limit(6);
+    if(!error) setRecentesTrans((data||[]).filter(r=>(r.status||"pronto")==="pronto"));
+  }
+  useEffect(()=>{ carregarRefs(); carregarRecentesTrans(); },[]);
   const capas = state.miniaturas || {};
   useEffect(()=>{
     const doisDias = Date.now() - 2*86400000;
@@ -2266,17 +2276,24 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         </section>
 
         <section className="db-bloco db-transc-bloco">
-          <div className="db-bloco-topo"><h2>Transcrições</h2><button className="db-seta" onClick={()=>abrirAba && abrirAba("roteiros")} aria-label="Ver todas as transcrições" title="Ver todas"><DbIcone tipo="seta" tam={18}/></button></div>
-          {refs.length ? <div className="db-transc">
-            {refs.slice(0,6).map(r=>(
-              <button key={r.id} onClick={()=>setRefAberta(r)}>
-                <DbIcone tipo={iconeRede(r.origem)} tam={16}/>
-                <span><b>{r.gancho || r.titulo}</b><small>{[r.gancho_tipo ? "gancho de "+r.gancho_tipo : "", r.criado_em ? new Date(r.criado_em).toLocaleDateString("pt-BR") : ""].filter(Boolean).join(" · ")}</small></span>
-              </button>
-            ))}
+          <div className="db-bloco-topo"><h2>Transcrições</h2><button className="db-seta" onClick={()=>abrirAba && abrirAba("transcritos")} aria-label="Ver todas as transcrições" title="Ver todas"><DbIcone tipo="seta" tam={18}/></button></div>
+          {recentesTrans.length ? <div className="db-transc">
+            {recentesTrans.map(r=>{
+              const yt = String(r.link||"").match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+              const capa = r.capa || (yt ? "https://i.ytimg.com/vi/"+yt[1]+"/hqdefault.jpg" : (r.link && capas[r.link] && capas[r.link].imagem));
+              const rede = r.origem==="tiktok" ? "TikTok" : r.origem==="youtube" ? "YouTube" : r.origem==="instagram" ? "Instagram" : "Arquivo";
+              const perfil = r.perfil ? (String(r.perfil).startsWith("@") ? r.perfil : "@"+r.perfil) : "";
+              const data = r.data_post || r.criado_em;
+              return (
+                <button key={r.id} onClick={()=>setRefAberta(r)}>
+                  <i className={"db-transc-capa"+(capa?" tem":"")}>{capa ? <img src={capa} alt="" loading="lazy" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.remove();}}/> : null}<DbIcone tipo={iconeRede(r.origem)} tam={14}/></i>
+                  <span><b>{r.titulo || r.gancho || "Sem título"}</b><small>{[rede, perfil, data ? new Date(String(data).length<=10 ? data+"T12:00:00" : data).toLocaleDateString("pt-BR") : ""].filter(Boolean).join(" · ")}</small></span>
+                </button>
+              );
+            })}
           </div> : <p className="db-vazio">Os vídeos que você transcrever aparecem aqui.</p>}
           <div className="db-transc-acoes">
-            <button className="db-btn-claro" onClick={()=>setAbaInsp("transcrever")}>Transcrever vídeo</button>
+            <button className="db-btn-claro" onClick={()=>abrirAba ? abrirAba("transcritos") : setAbaInsp("transcrever")}>Transcrever vídeo</button>
             <button className="db-btn-escuro" onClick={()=>setRoteiroNovo({})}>Criar roteiro</button>
           </div>
         </section>
