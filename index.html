@@ -1071,7 +1071,7 @@ const caseDestaque = {
 };
 
 // ================================
-// NICHOS (botões de filtro, nesta ordem). A aba "Todos" vem antes deles e já abre selecionada.
+// NICHOS (botões de filtro, nesta ordem). Não tem aba "Todos": o site abre mostrando todos os trabalhos.
 // ================================
 const nichos = ["Maternidade", "Cabelo", "Autoestima | Beleza | Moda", "Tech | Apps | Cursos", "Casa e decoração", "Diversos | Bem Estar | Fit", "Fotos"];
 
@@ -1600,8 +1600,9 @@ const degrades = [
   "linear-gradient(160deg,#e3d3c0,#b98f72)",
   "linear-gradient(160deg,#f1e5d6,#d6b9a0)"
 ];
-$("#filtros").innerHTML = ["Todos", ...nichos]
-  .map((n, i) => `<button class="filtro" type="button" data-nicho="${escapar(n)}" aria-pressed="${i === 0}">${escapar(n)}</button>`).join("");
+// Sem a aba "Todos": abre mostrando tudo, sem nenhum nicho marcado. Clicar no nicho marcado de novo volta a mostrar tudo.
+$("#filtros").innerHTML = nichos
+  .map((n) => `<button class="filtro" type="button" data-nicho="${escapar(n)}" aria-pressed="false">${escapar(n)}</button>`).join("");
 
 $("#trabalhos-grid").innerHTML = trabalhos.map((t, i) => t.link ? `
   <li class="trabalho cartao trabalho-video" data-nicho="${escapar(t.nicho)}">
@@ -1625,9 +1626,9 @@ let filtroTimer = null;
 $("#filtros").addEventListener("click", (e) => {
   const botao = e.target.closest(".filtro");
   if (!botao) return;
-  const escolhido = botao.dataset.nicho;
+  const escolhido = botao.getAttribute("aria-pressed") === "true" ? "Todos" : botao.dataset.nicho;
   const pertence = (c) => escolhido === "Todos" || c.dataset.nicho === escolhido;
-  document.querySelectorAll(".filtro").forEach((b) => b.setAttribute("aria-pressed", String(b === botao)));
+  document.querySelectorAll(".filtro").forEach((b) => b.setAttribute("aria-pressed", String(b === botao && escolhido !== "Todos")));
   const cards = [...document.querySelectorAll(".trabalho")];
   const espera = reduzMovimento ? 0 : 220;
   clearTimeout(filtroTimer);
