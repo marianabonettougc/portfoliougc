@@ -1371,7 +1371,8 @@ function ligarPrevia(midia) {
             setTimeout(() => f.isConnected && f.classList.add("pronta"), 2800);
             midia.classList.add("tocando-previa");
           }
-          if (ev.data === 0) { ev.target.seekTo(0); ev.target.playVideo(); }   // acabou: volta pro começo (loop)
+          // acabou: esconde o vídeo (a capa aparece) enquanto volta pro começo, para não aparecer o ícone do YouTube
+          if (ev.data === 0) { ev.target.getIframe().classList.remove("pronta"); ev.target.seekTo(0); ev.target.playVideo(); }
         }
       }
     });
