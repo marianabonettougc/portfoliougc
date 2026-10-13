@@ -92,7 +92,7 @@
     return null;
   }
   const NOME_FONTE = { instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube", outro: "Escrito na mão" };
-  const EMOJI_FONTE = { instagram: "📸", tiktok: "🎵", youtube: "▶️", outro: "✍️" };
+  
 
   // =========================================================
   // BANCO
@@ -257,7 +257,7 @@
     sec.innerHTML = `
     <div class="cr-pagina rs-pagina">
       <header class="cr-cabeca cr-cabeca-linha">
-        <div><h2>Roteiros</h2><p>Cole o link, envie um vídeo ou um áudio e receba a transcrição.</p></div>
+        <div><h2>Transcrição de vídeos</h2><p>Cole o link, envie um vídeo ou um áudio e receba a transcrição.</p></div>
         <button type="button" class="btn rs-estudar" id="rs-estudar">${ic("lampada", 16)}Estudar com o Claude</button>
       </header>
 
@@ -355,7 +355,7 @@
       if (v.length < 12 || /\s/.test(v)) { toast("Essa chave parece incompleta. Copie de novo no site da Supadata.", true); return; }
       try {
         await salvarChave(v);
-        toast("Chave salva ✓");
+        toast("Chave salva ");
         aviso(null);
         trocandoChave = false;
         st.saldo = null;
@@ -615,16 +615,16 @@
   async function clicouTranscrever() {
     const campo = $("#rs-link", st.sec);
     const bruto = campo.value.trim();
-    if (!bruto) { aviso("erro", "📎 Cole o link do vídeo no campo antes de clicar em Transcrever."); campo.focus(); return; }
+    if (!bruto) { aviso("erro", "Cole o link do vídeo no campo antes de clicar em Transcrever."); campo.focus(); return; }
     const link = limparLink(bruto);
     let valido = /^https?:\/\//i.test(link);
     try { const u = new URL(link); if (!u.hostname.includes(".")) valido = false; } catch (e) { valido = false; }
-    if (!valido) { aviso("erro", "🤔 Isso não parece um link. Copie o link do vídeo (ele começa com https://) e cole aqui."); campo.focus(); return; }
+    if (!valido) { aviso("erro", "Isso não parece um link. Copie o link do vídeo (ele começa com https://) e cole aqui."); campo.focus(); return; }
     if (!st.chave) { explicarChave(); return; }
     if (st.faltaSql) { aviso("erro", "Falta rodar o arquivo sql-roteiros.sql no Supabase (SQL Editor). Depois é só recarregar esta página."); return; }
     const igual = st.lista.find((r) => r.link && limparLink(r.link) === link);
     if (igual) {
-      aviso("aviso", `📌 Esse vídeo já está na sua biblioteca${igual.titulo ? ` (<b>${esc(igual.titulo)}</b>)` : ""}. Transcrever de novo gasta mais um crédito.`, [
+      aviso("aviso", `Esse vídeo já está na sua biblioteca${igual.titulo ? ` (<b>${esc(igual.titulo)}</b>)` : ""}. Transcrever de novo gasta mais um crédito.`, [
         { texto: "Ver o que já tenho", acao: () => { aviso(null); abrirEditor(igual); } },
         { texto: "Transcrever de novo", acao: () => { aviso(null); campo.value = ""; executar(link, st.deQuem, igual); } }
       ]);
@@ -648,7 +648,7 @@
     const inicio = Date.now();
     const atualizarAviso = () => {
       const s = Math.round((Date.now() - inicio) / 1000);
-      aviso("andamento", `<span class="rs-relogio" aria-hidden="true">⏳</span> <b>Ouvindo o vídeo… ${tempoTxt(s)}.</b> Costuma levar de 3 a 4 minutos, pode deixar a aba aberta.`);
+      aviso("andamento", `<span class="rs-relogio" aria-hidden="true"></span> <b>Ouvindo o vídeo… ${tempoTxt(s)}.</b> Costuma levar de 3 a 4 minutos, pode deixar a aba aberta.`);
     };
     atualizarAviso();
     const relogio = setInterval(atualizarAviso, 5000);
@@ -658,9 +658,9 @@
       const pronto = await atualizar(linha.id, { transcricao: texto, segmentos: segmentos || null, status: "pronto", erro: null });
       st.emAndamento.delete(linha.id);
       clearInterval(relogio);
-      aviso("ok", "✅ Pronto. Revisa, dá um nome e salva.");
+      aviso("ok", "Pronto. Revisa, dá um nome e salva.");
       pintarTudo();
-      abrirEditor(pronto, null, "✅ Pronto. Revisa, dá um nome e salva.");
+      abrirEditor(pronto, null, "Pronto. Revisa, dá um nome e salva.");
     } catch (err) {
       clearInterval(relogio);
       st.emAndamento.delete(linha.id);
@@ -669,11 +669,11 @@
       pintarTudo();
       const r = st.lista.find((x) => x.id === linha.id);
       if (err.tipo === "vazio") {
-        aviso("aviso", "🎵 " + esc(msg), [{ texto: "📝 Guardar assim mesmo", acao: () => { aviso(null); abrirEditor(r, null, "Escreva o texto do vídeo na mão e salve."); } }]);
+        aviso("aviso", "" + esc(msg), [{ texto: "Guardar assim mesmo", acao: () => { aviso(null); abrirEditor(r, null, "Escreva o texto do vídeo na mão e salve."); } }]);
       } else if (err.tipo === "chave") {
-        aviso("erro", "🔑 " + esc(msg));
+        aviso("erro", "" + esc(msg));
       } else {
-        aviso("erro", "⚠️ " + esc(msg));
+        aviso("erro", "" + esc(msg));
       }
     }
     buscarSaldo();
@@ -688,10 +688,10 @@
     dlg = document.createElement("dialog");
     dlg.className = "janela larga rs-janela";
     dlg.innerHTML = `<form method="dialog" novalidate>
-      <div class="janela-cabeca"><div><small class="janela-sobretitulo">📜 Roteiros</small><h2 id="rs-j-titulo">Editar roteiro</h2></div>
+      <div class="janela-cabeca"><div><small class="janela-sobretitulo">Transcrições</small><h2 id="rs-j-titulo">Editar roteiro</h2></div>
         <button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
       <div class="janela-corpo" id="rs-j-corpo"></div>
-      <div class="janela-rodape"><button type="button" class="btn" data-fechar>Cancelar</button><button type="button" class="btn btn-principal" id="rs-j-salvar">💾 Salvar</button></div>
+      <div class="janela-rodape"><button type="button" class="btn" data-fechar>Cancelar</button><button type="button" class="btn btn-principal" id="rs-j-salvar">Salvar</button></div>
     </form>`;
     document.body.appendChild(dlg);
     $$("[data-fechar]", dlg).forEach((b) => b.addEventListener("click", () => dlg.close()));
@@ -702,7 +702,7 @@
     const d = janela();
     const v = r || Object.assign({ de_quem: "outra" }, padrao || {});
     const novo = !r;
-    $("#rs-j-titulo", d).textContent = novo ? "✍️ Escrever na mão" : "✏️ Editar roteiro";
+    $("#rs-j-titulo", d).textContent = novo ? "Escrever na mão" : "Editar roteiro";
     const campo = (nome, rotulo, valor, tipo = "text", extra = "") =>
       `<div class="campo"><label for="rs-f-${nome}">${rotulo}</label><input id="rs-f-${nome}" name="${nome}" type="${tipo}" value="${esc(valor || "")}" ${extra}></div>`;
     $("#rs-j-corpo", d).innerHTML = `
@@ -710,7 +710,7 @@
       ${campo("titulo", "Título", v.titulo, "text", 'placeholder="Ex.: gancho do antes e depois"')}
       <div class="linha-campos">
         <div class="campo"><label for="rs-f-de_quem">De quem</label>
-          <select id="rs-f-de_quem" name="de_quem"><option value="outra"${v.de_quem !== "meu" ? " selected" : ""}>👀 De outra pessoa</option><option value="meu"${v.de_quem === "meu" ? " selected" : ""}>💛 Meu</option></select></div>
+          <select id="rs-f-de_quem" name="de_quem"><option value="outra"${v.de_quem !== "meu" ? " selected" : ""}>De outra pessoa</option><option value="meu"${v.de_quem === "meu" ? " selected" : ""}>Meu</option></select></div>
         ${campo("perfil", "Perfil (@)", v.perfil, "text", 'placeholder="@perfil"')}
       </div>
       <div class="linha-campos">
@@ -748,7 +748,7 @@
         if (novo) { linha.origem = link ? fonteDoLink(link) : "outro"; await inserir(linha); }
         else await atualizar(r.id, linha);
         d.close();
-        toast("Salvo ✓");
+        toast("Salvo ");
         aviso(null);
         pintarTudo();
       } catch (e) { toast(e.message, true); }
@@ -759,18 +759,18 @@
   }
   async function apagarRoteiro(r) {
     const d = janela();
-    $("#rs-j-titulo", d).textContent = "🗑 Apagar roteiro";
+    $("#rs-j-titulo", d).textContent = "Apagar roteiro";
     $("#rs-j-corpo", d).innerHTML = `<p style="margin:0">Apagar <b>${esc(r.titulo || "este roteiro")}</b>${r.perfil ? " de " + esc(r.perfil) : ""}? Não dá pra desfazer.</p>`;
     const btn = $("#rs-j-salvar", d);
     const b2 = btn.cloneNode(false);
-    b2.className = "btn btn-perigo"; b2.id = "rs-j-salvar"; b2.textContent = "🗑 Apagar";
+    b2.className = "btn btn-perigo"; b2.id = "rs-j-salvar"; b2.textContent = "Apagar";
     btn.replaceWith(b2);
     b2.addEventListener("click", async () => {
       b2.disabled = true;
       try { await remover(r.id); d.close(); toast("Apagado"); pintarTudo(); }
       catch (e) { toast(e.message, true); b2.disabled = false; }
     });
-    d.addEventListener("close", () => { b2.className = "btn btn-principal"; b2.textContent = "💾 Salvar"; }, { once: true });
+    d.addEventListener("close", () => { b2.className = "btn btn-principal"; b2.textContent = "Salvar"; }, { once: true });
     if (!d.open) d.showModal();
   }
 
@@ -779,7 +779,7 @@
   // =========================================================
   async function estudarComClaude() {
     const outras = st.lista.filter((r) => r.de_quem !== "meu" && (r.status || "pronto") === "pronto" && String(r.transcricao || "").trim()).slice(0, 10);
-    if (!outras.length) { aviso("aviso", "🧠 Ainda não tenho vídeos de outras creators transcritos. Transcreva alguns marcados como <b>De outra pessoa</b> e volte aqui."); return; }
+    if (!outras.length) { aviso("aviso", "Ainda não tenho vídeos de outras creators transcritos. Transcreva alguns marcados como <b>De outra pessoa</b> e volte aqui."); return; }
     const blocos = outras.map((r, i) => `VÍDEO ${i + 1}\nPerfil: ${r.perfil || "não informado"}${r.titulo ? "\nTítulo: " + r.titulo : ""}\nTranscrição:\n${String(r.transcricao).trim()}`).join("\n\n----------\n\n");
     const prompt = `Sou criadora de conteúdo UGC e estou estudando o que outras creators estão postando. Abaixo estão as transcrições de ${outras.length} vídeos recentes de outras perfis.
 
@@ -794,7 +794,7 @@ Meu assunto: [escreva aqui o seu nicho e os produtos que você usa]
 
 ${blocos}`;
     if (await copiar(prompt)) {
-      aviso("ok", `🧠 Prompt copiado com ${outras.length} ${outras.length === 1 ? "vídeo" : "vídeos"} de outras creators. Abra o <a href="https://claude.ai/new" target="_blank" rel="noopener">Claude</a>, cole e troque o trecho <b>[escreva aqui o seu nicho...]</b> pelo seu assunto.`);
+      aviso("ok", `Prompt copiado com ${outras.length} ${outras.length === 1 ? "vídeo" : "vídeos"} de outras creators. Abra o <a href="https://claude.ai/new" target="_blank" rel="noopener">Claude</a>, cole e troque o trecho <b>[escreva aqui o seu nicho...]</b> pelo seu assunto.`);
     }
   }
 
