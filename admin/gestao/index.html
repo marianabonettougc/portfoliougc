@@ -1017,6 +1017,16 @@ function emptyEntregaveis(){ return {videos:[], fotos:[], stories:[]}; }
 // cada item pode valer mais de um conteúdo (ex.: 3 vídeos com as mesmas datas); datas diferentes = outro item
 const qtdItem = (i) => Math.max(1, Number(i && i.quantidade) || 1);
 const qtdItens = (lista) => (lista||[]).reduce((s,i)=>s+qtdItem(i), 0);
+// o que foi fechado, tirado dos entregáveis (ex.: "2 Reels · 1 foto · 2 stories"); sem entregáveis usa o tipo de conteúdo
+function resumoEntregas(j){
+  const e = (j && j.entregaveis) || {};
+  const nv = qtdItens(e.videos), nf = qtdItens(e.fotos), ns = qtdItens(e.stories);
+  const partes = [];
+  if(nv) partes.push(`${nv} Reels`);
+  if(nf) partes.push(`${nf} foto${nf>1?"s":""}`);
+  if(ns) partes.push(`${ns} ${ns>1?"stories":"story"}`);
+  return partes.join(" · ") || (j && j.tipo) || "";
+}
 function novoEntregavelItem(tipo, idx){
   const nomes = {videos:"Vídeo", fotos:"Foto", stories:"Story"};
   return {id:uid(), label:`${nomes[tipo]} ${idx}`, concluido:false, roteiroStatus:STATUS_OPTIONS_BY_TIPO[tipo][0]};
@@ -1787,12 +1797,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const descricaoJob = (j) => {
     const e = j.entregaveis || {};
     const nv = qtdItens(e.videos), nf = qtdItens(e.fotos), ns = qtdItens(e.stories);
-    const partes = [];
-    if(j.tipo) partes.push(j.tipo);
-    if(nv) partes.push(`${nv} vídeo${nv>1?"s":""}`);
-    if(nf) partes.push(`${nf} foto${nf>1?"s":""}`);
-    if(ns) partes.push(`${ns} stories`);
-    return partes.join(" · ") || (j.categoria || "Job");
+    return resumoEntregas(j) || (j.categoria || "Job");
   };
 
   // ----- agenda do dia (tarefas com horário + planner, entregas, pagamentos e follow-ups) -----
@@ -3766,7 +3771,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
 function JobCard({j, onEdit, onDelete, onMarkPaid, onDuplicate, draggable, onDragStart}){
   const hoje = todayISO();
   const isHoje = j.prazoEntrega===hoje;
-  const totalV = qtdItens(j.entregaveis?.videos), totalF = qtdItens(j.entregaveis?.fotos);
+  const totalV = qtdItens(j.entregaveis?.videos), totalF = qtdItens(j.entregaveis?.fotos), totalS = qtdItens(j.entregaveis?.stories);
   const pago = j.pagamento && j.pagamento.status==="Pago";
   return (
     <div className="kanban-card" draggable={draggable} onDragStart={draggable ? (e)=>onDragStart(e, j.id) : undefined}>
@@ -3777,12 +3782,13 @@ function JobCard({j, onEdit, onDelete, onMarkPaid, onDuplicate, draggable, onDra
       <div style={{display:"flex", alignItems:"center", gap:6}}>
         <strong style={{fontSize:14}}>{j.marca}</strong>
       </div>
-      <div style={{fontSize:13, color:"var(--graphite-soft)", margin:"4px 0"}}>{j.tipo || "Conteúdo"}</div>
-      <div style={{display:"flex", gap:10, fontSize:12.5, color:"var(--graphite-soft)", marginBottom:6}}>
-        <span style={{display:"flex", alignItems:"center", gap:3}}><Icon name="videocam" size={13}/>{totalV}</span>
-        <span style={{display:"flex", alignItems:"center", gap:3}}><Icon name="photo_camera" size={13}/>{totalF}</span>
+      <div style={{fontSize:13, color:"var(--graphite-soft)", margin:"4px 0"}}>{[resumoEntregas(j) || "Conteúdo", j.nicho].filter(Boolean).join(" · ")}</div>
+      {(totalV>0 || totalF>0 || totalS>0 || isHoje) && <div style={{display:"flex", gap:10, fontSize:12.5, color:"var(--graphite-soft)", marginBottom:6}}>
+        {totalV>0 && <span title="Reels" style={{display:"flex", alignItems:"center", gap:3}}><Icon name="videocam" size={13}/>{totalV}</span>}
+        {totalF>0 && <span title="Fotos" style={{display:"flex", alignItems:"center", gap:3}}><Icon name="photo_camera" size={13}/>{totalF}</span>}
+        {totalS>0 && <span title="Stories" style={{display:"flex", alignItems:"center", gap:3}}><Icon name="auto_stories" size={13}/>{totalS}</span>}
         {isHoje && <Badge tone="yellow">Hoje</Badge>}
-      </div>
+      </div>}
       <DatasJob j={j} compacto/>
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8}}>
         <strong style={{fontSize:15}}>{j.tipoJob==="Permuta" ? "Permuta" : fmtMoneyCur(j.valor, j.moeda)}</strong>
@@ -3962,7 +3968,7 @@ function Jobs({state, updateState}){
                   <strong>{j.marca}</strong>
                   {j.recorrente && <span title="Job recorrente" style={{display:"inline-flex"}}><Icon name="repeat" size={14} style={{color:"var(--wine)"}}/></span>}
                 </div>
-                <div style={{fontSize:14.5, color:"var(--graphite-soft)"}}>{[j.tipo, j.nicho].filter(Boolean).join(" · ")}</div>
+                <div style={{fontSize:14.5, color:"var(--graphite-soft)"}}>{[resumoEntregas(j), j.nicho].filter(Boolean).join(" · ")}</div>
               </div>
               <DatasJob j={j}/>
               <div className="job-linha-valor">{j.tipoJob==="Permuta" ? "Permuta" : fmtMoneyCur(j.valor, j.moeda)}</div>
