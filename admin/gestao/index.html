@@ -940,6 +940,9 @@ function calcDataFim(inicio, periodoKey){
   return d.toISOString().slice(0,10);
 }
 function emptyEntregaveis(){ return {videos:[], fotos:[], stories:[]}; }
+// cada item pode valer mais de um conteúdo (ex.: 3 vídeos com as mesmas datas); datas diferentes = outro item
+const qtdItem = (i) => Math.max(1, Number(i && i.quantidade) || 1);
+const qtdItens = (lista) => (lista||[]).reduce((s,i)=>s+qtdItem(i), 0);
 function novoEntregavelItem(tipo, idx){
   const nomes = {videos:"Vídeo", fotos:"Foto", stories:"Story"};
   return {id:uid(), label:`${nomes[tipo]} ${idx}`, concluido:false, roteiroStatus:STATUS_OPTIONS_BY_TIPO[tipo][0]};
@@ -1628,7 +1631,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const prioridade = proximos[0] || andamento[0] || ativos[0] || null;
   const descricaoJob = (j) => {
     const e = j.entregaveis || {};
-    const nv = (e.videos||[]).length, nf = (e.fotos||[]).length, ns = (e.stories||[]).length;
+    const nv = qtdItens(e.videos), nf = qtdItens(e.fotos), ns = qtdItens(e.stories);
     const partes = [];
     if(j.tipo) partes.push(j.tipo);
     if(nv) partes.push(`${nv} vídeo${nv>1?"s":""}`);
@@ -2702,7 +2705,8 @@ function NichoModal({state, updateState, onClose}){
 }
 
 function EntregavelBlock({tipo, label, icon, items, onChange, publi}){
-  const concluidos = items.filter(i=>i.concluido).length;
+  const concluidos = qtdItens(items.filter(i=>i.concluido));
+  const nomeTipo = {videos:["vídeo","vídeos"], fotos:["foto","fotos"], stories:["story","stories"]}[tipo] || ["item","itens"];
   function addItem(){ onChange([...items, novoEntregavelItem(tipo, items.length+1)]); }
   function removeItem(id){ onChange(items.filter(i=>i.id!==id)); }
   function toggleConcluido(id){ onChange(items.map(i=>i.id===id?{...i,concluido:!i.concluido}:i)); }
@@ -2714,7 +2718,7 @@ function EntregavelBlock({tipo, label, icon, items, onChange, publi}){
   return (
     <div style={{marginBottom:14}}>
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8}}>
-        <span style={{fontSize:14.5, fontWeight:600, display:"flex", alignItems:"center", gap:6}}><Icon name={icon} size={16}/>{label} ({concluidos}/{items.length})</span>
+        <span style={{fontSize:14.5, fontWeight:600, display:"flex", alignItems:"center", gap:6}}><Icon name={icon} size={16}/>{label} ({concluidos}/{qtdItens(items)})</span>
         <button className="btn btn-ghost btn-sm" onClick={addItem}><Icon name="add" size={14}/>Adicionar</button>
       </div>
       {items.map(it=>(
@@ -2722,18 +2726,20 @@ function EntregavelBlock({tipo, label, icon, items, onChange, publi}){
           <div onClick={()=>toggleConcluido(it.id)} style={{cursor:"pointer", width:18,height:18, borderRadius:"50%", border:"1.5px solid "+(it.concluido?"var(--moss)":"var(--line)"), background: it.concluido?"var(--moss)":"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0}}>
             {it.concluido && <Icon name="check" size={12} style={{color:"#fff"}}/>}
           </div>
-          <span style={{flex:1, fontSize:15}}>{it.label}</span>
+          <span style={{flex:1, fontSize:15}}>{it.label}{qtdItem(it)>1 && <span style={{color:"var(--graphite-soft)", fontSize:13.5}}> · {qtdItem(it)} {nomeTipo[1]}</span>}</span>
           <select value={statusDoItem(it, tipo)} onChange={e=>setRoteiroStatus(it.id, e.target.value)} style={{fontSize:13.5, padding:"6px 8px", width:"auto"}}>
             {(STATUS_OPTIONS_BY_TIPO[tipo]||ROTEIRO_STATUS_OPTIONS).map(o=><option key={o}>{o}</option>)}
           </select>
           <button className="icon-btn" style={{width:30,height:30}} onClick={()=>removeItem(it.id)}><Icon name="delete" size={15}/></button>
           <div className="entregavel-datas">
+            <label>Quantidade<input type="number" min="1" value={it.quantidade||1} onChange={e=>setData(it.id,"quantidade",Math.max(1, Number(e.target.value)||1))}/></label>
             {temRoteiro && <label>Prazo do roteiro<input type="date" value={it.prazoRoteiro||""} onChange={e=>setData(it.id,"prazoRoteiro",e.target.value)}/></label>}
             <label>Prazo do conteúdo<input type="date" value={it.prazoConteudo||""} onChange={e=>setData(it.id,"prazoConteudo",e.target.value)}/></label>
             {publi && <label>Data de postagem<input type="date" value={it.prazoPostagem||""} onChange={e=>setData(it.id,"prazoPostagem",e.target.value)}/></label>}
           </div>
         </div>
       ))}
+      {items.length>0 && <p style={{fontSize:12.5, color:"var(--graphite-soft)", margin:"2px 0 0"}}>{publi ? `Vai postar em datas diferentes? Toque em Adicionar e crie outra linha com as datas dela.` : `Entregas em datas diferentes? Toque em Adicionar e crie outra linha com as datas dela.`}</p>}
     </div>
   );
 }
@@ -2864,6 +2870,162 @@ function Collapsible({title, icon, defaultOpen, badge, children}){
   );
 }
 
+// ---------- Roteiro do conteúdo do job: só importar (do Google Docs ou da aba Roteiros) ----------
+function ImportarRoteiroJob({f, setF, state}){
+  const [modo,setModo] = useState(""); // "docs" | "aba"
+  const [link,setLink] = useState("");
+  const [achados,setAchados] = useState([]);
+  const [lendo,setLendo] = useState(false);
+  const [erro,setErro] = useState("");
+  const [busca,setBusca] = useState("");
+  const usar = (titulo, texto, extra) => { setF(p=>({...p, roteiroTitulo:titulo||"", roteiroConteudo:texto||"", roteiroStatus:"Pronto", roteiroTemplate:"", ...(extra||{})})); setModo(""); setAchados([]); setLink(""); };
+  async function lerDocs(){
+    setErro(""); setAchados([]);
+    if(!/docs\.google\.com\/document\/d\//.test(link)){ setErro("Cole o link de um documento do Google Docs (docs.google.com/document/d/...)."); return; }
+    setLendo(true);
+    try{
+      const { data, error } = await supabaseClient.functions.invoke("google-docs", {body:{url:link.trim()}});
+      let msg = data && data.error;
+      if(error){ try{ msg = (await error.context.json()).error; }catch(e){} msg = msg || "Não consegui falar com o Google Docs agora."; }
+      if(msg) throw new Error(msg);
+      const lista = separarRoteirosDoDocs(data.texto);
+      if(lista.length>1) setAchados(lista.map(r=>({...r, marcado:true})));
+      else usar(data.titulo || (lista[0]||{}).titulo || "Roteiro do Google Docs", lista.length ? roteiroDoDocs(lista[0], {}).conteudo : data.texto, {roteiroDoc:link.trim(), roteiroId:""});
+    }catch(e){ setErro(String(e.message||e)); }
+    setLendo(false);
+  }
+  function usarAchados(){
+    const marc = achados.filter(r=>r.marcado);
+    if(!marc.length) return;
+    usar(marc.length===1 ? marc[0].titulo : `${marc.length} roteiros do Google Docs`, marc.map(r=>`${r.titulo}\n\n${roteiroDoDocs(r, {}).conteudo}`).join("\n\n----------\n\n"), {roteiroDoc:link.trim(), roteiroId:""});
+  }
+  const marcaJob = String(f.marca||"").trim().toLowerCase();
+  const roteiros = (state.roteiros||[]).filter(r=>!busca.trim() || [r.titulo, r.cliente, r.conteudo].join(" ").toLowerCase().includes(busca.trim().toLowerCase()))
+    .sort((a,b)=>{ const da = marcaJob && String(a.cliente||"").toLowerCase()===marcaJob ? 0 : 1, db = marcaJob && String(b.cliente||"").toLowerCase()===marcaJob ? 0 : 1; return da-db; });
+  return (
+    <div>
+      {f.roteiroConteudo ? (
+        <div style={{border:"1px solid var(--line)", borderRadius:12, padding:"12px 14px", marginBottom:12, background:"var(--card-bg)"}}>
+          <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6}}>
+            <Icon name="description" size={16}/><strong style={{flex:1, fontSize:14.5}}>{f.roteiroTitulo || "Roteiro importado"}</strong>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={()=>{ if(confirm("Tirar o roteiro deste job? O roteiro continua salvo onde estava.")) setF(p=>({...p, roteiroConteudo:"", roteiroTitulo:"", roteiroId:"", roteiroDoc:"", roteiroStatus:"Em criação"})); }}>Remover</button>
+          </div>
+          <div style={{whiteSpace:"pre-wrap", fontSize:13.5, lineHeight:1.55, maxHeight:220, overflow:"auto", color:"var(--graphite)"}}>{f.roteiroConteudo}</div>
+        </div>
+      ) : <p style={{fontSize:13.5, color:"var(--graphite-soft)", margin:"0 0 10px"}}>Nenhum roteiro ainda. Importe do Google Docs ou de um roteiro da aba Roteiros.</p>}
+      <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
+        <button type="button" className={"btn btn-sm "+(modo==="docs"?"btn-primary":"btn-ghost")} onClick={()=>{ setModo(modo==="docs"?"":"docs"); setErro(""); }}><Icon name="upload_file" size={15}/>{f.roteiroConteudo?"Trocar: ":""}Importar do Google Docs</button>
+        <button type="button" className={"btn btn-sm "+(modo==="aba"?"btn-primary":"btn-ghost")} onClick={()=>{ setModo(modo==="aba"?"":"aba"); setErro(""); }}><Icon name="description" size={15}/>{f.roteiroConteudo?"Trocar: ":""}Importar da aba Roteiros</button>
+      </div>
+      {modo==="docs" && (
+        <div style={{marginTop:12}}>
+          <div style={{display:"flex", gap:8}}>
+            <input value={link} onChange={e=>setLink(e.target.value)} placeholder="https://docs.google.com/document/d/..." onKeyDown={e=>{ if(e.key==="Enter") lerDocs(); }}/>
+            <button type="button" className="btn btn-ghost" onClick={lerDocs} disabled={lendo||!link.trim()}>{lendo?"Lendo...":"Ler documento"}</button>
+          </div>
+          {achados.length>0 && (
+            <div style={{marginTop:10}}>
+              <div style={{fontSize:13.5, fontWeight:600, marginBottom:6}}>{achados.length} roteiros no documento. Quais são deste job?</div>
+              {achados.map((r,i)=>(
+                <label key={i} style={{display:"flex", gap:8, alignItems:"center", fontSize:14, padding:"5px 0", cursor:"pointer"}}>
+                  <input type="checkbox" checked={r.marcado} onChange={e=>setAchados(l=>l.map((x,k)=>k===i?{...x, marcado:e.target.checked}:x))}/>{r.titulo}
+                </label>
+              ))}
+              <button type="button" className="btn btn-primary btn-sm" style={{marginTop:6}} disabled={!achados.some(r=>r.marcado)} onClick={usarAchados}>Usar no job</button>
+            </div>
+          )}
+        </div>
+      )}
+      {modo==="aba" && (
+        <div style={{marginTop:12}}>
+          <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar roteiro por título ou cliente..."/>
+          <div style={{maxHeight:240, overflow:"auto", marginTop:8, border:"1px solid var(--line)", borderRadius:12}}>
+            {roteiros.length ? roteiros.slice(0,60).map(r=>(
+              <button type="button" key={r.id} onClick={()=>usar(r.titulo, r.conteudo, {roteiroId:r.id, roteiroDoc:""})} style={{display:"block", width:"100%", textAlign:"left", padding:"10px 12px", border:0, borderBottom:"1px solid var(--line)", background:"transparent", cursor:"pointer", fontFamily:"inherit"}}>
+                <div style={{fontSize:14.5, fontWeight:600}}>{r.titulo || "Sem título"}</div>
+                <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>{[r.cliente, r.etapa, r.plataforma].filter(Boolean).join(" · ")}</div>
+              </button>
+            )) : <div style={{padding:12, fontSize:13.5, color:"var(--graphite-soft)"}}>Nenhum roteiro encontrado na aba Roteiros.</div>}
+          </div>
+        </div>
+      )}
+      {erro && <p style={{fontSize:13, color:"var(--danger, #b8473a)", background:"#f6e0dc", padding:"8px 12px", borderRadius:10, marginTop:10}}>{erro}</p>}
+    </div>
+  );
+}
+
+// ---------- Nota fiscal do job: número, valor e data de emissão lidos do arquivo (PDF ou XML) ----------
+function carregarScriptApp(src){
+  return new Promise((ok, falha)=>{ if(document.querySelector(`script[src="${src}"]`)){ ok(); return; } const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = ()=>falha(new Error("Não consegui abrir o leitor de PDF.")); document.head.appendChild(sc); });
+}
+const valorBR = (t) => Number(String(t).replace(/\./g,"").replace(",","."));
+const dataBRparaISO = (t) => { const m = String(t||"").match(/(\d{2})\/(\d{2})\/(\d{4})/); return m ? `${m[3]}-${m[2]}-${m[1]}` : ""; };
+function lerXmlNF(texto){
+  const doc = new DOMParser().parseFromString(texto, "text/xml");
+  const tag = (...nomes) => { for(const n of nomes){ const el = doc.getElementsByTagName(n)[0] || [...doc.getElementsByTagName("*")].find(x=>x.localName===n); if(el && el.textContent.trim()) return el.textContent.trim(); } return ""; };
+  const numero = tag("nNFSe","Numero","NumeroNFe","nNF");
+  const data = tag("dhEmi","DataEmissao","dhProc","DataEmissaoNFe","dEmi").slice(0,10);
+  const valor = tag("vLiq","ValorLiquidoNfse","vServ","ValorServicos","vNF");
+  return { numero, dataEmissao: /^\d{4}-\d{2}-\d{2}$/.test(data) ? data : dataBRparaISO(data), valor: valor ? String(Number(valor)) : "" };
+}
+function lerTextoNF(t){
+  t = t.replace(/\s+/g," ");
+  const pega = (res) => { for(const re of res){ const m = t.match(re); if(m) return m[1]; } return ""; };
+  const numero = pega([/N[úu]mero\s+da\s+NFS-?e\s*[:\-]?\s*(\d{1,15})\b/i, /NFS-?e\s*(?:N[º°o.]*|N[úu]mero)\s*[:\-]?\s*(\d{1,15})\b/i, /Nota\s+Fiscal[^\d]{0,30}N[º°o.]*\s*(\d{1,15})\b/i, /N[úu]mero(?:\s+da\s+Nota)?\s*[:\-]?\s*(\d{1,15})\b/i]);
+  const data = pega([/emiss[ãa]o[^\d]{0,80}(\d{2}\/\d{2}\/\d{4})/i, /(\d{2}\/\d{2}\/\d{4})/]);
+  const valor = pega([/Valor\s+L[íi]quido[^\d]{0,60}([\d.]+,\d{2})/i, /Valor\s+(?:Total\s+)?d[oa]s?\s+(?:Servi[çc]os?|Nota)[^\d]{0,60}([\d.]+,\d{2})/i, /Valor\s+Total[^\d]{0,60}([\d.]+,\d{2})/i, /R\$\s*([\d.]+,\d{2})/]);
+  return { numero, dataEmissao: dataBRparaISO(data), valor: valor ? String(valorBR(valor)) : "" };
+}
+function NotaFiscalJob({nf, setNf}){
+  const [lendo,setLendo] = useState(false);
+  const [aviso,setAviso] = useState("");
+  async function ler(arq){
+    if(!arq) return;
+    setLendo(true); setAviso("");
+    try{
+      let r;
+      if(/xml/i.test(arq.type) || /\.xml$/i.test(arq.name)) r = lerXmlNF(await arq.text());
+      else if(/pdf/i.test(arq.type) || /\.pdf$/i.test(arq.name)){
+        await carregarScriptApp("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        const doc = await window.pdfjsLib.getDocument({ data: await arq.arrayBuffer() }).promise;
+        let texto = "";
+        for(let i=1; i<=Math.min(doc.numPages, 3); i++){ const pg = await doc.getPage(i); texto += " " + (await pg.getTextContent()).items.map(x=>x.str).join(" "); }
+        if(!texto.trim()) throw new Error("Esse PDF é uma imagem (sem texto), então não dá para ler os dados. Envie o PDF original da prefeitura ou o XML.");
+        r = lerTextoNF(texto);
+      } else throw new Error("Envie a nota em PDF ou XML.");
+      const faltam = [!r.numero && "número", !r.valor && "valor", !r.dataEmissao && "data de emissão"].filter(Boolean);
+      setNf({arquivo:arq.name, numero:r.numero||nf.numero||"", valor:r.valor||nf.valor||"", dataEmissao:r.dataEmissao||nf.dataEmissao||"", status:"Emitida", lidaDoArquivo:true});
+      setAviso(faltam.length ? `Não achei ${faltam.join(", ")} na nota. Preencha abaixo.` : "Dados lidos da nota. Confira se está tudo certo.");
+    }catch(e){ setAviso(String(e.message||e)); }
+    setLendo(false);
+  }
+  const lida = nf.arquivo && nf.lidaDoArquivo;
+  return (
+    <div>
+      <Field label="Nota fiscal (PDF ou XML)">
+        <input type="file" accept=".pdf,.xml,application/pdf,text/xml,application/xml" onChange={e=>ler(e.target.files[0])}/>
+        {lendo && <div style={{fontSize:13, color:"var(--graphite-soft)", marginTop:6}}>Lendo a nota...</div>}
+        {nf.arquivo && !lendo && <div style={{fontSize:13, color:"var(--graphite-soft)", marginTop:4}}><Icon name="attach_file" size={13}/> {nf.arquivo}</div>}
+        {aviso && <div style={{fontSize:13, marginTop:6, color:/Não|Envie|imagem/.test(aviso) ? "var(--danger, #b8473a)" : "var(--moss)"}}>{aviso}</div>}
+      </Field>
+      {(lida || nf.numero || nf.valor || nf.dataEmissao) ? (
+        <div className="field-row">
+          <Field label="Número da NF"><input value={nf.numero||""} onChange={e=>setNf({numero:e.target.value})}/></Field>
+          <Field label="Valor da NF"><input type="number" value={nf.valor||""} onChange={e=>setNf({valor:e.target.value})}/></Field>
+          <Field label="Data de emissão"><input type="date" value={nf.dataEmissao||""} onChange={e=>setNf({dataEmissao:e.target.value})}/></Field>
+        </div>
+      ) : <p style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-6}}>Anexe a nota e o número, o valor e a data de emissão são preenchidos sozinhos.</p>}
+    </div>
+  );
+}
+
+// o prazo de entrega do job é o último "Prazo do conteúdo" dos itens (o campo separado saiu do formulário)
+function comPrazoDosItens(job){
+  const e = job.entregaveis || {};
+  const datas = [...(e.videos||[]), ...(e.fotos||[]), ...(e.stories||[])].map(i=>i.prazoConteudo).filter(Boolean).sort();
+  return datas.length ? {...job, prazoEntrega: datas[datas.length-1]} : job;
+}
 function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
   const [f,setF] = useState(()=>mergeJobWithDefaults(initial));
   const [nichoModal,setNichoModal] = useState(false);
@@ -2875,7 +3037,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
     if(!onAutosave) return;
     if(!f.marca || !f.marca.trim()) return;
     const t = setTimeout(()=>{
-      onAutosave(f);
+      onAutosave(comPrazoDosItens(f));
       setSavedTick(true);
       setTimeout(()=>setSavedTick(false), 1200);
     }, 500);
@@ -2883,8 +3045,8 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
   },[f]);
 
   const allNichos = [...NICHOS_DEFAULT, ...(state.nichos||[]).map(n=>n.nome)];
-  const totalItens = f.entregaveis.videos.length + f.entregaveis.fotos.length + f.entregaveis.stories.length;
-  const concluidosTotal = [...f.entregaveis.videos,...f.entregaveis.fotos,...f.entregaveis.stories].filter(i=>i.concluido).length;
+  const totalItens = qtdItens(f.entregaveis.videos) + qtdItens(f.entregaveis.fotos) + qtdItens(f.entregaveis.stories);
+  const concluidosTotal = qtdItens([...f.entregaveis.videos,...f.entregaveis.fotos,...f.entregaveis.stories].filter(i=>i.concluido));
   const pctCompleto = totalItens>0 ? Math.round((concluidosTotal/totalItens)*100) : 0;
 
   const [distribModal,setDistribModal] = useState(false);
@@ -2922,7 +3084,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
       {label:"50% após entrega", valor: orgVal/2}
     ];
     if(f.divisaoParcelas==="por-video"){
-      const n = Math.max(1, f.entregaveis.videos.length);
+      const n = Math.max(1, qtdItens(f.entregaveis.videos));
       return Array.from({length:n}).map((_,i)=>({label:`Parcela ${i+1} (por vídeo)`, valor: orgVal/n}));
     }
     return f.parcelasPersonalizadas.length>0 ? f.parcelasPersonalizadas : [{label:"Adicione parcelas personalizadas abaixo", valor:0}];
@@ -2968,12 +3130,6 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
 
       <Collapsible title="Entregáveis" icon="inventory_2" defaultOpen={true} badge={totalItens>0 && <Badge tone="gray" style={{marginLeft:6}}>{concluidosTotal}/{totalItens} concluídos</Badge>}>
       {totalItens>0 && <div style={{fontSize:13, color:"var(--graphite-soft)", marginBottom:10}}>{pctCompleto}% completo</div>}
-      <button type="button" className="btn btn-ghost btn-sm" style={{width:"100%", justifyContent:"center", marginBottom:14}} onClick={()=>{
-        if(totalItens===0){ alert("Adicione entregáveis primeiro."); return; }
-        setDistribModal(true);
-      }}>
-        <Icon name="calendar_month" size={15}/>Distribuir no Planner (escolher datas)
-      </button>
       <EntregavelBlock tipo="videos" label="Vídeos" icon="videocam" items={f.entregaveis.videos} onChange={(v)=>setNested("entregaveis","videos",v)} publi={f.categoria==="Publi"}/>
       <EntregavelBlock tipo="fotos" label="Fotos" icon="photo_camera" items={f.entregaveis.fotos} onChange={(v)=>setNested("entregaveis","fotos",v)} publi={f.categoria==="Publi"}/>
       <EntregavelBlock tipo="stories" label="Stories" icon="auto_stories" items={f.entregaveis.stories} onChange={(v)=>setNested("entregaveis","stories",v)} publi={f.categoria==="Publi"}/>
@@ -2989,12 +3145,8 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
       </div>
       <p style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-10, marginBottom:14}}>Para ações antigas, coloque quando foi fechada e quando o dinheiro caiu. É isso que conta nas métricas de cada mês.</p>
 
-      <div className="field-row" style={{marginTop:10}}>
-        <Field label="Prazo de entrega"><input type="date" value={f.prazoEntrega} onChange={e=>set("prazoEntrega",e.target.value)}/></Field>
-      </div>
-
       <div className="field-row">
-        <Field label="Data prevista de pagamento"><input type="date" value={f.dataPagamento} onChange={e=>set("dataPagamento",e.target.value)}/></Field>
+        <Field label="Data prevista de pagamento"><input type="date" value={f.dataPagamento} onChange={e=>{ const v=e.target.value; setF(p=>({...p, dataPagamento:v, pagamento:{...(p.pagamento||{}), dataPrevista:v}})); }}/></Field>
         <Field label="Forma de pagamento">
           <select value={f.formaPagamento} onChange={e=>set("formaPagamento",e.target.value)}>
             {PAYMENT_METHODS.map(p=><option key={p}>{p}</option>)}
@@ -3103,21 +3255,8 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
         )}
       </Collapsible>
 
-      <Collapsible title="Roteiro do conteúdo" icon="description" defaultOpen={false} badge={<Badge tone={f.roteiroStatus==="Pronto"?"green":"yellow"} style={{marginLeft:6}}>{f.roteiroStatus}</Badge>}>
-        <div className="field-row">
-          <Field label="Usar template">
-            <select value={f.roteiroTemplate} onChange={e=>{ set("roteiroTemplate", e.target.value); if(ROTEIRO_TEMPLATES[e.target.value]) set("roteiroConteudo", ROTEIRO_TEMPLATES[e.target.value]); }}>
-              <option value="">Selecione</option>
-              {Object.keys(ROTEIRO_TEMPLATES).map(t=><option key={t}>{t}</option>)}
-            </select>
-          </Field>
-          <Field label="Status do roteiro">
-            <select value={f.roteiroStatus} onChange={e=>set("roteiroStatus",e.target.value)}>
-              <option>Em criação</option><option>Pronto</option>
-            </select>
-          </Field>
-        </div>
-        <Field label="Conteúdo"><textarea rows="4" value={f.roteiroConteudo} onChange={e=>set("roteiroConteudo",e.target.value)} placeholder="Escreva ou gere o roteiro..."/></Field>
+      <Collapsible title="Roteiro do conteúdo" icon="description" defaultOpen={false} badge={<Badge tone={f.roteiroConteudo?"green":"gray"} style={{marginLeft:6}}>{f.roteiroConteudo ? "Importado" : "Sem roteiro"}</Badge>}>
+        <ImportarRoteiroJob f={f} setF={setF} state={state}/>
       </Collapsible>
 
       <Collapsible title="Nota Fiscal e Pagamento" icon="receipt_long" defaultOpen={false} badge={<Badge tone={f.nf.precisa && f.nf.status==="Pendente" ? "yellow" : "gray"} style={{marginLeft:6}}>{f.nf.precisa ? f.nf.status : "Não se aplica"}</Badge>}>
@@ -3125,47 +3264,8 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
           <strong style={{fontSize:15}}>Precisa emitir nota fiscal?</strong>
           <Toggle on={f.nf.precisa} onClick={()=>setNested("nf","precisa",!f.nf.precisa)}/>
         </div>
-        {f.nf.precisa && (
-          <div>
-            <div className="field-row">
-              <Field label="Status da NF">
-                <select value={f.nf.status} onChange={e=>setNested("nf","status",e.target.value)}>
-                  <option>Pendente</option><option>Emitida</option>
-                </select>
-              </Field>
-              <Field label="Número da NF"><input value={f.nf.numero} onChange={e=>setNested("nf","numero",e.target.value)} placeholder="Ex: 123456"/></Field>
-            </div>
-            <div className="field-row">
-              <Field label="Data de emissão"><input type="date" value={f.nf.dataEmissao} onChange={e=>setNested("nf","dataEmissao",e.target.value)}/></Field>
-              <Field label="Valor da NF"><input type="number" value={f.nf.valor} onChange={e=>setNested("nf","valor",e.target.value)} placeholder="0,00"/></Field>
-            </div>
-            <Field label="Anexar NF (PDF/imagem)">
-              <input type="file" onChange={e=>setNested("nf","arquivo", e.target.files[0]?e.target.files[0].name:"")}/>
-              {f.nf.arquivo && <div style={{fontSize:13, color:"var(--graphite-soft)", marginTop:4}}><Icon name="attach_file" size={13}/> {f.nf.arquivo}</div>}
-            </Field>
-          </div>
-        )}
-        <div style={{fontSize:12, fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--graphite-soft)", margin:"14px 0 8px"}}>Controle de pagamento</div>
-        <div className="field-row">
-          <Field label="Status">
-            <select value={f.pagamento.status} onChange={e=>setNested("pagamento","status",e.target.value)}>
-              <option>Em aberto</option><option>Pago</option>
-            </select>
-          </Field>
-          <Field label="Forma de pagamento">
-            <select value={f.pagamento.forma} onChange={e=>setNested("pagamento","forma",e.target.value)}>
-              {PAYMENT_METHODS.map(p=><option key={p}>{p}</option>)}
-            </select>
-          </Field>
-        </div>
-        <div className="field-row">
-          <Field label="Data prevista"><input type="date" value={f.pagamento.dataPrevista} onChange={e=>setNested("pagamento","dataPrevista",e.target.value)}/></Field>
-          <Field label="Data do pagamento"><input type="date" value={f.pagamento.dataPagamento} onChange={e=>setNested("pagamento","dataPagamento",e.target.value)}/></Field>
-        </div>
-        <Field label="Comprovante de pagamento">
-          <input type="file" onChange={e=>setNested("pagamento","comprovante", e.target.files[0]?e.target.files[0].name:"")}/>
-          {f.pagamento.comprovante && <div style={{fontSize:13, color:"var(--graphite-soft)", marginTop:4}}><Icon name="attach_file" size={13}/> {f.pagamento.comprovante}</div>}
-        </Field>
+        {f.nf.precisa && <NotaFiscalJob nf={f.nf} setNf={(campos)=>setF(p=>({...p, nf:{...p.nf, ...campos}}))}/>}
+        <Field label="Data prevista de pagamento"><input type="date" value={f.dataPagamento||""} onChange={e=>{ const v=e.target.value; setF(p=>({...p, dataPagamento:v, pagamento:{...(p.pagamento||{}), dataPrevista:v}})); }}/></Field>
       </Collapsible>
 
       <Collapsible title="Direitos de Uso — Tráfego Pago" icon="campaign" defaultOpen={false} badge={f.trafegoPago.ativo && <Badge tone="wine" style={{marginLeft:6}}>ativo</Badge>}>
@@ -3239,11 +3339,10 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
 
       <button className="btn btn-primary" style={{width:"100%", justifyContent:"center"}} onClick={()=>{
         if(!f.marca){ alert("Informe a marca."); return; }
-        onSave({...f, id: f.id || uid(), criadoEm: f.criadoEm || todayISO()});
+        onSave(comPrazoDosItens({...f, id: f.id || uid(), criadoEm: f.criadoEm || todayISO()}));
       }}>{initial ? "Salvar alterações" : "Criar UGC / Publi"}</button>
 
       {nichoModal && <NichoModal state={state} updateState={updateState} onClose={()=>setNichoModal(false)}/>}
-      {distribModal && <DistribuirPlannerModal marca={f.marca} prazoEntrega={f.prazoEntrega} entregaveis={f.entregaveis} onClose={()=>setDistribModal(false)} onConfirm={confirmarDistribuicao}/>}
     </Modal>
   );
 }
@@ -3251,7 +3350,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
 function JobCard({j, onEdit, onDelete, onMarkPaid, onDuplicate, draggable, onDragStart}){
   const hoje = todayISO();
   const isHoje = j.prazoEntrega===hoje;
-  const totalV = (j.entregaveis?.videos||[]).length, totalF = (j.entregaveis?.fotos||[]).length;
+  const totalV = qtdItens(j.entregaveis?.videos), totalF = qtdItens(j.entregaveis?.fotos);
   const pago = j.pagamento && j.pagamento.status==="Pago";
   return (
     <div className="kanban-card" draggable={draggable} onDragStart={draggable ? (e)=>onDragStart(e, j.id) : undefined}>
