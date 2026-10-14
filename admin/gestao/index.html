@@ -3862,8 +3862,8 @@ function Jobs({state, updateState}){
   if(tab==="Histórico") list = list.filter(j=>isHistorico(j));
   if(query) list = list.filter(j => (j.marca+(j.tipo||"")+(j.observacoes||"")+(j.nicho||"")).toLowerCase().includes(query.toLowerCase()));
   if(filterStatus!=="Todos") list = list.filter(j=>j.status===filterStatus);
-  // em ordem de fechamento da ação (o mais recente primeiro), na lista e na grade
-  list = [...list].sort((a,b)=>String(dataFechamentoJob(b)).localeCompare(String(dataFechamentoJob(a))));
+  // em ordem de fechamento da ação: a que fechou primeiro fica em cima (empate: a cadastrada primeiro), na lista e na grade
+  list = list.map((j,i)=>[j,i]).sort((a,b)=>String(dataFechamentoJob(a[0])||"9999").localeCompare(String(dataFechamentoJob(b[0])||"9999")) || a[1]-b[1]).map(x=>x[0]);
 
   const ativosCount = state.jobs.filter(j=>j.status!=="Cancelado" && !isHistorico(j)).length;
   const historicoCount = state.jobs.filter(j=>isHistorico(j)).length;
