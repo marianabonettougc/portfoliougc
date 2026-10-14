@@ -524,6 +524,9 @@
   .job-menu button{ display:flex; align-items:center; gap:8px; width:100%; border:0; background:none; padding:8px 10px; border-radius:8px; font:inherit; font-size:14px; cursor:pointer; text-align:left; }
   .job-menu button:hover{ background:var(--card-bg); }
   .job-sub{ border-top:1px solid var(--line); margin-top:6px; }
+  .escopo-caixa{ margin:-6px 0 14px; }
+  .escopo-caixa .job-sub{ border-top:0; border:1px solid var(--line); border-radius:12px; padding:0 12px 4px; margin:0; background:var(--card-bg); }
+  .escopo-caixa .job-sub-topo{ padding:10px 0 6px; }
   .job-sub-topo{ display:flex; justify-content:space-between; align-items:center; width:100%; border:0; background:none; padding:12px 0 4px; font:inherit; font-size:14px; font-weight:600; color:var(--graphite); cursor:pointer; }
   .ent-tipo{ margin-bottom:16px; }
   .ent-tipo-topo{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
@@ -3373,6 +3376,11 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
   return (
     <Modal title={<span style={{display:"flex", alignItems:"center", gap:10}}>{initial? "Editar UGC / Publi" : "Novo UGC / Publi"}{savedTick && <span style={{fontSize:12.5, fontWeight:600, color:"var(--moss)", display:"flex", alignItems:"center", gap:3}}><Icon name="cloud_done" size={14}/>Salvo</span>}</span>} onClose={onClose}>
       <Field label="Marca"><input value={f.marca} onChange={e=>set("marca",e.target.value)} placeholder="Nome da marca"/></Field>
+      <div className="escopo-caixa">
+        <SubSecaoJob titulo={<span style={{display:"flex", alignItems:"center", gap:6}}><Icon name="assignment" size={16}/>Escopo do cliente{f.escopo && f.escopo.trim() ? <Badge tone="gray" style={{marginLeft:4}}>preenchido</Badge> : null}</span>} aberta={!!(f.escopo && f.escopo.trim())}>
+          <textarea rows="8" value={f.escopo||""} onChange={e=>set("escopo",e.target.value)} placeholder="Cole aqui o escopo, o briefing ou a mensagem da marca..." style={{resize:"vertical"}}/>
+        </SubSecaoJob>
+      </div>
       <Field label="Finalidade">
         <div style={{display:"flex", gap:8}}>
           {["Publi","UGC"].map(c=>(
