@@ -962,6 +962,64 @@ function syncFollowups(followups, job){
   }];
 }
 
+// ---------- anexos (nota fiscal e comprovante) ficam no Storage, pasta anexos/jobs/<id do job>; o job guarda o caminho ----------
+async function enviarAnexo(arq, pasta){
+  const nome = String(arq.name||"arquivo").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\w.\-]+/g,"_").slice(-80);
+  const caminho = `${pasta}/${Date.now()}-${nome}`;
+  const { error } = await supabaseClient.storage.from("anexos").upload(caminho, arq, { upsert:false, contentType: arq.type || undefined });
+  if(error) throw new Error("Não consegui guardar o arquivo: "+error.message);
+  return caminho;
+}
+async function abrirAnexo(caminho){
+  const janela = window.open("", "_blank");
+  const { data, error } = await supabaseClient.storage.from("anexos").createSignedUrl(caminho, 600);
+  if(error || !data){ if(janela) janela.close(); alert("Não consegui abrir o arquivo agora."); return; }
+  if(janela) janela.location.href = data.signedUrl; else window.location.href = data.signedUrl;
+}
+// botão de anexo usado no job, no Financeiro e na Contabilidade (mesmo arquivo em todos)
+function AnexoCampo({rotulo, nome, caminho, pasta, accept, onEnviado, aoEscolher}){
+  const [enviando,setEnviando] = useState(false);
+  const [erro,setErro] = useState("");
+  async function escolher(arq){
+    if(!arq) return;
+    setErro(""); setEnviando(true);
+    try{
+      if(aoEscolher) await aoEscolher(arq);
+      const c = await enviarAnexo(arq, pasta);
+      onEnviado({nome:arq.name, caminho:c});
+    }catch(e){ setErro(String(e.message||e)); }
+    setEnviando(false);
+  }
+  return (
+    <div className="field" style={{marginBottom:14}}>
+      <label>{rotulo}</label>
+      {caminho || nome ? (
+        <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", fontSize:14}}>
+          <Icon name="attach_file" size={15}/><span style={{flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{nome || "arquivo"}</span>
+          {caminho ? <button type="button" className="btn btn-ghost btn-sm" onClick={()=>abrirAnexo(caminho)}><Icon name="open_in_new" size={14}/>Abrir</button> : <span style={{fontSize:12, color:"var(--graphite-soft)"}}>(enviado antes, só o nome ficou guardado)</span>}
+          <label className="btn btn-ghost btn-sm" style={{cursor:"pointer"}}>{enviando?"Enviando...":"Trocar"}<input type="file" accept={accept} style={{display:"none"}} onChange={e=>{ const a=e.target.files[0]; e.target.value=""; escolher(a); }}/></label>
+        </div>
+      ) : (
+        <label className="btn btn-ghost btn-sm" style={{cursor:"pointer", alignSelf:"flex-start"}}><Icon name="upload_file" size={15}/>{enviando?"Enviando...":"Anexar arquivo"}<input type="file" accept={accept} style={{display:"none"}} onChange={e=>{ const a=e.target.files[0]; e.target.value=""; escolher(a); }}/></label>
+      )}
+      {erro && <div style={{fontSize:13, color:"var(--danger, #b8473a)", marginTop:6}}>{erro}</div>}
+    </div>
+  );
+}
+// editar no Financeiro um lançamento que veio de um job atualiza o próprio job (valor, pago ou não, datas, anexos)
+function aplicarTransacaoNoJob(state, t){
+  if(!t || !t.jobId || t.origem!=="job") return state;
+  const job = (state.jobs||[]).find(j=>j.id===t.jobId);
+  if(!job) return state;
+  const pago = t.status==="Confirmado";
+  const pg = job.pagamento || {};
+  const novo = {...job, valor: t.valor, moeda: t.moeda || job.moeda,
+    dataPagamento: pago ? job.dataPagamento : t.data,
+    pagamento: {...pg, status: pago ? "Pago" : "Em aberto", dataPagamento: pago ? t.data : "", dataPrevista: pago ? (pg.dataPrevista||job.dataPagamento||"") : t.data}};
+  const jobs = state.jobs.map(j=>j.id===job.id ? novo : j);
+  return {...state, jobs, transacoes: syncTransacaoFromJob(state.transacoes, novo)};
+}
+
 function syncTransacaoFromJob(transacoes, job){
   transacoes = [...(transacoes||[])];
   const idx = transacoes.findIndex(t=>t.jobId===job.id && t.origem==="job");
@@ -975,7 +1033,7 @@ function syncTransacaoFromJob(transacoes, job){
     tipo:"receita",
     descricao: `${job.marca}${job.tipo ? " - "+job.tipo : ""}`,
     valor: job.valor, moeda: job.moeda||"BRL",
-    data: (job.pagamento && job.pagamento.dataPagamento) || (job.pagamento && job.pagamento.dataPrevista) || job.dataPagamento || job.prazoEntrega || todayISO(),
+    data: (job.pagamento && job.pagamento.status==="Pago" && job.pagamento.dataPagamento) || job.dataPagamento || (job.pagamento && job.pagamento.dataPrevista) || job.prazoEntrega || todayISO(),
     status: (job.pagamento && job.pagamento.status==="Pago") ? "Confirmado" : "Pendente",
     jobId: job.id, origem:"job"
   };
@@ -2976,7 +3034,7 @@ function lerTextoNF(t){
   const valor = pega([/Valor\s+L[íi]quido[^\d]{0,60}([\d.]+,\d{2})/i, /Valor\s+(?:Total\s+)?d[oa]s?\s+(?:Servi[çc]os?|Nota)[^\d]{0,60}([\d.]+,\d{2})/i, /Valor\s+Total[^\d]{0,60}([\d.]+,\d{2})/i, /R\$\s*([\d.]+,\d{2})/]);
   return { numero, dataEmissao: dataBRparaISO(data), valor: valor ? String(valorBR(valor)) : "" };
 }
-function NotaFiscalJob({nf, setNf}){
+function NotaFiscalJob({nf, setNf, pasta}){
   const [lendo,setLendo] = useState(false);
   const [aviso,setAviso] = useState("");
   async function ler(arq){
@@ -2995,8 +3053,10 @@ function NotaFiscalJob({nf, setNf}){
         r = lerTextoNF(texto);
       } else throw new Error("Envie a nota em PDF ou XML.");
       const faltam = [!r.numero && "número", !r.valor && "valor", !r.dataEmissao && "data de emissão"].filter(Boolean);
-      setNf({arquivo:arq.name, numero:r.numero||nf.numero||"", valor:r.valor||nf.valor||"", dataEmissao:r.dataEmissao||nf.dataEmissao||"", status:"Emitida", lidaDoArquivo:true});
-      setAviso(faltam.length ? `Não achei ${faltam.join(", ")} na nota. Preencha abaixo.` : "Dados lidos da nota. Confira se está tudo certo.");
+      let caminho = nf.caminho || "";
+      try{ caminho = await enviarAnexo(arq, pasta || "jobs/novos"); }catch(e){ faltam.push("(o arquivo não foi guardado: "+String(e.message||e)+")"); }
+      setNf({arquivo:arq.name, caminho, numero:r.numero||nf.numero||"", valor:r.valor||nf.valor||"", dataEmissao:r.dataEmissao||nf.dataEmissao||"", status:"Emitida", lidaDoArquivo:true});
+      setAviso(faltam.length ? `Não achei ${faltam.join(", ")} na nota. Preencha abaixo.` : "Dados lidos da nota (o valor do job foi atualizado). Confira se está tudo certo.");
     }catch(e){ setAviso(String(e.message||e)); }
     setLendo(false);
   }
@@ -3006,7 +3066,7 @@ function NotaFiscalJob({nf, setNf}){
       <Field label="Nota fiscal (PDF ou XML)">
         <input type="file" accept=".pdf,.xml,application/pdf,text/xml,application/xml" onChange={e=>ler(e.target.files[0])}/>
         {lendo && <div style={{fontSize:13, color:"var(--graphite-soft)", marginTop:6}}>Lendo a nota...</div>}
-        {nf.arquivo && !lendo && <div style={{fontSize:13, color:"var(--graphite-soft)", marginTop:4}}><Icon name="attach_file" size={13}/> {nf.arquivo}</div>}
+        {nf.arquivo && !lendo && <div style={{fontSize:13, color:"var(--graphite-soft)", marginTop:4, display:"flex", alignItems:"center", gap:6}}><Icon name="attach_file" size={13}/> {nf.arquivo}{nf.caminho && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>abrirAnexo(nf.caminho)}><Icon name="open_in_new" size={14}/>Abrir</button>}</div>}
         {aviso && <div style={{fontSize:13, marginTop:6, color:/Não|Envie|imagem/.test(aviso) ? "var(--danger, #b8473a)" : "var(--moss)"}}>{aviso}</div>}
       </Field>
       {(lida || nf.numero || nf.valor || nf.dataEmissao) ? (
@@ -3264,8 +3324,15 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
           <strong style={{fontSize:15}}>Precisa emitir nota fiscal?</strong>
           <Toggle on={f.nf.precisa} onClick={()=>setNested("nf","precisa",!f.nf.precisa)}/>
         </div>
-        {f.nf.precisa && <NotaFiscalJob nf={f.nf} setNf={(campos)=>setF(p=>({...p, nf:{...p.nf, ...campos}}))}/>}
+        {f.nf.precisa && <NotaFiscalJob nf={f.nf} pasta={`jobs/${f.id||"novos"}`} setNf={(campos)=>setF(p=>({...p, nf:{...p.nf, ...campos}, ...(campos.valor && Number(campos.valor)>0 ? {valor:String(campos.valor)} : {})}))}/>}
         <Field label="Data prevista de pagamento"><input type="date" value={f.dataPagamento||""} onChange={e=>{ const v=e.target.value; setF(p=>({...p, dataPagamento:v, pagamento:{...(p.pagamento||{}), dataPrevista:v}})); }}/></Field>
+        <div className="row-item" style={{marginBottom:12}}>
+          <strong style={{fontSize:15}}>Pagamento recebido?</strong>
+          <Toggle on={(f.pagamento||{}).status==="Pago"} onClick={()=>setF(p=>{ const pago = (p.pagamento||{}).status==="Pago"; return {...p, pagamento:{...(p.pagamento||{}), status: pago ? "Em aberto" : "Pago", dataPagamento: pago ? "" : ((p.pagamento||{}).dataPagamento || todayISO())}}; })}/>
+        </div>
+        <AnexoCampo rotulo="Comprovante de pagamento" nome={(f.pagamento||{}).comprovante} caminho={(f.pagamento||{}).comprovanteCaminho} pasta={`jobs/${f.id||"novos"}`}
+          onEnviado={(a)=>setF(p=>({...p, pagamento:{...(p.pagamento||{}), comprovante:a.nome, comprovanteCaminho:a.caminho}}))}/>
+        <p style={{fontSize:12.5, color:"var(--graphite-soft)", margin:"-4px 0 0"}}>O valor, a data prevista, o pagamento e os anexos daqui aparecem iguais no Financeiro e no Dashboard.</p>
       </Collapsible>
 
       <Collapsible title="Direitos de Uso — Tráfego Pago" icon="campaign" defaultOpen={false} badge={f.trafegoPago.ativo && <Badge tone="wine" style={{marginLeft:6}}>ativo</Badge>}>
@@ -3866,7 +3933,7 @@ function TrafegoPago({state, updateState}){
 }
 
 /* ================= FINANCEIRO ================= */
-function TransModal({onClose, onSave, initial}){
+function TransModal({onClose, onSave, initial, job, onAnexar}){
   const [f,setF] = useState(initial || {tipo:"receita", descricao:"", valor:"", moeda:"BRL", data:"", status:"Pendente"});
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
   return (
@@ -3896,7 +3963,14 @@ function TransModal({onClose, onSave, initial}){
       <Field label={<span>Data de Recebimento <span style={{color:"var(--wine)"}}>*</span></span>}>
         <input type="date" value={f.data} onChange={e=>set("data",e.target.value)}/>
       </Field>
-      <p style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-10, marginBottom:16}}>Define em qual mês o valor será contabilizado (competência)</p>
+      <p style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-10, marginBottom:16}}>{job ? (f.status==="Confirmado" ? "Dia em que o dinheiro caiu. Fica igual no job em UGC's & Publis." : "Data prevista de pagamento. Fica igual no job em UGC's & Publis.") : "Define em qual mês o valor será contabilizado (competência)"}</p>
+      {job && <div style={{border:"1px solid var(--line)", borderRadius:12, padding:"12px 14px 0", marginBottom:16}}>
+        <div style={{fontSize:12, fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--graphite-soft)", marginBottom:10}}>Anexos do job {job.marca}</div>
+        <AnexoCampo rotulo={(job.nf||{}).numero ? `Nota fiscal nº ${job.nf.numero}` : "Nota fiscal"} nome={(job.nf||{}).arquivo} caminho={(job.nf||{}).caminho} pasta={`jobs/${job.id}`} accept=".pdf,.xml,application/pdf,text/xml,application/xml"
+          onEnviado={(a)=>onAnexar(job.id, {nf:{precisa:true, arquivo:a.nome, caminho:a.caminho}})}/>
+        <AnexoCampo rotulo="Comprovante de pagamento" nome={(job.pagamento||{}).comprovante} caminho={(job.pagamento||{}).comprovanteCaminho} pasta={`jobs/${job.id}`}
+          onEnviado={(a)=>onAnexar(job.id, {pagamento:{comprovante:a.nome, comprovanteCaminho:a.caminho}})}/>
+      </div>}
       <button className="btn btn-primary" style={{width:"100%", justifyContent:"center"}} onClick={()=>{
         if(!f.descricao || !f.valor || !f.data){ alert("Preencha descrição, valor e data de recebimento."); return; }
         onSave({...f, id:f.id||uid()});
@@ -3927,12 +4001,19 @@ function Financeiro({state, updateState, go, pessoal}){
   function save(t){
     const exists = state.transacoes.some(x=>x.id===t.id);
     const list = exists ? state.transacoes.map(x=>x.id===t.id?t:x) : [...state.transacoes, t];
-    updateState({...state, transacoes:list});
+    updateState(aplicarTransacaoNoJob({...state, transacoes:list}, t));
     setModal(false); setEditing(null);
   }
   function remove(id){ updateState({...state, transacoes: state.transacoes.filter(t=>t.id!==id)}); }
   function toggleStatus(id){
-    updateState({...state, transacoes: state.transacoes.map(t=>t.id===id?{...t, status: t.status==="Confirmado"?"Pendente":"Confirmado"}:t)});
+    const t0 = state.transacoes.find(t=>t.id===id);
+    const t = t0 && {...t0, status: t0.status==="Confirmado"?"Pendente":"Confirmado", data: t0.status==="Confirmado" ? t0.data : (t0.data && t0.data<=todayISO() ? t0.data : todayISO())};
+    updateState(aplicarTransacaoNoJob({...state, transacoes: state.transacoes.map(x=>x.id===id?t:x)}, t));
+  }
+  // anexos do job direto do Financeiro
+  function anexarNoJob(jobId, campos){
+    const jobs = state.jobs.map(j=>j.id!==jobId ? j : {...j, nf:{...(j.nf||{}), ...(campos.nf||{})}, pagamento:{...(j.pagamento||{}), ...(campos.pagamento||{})}});
+    updateState({...state, jobs});
   }
   function gerarRecorrentes(){
     const processed = processRecurringJobs(state);
@@ -4320,7 +4401,7 @@ function Financeiro({state, updateState, go, pessoal}){
       })()}
 
       {modal && <TransModal onClose={()=>setModal(false)} onSave={save}/>}
-      {editing && <TransModal initial={editing} onClose={()=>setEditing(null)} onSave={save}/>}
+      {editing && <TransModal initial={editing} job={editing.jobId && editing.origem==="job" ? (state.jobs||[]).find(j=>j.id===editing.jobId) : null} onAnexar={anexarNoJob} onClose={()=>setEditing(null)} onSave={save}/>}
     </div>
   );
 }
@@ -4610,8 +4691,15 @@ function FiscalDocumentsCard({state, updateState}){
   const [query,setQuery] = useState("");
   const [filtro,setFiltro] = useState("Todas");
   const [modal,setModal] = useState(false);
+  const docsJobs = (state.jobs||[]).flatMap(j=>{
+    const l = [], quando = new Date((j.nf&&j.nf.dataEmissao) || (j.pagamento&&j.pagamento.dataPagamento) || j.dataPagamento || j.criadoEm || todayISO());
+    const mes = monthNames[isNaN(quando) ? new Date().getMonth() : quando.getMonth()].slice(0,3), ano = isNaN(quando) ? new Date().getFullYear() : quando.getFullYear();
+    if(j.nf && j.nf.caminho) l.push({id:"jnf-"+j.id, doJob:true, nome:`NF${j.nf.numero?" nº "+j.nf.numero:""} · ${j.marca}`, categoria:"Notas Fiscais", mesRef:mes, anoRef:ano, valor:j.nf.valor||j.valor, caminho:j.nf.caminho});
+    if(j.pagamento && j.pagamento.comprovanteCaminho) l.push({id:"jcp-"+j.id, doJob:true, nome:`Comprovante · ${j.marca}`, categoria:"Comprovantes", mesRef:mes, anoRef:ano, valor:j.valor, caminho:j.pagamento.comprovanteCaminho});
+    return l;
+  });
   const docs = state.documentosFiscais || [];
-  const shown = docs.filter(d=>{
+  const shown = [...docs, ...docsJobs].filter(d=>{
     if(query && !d.nome.toLowerCase().includes(query.toLowerCase())) return false;
     if(filtro!=="Todas" && d.categoria!==filtro) return false;
     return true;
@@ -4646,7 +4734,8 @@ function FiscalDocumentsCard({state, updateState}){
                 <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>{d.categoria} · {d.mesRef} {d.anoRef}{d.valor ? " · "+fmtMoney(d.valor) : ""}</div>
               </div>
               {d.link && <a href={d.link} target="_blank" className="btn btn-ghost btn-sm">Abrir</a>}
-              <button className="icon-btn" onClick={()=>remove(d.id)}><Icon name="delete" size={17}/></button>
+              {d.caminho && <button className="btn btn-ghost btn-sm" onClick={()=>abrirAnexo(d.caminho)}>Abrir</button>}
+              {d.doJob ? <span style={{fontSize:12, color:"var(--graphite-soft)"}}>do job</span> : <button className="icon-btn" onClick={()=>remove(d.id)}><Icon name="delete" size={17}/></button>}
             </div>
           ))}
         </div>

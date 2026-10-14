@@ -440,3 +440,12 @@ alter table public.estilo_ugc add column if not exists metodo text;        -- re
 alter table public.estilo_ugc add column if not exists ritmo_fala numeric; -- palavras por segundo da Mari
 
 select 'Pronto! As 13 tabelas foram criadas com a tranca (RLS) ligada.' as resultado;
+
+-- ---------------------------------------------------------------------
+-- ANEXOS (out/2026): notas fiscais e comprovantes dos jobs (UGC's & Publis)
+-- Bucket privado "anexos", pasta jobs/<id do job>/. Só a dona lê e grava.
+-- ---------------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit) values ('anexos','anexos',false, 20971520) on conflict (id) do nothing;
+drop policy if exists "anexos: dona faz tudo" on storage.objects;
+create policy "anexos: dona faz tudo" on storage.objects for all to authenticated
+  using (bucket_id='anexos' and public.e_a_dona()) with check (bucket_id='anexos' and public.e_a_dona());
