@@ -525,6 +525,13 @@
   .job-menu button:hover{ background:var(--card-bg); }
   .job-sub{ border-top:1px solid var(--line); margin-top:6px; }
   .escopo-caixa{ margin:-6px 0 14px; }
+  .alca{ display:inline-flex; align-items:center; color:var(--graphite-soft); opacity:.55; cursor:grab; touch-action:none; padding:4px 2px; margin-right:2px; }
+  [data-alca]{ cursor:grab; }
+  [data-alca] button, [data-alca] input{ cursor:pointer; }
+  .job-secao, .ent-item{ will-change:transform; }
+  .job-bloco-titulo{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--graphite-soft); margin:0 0 8px; }
+  .job-arquivo{ display:flex; align-items:center; gap:8px; font-size:14px; padding:6px 0; }
+  .job-arquivo span{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .escopo-caixa .job-sub{ border-top:0; border:1px solid var(--line); border-radius:12px; padding:0 12px 4px; margin:0; background:var(--card-bg); }
   .escopo-caixa .job-sub-topo{ padding:10px 0 6px; }
   .job-sub-topo{ display:flex; justify-content:space-between; align-items:center; width:100%; border:0; background:none; padding:12px 0 4px; font:inherit; font-size:14px; font-weight:600; color:var(--graphite); cursor:pointer; }
@@ -1030,7 +1037,7 @@ function AnexoCampo({rotulo, nome, caminho, pasta, accept, onEnviado, aoEscolher
   }
   return (
     <div className="field" style={{marginBottom:14}}>
-      <label>{rotulo}</label>
+      {rotulo ? <label>{rotulo}</label> : null}
       {caminho || nome ? (
         <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", fontSize:14}}>
           <Icon name="attach_file" size={15}/><span style={{flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{nome || "arquivo"}</span>
@@ -3118,11 +3125,62 @@ function NotaFiscalJob({nf, setNf, pasta}){
   );
 }
 
+// arrastar para reordenar: segura o cartão (no celular, pela alça ⋮⋮) e solta no lugar novo; ele leva junto todas as informações
+function useArrastar(onMover){
+  const ref = useRef(null);
+  const [arr,setArr] = useState(null); // {de, para, dy, alt}
+  function iniciar(e, idx){
+    if(e.button>0) return;
+    const alca = e.target.closest("[data-alca]");
+    if(!alca) return;
+    if(e.pointerType!=="mouse" && !e.target.closest("[data-alca-toque]")) return; // no toque, só pela alça (para não atrapalhar a rolagem)
+    if(e.target.closest("input,select,textarea") ) return;
+    if(!ref.current) return;
+    const filhos = [...ref.current.children].filter(c=>c.hasAttribute("data-arrastavel"));
+    // a alça tem que ser deste cartão (um Reels dentro de Entregáveis não arrasta a parte inteira)
+    if(alca.closest("[data-arrastavel]")!==filhos[idx]) return;
+    const rects = filhos.map(c=>c.getBoundingClientRect());
+    if(!rects[idx]) return;
+    const gap = rects.length>1 ? Math.max(0, rects[1].top - rects[0].bottom) : 8;
+    const alt = rects[idx].height + gap, y0 = e.clientY;
+    let ativo = false, para = idx;
+    const mover = (ev)=>{
+      const dy = ev.clientY - y0;
+      if(!ativo && Math.abs(dy)<6) return;
+      ativo = true; ev.preventDefault();
+      const centro = rects[idx].top + rects[idx].height/2 + dy;
+      para = rects.filter((r,i)=>i!==idx && (r.top + r.height/2) < centro).length;
+      setArr({de:idx, para, dy, alt});
+    };
+    const soltar = ()=>{
+      window.removeEventListener("pointermove", mover); window.removeEventListener("pointerup", soltar); window.removeEventListener("pointercancel", soltar);
+      setArr(null);
+      if(ativo){
+        // o clique que vem junto com o soltar não pode abrir/fechar o cartão
+        const engole = (ev)=>{ ev.stopPropagation(); ev.preventDefault(); };
+        window.addEventListener("click", engole, {capture:true, once:true}); setTimeout(()=>window.removeEventListener("click", engole, {capture:true}), 50);
+        if(para!==idx) onMover(idx, para);
+      }
+    };
+    window.addEventListener("pointermove", mover, {passive:false}); window.addEventListener("pointerup", soltar); window.addEventListener("pointercancel", soltar);
+  }
+  const estilo = (i)=>{
+    if(!arr) return undefined;
+    const {de, para, dy, alt} = arr;
+    if(i===de) return {transform:`translateY(${dy}px)`, position:"relative", zIndex:6, boxShadow:"0 14px 30px rgba(61,43,32,.18)", transition:"none", cursor:"grabbing"};
+    if(de<para && i>de && i<=para) return {transform:`translateY(${-alt}px)`, transition:"transform .15s"};
+    if(de>para && i>=para && i<de) return {transform:`translateY(${alt}px)`, transition:"transform .15s"};
+    return {transition:"transform .15s"};
+  };
+  return {ref, iniciar, estilo, arrastando:!!arr};
+}
+const moverNaLista = (lista, de, para) => { const o = [...lista]; const [x] = o.splice(de,1); o.splice(para,0,x); return o; };
+
 // ---------- partes do formulário de UGC / Publi (minimizar, mover, renomear, ocultar) ----------
 const SECOES_JOB = {
   pagamento:{titulo:"Pagamento", icone:"payments"},
   entregaveis:{titulo:"Entregáveis", icone:"inventory_2"},
-  roteiro:{titulo:"Roteiro do conteúdo", icone:"description"},
+  roteiro:{titulo:"Briefing & Roteiros", icone:"description"},
   trafego:{titulo:"Direitos de uso (tráfego pago)", icone:"campaign"},
   observacoes:{titulo:"Observações", icone:"notes"}
 };
@@ -3132,12 +3190,13 @@ function layoutJob(l){
   const ordem = [...(l.ordem||[]).filter(id=>SECOES_JOB[id]), ...base.filter(id=>!(l.ordem||[]).includes(id))];
   return {ordem, nomes:l.nomes||{}, fechadas:l.fechadas||["trafego","roteiro"], ocultas:(l.ocultas||[]).filter(id=>SECOES_JOB[id])};
 }
-function SecaoJob({titulo, icone, badge, aberta, onAlternar, onSubir, onDescer, onRenomear, onOcultar, children}){
+function SecaoJob({titulo, icone, badge, aberta, onAlternar, onRenomear, onOcultar, children, onPointerDown, estilo}){
   const [menu,setMenu] = useState(false);
   const [editando,setEditando] = useState(null);
   return (
-    <div className="card job-secao" style={{background:"var(--warm-white)", marginBottom:14}}>
-      <div className="job-secao-topo">
+    <div className="card job-secao" data-arrastavel="" style={{background:"var(--warm-white)", marginBottom:14, ...(estilo||{})}} onPointerDown={onPointerDown}>
+      <div className="job-secao-topo" data-alca="">
+        <span className="alca" data-alca-toque="" title="Arraste para mudar de lugar"><Icon name="drag_indicator" size={18}/></span>
         {editando!==null ? (
           <form style={{flex:1, display:"flex", gap:6}} onSubmit={e=>{ e.preventDefault(); if(editando.trim()) onRenomear(editando.trim()); setEditando(null); }}>
             <input autoFocus value={editando} onChange={e=>setEditando(e.target.value)} onBlur={()=>{ if(editando.trim()) onRenomear(editando.trim()); setEditando(null); }}/>
@@ -3147,8 +3206,6 @@ function SecaoJob({titulo, icone, badge, aberta, onAlternar, onSubir, onDescer, 
             <Icon name={icone} size={17}/>{titulo}{badge}
           </button>
         )}
-        <button type="button" className="icon-btn" title="Subir" disabled={!onSubir} onClick={onSubir||undefined}><Icon name="arrow_upward" size={16}/></button>
-        <button type="button" className="icon-btn" title="Descer" disabled={!onDescer} onClick={onDescer||undefined}><Icon name="arrow_downward" size={16}/></button>
         <div style={{position:"relative"}}>
           <button type="button" className="icon-btn" title="Mais opções" onClick={()=>setMenu(m=>!m)}><Icon name="more_horiz" size={17}/></button>
           {menu && <div className="job-menu" onMouseLeave={()=>setMenu(false)}>
@@ -3216,21 +3273,24 @@ function EntregaveisJob({f, setF, state, updateState}){
                 <button type="button" onClick={()=>definirQtd(tipo, nome, itens.length+1)} aria-label="Mais">+</button>
               </div>
             </div>
-            {itens.map((it, k)=>(
+            <ListaItensEntrega itens={itens} onMover={(de, para)=>mudarLista(tipo, l=>moverNaLista(l, de, para))} render={(it, k, arr)=>(
               <ItemEntregavel key={it.id} it={it} tipo={tipo} publi={publi} opcoes={opcoes} final={final}
                 onMudar={(campos)=>mudarLista(tipo, l=>l.map(i=>i.id===it.id?{...i, ...campos}:i))}
                 onNovoStatus={()=>novoStatus(tipo, it.id)}
-                onSubir={k>0 ? ()=>mudarLista(tipo, l=>{ const o=[...l]; [o[k-1],o[k]]=[o[k],o[k-1]]; return o; }) : null}
-                onDescer={k<itens.length-1 ? ()=>mudarLista(tipo, l=>{ const o=[...l]; [o[k+1],o[k]]=[o[k],o[k+1]]; return o; }) : null}
+                onPointerDown={(e)=>arr.iniciar(e, k)} estilo={arr.estilo(k)}
                 onExcluir={()=>{ if(confirm(`Excluir "${it.label}"?`)) mudarLista(tipo, l=>l.filter(i=>i.id!==it.id)); }}/>
-            ))}
+            )}/>
           </div>
         );
       })}
     </div>
   );
 }
-function ItemEntregavel({it, tipo, publi, opcoes, final, onMudar, onNovoStatus, onSubir, onDescer, onExcluir}){
+function ListaItensEntrega({itens, onMover, render}){
+  const arr = useArrastar(onMover);
+  return <div ref={arr.ref}>{itens.map((it, k)=>render(it, k, arr))}</div>;
+}
+function ItemEntregavel({it, tipo, publi, opcoes, final, onMudar, onNovoStatus, onExcluir, onPointerDown, estilo}){
   const [aberto,setAberto] = useState(!it.concluido && !(it.prazoRoteiro || it.prazoConteudo));
   const [editando,setEditando] = useState(null);
   const st = statusDoItem(it, tipo);
@@ -3240,8 +3300,9 @@ function ItemEntregavel({it, tipo, publi, opcoes, final, onMudar, onNovoStatus, 
     onMudar({roteiroStatus:v, concluido: v===final});
   }
   return (
-    <div className={"ent-item"+(it.concluido?" feito":"")}>
-      <div className="ent-item-topo">
+    <div className={"ent-item"+(it.concluido?" feito":"")} data-arrastavel="" style={estilo} onPointerDown={onPointerDown}>
+      <div className="ent-item-topo" data-alca="">
+        <span className="alca" data-alca-toque="" title="Arraste para mudar de lugar"><Icon name="drag_indicator" size={17}/></span>
         <button type="button" className="ent-check" onClick={()=>onMudar({concluido:!it.concluido, roteiroStatus: !it.concluido ? final : (st===final ? opcoes[0] : st)})} aria-label={it.concluido?"Desmarcar":"Marcar como finalizado"}>{it.concluido && <Icon name="check" size={12}/>}</button>
         {editando!==null ? (
           <form style={{flex:1}} onSubmit={e=>{ e.preventDefault(); onMudar({label:editando.trim()||it.label}); setEditando(null); }}>
@@ -3251,8 +3312,6 @@ function ItemEntregavel({it, tipo, publi, opcoes, final, onMudar, onNovoStatus, 
           <button type="button" className="ent-item-nome" onClick={()=>setAberto(a=>!a)}>{it.label}<span className="ent-item-status">{st}</span></button>
         )}
         <button type="button" className="icon-btn" title="Renomear" onClick={()=>setEditando(it.label)}><Icon name="edit" size={15}/></button>
-        <button type="button" className="icon-btn" title="Subir" disabled={!onSubir} onClick={onSubir||undefined}><Icon name="arrow_upward" size={15}/></button>
-        <button type="button" className="icon-btn" title="Descer" disabled={!onDescer} onClick={onDescer||undefined}><Icon name="arrow_downward" size={15}/></button>
         <button type="button" className="icon-btn" title="Excluir" onClick={onExcluir}><Icon name="delete" size={15}/></button>
         <button type="button" className="icon-btn" title={aberto?"Minimizar":"Abrir"} onClick={()=>setAberto(a=>!a)}><Icon name={aberto?"expand_less":"expand_more"} size={18}/></button>
       </div>
@@ -3307,15 +3366,16 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
   // partes do formulário: ordem, nome, minimizadas e ocultas ficam guardadas (state.jobLayout) e valem para todos os jobs
   const layout = layoutJob(state.jobLayout);
   function mudarLayout(fn){ updateState(s=>({...s, jobLayout: fn(layoutJob(s.jobLayout))})); }
-  function moverSecao(id, dir, lista){
-    const alvo = lista[lista.indexOf(id)+dir]; if(!alvo) return;
-    mudarLayout(l=>{ const o = [...l.ordem]; const a = o.indexOf(id), b = o.indexOf(alvo); [o[a], o[b]] = [o[b], o[a]]; return {...l, ordem:o}; });
-  }
   const secaoVisivel = (id) => !layout.ocultas.includes(id) && !(id==="pagamento" && f.tipoJob==="Permuta");
+  const secoesVisiveis = layout.ordem.filter(id=>secaoVisivel(id));
+  const arrSecoes = useArrastar((de, para)=>{
+    const nova = moverNaLista(secoesVisiveis, de, para);
+    mudarLayout(l=>({...l, ordem:[...nova, ...l.ordem.filter(id=>!nova.includes(id))]}));
+  });
   const badgeSecao = (id) => {
     if(id==="entregaveis") return totalItens>0 ? <Badge tone="gray" style={{marginLeft:6}}>{concluidosTotal}/{totalItens} concluídos</Badge> : null;
     if(id==="pagamento") return (f.pagamento||{}).status==="Pago" ? <Badge tone="green" style={{marginLeft:6}}>Pago</Badge> : (f.valor ? <Badge tone="yellow" style={{marginLeft:6}}>A receber</Badge> : null);
-    if(id==="roteiro") return <Badge tone={f.roteiroConteudo?"green":"gray"} style={{marginLeft:6}}>{f.roteiroConteudo ? "Importado" : "Sem roteiro"}</Badge>;
+    if(id==="roteiro") return <><Badge tone={(f.briefing||"").trim() || (f.briefingArquivos||[]).length ? "green" : "gray"} style={{marginLeft:6}}>{(f.briefing||"").trim() || (f.briefingArquivos||[]).length ? "Briefing ok" : "Sem briefing"}</Badge><Badge tone={f.roteiroConteudo?"green":"gray"} style={{marginLeft:4}}>{f.roteiroConteudo ? "Roteiro ok" : "Sem roteiro"}</Badge></>;
     if(id==="trafego") return (f.trafegoPago||{}).ativo ? <Badge tone="wine" style={{marginLeft:6}}>ativo</Badge> : null;
     return null;
   };
@@ -3419,10 +3479,11 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
         </select>
       </Field>
 
-      {layout.ordem.filter(id=>secaoVisivel(id)).map((id, pos, lista)=>(
+      <div ref={arrSecoes.ref}>
+      {secoesVisiveis.map((id, pos)=>(
         <SecaoJob key={id} id={id} titulo={layout.nomes[id] || SECOES_JOB[id].titulo} icone={SECOES_JOB[id].icone} badge={badgeSecao(id)}
           aberta={!layout.fechadas.includes(id)} onAlternar={()=>mudarLayout(l=>({...l, fechadas: l.fechadas.includes(id) ? l.fechadas.filter(x=>x!==id) : [...l.fechadas, id]}))}
-          onSubir={pos>0 ? ()=>moverSecao(id,-1,lista) : null} onDescer={pos<lista.length-1 ? ()=>moverSecao(id,1,lista) : null}
+          onPointerDown={(e)=>arrSecoes.iniciar(e, pos)} estilo={arrSecoes.estilo(pos)}
           onRenomear={(nome)=>mudarLayout(l=>({...l, nomes:{...l.nomes, [id]:nome}}))} onOcultar={()=>mudarLayout(l=>({...l, ocultas:[...l.ocultas, id]}))}>
           {id==="pagamento" && <>
             <div className="field-row">
@@ -3533,7 +3594,20 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
             </SubSecaoJob>
           </>}
           {id==="entregaveis" && <EntregaveisJob f={f} setF={setF} state={state} updateState={updateState}/>}
-          {id==="roteiro" && <ImportarRoteiroJob f={f} setF={setF} state={state}/>}
+          {id==="roteiro" && <>
+            <div className="job-bloco-titulo">Briefing</div>
+            <textarea rows="5" value={f.briefing||""} onChange={e=>set("briefing",e.target.value)} placeholder="Escreva ou cole o briefing da marca..." style={{resize:"vertical", marginBottom:10}}/>
+            {(f.briefingArquivos||[]).map((a,k)=>(
+              <div key={a.caminho||k} className="job-arquivo">
+                <Icon name="attach_file" size={15}/><span>{a.nome}</span>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={()=>abrirAnexo(a.caminho)}><Icon name="open_in_new" size={14}/>Abrir</button>
+                <button type="button" className="icon-btn" title="Tirar o arquivo" onClick={()=>{ if(confirm(`Tirar "${a.nome}" do briefing?`)) setF(p=>({...p, briefingArquivos:(p.briefingArquivos||[]).filter((_,i)=>i!==k)})); }}><Icon name="delete" size={15}/></button>
+              </div>
+            ))}
+            <AnexoCampo rotulo="" pasta={`jobs/${f.id||"novos"}/briefing`} onEnviado={(a)=>setF(p=>({...p, briefingArquivos:[...(p.briefingArquivos||[]), a]}))}/>
+            <div className="job-bloco-titulo" style={{marginTop:6}}>Roteiros</div>
+            <ImportarRoteiroJob f={f} setF={setF} state={state}/>
+          </>}
           {id==="trafego" && <>
         <div className="row-item" style={{marginBottom: f.trafegoPago.ativo ? 12 : 0}}>
           <strong style={{fontSize:15}}>Adicionar tráfego pago (ads)</strong>
@@ -3603,6 +3677,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
           {id==="observacoes" && <textarea rows="3" value={f.observacoes} onChange={e=>set("observacoes",e.target.value)} placeholder="Detalhes do job, briefing, links..."/>}
         </SecaoJob>
       ))}
+      </div>
       {layout.ocultas.length>0 && <p style={{fontSize:13, color:"var(--graphite-soft)", margin:"-4px 0 14px"}}>Partes ocultas: {layout.ocultas.map(id=>(
         <button key={id} type="button" className="btn btn-ghost btn-sm" style={{marginLeft:6}} onClick={()=>mudarLayout(l=>({...l, ocultas:l.ocultas.filter(x=>x!==id)}))}><Icon name="visibility" size={14}/>{layout.nomes[id] || SECOES_JOB[id].titulo}</button>
       ))}</p>}
