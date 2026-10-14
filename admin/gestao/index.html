@@ -996,8 +996,16 @@ const ROTEIRO_BANK = [
 ];
 const TRAFEGO_PLATAFORMAS = ["Facebook Ads","Instagram Ads","Google Ads","TikTok Ads","YouTube Ads"];
 const TRAFEGO_PERIODOS = [{key:"3m",label:"3 meses",dias:90},{key:"6m",label:"6 meses",dias:180},{key:"12m",label:"12 meses",dias:365},{key:"perm",label:"Permanente",dias:null}];
+// períodos com outro número de meses (ex.: "18m") que a Mari digita
+const mesesDoPeriodo = (key) => { const m = String(key||"").match(/^(\d+)m$/); return m ? Number(m[1]) : 0; };
+const periodoPersonalizado = (key) => !!mesesDoPeriodo(key) && !TRAFEGO_PERIODOS.some(p=>p.key===key);
+const rotuloPeriodo = (key) => { const p = TRAFEGO_PERIODOS.find(x=>x.key===key); if(p) return p.label; const n = mesesDoPeriodo(key); return n ? `${n} ${n===1?"mês":"meses"}` : "—"; };
 function calcDataFim(inicio, periodoKey){
   if(!inicio) return "";
+  if(periodoPersonalizado(periodoKey)){
+    const d = new Date(inicio+"T00:00:00"); d.setMonth(d.getMonth()+mesesDoPeriodo(periodoKey));
+    return isoLocal(d);
+  }
   const p = TRAFEGO_PERIODOS.find(x=>x.key===periodoKey);
   if(!p || !p.dias) return "";
   const d = new Date(inicio+"T00:00:00");
@@ -3674,7 +3682,17 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
                     {p.label}
                   </button>
                 ))}
+                <button type="button" onClick={()=>{ if(!periodoPersonalizado(f.trafegoPago.periodo)) setPeriodo("18m"); }}
+                  style={{padding:"7px 14px", borderRadius:999, border:"1.5px solid "+(periodoPersonalizado(f.trafegoPago.periodo)?"var(--butter)":"var(--line)"), background: periodoPersonalizado(f.trafegoPago.periodo)?"var(--butter-soft)":"#fff", fontSize:13.5, cursor:"pointer"}}>
+                  Outro
+                </button>
               </div>
+              {periodoPersonalizado(f.trafegoPago.periodo) && (
+                <div style={{display:"flex", alignItems:"center", gap:8, marginTop:10, fontSize:14}}>
+                  <input type="number" min="1" max="120" style={{width:90}} value={mesesDoPeriodo(f.trafegoPago.periodo)} onChange={e=>{ const n = Math.max(1, Math.min(120, Number(e.target.value)||1)); setPeriodo(n+"m"); }}/>
+                  <span>meses</span>
+                </div>
+              )}
             </div>
             <div className="field-row">
               <Field label="Data de início"><input type="date" value={f.trafegoPago.dataInicio} onChange={e=>{ setNested("trafegoPago","dataInicio",e.target.value); setNested("trafegoPago","dataFim", calcDataFim(e.target.value, f.trafegoPago.periodo)); }}/></Field>
@@ -3707,14 +3725,11 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
                 ))}
               </div>
             </div>
-            <Field label="Vincular contrato (opcional)">
-              <select value={f.trafegoPago.contrato} onChange={e=>setNested("trafegoPago","contrato",e.target.value)}>
-                <option>Nenhum</option>
-              </select>
-            </Field>
+            <AnexoCampo rotulo="Contrato (PDF, opcional)" nome={f.trafegoPago.contratoArquivo} caminho={f.trafegoPago.contratoCaminho} pasta={`jobs/${f.id||"novos"}/contrato`} accept=".pdf,application/pdf"
+              onEnviado={(a)=>setF(p=>({...p, trafegoPago:{...p.trafegoPago, contrato:a.nome, contratoArquivo:a.nome, contratoCaminho:a.caminho}}))}/>
             <div style={{background:"var(--card-bg)", border:"1px solid var(--line)", borderRadius:12, padding:"12px 14px", fontSize:14.5, marginBottom:12}}>
               <div style={{display:"flex", justifyContent:"space-between", padding:"3px 0"}}><span>Orgânico:</span><strong>{fmtMoneyCur(orgVal, f.moeda)}</strong></div>
-              <div style={{display:"flex", justifyContent:"space-between", padding:"3px 0"}}><span>Tráfego ({TRAFEGO_PERIODOS.find(p=>p.key===f.trafegoPago.periodo)?.label}):</span><strong>{fmtMoneyCur(trafVal, f.moeda)}</strong></div>
+              <div style={{display:"flex", justifyContent:"space-between", padding:"3px 0"}}><span>Tráfego ({rotuloPeriodo(f.trafegoPago.periodo)}):</span><strong>{fmtMoneyCur(trafVal, f.moeda)}</strong></div>
               <div style={{display:"flex", justifyContent:"space-between", padding:"5px 0 0", borderTop:"1px solid var(--line)", marginTop:4, color:"var(--wine)", fontWeight:700}}><span>TOTAL:</span><span>{fmtMoneyCur(orgVal+trafVal, f.moeda)}</span></div>
             </div>
             <div style={{display:"flex", gap:8, alignItems:"flex-start", fontSize:13, color:"var(--graphite-soft)", background:"var(--card-bg)", borderRadius:10, padding:"10px 12px"}}>
@@ -3996,7 +4011,7 @@ function RenewalModal({job, onClose, onRegister}){
   const [periodo,setPeriodo] = useState("3m");
   const dataFimFmt = job.trafegoPago.dataFim ? new Date(job.trafegoPago.dataFim+"T00:00:00").toLocaleDateString('pt-BR') : "—";
   const nomeConteudo = `${job.tipo||"conteúdo"} ${job.marca}`;
-  const periodoAnteriorLabel = TRAFEGO_PERIODOS.find(p=>p.key===job.trafegoPago.periodo)?.label || "—";
+  const periodoAnteriorLabel = rotuloPeriodo(job.trafegoPago.periodo) || "—";
 
   function buildMessage(){
     return `Oi ${job.marca}!
@@ -4216,7 +4231,7 @@ function TrafegoPago({state, updateState}){
               <div style={{flex:1, minWidth:180}}>
                 <strong>{j.marca} — {j.tipo || "conteúdo"}</strong>
                 <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:2}}>
-                  Período: {TRAFEGO_PERIODOS.find(p=>p.key===j.trafegoPago.periodo)?.label} ({j.trafegoPago.dataInicio ? new Date(j.trafegoPago.dataInicio+"T00:00:00").toLocaleDateString('pt-BR') : "?"} — {j.trafegoPago.dataFim ? new Date(j.trafegoPago.dataFim+"T00:00:00").toLocaleDateString('pt-BR') : "?"})
+                  Período: {rotuloPeriodo(j.trafegoPago.periodo)} ({j.trafegoPago.dataInicio ? new Date(j.trafegoPago.dataInicio+"T00:00:00").toLocaleDateString('pt-BR') : "?"} — {j.trafegoPago.dataFim ? new Date(j.trafegoPago.dataFim+"T00:00:00").toLocaleDateString('pt-BR') : "?"})
                 </div>
                 {st==="Vencidos" && <div style={{fontSize:13.5, color:"var(--wine)", marginTop:2}}>Vencido há {Math.round((hoje - new Date(j.trafegoPago.dataFim+"T00:00:00"))/(1000*60*60*24))} dia(s)</div>}
                 {j.trafegoPago.perdido && j.trafegoPago.perdidoEm && <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:2}}>Marcado como não renovado em {new Date(j.trafegoPago.perdidoEm+"T00:00:00").toLocaleDateString('pt-BR')}</div>}
@@ -5024,6 +5039,7 @@ function FiscalDocumentsCard({state, updateState}){
     const l = [], quando = new Date((j.nf&&j.nf.dataEmissao) || (j.pagamento&&j.pagamento.dataPagamento) || j.dataPagamento || j.criadoEm || todayISO());
     const mes = monthNames[isNaN(quando) ? new Date().getMonth() : quando.getMonth()].slice(0,3), ano = isNaN(quando) ? new Date().getFullYear() : quando.getFullYear();
     if(j.nf && j.nf.caminho) l.push({id:"jnf-"+j.id, doJob:true, nome:`NF${j.nf.numero?" nº "+j.nf.numero:""} · ${j.marca}`, categoria:"Notas Fiscais", mesRef:mes, anoRef:ano, valor:j.nf.valor||j.valor, caminho:j.nf.caminho});
+    if(j.trafegoPago && j.trafegoPago.contratoCaminho) l.push({id:"jct-"+j.id, doJob:true, nome:`Contrato · ${j.marca}`, categoria:"Contratos", mesRef:mes, anoRef:ano, valor:"", caminho:j.trafegoPago.contratoCaminho});
     if(j.pagamento && j.pagamento.comprovanteCaminho) l.push({id:"jcp-"+j.id, doJob:true, nome:`Comprovante · ${j.marca}`, categoria:"Comprovantes", mesRef:mes, anoRef:ano, valor:j.valor, caminho:j.pagamento.comprovanteCaminho});
     return l;
   });
