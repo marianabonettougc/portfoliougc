@@ -320,6 +320,7 @@
   .case-video .play span{display:none}
   .case-video{min-width:0}
   .case-video .video-midia{aspect-ratio:9/16}
+  .case-foto .video-midia{cursor:default}
   html.miniatura .case-destaque{grid-template-columns:minmax(0,300px) minmax(0,1fr)}
   html.miniatura .nota p{font-size:.8rem}
   .video-gancho{display:block;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(1.5rem,2.2vw,2rem);line-height:1.05;letter-spacing:-.02em;color:#fff;margin-bottom:10px;text-shadow:0 2px 10px rgba(0,0,0,.35)}
@@ -1156,7 +1157,7 @@ const destaques = [
 // ================================
 const caseDestaque = {
   titulo: ["Case: Pantene", "Biotinamina"],
-  link: "https://youtube.com/shorts/ntAA0AWlDbM",                 // LINK DO VÍDEO DO CASE PANTENE
+  link: "https://youtube.com/shorts/ntAA0AWlDbM",                 // vídeo do case (fica nos destaques lá em cima; aqui aparece só a foto)
   capa: "capas/case-pantene-tufo.webp",                           // FOTO DO CASE (tufo de cabelo com "Eu quase fiquei careca", igual ao Canva)
   semPrevia: true,                                                 // só a foto: não roda prévia ao passar o mouse
   marca: "Pantene",                                                // NOME DA MARCA
@@ -1404,7 +1405,7 @@ desenharDestaques();
 
 const caseEl = $("#case-destaque");
 caseEl.innerHTML = `
-  <div class="case-video">${cardVideo(caseDestaque, "case")}</div>
+  <div class="case-video case-foto">${cardVideo({ capa: caseDestaque.capa, logo: caseDestaque.logo, marca: caseDestaque.marca }, "case-foto")}</div>
   <div>
     <h3 class="case-titulo">${caseDestaque.titulo.map(escapar).join(" ")}</h3>
     <div class="nota">
@@ -1427,6 +1428,7 @@ ligarMiniaturas(document);
 const dadosDoCard = (midia) => {
   const c = midia.dataset.chave;
   if (c === "case") return caseDestaque;
+  if (c === "case-foto") return { capa: caseDestaque.capa }; // case: só a foto, sem vídeo
   if (c && c[0] === "t") return trabalhos[Number(c.slice(1))];
   return destaques[Number(c)];
 };
