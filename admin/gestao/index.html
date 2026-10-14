@@ -1288,7 +1288,7 @@ function jobNaEtapa(job, i){
   const st = ROTEIRO_STATUS_OPTIONS[i], fim = i===ROTEIRO_STATUS_OPTIONS.length-1;
   const e = job.entregaveis || {};
   const muda = (lista) => (lista||[]).map(it=>({...it, roteiroStatus:st, concluido: fim ? true : (statusDoItem(it,"videos")==="Finalizado" ? false : it.concluido)}));
-  return {...job, etapaManual:i, entregaveis:{...e, videos:muda(e.videos), stories:muda(e.stories)}};
+  return {...job, etapaManual:i, status: (job.status==="Cancelado" ? job.status : (jobDoStatusItem(st) || job.status)), entregaveis:{...e, videos:muda(e.videos), stories:muda(e.stories)}};
 }
 const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const diasAte = (iso) => { const h = new Date(); h.setHours(0,0,0,0); return Math.round((new Date(iso+"T00:00:00") - h)/86400000); };
@@ -3300,7 +3300,10 @@ const TIPOS_ENTREGA = [
 function EntregaveisJob({f, setF, state, updateState}){
   const publi = f.categoria==="Publi";
   const extras = state.statusExtras || [];
-  const mudarLista = (tipo, fn) => setF(p=>({...p, entregaveis:{...p.entregaveis, [tipo]: fn(p.entregaveis[tipo]||[])}}));
+  const mudarLista = (tipo, fn) => setF(p=>{
+    const novo = {...p, entregaveis:{...p.entregaveis, [tipo]: fn(p.entregaveis[tipo]||[])}};
+    return tipo==="fotos" ? novo : statusDoJobPelosItens(novo);
+  });
   function definirQtd(tipo, nome, n){
     n = Math.max(0, Math.min(50, Number(n)||0));
     const atual = f.entregaveis[tipo] || [];
@@ -3400,13 +3403,40 @@ function comPrazoDosItens(job){
   const datas = [...(e.videos||[]), ...(e.fotos||[]), ...(e.stories||[])].map(i=>i.prazoConteudo).filter(Boolean).sort();
   return datas.length ? {...job, prazoEntrega: datas[datas.length-1]} : job;
 }
+// status do job e status de cada Reels/story andam juntos (a lista é a mesma; só muda maiúscula)
+const itemDoStatusJob = (st) => ROTEIRO_STATUS_OPTIONS.find(o=>o.toLowerCase()===String(st||"").toLowerCase()) || "";
+const jobDoStatusItem = (st) => JOB_STATUS.find(o=>o.toLowerCase()===String(st||"").toLowerCase()) || "";
+const etapaItem = (it) => ROTEIRO_STATUS_OPTIONS.indexOf(statusDoItem(it, "videos"));
+// mudou o status do job: todos os Reels/stories vão junto
+function itensNoStatusDoJob(job, st){
+  const alvo = itemDoStatusJob(st); if(!alvo) return job;
+  const e = job.entregaveis || {}, fim = alvo===ROTEIRO_STATUS_OPTIONS[ROTEIRO_STATUS_OPTIONS.length-1];
+  const muda = (l) => (l||[]).map(i=>({...i, roteiroStatus:alvo, concluido:fim}));
+  return {...job, entregaveis:{...e, videos:muda(e.videos), stories:muda(e.stories)}};
+}
+// abriu o job: Reels/stories que ficaram para trás do status do job sobem até ele (os que já estão mais adiante ficam)
+function itensAteStatusDoJob(job){
+  const alvo = itemDoStatusJob(job.status); if(!alvo) return job;
+  const ia = ROTEIRO_STATUS_OPTIONS.indexOf(alvo), e = job.entregaveis || {};
+  const sobe = (l) => (l||[]).map(i=>{ const k = etapaItem(i); return k>=0 && k<ia ? {...i, roteiroStatus:alvo, concluido: ia===ROTEIRO_STATUS_OPTIONS.length-1} : i; });
+  return {...job, entregaveis:{...e, videos:sobe(e.videos), stories:sobe(e.stories)}};
+}
+// mudou o status de um Reels/story: o job fica no status do mais atrasado
+function statusDoJobPelosItens(job){
+  const e = job.entregaveis || {};
+  const ks = [...(e.videos||[]), ...(e.stories||[])].map(etapaItem);
+  if(!ks.length || ks.some(k=>k<0)) return job;
+  if(job.status==="Cancelado") return job;
+  const st = jobDoStatusItem(ROTEIRO_STATUS_OPTIONS[Math.min(...ks)]);
+  return st ? {...job, status:st} : job;
+}
 function separarQuantidades(job){
   const e = job.entregaveis || {};
   const abre = (lista) => (lista||[]).flatMap(i=>{ const n = qtdItem(i); if(n<=1) return [{...i, quantidade:1}]; return Array.from({length:n}, (_,k)=>({...i, id:k===0?i.id:uid(), quantidade:1, label:k===0?i.label:`${i.label} (${k+1})`})); });
   return {...job, entregaveis:{...e, videos:abre(e.videos), fotos:abre(e.fotos), stories:abre(e.stories)}};
 }
 function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
-  const [f,setF] = useState(()=>separarQuantidades(mergeJobWithDefaults(initial)));
+  const [f,setF] = useState(()=>itensAteStatusDoJob(separarQuantidades(mergeJobWithDefaults(initial))));
   const [nichoModal,setNichoModal] = useState(false);
   const [savedTick,setSavedTick] = useState(false);
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
@@ -3530,7 +3560,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
         <Field label="Status">
           <select value={f.status} onChange={e=>{
             const v = e.target.value;
-            if(v!=="__novo"){ set("status", v); return; }
+            if(v!=="__novo"){ setF(p=>itensNoStatusDoJob({...p, status:v}, v)); return; }
             const nome = (prompt("Nome do novo status:")||"").trim();
             if(!nome) return;
             if(!statusDoJobLista(state).includes(nome)) updateState(s=>({...s, statusJobExtras:[...(s.statusJobExtras||[]), nome]}));
