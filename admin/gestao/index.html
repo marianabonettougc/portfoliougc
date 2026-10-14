@@ -3956,7 +3956,7 @@ function Jobs({state, updateState}){
                   <strong>{j.marca}</strong>
                   {j.recorrente && <span title="Job recorrente" style={{display:"inline-flex"}}><Icon name="repeat" size={14} style={{color:"var(--wine)"}}/></span>}
                 </div>
-                <div style={{fontSize:14.5, color:"var(--graphite-soft)"}}>{j.tipo} {j.nicho && "· "+j.nicho} {j.tipoJob==="Permuta" && "· Permuta"}</div>
+                <div style={{fontSize:14.5, color:"var(--graphite-soft)"}}>{[j.tipo, j.nicho].filter(Boolean).join(" · ")}</div>
               </div>
               <DatasJob j={j}/>
               <div className="job-linha-valor">{j.tipoJob==="Permuta" ? "Permuta" : fmtMoneyCur(j.valor, j.moeda)}</div>
