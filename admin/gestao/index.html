@@ -176,7 +176,7 @@
   .db-prio-nome b{ font-family:var(--db-serif); font-weight:400; font-size:28px; line-height:1.15; }
   .db-selo{ background:var(--db-bege); color:var(--db-cafe); font-size:12px; font-weight:500; letter-spacing:.04em; text-transform:uppercase; padding:5px 12px; border-radius:8px; }
   .db-prio-sub{ margin:4px 0 0; font-size:15px; color:var(--db-suave); }
-  .db-etapas{ display:grid; grid-template-columns:repeat(6,1fr); }
+  .db-etapas{ display:grid; grid-template-columns:repeat(7,1fr); }
   .db-etapas-grande{ margin-top:20px; }
   .db-etapa{ position:relative; display:flex; flex-direction:column; align-items:center; gap:8px; }
   .db-etapa::before{ content:""; position:absolute; top:7px; left:-50%; width:100%; height:1.5px; background:var(--db-linha2); }
@@ -514,6 +514,38 @@
   .badge-blue{ background:#e2e9f1; color:#4a6a8a; }
   .badge-pink{ background:#f6e0dc; color:#b8473a; }
 
+  .job-linha3{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+  @media(max-width:640px){ .job-linha3{ grid-template-columns:1fr; } }
+  .job-secao-topo{ display:flex; align-items:center; gap:4px; }
+  .job-secao-titulo{ flex:1; min-width:0; display:flex; align-items:center; gap:6px; border:0; background:none; padding:0; font:inherit; font-size:14px; font-weight:700; color:var(--graphite); cursor:pointer; text-align:left; }
+  .job-secao-topo .icon-btn{ width:30px; height:30px; }
+  .job-secao-topo .icon-btn:disabled{ opacity:.3; cursor:default; }
+  .job-menu{ position:absolute; right:0; top:34px; z-index:5; background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 10px 24px rgba(61,43,32,.14); padding:6px; min-width:160px; }
+  .job-menu button{ display:flex; align-items:center; gap:8px; width:100%; border:0; background:none; padding:8px 10px; border-radius:8px; font:inherit; font-size:14px; cursor:pointer; text-align:left; }
+  .job-menu button:hover{ background:var(--card-bg); }
+  .job-sub{ border-top:1px solid var(--line); margin-top:6px; }
+  .job-sub-topo{ display:flex; justify-content:space-between; align-items:center; width:100%; border:0; background:none; padding:12px 0 4px; font:inherit; font-size:14px; font-weight:600; color:var(--graphite); cursor:pointer; }
+  .ent-tipo{ margin-bottom:16px; }
+  .ent-tipo-topo{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .ent-tipo-nome{ display:flex; align-items:center; gap:6px; font-size:14.5px; font-weight:600; }
+  .ent-tipo-nome small{ font-weight:400; color:var(--graphite-soft); font-size:12.5px; margin-left:4px; }
+  .ent-qtd{ display:flex; align-items:center; border:1px solid var(--line); border-radius:999px; overflow:hidden; background:#fff; }
+  .ent-qtd button{ width:34px; height:32px; border:0; background:none; font-size:18px; cursor:pointer; color:var(--graphite); }
+  .ent-qtd button:disabled{ opacity:.3; cursor:default; }
+  .ent-qtd input{ width:44px; text-align:center; border:0; padding:4px 0; font-size:15px; background:transparent; -moz-appearance:textfield; }
+  .ent-qtd input::-webkit-inner-spin-button{ display:none; }
+  .ent-item{ border:1px solid var(--line); border-radius:12px; background:#fff; padding:6px 8px 6px 10px; margin-bottom:8px; }
+  .ent-item.feito .ent-item-nome{ color:var(--graphite-soft); }
+  .ent-item-topo{ display:flex; align-items:center; gap:2px; }
+  .ent-item-topo .icon-btn{ width:28px; height:28px; }
+  .ent-item-topo .icon-btn:disabled{ opacity:.3; cursor:default; }
+  .ent-check{ width:18px; height:18px; border-radius:50%; border:1.5px solid var(--line); background:transparent; display:flex; align-items:center; justify-content:center; padding:0; margin-right:8px; cursor:pointer; flex-shrink:0; color:#fff; }
+  .ent-item.feito .ent-check{ background:var(--moss); border-color:var(--moss); }
+  .ent-item-nome{ flex:1; min-width:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; border:0; background:none; padding:4px 0; font:inherit; font-size:15px; color:var(--graphite); text-align:left; cursor:pointer; }
+  .ent-item-status{ font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; background:var(--card-bg); color:var(--graphite-soft); border-radius:999px; padding:2px 8px; }
+  .ent-item-campos{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; padding:8px 2px 6px 26px; }
+  .ent-item-campos label{ display:flex; flex-direction:column; gap:4px; font-size:12.5px; color:var(--graphite-soft); }
+  @media(max-width:560px){ .ent-item-campos{ padding-left:0; } }
   .entregavel-datas{ flex-basis:100%; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; padding:4px 0 2px 30px; }
   .entregavel-datas label{ display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--graphite-soft); }
   .entregavel-datas input{ font-size:13px; padding:6px 8px; }
@@ -848,9 +880,12 @@ const fmtMoneyCur = (v, moeda) => {
 };
 const NICHOS_DEFAULT = ["Beleza","Maternidade","Pet","Casa","Moda","Eletrônicos","Alimentos","Infantil","Fitness","Outro"];
 // status de cada vídeo/story do job: as mesmas etapas da "Minha prioridade" do Dashboard (a última é Entregue)
-const ROTEIRO_STATUS_OPTIONS = ["Roteiro","Ag. aprovação de roteiro","Gravação","Edição","Aprovação","Entregue"];
+// out/2026 (pedido da Mari): as etapas de cada Reels/story; a última (Finalizado) marca como concluído
+const ROTEIRO_STATUS_OPTIONS = ["Aguardando produto","Roteirização","Aprovação de roteiro","Conteúdo entregue","Aprovação do conteúdo","Refação","Finalizado"];
+const STATUS_FINAL = (tipo) => tipo==="fotos" ? "Entregue" : "Finalizado";
 // nomes antigos (antes de out/2026) -> nomes novos
-const STATUS_VIDEO_ANTIGO = {"Roteiro pendente":"Roteiro", "Roteiro pronto":"Ag. aprovação de roteiro", "Gravado":"Edição", "Editado":"Aprovação"};
+const STATUS_VIDEO_ANTIGO = {"Roteiro pendente":"Roteirização", "Roteiro pronto":"Aprovação de roteiro", "Gravado":"Aprovação de roteiro", "Editado":"Aprovação do conteúdo",
+  "Roteiro":"Roteirização", "Ag. aprovação de roteiro":"Aprovação de roteiro", "Gravação":"Aprovação de roteiro", "Edição":"Aprovação de roteiro", "Aprovação":"Aprovação do conteúdo", "Entregue":"Finalizado"};
 const statusDoItem = (it, tipo) => tipo==="fotos" ? (it.roteiroStatus||FOTO_STATUS_OPTIONS[0]) : (STATUS_VIDEO_ANTIGO[it.roteiroStatus] || it.roteiroStatus || ROTEIRO_STATUS_OPTIONS[0]);
 const FOTO_STATUS_OPTIONS = ["A planejar","Planejada","Tirada","Editado","Entregue"];
 const STATUS_OPTIONS_BY_TIPO = {videos:ROTEIRO_STATUS_OPTIONS, fotos:FOTO_STATUS_OPTIONS, stories:ROTEIRO_STATUS_OPTIONS};
@@ -1157,10 +1192,10 @@ function LineChart({data, width, height}){
 }
 
 /* ---------- DASHBOARD (board novo, igual ao modelo da Mari) ---------- */
-const ETAPAS_JOB = ["Roteiro","Ag. aprovação de roteiro","Gravação","Edição","Aprovação","Entrega"];
+const ETAPAS_JOB = ROTEIRO_STATUS_OPTIONS;
 // etapa do job na "Minha prioridade" (ordem de prioridade em etapaDoJob); as bolinhas são clicáveis (jobNaEtapa)
-const ETAPA_JOB_DO_STATUS = {"Em Produção":2, "Gravado":3, "Aguardando Aprovação":4, "Conteúdo Entregue":5, "Finalizado":5};
-const ETAPA_JOB_DO_QUADRO = {"Ideias":0, "Roteirização":0, "Revisão":0, "Em Aprovação":1, "Gravação":2, "Edição":3, "Pronto para postar":5, "Pronto p/ Postar":5, "Finalizado":5};
+const ETAPA_JOB_DO_STATUS = {"Aguardando Produto":0, "Em Produção":2, "Gravado":2, "Conteúdo Entregue":3, "Aguardando Aprovação":4, "Finalizado":6};
+const ETAPA_JOB_DO_QUADRO = {"Ideias":1, "Roteirização":1, "Revisão":1, "Em Aprovação":2, "Gravação":2, "Edição":2, "Pronto para postar":4, "Pronto p/ Postar":4, "Finalizado":6};
 const etapaDoJob = (job, roteiros) => Math.max(ETAPA_JOB_DO_STATUS[job && job.status] ?? 0, etapaDoAndamento(job, roteiros));
 // o status do job (Em Produção, Conteúdo Entregue...) é o mínimo; o andamento dos conteúdos pode estar mais adiantado
 const etapaDoAndamento = (job, roteiros) => {
@@ -1180,7 +1215,7 @@ function jobNaEtapa(job, i){
   i = Math.max(0, Math.min(ETAPAS_JOB.length-1, i));
   const st = ROTEIRO_STATUS_OPTIONS[i], fim = i===ROTEIRO_STATUS_OPTIONS.length-1;
   const e = job.entregaveis || {};
-  const muda = (lista) => (lista||[]).map(it=>({...it, roteiroStatus:st, concluido: fim ? true : (statusDoItem(it,"videos")==="Entregue" ? false : it.concluido)}));
+  const muda = (lista) => (lista||[]).map(it=>({...it, roteiroStatus:st, concluido: fim ? true : (statusDoItem(it,"videos")==="Finalizado" ? false : it.concluido)}));
   return {...job, etapaManual:i, entregaveis:{...e, videos:muda(e.videos), stories:muda(e.stories)}};
 }
 const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -3080,14 +3115,175 @@ function NotaFiscalJob({nf, setNf, pasta}){
   );
 }
 
+// ---------- partes do formulário de UGC / Publi (minimizar, mover, renomear, ocultar) ----------
+const SECOES_JOB = {
+  pagamento:{titulo:"Pagamento", icone:"payments"},
+  entregaveis:{titulo:"Entregáveis", icone:"inventory_2"},
+  roteiro:{titulo:"Roteiro do conteúdo", icone:"description"},
+  trafego:{titulo:"Direitos de uso (tráfego pago)", icone:"campaign"},
+  observacoes:{titulo:"Observações", icone:"notes"}
+};
+function layoutJob(l){
+  l = l || {};
+  const base = Object.keys(SECOES_JOB);
+  const ordem = [...(l.ordem||[]).filter(id=>SECOES_JOB[id]), ...base.filter(id=>!(l.ordem||[]).includes(id))];
+  return {ordem, nomes:l.nomes||{}, fechadas:l.fechadas||["trafego","roteiro"], ocultas:(l.ocultas||[]).filter(id=>SECOES_JOB[id])};
+}
+function SecaoJob({titulo, icone, badge, aberta, onAlternar, onSubir, onDescer, onRenomear, onOcultar, children}){
+  const [menu,setMenu] = useState(false);
+  const [editando,setEditando] = useState(null);
+  return (
+    <div className="card job-secao" style={{background:"var(--warm-white)", marginBottom:14}}>
+      <div className="job-secao-topo">
+        {editando!==null ? (
+          <form style={{flex:1, display:"flex", gap:6}} onSubmit={e=>{ e.preventDefault(); if(editando.trim()) onRenomear(editando.trim()); setEditando(null); }}>
+            <input autoFocus value={editando} onChange={e=>setEditando(e.target.value)} onBlur={()=>{ if(editando.trim()) onRenomear(editando.trim()); setEditando(null); }}/>
+          </form>
+        ) : (
+          <button type="button" className="job-secao-titulo" onClick={onAlternar} aria-expanded={aberta}>
+            <Icon name={icone} size={17}/>{titulo}{badge}
+          </button>
+        )}
+        <button type="button" className="icon-btn" title="Subir" disabled={!onSubir} onClick={onSubir||undefined}><Icon name="arrow_upward" size={16}/></button>
+        <button type="button" className="icon-btn" title="Descer" disabled={!onDescer} onClick={onDescer||undefined}><Icon name="arrow_downward" size={16}/></button>
+        <div style={{position:"relative"}}>
+          <button type="button" className="icon-btn" title="Mais opções" onClick={()=>setMenu(m=>!m)}><Icon name="more_horiz" size={17}/></button>
+          {menu && <div className="job-menu" onMouseLeave={()=>setMenu(false)}>
+            <button type="button" onClick={()=>{ setMenu(false); setEditando(titulo); }}><Icon name="edit" size={15}/>Renomear</button>
+            <button type="button" onClick={()=>{ setMenu(false); if(confirm(`Ocultar "${titulo}" do formulário? As informações continuam guardadas e dá para mostrar de novo depois.`)) onOcultar(); }}><Icon name="visibility_off" size={15}/>Ocultar</button>
+          </div>}
+        </div>
+        <button type="button" className="icon-btn" title={aberta?"Minimizar":"Abrir"} onClick={onAlternar}><Icon name={aberta?"expand_less":"expand_more"} size={20}/></button>
+      </div>
+      {aberta && <div style={{marginTop:14}}>{children}</div>}
+    </div>
+  );
+}
+function SubSecaoJob({titulo, aberta, children}){
+  const [open,setOpen] = useState(!!aberta);
+  return (
+    <div className="job-sub">
+      <button type="button" className="job-sub-topo" onClick={()=>setOpen(o=>!o)} aria-expanded={open}><span>{titulo}</span><Icon name={open?"expand_less":"expand_more"} size={18}/></button>
+      {open && <div style={{padding:"12px 0 2px"}}>{children}</div>}
+    </div>
+  );
+}
+
+// ---------- entregáveis: quantidade de Reels/fotos/stories e uma ficha para cada um ----------
+const TIPOS_ENTREGA = [
+  {tipo:"videos", titulo:"Reels / vídeos", icone:"videocam", nome:"Reels"},
+  {tipo:"fotos", titulo:"Fotos", icone:"photo_camera", nome:"Foto"},
+  {tipo:"stories", titulo:"Stories", icone:"auto_stories", nome:"Story"}
+];
+function EntregaveisJob({f, setF, state, updateState}){
+  const publi = f.categoria==="Publi";
+  const extras = state.statusExtras || [];
+  const mudarLista = (tipo, fn) => setF(p=>({...p, entregaveis:{...p.entregaveis, [tipo]: fn(p.entregaveis[tipo]||[])}}));
+  function definirQtd(tipo, nome, n){
+    n = Math.max(0, Math.min(50, Number(n)||0));
+    const atual = f.entregaveis[tipo] || [];
+    if(n < atual.length){
+      const saem = atual.slice(n);
+      const temDados = saem.some(i=>i.prazoRoteiro || i.prazoConteudo || i.prazoPostagem || i.dataFechamento || i.concluido);
+      if(temDados && !confirm(`Diminuir para ${n}? ${saem.length===1?"O último sai":"Os últimos "+saem.length+" saem"} junto com as datas.`)) return;
+      mudarLista(tipo, l=>l.slice(0,n));
+    } else if(n > atual.length){
+      mudarLista(tipo, l=>[...l, ...Array.from({length:n-l.length}, (_,k)=>({...novoEntregavelItem(tipo, l.length+k+1), label:`${nome} ${l.length+k+1}`, dataFechamento: f.dataFechamento || ""}))]);
+    }
+  }
+  function novoStatus(tipo, id){
+    const nome = (prompt("Nome do novo status:")||"").trim();
+    if(!nome) return;
+    if(!extras.includes(nome) && !ROTEIRO_STATUS_OPTIONS.includes(nome)) updateState(s=>({...s, statusExtras:[...(s.statusExtras||[]), nome]}));
+    mudarLista(tipo, l=>l.map(i=>i.id===id?{...i, roteiroStatus:nome}:i));
+  }
+  return (
+    <div>
+      {TIPOS_ENTREGA.map(({tipo, titulo, icone, nome})=>{
+        const itens = f.entregaveis[tipo] || [];
+        const opcoes = [...(STATUS_OPTIONS_BY_TIPO[tipo]||ROTEIRO_STATUS_OPTIONS), ...extras];
+        const final = STATUS_FINAL(tipo);
+        return (
+          <div key={tipo} className="ent-tipo">
+            <div className="ent-tipo-topo">
+              <span className="ent-tipo-nome"><Icon name={icone} size={17}/>{titulo}{itens.length>0 && <small>{itens.filter(i=>i.concluido).length}/{itens.length} finalizados</small>}</span>
+              <div className="ent-qtd" aria-label={"Quantidade de "+titulo}>
+                <button type="button" onClick={()=>definirQtd(tipo, nome, itens.length-1)} disabled={!itens.length} aria-label="Menos">−</button>
+                <input type="number" min="0" value={itens.length} onChange={e=>definirQtd(tipo, nome, e.target.value)}/>
+                <button type="button" onClick={()=>definirQtd(tipo, nome, itens.length+1)} aria-label="Mais">+</button>
+              </div>
+            </div>
+            {itens.map((it, k)=>(
+              <ItemEntregavel key={it.id} it={it} tipo={tipo} publi={publi} opcoes={opcoes} final={final}
+                onMudar={(campos)=>mudarLista(tipo, l=>l.map(i=>i.id===it.id?{...i, ...campos}:i))}
+                onNovoStatus={()=>novoStatus(tipo, it.id)}
+                onSubir={k>0 ? ()=>mudarLista(tipo, l=>{ const o=[...l]; [o[k-1],o[k]]=[o[k],o[k-1]]; return o; }) : null}
+                onDescer={k<itens.length-1 ? ()=>mudarLista(tipo, l=>{ const o=[...l]; [o[k+1],o[k]]=[o[k],o[k+1]]; return o; }) : null}
+                onExcluir={()=>{ if(confirm(`Excluir "${it.label}"?`)) mudarLista(tipo, l=>l.filter(i=>i.id!==it.id)); }}/>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+function ItemEntregavel({it, tipo, publi, opcoes, final, onMudar, onNovoStatus, onSubir, onDescer, onExcluir}){
+  const [aberto,setAberto] = useState(!it.concluido && !(it.prazoRoteiro || it.prazoConteudo));
+  const [editando,setEditando] = useState(null);
+  const st = statusDoItem(it, tipo);
+  const lista = opcoes.includes(st) ? opcoes : [st, ...opcoes];
+  function mudarStatus(v){
+    if(v==="__novo"){ onNovoStatus(); return; }
+    onMudar({roteiroStatus:v, concluido: v===final});
+  }
+  return (
+    <div className={"ent-item"+(it.concluido?" feito":"")}>
+      <div className="ent-item-topo">
+        <button type="button" className="ent-check" onClick={()=>onMudar({concluido:!it.concluido, roteiroStatus: !it.concluido ? final : (st===final ? opcoes[0] : st)})} aria-label={it.concluido?"Desmarcar":"Marcar como finalizado"}>{it.concluido && <Icon name="check" size={12}/>}</button>
+        {editando!==null ? (
+          <form style={{flex:1}} onSubmit={e=>{ e.preventDefault(); onMudar({label:editando.trim()||it.label}); setEditando(null); }}>
+            <input autoFocus value={editando} onChange={e=>setEditando(e.target.value)} onBlur={()=>{ onMudar({label:editando.trim()||it.label}); setEditando(null); }}/>
+          </form>
+        ) : (
+          <button type="button" className="ent-item-nome" onClick={()=>setAberto(a=>!a)}>{it.label}<span className="ent-item-status">{st}</span></button>
+        )}
+        <button type="button" className="icon-btn" title="Renomear" onClick={()=>setEditando(it.label)}><Icon name="edit" size={15}/></button>
+        <button type="button" className="icon-btn" title="Subir" disabled={!onSubir} onClick={onSubir||undefined}><Icon name="arrow_upward" size={15}/></button>
+        <button type="button" className="icon-btn" title="Descer" disabled={!onDescer} onClick={onDescer||undefined}><Icon name="arrow_downward" size={15}/></button>
+        <button type="button" className="icon-btn" title="Excluir" onClick={onExcluir}><Icon name="delete" size={15}/></button>
+        <button type="button" className="icon-btn" title={aberto?"Minimizar":"Abrir"} onClick={()=>setAberto(a=>!a)}><Icon name={aberto?"expand_less":"expand_more"} size={18}/></button>
+      </div>
+      {aberto && (
+        <div className="ent-item-campos">
+          <label>Status
+            <select value={st} onChange={e=>mudarStatus(e.target.value)}>
+              {lista.map(o=><option key={o}>{o}</option>)}
+              <option value="__novo">+ Adicionar outro status</option>
+            </select>
+          </label>
+          <label>Data de fechamento da ação<input type="date" value={it.dataFechamento||""} onChange={e=>onMudar({dataFechamento:e.target.value})}/></label>
+          {tipo!=="fotos" && <label>Prazo para entregar o roteiro<input type="date" value={it.prazoRoteiro||""} onChange={e=>onMudar({prazoRoteiro:e.target.value})}/></label>}
+          <label>Prazo para enviar aprovação<input type="date" value={it.prazoConteudo||""} onChange={e=>onMudar({prazoConteudo:e.target.value})}/></label>
+          {publi && <label>Prazo de postagem<input type="date" value={it.prazoPostagem||""} onChange={e=>onMudar({prazoPostagem:e.target.value})}/></label>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // o prazo de entrega do job é o último "Prazo do conteúdo" dos itens (o campo separado saiu do formulário)
 function comPrazoDosItens(job){
   const e = job.entregaveis || {};
   const datas = [...(e.videos||[]), ...(e.fotos||[]), ...(e.stories||[])].map(i=>i.prazoConteudo).filter(Boolean).sort();
   return datas.length ? {...job, prazoEntrega: datas[datas.length-1]} : job;
 }
+function separarQuantidades(job){
+  const e = job.entregaveis || {};
+  const abre = (lista) => (lista||[]).flatMap(i=>{ const n = qtdItem(i); if(n<=1) return [{...i, quantidade:1}]; return Array.from({length:n}, (_,k)=>({...i, id:k===0?i.id:uid(), quantidade:1, label:k===0?i.label:`${i.label} (${k+1})`})); });
+  return {...job, entregaveis:{...e, videos:abre(e.videos), fotos:abre(e.fotos), stories:abre(e.stories)}};
+}
 function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
-  const [f,setF] = useState(()=>mergeJobWithDefaults(initial));
+  const [f,setF] = useState(()=>separarQuantidades(mergeJobWithDefaults(initial)));
   const [nichoModal,setNichoModal] = useState(false);
   const [savedTick,setSavedTick] = useState(false);
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
@@ -3105,6 +3301,21 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
   },[f]);
 
   const allNichos = [...NICHOS_DEFAULT, ...(state.nichos||[]).map(n=>n.nome)];
+  // partes do formulário: ordem, nome, minimizadas e ocultas ficam guardadas (state.jobLayout) e valem para todos os jobs
+  const layout = layoutJob(state.jobLayout);
+  function mudarLayout(fn){ updateState(s=>({...s, jobLayout: fn(layoutJob(s.jobLayout))})); }
+  function moverSecao(id, dir, lista){
+    const alvo = lista[lista.indexOf(id)+dir]; if(!alvo) return;
+    mudarLayout(l=>{ const o = [...l.ordem]; const a = o.indexOf(id), b = o.indexOf(alvo); [o[a], o[b]] = [o[b], o[a]]; return {...l, ordem:o}; });
+  }
+  const secaoVisivel = (id) => !layout.ocultas.includes(id) && !(id==="pagamento" && f.tipoJob==="Permuta");
+  const badgeSecao = (id) => {
+    if(id==="entregaveis") return totalItens>0 ? <Badge tone="gray" style={{marginLeft:6}}>{concluidosTotal}/{totalItens} concluídos</Badge> : null;
+    if(id==="pagamento") return (f.pagamento||{}).status==="Pago" ? <Badge tone="green" style={{marginLeft:6}}>Pago</Badge> : (f.valor ? <Badge tone="yellow" style={{marginLeft:6}}>A receber</Badge> : null);
+    if(id==="roteiro") return <Badge tone={f.roteiroConteudo?"green":"gray"} style={{marginLeft:6}}>{f.roteiroConteudo ? "Importado" : "Sem roteiro"}</Badge>;
+    if(id==="trafego") return (f.trafegoPago||{}).ativo ? <Badge tone="wine" style={{marginLeft:6}}>ativo</Badge> : null;
+    return null;
+  };
   const totalItens = qtdItens(f.entregaveis.videos) + qtdItens(f.entregaveis.fotos) + qtdItens(f.entregaveis.stories);
   const concluidosTotal = qtdItens([...f.entregaveis.videos,...f.entregaveis.fotos,...f.entregaveis.stories].filter(i=>i.concluido));
   const pctCompleto = totalItens>0 ? Math.round((concluidosTotal/totalItens)*100) : 0;
@@ -3166,59 +3377,26 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
         <div style={{display:"flex", gap:8}}>
           {["Publi","UGC"].map(c=>(
             <button type="button" key={c} onClick={()=>set("categoria",c)}
-              style={{flex:1, padding:"9px 0", borderRadius:10, border:"1.5px solid "+(f.categoria===c?FINALIDADE_COLOR[c]:"var(--line)"), background: f.categoria===c ? FINALIDADE_COLOR[c] : "var(--card-bg)", color: f.categoria===c ? "#fff" : "var(--graphite)", fontWeight:600, fontSize:14, cursor:"pointer"}}>
+              style={{flex:1, padding:"9px 0", borderRadius:10, border:"1.5px solid "+(f.categoria===c?FINALIDADE_COLOR[c]:"var(--line)"), background: f.categoria===c ? FINALIDADE_COLOR[c] : "var(--card-bg)", color: f.categoria===c ? "#fff" : "var(--graphite)", fontWeight:600, fontSize:15, cursor:"pointer"}}>
               {c}
             </button>
           ))}
         </div>
       </Field>
-      <Field label="Tipo de conteúdo">
-        <select value={f.tipo} onChange={e=>set("tipo",e.target.value)}>
-          <option value="">Selecione</option>
-          {TIPO_CONTEUDO_OPTIONS.map(t=><option key={t}>{t}</option>)}
-        </select>
-      </Field>
-      <Field label="Nicho">
-        <div style={{display:"flex", gap:8}}>
-          <select style={{flex:1}} value={f.nicho} onChange={e=>set("nicho",e.target.value)}>
-            <option value="">Selecione</option>
-            {allNichos.map(n=><option key={n}>{n}</option>)}
-          </select>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={()=>setNichoModal(true)}><Icon name="tune" size={15}/>Nichos</button>
-        </div>
-      </Field>
-
-      <Collapsible title="Entregáveis" icon="inventory_2" defaultOpen={true} badge={totalItens>0 && <Badge tone="gray" style={{marginLeft:6}}>{concluidosTotal}/{totalItens} concluídos</Badge>}>
-      {totalItens>0 && <div style={{fontSize:13, color:"var(--graphite-soft)", marginBottom:10}}>{pctCompleto}% completo</div>}
-      <EntregavelBlock tipo="videos" label="Vídeos" icon="videocam" items={f.entregaveis.videos} onChange={(v)=>setNested("entregaveis","videos",v)} publi={f.categoria==="Publi"}/>
-      <EntregavelBlock tipo="fotos" label="Fotos" icon="photo_camera" items={f.entregaveis.fotos} onChange={(v)=>setNested("entregaveis","fotos",v)} publi={f.categoria==="Publi"}/>
-      <EntregavelBlock tipo="stories" label="Stories" icon="auto_stories" items={f.entregaveis.stories} onChange={(v)=>setNested("entregaveis","stories",v)} publi={f.categoria==="Publi"}/>
-      </Collapsible>
-
-      <div className="field-row" style={{marginTop:10}}>
-        <Field label="Data de fechamento"><input type="date" value={f.dataFechamento || f.criadoEm || ""} onChange={e=>set("dataFechamento",e.target.value)}/></Field>
-        <Field label="Data em que recebeu"><input type="date" value={(f.pagamento && f.pagamento.dataPagamento) || ""} onChange={e=>{
-          const v = e.target.value;
-          // com a data preenchida (até hoje), o job conta como pago nas métricas
-          setF(prev=>({...prev, pagamento:{...(prev.pagamento||{}), dataPagamento:v, status: v && v<=todayISO() ? "Pago" : ((prev.pagamento||{}).status==="Pago" && !v ? "Em aberto" : (prev.pagamento||{}).status)}}));
-        }}/></Field>
-      </div>
-      <p style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-10, marginBottom:14}}>Para ações antigas, coloque quando foi fechada e quando o dinheiro caiu. É isso que conta nas métricas de cada mês.</p>
-
-      <div className="field-row">
-        <Field label="Data prevista de pagamento"><input type="date" value={f.dataPagamento} onChange={e=>{ const v=e.target.value; setF(p=>({...p, dataPagamento:v, pagamento:{...(p.pagamento||{}), dataPrevista:v}})); }}/></Field>
-        <Field label="Forma de pagamento">
-          <select value={f.formaPagamento} onChange={e=>set("formaPagamento",e.target.value)}>
-            {PAYMENT_METHODS.map(p=><option key={p}>{p}</option>)}
-          </select>
-        </Field>
-      </div>
-
-      <div className="field-row">
+      <div className="job-linha3">
         <Field label="Tipo de job">
           <select value={f.tipoJob} onChange={e=>set("tipoJob",e.target.value)}>
             <option>Pago</option><option>Permuta</option>
           </select>
+        </Field>
+        <Field label="Nicho">
+          <div style={{display:"flex", gap:6}}>
+            <select style={{flex:1, minWidth:0}} value={f.nicho} onChange={e=>set("nicho",e.target.value)}>
+              <option value="">Selecione</option>
+              {allNichos.map(n=><option key={n}>{n}</option>)}
+            </select>
+            <button type="button" className="icon-btn" title="Editar nichos" onClick={()=>setNichoModal(true)}><Icon name="tune" size={16}/></button>
+          </div>
         </Field>
         <Field label="Status">
           <select value={f.status} onChange={e=>set("status",e.target.value)}>
@@ -3226,20 +3404,38 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
           </select>
         </Field>
       </div>
+      <Field label="Tipo de conteúdo">
+        <select value={f.tipo} onChange={e=>set("tipo",e.target.value)}>
+          <option value="">Selecione</option>
+          {TIPO_CONTEUDO_OPTIONS.map(t=><option key={t}>{t}</option>)}
+        </select>
+      </Field>
 
-      {f.tipoJob!=="Permuta" && (
-        <div className="field-row">
-          <Field label="Valor"><input type="number" value={f.valor} onChange={e=>set("valor",e.target.value)} placeholder="0,00"/></Field>
-          <Field label="Moeda">
-            <select value={f.moeda} onChange={e=>set("moeda",e.target.value)}>
-              {MOEDAS.map(m=><option key={m.code} value={m.code}>{m.code} ({m.symbol})</option>)}
-            </select>
-          </Field>
-        </div>
-      )}
+      {layout.ordem.filter(id=>secaoVisivel(id)).map((id, pos, lista)=>(
+        <SecaoJob key={id} id={id} titulo={layout.nomes[id] || SECOES_JOB[id].titulo} icone={SECOES_JOB[id].icone} badge={badgeSecao(id)}
+          aberta={!layout.fechadas.includes(id)} onAlternar={()=>mudarLayout(l=>({...l, fechadas: l.fechadas.includes(id) ? l.fechadas.filter(x=>x!==id) : [...l.fechadas, id]}))}
+          onSubir={pos>0 ? ()=>moverSecao(id,-1,lista) : null} onDescer={pos<lista.length-1 ? ()=>moverSecao(id,1,lista) : null}
+          onRenomear={(nome)=>mudarLayout(l=>({...l, nomes:{...l.nomes, [id]:nome}}))} onOcultar={()=>mudarLayout(l=>({...l, ocultas:[...l.ocultas, id]}))}>
+          {id==="pagamento" && <>
+            <div className="field-row">
+              <Field label="Data de fechamento da ação"><input type="date" value={f.dataFechamento || f.criadoEm || ""} onChange={e=>set("dataFechamento",e.target.value)}/></Field>
+              <Field label="Prazo de pagamento"><input type="date" value={f.dataPagamento||""} onChange={e=>{ const v=e.target.value; setF(p=>({...p, dataPagamento:v, pagamento:{...(p.pagamento||{}), dataPrevista:v}})); }}/></Field>
+            </div>
+            <div className="field-row">
+              <Field label="Valor"><input type="number" value={f.valor} onChange={e=>set("valor",e.target.value)} placeholder="0,00"/></Field>
+              <Field label="Moeda">
+                <select value={f.moeda} onChange={e=>set("moeda",e.target.value)}>
+                  {MOEDAS.map(m=><option key={m.code} value={m.code}>{m.code} ({m.symbol})</option>)}
+                </select>
+              </Field>
+            </div>
+            <Field label="Forma de pagamento">
+              <select value={f.formaPagamento} onChange={e=>set("formaPagamento",e.target.value)}>
+                {PAYMENT_METHODS.map(p=><option key={p}>{p}</option>)}
+              </select>
+            </Field>
+            <SubSecaoJob titulo="Tipo de pagamento" aberta={false}>
 
-      {f.tipoJob!=="Permuta" && (
-        <Collapsible title="Tipo de Pagamento" icon="payments" defaultOpen={false}>
           {[["unico","Pagamento único"],["parcelado","Parcelado"]].map(([val,label])=>(
             <label key={val} style={{display:"flex", alignItems:"center", gap:8, fontSize:15, padding:"6px 0", cursor:"pointer"}}>
               <input type="radio" name="tipoPagamento" checked={f.tipoPagamento===val} onChange={()=>set("tipoPagamento",val)}/>{label}
@@ -3276,10 +3472,8 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
               ))}
             </div>
           )}
-        </Collapsible>
-      )}
-
-      <Collapsible title="Job recorrente" icon="repeat" defaultOpen={false} badge={f.recorrente && <Badge tone="wine" style={{marginLeft:6}}>ativo</Badge>}>
+            </SubSecaoJob>
+            <SubSecaoJob titulo="Job recorrente" aberta={!!f.recorrente}>
         <div className="row-item" style={{marginBottom: f.recorrente ? 12 : 0}}>
           <strong style={{fontSize:15}}>Ativar recorrência</strong>
           <Toggle on={f.recorrente} onClick={()=>set("recorrente",!f.recorrente)}/>
@@ -3313,19 +3507,14 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
             </div>
           </div>
         )}
-      </Collapsible>
-
-      <Collapsible title="Roteiro do conteúdo" icon="description" defaultOpen={false} badge={<Badge tone={f.roteiroConteudo?"green":"gray"} style={{marginLeft:6}}>{f.roteiroConteudo ? "Importado" : "Sem roteiro"}</Badge>}>
-        <ImportarRoteiroJob f={f} setF={setF} state={state}/>
-      </Collapsible>
-
-      <Collapsible title="Nota Fiscal e Pagamento" icon="receipt_long" defaultOpen={false} badge={<Badge tone={f.nf.precisa && f.nf.status==="Pendente" ? "yellow" : "gray"} style={{marginLeft:6}}>{f.nf.precisa ? f.nf.status : "Não se aplica"}</Badge>}>
+            </SubSecaoJob>
+            <SubSecaoJob titulo="Nota fiscal e recebimento" aberta={!!(f.nf && f.nf.precisa)}>
         <div className="row-item" style={{marginBottom:12}}>
           <strong style={{fontSize:15}}>Precisa emitir nota fiscal?</strong>
           <Toggle on={f.nf.precisa} onClick={()=>setNested("nf","precisa",!f.nf.precisa)}/>
         </div>
         {f.nf.precisa && <NotaFiscalJob nf={f.nf} pasta={`jobs/${f.id||"novos"}`} setNf={(campos)=>setF(p=>({...p, nf:{...p.nf, ...campos}, ...(campos.valor && Number(campos.valor)>0 ? {valor:String(campos.valor)} : {})}))}/>}
-        <Field label="Data prevista de pagamento"><input type="date" value={f.dataPagamento||""} onChange={e=>{ const v=e.target.value; setF(p=>({...p, dataPagamento:v, pagamento:{...(p.pagamento||{}), dataPrevista:v}})); }}/></Field>
+        <Field label="Data prevista de pagamento (vem do prazo de pagamento; pode mudar aqui)"><input type="date" value={f.dataPagamento||""} onChange={e=>{ const v=e.target.value; setF(p=>({...p, dataPagamento:v, pagamento:{...(p.pagamento||{}), dataPrevista:v}})); }}/></Field>
         <div className="row-item" style={{marginBottom:12}}>
           <strong style={{fontSize:15}}>Pagamento recebido?</strong>
           <Toggle on={(f.pagamento||{}).status==="Pago"} onClick={()=>setF(p=>{ const pago = (p.pagamento||{}).status==="Pago"; return {...p, pagamento:{...(p.pagamento||{}), status: pago ? "Em aberto" : "Pago", dataPagamento: pago ? "" : ((p.pagamento||{}).dataPagamento || todayISO())}}; })}/>
@@ -3333,9 +3522,11 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
         <AnexoCampo rotulo="Comprovante de pagamento" nome={(f.pagamento||{}).comprovante} caminho={(f.pagamento||{}).comprovanteCaminho} pasta={`jobs/${f.id||"novos"}`}
           onEnviado={(a)=>setF(p=>({...p, pagamento:{...(p.pagamento||{}), comprovante:a.nome, comprovanteCaminho:a.caminho}}))}/>
         <p style={{fontSize:12.5, color:"var(--graphite-soft)", margin:"-4px 0 0"}}>O valor, a data prevista, o pagamento e os anexos daqui aparecem iguais no Financeiro e no Dashboard.</p>
-      </Collapsible>
-
-      <Collapsible title="Direitos de Uso — Tráfego Pago" icon="campaign" defaultOpen={false} badge={f.trafegoPago.ativo && <Badge tone="wine" style={{marginLeft:6}}>ativo</Badge>}>
+            </SubSecaoJob>
+          </>}
+          {id==="entregaveis" && <EntregaveisJob f={f} setF={setF} state={state} updateState={updateState}/>}
+          {id==="roteiro" && <ImportarRoteiroJob f={f} setF={setF} state={state}/>}
+          {id==="trafego" && <>
         <div className="row-item" style={{marginBottom: f.trafegoPago.ativo ? 12 : 0}}>
           <strong style={{fontSize:15}}>Adicionar tráfego pago (ads)</strong>
           <Toggle on={f.trafegoPago.ativo} onClick={()=>setNested("trafegoPago","ativo",!f.trafegoPago.ativo)}/>
@@ -3400,9 +3591,13 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
             </div>
           </div>
         )}
-      </Collapsible>
-
-      <Field label="Observações"><textarea rows="3" value={f.observacoes} onChange={e=>set("observacoes",e.target.value)} placeholder="Detalhes do job, briefing, links..."/></Field>
+          </>}
+          {id==="observacoes" && <textarea rows="3" value={f.observacoes} onChange={e=>set("observacoes",e.target.value)} placeholder="Detalhes do job, briefing, links..."/>}
+        </SecaoJob>
+      ))}
+      {layout.ocultas.length>0 && <p style={{fontSize:13, color:"var(--graphite-soft)", margin:"-4px 0 14px"}}>Partes ocultas: {layout.ocultas.map(id=>(
+        <button key={id} type="button" className="btn btn-ghost btn-sm" style={{marginLeft:6}} onClick={()=>mudarLayout(l=>({...l, ocultas:l.ocultas.filter(x=>x!==id)}))}><Icon name="visibility" size={14}/>{layout.nomes[id] || SECOES_JOB[id].titulo}</button>
+      ))}</p>}
 
       <button className="btn btn-primary" style={{width:"100%", justifyContent:"center"}} onClick={()=>{
         if(!f.marca){ alert("Informe a marca."); return; }
@@ -3467,13 +3662,13 @@ function Jobs({state, updateState}){
   const [filterStatus,setFilterStatus] = useState("Todos");
   const [confirmPagoId,setConfirmPagoId] = useState(null);
 
-  function persistJob(job){
+  function persistJob(job){ updateState(state=>{
     const exists = state.jobs.some(j=>j.id===job.id);
     const list = exists ? state.jobs.map(j=>j.id===job.id?job:j) : [...state.jobs, job];
     const followups = syncFollowups(state.followups, job);
     const transacoes = syncTransacaoFromJob(state.transacoes, job);
-    updateState({...state, jobs:list, followups, transacoes});
-  }
+    return {...state, jobs:list, followups, transacoes};
+  }); }
   function save(job){
     persistJob(job);
     setModal(false); setEditing(null);
@@ -3838,11 +4033,11 @@ function TrafegoPago({state, updateState}){
     updateState({...state, jobs: state.jobs.map(j=>j.id===job.id?{...j, trafegoPago:{...j.trafegoPago, periodo:periodoKey, dataInicio:novaDataInicio, dataFim:novaDataFim, valorAdicional:preco, perdido:false, perdidoEm:""}}:j)});
     setRenewalJob(null);
   }
-  function persistJobTraf(job){
+  function persistJobTraf(job){ updateState(state=>{
     const followups = syncFollowups(state.followups, job);
     const transacoes = syncTransacaoFromJob(state.transacoes, job);
-    updateState({...state, jobs: state.jobs.map(j=>j.id===job.id?job:j), followups, transacoes});
-  }
+    return {...state, jobs: state.jobs.map(j=>j.id===job.id?job:j), followups, transacoes};
+  }); }
   function saveJob(job){
     persistJobTraf(job);
     setViewingJob(null);
@@ -8086,6 +8281,9 @@ function App({session}){
   },[]);
 
   function updateState(next){
+    // aceita função (estado mais recente -> novo): evita que dois salvamentos seguidos apaguem um ao outro
+    if(typeof next==="function") next = next(stateRef.current);
+    stateRef.current = next;
     setState(next);
     if(saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(()=>saveData(next, userId, handleSaveStatus), 400);
