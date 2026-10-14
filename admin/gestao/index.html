@@ -525,7 +525,12 @@
   .job-menu button:hover{ background:var(--card-bg); }
   .job-sub{ border-top:1px solid var(--line); margin-top:6px; }
   .escopo-caixa{ margin:-6px 0 14px; }
-  .alca{ display:inline-flex; align-items:center; color:var(--graphite-soft); opacity:.55; cursor:grab; touch-action:none; padding:4px 2px; margin-right:2px; }
+  .escopo-texto{ width:100%; min-height:110px; resize:vertical; border:1px solid var(--line); border-radius:12px; background:#fff; padding:12px 14px; font:inherit; font-size:14.5px; line-height:1.5; box-sizing:border-box; }
+  .job-datas{ display:flex; gap:14px; min-width:150px; font-size:14px; color:var(--graphite); }
+  .job-datas span{ display:flex; flex-direction:column; line-height:1.25; }
+  .job-datas small{ font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--graphite-soft); }
+  .job-datas.compacto{ font-size:13px; margin:2px 0 8px; min-width:0; }
+  [data-alca]{ user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
   [data-alca]{ cursor:grab; }
   [data-alca] button, [data-alca] input{ cursor:pointer; }
   .job-secao, .ent-item{ will-change:transform; }
@@ -869,18 +874,22 @@ function Toggle({on, onClick}){
 }
 
 /* ---------- STATUS maps ---------- */
-const JOB_STATUS = ["Lead","Em Negociação","Fechado","Aguardando Aprovação","Aguardando Produto","Aprovado","Planejado","Em Produção","Gravado","Conteúdo Entregue","Finalizado","Cancelado"];
+// status do job (out/2026, pedido da Mari); os antigos continuam aparecendo nos jobs que já tinham
+const JOB_STATUS = ["Aguardando Produto","Roteirização","Aprovação de Roteiro","Conteúdo Entregue","Aprovação do Conteúdo","Refação","Finalizado","Cancelado"];
+const statusDoJobLista = (state, atual) => { const l = [...JOB_STATUS, ...((state && state.statusJobExtras)||[])]; return atual && !l.includes(atual) ? [atual, ...l] : l; };;
 const JOB_FINISHED = ["Finalizado","Cancelado"];
 const isHistorico = (j) => j.status==="Finalizado" || (j.pagamento && j.pagamento.status==="Pago");
 const jobStatusTone = (s) => ({
   "Lead":"gray","Em Negociação":"yellow","Fechado":"blue","Aguardando Aprovação":"wine","Aguardando Produto":"yellow",
   "Aprovado":"blue","Planejado":"yellow","Em Produção":"blue","Gravado":"wine","Conteúdo Entregue":"green",
-  "Finalizado":"green","Cancelado":"gray"
+  "Finalizado":"green","Cancelado":"gray",
+  "Roteirização":"yellow","Aprovação de Roteiro":"wine","Aprovação do Conteúdo":"wine","Refação":"yellow"
 }[s] || "gray");
 const KANBAN_COLORS = {
   "Lead":"#3d2b20","Em Negociação":"#6b4a35","Fechado":"#a87058","Aguardando Aprovação":"#8a634b","Aguardando Produto":"#6B4E3D",
   "Aprovado":"#a87058","Planejado":"#3d2b20","Em Produção":"#6b4a35","Gravado":"#8a634b","Conteúdo Entregue":"#a87058",
-  "Finalizado":"#6B4E3D","Cancelado":"#8a634b"
+  "Finalizado":"#6B4E3D","Cancelado":"#8a634b",
+  "Roteirização":"#6b4a35","Aprovação de Roteiro":"#8a634b","Aprovação do Conteúdo":"#8a634b","Refação":"#a87058"
 };
 const PAYMENT_METHODS = ["PIX","Transferência","Boleto","Cartão","PayPal","Outro"];
 const MOEDAS = [{code:"BRL",symbol:"R$"},{code:"USD",symbol:"US$"},{code:"EUR",symbol:"€"}];
@@ -1086,6 +1095,24 @@ function syncTransacaoFromJob(transacoes, job){
   return transacoes;
 }
 
+// próxima data de postagem do job (a primeira de hoje em diante; se todas passaram, a última)
+function postagemDoJob(j){
+  const e = j.entregaveis || {};
+  const datas = [...(e.videos||[]), ...(e.fotos||[]), ...(e.stories||[])].map(i=>i.prazoPostagem).filter(Boolean).sort();
+  if(!datas.length) return "";
+  const hoje = isoLocal(new Date());
+  return datas.find(d=>d>=hoje) || datas[datas.length-1];
+}
+function DatasJob({j, compacto}){
+  const fech = dataFechamentoJob(j), post = postagemDoJob(j);
+  const br = (iso) => iso ? iso.split("-").reverse().join("/") : "";
+  return (
+    <div className={"job-datas"+(compacto?" compacto":"")}>
+      <span><small>Fechamento</small>{fech ? br(fech) : "sem data"}</span>
+      {post && <span><small>Postagem</small>{br(post)}</span>}
+    </div>
+  );
+}
 // mês em que a ação foi fechada: usa a data de fechamento; se não tiver, o dia em que foi cadastrada
 const dataFechamentoJob = (j) => j.dataFechamento || j.criadoEm || "";
 
@@ -1108,7 +1135,7 @@ function processRecurringJobs(state){
     if(j.recorrencia.encerrarEm && j.recorrencia.proximaCriacao > j.recorrencia.encerrarEm) return j;
     changed = true;
     const clone = {
-      ...j, id:uid(), criadoEm: today, status:"Lead",
+      ...j, id:uid(), criadoEm: today, status:"Aguardando Produto",
       prazoEntrega: j.recorrencia.proximaCriacao, dataEntregaReal:"",
       entregaveis: resetEntregaveisConcluido(j.entregaveis || emptyEntregaveis()),
       pagamento: {...(j.pagamento||{}), status:"Em aberto", dataPagamento:""},
@@ -1204,7 +1231,7 @@ function LineChart({data, width, height}){
 /* ---------- DASHBOARD (board novo, igual ao modelo da Mari) ---------- */
 const ETAPAS_JOB = ROTEIRO_STATUS_OPTIONS;
 // etapa do job na "Minha prioridade" (ordem de prioridade em etapaDoJob); as bolinhas são clicáveis (jobNaEtapa)
-const ETAPA_JOB_DO_STATUS = {"Aguardando Produto":0, "Em Produção":2, "Gravado":2, "Conteúdo Entregue":3, "Aguardando Aprovação":4, "Finalizado":6};
+const ETAPA_JOB_DO_STATUS = {"Aguardando Produto":0, "Roteirização":1, "Aprovação de Roteiro":2, "Em Produção":2, "Gravado":2, "Conteúdo Entregue":3, "Aguardando Aprovação":4, "Aprovação do Conteúdo":4, "Refação":5, "Finalizado":6};
 const ETAPA_JOB_DO_QUADRO = {"Ideias":1, "Roteirização":1, "Revisão":1, "Em Aprovação":2, "Gravação":2, "Edição":2, "Pronto para postar":4, "Pronto p/ Postar":4, "Finalizado":6};
 const etapaDoJob = (job, roteiros) => Math.max(ETAPA_JOB_DO_STATUS[job && job.status] ?? 0, etapaDoAndamento(job, roteiros));
 // o status do job (Em Produção, Conteúdo Entregue...) é o mínimo; o andamento dos conteúdos pode estar mais adiantado
@@ -2934,7 +2961,7 @@ function defaultJobObj(){
     tipoPagamento:"unico", divisaoParcelas:"50-50", parcelasPersonalizadas:[],
     recorrente:false,
     recorrencia:{ frequencia:"Mensal (30d)", intervaloDias:30, proximaCriacao:"", encerrarEm:"", gerarReceita:true },
-    status:"Lead",
+    status:"Aguardando Produto",
     roteiroConteudo:"", roteiroStatus:"Em criação", roteiroTemplate:"",
     nf:{ precisa:false, status:"Pendente", numero:"", dataEmissao:"", valor:"", arquivo:"" },
     pagamento:{ status:"Em aberto", forma:"PIX", dataPrevista:"", dataPagamento:"", comprovante:"" },
@@ -3133,8 +3160,8 @@ function useArrastar(onMover){
     if(e.button>0) return;
     const alca = e.target.closest("[data-alca]");
     if(!alca) return;
-    if(e.pointerType!=="mouse" && !e.target.closest("[data-alca-toque]")) return; // no toque, só pela alça (para não atrapalhar a rolagem)
     if(e.target.closest("input,select,textarea") ) return;
+    const toque = e.pointerType!=="mouse"; // no celular: segurar um instante (0,35 s) para começar; antes disso o dedo só rola a tela
     if(!ref.current) return;
     const filhos = [...ref.current.children].filter(c=>c.hasAttribute("data-arrastavel"));
     // a alça tem que ser deste cartão (um Reels dentro de Entregáveis não arrasta a parte inteira)
@@ -3142,18 +3169,24 @@ function useArrastar(onMover){
     const rects = filhos.map(c=>c.getBoundingClientRect());
     if(!rects[idx]) return;
     const gap = rects.length>1 ? Math.max(0, rects[1].top - rects[0].bottom) : 8;
-    const alt = rects[idx].height + gap, y0 = e.clientY;
-    let ativo = false, para = idx;
+    const alt = rects[idx].height + gap, y0 = e.clientY, x0 = e.clientX;
+    let ativo = false, para = idx, pronto = !toque, cancelado = false;
+    const timer = toque ? setTimeout(()=>{ if(!cancelado){ pronto = true; if(navigator.vibrate) navigator.vibrate(15); setArr({de:idx, para:idx, dy:0, alt}); } }, 350) : null;
+    const travaRolagem = (ev)=>{ if(pronto) ev.preventDefault(); };
+    if(toque) window.addEventListener("touchmove", travaRolagem, {passive:false});
     const mover = (ev)=>{
       const dy = ev.clientY - y0;
-      if(!ativo && Math.abs(dy)<6) return;
+      if(!pronto){ if(Math.abs(dy)>8 || Math.abs(ev.clientX - x0)>8){ cancelado = true; clearTimeout(timer); limpar(); } return; }
+      if(!ativo && Math.abs(dy)<6 && !toque) return;
       ativo = true; ev.preventDefault();
       const centro = rects[idx].top + rects[idx].height/2 + dy;
       para = rects.filter((r,i)=>i!==idx && (r.top + r.height/2) < centro).length;
       setArr({de:idx, para, dy, alt});
     };
+    const limpar = ()=>{ window.removeEventListener("pointermove", mover); window.removeEventListener("pointerup", soltar); window.removeEventListener("pointercancel", soltar); window.removeEventListener("touchmove", travaRolagem); };
     const soltar = ()=>{
-      window.removeEventListener("pointermove", mover); window.removeEventListener("pointerup", soltar); window.removeEventListener("pointercancel", soltar);
+      clearTimeout(timer); limpar();
+      if(!pronto) return;
       setArr(null);
       if(ativo){
         // o clique que vem junto com o soltar não pode abrir/fechar o cartão
@@ -3196,7 +3229,6 @@ function SecaoJob({titulo, icone, badge, aberta, onAlternar, onRenomear, onOcult
   return (
     <div className="card job-secao" data-arrastavel="" style={{background:"var(--warm-white)", marginBottom:14, ...(estilo||{})}} onPointerDown={onPointerDown}>
       <div className="job-secao-topo" data-alca="">
-        <span className="alca" data-alca-toque="" title="Arraste para mudar de lugar"><Icon name="drag_indicator" size={18}/></span>
         {editando!==null ? (
           <form style={{flex:1, display:"flex", gap:6}} onSubmit={e=>{ e.preventDefault(); if(editando.trim()) onRenomear(editando.trim()); setEditando(null); }}>
             <input autoFocus value={editando} onChange={e=>setEditando(e.target.value)} onBlur={()=>{ if(editando.trim()) onRenomear(editando.trim()); setEditando(null); }}/>
@@ -3302,7 +3334,6 @@ function ItemEntregavel({it, tipo, publi, opcoes, final, onMudar, onNovoStatus, 
   return (
     <div className={"ent-item"+(it.concluido?" feito":"")} data-arrastavel="" style={estilo} onPointerDown={onPointerDown}>
       <div className="ent-item-topo" data-alca="">
-        <span className="alca" data-alca-toque="" title="Arraste para mudar de lugar"><Icon name="drag_indicator" size={17}/></span>
         <button type="button" className="ent-check" onClick={()=>onMudar({concluido:!it.concluido, roteiroStatus: !it.concluido ? final : (st===final ? opcoes[0] : st)})} aria-label={it.concluido?"Desmarcar":"Marcar como finalizado"}>{it.concluido && <Icon name="check" size={12}/>}</button>
         {editando!==null ? (
           <form style={{flex:1}} onSubmit={e=>{ e.preventDefault(); onMudar({label:editando.trim()||it.label}); setEditando(null); }}>
@@ -3375,7 +3406,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
   const badgeSecao = (id) => {
     if(id==="entregaveis") return totalItens>0 ? <Badge tone="gray" style={{marginLeft:6}}>{concluidosTotal}/{totalItens} concluídos</Badge> : null;
     if(id==="pagamento") return (f.pagamento||{}).status==="Pago" ? <Badge tone="green" style={{marginLeft:6}}>Pago</Badge> : (f.valor ? <Badge tone="yellow" style={{marginLeft:6}}>A receber</Badge> : null);
-    if(id==="roteiro") return <><Badge tone={(f.briefing||"").trim() || (f.briefingArquivos||[]).length ? "green" : "gray"} style={{marginLeft:6}}>{(f.briefing||"").trim() || (f.briefingArquivos||[]).length ? "Briefing ok" : "Sem briefing"}</Badge><Badge tone={f.roteiroConteudo?"green":"gray"} style={{marginLeft:4}}>{f.roteiroConteudo ? "Roteiro ok" : "Sem roteiro"}</Badge></>;
+    if(id==="roteiro") return <>{((f.briefing||"").trim() || (f.briefingArquivos||[]).length>0) && <Badge tone="green" style={{marginLeft:6}}>Briefing ok</Badge>}{f.roteiroConteudo && <Badge tone="green" style={{marginLeft:4}}>Roteiro ok</Badge>}</>;
     if(id==="trafego") return (f.trafegoPago||{}).ativo ? <Badge tone="wine" style={{marginLeft:6}}>ativo</Badge> : null;
     return null;
   };
@@ -3438,7 +3469,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
       <Field label="Marca"><input value={f.marca} onChange={e=>set("marca",e.target.value)} placeholder="Nome da marca"/></Field>
       <div className="escopo-caixa">
         <SubSecaoJob titulo={<span style={{display:"flex", alignItems:"center", gap:6}}><Icon name="assignment" size={16}/>Escopo do cliente{f.escopo && f.escopo.trim() ? <Badge tone="gray" style={{marginLeft:4}}>preenchido</Badge> : null}</span>} aberta={!!(f.escopo && f.escopo.trim())}>
-          <textarea rows="8" value={f.escopo||""} onChange={e=>set("escopo",e.target.value)} placeholder="Cole aqui o escopo, o briefing ou a mensagem da marca..." style={{resize:"vertical"}}/>
+          <textarea className="escopo-texto" rows="5" value={f.escopo||""} onChange={e=>set("escopo",e.target.value)} placeholder="Cole aqui o escopo, o briefing ou a mensagem da marca..."/>
         </SubSecaoJob>
       </div>
       <Field label="Finalidade">
@@ -3467,8 +3498,16 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
           </div>
         </Field>
         <Field label="Status">
-          <select value={f.status} onChange={e=>set("status",e.target.value)}>
-            {JOB_STATUS.map(p=><option key={p}>{p}</option>)}
+          <select value={f.status} onChange={e=>{
+            const v = e.target.value;
+            if(v!=="__novo"){ set("status", v); return; }
+            const nome = (prompt("Nome do novo status:")||"").trim();
+            if(!nome) return;
+            if(!statusDoJobLista(state).includes(nome)) updateState(s=>({...s, statusJobExtras:[...(s.statusJobExtras||[]), nome]}));
+            set("status", nome);
+          }}>
+            {statusDoJobLista(state, f.status).map(p=><option key={p}>{p}</option>)}
+            <option value="__novo">+ Adicionar outro status</option>
           </select>
         </Field>
       </div>
@@ -3710,9 +3749,9 @@ function JobCard({j, onEdit, onDelete, onMarkPaid, onDuplicate, draggable, onDra
       <div style={{display:"flex", gap:10, fontSize:12.5, color:"var(--graphite-soft)", marginBottom:6}}>
         <span style={{display:"flex", alignItems:"center", gap:3}}><Icon name="videocam" size={13}/>{totalV}</span>
         <span style={{display:"flex", alignItems:"center", gap:3}}><Icon name="photo_camera" size={13}/>{totalF}</span>
-        {j.prazoEntrega && <span style={{display:"flex", alignItems:"center", gap:3}}><Icon name="event" size={13}/>{j.prazoEntrega.slice(8,10)}/{j.prazoEntrega.slice(5,7)}</span>}
         {isHoje && <Badge tone="yellow">Hoje</Badge>}
       </div>
+      <DatasJob j={j} compacto/>
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8}}>
         <strong style={{fontSize:15}}>{j.tipoJob==="Permuta" ? "Permuta" : fmtMoneyCur(j.valor, j.moeda)}</strong>
         {j.tipoJob!=="Permuta" && <Badge tone={pago?"green":"yellow"}>{pago?"Pago":"A receber"}</Badge>}
@@ -3783,7 +3822,7 @@ function Jobs({state, updateState}){
     updateState({...state, jobs, transacoes});
   }
   function duplicate(job){
-    const clone = { ...job, id:uid(), marca: job.marca+" (cópia)", status:"Lead", criadoEm:todayISO(), dataEntregaReal:"",
+    const clone = { ...job, id:uid(), marca: job.marca+" (cópia)", status:"Aguardando Produto", criadoEm:todayISO(), dataEntregaReal:"",
       pagamento:{...(job.pagamento||{}), status:"Em aberto", dataPagamento:""},
       entregaveis: resetEntregaveisConcluido(job.entregaveis || emptyEntregaveis())
     };
@@ -3791,11 +3830,14 @@ function Jobs({state, updateState}){
     updateState({...state, jobs:[...state.jobs, clone], transacoes});
   }
 
+  const colunasStatus = [...statusDoJobLista(state), ...[...new Set(state.jobs.map(j=>j.status).filter(Boolean))].filter(x=>!statusDoJobLista(state).includes(x))];
   let list = state.jobs;
   if(tab==="Ativos") list = list.filter(j=>j.status!=="Cancelado" && !isHistorico(j));
   if(tab==="Histórico") list = list.filter(j=>isHistorico(j));
   if(query) list = list.filter(j => (j.marca+(j.tipo||"")+(j.observacoes||"")+(j.nicho||"")).toLowerCase().includes(query.toLowerCase()));
   if(filterStatus!=="Todos") list = list.filter(j=>j.status===filterStatus);
+  // em ordem de fechamento da ação (o mais recente primeiro), na lista e na grade
+  list = [...list].sort((a,b)=>String(dataFechamentoJob(b)).localeCompare(String(dataFechamentoJob(a))));
 
   const ativosCount = state.jobs.filter(j=>j.status!=="Cancelado" && !isHistorico(j)).length;
   const historicoCount = state.jobs.filter(j=>isHistorico(j)).length;
@@ -3843,7 +3885,7 @@ function Jobs({state, updateState}){
             <div style={{marginTop:10, display:"flex", gap:10, alignItems:"center"}}>
               <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{maxWidth:220}}>
                 <option>Todos</option>
-                {JOB_STATUS.map(s=><option key={s}>{s}</option>)}
+                {colunasStatus.map(s=><option key={s}>{s}</option>)}
               </select>
               {filterStatus!=="Todos" && <button className="btn btn-ghost btn-sm" onClick={()=>setFilterStatus("Todos")}>Limpar</button>}
             </div>
@@ -3853,7 +3895,7 @@ function Jobs({state, updateState}){
 
       {tab==="Organize" ? (
         <div style={{display:"flex", gap:14, overflowX:"auto", paddingBottom:10}}>
-          {JOB_STATUS.map(col=>{
+          {colunasStatus.map(col=>{
             const colJobs = state.jobs.filter(j=>j.status===col && !isHistorico(j) && (!query || (j.marca+(j.tipo||"")).toLowerCase().includes(query.toLowerCase())));
             return (
               <div key={col} onDragOver={(e)=>{e.preventDefault(); setDragOverCol(col);}} onDrop={(e)=>onDrop(e,col)}
@@ -3890,9 +3932,7 @@ function Jobs({state, updateState}){
                 </div>
                 <div style={{fontSize:14.5, color:"var(--graphite-soft)"}}>{j.tipo} {j.nicho && "· "+j.nicho} {j.tipoJob==="Permuta" && "· Permuta"}</div>
               </div>
-              <div style={{fontSize:15, color:"var(--graphite-soft)", minWidth:110}}>
-                {j.prazoEntrega ? new Date(j.prazoEntrega+"T00:00:00").toLocaleDateString('pt-BR') : "sem prazo"}
-              </div>
+              <DatasJob j={j}/>
               <div style={{fontWeight:700, minWidth:100}}>{j.tipoJob==="Permuta" ? "Permuta" : fmtMoneyCur(j.valor, j.moeda)}</div>
               <Badge tone={jobStatusTone(j.status)}>{j.status}</Badge>
               <div style={{display:"flex", gap:6}}>
