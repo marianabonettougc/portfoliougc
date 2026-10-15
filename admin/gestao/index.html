@@ -176,7 +176,7 @@
   .db-prio-nome b{ font-family:var(--db-serif); font-weight:400; font-size:28px; line-height:1.15; }
   .db-selo{ background:var(--db-bege); color:var(--db-cafe); font-size:12px; font-weight:500; letter-spacing:.04em; text-transform:uppercase; padding:5px 12px; border-radius:8px; }
   .db-prio-sub{ margin:4px 0 0; font-size:15px; color:var(--db-suave); }
-  .db-etapas{ display:grid; grid-template-columns:repeat(7,1fr); }
+  .db-etapas{ display:grid; grid-template-columns:repeat(8,1fr); }
   .db-etapas-grande{ margin-top:20px; }
   .db-etapa{ position:relative; display:flex; flex-direction:column; align-items:center; gap:8px; }
   .db-etapa::before{ content:""; position:absolute; top:7px; left:-50%; width:100%; height:1.5px; background:var(--db-linha2); }
@@ -890,7 +890,7 @@ function Toggle({on, onClick}){
 
 /* ---------- STATUS maps ---------- */
 // status do job (out/2026, pedido da Mari); os antigos continuam aparecendo nos jobs que já tinham
-const JOB_STATUS = ["Aguardando Produto","Roteirização","Aprovação de Roteiro","Conteúdo Entregue","Aprovação do Conteúdo","Refação","Finalizado","Cancelado"];
+const JOB_STATUS = ["Aguardando Briefing","Aguardando Produto","Roteirização","Aprovação de Roteiro","Conteúdo Entregue","Aprovação do Conteúdo","Refação","Finalizado","Cancelado"];
 const statusDoJobLista = (state, atual) => { const l = [...JOB_STATUS, ...((state && state.statusJobExtras)||[])]; return atual && !l.includes(atual) ? [atual, ...l] : l; };;
 const JOB_FINISHED = ["Finalizado","Cancelado"];
 const isHistorico = (j) => j.status==="Finalizado" || (j.pagamento && j.pagamento.status==="Pago");
@@ -898,13 +898,13 @@ const jobStatusTone = (s) => ({
   "Lead":"gray","Em Negociação":"yellow","Fechado":"blue","Aguardando Aprovação":"wine","Aguardando Produto":"yellow",
   "Aprovado":"blue","Planejado":"yellow","Em Produção":"blue","Gravado":"wine","Conteúdo Entregue":"green",
   "Finalizado":"green","Cancelado":"gray",
-  "Roteirização":"yellow","Aprovação de Roteiro":"wine","Aprovação do Conteúdo":"wine","Refação":"yellow"
+  "Aguardando Briefing":"yellow","Roteirização":"yellow","Aprovação de Roteiro":"wine","Aprovação do Conteúdo":"wine","Refação":"yellow"
 }[s] || "gray");
 const KANBAN_COLORS = {
   "Lead":"#3d2b20","Em Negociação":"#6b4a35","Fechado":"#a87058","Aguardando Aprovação":"#8a634b","Aguardando Produto":"#6B4E3D",
   "Aprovado":"#a87058","Planejado":"#3d2b20","Em Produção":"#6b4a35","Gravado":"#8a634b","Conteúdo Entregue":"#a87058",
   "Finalizado":"#6B4E3D","Cancelado":"#8a634b",
-  "Roteirização":"#6b4a35","Aprovação de Roteiro":"#8a634b","Aprovação do Conteúdo":"#8a634b","Refação":"#a87058"
+  "Aguardando Briefing":"#3d2b20","Roteirização":"#6b4a35","Aprovação de Roteiro":"#8a634b","Aprovação do Conteúdo":"#8a634b","Refação":"#a87058"
 };
 const PAYMENT_METHODS = ["PIX","Transferência","Boleto","Cartão","PayPal","Outro"];
 const MOEDAS = [{code:"BRL",symbol:"R$"},{code:"USD",symbol:"US$"},{code:"EUR",symbol:"€"}];
@@ -915,7 +915,7 @@ const fmtMoneyCur = (v, moeda) => {
 const NICHOS_DEFAULT = ["Beleza","Maternidade","Pet","Casa","Moda","Eletrônicos","Alimentos","Infantil","Fitness","Outro"];
 // status de cada vídeo/story do job: as mesmas etapas da "Minha prioridade" do Dashboard (a última é Entregue)
 // out/2026 (pedido da Mari): as etapas de cada Reels/story; a última (Finalizado) marca como concluído
-const ROTEIRO_STATUS_OPTIONS = ["Aguardando produto","Roteirização","Aprovação de roteiro","Conteúdo entregue","Aprovação do conteúdo","Refação","Finalizado"];
+const ROTEIRO_STATUS_OPTIONS = ["Aguardando briefing","Aguardando produto","Roteirização","Aprovação de roteiro","Conteúdo entregue","Aprovação do conteúdo","Refação","Finalizado"];
 const STATUS_FINAL = (tipo) => tipo==="fotos" ? "Entregue" : "Finalizado";
 // nomes antigos (antes de out/2026) -> nomes novos
 const STATUS_VIDEO_ANTIGO = {"Roteiro pendente":"Roteirização", "Roteiro pronto":"Aprovação de roteiro", "Gravado":"Aprovação de roteiro", "Editado":"Aprovação do conteúdo",
@@ -1179,7 +1179,7 @@ function processRecurringJobs(state){
     if(j.recorrencia.encerrarEm && j.recorrencia.proximaCriacao > j.recorrencia.encerrarEm) return j;
     changed = true;
     const clone = {
-      ...j, id:uid(), criadoEm: today, status:"Aguardando Produto",
+      ...j, id:uid(), criadoEm: today, status:"Aguardando Briefing",
       prazoEntrega: j.recorrencia.proximaCriacao, dataEntregaReal:"",
       entregaveis: resetEntregaveisConcluido(j.entregaveis || emptyEntregaveis()),
       pagamento: {...(j.pagamento||{}), status:"Em aberto", dataPagamento:""},
@@ -1275,8 +1275,8 @@ function LineChart({data, width, height}){
 /* ---------- DASHBOARD (board novo, igual ao modelo da Mari) ---------- */
 const ETAPAS_JOB = ROTEIRO_STATUS_OPTIONS;
 // etapa do job na "Minha prioridade" (ordem de prioridade em etapaDoJob); as bolinhas são clicáveis (jobNaEtapa)
-const ETAPA_JOB_DO_STATUS = {"Aguardando Produto":0, "Roteirização":1, "Aprovação de Roteiro":2, "Em Produção":2, "Gravado":2, "Conteúdo Entregue":3, "Aguardando Aprovação":4, "Aprovação do Conteúdo":4, "Refação":5, "Finalizado":6};
-const ETAPA_JOB_DO_QUADRO = {"Ideias":1, "Roteirização":1, "Revisão":1, "Em Aprovação":2, "Gravação":2, "Edição":2, "Pronto para postar":4, "Pronto p/ Postar":4, "Finalizado":6};
+const ETAPA_JOB_DO_STATUS = {"Aguardando Briefing":0, "Aguardando Produto":1, "Roteirização":2, "Aprovação de Roteiro":3, "Em Produção":3, "Gravado":3, "Conteúdo Entregue":4, "Aguardando Aprovação":5, "Aprovação do Conteúdo":5, "Refação":6, "Finalizado":7};
+const ETAPA_JOB_DO_QUADRO = {"Ideias":2, "Roteirização":2, "Revisão":2, "Em Aprovação":3, "Gravação":3, "Edição":3, "Pronto para postar":5, "Pronto p/ Postar":5, "Finalizado":7};
 const etapaDoJob = (job, roteiros) => Math.max(ETAPA_JOB_DO_STATUS[job && job.status] ?? 0, etapaDoAndamento(job, roteiros));
 // o status do job (Em Produção, Conteúdo Entregue...) é o mínimo; o andamento dos conteúdos pode estar mais adiantado
 const etapaDoAndamento = (job, roteiros) => {
@@ -3001,7 +3001,7 @@ function defaultJobObj(){
     tipoPagamento:"unico", divisaoParcelas:"50-50", parcelasPersonalizadas:[],
     recorrente:false,
     recorrencia:{ frequencia:"Mensal (30d)", intervaloDias:30, proximaCriacao:"", encerrarEm:"", gerarReceita:true },
-    status:"Aguardando Produto",
+    status:"Aguardando Briefing",
     roteiroConteudo:"", roteiroStatus:"Em criação", roteiroTemplate:"",
     nf:{ precisa:false, status:"Pendente", numero:"", dataEmissao:"", valor:"", arquivo:"" },
     pagamento:{ status:"Em aberto", forma:"PIX", dataPrevista:"", dataPagamento:"", comprovante:"" },
@@ -3906,7 +3906,7 @@ function Jobs({state, updateState}){
     updateState({...state, jobs, transacoes});
   }
   function duplicate(job){
-    const clone = { ...job, id:uid(), marca: job.marca+" (cópia)", status:"Aguardando Produto", criadoEm:todayISO(), dataEntregaReal:"",
+    const clone = { ...job, id:uid(), marca: job.marca+" (cópia)", status:"Aguardando Briefing", criadoEm:todayISO(), dataEntregaReal:"",
       pagamento:{...(job.pagamento||{}), status:"Em aberto", dataPagamento:""},
       entregaveis: resetEntregaveisConcluido(job.entregaveis || emptyEntregaveis())
     };
