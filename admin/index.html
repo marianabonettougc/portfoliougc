@@ -19,9 +19,9 @@ fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/painel.css?v=202610150534">
+<link rel="stylesheet" href="../css/painel.css?v=202610152347">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/banco.js?v=202610150534"></script>
+<script src="../js/banco.js?v=202610152347"></script>
 <script>
 // PRIMEIRA COISA: conferir a sessão. Sem sessão, vai para o login.
 // A página só aparece depois dessa conferência (antes ela fica escondida).
@@ -101,6 +101,8 @@ window.sessaoPronta = (async function () {
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 3.5h5M10.5 3.5v6L5.2 18.6A1.6 1.6 0 0 0 6.6 21h10.8a1.6 1.6 0 0 0 1.4-2.4L13.5 9.5v-6"/><path d="M7.8 15h8.4"/></svg>Laboratório criativo</button>
     <button class="menu-item" data-aba="editorial" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>Biblioteca editorial</button>
+    <button class="menu-item" data-aba="edicao" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 9h17M3.5 15h17M8 5v4M16 5v4M8 15v4M16 15v4"/></svg>Edição de vídeos</button>
       </div>
     </div>
     <div class="menu-secao" data-secao="financeiro-cnpj">
@@ -160,6 +162,7 @@ window.sessaoPronta = (async function () {
     <section class="aba" id="aba-transcritos" hidden></section>
     <section class="aba" id="aba-laboratorio" hidden></section>
     <section class="aba" id="aba-editorial" hidden></section>
+    <section class="aba" id="aba-edicao" hidden></section>
   </main>
 </div>
 
@@ -175,10 +178,11 @@ window.sessaoPronta = (async function () {
 </dialog>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="../js/biblioteca.js?v=202610150534"></script>
-<script src="../js/admin.js?v=202610150534"></script>
-<script src="../js/roteiros-supadata.js?v=202610150534"></script>
-<script src="../js/laboratorio.js?v=202610150534"></script>
-<script src="../js/editorial.js?v=202610150534"></script>
+<script src="../js/biblioteca.js?v=202610152347"></script>
+<script src="../js/admin.js?v=202610152347"></script>
+<script src="../js/roteiros-supadata.js?v=202610152347"></script>
+<script src="../js/laboratorio.js?v=202610152347"></script>
+<script src="../js/editorial.js?v=202610152347"></script>
+<script src="../js/edicao.js?v=202610152347"></script>
 </body>
 </html>
