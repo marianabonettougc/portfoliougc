@@ -5,6 +5,8 @@
 //   do vídeo com os tempos e o que dá para melhorar
 // - { acao: "ideias", referencia, produto, objetivo, nicho, formato, tom, material }: ideias de vídeos
 //   novos da Mari usando o que funcionou na referência, mais ganchos alternativos
+// - { acao: "post", link }: dados de um post do Instagram (legenda, tipo, perfil, capa) pelo Apify (segredo APIFY_TOKEN)
+// - { acao: "laboratorio", post }: transforma um post salvo (legenda + transcrição) numa ideia de conteúdo dela
 // Usa o Groq (segredo GROQ_API_KEY) e o resumo do método da skill roteiro-ugc (tabela estilo_ugc).
 // Só a dona do painel pode usar.
 // =========================================================
@@ -135,6 +137,42 @@ Crie 5 ideias diferentes entre si. Português do Brasil. Nunca invente resultado
   };
 }
 
+// ---------- Laboratório criativo ----------
+async function postInstagram(link: string) {
+  const token = Deno.env.get("APIFY_TOKEN") || "";
+  if (!token) throw new Error("Falta o APIFY_TOKEN no Supabase.");
+  const r = await fetch(`https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${token}&timeout=90`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ directUrls: [link], resultsType: "posts", resultsLimit: 1, addParentData: false }),
+  });
+  if (!r.ok) throw new Error(r.status === 402 ? "Os créditos do Apify deste mês acabaram." : "Não consegui ler esse post agora.");
+  const itens = await r.json().catch(() => []);
+  const p = Array.isArray(itens) ? itens.find((x: any) => x && !x.error) : null;
+  if (!p) throw new Error("O Instagram não mostrou esse post (pode ser privado ou ter sido apagado).");
+  const tipo = p.type === "Video" || p.productType === "clips" ? "Reel" : p.type === "Sidecar" ? "Carrossel" : "Post";
+  return { perfil: p.ownerUsername || null, tipo, legenda: txt(p.caption, 4000) || null, capa: p.displayUrl || null, video: p.videoUrl || null, data: p.timestamp || null };
+}
+async function ideiaDoPost(chave: string, post: any, supa: any) {
+  let metodo = "";
+  try { const { data } = await supa.from("estilo_ugc").select("metodo").eq("id", 1).maybeSingle(); metodo = String(data?.metodo || "").slice(0, 1200); } catch { /* sem método */ }
+  const pedido = `Você ajuda uma criadora brasileira de UGC (contratada por marcas para fazer vídeos) a transformar posts que ela salvou no Instagram em ideias de conteúdo próprias.
+
+POST SALVO (${txt(post.tipo, 20) || "post"} de @${txt(post.perfil, 60) || "alguém"})
+Legenda: ${txt(post.legenda, 1500) || "sem legenda"}
+O que a pessoa fala no vídeo: ${txt(post.transcricao, 2500) || "sem fala (carrossel, foto ou vídeo só com música)"}
+${metodo ? "\n" + metodo : ""}
+
+Responda SOMENTE um JSON:
+{"tema":"até 4 palavras","formato":"ex.: Review, Tutorial, Lista, Storytelling, Opinião, Antes e depois, Bastidores","gancho_original":"a primeira frase ou ideia que prende no post (curta)","por_que_funciona":"1 frase: o que faz esse post chamar atenção",
+"ideia":{"titulo":"até 7 palavras","descricao":"2 frases: o vídeo que ELA faria usando o que funciona no post, aplicado a UGC ou a um produto do nicho dela","gancho":"a primeira frase do vídeo dela, pronta para falar"}}
+Português do Brasil. Nunca invente número, prazo ou resultado. Ganchos proibidos: começar com "Você já...", "Você sabia...", "Sabia que...", "Descobri...", "Cansada de...", "Chega de...". Nunca use travessão.`;
+  const j = await perguntar(chave, pedido, 1500);
+  const i = j.ideia || {};
+  const g = txt(i.gancho, 300);
+  return { tema: txt(j.tema, 60), formato: txt(j.formato, 60), gancho_original: txt(j.gancho_original, 300), por_que_funciona: txt(j.por_que_funciona, 400),
+    ideia: { titulo: txt(i.titulo, 90), descricao: txt(i.descricao, 600), gancho: ruim(g) || PRAZO.test(g) ? "" : g } };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return resposta({ error: "Use POST." }, 405);
@@ -146,6 +184,8 @@ Deno.serve(async (req) => {
     const chave = Deno.env.get("GROQ_API_KEY") || "";
     if (!chave) return resposta({ error: "Falta a chave do Groq no Supabase (GROQ_API_KEY)." }, 500);
     const corpo = await req.json().catch(() => ({}));
+    if (corpo.acao === "post") return resposta(await postInstagram(String(corpo.link || "")));
+    if (corpo.acao === "laboratorio") return resposta(await ideiaDoPost(chave, corpo.post || {}, supa));
     const ref = corpo.referencia || {};
     if (!ref.transcricao && !(Array.isArray(ref.segmentos) && ref.segmentos.length)) return resposta({ error: "Essa referência ainda não tem transcrição." }, 400);
     if (corpo.acao === "analise") return resposta(await analise(chave, ref));

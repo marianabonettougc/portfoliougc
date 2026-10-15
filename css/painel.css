@@ -804,3 +804,42 @@ button.menu-grupo:hover{color:var(--texto)}
 
 /* Transcrições recentes: 5 de cada vez */
 .cr-ver-mais{width:100%;justify-content:center;margin-top:6px}
+
+/* ===== Criatividade > Laboratório criativo ===== */
+.lab-entrada{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px;margin-bottom:16px}
+.lab-col{background:var(--cartao);border:1px solid var(--linha);border-radius:var(--raio);padding:14px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.lab-col textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:70px}
+.lab-rotulo{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--suave)}
+.lab-ajuda{margin:0;font-size:12.5px;line-height:1.5;color:var(--suave)}
+.lab-numeros{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.lab-num{background:var(--cartao);border:1px solid var(--linha);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column}
+.lab-num b{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:24px;line-height:1.1;color:var(--texto)}
+.lab-num span{font-size:12px;color:var(--suave)}
+.lab-tabela{display:flex;flex-direction:column;gap:8px}
+.lab-linha{display:grid;grid-template-columns:44px minmax(110px,.8fr) minmax(0,2fr) minmax(0,1fr) 110px 96px auto;align-items:center;gap:12px;background:var(--cartao);border:1px solid var(--linha);border-radius:12px;padding:8px 12px}
+.lab-capa{width:44px;height:44px;border-radius:9px;overflow:hidden;background:var(--bege);display:grid;place-items:center;color:var(--suave)}
+.lab-capa img{width:100%;height:100%;object-fit:cover}
+.lab-capa svg{width:18px;height:18px}
+.lab-info,.lab-ideia{min-width:0;display:flex;flex-direction:column}
+.lab-info b,.lab-ideia b{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lab-info small,.lab-ideia small{font-size:12px;color:var(--suave);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lab-tags{display:flex;gap:4px;flex-wrap:wrap;min-width:0}
+.lab-tag{font-size:11px;background:var(--bege);color:var(--principal);border-radius:999px;padding:2px 8px;white-space:nowrap}
+.lab-status{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;border-radius:999px;padding:3px 9px;text-align:center;white-space:nowrap}
+.lab-status.verde{background:var(--verde-suave);color:var(--verde)}
+.lab-status.amarelo{background:var(--amarelo-suave);color:var(--amarelo)}
+.lab-status.vermelho{background:var(--vermelho-suave);color:var(--vermelho)}
+.lab-status.cinza{background:var(--bege);color:var(--suave)}
+.lab-etapa{font-size:12px;color:var(--suave);white-space:nowrap}
+.lab-janela{display:flex;flex-direction:column;gap:12px}
+.lab-bloco small{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--suave);margin-bottom:4px}
+.lab-bloco p{margin:0 0 6px;font-size:13.5px;line-height:1.55}
+.lab-bloco h3{margin:0 0 6px;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:22px}
+.lab-destaque{background:var(--bege);border-radius:12px;padding:14px}
+.lab-gancho{font-style:italic;color:var(--principal)}
+.lab-meta{font-size:12.5px!important;color:var(--suave)}
+.lab-texto{white-space:pre-wrap;max-height:200px;overflow:auto}
+.lab-etapas{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px;color:var(--suave)}
+.lab-rodape{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+@media(max-width:900px){.lab-entrada{grid-template-columns:1fr}.lab-linha{grid-template-columns:44px minmax(0,1fr) auto}.lab-ideia,.lab-tags,.lab-etapa{grid-column:2 / -1}.lab-status{grid-column:3;grid-row:1}}
+@media(max-width:560px){.lab-numeros{grid-template-columns:repeat(2,minmax(0,1fr))}}

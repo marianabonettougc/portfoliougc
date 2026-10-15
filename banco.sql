@@ -449,3 +449,16 @@ insert into storage.buckets (id, name, public, file_size_limit) values ('anexos'
 drop policy if exists "anexos: dona faz tudo" on storage.objects;
 create policy "anexos: dona faz tudo" on storage.objects for all to authenticated
   using (bucket_id='anexos' and public.e_a_dona()) with check (bucket_id='anexos' and public.e_a_dona());
+
+-- ---------------------------------------------------------------------
+-- LABORATÓRIO CRIATIVO (out/2026): posts salvos do Instagram viram ideias
+-- status: novo | processando | pronto | erro · etapa: Nova, Ideia pronta, Vou gravar, Gravado, Descartada
+-- ---------------------------------------------------------------------
+create table if not exists public.laboratorio (
+  id bigint generated always as identity primary key,
+  link text not null unique, codigo text, perfil text, tipo text, legenda text, transcricao text,
+  status text not null default 'novo', erro text, ideia jsonb, etapa text not null default 'Nova',
+  capa text, salvo_em timestamptz, criado_em timestamptz not null default now()
+);
+alter table public.laboratorio enable row level security;
+create policy "dona faz tudo" on public.laboratorio for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());

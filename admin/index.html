@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 // Atualiza sozinho: se existir uma versão mais nova do painel publicada, recarrega a página nova
-window.VERSAO_PAINEL = "202610150445";
+window.VERSAO_PAINEL = "202610150520";
 fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).then((j) => {
   if (j.versao && j.versao !== window.VERSAO_PAINEL) {
     const u = new URL(location.href);
@@ -19,9 +19,9 @@ fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/painel.css?v=202610150445">
+<link rel="stylesheet" href="../css/painel.css?v=202610150520">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/banco.js?v=202610150445"></script>
+<script src="../js/banco.js?v=202610150520"></script>
 <script>
 // PRIMEIRA COISA: conferir a sessão. Sem sessão, vai para o login.
 // A página só aparece depois dessa conferência (antes ela fica escondida).
@@ -94,6 +94,13 @@ window.sessaoPronta = (async function () {
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>Tráfego Pago</button>
       </div>
     </div>
+    <div class="menu-secao" data-secao="criatividade">
+      <button class="menu-grupo" type="button" aria-expanded="true">criatividade<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
+    <button class="menu-item" data-aba="laboratorio" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 3.5h5M10.5 3.5v6L5.2 18.6A1.6 1.6 0 0 0 6.6 21h10.8a1.6 1.6 0 0 0 1.4-2.4L13.5 9.5v-6"/><path d="M7.8 15h8.4"/></svg>Laboratório criativo</button>
+      </div>
+    </div>
     <div class="menu-secao" data-secao="financeiro-cnpj">
       <button class="menu-grupo" type="button" aria-expanded="true">financeiro CNPJ<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
       <div class="menu-secao-itens">
@@ -149,6 +156,7 @@ window.sessaoPronta = (async function () {
     <section class="aba" id="aba-checklist" hidden></section>
     <section class="aba aba-gestao" id="aba-gestao" hidden></section>
     <section class="aba" id="aba-transcritos" hidden></section>
+    <section class="aba" id="aba-laboratorio" hidden></section>
   </main>
 </div>
 
@@ -164,8 +172,9 @@ window.sessaoPronta = (async function () {
 </dialog>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="../js/biblioteca.js?v=202610150445"></script>
-<script src="../js/admin.js?v=202610150445"></script>
-<script src="../js/roteiros-supadata.js?v=202610150445"></script>
+<script src="../js/biblioteca.js?v=202610150520"></script>
+<script src="../js/admin.js?v=202610150520"></script>
+<script src="../js/roteiros-supadata.js?v=202610150520"></script>
+<script src="../js/laboratorio.js?v=202610150520"></script>
 </body>
 </html>

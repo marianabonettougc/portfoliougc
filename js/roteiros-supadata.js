@@ -220,6 +220,14 @@
       clearTimeout(limite);
     }
   }
+  // o Laboratório criativo (js/laboratorio.js) usa a mesma transcrição da Supadata
+  window.painelSupadata = {
+    transcrever: async (link) => {
+      if (!st.chave) await carregarChave();
+      if (!st.chave) throw new ErroSupa("chave", "Conecte a Supadata na página Transcrever vídeo.");
+      return transcreverNaSupadata(link, null);
+    }
+  };
   async function buscarSaldo() {
     if (!st.chave) { st.saldo = null; return; }
     try {
