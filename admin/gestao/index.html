@@ -1138,13 +1138,19 @@ function postagensDoJob(j){
   const e = j.entregaveis || {};
   return [...new Set([...(e.videos||[]), ...(e.fotos||[]), ...(e.stories||[])].map(i=>i.prazoPostagem).filter(Boolean))].sort();
 }
+// UGC não posta: as datas de entrega do conteúdo de cada item
+function entregasDoJob(j){
+  const e = j.entregaveis || {};
+  return [...new Set([...(e.videos||[]), ...(e.fotos||[]), ...(e.stories||[])].map(i=>i.dataEntrega).filter(Boolean))].sort();
+}
 function DatasJob({j, compacto}){
-  const fech = dataFechamentoJob(j), posts = postagensDoJob(j);
+  const fech = dataFechamentoJob(j), ugc = j.categoria!=="Publi", posts = ugc ? entregasDoJob(j) : postagensDoJob(j);
+  const rotulo = ugc ? (posts.length>1 ? "Entregas" : "Entrega") : (posts.length>1 ? "Postagens" : "Postagem");
   const br = (iso) => iso ? iso.split("-").reverse().join("/") : "";
   return (
     <div className={"job-datas"+(compacto?" compacto":"")}>
       <span><small>Fechamento</small>{fech ? br(fech) : "sem data"}</span>
-      {posts.length>0 && <span><small>{posts.length>1 ? "Postagens" : "Postagem"}</small>{posts.map(d=><span key={d} className="job-datas-dia">{br(d)}</span>)}</span>}
+      {posts.length>0 && <span><small>{rotulo}</small>{posts.map(d=><span key={d} className="job-datas-dia">{br(d)}</span>)}</span>}
     </div>
   );
 }
@@ -1813,7 +1819,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
       const e = j.entregaveis || {};
       ["videos","fotos","stories"].forEach(t=>(e[t]||[]).forEach(it=>{
         if(it.prazoRoteiro===iso) lista.push({id:"r-"+it.id, hora:"", texto:`Entregar roteiro: ${it.label}`, sub:j.marca, pagina:"jobs"});
-        if(it.prazoConteudo===iso) lista.push({id:"c-"+it.id, hora:"", texto:`Entregar conteúdo: ${it.label}`, sub:j.marca, pagina:"jobs"});
+        if(it.prazoConteudo===iso) lista.push({id:"c-"+it.id, hora:"", texto:`Enviar para aprovação: ${it.label}`, sub:j.marca, pagina:"jobs"});
+        if(j.categoria!=="Publi" && it.dataEntrega===iso) lista.push({id:"d-"+it.id, hora:"", texto:`Entregar conteúdo: ${it.label}`, sub:j.marca+" · UGC", pagina:"jobs"});
         if(j.categoria==="Publi" && it.prazoPostagem===iso) lista.push({id:"o-"+it.id, hora:"", texto:`Postar: ${it.label}`, sub:j.marca+" · Publi", pagina:"jobs"});
       }));
     });
@@ -3390,7 +3397,8 @@ function ItemEntregavel({it, tipo, publi, opcoes, final, onMudar, onNovoStatus, 
           <label>Data de fechamento da ação<input type="date" value={it.dataFechamento||""} onChange={e=>onMudar({dataFechamento:e.target.value})}/></label>
           {tipo!=="fotos" && <label>Prazo para entregar o roteiro<input type="date" value={it.prazoRoteiro||""} onChange={e=>onMudar({prazoRoteiro:e.target.value})}/></label>}
           <label>Prazo para enviar aprovação<input type="date" value={it.prazoConteudo||""} onChange={e=>onMudar({prazoConteudo:e.target.value})}/></label>
-          {publi && <label>Prazo de postagem<input type="date" value={it.prazoPostagem||""} onChange={e=>onMudar({prazoPostagem:e.target.value})}/></label>}
+          {publi ? <label>Prazo de postagem<input type="date" value={it.prazoPostagem||""} onChange={e=>onMudar({prazoPostagem:e.target.value})}/></label>
+                 : <label>Data de entrega do conteúdo<input type="date" value={it.dataEntrega||""} onChange={e=>onMudar({dataEntrega:e.target.value})}/></label>}
         </div>
       )}
     </div>
@@ -3400,7 +3408,9 @@ function ItemEntregavel({it, tipo, publi, opcoes, final, onMudar, onNovoStatus, 
 // o prazo de entrega do job é o último "Prazo do conteúdo" dos itens (o campo separado saiu do formulário)
 function comPrazoDosItens(job){
   const e = job.entregaveis || {};
-  const datas = [...(e.videos||[]), ...(e.fotos||[]), ...(e.stories||[])].map(i=>i.prazoConteudo).filter(Boolean).sort();
+  const itens = [...(e.videos||[]), ...(e.fotos||[]), ...(e.stories||[])];
+  const entregas = job.categoria!=="Publi" ? itens.map(i=>i.dataEntrega).filter(Boolean).sort() : [];
+  const datas = entregas.length ? entregas : itens.map(i=>i.prazoConteudo).filter(Boolean).sort();
   return datas.length ? {...job, prazoEntrega: datas[datas.length-1]} : job;
 }
 // status do job e status de cada Reels/story andam juntos (a lista é a mesma; só muda maiúscula)
