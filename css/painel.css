@@ -801,3 +801,6 @@ button.menu-grupo:hover{color:var(--texto)}
   .rs-pagina .cr-linha-link .cr-btn{width:100%;justify-content:center}
   .rs-chave-campo{flex:1 1 100%}
 }
+
+/* Transcrições recentes: 5 de cada vez */
+.cr-ver-mais{width:100%;justify-content:center;margin-top:6px}

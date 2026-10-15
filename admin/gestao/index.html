@@ -127,6 +127,8 @@
   /* cabeçalho */
   .db-cabeca{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
   .db-ola h1{ font-family:var(--db-serif); font-weight:400; font-size:36px; line-height:1.15; margin:0; display:flex; align-items:center; gap:10px; }
+  .db-ver-mais{ display:block; width:100%; margin:8px 0 4px; padding:9px; border:1px solid var(--db-linha); border-radius:10px; background:transparent; color:var(--db-cafe); font:inherit; font-size:13px; font-weight:500; cursor:pointer; }
+  .db-ver-mais:hover{ background:var(--db-bege); }
   .db-ola-sol{ color:var(--db-cafe2); display:inline-flex; }
   .db-ola p{ margin:4px 0 0; color:var(--db-suave); font-size:15px; display:flex; align-items:center; gap:6px; }
   .db-ola p .db-ic{ color:var(--db-cafe2); }
@@ -176,7 +178,14 @@
   .db-prio-nome b{ font-family:var(--db-serif); font-weight:400; font-size:28px; line-height:1.15; }
   .db-selo{ background:var(--db-bege); color:var(--db-cafe); font-size:12px; font-weight:500; letter-spacing:.04em; text-transform:uppercase; padding:5px 12px; border-radius:8px; }
   .db-prio-sub{ margin:4px 0 0; font-size:15px; color:var(--db-suave); }
-  .db-etapas{ display:grid; grid-template-columns:repeat(8,1fr); }
+  .db-etapas{ display:grid; grid-template-columns:repeat(9,1fr); }
+  /* Minha prioridade: só o nome da etapa atual aparece embaixo das bolinhas (os outros ficam no passar o mouse) */
+  .db-etapas-grande{ padding-bottom:30px; }
+  .db-etapas-grande .db-etapa small{ position:absolute; top:26px; left:50%; transform:translateX(-50%); white-space:nowrap; max-width:none; font-size:13px; visibility:hidden; }
+  .db-etapas-grande .db-etapa.atual small{ visibility:visible; font-weight:600; color:var(--db-texto); }
+  .db-etapas-grande .db-etapa:first-child small{ left:0; transform:none; }
+  .db-etapas-grande .db-etapa:last-child small{ left:auto; right:0; transform:none; }
+  .db-etapa-pos{ display:block; font-size:12px; color:var(--db-suave); margin-top:4px; }
   .db-etapas-grande{ margin-top:20px; }
   .db-etapa{ position:relative; display:flex; flex-direction:column; align-items:center; gap:8px; }
   .db-etapa::before{ content:""; position:absolute; top:7px; left:-50%; width:100%; height:1.5px; background:var(--db-linha2); }
@@ -890,7 +899,7 @@ function Toggle({on, onClick}){
 
 /* ---------- STATUS maps ---------- */
 // status do job (out/2026, pedido da Mari); os antigos continuam aparecendo nos jobs que já tinham
-const JOB_STATUS = ["Aguardando Briefing","Aguardando Produto","Roteirização","Aprovação de Roteiro","Conteúdo Entregue","Aprovação do Conteúdo","Refação","Finalizado","Cancelado"];
+const JOB_STATUS = ["Aguardando Briefing","Aguardando Produto","Roteirização","Aprovação de Roteiro","Em Produção","Conteúdo Entregue","Aprovação do Conteúdo","Refação","Finalizado","Cancelado"];
 const statusDoJobLista = (state, atual) => { const l = [...JOB_STATUS, ...((state && state.statusJobExtras)||[])]; return atual && !l.includes(atual) ? [atual, ...l] : l; };;
 const JOB_FINISHED = ["Finalizado","Cancelado"];
 const isHistorico = (j) => j.status==="Finalizado" || (j.pagamento && j.pagamento.status==="Pago");
@@ -915,11 +924,11 @@ const fmtMoneyCur = (v, moeda) => {
 const NICHOS_DEFAULT = ["Beleza","Maternidade","Pet","Casa","Moda","Eletrônicos","Alimentos","Infantil","Fitness","Outro"];
 // status de cada vídeo/story do job: as mesmas etapas da "Minha prioridade" do Dashboard (a última é Entregue)
 // out/2026 (pedido da Mari): as etapas de cada Reels/story; a última (Finalizado) marca como concluído
-const ROTEIRO_STATUS_OPTIONS = ["Aguardando briefing","Aguardando produto","Roteirização","Aprovação de roteiro","Conteúdo entregue","Aprovação do conteúdo","Refação","Finalizado"];
+const ROTEIRO_STATUS_OPTIONS = ["Aguardando briefing","Aguardando produto","Roteirização","Aprovação de roteiro","Em produção","Conteúdo entregue","Aprovação do conteúdo","Refação","Finalizado"];
 const STATUS_FINAL = (tipo) => tipo==="fotos" ? "Entregue" : "Finalizado";
 // nomes antigos (antes de out/2026) -> nomes novos
-const STATUS_VIDEO_ANTIGO = {"Roteiro pendente":"Roteirização", "Roteiro pronto":"Aprovação de roteiro", "Gravado":"Aprovação de roteiro", "Editado":"Aprovação do conteúdo",
-  "Roteiro":"Roteirização", "Ag. aprovação de roteiro":"Aprovação de roteiro", "Gravação":"Aprovação de roteiro", "Edição":"Aprovação de roteiro", "Aprovação":"Aprovação do conteúdo", "Entregue":"Finalizado"};
+const STATUS_VIDEO_ANTIGO = {"Roteiro pendente":"Roteirização", "Roteiro pronto":"Aprovação de roteiro", "Gravado":"Em produção", "Editado":"Aprovação do conteúdo",
+  "Roteiro":"Roteirização", "Ag. aprovação de roteiro":"Aprovação de roteiro", "Gravação":"Em produção", "Edição":"Em produção", "Aprovação":"Aprovação do conteúdo", "Entregue":"Finalizado"};
 const statusDoItem = (it, tipo) => tipo==="fotos" ? (it.roteiroStatus||FOTO_STATUS_OPTIONS[0]) : (STATUS_VIDEO_ANTIGO[it.roteiroStatus] || it.roteiroStatus || ROTEIRO_STATUS_OPTIONS[0]);
 const FOTO_STATUS_OPTIONS = ["A planejar","Planejada","Tirada","Editado","Entregue"];
 const STATUS_OPTIONS_BY_TIPO = {videos:ROTEIRO_STATUS_OPTIONS, fotos:FOTO_STATUS_OPTIONS, stories:ROTEIRO_STATUS_OPTIONS};
@@ -1275,8 +1284,8 @@ function LineChart({data, width, height}){
 /* ---------- DASHBOARD (board novo, igual ao modelo da Mari) ---------- */
 const ETAPAS_JOB = ROTEIRO_STATUS_OPTIONS;
 // etapa do job na "Minha prioridade" (ordem de prioridade em etapaDoJob); as bolinhas são clicáveis (jobNaEtapa)
-const ETAPA_JOB_DO_STATUS = {"Aguardando Briefing":0, "Aguardando Produto":1, "Roteirização":2, "Aprovação de Roteiro":3, "Em Produção":3, "Gravado":3, "Conteúdo Entregue":4, "Aguardando Aprovação":5, "Aprovação do Conteúdo":5, "Refação":6, "Finalizado":7};
-const ETAPA_JOB_DO_QUADRO = {"Ideias":2, "Roteirização":2, "Revisão":2, "Em Aprovação":3, "Gravação":3, "Edição":3, "Pronto para postar":5, "Pronto p/ Postar":5, "Finalizado":7};
+const ETAPA_JOB_DO_STATUS = {"Aguardando Briefing":0, "Aguardando Produto":1, "Roteirização":2, "Aprovação de Roteiro":3, "Em Produção":4, "Gravado":4, "Conteúdo Entregue":5, "Aguardando Aprovação":6, "Aprovação do Conteúdo":6, "Refação":7, "Finalizado":8};
+const ETAPA_JOB_DO_QUADRO = {"Ideias":2, "Roteirização":2, "Revisão":2, "Em Aprovação":3, "Gravação":4, "Edição":4, "Pronto para postar":6, "Pronto p/ Postar":6, "Finalizado":8};
 const etapaDoJob = (job, roteiros) => Math.max(ETAPA_JOB_DO_STATUS[job && job.status] ?? 0, etapaDoAndamento(job, roteiros));
 // o status do job (Em Produção, Conteúdo Entregue...) é o mínimo; o andamento dos conteúdos pode estar mais adiantado
 const etapaDoAndamento = (job, roteiros) => {
@@ -1326,6 +1335,8 @@ const linkPerfil = (c) => c.rede==="tiktok" ? `https://www.tiktok.com/@${c.usuar
 // ícones de traço fino, todos no mesmo estilo
 function DbIcone({tipo, tam}){
   const d = {
+    lua: <><path d="M19.5 14.6A7.8 7.8 0 0 1 9.4 4.5a7.8 7.8 0 1 0 10.1 10.1z"/></>,
+    entardecer: <><path d="M7.5 15.5a4.5 4.5 0 0 1 9 0"/><path d="M3 15.5h18M5 19h14M12 6v2.4M5.6 9.1l1.6 1.6M18.4 9.1l-1.6 1.6"/></>,
     sol: <><circle cx="12" cy="12" r="4.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></>,
     brilho: <><path d="M12 4c.6 3.8 2.4 5.6 6.2 6.2-3.8.6-5.6 2.4-6.2 6.2-.6-3.8-2.4-5.6-6.2-6.2C9.6 9.6 11.4 7.8 12 4z"/><path d="M18.5 3.5v2.6M17.2 4.8h2.6"/></>,
     maleta: <><rect x="3.5" y="7.5" width="17" height="12" rx="2.5"/><path d="M9 7.5V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v1.5"/><path d="M3.5 12.5h17"/></>,
@@ -1780,7 +1791,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const hojeD = new Date(); hojeD.setHours(0,0,0,0);
   const hoje = isoLocal(hojeD);
   const hora = new Date().getHours();
-  const saudacao = hora<12 ? "Bom dia" : hora<18 ? "Boa tarde" : "Boa noite";
+  const saudacao = hora<5 ? "Boa noite" : hora<12 ? "Bom dia" : hora<18 ? "Boa tarde" : "Boa noite";
+  const iconeHora = hora<5 || hora>=18 ? "lua" : hora<12 ? "sol" : hora<17 ? "sol" : "entardecer";
   const nome = String(state.profile.name||"").trim() || "Mari";
   const jobs = state.jobs || [];
   const planner = state.planner || [];
@@ -1922,8 +1934,9 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   }
   // bloco Transcrições: as mesmas da página Transcrever vídeo (todas, mais recentes primeiro)
   const [recentesTrans,setRecentesTrans] = useState([]);
+  const [transVisiveis,setTransVisiveis] = useState(5);
   async function carregarRecentesTrans(){
-    const { data, error } = await supabaseClient.from("roteiros").select("*").not("transcricao","is",null).order("criado_em",{ascending:false}).limit(6);
+    const { data, error } = await supabaseClient.from("roteiros").select("*").not("transcricao","is",null).order("criado_em",{ascending:false}).limit(60);
     if(!error) setRecentesTrans((data||[]).filter(r=>(r.status||"pronto")==="pronto"));
   }
   useEffect(()=>{ carregarRefs(); carregarRecentesTrans(); },[]);
@@ -2114,7 +2127,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
       {/* cabeçalho */}
       <div className="db-cabeca">
         <div className="db-ola">
-          <h1>{saudacao}, {nome}! <span className="db-ola-sol"><DbIcone tipo="sol" tam={26}/></span></h1>
+          <h1>{saudacao}, {nome}! <span className="db-ola-sol"><DbIcone tipo={iconeHora} tam={26}/></span></h1>
           <p>Tudo pronto para um dia produtivo? <DbIcone tipo="brilho" tam={15}/></p>
         </div>
         <div className="db-acoes">
@@ -2185,6 +2198,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                         onClick={ir} onKeyDown={ev=>{ if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); ir(); } }}
                         className={"db-etapa db-etapa-clicavel"+(i<=at?" feita":"")+(i===at?" atual":"")}><i/><small>{e}</small></span>; })}
                   </div>
+                  {(()=>{ const at = etapaDoJob(prioridade, state.roteiros); return <span className="db-etapa-pos">Etapa {at+1} de {ETAPAS_JOB.length}{at<ETAPAS_JOB.length-1 ? ` · próxima: ${ETAPAS_JOB[at+1]}` : ""}</span>; })()}
                 </div>
                 <div className="db-prio-prazo">
                   <div className="db-prio-data"><DbIcone tipo="calendario" tam={19}/><span><small>Prazo de entrega</small>
@@ -2446,7 +2460,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         <section className="db-bloco db-transc-bloco">
           <div className="db-bloco-topo"><h2>Transcrições</h2><button className="db-seta" onClick={()=>abrirAba && abrirAba("transcritos")} aria-label="Ver todas as transcrições" title="Ver todas"><DbIcone tipo="seta" tam={18}/></button></div>
           {recentesTrans.length ? <div className="db-transc">
-            {recentesTrans.map(r=>{
+            {recentesTrans.slice(0, transVisiveis).map(r=>{
               const yt = String(r.link||"").match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
               const capa = r.capa || (yt ? "https://i.ytimg.com/vi/"+yt[1]+"/hqdefault.jpg" : (r.link && capas[r.link] && capas[r.link].imagem));
               const rede = r.origem==="tiktok" ? "TikTok" : r.origem==="youtube" ? "YouTube" : r.origem==="instagram" ? "Instagram" : "Arquivo";
@@ -2460,6 +2474,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
               );
             })}
           </div> : <p className="db-vazio">Os vídeos que você transcrever aparecem aqui.</p>}
+          {recentesTrans.length>5 && <button className="db-ver-mais" onClick={()=>setTransVisiveis(n=>n>=recentesTrans.length ? 5 : n+5)}>{transVisiveis>=recentesTrans.length ? "Ver menos" : `Ver mais (${recentesTrans.length-transVisiveis})`}</button>}
           <div className="db-transc-acoes">
             <button className="db-btn-claro" onClick={()=>transcrever(null, "")}>Transcrever vídeo</button>
             <button className="db-btn-escuro" onClick={()=>setRoteiroNovo({})}>Criar roteiro</button>

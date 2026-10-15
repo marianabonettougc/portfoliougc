@@ -1512,16 +1512,21 @@
     ligarImportar(sec);
     desenharRecentes(sec);
   }
+  let recentesVisiveis = 5;
   function desenharRecentes(sec) {
-    const lista = dados.roteiros.filter((r) => r.transcricao).slice(0, 8);
+    const todas = dados.roteiros.filter((r) => r.transcricao);
+    const lista = todas.slice(0, recentesVisiveis);
     const caixa = $("#cr-recentes", sec);
-    caixa.innerHTML = lista.length ? lista.map((r) => `<div class="cr-recente" data-id="${r.id}">
+    caixa.innerHTML = (lista.length ? lista.map((r) => `<div class="cr-recente" data-id="${r.id}">
         ${capaRef(r)}
         <div class="cr-recente-txt"><b>${esc(r.titulo || "Sem título")}</b><small>${esc(nomeOrigem(r.origem))}${r.criado_em ? " · " + DATA_BR(r.criado_em) : ""}</small></div>
         <button class="btn" type="button" data-ver>Ver transcrição${ic("seta", 14)}</button>
         <div class="cr-ref-menu"><button type="button" class="cr-mais" data-menu aria-label="Opções">${ic("pontos", 16)}</button>
           <div class="cr-menu" hidden><button type="button" data-criar>Criar roteiro</button><button type="button" data-editar>Editar</button><button type="button" data-apagar>Excluir</button></div></div>
-      </div>`).join("") : `<p class="cr-vazio">${ic("arquivo", 24)}Suas transcrições aparecem aqui.</p>`;
+      </div>`).join("") : `<p class="cr-vazio">${ic("arquivo", 24)}Suas transcrições aparecem aqui.</p>`)
+      + (todas.length > 5 ? `<button class="btn cr-ver-mais" type="button" data-ver-mais>${recentesVisiveis >= todas.length ? "Ver menos" : `Ver mais (${todas.length - recentesVisiveis})`}</button>` : "");
+    const vm = $("[data-ver-mais]", caixa);
+    if (vm) vm.addEventListener("click", () => { recentesVisiveis = recentesVisiveis >= todas.length ? 5 : recentesVisiveis + 5; desenharRecentes(sec); });
     ligarAssistir(caixa);
     buscarCapas();
     $$(".cr-recente", caixa).forEach((linha) => {
