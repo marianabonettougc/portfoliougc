@@ -8602,6 +8602,11 @@ function App({session}){
       merged = processRecurringJobs(merged);
       merged = syncAllJobTransacoes(merged);
       merged = normalizarStatusJobs(merged);
+      // correção única (out/2026): o recebimento da Koin (R$ 400 em 25/09) tinha voltado para pendente
+      if(!(merged.correcoes||{}).koin2509){
+        merged = {...merged, correcoes:{...(merged.correcoes||{}), koin2509:true}, jobs:(merged.jobs||[]).map(j=>j.id==="muzyunr5af7aqd" && !(j.pagamento && j.pagamento.status==="Pago") ? {...j, pagamento:{...(j.pagamento||{}), status:"Pago", dataPagamento:"2026-09-25"}} : j)};
+        merged = syncAllJobTransacoes(merged);
+      }
       setState(merged);
       if(d) salvarSeguro(merged, handleSaveStatus);
       setLoaded(true);
