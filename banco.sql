@@ -462,3 +462,25 @@ create table if not exists public.laboratorio (
 );
 alter table public.laboratorio enable row level security;
 create policy "dona faz tudo" on public.laboratorio for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+-- ---------------------------------------------------------------------
+-- BIBLIOTECA EDITORIAL (out/2026): perfis de referência e os posts deles
+-- (função biblioteca: buscar/recolher pelo Apify, analisar pelo Groq; página js/editorial.js)
+-- ---------------------------------------------------------------------
+create table if not exists public.biblioteca_perfis (
+  id bigint generated always as identity primary key,
+  rede text not null default 'instagram', usuario text not null,
+  ultima_busca timestamptz, run_id text, criado_em timestamptz not null default now(),
+  unique (rede, usuario)
+);
+alter table public.biblioteca_perfis enable row level security;
+create policy "dona faz tudo" on public.biblioteca_perfis for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+create table if not exists public.biblioteca (
+  id bigint generated always as identity primary key,
+  rede text not null default 'instagram', perfil text not null, post_id text not null, link text not null,
+  legenda text, capa text, tipo text, curtidas int, comentarios int, visualizacoes int, publicado_em timestamptz,
+  transcricao text, analise jsonb, criado_em timestamptz not null default now(), atualizado_em timestamptz not null default now(),
+  unique (rede, post_id)
+);
+alter table public.biblioteca enable row level security;
+create policy "dona faz tudo" on public.biblioteca for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
