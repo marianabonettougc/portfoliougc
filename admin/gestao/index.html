@@ -571,6 +571,9 @@
   .ent-item-nome{ flex:1; min-width:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; border:0; background:none; padding:4px 0; font:inherit; font-size:15px; color:var(--graphite); text-align:left; cursor:pointer; }
   .ent-item-status{ font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; background:var(--card-bg); color:var(--graphite-soft); border-radius:999px; padding:2px 8px; }
   .ent-item-campos{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; padding:8px 2px 6px 26px; }
+  .ent-check-linha{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--graphite-soft); cursor:pointer; }
+  .ent-check-linha input{ width:15px; height:15px; margin:0; accent-color:var(--moss); }
+  .ent-sem-aprov{ display:flex; align-items:center; min-height:34px; font-size:14px; color:var(--graphite); }
   .ent-item-campos label{ display:flex; flex-direction:column; gap:4px; font-size:12.5px; color:var(--graphite-soft); }
   @media(max-width:560px){ .ent-item-campos{ padding-left:0; } }
   .entregavel-datas{ flex-basis:100%; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; padding:4px 0 2px 30px; }
@@ -1819,7 +1822,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
       const e = j.entregaveis || {};
       ["videos","fotos","stories"].forEach(t=>(e[t]||[]).forEach(it=>{
         if(it.prazoRoteiro===iso) lista.push({id:"r-"+it.id, hora:"", texto:`Entregar roteiro: ${it.label}`, sub:j.marca, pagina:"jobs"});
-        if(it.prazoConteudo===iso) lista.push({id:"c-"+it.id, hora:"", texto:`Enviar para aprovação: ${it.label}`, sub:j.marca, pagina:"jobs"});
+        if(!it.semAprovacao && it.prazoConteudo===iso) lista.push({id:"c-"+it.id, hora:"", texto:`Enviar para aprovação: ${it.label}`, sub:j.marca, pagina:"jobs"});
         if(j.categoria!=="Publi" && it.dataEntrega===iso) lista.push({id:"d-"+it.id, hora:"", texto:`Entregar conteúdo: ${it.label}`, sub:j.marca+" · UGC", pagina:"jobs"});
         if(j.categoria==="Publi" && it.prazoPostagem===iso) lista.push({id:"o-"+it.id, hora:"", texto:`Postar: ${it.label}`, sub:j.marca+" · Publi", pagina:"jobs"});
       }));
@@ -3396,7 +3399,10 @@ function ItemEntregavel({it, tipo, publi, opcoes, final, onMudar, onNovoStatus, 
           </label>
           <label>Data de fechamento da ação<input type="date" value={it.dataFechamento||""} onChange={e=>onMudar({dataFechamento:e.target.value})}/></label>
           {tipo!=="fotos" && <label>Prazo para entregar o roteiro<input type="date" value={it.prazoRoteiro||""} onChange={e=>onMudar({prazoRoteiro:e.target.value})}/></label>}
-          <label>Prazo para enviar aprovação<input type="date" value={it.prazoConteudo||""} onChange={e=>onMudar({prazoConteudo:e.target.value})}/></label>
+          <label>Prazo para enviar aprovação
+            {it.semAprovacao ? <span className="ent-sem-aprov">Sem aprovação</span> : <input type="date" value={it.prazoConteudo||""} onChange={e=>onMudar({prazoConteudo:e.target.value})}/>}
+            <span className="ent-check-linha"><input type="checkbox" checked={!!it.semAprovacao} onChange={e=>onMudar({semAprovacao:e.target.checked, ...(e.target.checked ? {prazoConteudo:""} : {})})}/>Não tem aprovação</span>
+          </label>
           {publi ? <label>Prazo de postagem<input type="date" value={it.prazoPostagem||""} onChange={e=>onMudar({prazoPostagem:e.target.value})}/></label>
                  : <label>Data de entrega do conteúdo<input type="date" value={it.dataEntrega||""} onChange={e=>onMudar({dataEntrega:e.target.value})}/></label>}
         </div>
