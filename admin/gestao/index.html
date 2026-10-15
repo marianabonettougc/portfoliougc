@@ -1169,7 +1169,7 @@ function syncTransacaoFromJob(transacoes, job){
   const item = {
     id: idx>=0 ? transacoes[idx].id : uid(),
     tipo:"receita",
-    descricao: `${job.marca}${job.tipo ? " - "+job.tipo : ""}`,
+    descricao: `${String(job.marca||"").trim()}${resumoEntregas(job) ? " - "+resumoEntregas(job) : ""}`,
     valor: job.valor, moeda: job.moeda||"BRL",
     data: (job.pagamento && job.pagamento.status==="Pago" && job.pagamento.dataPagamento) || job.dataPagamento || (job.pagamento && job.pagamento.dataPrevista) || job.prazoEntrega || todayISO(),
     status: (job.pagamento && job.pagamento.status==="Pago") ? "Confirmado" : "Pendente",
@@ -1213,8 +1213,15 @@ const dataFechamentoJob = (j) => j.dataFechamento || j.criadoEm || "";
 
 function syncAllJobTransacoes(state){
   let transacoes = [...state.transacoes];
-  state.jobs.forEach(job=>{ transacoes = syncTransacaoFromJob(transacoes, job); });
-  return {...state, transacoes};
+  // pagamento confirmado no Financeiro e o job ainda "em aberto": o job passa a pago (nunca desfaz a confirmação)
+  const jobs = state.jobs.map(job=>{
+    const t = transacoes.find(x=>x.jobId===job.id && x.origem==="job");
+    if(t && t.status==="Confirmado" && !(job.pagamento && job.pagamento.status==="Pago"))
+      return {...job, pagamento:{...(job.pagamento||{}), status:"Pago", dataPagamento:(job.pagamento && job.pagamento.dataPagamento) || t.data || todayISO()}};
+    return job;
+  });
+  jobs.forEach(job=>{ transacoes = syncTransacaoFromJob(transacoes, job); });
+  return {...state, jobs, transacoes};
 }
 
 function processRecurringJobs(state){
