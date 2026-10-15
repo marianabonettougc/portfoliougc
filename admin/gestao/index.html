@@ -4649,7 +4649,9 @@ function Financeiro({state, updateState, go, pessoal}){
 
         const hoje = new Date();
         const meses12 = [];
-        for(let i=11;i>=0;i--){
+        // do mês atual até o último mês com valor a receber (no máximo 6 meses à frente), e o resto para trás (12 no total)
+        const ultimoMes = state.transacoes.reduce((mx,t)=>{ const d = new Date(t.data+"T00:00:00"); const k = (d.getFullYear()-hoje.getFullYear())*12 + d.getMonth()-hoje.getMonth(); return isNaN(k) ? mx : Math.max(mx, Math.min(6, k)); }, 0);
+        for(let i=11-ultimoMes;i>=-ultimoMes;i--){
           const d = new Date(hoje.getFullYear(), hoje.getMonth()-i, 1);
           meses12.push({label: monthNames[d.getMonth()].slice(0,3)+"/"+String(d.getFullYear()).slice(2), full: monthNames[d.getMonth()]+" "+d.getFullYear(), y:d.getFullYear(), m:d.getMonth()});
         }
@@ -4733,48 +4735,61 @@ function Financeiro({state, updateState, go, pessoal}){
 
       {pageTab==="Previsão" && (()=>{
         const jobsRecorrentes = state.jobs.filter(j=>j.recorrente && j.recorrencia && j.tipoJob!=="Permuta" && Number(j.valor)>0);
-        if(jobsRecorrentes.length===0){
-          return (
-            <div className="empty">
-              <Icon name="autorenew"/>
-              <div className="empty-title">Você ainda não tem despesas ou receitas recorrentes cadastradas.</div>
-              <div className="empty-sub">Marque uma despesa ou job como recorrente para ver a previsão dos próximos meses aqui.</div>
-            </div>
-          );
-        }
         const hoje = new Date();
         const meses = [];
         for(let i=0;i<6;i++){
           const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
           meses.push({label: monthNames[d.getMonth()]+" "+d.getFullYear(), y:d.getFullYear(), m:d.getMonth()});
         }
+        const hojeIso = isoLocal(hoje);
+        const atrasados = state.transacoes.filter(t=>t.tipo==="receita" && t.status!=="Confirmado" && t.data && t.data < hojeIso.slice(0,8)+"01");
+        const dados = meses.map(mo=>{
+          const inicioMes = new Date(mo.y, mo.m, 1), fimMes = new Date(mo.y, mo.m+1, 0);
+          const itens = state.transacoes.filter(t=>{ const d = new Date(t.data+"T00:00:00"); return t.tipo==="receita" && t.status!=="Confirmado" && d>=inicioMes && d<=fimMes; })
+            .map(t=>({nome:t.descricao||"Receita", valor:Number(t.valor||0), data:t.data}));
+          jobsRecorrentes.forEach(j=>{
+            let proxima = j.recorrencia.proximaCriacao ? new Date(j.recorrencia.proximaCriacao+"T00:00:00") : null;
+            const intervalo = Number(j.recorrencia.intervaloDias||30);
+            if(!proxima || !intervalo) return;
+            let guard = 0;
+            while(proxima <= fimMes && guard<60){
+              if(proxima >= inicioMes) itens.push({nome:`${String(j.marca||"").trim()} (recorrente)`, valor:Number(j.valor||0), data:isoLocal(proxima)});
+              proxima = new Date(proxima); proxima.setDate(proxima.getDate()+intervalo); guard++;
+            }
+          });
+          const despesas = state.transacoes.filter(t=>{ const d = new Date(t.data+"T00:00:00"); return t.tipo==="despesa" && t.status!=="Confirmado" && d>=inicioMes && d<=fimMes; }).reduce((a,b)=>a+Number(b.valor||0),0);
+          return {...mo, itens:itens.sort((a,b)=>String(a.data).localeCompare(String(b.data))), total:itens.reduce((a,b)=>a+b.valor,0), despesas};
+        });
+        const totalGeral = dados.reduce((a,b)=>a+b.total,0);
+        if(!totalGeral && !atrasados.length){
+          return (
+            <div className="empty">
+              <Icon name="autorenew"/>
+              <div className="empty-title">Nada a receber nos próximos meses.</div>
+              <div className="empty-sub">Os valores das suas ações em UGC's & Publis que ainda não foram pagos aparecem aqui, no mês da data prevista de pagamento.</div>
+            </div>
+          );
+        }
         return (
           <div className="card">
-            <h3 style={{marginTop:0}}>Previsão dos próximos meses</h3>
-            <p style={{fontSize:14, color:"var(--graphite-soft)", marginTop:-6, marginBottom:16}}>Baseado nos jobs marcados como recorrentes.</p>
-            <div className="grid grid-3">
-              {meses.map(mo=>{
-                const inicioMes = new Date(mo.y, mo.m, 1);
-                const fimMes = new Date(mo.y, mo.m+1, 0);
-                let total = 0;
-                jobsRecorrentes.forEach(j=>{
-                  let proxima = j.recorrencia.proximaCriacao ? new Date(j.recorrencia.proximaCriacao+"T00:00:00") : null;
-                  const intervalo = Number(j.recorrencia.intervaloDias||30);
-                  if(!proxima || !intervalo) return;
-                  let guard = 0;
-                  while(proxima <= fimMes && guard<60){
-                    if(proxima >= inicioMes && proxima <= fimMes) total += Number(j.valor||0);
-                    proxima = new Date(proxima); proxima.setDate(proxima.getDate()+intervalo);
-                    guard++;
-                  }
-                });
-                return (
-                  <div key={mo.label} style={{background:"var(--warm-white)", border:"1px solid var(--line)", borderRadius:12, padding:16}}>
-                    <div style={{fontSize:13, color:"var(--graphite-soft)", marginBottom:6}}>{mo.label}</div>
-                    <div style={{fontFamily:"Poppins", fontSize:22, fontWeight:700}}>{fmtMoney(total)}</div>
-                  </div>
-                );
-              })}
+            <h3 style={{marginTop:0}}>O que vai entrar nos próximos meses</h3>
+            <p style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:-6, marginBottom:16}}>Valores a receber das suas ações (pela data prevista de pagamento) e jobs recorrentes. Total: <b style={{color:"var(--graphite)"}}>{fmtMoney(totalGeral)}</b></p>
+            {atrasados.length>0 && <div style={{background:"#f6e0dc", color:"#8a3a2c", borderRadius:12, padding:"10px 14px", fontSize:13.5, marginBottom:14}}>
+              <b>Atrasados ({atrasados.length}):</b> {atrasados.map(t=>`${t.descricao} · ${fmtMoney(t.valor)} (era ${dataBR(t.data)})`).join(" · ")}
+            </div>}
+            <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(230px,1fr))", gap:14}}>
+              {dados.map(mo=>(
+                <div key={mo.label} style={{background:"var(--warm-white)", border:"1px solid var(--line)", borderRadius:12, padding:16, minWidth:0}}>
+                  <div style={{fontSize:12.5, color:"var(--graphite-soft)", marginBottom:4}}>{mo.label}</div>
+                  <div style={{fontFamily:"Poppins", fontSize:20, fontWeight:700, marginBottom:8}}>{fmtMoney(mo.total)}</div>
+                  {mo.itens.length ? mo.itens.map((it,k)=>(
+                    <div key={k} style={{display:"flex", justifyContent:"space-between", gap:8, fontSize:12.5, padding:"4px 0", borderTop:"1px solid var(--line)"}}>
+                      <span style={{minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{it.data ? dataBR(it.data).slice(0,5)+" · " : ""}{it.nome}</span><b style={{whiteSpace:"nowrap"}}>{fmtMoney(it.valor)}</b>
+                    </div>
+                  )) : <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Nada previsto.</div>}
+                  {mo.despesas>0 && <div style={{fontSize:12.5, color:"var(--wine)", marginTop:6}}>Despesas previstas: {fmtMoney(mo.despesas)}</div>}
+                </div>
+              ))}
             </div>
           </div>
         );
@@ -4787,27 +4802,40 @@ function Financeiro({state, updateState, go, pessoal}){
           const d = new Date(hoje.getFullYear(), hoje.getMonth()-i, 1);
           meses.push({label: monthNames[d.getMonth()].slice(0,3), y:d.getFullYear(), m:d.getMonth()});
         }
-        const data = meses.map(mo=>({
-          label: mo.label,
-          value: state.transacoes.filter(t=>{
-            const d = new Date(t.data+"T00:00:00");
-            return t.tipo==="receita" && t.status==="Confirmado" && d.getMonth()===mo.m && d.getFullYear()===mo.y;
-          }).reduce((a,b)=>a+Number(b.valor||0),0)
-        }));
-        const mesesComReceita = data.filter(d=>d.value>0).length;
-        if(mesesComReceita<2){
+        // próximos meses que já têm valor a receber (até 3)
+        for(let i=1;i<=3;i++){
+          const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
+          if(state.transacoes.some(t=>{ const x = new Date(t.data+"T00:00:00"); return t.tipo==="receita" && x.getMonth()===d.getMonth() && x.getFullYear()===d.getFullYear(); }))
+            meses.push({label: monthNames[d.getMonth()].slice(0,3), y:d.getFullYear(), m:d.getMonth()});
+        }
+        const somaMes = (mo, conf) => state.transacoes.filter(t=>{
+          const d = new Date(t.data+"T00:00:00");
+          return t.tipo==="receita" && (conf===undefined || (conf ? t.status==="Confirmado" : t.status!=="Confirmado")) && d.getMonth()===mo.m && d.getFullYear()===mo.y;
+        }).reduce((a,b)=>a+Number(b.valor||0),0);
+        const data = meses.map(mo=>({ label: mo.label, value: somaMes(mo) }));
+        const linhas = meses.map(mo=>({ ...mo, rec: somaMes(mo, true), pend: somaMes(mo, false) }));
+        if(!data.some(d=>d.value>0)){
           return (
             <div className="empty">
               <Icon name="show_chart"/>
-              <div className="empty-title">Ainda não há dados suficientes</div>
-              <div className="empty-sub">Precisamos de pelo menos 2 meses com receita registrada pra mostrar sua evolução aqui.</div>
+              <div className="empty-title">Ainda sem receitas</div>
+              <div className="empty-sub">Assim que suas ações tiverem valor, a evolução mês a mês aparece aqui.</div>
             </div>
           );
         }
         return (
           <div className="card">
-            <h3 style={{marginTop:0}}>Evolução da receita (últimos 6 meses)</h3>
+            <h3 style={{marginTop:0}}>Evolução da receita</h3>
+            <p style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:-6}}>Recebido + a receber em cada mês (pela data de pagamento).</p>
             <LineChart data={data} width={600} height={240}/>
+            <div style={{marginTop:14}}>
+              {linhas.filter(l=>l.rec||l.pend).map(l=>(
+                <div key={l.label+l.y} style={{display:"flex", justifyContent:"space-between", fontSize:13.5, padding:"8px 2px", borderTop:"1px solid var(--line)"}}>
+                  <span>{monthNames[l.m]} {l.y}</span>
+                  <span><span style={{color:"var(--moss)"}}>Recebido {fmtMoney(l.rec)}</span> · <span style={{color:"var(--butter)"}}>A receber {fmtMoney(l.pend)}</span></span>
+                </div>
+              ))}
+            </div>
           </div>
         );
       })()}
