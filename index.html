@@ -195,7 +195,7 @@
   .video-midia iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
   /* Prévia sem som ao passar o mouse. O player fica mais largo que o card (formato 16:9) e o vídeo vertical
      ocupa só o meio: assim o título, os ícones e a marca do YouTube ficam de fora da área visível */
-  .video-midia iframe.previa{inset:auto;top:0;left:-108.03%;width:316.05%;height:100%;z-index:1;pointer-events:none;transform:scale(1.04);opacity:0;transition:opacity .45s ease}
+  .video-midia iframe.previa{inset:auto;top:-150%;left:-582.1%;width:1264.2%;height:400%;z-index:1;pointer-events:none;transform:scale(.26);opacity:0;transition:opacity .45s ease}
   .video-midia iframe.previa.pronta{opacity:1}
   .video-midia.tocando-previa .play span{opacity:0;transform:scale(.85)}
   /* Capa automática (miniatura do próprio vídeo) */
@@ -228,9 +228,10 @@
   .player-caixa.horizontal{height:auto;width:min(1100px,100%);aspect-ratio:16/9}
   /* Player próprio: o vídeo do YouTube roda por baixo, sem nenhum botão ou texto do YouTube aparecendo */
   .player-recorte{position:absolute;inset:0;overflow:hidden;background:#000}
-  .player-recorte iframe{position:absolute;top:0;left:-108.03%;width:316.05%;height:100%;border:0;pointer-events:none;transform:scale(1.04)}
-  .player-caixa.horizontal .player-recorte iframe{left:0;width:100%;transform:none}
-  .player-caixa.simples .player-recorte iframe{left:0;width:100%;transform:none;pointer-events:auto}
+  /* o player é desenhado 3x maior e reduzido: o YouTube escolhe a qualidade pelo tamanho do player, então assim ele manda em HD (1080p ou mais) */
+  .player-recorte iframe{position:absolute;top:-100%;left:-424.075%;width:948.15%;height:300%;border:0;pointer-events:none;transform:scale(.346667)}
+  .player-caixa.horizontal .player-recorte iframe{top:0;left:0;width:100%;height:100%;transform:none}
+  .player-caixa.simples .player-recorte iframe{top:0;left:0;width:100%;height:100%;transform:none;pointer-events:auto}
   .player-escudo{position:absolute;inset:0;z-index:2;cursor:pointer;background:transparent;border:0;padding:0}
   .player-caixa.simples .player-escudo,.player-caixa.simples .player-controles,.player-caixa.simples .player-pausa{display:none}
   .player-caixa .video-logo{top:16px;left:16px;width:58px;height:58px;z-index:4}
@@ -293,6 +294,7 @@
 
   /* site reduzido no celular: textos maiores (quase tudo é medido em rem, então cresce junto) */
   html.miniatura{font-size:22px}
+  .miniatura .sobre-grid{align-items:start}
   .miniatura .capa-nome{font-size:5rem}
   /* celular: setinhas grandes para o dedo, nichos e títulos das linhas legíveis */
   .miniatura .seta{width:76px;height:76px}
@@ -1103,52 +1105,13 @@ const marcas = [
 // Os vídeos rodam dentro do próprio card, com o player oficial do YouTube.
 // Para adicionar um vídeo novo, copie um bloco { ... } e cole no fim da lista.
 // ================================
+// Lista reserva (igual aos vídeos do painel): só aparece se o banco não responder.
 const destaques = [
-  {
-    link: "https://www.youtube.com/shorts/vIAAHLv0V18",           // LINK DO VÍDEO
-    capa: "",                                                      // CAPA DO VÍDEO (ex.: "capas/video-01.jpg"). Vazio = usa a miniatura do YouTube
-    marca: "Unicesumar",                                           // NOME DA MARCA (aparece em etiqueta quando não tem logo)
-    logo: "logos/parceiros/unicesumar.webp",                       // LOGO DA MARCA NA BOLINHA
-    titulo: "Unicesumar",
-    categoria: "Categoria",
-    resultado: "+5,5 mi"                                          // VISUALIZAÇÕES
-  },
-  {
-    link: "https://youtu.be/x3cTwB7OKOY",                          // LINK DO VÍDEO
-    capa: "",                                                      // CAPA DO VÍDEO
-    marca: "",                                                     // TROCAR: NOME DA MARCA
-    logo: "",                                                      // LOGO DA MARCA NA BOLINHA
-    titulo: "",
-    categoria: "Categoria",
-    resultado: "+470k"                                            // VISUALIZAÇÕES
-  },
-  {
-    link: "https://youtube.com/shorts/MFT4boPq418?feature=share",  // LINK DO VÍDEO
-    capa: "",                                                      // CAPA DO VÍDEO
-    marca: "Piccadilly",                                           // NOME DA MARCA
-    logo: "logos/parceiros/piccadilly.webp",                       // LOGO DA MARCA NA BOLINHA
-    titulo: "Piccadilly",
-    categoria: "Categoria",
-    resultado: "+55k"                                             // VISUALIZAÇÕES
-  },
-  {
-    link: "",                                                      // TROCAR: LINK DO VÍDEO 04
-    capa: "",                                                      // CAPA DO VÍDEO
-    marca: "",                                                     // NOME DA MARCA
-    logo: "",                                                      // LOGO DA MARCA NA BOLINHA
-    titulo: "Vídeo 04",
-    categoria: "",
-    resultado: ""                                                  // TROCAR: VISUALIZAÇÕES
-  },
-  {
-    link: "",                                                      // TROCAR: LINK DO VÍDEO 05
-    capa: "",                                                      // CAPA DO VÍDEO
-    marca: "",                                                     // NOME DA MARCA
-    logo: "",                                                      // LOGO DA MARCA NA BOLINHA
-    titulo: "Vídeo 05",
-    categoria: "",
-    resultado: ""                                                  // TROCAR: VISUALIZAÇÕES
-  }
+  { link: "https://youtube.com/shorts/h58kGmKkbiM", capa: "", marca: "Unicesumar", logo: "logos/parceiros/unicesumar.webp", titulo: "Unicesumar", categoria: "Tech | Educação", resultado: "+5 mi" },
+  { link: "https://youtube.com/shorts/x3cTwB7OKOY", capa: "", marca: "Cartão de Todos", logo: "logos/parceiros/cartao-de-todos.webp", titulo: "Cartão de todos", categoria: "Tech | Educação", resultado: "+471K" },
+  { link: "https://youtube.com/shorts/0qjra2307vs", capa: "", marca: "Pague Menos", logo: "logos/parceiros/pague-menos.webp", titulo: "Pague Menos", categoria: "Maternidade", resultado: "+271K" },
+  { link: "https://youtube.com/shorts/ntAA0AWlDbM", capa: "", marca: "Pantene", logo: "logos/parceiros/pantene.webp", titulo: "Pantene Biotinamina", categoria: "Cabelo", resultado: "+111K" },
+  { link: "https://youtube.com/shorts/MFT4boPq418", capa: "", marca: "Piccadilly", logo: "logos/parceiros/piccadilly.webp", titulo: "Piccadilly", categoria: "Moda", resultado: "+55k" }
 ];
 
 // ================================
@@ -1506,7 +1469,8 @@ function ligarPrevia(midia) {
           }
           // acabou: esconde o vídeo (a capa aparece) enquanto volta pro começo, para não aparecer o ícone do YouTube
           if (ev.data === 0) { ev.target.getIframe().classList.remove("pronta"); ev.target.seekTo(0); ev.target.playVideo(); }
-        }
+        },
+        onApiChange: (ev) => semLegenda(ev.target)   // o módulo de legenda carregou: desliga na hora
       }
     });
     const f = item.p.getIframe && item.p.getIframe();
@@ -1590,9 +1554,15 @@ function carregarApiYoutube() {
 // o YouTube liga a legenda automática sozinho quando o vídeo toca sem som: isto desliga
 function semLegenda(p) {
   if (!p) return;
-  try { p.setOption("captions", "track", {}); } catch (e) {}
-  try { p.unloadModule("captions"); } catch (e) {}
-  try { p.unloadModule("cc"); } catch (e) {}
+  const tirar = () => {
+    try { p.setOption("captions", "track", {}); } catch (e) {}
+    try { p.setOption("captions", "reload", false); } catch (e) {}
+    try { p.unloadModule("captions"); } catch (e) {}
+    try { p.unloadModule("cc"); } catch (e) {}
+  };
+  tirar();
+  // o YouTube às vezes liga a legenda um pouco depois de começar: confere de novo
+  setTimeout(tirar, 600); setTimeout(tirar, 2000);
 }
 function atualizarBotoes() {
   if (!player || !player.getPlayerState) return;
@@ -1681,13 +1651,15 @@ function abrirPlayer(d) {
   document.body.style.overflow = "hidden";
   janela.querySelector(".player-fechar").focus();
   // celular/tablet: usa o player do YouTube encaixado na caixa em pé, sem recorte nem zoom (o recorte do computador fica estranho no celular)
-  if (!temMouse) { janela.querySelectorAll(".player-carregando").forEach((el) => el.remove()); playerSimples(id, d); return; }
+  //            (também pela API, para conseguir desligar a legenda automática)
+  const simples = !temMouse;
+  caixaPlayer.classList.toggle("simples", simples);
   carregarApiYoutube().then(() => {
     if (janela.hidden) return;
     player = new YT.Player("player-alvo", {
       videoId: id,
       host: "https://www.youtube-nocookie.com",
-      playerVars: { autoplay: 1, controls: 0, cc_load_policy: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1, loop: 1, playlist: id },
+      playerVars: { autoplay: 1, controls: simples ? 1 : 0, cc_load_policy: 0, disablekb: simples ? 0 : 1, fs: simples ? 1 : 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1, loop: 1, playlist: id },
       events: {
         onReady: (e) => {
           const p = e.target;
@@ -1756,7 +1728,7 @@ const fotos = [
   { src: "fotos/foto-05.webp", alt: "Mari Bonetto segurando a linha Elseve Bond Repair" },
   { src: "fotos/foto-06.webp", alt: "Mari Bonetto sorrindo com dois hidratantes Natura Tododia", posicao: "center 30%" },
   { src: "fotos/foto-10.jpg", alt: "Mari Bonetto no sofá com as duas filhas usando óculos de sol", posicao: "center 90%" },
-  { src: "fotos/foto-13.jpg", alt: "Mari Bonetto no sofá mostrando chocolates Cacau Show" },,
+  { src: "fotos/foto-13.jpg", alt: "Mari Bonetto no sofá mostrando chocolates Cacau Show" },
   { src: "fotos/foto-14.webp", alt: "Mari Bonetto sorrindo atrás de uma air fryer Philco" },
   { src: "fotos/foto-15.webp", alt: "Mari Bonetto de pijama na cama ao lado de um pacote da Shein", posicao: "center 80%" },
   { src: "fotos/foto-16.webp", alt: "Mari Bonetto com creme Nivea Facial no rosto, segurando o pote" },
