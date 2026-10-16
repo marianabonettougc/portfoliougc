@@ -55,7 +55,7 @@ FALA (cada palavra com o segundo em que começa, no tempo do vídeo bruto):
 ${fala}
 
 Responda SOMENTE um JSON:
-{"titulo":"título do gancho para os 3 primeiros segundos, até 6 palavras, sem emoji",
+{"titulo":"título do gancho para os 3 primeiros segundos, condensado, de 3 a 6 palavras, sem emoji","titulo_destaque":"a palavra do título que vai na fonte de destaque",
 "remover":[{"de":0.0,"ate":0.0,"motivo":"repetição | erro | gaguejo | fala de bastidor"}],
 "destaques":[{"t":0.0,"palavra":"palavra forte que merece cor de destaque"}],
 "zooms":[{"t":0.0}],
@@ -68,7 +68,7 @@ Regras:
 - "remover": quando ela repete uma frase (tomada errada), fique com a ÚLTIMA versão e marque as anteriores para tirar. Tire também "vamos de novo", "peraí", gaguejos e falas que não são do roteiro. Use os tempos da fala. Não marque silêncios (o painel já corta).
 - "destaques": 1 a cada 4 ou 5 segundos, só palavras que carregam a ideia (benefício, número, nome do produto).
 - "zooms": 1 a cada 5 a 8 segundos, em frases de ênfase.
-- "efeitos": riser logo antes do gancho/revelação, hit logo depois da revelação, pop quando entra texto ou título (inclua um pop em 0.1 para o título), woosh nas mudanças de assunto, click/shutter em listas e cortes rápidos, typing quando ela fala de algo escrito. Exagere um pouco no começo e depois use com moderação (no máximo 1 a cada 3 segundos).
+- "efeitos": riser logo antes do gancho/revelação, hit logo depois da revelação, pop quando entra texto na tela (o painel já põe sozinho os cliques do título, não marque pop para o título), woosh nas mudanças de assunto, click/shutter em listas e cortes rápidos, typing quando ela fala de algo escrito. Exagere um pouco no começo e depois use com moderação (no máximo 1 a cada 3 segundos).
 - Todos os tempos em segundos do bruto, com 1 casa decimal.
 - Português do Brasil. Nunca use travessão.`;
   const r = await fetch(`${GROQ}/chat/completions`, {
@@ -81,6 +81,7 @@ Regras:
   const lista = (x: unknown) => (Array.isArray(x) ? x : []);
   return {
     titulo: txt(a.titulo, 60),
+    titulo_destaque: txt(a.titulo_destaque, 30),
     remover: lista(a.remover).map((x: any) => ({ de: num(x.de), ate: num(x.ate), motivo: txt(x.motivo, 60) })).filter((x: any) => x.de != null && x.ate != null && x.ate > x.de),
     destaques: lista(a.destaques).map((x: any) => ({ t: num(x.t), palavra: txt(x.palavra, 40) })).filter((x: any) => x.t != null),
     zooms: lista(a.zooms).map((x: any) => ({ t: num(x.t) })).filter((x: any) => x.t != null),

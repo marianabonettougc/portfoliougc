@@ -45,6 +45,9 @@ LEGENDA
 
 TÍTULOS E GRAFISMOS
 - Título criativo no começo (modelos do CapCut tipo "mesclador" ou título feito no Canva com fundo transparente, animado).
+- Título condensado (curto) em duas fontes: uma forte e a palavra de destaque em serifa itálica (a Bia usa Scholar itálico + Buzzi). Estrelinhas copiadas de "star character" do Google perto do destaque.
+- O título entra em etapas (parte 1, depois parte 2, depois parte 3), cada parte com um clique de mouse ("mouse click sound"). Todas as partes saem juntas.
+- Frase gigante ocupando a tela logo no início: entende em 1 segundo, quebra o padrão do feed e já filtra o público certo. Sempre as mesmas 2 fontes e 3 cores (assinatura). Fundo claro pede cores vibrantes; fundo escuro pede tons pastel.
 - Setas desenhadas à mão e sublinhado tipo marca-texto para apontar detalhes.
 - Logo da marca sempre visível no produto.
 
@@ -66,17 +69,25 @@ EFEITOS SONOROS (quando usar)
 - UGC de produto: som do próprio produto (ASMR) sincronizado com o gesto: chuveiro, spray ("Shaker"), escova ("Touch & scratch hair"), creme ("Sticky sound").
 - Não achou um efeito? Busque "efeitos sonoros" ou "SFX" no YouTube ou TikTok, grave a tela e extraia o áudio.
 
+ANÚNCIOS (como a editora dos ADS da Rafa faz)
+- Gancho visual com b-roll do dia a dia (viagem, rotina), não gravação montada: ela grava e manda, o anúncio nasce em cima disso.
+- Efeitos sonoros geram identificação e prendem; junto com o texto na tela, seguram até o fim.
+- Destacar as palavras-chave que geram desejo enquanto a pessoa assiste.
+- Volume: criativo de anúncio satura rápido, então é preciso produzir vários.
+
 ESTRUTURA DE UGC
 - Gancho forte, contexto curto, demonstração do produto, prova ou benefício, CTA ("comenta X", "salva").`;
 
   const EFEITOS = { woosh: "Woosh", pop: "Pop", click: "Click", shutter: "Shutter", typing: "Typing", riser: "Riser", hit: "Hit", ding: "Ding" };
   const ESTILOS = { minimal: "Fina e branca (estilo das referências)", bold: "Forte com contorno", caixa: "Caixinha bege" };
+  const TITULOS = { etapas: "Em etapas com clique (duas fontes e estrelinhas)", frase: "Frase gigante na tela (3 cores)", caixa: "Caixinhas" };
+  const DUR_TITULO = 2.8;
 
   const st = {
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { estilo: "minimal", altura: 0.7, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
+    opc: { estilo: "minimal", altura: 0.7, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "etapas", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
     tema: "", arquivoFinal: null,
   };
 
@@ -194,6 +205,7 @@ ESTRUTURA DE UGC
         etapa("Pensando na edição (cortes, título, zoom e efeitos)");
         st.plano = await chamar({ acao: "plano", palavras: todas, duracao: offset, padrao: st.padrao, tema: st.tema });
         st.titulo = st.plano.titulo || "";
+        st.tituloDestaque = st.plano.titulo_destaque || "";
       } else {
         st.plano = { titulo: "", remover: [], destaques: [], zooms: [], efeitos: [], broll: [], dicas: ["Não ouvi fala nesse vídeo, então não cortei silêncios nem pus legenda. Dá para pôr título e efeitos à mão."], musica: "" };
       }
@@ -263,9 +275,29 @@ ESTRUTURA DE UGC
     st.legendas = agrupar(palavras);
     // efeitos e zooms do plano no tempo final
     st.efeitos = (p.efeitos || []).map((e) => ({ id: uid(), t: paraFinalPerto(e.t), tipo: e.tipo, por_que: e.por_que || "" })).filter((e) => e.t != null);
-    if (st.titulo && !st.efeitos.some((e) => e.t < 0.4 && e.tipo === "pop")) st.efeitos.unshift({ id: uid(), t: 0.05, tipo: "pop", por_que: "entrada do título" });
-    st.efeitos.sort((a, b) => a.t - b.t);
+    st.efeitos = st.efeitos.filter((e) => !(e.t < 0.4 && e.tipo === "pop"));
+    sonsDoTitulo();
     st.zooms = (p.zooms || []).map((z) => paraFinalPerto(z.t)).filter((t) => t != null);
+  }
+  // título em partes (até 3): cada parte entra num tempo, com um clique de mouse (estilo das referências)
+  function partesTitulo() {
+    const palavras = String(st.titulo || "").trim().split(/\s+/).filter(Boolean);
+    if (!palavras.length) return [];
+    const n = palavras.length <= 2 ? palavras.length : Math.min(3, Math.ceil(palavras.length / 2));
+    const tam = Math.ceil(palavras.length / n), partes = [];
+    for (let i = 0; i < palavras.length; i += tam) partes.push(palavras.slice(i, i + tam).join(" "));
+    const limpa = (x) => x.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+    let alvo = partes.findIndex((p) => st.tituloDestaque && p.split(/\s+/).some((w) => limpa(w) === limpa(st.tituloDestaque)));
+    if (alvo < 0) alvo = partes.reduce((m, p, i) => (p.replace(/\s/g, "").length > partes[m].replace(/\s/g, "").length ? i : m), 0);
+    return partes.map((texto, i) => ({ texto, destaque: i === alvo, t: 0.12 + i * 0.38 }));
+  }
+  function sonsDoTitulo() {
+    st.efeitos = st.efeitos.filter((e) => !e.doTitulo);
+    if (st.titulo && st.opc.titulo) {
+      if (st.opc.estiloTitulo === "etapas") partesTitulo().forEach((p, i) => st.efeitos.push({ id: uid(), t: p.t, tipo: "click", por_que: `título, parte ${i + 1}`, doTitulo: true }));
+      else st.efeitos.push({ id: uid(), t: 0.05, tipo: "pop", por_que: "entrada do título", doTitulo: true });
+    }
+    st.efeitos.sort((a, b) => a.t - b.t);
   }
   function agrupar(palavras) {
     const grupos = [];
@@ -320,9 +352,9 @@ ESTRUTURA DE UGC
     const u = W / 1080;
     // legenda
     const g = st.legendas.find((x) => t >= x.o0 && t < x.o1);
-    if (g && !(st.opc.titulo && st.titulo && t < 2.4)) desenharLegenda(g, u, W, H);
+    if (g && !(st.opc.titulo && st.titulo && t < DUR_TITULO - 0.2)) desenharLegenda(g, u, W, H);
     // título do gancho
-    if (st.opc.titulo && st.titulo && t < 2.6) desenharTitulo(t, u, W, H);
+    if (st.opc.titulo && st.titulo && t < DUR_TITULO) desenharTitulo(t, u, W, H);
   }
   function quebrar(texto, max, fonte) {
     c2d.font = fonte;
@@ -360,8 +392,64 @@ ESTRUTURA DE UGC
     }
     c2d.restore();
   }
+  const SERIFA = (tam) => `italic 400 ${tam}px "DM Serif Display", Georgia, serif`;
+  const BASTAO = (tam) => `800 ${tam}px Poppins, "Helvetica Neue", Arial, sans-serif`;
+  function estrela(x, y, r, cor) {
+    c2d.save(); c2d.fillStyle = cor; c2d.beginPath();
+    for (let i = 0; i < 8; i++) { const a = (Math.PI / 4) * i - Math.PI / 2, rr = i % 2 ? r * 0.28 : r; c2d.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+    c2d.closePath(); c2d.fill(); c2d.restore();
+  }
   function desenharTitulo(t, u, W, H) {
-    const k = Math.min(1, t / 0.22), saida = t > 2.3 ? Math.max(0, 1 - (t - 2.3) / 0.3) : 1;
+    if (st.opc.estiloTitulo === "etapas") return tituloEtapas(t, u, W, H);
+    if (st.opc.estiloTitulo === "frase") return tituloFrase(t, u, W, H);
+    return tituloCaixa(t, u, W, H);
+  }
+  // Bia Abbate / Rafa: título condensado, uma parte numa fonte forte e a palavra de destaque em serifa itálica, entrando em etapas
+  function tituloEtapas(t, u, W, H) {
+    const saida = t > DUR_TITULO - 0.3 ? Math.max(0, (DUR_TITULO - t) / 0.3) : 1;
+    const partes = partesTitulo(), y0 = H * 0.24, alt = 138 * u;
+    c2d.save(); c2d.globalAlpha = saida; c2d.textAlign = "center"; c2d.textBaseline = "middle";
+    partes.forEach((p, i) => {
+      if (t < p.t) return;
+      const k = Math.min(1, (t - p.t) / 0.12), esc0 = 0.82 + 0.18 * suave(k);
+      const y = y0 + (i - (partes.length - 1) / 2) * alt;
+      let tam = p.destaque ? 132 * u : 92 * u;
+      c2d.font = p.destaque ? SERIFA(tam) : BASTAO(tam);
+      const texto = p.destaque ? p.texto.toLowerCase() : p.texto.toUpperCase();
+      const w = c2d.measureText(texto).width;
+      if (w > W * 0.86) { tam *= (W * 0.86) / w; c2d.font = p.destaque ? SERIFA(tam) : BASTAO(tam); }
+      c2d.save(); c2d.translate(W / 2, y); c2d.scale(esc0, esc0);
+      c2d.shadowColor = "rgba(0,0,0,.42)"; c2d.shadowBlur = 22 * u; c2d.shadowOffsetY = 3 * u;
+      c2d.fillStyle = "#ffffff"; c2d.fillText(texto, 0, 0);
+      c2d.shadowColor = "transparent";
+      if (p.destaque) {
+        const ww = Math.min(c2d.measureText(texto).width, W * 0.86), brilho = 0.75 + 0.25 * Math.sin(t * 9);
+        estrela(-ww / 2 - 30 * u, -tam * 0.38, 22 * u * brilho, st.opc.cor);
+        estrela(ww / 2 + 26 * u, tam * 0.3, 16 * u * (1.75 - brilho), st.opc.cor);
+        estrela(ww / 2 + 52 * u, -tam * 0.12, 9 * u, "#ffffff");
+      }
+      c2d.restore();
+    });
+    c2d.restore();
+  }
+  // Rafa: frase gigante ocupando a tela, duas fontes alternadas e três cores (contraste com o fundo)
+  function tituloFrase(t, u, W, H) {
+    const saida = t > DUR_TITULO - 0.3 ? Math.max(0, (DUR_TITULO - t) / 0.3) : 1;
+    const k = Math.min(1, t / 0.18), esc0 = 0.9 + 0.1 * suave(k);
+    c2d.save(); c2d.globalAlpha = saida;
+    c2d.fillStyle = "rgba(29,22,17,.42)"; c2d.fillRect(0, 0, W, H);
+    const partes = partesTitulo(), cores = ["#ffffff", st.opc.cor, "#efe5d8"];
+    const linhas = partes.map((p, i) => { const serifa = i % 2 === 1; let tam = 170 * u; const texto = serifa ? p.texto.toLowerCase() : p.texto.toUpperCase();
+      c2d.font = serifa ? SERIFA(tam) : BASTAO(tam); const w = c2d.measureText(texto).width; if (w > W * 0.88) tam *= (W * 0.88) / w; return { texto, serifa, tam, cor: cores[i % 3] }; });
+    const total = linhas.reduce((s, l) => s + l.tam * 1.08, 0);
+    let y = H * 0.42 - total / 2;
+    c2d.translate(W / 2, H * 0.42); c2d.scale(esc0, esc0); c2d.translate(-W / 2, -H * 0.42);
+    c2d.textAlign = "center"; c2d.textBaseline = "middle";
+    for (const l of linhas) { c2d.font = l.serifa ? SERIFA(l.tam) : BASTAO(l.tam); y += l.tam * 0.54; c2d.fillStyle = l.cor; c2d.fillText(l.texto, W / 2, y); y += l.tam * 0.54; }
+    c2d.restore();
+  }
+  function tituloCaixa(t, u, W, H) {
+    const k = Math.min(1, t / 0.22), saida = t > DUR_TITULO - 0.3 ? Math.max(0, (DUR_TITULO - t) / 0.3) : 1;
     const esc0 = (k < 1 ? 0.6 + 0.5 * suave(k) : 1.1 - 0.1 * Math.min(1, (t - 0.22) / 0.15)) * saida;
     if (esc0 <= 0) return;
     const fonte = `800 ${96 * u}px Poppins, "Helvetica Neue", Arial, sans-serif`;
@@ -599,6 +687,7 @@ ESTRUTURA DE UGC
     box.innerHTML = `<h3 class="ed-titulo">Ajustes</h3>
       <label class="ed-rotulo" for="ed-titulo-txt">Título do gancho</label>
       <input class="entrada" id="ed-titulo-txt" value="${esc(st.titulo)}" maxlength="60" placeholder="Sem título">
+      <select class="entrada" id="ed-estilo-titulo" aria-label="Estilo do título">${Object.entries(TITULOS).map(([k, t]) => `<option value="${k}" ${o.estiloTitulo === k ? "selected" : ""}>${t}</option>`).join("")}</select>
       <label class="ed-rotulo" for="ed-estilo">Legenda</label>
       <select class="entrada" id="ed-estilo">${Object.entries(ESTILOS).map(([k, t]) => `<option value="${k}" ${o.estilo === k ? "selected" : ""}>${t}</option>`).join("")}</select>
       <label class="ed-rotulo" for="ed-altura">Altura da legenda</label>
@@ -609,7 +698,9 @@ ESTRUTURA DE UGC
       <input type="range" id="ed-vol" min="0" max="1.2" step="0.05" value="${o.vol}">
       <label class="ed-rotulo" for="ed-qual">Qualidade do arquivo</label>
       <select class="entrada" id="ed-qual"><option value="1080" ${o.qualidade === 1080 ? "selected" : ""}>1080 x 1920 (Full HD)</option><option value="720" ${o.qualidade === 720 ? "selected" : ""}>720 x 1280 (mais leve)</option></select>`;
-    $("#ed-titulo-txt", box).addEventListener("input", (e) => { st.titulo = e.target.value; if (!st.tocando) desenhar(Math.min(st.t, 1)); });
+    $("#ed-titulo-txt", box).addEventListener("input", (e) => { st.titulo = e.target.value; if (!st.tocando) desenhar(Math.min(st.t, 1.2)); });
+    $("#ed-titulo-txt", box).addEventListener("change", () => { sonsDoTitulo(); pintarPlano(); });
+    $("#ed-estilo-titulo", box).addEventListener("change", (e) => { o.estiloTitulo = e.target.value; sonsDoTitulo(); pintarPlano(); if (!st.tocando) { st.t = Math.min(st.t, 1.2); desenhar(st.t); } });
     $("#ed-estilo", box).addEventListener("change", (e) => { o.estilo = e.target.value; redesenhar(); });
     $("#ed-altura", box).addEventListener("input", (e) => { o.altura = Number(e.target.value); redesenhar(); });
     $("#ed-cor", box).addEventListener("input", (e) => { o.cor = e.target.value; redesenhar(); });
@@ -619,7 +710,7 @@ ESTRUTURA DE UGC
       o[c.dataset.opc] = c.checked;
       // cortes mudam a linha do tempo inteira: monta de novo (os efeitos voltam aos do plano)
       if (["silencio", "erros", "zoomCortes"].includes(c.dataset.opc)) { if (st.tocando) parar(); montar(); st.t = Math.min(st.t, st.duracao); pintar(); }
-      else redesenhar();
+      else { if (c.dataset.opc === "titulo") { sonsDoTitulo(); pintarPlano(); } redesenhar(); }
     }));
   }
   function redesenhar() { if (!st.tocando) desenhar(st.t); }
@@ -689,10 +780,10 @@ ESTRUTURA DE UGC
     const sec = document.getElementById("aba-" + ABA);
     if (!sec) return;
     if (!st.pronto) {
-      if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@300;600;800&display=swap"; document.head.appendChild(l); }
+      if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;600;800&display=swap"; document.head.appendChild(l); }
       montarTela(sec); st.pronto = true;
       carregarPadrao();
-      try { await Promise.all(["300 40px Poppins", "800 40px Poppins", "600 40px Poppins"].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
+      try { await Promise.all(["300 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"'].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
     }
     pintar();
   }

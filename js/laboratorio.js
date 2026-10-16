@@ -1,9 +1,11 @@
 // =========================================================
 // CRIATIVIDADE > LABORATÓRIO CRIATIVO (hash #laboratorio)
 // Banco de ideias feito dos posts que a Mari salva no Instagram.
-// - Entrada: links colados (um por linha) ou o arquivo dos salvos que o Instagram
-//   entrega em "Baixar suas informações" (saved_posts.json ou .html): o painel
-//   tira todos os links instagram.com/p|reel/... do arquivo.
+// - Entrada: links colados (um por linha), o arquivo dos salvos que o Instagram
+//   entrega em "Baixar suas informações" (saved_posts.json ou .html: o painel
+//   tira todos os links instagram.com/p|reel/... do arquivo) ou o arquivo
+//   salvos_instagram.json do programa ferramentas/salvos.py (Instaloader rodando
+//   no Mac dela, já com perfil, tipo e legenda).
 // - Processar: lê o post (legenda, tipo, perfil, capa) pela função referencias
 //   acao "post" (Apify); se for Reel, transcreve pela Supadata (mesma chave da
 //   página Transcrever vídeo); depois a IA (referencias acao "laboratorio") tira
@@ -51,6 +53,14 @@
     });
     return [...vistos.values()];
   }
+  // arquivo do programa ferramentas/salvos.py (Instaloader no Mac dela): {"origem":"instaloader","salvos":[{link,codigo,perfil,tipo,legenda}]}
+  function salvosDoPrograma(texto) {
+    try {
+      const j = JSON.parse(texto);
+      if (!j || j.origem !== "instaloader" || !Array.isArray(j.salvos)) return null;
+      return j.salvos.map((x) => { const l = linkLimpo(x.link); return l ? { ...l, perfil: x.perfil, tipo: ["Reel", "Carrossel", "Post"].includes(x.tipo) ? x.tipo : null, legenda: x.legenda } : null; }).filter(Boolean);
+    } catch (e) { return null; }
+  }
   // datas do arquivo do Instagram: {"string_map_data":{"Saved on":{"href":...,"timestamp":...}}}
   function datasDoArquivo(texto) {
     const datas = {};
@@ -76,7 +86,9 @@
   }
   async function adicionar(itens, datas) {
     const existentes = new Set(st.lista.map((r) => r.codigo));
-    const novos = itens.filter((i) => !existentes.has(i.codigo)).map((i) => ({ link: i.link, codigo: i.codigo, salvo_em: (datas && datas[i.codigo]) || null, status: "novo", etapa: "Nova" }));
+    // itens do programa salvos.py já vêm com perfil, tipo e legenda: aí o processar pula a leitura pelo Apify
+    const novos = itens.filter((i) => !existentes.has(i.codigo)).map((i) => ({ link: i.link, codigo: i.codigo, salvo_em: (datas && datas[i.codigo]) || null, status: "novo", etapa: "Nova",
+      ...(i.tipo ? { perfil: i.perfil || null, tipo: i.tipo, legenda: i.legenda || null } : {}) }));
     if (!novos.length) return 0;
     for (let k = 0; k < novos.length; k += 200) {
       const { error } = await banco().from("laboratorio").upsert(novos.slice(k, k + 200), { onConflict: "link", ignoreDuplicates: true });
@@ -196,6 +208,11 @@
           <span class="lab-rotulo">Trazer todos os salvos de uma vez</span>
           <p class="lab-ajuda">No Instagram: <b>Sua atividade › Baixar suas informações › Algumas das suas informações › Salvos</b>, formato JSON. Quando chegar o e-mail, baixe, abra o .zip e envie aqui o arquivo <b>saved_posts.json</b>.</p>
           <label class="btn" style="cursor:pointer">${ic.arquivo}Enviar arquivo dos salvos<input type="file" id="lab-arquivo" accept=".json,.html,.htm,.txt" hidden></label>
+          <details class="lab-mac"><summary>Mais rápido, pelo Mac (na hora, sem esperar e-mail)</summary>
+            <p class="lab-ajuda">Abra o app <b>Terminal</b> no Mac, cole a linha abaixo e aperte Enter. Ele pede o seu usuário e a senha do Instagram ali mesmo (a senha não aparece, não fica salva e não vem para o painel), lê os seus salvos devagar e grava o arquivo <b>salvos_instagram.json</b> na Mesa. Depois é só enviar esse arquivo aqui em cima. Se o Mac pedir para instalar as "ferramentas de linha de comando", aceite e rode de novo.</p>
+            <div class="lab-comando"><code id="lab-cmd">curl -fsSL https://marianabonetto.com.br/ferramentas/salvos.py -o ~/salvos.py && python3 ~/salvos.py</code><button class="btn" type="button" id="lab-copiar">Copiar</button></div>
+            <p class="lab-ajuda">Vai com calma: usar programas no Instagram tem um risco pequeno de ele pedir confirmação ou bloquear por um tempo. Rodar no seu próprio Mac, com a sua internet e de vez em quando, é o jeito mais seguro.</p>
+          </details>
         </div>
       </div>
       <div class="lab-numeros" id="lab-numeros"></div>
@@ -213,11 +230,13 @@
       const arq = e.target.files[0]; e.target.value = "";
       if (!arq) return;
       const texto = await arq.text();
-      const itens = linksDoTexto(texto);
+      const doPrograma = salvosDoPrograma(texto);
+      const itens = doPrograma || linksDoTexto(texto);
       if (!itens.length) { toast("Não achei links de posts nesse arquivo. Envie o saved_posts.json do Instagram.", true); return; }
       try { const n = await adicionar(itens, datasDoArquivo(texto)); toast(`${itens.length} salvos no arquivo, ${n} novos no laboratório.`); pintar(); }
       catch (err) { toast("Não consegui salvar: " + err.message, true); }
     });
+    $("#lab-copiar", sec).addEventListener("click", async () => { try { await navigator.clipboard.writeText($("#lab-cmd", sec).textContent); toast("Copiado. Cole no Terminal do Mac."); } catch (e) { toast("Selecione a linha e copie com Cmd+C.", true); } });
     $("#lab-proc5", sec).addEventListener("click", () => processarVarios(5));
     $("#lab-proc20", sec).addEventListener("click", () => processarVarios(20));
     $("#lab-busca", sec).addEventListener("input", (e) => { st.busca = e.target.value; pintarLista(); });
