@@ -1046,3 +1046,22 @@ button.menu-grupo:hover{color:var(--texto)}
 .pc-iphone summary{cursor:pointer;font-size:13px}
 .pc-iphone .lab-comando{display:flex;margin:6px 0}
 .pc-iphone code{word-break:break-all}
+
+/* Notificações no celular (js/lembretes.js) */
+.lb-sino{width:auto;padding:0 8px;gap:4px;font-size:12px;color:var(--suave);margin-left:auto}
+.lb-sino svg{width:17px;height:17px}
+.janela-cabeca .lb-sino + .icone-btn{margin-left:2px}
+.lb-form{display:flex;flex-direction:column;gap:12px}
+.lb-form input{width:100%}
+.lb-atalhos{display:flex;flex-wrap:wrap;gap:6px;margin-top:-4px}
+.lb-pagina{display:grid;gap:16px;max-width:760px}
+.lb-cab{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.lb-botoes{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.lb-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.lb-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--linha)}
+.lb-item:first-child{border-top:0}
+.lb-item b{display:block;font-weight:600}
+.lb-item small{color:var(--suave)}
+.lb-item.atrasado small{color:#a0522d}
+.lb-acoes{display:flex;gap:6px;flex-shrink:0}
+@media (max-width:560px){.lb-item{flex-direction:column;align-items:flex-start}}

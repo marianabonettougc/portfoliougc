@@ -598,6 +598,8 @@
   .modal-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
   .modal-head h3{ margin:0; font-size:20px; }
   .modal-close{ cursor:pointer; color:var(--graphite-soft); background:none; border:none; }
+  .modal-sino{ display:flex; align-items:center; gap:3px; font-family:inherit; font-size:12px; padding:4px 6px; border-radius:8px; }
+  .modal-sino:hover{ background:var(--line); }
 
   /* CALENDAR */
   .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
@@ -911,8 +913,16 @@ function MessageModal({title, text, onClose}){
   );
 }
 
-function Modal({title, onClose, children, largo}){
+function Modal({title, onClose, children, largo, lembrete}){
   const ref = useRef();
+  // "Importante, notificar": abre o aviso no painel (js/lembretes.js, mesmo site)
+  const podeNotificar = (()=>{ try{ return !!(window.parent !== window && window.parent.painelLembretes); }catch(e){ return false; } })();
+  function notificar(){
+    const L = window.parent.painelLembretes;
+    const raiz = ref.current;
+    const titulo = (lembrete && lembrete.titulo) || L.nomeDaJanela(raiz, raiz && raiz.querySelector(".modal-head h3"));
+    L.abrir({ tipo: (lembrete && lembrete.tipo) || "dashboard", id: (lembrete && lembrete.id) || null, titulo });
+  }
   useEffect(()=>{
     function onKey(e){ if(e.key==="Escape") onClose(); }
     document.addEventListener("keydown", onKey);
@@ -923,7 +933,10 @@ function Modal({title, onClose, children, largo}){
       <div className={"modal"+(largo?" modal-largo":"")} ref={ref} onMouseDown={(e)=>e.stopPropagation()}>
         <div className="modal-head">
           <h3>{title}</h3>
-          <button className="modal-close" onClick={onClose}><Icon name="close"/></button>
+          <span style={{display:"flex", alignItems:"center", gap:4}}>
+            {podeNotificar && <button className="modal-close modal-sino" title="Importante, notificar" onClick={notificar}><Icon name="notifications" size={18}/><span>Notificar</span></button>}
+            <button className="modal-close" onClick={onClose}><Icon name="close"/></button>
+          </span>
         </div>
         {children}
       </div>
@@ -3621,7 +3634,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
   }
 
   return (
-    <Modal title={<span style={{display:"flex", alignItems:"center", gap:10}}>{initial? "Editar UGC / Publi" : "Novo UGC / Publi"}{savedTick && <span style={{fontSize:12.5, fontWeight:600, color:"var(--moss)", display:"flex", alignItems:"center", gap:3}}><Icon name="cloud_done" size={14}/>Salvo</span>}</span>} onClose={onClose}>
+    <Modal title={<span style={{display:"flex", alignItems:"center", gap:10}}>{initial? "Editar UGC / Publi" : "Novo UGC / Publi"}{savedTick && <span style={{fontSize:12.5, fontWeight:600, color:"var(--moss)", display:"flex", alignItems:"center", gap:3}}><Icon name="cloud_done" size={14}/>Salvo</span>}</span>} onClose={onClose} lembrete={f.id ? {tipo:"job", id:String(f.id), titulo:[f.marca, f.categoria].filter(Boolean).join(" · ") || "UGC / Publi"} : null}>
       <Field label="Marca"><input value={f.marca} onChange={e=>set("marca",e.target.value)} placeholder="Nome da marca"/></Field>
       <div className="escopo-caixa">
         <SubSecaoJob titulo={<span style={{display:"flex", alignItems:"center", gap:6}}><Icon name="assignment" size={16}/>Escopo do cliente{f.escopo && f.escopo.trim() ? <Badge tone="gray" style={{marginLeft:4}}>preenchido</Badge> : null}</span>} aberta={!!(f.escopo && f.escopo.trim())}>
@@ -6347,7 +6360,7 @@ function RoteiroModal({onClose, onSave, initial, etapas=ROTEIRO_ETAPAS}){
   const [erroForm,setErroForm] = useState("");
   const set=(k,v)=>{ setErroForm(""); setF(p=>({...p,[k]:v})); };
   return (
-    <Modal title={initial ? "Editar roteiro" : "Novo roteiro"} onClose={onClose}>
+    <Modal title={initial ? "Editar roteiro" : "Novo roteiro"} onClose={onClose} lembrete={f.id ? {tipo:"roteiro", id:String(f.id), titulo:"Roteiro: " + (f.titulo || "sem título")} : null}>
       <Field label="Finalidade">
         <div style={{display:"flex", gap:8}}>
           {FINALIDADES.map(c=>(

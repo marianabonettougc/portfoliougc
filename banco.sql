@@ -502,3 +502,30 @@ create policy "dona faz tudo" on public.painel_conteudo for all to authenticated
 -- legenda pronta com hashtags e "por que atrai marca"
 alter table public.painel_conteudo add column if not exists tipo_roteiro text, add column if not exists legenda text, add column if not exists porque text;
 -- configuracoes chave "ntfy_topico": endereço secreto das notificações no iPhone (app ntfy), gerado no painel
+
+-- ---------------------------------------------------------------------
+-- NOTIFICAÇÕES NO CELULAR (out/2026): "Importante, notificar" (js/lembretes.js, função notificacoes)
+-- ---------------------------------------------------------------------
+create table if not exists public.lembretes (
+  id bigint generated always as identity primary key,
+  item_tipo text not null default 'item', item_id text not null, titulo text not null, detalhe text, url text,
+  quando timestamptz not null, ativo boolean not null default true, enviado_em timestamptz,
+  criado_em timestamptz not null default now(),
+  unique (item_tipo, item_id)
+);
+alter table public.lembretes enable row level security;
+create policy "dona faz tudo" on public.lembretes for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+create index if not exists lembretes_pendentes on public.lembretes (quando) where ativo and enviado_em is null;
+create table if not exists public.push_inscricoes (
+  id bigint generated always as identity primary key,
+  endpoint text not null unique, p256dh text not null, auth text not null, aparelho text,
+  criado_em timestamptz not null default now()
+);
+alter table public.push_inscricoes enable row level security;
+create policy "dona faz tudo" on public.push_inscricoes for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+-- chaves VAPID: criadas pela própria função notificacoes na primeira vez; sem política (só o servidor lê)
+create table if not exists public.chaves_push (id int primary key default 1, publica text not null, privada text not null, criado_em timestamptz not null default now());
+alter table public.chaves_push enable row level security;
+-- a cada minuto o banco chama a função para mandar os avisos que venceram
+create extension if not exists pg_cron;
+select cron.schedule('disparar-lembretes', '* * * * *', $$select net.http_post(url := 'https://ztpzcmeiypnstswasxdw.supabase.co/functions/v1/notificacoes', body := '{"acao":"disparar"}'::jsonb, headers := '{"Content-Type":"application/json"}'::jsonb, timeout_milliseconds := 20000)$$);

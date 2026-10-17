@@ -370,6 +370,7 @@
     const copiar = (id, texto, aviso) => { const b = $(id, box); if (b) b.addEventListener("click", async () => { try { await navigator.clipboard.writeText(texto); toast(aviso); } catch (e) { toast("Selecione e copie com Ctrl+C.", true); } }); };
     box.innerHTML = `<h3 class="pc-h3">${ic.sino}No iPhone: salvou, chegou a ideia</h3>
       <p class="pc-ajuda">O Instagram não avisa ninguém quando você salva um post. Então, no iPhone, você manda o post para o painel pelo botão de compartilhar: eu guardo na pasta, crio a ideia com roteiro nesta grade e te mando uma notificação com o hook e o CTA.</p>
+      <p class="pc-ajuda">A notificação chega no painel instalado na Tela de Início (ative em <a href="#notificacoes">Geral > Notificações no celular</a>). O app ntfy abaixo é opcional, uma reserva.</p>
       ${st.topico ? `<details class="pc-passos" open><summary><b>1. Notificações (uma vez)</b></summary><ol class="pc-ajuda">
           <li>Instale o app grátis <b>ntfy</b> na App Store.</li>
           <li>Abra, toque em <b>+</b> e cole este nome em <b>Topic</b> (deixe o servidor como está): <span class="lab-comando"><code>${esc(st.topico)}</code><button class="btn" type="button" id="pc-copiar-topico">Copiar</button></span></li>
@@ -453,6 +454,9 @@
       const ok = await window.painelRoteiros.salvarNoQuadro({ id: "pc" + p.id + "-" + Date.now().toString(36), titulo: o.tema || "Post do painel", plataforma: "Instagram", status: "Em aberto", finalidade: "Conteúdos", etapa: o.status === "Ideia" ? "Ideias" : "Roteirização", conteudo, gancho: o.hook || "", formato: o.formato || "", tipoUgc: o.tipo_ugc || "", funil: o.funil || "", referencia: insp.link || "", dataPublicacao: o.data || "" });
       if (ok) { await salvar({ ...o, id: p.id }); dlg.close(); pintar(); toast("Mandado para Meus roteiros."); }
     });
+    // sininho "Importante, notificar" (js/lembretes.js) com o post certo
+    if (p.id) { dlg.dataset.lembreteTipo = "post"; dlg.dataset.lembreteId = String(p.id); dlg.dataset.lembreteTitulo = (p.formato ? p.formato + ": " : "") + (p.tema || "Post do painel"); }
+    else { delete dlg.dataset.lembreteId; delete dlg.dataset.lembreteTitulo; }
     if (!dlg.open) dlg.showModal();
   }
 

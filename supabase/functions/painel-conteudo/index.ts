@@ -14,6 +14,7 @@
 //   Responde na hora e, em segundo plano, lê o post (Apify), guarda no Laboratório com a
 //   pasta, cria a ideia com roteiro no Painel do mês e manda notificação no iPhone (ntfy).
 // - { acao: "notif_teste" }: notificação de teste no iPhone.
+// As notificações saem pela função notificacoes (Web Push do painel instalado + app ntfy).
 // Segredos: GROQ_API_KEY e APIFY_TOKEN (só no Supabase). Só a dona do painel pode usar.
 // O tópico do ntfy (endereço das notificações) fica em configuracoes, chave "ntfy_topico".
 // =========================================================
@@ -146,15 +147,15 @@ async function lerPost(link: string) {
     return { perfil: p.ownerUsername || null, tipo, legenda: String(p.caption || "").slice(0, 4000) || null, publicado_em: p.timestamp || null };
   } catch { return null; }
 }
-async function notificar(supa: any, titulo: string, texto: string) {
-  const { data } = await supa.from("configuracoes").select("valor").eq("chave", "ntfy_topico").maybeSingle();
-  const topico = String(data?.valor || "").replace(/"/g, "").trim();
-  if (!topico) return false;
-  const r = await fetch("https://ntfy.sh/", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ topic: topico, title: titulo.slice(0, 120), message: texto.slice(0, 3800), tags: ["sparkles"], click: PAINEL }),
+// manda pela função notificacoes (celular com o painel instalado + app ntfy), com o login dela
+let AUTH = "";
+async function notificar(_supa: any, titulo: string, texto: string) {
+  const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/notificacoes`, {
+    method: "POST", headers: { "Content-Type": "application/json", Authorization: AUTH },
+    body: JSON.stringify({ acao: "enviar", titulo: titulo.slice(0, 120), texto: texto.slice(0, 3000), url: PAINEL }),
   }).catch(() => null);
-  return Boolean(r?.ok);
+  const j = r ? await r.json().catch(() => ({})) : {};
+  return Boolean(r?.ok && (j.celulares || j.ntfy));
 }
 const pad = (n: number) => String(n).padStart(2, "0");
 function hojeBR() { const d = new Date(Date.now() - 3 * 3600 * 1000); return { a: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate() }; }
@@ -207,6 +208,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return resposta({ error: "Use POST." }, 405);
   try {
     const auth = req.headers.get("Authorization") || "";
+    AUTH = auth;
     const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: auth } } });
     const { data: { user } } = await supa.auth.getUser(auth.replace(/^Bearer\s+/i, ""));
     if (!user || user.email !== EMAIL_DONA) return resposta({ error: "Não autorizado" }, 401);
@@ -224,7 +226,7 @@ Deno.serve(async (req) => {
     }
     if (corpo.acao === "notif_teste") {
       const ok = await notificar(supa, "Painel da Mari", "Notificações funcionando! Quando você salvar uma referência pelo atalho, a ideia com roteiro chega aqui.");
-      return ok ? resposta({ ok: true }) : resposta({ error: "As notificações ainda não estão ligadas no painel." }, 400);
+      return ok ? resposta({ ok: true }) : resposta({ error: "Nenhum celular ativado ainda (Geral > Notificações no celular)." }, 400);
     }
     return resposta({ error: "Ação desconhecida." }, 400);
   } catch (e) {

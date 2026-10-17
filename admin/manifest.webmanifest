@@ -1,0 +1,15 @@
+{
+  "name": "Painel da Mari",
+  "short_name": "Painel Mari",
+  "start_url": "/admin/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6efe6",
+  "theme_color": "#5a3a28",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/admin/icones/icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/admin/icones/icone-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/admin/icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
