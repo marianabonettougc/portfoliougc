@@ -1,12 +1,13 @@
 // =========================================================
 // PAINEL DE CONTEÚDO (Edge Function do Supabase)
 // Criatividade > Painel de conteúdo (js/painel-conteudo.js).
-// { acao: "ideias", rotulo, quantidade, inspiracoes, notas, evitar }
+// { acao: "ideias", rotulo, quantidade, inspiracoes, notas, evitar, umaPorReferencia }
 //   Cria ideias de conteúdo para o perfil da Mari (tema, tipo de UGC, funil, propósito,
 //   hook, desenvolvimento do roteiro e CTA) seguindo o método de roteiro da Lara, que fica
 //   só no Supabase (estilo_ugc.metodo e metodo_roteiro "references/tipos.md"), inspiradas nos
 //   posts das pastas do Instagram dela ("Gravar em ..." e "Produzir vídeos assim"):
-//   pode usar o mesmo tema, nunca as falas das criadoras.
+//   pode usar o mesmo tema, nunca as falas das criadoras. Com umaPorReferencia, cria uma
+//   ideia para cada inspiração e devolve o número dela em "referencia".
 // Segredo: GROQ_API_KEY (só no Supabase). Só a dona do painel pode usar.
 // =========================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -45,6 +46,7 @@ function limpar(a: any) {
     ganchos: (Array.isArray(x.ganchos) ? x.ganchos : []).map((g: unknown) => txt(g, 200)).filter(Boolean).slice(0, 3),
     desenvolvimento: txt(x.desenvolvimento, 2400), cta: txt(x.cta, 240), inspirado_em: txt(x.inspirado_em, 80),
     duracao_seg: Number(x.duracao_seg) > 0 ? Math.round(Number(x.duracao_seg)) : null,
+    referencia: Number(x.referencia) > 0 ? Math.round(Number(x.referencia)) : null,
   })).filter((x: any) => x.tema && x.hook);
 }
 function problemas(x: any) {
@@ -63,7 +65,8 @@ async function ideias(supa: any, chave: string, c: any) {
   const tiposTxt = txt(tipos?.conteudo, 3200);
   const insp = (Array.isArray(c.inspiracoes) ? c.inspiracoes : []).slice(0, 12).map((p: any, i: number) =>
     `${i + 1}. @${txt(p.perfil, 40) || "?"} (${txt(p.tipo, 20) || "post"}, pasta "${txt(p.colecao, 60)}")\nLegenda: ${txt(p.legenda, 260) || "sem legenda"}${p.transcricao ? "\nFala: " + txt(p.transcricao, 520) : ""}`).join("\n\n");
-  const qtd = Math.min(6, Math.max(1, Number(c.quantidade) || 4));
+  const porRef = Boolean(c.umaPorReferencia) && Array.isArray(c.inspiracoes) && c.inspiracoes.length > 0;
+  const qtd = porRef ? Math.min(6, c.inspiracoes.length) : Math.min(6, Math.max(1, Number(c.quantidade) || 4));
   const pedido = `Você é roteirista de uma criadora brasileira de UGC (Mari Bonetto, mãe, nichos maternidade, cabelo, beleza, casa e tech). O perfil dela existe para atrair marcas: cada conteúdo precisa parar o scroll de quem não a segue E provar que ela sabe fazer o vídeo que uma marca precisa.
 
 MÉTODO DE ROTEIRO (siga à risca):
@@ -75,7 +78,7 @@ ${tiposTxt}
 INSPIRAÇÕES (posts que ela salvou nas pastas do Instagram para o mês de ${txt(c.rotulo, 40)}):
 ${insp || "Nenhuma inspiração enviada: use os nichos dela."}
 
-${c.notas ? "PEDIDO DELA: " + txt(c.notas, 600) + "\n\n" : ""}${Array.isArray(c.evitar) && c.evitar.length ? "JÁ EXISTEM ESTES TEMAS (não repita): " + c.evitar.slice(0, 40).map((t: unknown) => txt(t, 80)).join("; ") + "\n\n" : ""}Crie ${qtd} ideias de conteúdo para o perfil dela. Regras:
+${c.notas ? "PEDIDO DELA: " + txt(c.notas, 600) + "\n\n" : ""}${Array.isArray(c.evitar) && c.evitar.length ? "JÁ EXISTEM ESTES TEMAS (não repita): " + c.evitar.slice(0, 40).map((t: unknown) => txt(t, 80)).join("; ") + "\n\n" : ""}${porRef ? `Crie exatamente UMA ideia para CADA inspiração (${qtd} ideias), na mesma ordem: a ideia 1 parte da inspiração 1, a 2 da 2 e assim por diante. Use o mesmo tema e a mesma estrutura da inspiração, adaptados ao nicho e à vida dela. No campo "referencia" coloque o número da inspiração.` : `Crie ${qtd} ideias de conteúdo para o perfil dela.`} Regras:
 - Inspire-se nos temas, formatos e estruturas das inspirações, mas NUNCA copie falas, frases, ganchos ou bordões das criadoras. Pode usar o mesmo tema com outro ângulo e palavras dela.
 - Varie tipo de UGC, formato e funil entre as ideias.
 - Desenvolvimento: as falas dela em primeira pessoa, no português falado, separadas por bloco. Para conteúdo de valor use GANCHO, CONTEXTO, CONTEÚDO, FECHAMENTO; se a ideia for publi de produto use GANCHO, IDENTIFICAÇÃO, SOLUÇÃO, PROVA, FECHAMENTO. Um bloco por linha, no formato "BLOCO: fala". Indique entre colchetes o que aparece na tela quando ajudar.
@@ -84,7 +87,7 @@ ${c.notas ? "PEDIDO DELA: " + txt(c.notas, 600) + "\n\n" : ""}${Array.isArray(c.
 - Nunca use travessão.
 
 Responda SOMENTE um JSON:
-{"ideias":[{"tema":"tema em poucas palavras","formato":"Reels | Carrossel | Stories","tipo_ugc":"um dos tipos acima","funil":"Topo | Meio | Fundo","proposito":"para que serve esse conteúdo no perfil dela (1 frase)","hook":"a primeira fala, para o dedo em 3 segundos","ganchos":["outra opção de gancho","mais uma"],"desenvolvimento":"GANCHO: ...\\nCONTEXTO: ...\\nCONTEÚDO: ...\\nFECHAMENTO: ...","cta":"o CTA","inspirado_em":"@perfil que inspirou (ou vazio)","duracao_seg":30}]}`;
+{"ideias":[{"tema":"tema em poucas palavras","formato":"Reels | Carrossel | Stories","tipo_ugc":"um dos tipos acima","funil":"Topo | Meio | Fundo","proposito":"para que serve esse conteúdo no perfil dela (1 frase)","hook":"a primeira fala, para o dedo em 3 segundos","ganchos":["outra opção de gancho","mais uma"],"desenvolvimento":"GANCHO: ...\\nCONTEXTO: ...\\nCONTEÚDO: ...\\nFECHAMENTO: ...","cta":"o CTA","inspirado_em":"@perfil que inspirou (ou vazio)","referencia":1,"duracao_seg":30}]}`;
   let saida = limpar(await groq(chave, pedido));
   // uma reescrita automática se aparecer construção banida ou gancho batido
   const ruins = saida.map((x: any, i: number) => ({ i, p: problemas(x) })).filter((r: any) => r.p.length);
@@ -95,7 +98,7 @@ Regras: português falado, primeira pessoa, frases curtas, nada de "não é X, �
 Ideias: ${JSON.stringify({ ideias: ruins.map((r: any) => saida[r.i]) })}
 Responda SOMENTE o JSON {"ideias":[...]} com as ideias corrigidas, na mesma ordem e com os mesmos campos.`, 2600);
       const novas = limpar(conserto);
-      ruins.forEach((r: any, k: number) => { if (novas[k] && !problemas(novas[k]).length) saida[r.i] = novas[k]; });
+      ruins.forEach((r: any, k: number) => { if (novas[k] && !problemas(novas[k]).length) saida[r.i] = { ...novas[k], referencia: saida[r.i].referencia }; });
     } catch { /* fica a primeira versão */ }
   }
   return { ideias: saida };

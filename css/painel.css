@@ -1028,3 +1028,13 @@ button.menu-grupo:hover{color:var(--texto)}
 .pc-ganchos .cr-chip{white-space:normal;text-align:left}
 @media(max-width:1000px){.pc-quadro{grid-template-columns:repeat(4,minmax(0,1fr))}.pc-baixo{grid-template-columns:1fr}}
 @media(max-width:620px){.pc-folha{padding:26px 14px 16px}.pc-titulo{font-size:27px}.pc-quadro{grid-template-columns:repeat(2,minmax(0,1fr))}.pc-dia{min-height:120px}.pc-numeros b{font-size:19px}.pc-grade4{grid-template-columns:1fr 1fr}}
+
+.pc-post i{font-style:normal;font-size:9.5px;color:var(--principal);opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-ref{background:var(--bege);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.pc-ref small{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--suave)}
+.pc-ref a{font-weight:600;font-size:13px}
+.pc-ref span{font-size:12.5px;color:var(--texto)}
+.pc-ref em{font-style:normal;font-size:11.5px;color:var(--suave)}
+.pc-passos{display:flex;flex-direction:column;gap:6px}
+.pc-passos ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.pc-enviar{align-self:flex-start;cursor:pointer}

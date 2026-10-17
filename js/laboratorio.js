@@ -213,10 +213,10 @@
           <span class="lab-rotulo">Trazer todos os salvos de uma vez</span>
           <p class="lab-ajuda">No Instagram: <b>Sua atividade › Baixar suas informações › Algumas das suas informações › Salvos</b>, formato JSON. Quando chegar o e-mail, baixe, abra o .zip e envie aqui o arquivo <b>saved_posts.json</b>.</p>
           <label class="btn" style="cursor:pointer">${ic.arquivo}Enviar arquivo dos salvos<input type="file" id="lab-arquivo" accept=".json,.html,.htm,.txt" hidden></label>
-          <details class="lab-mac"><summary>Mais rápido, pelo Mac (na hora, sem esperar e-mail)</summary>
-            <p class="lab-ajuda">Abra o app <b>Terminal</b> no Mac, cole a linha abaixo e aperte Enter. Ele pede o seu usuário e a senha do Instagram ali mesmo (a senha não aparece, não fica salva e não vem para o painel), lê os seus salvos devagar (com o nome de cada pasta, como "Gravar em outubro" e "Produzir vídeos assim", que vão para o Painel de conteúdo) e grava o arquivo <b>salvos_instagram.json</b> na Mesa. Depois é só enviar esse arquivo aqui em cima. Se o Mac pedir para instalar as "ferramentas de linha de comando", aceite e rode de novo.</p>
-            <div class="lab-comando"><code id="lab-cmd">curl -fsSL https://marianabonetto.com.br/ferramentas/salvos.py -o ~/salvos.py && python3 ~/salvos.py</code><button class="btn" type="button" id="lab-copiar">Copiar</button></div>
-            <p class="lab-ajuda">Vai com calma: usar programas no Instagram tem um risco pequeno de ele pedir confirmação ou bloquear por um tempo. Rodar no seu próprio Mac, com a sua internet e de vez em quando, é o jeito mais seguro.</p>
+          <details class="lab-mac"><summary>Mais rápido, pelo computador Windows (na hora, sem esperar e-mail)</summary>
+            <p class="lab-ajuda">Aperte a tecla <b>Windows</b>, digite <b>PowerShell</b> e abra. Cole a linha abaixo e aperte Enter. Ele entra pelo Instagram que já está aberto no seu navegador (sem senha; se não achar, pede a senha ali mesmo, que não fica salva e não vem para o painel), lê os seus salvos devagar com o nome de cada pasta (como "Gravar em outubro" e "Produzir vídeos assim", que vão para o Painel de conteúdo) e grava <b>salvos_instagram.json</b> na Área de Trabalho. Se abrir a Microsoft Store pedindo o Python, instale e rode a linha de novo.</p>
+            <div class="lab-comando"><code id="lab-cmd">irm https://marianabonetto.com.br/ferramentas/salvos.py -OutFile "$HOME\\salvos.py"; python "$HOME\\salvos.py"</code><button class="btn" type="button" id="lab-copiar">Copiar</button></div>
+            <p class="lab-ajuda">Vai com calma: usar programas no Instagram tem um risco pequeno de ele pedir confirmação ou bloquear por um tempo. Rodar no seu próprio computador, com a sua internet e de vez em quando, é o jeito mais seguro.</p>
           </details>
         </div>
       </div>
@@ -241,7 +241,7 @@
       try { const n = await adicionar(itens, datasDoArquivo(texto)); toast(`${itens.length} salvos no arquivo, ${n} novos no laboratório.`); pintar(); }
       catch (err) { toast("Não consegui salvar: " + err.message, true); }
     });
-    $("#lab-copiar", sec).addEventListener("click", async () => { try { await navigator.clipboard.writeText($("#lab-cmd", sec).textContent); toast("Copiado. Cole no Terminal do Mac."); } catch (e) { toast("Selecione a linha e copie com Cmd+C.", true); } });
+    $("#lab-copiar", sec).addEventListener("click", async () => { try { await navigator.clipboard.writeText($("#lab-cmd", sec).textContent); toast("Copiado. Cole no PowerShell."); } catch (e) { toast("Selecione a linha e copie com Ctrl+C.", true); } });
     $("#lab-proc5", sec).addEventListener("click", () => processarVarios(5));
     $("#lab-proc20", sec).addEventListener("click", () => processarVarios(20));
     $("#lab-busca", sec).addEventListener("input", (e) => { st.busca = e.target.value; pintarLista(); });

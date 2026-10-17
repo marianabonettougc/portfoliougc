@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 # =========================================================
 # Traz os posts SALVOS do Instagram da Mari para o Laboratório criativo.
-# Roda no computador dela (Mac), com a internet dela, usando o Instaloader.
-# - Pergunta o usuário e a senha do Instagram aqui no Terminal (a senha não
-#   aparece na tela, não é salva em arquivo e não vai para lugar nenhum além
-#   do próprio Instagram).
+# Roda no computador dela (Windows, pelo PowerShell; também funciona em Mac), com a
+# internet dela, usando o Instaloader.
+# - Login: primeiro tenta usar o Instagram que já está aberto no navegador dela
+#   (Edge, Firefox ou Chrome), sem pedir senha. Se não der, pergunta o usuário e a
+#   senha ali mesmo (a senha não aparece na tela, não é salva em arquivo e não vai
+#   para lugar nenhum além do próprio Instagram).
 # - Lê a lista de salvos devagar (com pausas) para o Instagram não estranhar.
-# - Grava "salvos_instagram.json" na Mesa (Desktop): link, perfil, tipo, legenda e a
+# - Grava "salvos_instagram.json" na Área de Trabalho: link, perfil, tipo, legenda e a
 #   PASTA (coleção) de cada post, por exemplo "Gravar em outubro" e "Produzir vídeos assim".
 #   Esse arquivo vai no Laboratório criativo > "Enviar arquivo dos salvos" e as pastas
 #   aparecem no Painel de conteúdo.
@@ -23,16 +25,64 @@ except ImportError:
 
 LIMITE = 2000  # no máximo isso de salvos por vez
 
+def login_pelo_navegador(L, usuario):
+    """Usa o Instagram já aberto no navegador (Edge, Firefox, Chrome...), sem senha."""
+    try:
+        import browser_cookie3
+    except ImportError:
+        print("Preparando o login pelo navegador (só na primeira vez)...")
+        os.system(f'"{sys.executable}" -m pip install --user --quiet browser_cookie3')
+        try:
+            import browser_cookie3
+        except ImportError:
+            return False
+    for nome in ("edge", "firefox", "chrome", "brave", "opera"):
+        try:
+            cj = getattr(browser_cookie3, nome)(domain_name="instagram.com")
+        except Exception:
+            continue
+        if not any(c.name == "sessionid" for c in cj):
+            continue
+        L.context._session.cookies.update(cj)
+        try:
+            quem = L.test_login()
+        except Exception:
+            quem = None
+        if quem:
+            L.context.username = quem
+            print(f"Entrei com o Instagram que está aberto no {nome.capitalize()} (@{quem}).")
+            if quem.lower() != usuario.lower():
+                print(f"Atenção: o navegador está logado como @{quem}.")
+            return True
+    return False
+
+def area_de_trabalho():
+    casa = os.path.expanduser("~")
+    for p in ("Desktop", "OneDrive/Desktop", "OneDrive/Área de Trabalho", "Área de Trabalho"):
+        c = os.path.join(casa, p)
+        if os.path.isdir(c):
+            return c
+    return casa
+
 def main():
     print("\n=== Salvos do Instagram para o Laboratório criativo ===\n")
     usuario = input("Seu usuário do Instagram [maribonettougc]: ").strip().lstrip("@") or "maribonettougc"
     L = instaloader.Instaloader(quiet=True, download_pictures=False, download_videos=False,
                                 download_video_thumbnails=False, save_metadata=False, compress_json=False)
     sessao = os.path.expanduser(f"~/.instaloader-sessao-{usuario}")
+    entrou = False
     try:
         L.load_session_from_file(usuario, sessao)
-        print("Usando o login que já estava salvo neste computador.")
-    except FileNotFoundError:
+        entrou = bool(L.test_login())
+        if entrou:
+            print("Usando o login que já estava salvo neste computador.")
+    except Exception:
+        entrou = False
+    if not entrou:
+        entrou = login_pelo_navegador(L, usuario)
+    if not entrou:
+        print("\nNão achei o Instagram aberto no navegador, então preciso da sua senha.")
+        print("(Esqueceu? No app do Instagram: Configurações > Central de contas > Senha e segurança.)")
         senha = getpass.getpass("Sua senha do Instagram (não aparece enquanto digita): ")
         try:
             L.login(usuario, senha)
@@ -45,7 +95,7 @@ def main():
         except instaloader.ConnectionException as e:
             print("\nO Instagram pediu confirmação. Abra o app do Instagram, confirme que foi você e rode de novo.\n", e)
             return
-        L.save_session_to_file(sessao)  # guarda só o login (não a senha) para não pedir de novo
+    L.save_session_to_file(sessao)  # guarda só o login (não a senha) para não pedir de novo
 
     saida, vistos = [], {}
 
@@ -108,12 +158,15 @@ def main():
     except Exception as e:
         print("\nO Instagram interrompeu a leitura (normal se tiver muitos salvos). Vou gravar o que já li.\n", e)
 
-    mesa = os.path.expanduser("~/Desktop")
-    arquivo = os.path.join(mesa if os.path.isdir(mesa) else os.path.expanduser("~"), "salvos_instagram.json")
+    arquivo = os.path.join(area_de_trabalho(), "salvos_instagram.json")
     with open(arquivo, "w", encoding="utf-8") as f:
         json.dump({"origem": "instaloader", "usuario": usuario, "pastas": [n for _, n in colecoes], "salvos": saida}, f, ensure_ascii=False, indent=1)
     print(f"\nPronto! {len(saida)} salvos em: {arquivo}")
-    print("Agora abra o painel > Criatividade > Laboratório criativo > Enviar arquivo dos salvos.\n")
+    print("Agora abra o painel > Criatividade > Painel de conteúdo > Enviar arquivo das pastas.\n")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        if os.name == "nt":
+            input("\nAperte Enter para fechar.")

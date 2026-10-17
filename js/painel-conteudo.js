@@ -30,6 +30,7 @@
   const deIso = (s) => { const [a, m, d] = String(s).split("-").map(Number); return new Date(a, m - 1, d); };
   const semAcento = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
+  const CMD_WIN = 'irm https://marianabonetto.com.br/ferramentas/salvos.py -OutFile "$HOME\\salvos.py"; python "$HOME\\salvos.py"';
   const hoje = new Date();
   const st = { pronto: false, mes: `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`, semana: 0, posts: [], lab: [], faltaTabela: false, gerando: false, transcrevendo: false };
 
@@ -86,35 +87,92 @@
     for (let d = inicio; d <= ultimo && livres.length < qtd; d++) { const s = iso(new Date(a, m - 1, d)); if (!ocupados.has(s)) livres.push(s); }
     return livres;
   }
+  // posts das pastas que ainda não viraram ideia neste mês
+  function referenciasLivres() {
+    const { gravar, assim } = pastasDoMes();
+    const usados = new Set(st.posts.map((p) => p.inspiracao && p.inspiracao.link).filter(Boolean));
+    return [...gravar, ...assim].filter((p) => !usados.has(p.link));
+  }
+  async function chamarIdeias(corpo) {
+    for (let t = 0; t < 4; t++) {
+      const { data, error } = await banco().functions.invoke("painel-conteudo", { body: corpo });
+      let msg = data && data.error, limite = data && data.limite;
+      if (error) { try { const j = await error.context.json(); msg = j.error; limite = j.limite; } catch (e) { /* segue */ } msg = msg || "A função não respondeu agora."; }
+      if (limite) { toast("Esperando 1 minuto pelo limite grátis da IA… pode continuar usando o painel."); await espera(62000); continue; }
+      if (msg) throw new Error(msg);
+      return data.ideias || [];
+    }
+    throw new Error("A IA está sem limite agora. Tente de novo daqui a alguns minutos.");
+  }
+  // com posts nas pastas: uma ideia para cada post (com o link da referência); sem posts: ideias soltas
   async function gerar(qtd, notas) {
     if (st.gerando) return;
-    const { gravar, assim } = pastasDoMes();
-    const insp = [...gravar, ...assim].sort((x, y) => (y.transcricao ? 1 : 0) - (x.transcricao ? 1 : 0)).slice(0, 12)
-      .map((p) => ({ perfil: p.perfil, tipo: p.tipo, colecao: p.colecao, legenda: p.legenda, transcricao: p.transcricao }));
+    const refs = referenciasLivres();
     st.gerando = true; pintar();
-    let feitas = 0, tentativas = 0;
+    let feitas = 0;
+    const base = { acao: "ideias", rotulo: rotuloMes(st.mes), notas };
     try {
-      while (feitas < qtd && tentativas < 6) {
-        tentativas++;
-        const lote = Math.min(3, qtd - feitas);
-        const { data, error } = await banco().functions.invoke("painel-conteudo", { body: { acao: "ideias", rotulo: rotuloMes(st.mes), quantidade: lote, inspiracoes: insp, notas, evitar: st.posts.map((p) => p.tema) } });
-        let msg = data && data.error, limite = data && data.limite;
-        if (error) { try { const j = await error.context.json(); msg = j.error; limite = j.limite; } catch (e) { /* segue */ } msg = msg || "A função não respondeu agora."; }
-        if (limite) { toast("Esperando 1 minuto pelo limite grátis da IA… pode continuar usando o painel."); await espera(62000); continue; }
-        if (msg) throw new Error(msg);
-        const dias = proximosDiasLivres((data.ideias || []).length);
-        for (const [k, x] of (data.ideias || []).entries()) {
-          await salvar({ data: dias[k] || null, horario: "12h", formato: x.formato, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, status: "Roteirizado", inspiracao: { perfil: x.inspirado_em, duracao_seg: x.duracao_seg } });
-          feitas++;
+      if (refs.length) {
+        const alvo = refs.slice(0, 18);
+        for (let k = 0; k < alvo.length; k += 3) {
+          const lote = alvo.slice(k, k + 3);
+          const ideias = await chamarIdeias({ ...base, umaPorReferencia: true, quantidade: lote.length, evitar: st.posts.map((p) => p.tema),
+            inspiracoes: lote.map((p) => ({ perfil: p.perfil, tipo: p.tipo, colecao: p.colecao, legenda: p.legenda, transcricao: p.transcricao })) });
+          const dias = proximosDiasLivres(ideias.length);
+          for (const [n, x] of ideias.entries()) {
+            const r = lote[(x.referencia || n + 1) - 1] || lote[n] || lote[0];
+            await salvar({ data: dias[n] || null, horario: "12h", formato: x.formato, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, status: "Roteirizado",
+              inspiracao: { link: r.link, perfil: r.perfil ? "@" + r.perfil : x.inspirado_em, colecao: r.colecao, legenda: String(r.legenda || "").split("\n")[0].slice(0, 160), duracao_seg: x.duracao_seg } });
+            feitas++;
+          }
+          pintar();
         }
-        pintar();
+      } else {
+        const insp = [];
+        while (feitas < qtd) {
+          const ideias = await chamarIdeias({ ...base, quantidade: Math.min(3, qtd - feitas), inspiracoes: insp, evitar: st.posts.map((p) => p.tema) });
+          if (!ideias.length) break;
+          const dias = proximosDiasLivres(ideias.length);
+          for (const [n, x] of ideias.entries()) {
+            await salvar({ data: dias[n] || null, horario: "12h", formato: x.formato, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, status: "Roteirizado", inspiracao: { perfil: x.inspirado_em, duracao_seg: x.duracao_seg } });
+            feitas++;
+          }
+          pintar();
+        }
       }
-      toast(`${feitas} ideia${feitas === 1 ? "" : "s"} com roteiro no painel de ${rotuloMes(st.mes)}.`);
+      toast(`${feitas} ideia${feitas === 1 ? "" : "s"} com roteiro na grade de ${rotuloMes(st.mes)}.`);
     } catch (e) { toast(e.message, true); }
     st.gerando = false;
-    const prim = st.posts.filter((p) => p.data).map((p) => p.data).sort()[0];
+    const prim = st.posts.filter((p) => p.data && p.data >= iso(hoje)).map((p) => p.data).sort()[0] || st.posts.filter((p) => p.data).map((p) => p.data).sort()[0];
     if (prim) st.semana = semanaDe(prim);
     pintar();
+  }
+
+  // ---------- arquivo das pastas (salvos_instagram.json do programa) ----------
+  async function importarArquivo(arq) {
+    let j;
+    try { j = JSON.parse(await arq.text()); } catch (e) { toast("Esse arquivo não é o salvos_instagram.json do programa.", true); return; }
+    const lista = Array.isArray(j && j.salvos) ? j.salvos : [];
+    if (!lista.length) { toast("O arquivo veio sem salvos. Rode o programa de novo.", true); return; }
+    const comPasta = lista.filter((x) => x.colecao);
+    const { data: existentes } = await banco().from("laboratorio").select("id,link,colecao").limit(5000);
+    const porLink = new Map((existentes || []).map((r) => [r.link, r]));
+    const novos = [];
+    for (const x of lista) {
+      const m = String(x.link || "").match(/instagram\.com\/(p|reel|reels|tv)\/([\w-]+)/i);
+      if (!m) continue;
+      const link = `https://www.instagram.com/${m[1].toLowerCase() === "p" ? "p" : "reel"}/${m[2]}/`;
+      const ja = porLink.get(link);
+      if (ja) { if (x.colecao && ja.colecao !== x.colecao) await banco().from("laboratorio").update({ colecao: x.colecao }).eq("id", ja.id); continue; }
+      novos.push({ link, codigo: m[2], perfil: x.perfil || null, tipo: ["Reel", "Carrossel", "Post"].includes(x.tipo) ? x.tipo : null, legenda: x.legenda || null, colecao: x.colecao || null, status: "novo", etapa: "Nova" });
+    }
+    for (let k = 0; k < novos.length; k += 200) {
+      const { error } = await banco().from("laboratorio").upsert(novos.slice(k, k + 200), { onConflict: "link", ignoreDuplicates: true });
+      if (error) { toast("Não consegui salvar: " + error.message, true); return; }
+    }
+    await carregar(); pintar();
+    const pastas = [...new Set(comPasta.map((x) => x.colecao))];
+    toast(`${lista.length} salvos lidos${pastas.length ? `, pastas: ${pastas.join(", ")}` : ""}.`);
   }
 
   // ---------- transcrever os Reels das pastas ----------
@@ -186,8 +244,8 @@
       </div>
       <div class="pc-baixo">
         <section class="pc-cartao pc-gerar">
-          <h3 class="pc-h3">Criar ideias com roteiro</h3>
-          <p class="pc-ajuda">Uso o método da Lara e me inspiro nos posts das suas pastas do Instagram, sem copiar as falas. Cada ideia vem com tema, tipo de UGC, funil, propósito, hook, desenvolvimento e CTA, e já entra nos próximos dias livres.</p>
+          <h3 class="pc-h3">Montar a grade com ideias e roteiros</h3>
+          <p class="pc-ajuda" id="pc-gerar-ajuda"></p>
           <textarea class="entrada" id="pc-notas" rows="2" placeholder="Algum pedido? Ex.: foco em maternidade, uma publi de cabelo, conteúdo para atrair marcas de casa..."></textarea>
           <div class="pc-linha"><select class="entrada" id="pc-qtd" aria-label="Quantas ideias"><option value="3">3 ideias</option><option value="6" selected>6 ideias</option><option value="9">9 ideias</option></select>
             <button class="btn btn-principal" type="button" id="pc-gerar"></button></div>
@@ -210,7 +268,7 @@
     const ok = p.status !== "Ideia";
     return `<button type="button" class="pc-post f-${esc(semAcento(p.formato || "reels"))}" data-id="${p.id}">
       <small>${esc((p.formato || "Reels").toUpperCase())}</small>
-      <b>${esc(p.tema || "Sem tema")}</b>
+      <b>${esc(p.tema || "Sem tema")}</b>${p.inspiracao && p.inspiracao.link ? `<i>ref. ${esc(p.inspiracao.perfil || "")}</i>` : ""}
       <span>${esc(p.horario || "")}${p.horario ? " · " : ""}${esc(p.status === "Ideia" ? "ideia" : p.status === "Roteirizado" ? "roteiro" : p.status.toLowerCase())}${ok ? " ✓" : ""}</span>
     </button>`;
   }
@@ -254,7 +312,12 @@
       });
     });
     const bt = $("#pc-gerar", sec);
-    bt.disabled = st.gerando; bt.innerHTML = st.gerando ? "Criando ideias…" : `${ic.brilho}Criar ideias do mês`;
+    const livres = referenciasLivres().length;
+    bt.disabled = st.gerando; bt.innerHTML = st.gerando ? "Montando a grade…" : livres ? `${ic.brilho}Montar a grade (${Math.min(livres, 18)} ideia${livres === 1 ? "" : "s"})` : `${ic.brilho}Criar ideias do mês`;
+    $("#pc-qtd", sec).hidden = Boolean(livres);
+    $("#pc-gerar-ajuda", sec).textContent = livres
+      ? `Para cada post das suas pastas "Gravar em ${MESES[Number(st.mes.split("-")[1]) - 1]}" e "Produzir vídeos assim" eu crio uma ideia com o link da referência e o roteiro pronto (tema, tipo de UGC, funil, propósito, hook, desenvolvimento e CTA), pelo método da Lara e sem copiar as falas. Cada uma entra num dia livre.`
+      : "Uso o método da Lara para criar ideias com roteiro pronto (tema, tipo de UGC, funil, propósito, hook, desenvolvimento e CTA). Quando os posts das suas pastas chegarem, cada ideia sai de um post, com o link da referência.";
     pintarPastas();
   }
 
@@ -268,9 +331,14 @@
       <div class="pc-pasta"><b>Gravar em ${esc(nomeMes)}</b><small>${gravar.length} post${gravar.length === 1 ? "" : "s"}</small></div>${lista(gravar)}
       <div class="pc-pasta"><b>Produzir vídeos assim</b><small>${assim.length} post${assim.length === 1 ? "" : "s"}</small></div>${lista(assim)}
       ${faltaReel ? `<button class="btn" type="button" id="pc-transcrever" ${st.transcrevendo ? "disabled" : ""}>${st.transcrevendo ? "Transcrevendo…" : `Transcrever ${faltaReel} Reel${faltaReel === 1 ? "" : "s"} (ideias melhores)`}</button>` : ""}
-      ${!gravar.length && !assim.length ? `<p class="pc-ajuda">Ainda não chegaram posts dessas pastas. No <a href="#laboratorio">Laboratório criativo</a>, use <b>"Mais rápido, pelo Mac"</b>: o programa traz os seus salvos com o nome da pasta (crie no Instagram as pastas <b>Gravar em ${esc(nomeMes)}</b> e <b>Produzir vídeos assim</b>). Depois envie o arquivo lá. Sem pastas, as ideias saem só do método e dos seus nichos.</p>` : ""}
+      ${!gravar.length && !assim.length ? `<div class="pc-passos"><p class="pc-ajuda"><b>Trazer as pastas (uma vez por mês, no Windows):</b></p>
+        <ol class="pc-ajuda"><li>Aperte a tecla <b>Windows</b>, digite <b>PowerShell</b> e abra.</li><li>Cole a linha abaixo e aperte <b>Enter</b>. Se abrir a Microsoft Store pedindo o Python, instale e rode a linha de novo.</li><li>Ele entra pelo Instagram que já está aberto no seu navegador (sem senha) e grava <b>salvos_instagram.json</b> na Área de Trabalho.</li><li>Envie esse arquivo no botão abaixo.</li></ol>
+        <div class="lab-comando"><code id="pc-cmd">${CMD_WIN}</code><button class="btn" type="button" id="pc-copiar">Copiar</button></div></div>` : ""}
+      <label class="btn pc-enviar">${ic.pasta}Enviar arquivo das pastas<input type="file" id="pc-arquivo" accept=".json" hidden></label>
       ${outras.length ? `<p class="pc-ajuda">Outras pastas que chegaram: ${outras.map(esc).join(", ")}.</p>` : ""}`;
     const t = $("#pc-transcrever", box); if (t) t.addEventListener("click", transcreverPastas);
+    const c = $("#pc-copiar", box); if (c) c.addEventListener("click", async () => { try { await navigator.clipboard.writeText(CMD_WIN); toast("Copiado. Cole no PowerShell."); } catch (e) { toast("Selecione a linha e copie com Ctrl+C.", true); } });
+    $("#pc-arquivo", box).addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) importarArquivo(f); });
   }
 
   // ---------- janela do post ----------
@@ -284,6 +352,7 @@
     const insp = p.inspiracao || {};
     dlg.innerHTML = `<div class="janela-cabeca"><div><small class="janela-sobretitulo">Painel de conteúdo · ${esc(rotuloMes(st.mes))}</small><h2>${p.id ? esc(p.tema || "Post") : "Novo post"}</h2></div><button class="icone-btn" type="button" data-fechar aria-label="Fechar">${ic.x}</button></div>
       <div class="janela-corpo pc-form">
+        ${insp.link ? `<div class="pc-ref"><small>Referência</small><a href="${esc(insp.link)}" target="_blank" rel="noopener">${esc(insp.perfil || "Abrir o post")} · abrir no Instagram</a>${insp.legenda ? `<span>${esc(insp.legenda)}</span>` : ""}${insp.colecao ? `<em>pasta ${esc(insp.colecao)}</em>` : ""}</div>` : ""}
         <label class="campo pc-largo"><span>Tema</span><input name="tema" value="${esc(p.tema)}"></label>
         <div class="pc-grade4">
           <label class="campo"><span>Dia</span><input type="date" name="data" value="${esc(p.data || "")}"></label>
@@ -301,7 +370,7 @@
         <label class="campo pc-largo"><span>Desenvolvimento do roteiro</span><textarea name="desenvolvimento" rows="9">${esc(p.desenvolvimento)}</textarea></label>
         <label class="campo pc-largo"><span>CTA</span><input name="cta" value="${esc(p.cta)}"></label>
         <label class="campo pc-largo"><span>Notas</span><textarea name="notas" rows="2">${esc(p.notas)}</textarea></label>
-        ${insp.perfil || insp.duracao_seg ? `<p class="pc-ajuda">${insp.perfil ? `Inspirado em ${esc(insp.perfil)}. ` : ""}${insp.duracao_seg ? `Duração estimada: ${insp.duracao_seg}s.` : ""}</p>` : ""}
+        ${insp.duracao_seg || (!insp.link && insp.perfil) ? `<p class="pc-ajuda">${!insp.link && insp.perfil ? `Inspirado em ${esc(insp.perfil)}. ` : ""}${insp.duracao_seg ? `Duração estimada: ${insp.duracao_seg}s.` : ""}</p>` : ""}
       </div>
       <div class="janela-rodape">${p.id ? `<button class="btn btn-perigo" type="button" data-excluir>Excluir</button>` : ""}<span style="flex:1"></span>
         ${p.id ? `<button class="btn" type="button" data-quadro>Mandar para Meus roteiros</button>` : ""}
@@ -324,8 +393,8 @@
     if (q) q.addEventListener("click", async () => {
       if (!window.painelRoteiros || !window.painelRoteiros.salvarNoQuadro) { toast("Abra Meus roteiros uma vez e tente de novo.", true); return; }
       const o = ler();
-      const conteudo = [o.proposito && "PROPÓSITO:\n" + o.proposito, o.hook && "HOOK:\n" + o.hook, o.desenvolvimento && "DESENVOLVIMENTO:\n" + o.desenvolvimento, o.cta && "CTA:\n" + o.cta].filter(Boolean).join("\n\n");
-      const ok = await window.painelRoteiros.salvarNoQuadro({ id: "pc" + p.id + "-" + Date.now().toString(36), titulo: o.tema || "Post do painel", plataforma: "Instagram", status: "Em aberto", finalidade: "Conteúdos", etapa: o.status === "Ideia" ? "Ideias" : "Roteirização", conteudo, gancho: o.hook || "", formato: o.formato || "", tipoUgc: o.tipo_ugc || "", funil: o.funil || "", dataPublicacao: o.data || "" });
+      const conteudo = [o.proposito && "PROPÓSITO:\n" + o.proposito, o.hook && "HOOK:\n" + o.hook, o.desenvolvimento && "DESENVOLVIMENTO:\n" + o.desenvolvimento, o.cta && "CTA:\n" + o.cta, insp.link && "REFERÊNCIA:\n" + insp.link].filter(Boolean).join("\n\n");
+      const ok = await window.painelRoteiros.salvarNoQuadro({ id: "pc" + p.id + "-" + Date.now().toString(36), titulo: o.tema || "Post do painel", plataforma: "Instagram", status: "Em aberto", finalidade: "Conteúdos", etapa: o.status === "Ideia" ? "Ideias" : "Roteirização", conteudo, gancho: o.hook || "", formato: o.formato || "", tipoUgc: o.tipo_ugc || "", funil: o.funil || "", referencia: insp.link || "", dataPublicacao: o.data || "" });
       if (ok) { await salvar({ ...o, id: p.id }); dlg.close(); pintar(); toast("Mandado para Meus roteiros."); }
     });
     if (!dlg.open) dlg.showModal();
