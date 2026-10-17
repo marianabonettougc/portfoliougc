@@ -24,6 +24,7 @@
   const STATUS = ["Ideia", "Roteirizado", "Gravado", "Editado", "Postado"];
   const FORMATOS = ["Reels", "Carrossel", "Stories"];
   const FUNIS = ["Topo", "Meio", "Fundo"];
+  const ROTEIROS = ["Spec ad", "Vitrine para marca", "Stories de bastidor"];
   const TIPOS = ["Falado com a câmera", "Teatro encenando uma situação", "Dois personagens comparativos", "Rotina ou dia a dia", "Testando o produto ou demonstração", "Focado em ads", "Problema versus solução", "Unboxing", "Sorteador de assuntos", "Várias vozes ou personagens com locução", "Entrevista de rua", "React", "Tutorial walkthrough", "Decupagem por frase"];
   const pad = (n) => String(n).padStart(2, "0");
   const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -52,6 +53,8 @@
     ]);
     if (a.error) { st.faltaTabela = true; st.posts = []; } else { st.faltaTabela = false; st.posts = a.data || []; }
     st.lab = b.error ? [] : (b.data || []);
+    const c = await banco().from("configuracoes").select("valor").eq("chave", "ntfy_topico").maybeSingle();
+    st.topico = (c.data && c.data.valor) || "";
   }
   async function salvar(post) {
     const campos = { ...post }; delete campos.id; delete campos.criado_em;
@@ -121,7 +124,7 @@
           const dias = proximosDiasLivres(ideias.length);
           for (const [n, x] of ideias.entries()) {
             const r = lote[(x.referencia || n + 1) - 1] || lote[n] || lote[0];
-            await salvar({ data: dias[n] || null, horario: "12h", formato: x.formato, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, status: "Roteirizado",
+            await salvar({ data: dias[n] || null, horario: "12h", formato: x.formato, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, tipo_roteiro: x.tipo_roteiro, legenda: x.legenda, porque: x.porque, status: "Roteirizado",
               inspiracao: { link: r.link, perfil: r.perfil ? "@" + r.perfil : x.inspirado_em, colecao: r.colecao, legenda: String(r.legenda || "").split("\n")[0].slice(0, 160), duracao_seg: x.duracao_seg } });
             feitas++;
           }
@@ -134,7 +137,7 @@
           if (!ideias.length) break;
           const dias = proximosDiasLivres(ideias.length);
           for (const [n, x] of ideias.entries()) {
-            await salvar({ data: dias[n] || null, horario: "12h", formato: x.formato, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, status: "Roteirizado", inspiracao: { perfil: x.inspirado_em, duracao_seg: x.duracao_seg } });
+            await salvar({ data: dias[n] || null, horario: "12h", formato: x.formato, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, tipo_roteiro: x.tipo_roteiro, legenda: x.legenda, porque: x.porque, status: "Roteirizado", inspiracao: { perfil: x.inspirado_em, duracao_seg: x.duracao_seg } });
             feitas++;
           }
           pintar();
@@ -216,6 +219,7 @@
     dir: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
     x: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
     pasta: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>',
+    sino: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></svg>',
   };
   function opcoesMes() {
     const lista = [];
@@ -251,6 +255,7 @@
             <button class="btn btn-principal" type="button" id="pc-gerar"></button></div>
         </section>
         <section class="pc-cartao" id="pc-pastas"></section>
+        <section class="pc-cartao pc-iphone" id="pc-iphone"></section>
       </div>
     </div>`;
     const sel = $("#pc-mes", sec);
@@ -267,7 +272,7 @@
   function cartaoPost(p) {
     const ok = p.status !== "Ideia";
     return `<button type="button" class="pc-post f-${esc(semAcento(p.formato || "reels"))}" data-id="${p.id}">
-      <small>${esc((p.formato || "Reels").toUpperCase())}</small>
+      <small>${esc((p.formato || "Reels").toUpperCase())}${p.tipo_roteiro && p.tipo_roteiro !== "Stories de bastidor" ? " · " + esc(p.tipo_roteiro === "Spec ad" ? "SPEC AD" : "VITRINE") : ""}</small>
       <b>${esc(p.tema || "Sem tema")}</b>${p.inspiracao && p.inspiracao.link ? `<i>ref. ${esc(p.inspiracao.perfil || "")}</i>` : ""}
       <span>${esc(p.horario || "")}${p.horario ? " · " : ""}${esc(p.status === "Ideia" ? "ideia" : p.status === "Roteirizado" ? "roteiro" : p.status.toLowerCase())}${ok ? " ✓" : ""}</span>
     </button>`;
@@ -316,9 +321,10 @@
     bt.disabled = st.gerando; bt.innerHTML = st.gerando ? "Montando a grade…" : livres ? `${ic.brilho}Montar a grade (${Math.min(livres, 18)} ideia${livres === 1 ? "" : "s"})` : `${ic.brilho}Criar ideias do mês`;
     $("#pc-qtd", sec).hidden = Boolean(livres);
     $("#pc-gerar-ajuda", sec).textContent = livres
-      ? `Para cada post das suas pastas "Gravar em ${MESES[Number(st.mes.split("-")[1]) - 1]}" e "Produzir vídeos assim" eu crio uma ideia com o link da referência e o roteiro pronto (tema, tipo de UGC, funil, propósito, hook, desenvolvimento e CTA), pelo método da Lara e sem copiar as falas. Cada uma entra num dia livre.`
-      : "Uso o método da Lara para criar ideias com roteiro pronto (tema, tipo de UGC, funil, propósito, hook, desenvolvimento e CTA). Quando os posts das suas pastas chegarem, cada ideia sai de um post, com o link da referência.";
+      ? `Para cada post das suas pastas "Gravar em ${MESES[Number(st.mes.split("-")[1]) - 1]}" e "Produzir vídeos assim" eu crio uma ideia com o link da referência e o roteiro pronto para atrair marca (spec ad ou vitrine, hook, desenvolvimento com direção de cena, CTA, legenda com hashtags), pelo método da Lara e sem copiar as falas. Cada uma entra num dia livre.`
+      : "Uso o método da Lara e a lógica do spec ad (o vídeo que uma marca postaria como anúncio) para criar ideias com roteiro pronto: hook, desenvolvimento com direção de cena, CTA e legenda com hashtags. Quando os posts das suas pastas chegarem, cada ideia sai de um post, com o link da referência.";
     pintarPastas();
+    pintarIphone();
   }
 
   function pintarPastas() {
@@ -331,7 +337,7 @@
       <div class="pc-pasta"><b>Gravar em ${esc(nomeMes)}</b><small>${gravar.length} post${gravar.length === 1 ? "" : "s"}</small></div>${lista(gravar)}
       <div class="pc-pasta"><b>Produzir vídeos assim</b><small>${assim.length} post${assim.length === 1 ? "" : "s"}</small></div>${lista(assim)}
       ${faltaReel ? `<button class="btn" type="button" id="pc-transcrever" ${st.transcrevendo ? "disabled" : ""}>${st.transcrevendo ? "Transcrevendo…" : `Transcrever ${faltaReel} Reel${faltaReel === 1 ? "" : "s"} (ideias melhores)`}</button>` : ""}
-      ${!gravar.length && !assim.length ? `<div class="pc-passos"><p class="pc-ajuda"><b>Trazer as pastas (uma vez por mês, no Windows):</b></p>
+      ${!gravar.length && !assim.length ? `<div class="pc-passos"><p class="pc-ajuda">Está em 0 porque o Instagram não deixa nenhum site ler suas pastas de salvos sozinho. Tem dois jeitos de trazer: pelo iPhone (cartão abaixo, cada post que você salvar) ou tudo de uma vez pelo computador.</p><p class="pc-ajuda"><b>Trazer as pastas inteiras (no Windows):</b></p>
         <ol class="pc-ajuda"><li>Aperte a tecla <b>Windows</b>, digite <b>PowerShell</b> e abra.</li><li>Cole a linha abaixo e aperte <b>Enter</b>. Se abrir a Microsoft Store pedindo o Python, instale e rode a linha de novo.</li><li>Ele entra pelo Instagram que já está aberto no seu navegador (sem senha) e grava <b>salvos_instagram.json</b> na Área de Trabalho.</li><li>Envie esse arquivo no botão abaixo.</li></ol>
         <div class="lab-comando"><code id="pc-cmd">${CMD_WIN}</code><button class="btn" type="button" id="pc-copiar">Copiar</button></div></div>` : ""}
       <label class="btn pc-enviar">${ic.pasta}Enviar arquivo das pastas<input type="file" id="pc-arquivo" accept=".json" hidden></label>
@@ -339,6 +345,53 @@
     const t = $("#pc-transcrever", box); if (t) t.addEventListener("click", transcreverPastas);
     const c = $("#pc-copiar", box); if (c) c.addEventListener("click", async () => { try { await navigator.clipboard.writeText(CMD_WIN); toast("Copiado. Cole no PowerShell."); } catch (e) { toast("Selecione a linha e copie com Ctrl+C.", true); } });
     $("#pc-arquivo", box).addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) importarArquivo(f); });
+  }
+
+  // ---------- iPhone: salvar pelo atalho e receber a ideia por notificação (app ntfy) ----------
+  const LINK_SALVAR = "https://marianabonetto.com.br/admin/salvar/?l=";
+  async function ligarNotificacoes() {
+    const letras = "abcdefghijkmnpqrstuvwxyz23456789";
+    const aleat = [...crypto.getRandomValues(new Uint8Array(18))].map((n) => letras[n % letras.length]).join("");
+    const topico = "mari-painel-" + aleat;
+    const { error } = await banco().from("configuracoes").upsert({ chave: "ntfy_topico", valor: topico, updated_at: new Date().toISOString() }, { onConflict: "chave" });
+    if (error) { toast("Não consegui ligar: " + error.message, true); return; }
+    st.topico = topico; pintarIphone();
+  }
+  async function testarNotificacao(bt) {
+    bt.disabled = true;
+    const { data, error } = await banco().functions.invoke("painel-conteudo", { body: { acao: "notif_teste" } });
+    let msg = data && data.error;
+    if (error) { try { msg = (await error.context.json()).error; } catch (e) { msg = "A função não respondeu agora."; } }
+    bt.disabled = false;
+    toast(msg || "Mandei! Olhe o iPhone.", Boolean(msg));
+  }
+  function pintarIphone() {
+    const box = $("#pc-iphone"); if (!box) return;
+    const copiar = (id, texto, aviso) => { const b = $(id, box); if (b) b.addEventListener("click", async () => { try { await navigator.clipboard.writeText(texto); toast(aviso); } catch (e) { toast("Selecione e copie com Ctrl+C.", true); } }); };
+    box.innerHTML = `<h3 class="pc-h3">${ic.sino}No iPhone: salvou, chegou a ideia</h3>
+      <p class="pc-ajuda">O Instagram não avisa ninguém quando você salva um post. Então, no iPhone, você manda o post para o painel pelo botão de compartilhar: eu guardo na pasta, crio a ideia com roteiro nesta grade e te mando uma notificação com o hook e o CTA.</p>
+      ${st.topico ? `<details class="pc-passos" open><summary><b>1. Notificações (uma vez)</b></summary><ol class="pc-ajuda">
+          <li>Instale o app grátis <b>ntfy</b> na App Store.</li>
+          <li>Abra, toque em <b>+</b> e cole este nome em <b>Topic</b> (deixe o servidor como está): <span class="lab-comando"><code>${esc(st.topico)}</code><button class="btn" type="button" id="pc-copiar-topico">Copiar</button></span></li>
+          <li>Permita as notificações e toque em <button class="btn" type="button" id="pc-testar">Mandar teste</button></li></ol>
+          <p class="pc-ajuda">Esse nome é o endereço secreto das suas notificações. Não mostre para ninguém. Se vazar, toque em <button class="login-link" type="button" id="pc-novo-topico">trocar o endereço</button>.</p></details>
+        <details class="pc-passos"><summary><b>2. Atalho "Salvar no painel" (uma vez)</b></summary><ol class="pc-ajuda">
+          <li>Abra o app <b>Atalhos</b>, toque em <b>+</b> e dê o nome <b>Salvar no painel</b>.</li>
+          <li>Toque no ⓘ (ou na setinha do nome) e ligue <b>Mostrar na Folha de Compartilhamento</b>. Em tipos, deixe só <b>URLs</b>.</li>
+          <li>Adicione a ação <b>Codificar URL</b> (ela usa a Entrada do Atalho).</li>
+          <li>Adicione a ação <b>Abrir URLs</b> e escreva este endereço, colocando no fim a variável <b>URL Codificada</b>: <span class="lab-comando"><code>${LINK_SALVAR}</code><button class="btn" type="button" id="pc-copiar-link">Copiar</button></span></li>
+          <li>Na primeira vez a página pede seu e-mail e senha do painel. Depois fica salvo.</li></ol></details>
+        <details class="pc-passos"><summary><b>3. No dia a dia</b></summary><ol class="pc-ajuda">
+          <li>No Instagram, salve o post na pasta como sempre.</li>
+          <li>Toque no aviãozinho de compartilhar, depois em <b>Compartilhar em…</b> (ou <b>Mais</b>) e escolha <b>Salvar no painel</b>.</li>
+          <li>Toque na pasta. Em 1 ou 2 minutos chega a notificação com a ideia. Tocando nela, abre este painel.</li></ol>
+          <p class="pc-ajuda">Sem o atalho também dá: copie o link do post e abra <a href="../admin/salvar/" target="_blank" rel="noopener">marianabonetto.com.br/admin/salvar</a> (dá para pôr na Tela de Início).</p></details>`
+        : `<button class="btn btn-principal" type="button" id="pc-ligar">Ligar as notificações no iPhone</button>`}`;
+    const l = $("#pc-ligar", box); if (l) l.addEventListener("click", ligarNotificacoes);
+    const t = $("#pc-testar", box); if (t) t.addEventListener("click", () => testarNotificacao(t));
+    const n = $("#pc-novo-topico", box); if (n) n.addEventListener("click", () => { if (confirm("Trocar o endereço? Depois você assina o novo no app ntfy.")) ligarNotificacoes(); });
+    copiar("#pc-copiar-topico", st.topico, "Copiado. Cole no app ntfy.");
+    copiar("#pc-copiar-link", LINK_SALVAR, "Copiado. Cole na ação Abrir URLs.");
   }
 
   // ---------- janela do post ----------
@@ -360,15 +413,18 @@
           <label class="campo"><span>Formato</span><select name="formato">${opt(FORMATOS, p.formato)}</select></label>
           <label class="campo"><span>Status</span><select name="status">${opt(STATUS, p.status)}</select></label>
         </div>
-        <div class="pc-grade2">
+        <div class="pc-grade3">
+          <label class="campo"><span>Tipo de roteiro</span><select name="tipo_roteiro"><option value=""></option>${opt(ROTEIROS, p.tipo_roteiro)}</select></label>
           <label class="campo"><span>Tipo de UGC</span><select name="tipo_ugc"><option value=""></option>${opt(tipos, p.tipo_ugc)}</select></label>
           <label class="campo"><span>Funil</span><select name="funil">${opt(FUNIS, p.funil)}</select></label>
         </div>
+        ${p.porque ? `<div class="pc-porque"><small>Por que atrai marca</small>${esc(p.porque)}</div>` : ""}
         <label class="campo pc-largo"><span>Propósito</span><input name="proposito" value="${esc(p.proposito)}" placeholder="Para que serve esse conteúdo no seu perfil"></label>
         <label class="campo pc-largo"><span>Hook</span><textarea name="hook" rows="2">${esc(p.hook)}</textarea></label>
         ${ganchos.length ? `<div class="pc-ganchos"><small>Outras opções de gancho (toque para usar)</small>${ganchos.map((g) => `<button type="button" class="cr-chip" data-gancho>${esc(g)}</button>`).join("")}</div>` : ""}
         <label class="campo pc-largo"><span>Desenvolvimento do roteiro</span><textarea name="desenvolvimento" rows="9">${esc(p.desenvolvimento)}</textarea></label>
         <label class="campo pc-largo"><span>CTA</span><input name="cta" value="${esc(p.cta)}"></label>
+        <label class="campo pc-largo"><span>Legenda e hashtags</span><textarea name="legenda" rows="4">${esc(p.legenda)}</textarea></label>
         <label class="campo pc-largo"><span>Notas</span><textarea name="notas" rows="2">${esc(p.notas)}</textarea></label>
         ${insp.duracao_seg || (!insp.link && insp.perfil) ? `<p class="pc-ajuda">${!insp.link && insp.perfil ? `Inspirado em ${esc(insp.perfil)}. ` : ""}${insp.duracao_seg ? `Duração estimada: ${insp.duracao_seg}s.` : ""}</p>` : ""}
       </div>
@@ -393,7 +449,7 @@
     if (q) q.addEventListener("click", async () => {
       if (!window.painelRoteiros || !window.painelRoteiros.salvarNoQuadro) { toast("Abra Meus roteiros uma vez e tente de novo.", true); return; }
       const o = ler();
-      const conteudo = [o.proposito && "PROPÓSITO:\n" + o.proposito, o.hook && "HOOK:\n" + o.hook, o.desenvolvimento && "DESENVOLVIMENTO:\n" + o.desenvolvimento, o.cta && "CTA:\n" + o.cta, insp.link && "REFERÊNCIA:\n" + insp.link].filter(Boolean).join("\n\n");
+      const conteudo = [o.proposito && "PROPÓSITO:\n" + o.proposito, o.hook && "HOOK:\n" + o.hook, o.desenvolvimento && "DESENVOLVIMENTO:\n" + o.desenvolvimento, o.cta && "CTA:\n" + o.cta, o.legenda && "LEGENDA:\n" + o.legenda, p.porque && "POR QUE ATRAI MARCA:\n" + p.porque, insp.link && "REFERÊNCIA:\n" + insp.link].filter(Boolean).join("\n\n");
       const ok = await window.painelRoteiros.salvarNoQuadro({ id: "pc" + p.id + "-" + Date.now().toString(36), titulo: o.tema || "Post do painel", plataforma: "Instagram", status: "Em aberto", finalidade: "Conteúdos", etapa: o.status === "Ideia" ? "Ideias" : "Roteirização", conteudo, gancho: o.hook || "", formato: o.formato || "", tipoUgc: o.tipo_ugc || "", funil: o.funil || "", referencia: insp.link || "", dataPublicacao: o.data || "" });
       if (ok) { await salvar({ ...o, id: p.id }); dlg.close(); pintar(); toast("Mandado para Meus roteiros."); }
     });

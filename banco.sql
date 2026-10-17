@@ -498,3 +498,7 @@ create table if not exists public.painel_conteudo (
 );
 alter table public.painel_conteudo enable row level security;
 create policy "dona faz tudo" on public.painel_conteudo for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+-- roteiros que atraem marca: tipo de roteiro (Spec ad, Vitrine para marca, Stories de bastidor),
+-- legenda pronta com hashtags e "por que atrai marca"
+alter table public.painel_conteudo add column if not exists tipo_roteiro text, add column if not exists legenda text, add column if not exists porque text;
+-- configuracoes chave "ntfy_topico": endereço secreto das notificações no iPhone (app ntfy), gerado no painel

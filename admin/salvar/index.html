@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Salvar ref.">
+<meta name="theme-color" content="#f6efe6">
+<title>Salvar referência | Painel Mari Bonetto</title>
+<!-- Página do iPhone: o atalho "Salvar no painel" (folha de compartilhar do Instagram) abre
+     esta página com ?l=<link do post>. Ela escolhe a pasta com um toque e a função
+     painel-conteudo (acao "salvo") guarda no Laboratório, cria a ideia com roteiro no
+     Painel de conteúdo e manda a notificação no iPhone. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../css/painel.css?v=202610170110">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../js/banco.js?v=202610170110"></script>
+<style>
+  [hidden]{display:none!important}
+  .sv{max-width:440px;margin:0 auto;padding:28px 16px 40px}
+  .sv h1{font-family:"DM Serif Display",serif;font-weight:400;font-size:30px;margin:0 0 4px}
+  .sv h1 em{color:#a0522d}
+  .sv .sub{color:var(--suave);margin:0 0 18px}
+  .sv-link{background:var(--cartao);border:1px solid var(--linha-forte);border-radius:14px;padding:12px 14px;word-break:break-all;font-size:12.5px;margin-bottom:16px}
+  .sv-link small{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);margin-bottom:2px}
+  .sv-pastas{display:flex;flex-direction:column;gap:10px}
+  .sv-pastas .btn{height:52px;font-size:15px;border-radius:16px}
+  .sv-ok{text-align:center;padding:26px 8px}
+  .sv-ok b{display:block;font-family:"DM Serif Display",serif;font-weight:400;font-size:26px;margin-bottom:6px}
+  .sv form .campo{margin-bottom:10px}
+  .sv input{width:100%}
+  .sv .linha{display:flex;gap:8px}
+  .sv .linha input{flex:1}
+</style>
+</head>
+<body>
+<main class="sv">
+  <h1>Salvar <em>referência</em></h1>
+  <p class="sub">Escolha a pasta. Eu guardo, crio a ideia com roteiro e te aviso no iPhone.</p>
+  <p class="faixa faixa-erro" id="erro" role="alert" hidden></p>
+
+  <form id="form-entrar" hidden novalidate>
+    <p class="faixa">Entre uma vez neste iPhone (fica salvo).</p>
+    <div class="campo"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username"></div>
+    <div class="campo"><label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password"></div>
+    <button class="btn btn-principal" type="submit">Entrar</button>
+  </form>
+
+  <div id="tela" hidden>
+    <div class="sv-link" id="caixa-link"><small>Post</small><span id="link"></span></div>
+    <div class="linha" id="colar" hidden><input class="entrada" id="campo-link" placeholder="Cole o link do post do Instagram" inputmode="url"><button class="btn" type="button" id="btn-colar">Colar</button></div>
+    <div class="sv-pastas" id="pastas"></div>
+  </div>
+
+  <div class="sv-ok" id="ok" hidden><b>Salvo!</b><p>Em 1 ou 2 minutos chega a notificação com a ideia e o roteiro.</p>
+    <a class="btn" href="../#planejar">Abrir o Painel de conteúdo</a></div>
+</main>
+<script>
+(function () {
+  "use strict";
+  const banco = window.banco;
+  const $ = (id) => document.getElementById(id);
+  const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  const RE = /instagram\.com\/(?:[\w.]+\/)?(p|reels?|tv)\/[\w-]+/i;
+  const erro = (t) => { $("erro").textContent = t || ""; $("erro").hidden = !t; };
+  const achar = (t) => { const m = String(t || "").match(/https?:\/\/\S*instagram\.com\/\S+/i); return m && RE.test(m[0]) ? m[0] : ""; };
+  let link = achar(new URLSearchParams(location.search).get("l") || "");
+
+  function mostrarLink() {
+    $("link").textContent = link || "";
+    $("caixa-link").hidden = !link;
+    $("colar").hidden = Boolean(link);
+  }
+  function pastas() {
+    const h = new Date(), m1 = MESES[h.getMonth()], m2 = MESES[(h.getMonth() + 1) % 12];
+    const lista = [`Gravar em ${m1}`, `Gravar em ${m2}`, "Produzir vídeos assim"];
+    $("pastas").innerHTML = lista.map((p) => `<button class="btn" type="button" data-pasta="${p}">${p}</button>`).join("");
+    document.querySelectorAll("[data-pasta]").forEach((b) => b.addEventListener("click", () => enviar(b.dataset.pasta, b)));
+  }
+  async function enviar(pasta, botao) {
+    erro("");
+    if (!link) { link = achar($("campo-link").value); mostrarLink(); }
+    if (!link) { erro("Cole o link de um post ou Reel do Instagram."); return; }
+    document.querySelectorAll("[data-pasta]").forEach((b) => { b.disabled = true; });
+    botao.textContent = "Salvando…";
+    const { data, error } = await banco.functions.invoke("painel-conteudo", { body: { acao: "salvo", link, pasta } });
+    let msg = data && data.error;
+    if (error) { try { msg = (await error.context.json()).error; } catch (e) { msg = msg || "Não consegui falar com o painel agora. Tente de novo."; } }
+    if (msg) { erro(msg); pastas(); return; }
+    $("tela").hidden = true; $("ok").hidden = false;
+  }
+  async function iniciar() {
+    if (!banco) { erro("Não carregou. Confira a internet e abra de novo."); return; }
+    const { data } = await banco.auth.getSession();
+    if (!data || !data.session) { $("form-entrar").hidden = false; return; }
+    $("form-entrar").hidden = true; $("tela").hidden = false;
+    mostrarLink(); pastas();
+  }
+  $("form-entrar").addEventListener("submit", async (e) => {
+    e.preventDefault(); erro("");
+    const { error } = await banco.auth.signInWithPassword({ email: $("email").value.trim(), password: $("senha").value });
+    if (error) { erro("E-mail ou senha não conferem."); return; }
+    iniciar();
+  });
+  $("btn-colar").addEventListener("click", async () => {
+    try { $("campo-link").value = await navigator.clipboard.readText(); } catch (e) { erro("Toque e segure no campo e escolha Colar."); return; }
+    link = achar($("campo-link").value); mostrarLink();
+    if (!link) erro("O que estava copiado não é link de post do Instagram.");
+  });
+  $("campo-link").addEventListener("input", () => { const l = achar($("campo-link").value); if (l) { link = l; mostrarLink(); } });
+  iniciar();
+})();
+</script>
+</body>
+</html>
