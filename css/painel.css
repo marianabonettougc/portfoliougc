@@ -960,3 +960,71 @@ button.menu-grupo:hover{color:var(--texto)}
 .lab-mac[open]{display:flex;flex-direction:column;gap:8px}
 .lab-comando{display:flex;gap:6px;align-items:stretch}
 .lab-comando code{flex:1;min-width:0;background:var(--texto);color:#f5ede3;border-radius:8px;padding:8px 10px;font-size:11.5px;line-height:1.45;word-break:break-all}
+
+/* Painel de conteúdo (js/painel-conteudo.js): folha creme com fita, título em serifa com itálico */
+.pc-folha{position:relative;background:var(--cartao);border:1px solid var(--linha);border-radius:18px;padding:30px 26px 22px;box-shadow:0 14px 34px rgba(61,43,32,.10);margin-top:14px}
+.pc-fita{position:absolute;top:-13px;left:50%;width:120px;height:26px;transform:translateX(-50%) rotate(-2deg);background:rgba(214,190,160,.75);border-radius:2px}
+.pc-sobre{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--suave);font-weight:600}
+.pc-topo{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.pc-titulo{margin:4px 0 0;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:34px;line-height:1.1;color:var(--texto)}
+.pc-titulo em{color:var(--principal);font-style:italic}
+.pc-sub{margin:4px 0 16px;font-family:"DM Serif Display",Georgia,serif;font-style:italic;color:var(--suave);font-size:15px}
+.pc-acoes{display:flex;align-items:center;gap:8px}
+.pc-acoes select{min-width:170px}
+.pc-rot{white-space:nowrap;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);font-weight:600}
+.pc-numeros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.pc-numeros div{background:var(--bege);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column}
+.pc-numeros b{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:24px;line-height:1.1}
+.pc-numeros span{font-size:11.5px;color:var(--suave)}
+.pc-semana-nav{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
+.pc-semana-nav b{font-size:12.5px;font-weight:600;color:var(--texto);min-width:200px;text-align:center}
+.pc-quadro{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.pc-dia{background:var(--bege);border-radius:12px;padding:8px 6px;min-height:230px;display:flex;flex-direction:column;gap:6px;transition:box-shadow .15s}
+.pc-dia.fora{opacity:.45}
+.pc-dia.hoje{box-shadow:inset 0 0 0 1.5px var(--principal)}
+.pc-dia.alvo{box-shadow:inset 0 0 0 2px var(--principal)}
+.pc-dia-cab{display:flex;align-items:baseline;justify-content:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.1em;color:var(--texto);margin-bottom:2px}
+.pc-dia-cab small{font-weight:500;color:var(--suave);letter-spacing:0}
+.pc-post{all:unset;box-sizing:border-box;cursor:pointer;background:var(--cartao);border-radius:9px;padding:7px 8px 7px 10px;display:flex;flex-direction:column;gap:2px;border-left:3px solid var(--principal);box-shadow:0 1px 3px rgba(61,43,32,.08)}
+.pc-post:hover{box-shadow:0 3px 10px rgba(61,43,32,.14)}
+.pc-post small{font-size:8.5px;font-weight:700;letter-spacing:.08em;color:var(--principal)}
+.pc-post b{font-size:11.5px;font-weight:600;line-height:1.25;color:var(--texto);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pc-post span{font-size:10px;color:var(--suave)}
+.pc-post.f-carrossel{border-left-color:var(--verde)}.pc-post.f-carrossel small{color:var(--verde)}
+.pc-post.f-stories{border-left-color:#c58b7a}.pc-post.f-stories small{color:#b0705e}
+.pc-add{all:unset;cursor:pointer;margin-top:auto;align-self:center;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:var(--suave);opacity:.6}
+.pc-add:hover{opacity:1;background:var(--cartao)}
+.pc-add svg{width:14px;height:14px}
+.pc-banco{margin-top:14px}
+.pc-banco-cab{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);margin-bottom:6px}
+.pc-banco-cab small{text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px}
+.pc-banco-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.pc-baixo{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px;margin-top:16px}
+.pc-cartao{background:var(--cartao);border:1px solid var(--linha);border-radius:var(--raio);padding:16px;display:flex;flex-direction:column;gap:10px}
+.pc-gerar{background:var(--principal);border-color:var(--principal);color:#fff}
+.pc-gerar .pc-h3,.pc-gerar .pc-ajuda{color:#fff}
+.pc-gerar .pc-ajuda{opacity:.85}
+.pc-gerar textarea,.pc-gerar select{background:#fffdf9;color:var(--texto)}
+.pc-gerar textarea::placeholder{color:var(--suave)}
+.pc-gerar .btn-principal{background:#fff;color:var(--principal);border-color:#fff}
+.pc-h3{margin:0;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:19px;display:flex;align-items:center;gap:8px;color:var(--texto)}
+.pc-h3 svg{width:18px;height:18px}
+.pc-ajuda{margin:0;font-size:12.5px;line-height:1.5;color:var(--suave)}
+.pc-linha{display:flex;gap:8px;align-items:center}
+.pc-linha select{width:auto}
+.pc-pasta{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--linha);padding-top:8px}
+.pc-pasta b{font-size:13px;font-weight:600}
+.pc-pasta small{font-size:11.5px;color:var(--suave)}
+.pc-insp{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.pc-insp li{font-size:12px;display:flex;flex-wrap:wrap;gap:0 6px}
+.pc-insp li a{font-weight:600}
+.pc-insp li small{color:var(--suave)}
+.pc-insp li span{flex-basis:100%;color:var(--suave);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-form{display:flex;flex-direction:column;gap:10px}
+.pc-grade4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.pc-grade2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pc-ganchos{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pc-ganchos small{flex-basis:100%;font-size:11.5px;color:var(--suave)}
+.pc-ganchos .cr-chip{white-space:normal;text-align:left}
+@media(max-width:1000px){.pc-quadro{grid-template-columns:repeat(4,minmax(0,1fr))}.pc-baixo{grid-template-columns:1fr}}
+@media(max-width:620px){.pc-folha{padding:26px 14px 16px}.pc-titulo{font-size:27px}.pc-quadro{grid-template-columns:repeat(2,minmax(0,1fr))}.pc-dia{min-height:120px}.pc-numeros b{font-size:19px}.pc-grade4{grid-template-columns:1fr 1fr}}

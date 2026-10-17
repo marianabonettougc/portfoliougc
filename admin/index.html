@@ -19,9 +19,9 @@ fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/painel.css?v=202610162014">
+<link rel="stylesheet" href="../css/painel.css?v=202610170040">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/banco.js?v=202610162014"></script>
+<script src="../js/banco.js?v=202610170040"></script>
 <script>
 // PRIMEIRA COISA: conferir a sessão. Sem sessão, vai para o login.
 // A página só aparece depois dessa conferência (antes ela fica escondida).
@@ -97,6 +97,8 @@ window.sessaoPronta = (async function () {
     <div class="menu-secao" data-secao="criatividade">
       <button class="menu-grupo" type="button" aria-expanded="true">criatividade<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
       <div class="menu-secao-itens">
+    <button class="menu-item" data-aba="planejar" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M9 9.5v11M14.5 9.5v11M8 3v3M16 3v3"/></svg>Painel de conteúdo</button>
     <button class="menu-item" data-aba="laboratorio" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 3.5h5M10.5 3.5v6L5.2 18.6A1.6 1.6 0 0 0 6.6 21h10.8a1.6 1.6 0 0 0 1.4-2.4L13.5 9.5v-6"/><path d="M7.8 15h8.4"/></svg>Laboratório criativo</button>
     <button class="menu-item" data-aba="editorial" type="button">
@@ -163,6 +165,7 @@ window.sessaoPronta = (async function () {
     <section class="aba" id="aba-laboratorio" hidden></section>
     <section class="aba" id="aba-editorial" hidden></section>
     <section class="aba" id="aba-edicao" hidden></section>
+    <section class="aba" id="aba-planejar" hidden></section>
   </main>
 </div>
 
@@ -178,11 +181,12 @@ window.sessaoPronta = (async function () {
 </dialog>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="../js/biblioteca.js?v=202610162014"></script>
-<script src="../js/admin.js?v=202610162014"></script>
-<script src="../js/roteiros-supadata.js?v=202610162014"></script>
-<script src="../js/laboratorio.js?v=202610162014"></script>
-<script src="../js/editorial.js?v=202610162014"></script>
-<script src="../js/edicao.js?v=202610162014"></script>
+<script src="../js/biblioteca.js?v=202610170040"></script>
+<script src="../js/admin.js?v=202610170040"></script>
+<script src="../js/roteiros-supadata.js?v=202610170040"></script>
+<script src="../js/laboratorio.js?v=202610170040"></script>
+<script src="../js/editorial.js?v=202610170040"></script>
+<script src="../js/edicao.js?v=202610170040"></script>
+<script src="../js/painel-conteudo.js?v=202610170040"></script>
 </body>
 </html>

@@ -484,3 +484,17 @@ create table if not exists public.biblioteca (
 );
 alter table public.biblioteca enable row level security;
 create policy "dona faz tudo" on public.biblioteca for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+-- ---------------------------------------------------------------------
+-- PAINEL DE CONTEÚDO (out/2026): posts do mês por dia (js/painel-conteudo.js, função painel-conteudo)
+-- laboratorio.colecao: pasta do Instagram de onde veio o salvo (programa ferramentas/salvos.py)
+-- ---------------------------------------------------------------------
+alter table public.laboratorio add column if not exists colecao text;
+create table if not exists public.painel_conteudo (
+  id bigint generated always as identity primary key,
+  mes text not null, data date, horario text, formato text, tema text, tipo_ugc text, funil text, proposito text,
+  hook text, ganchos jsonb, desenvolvimento text, cta text, status text not null default 'Ideia', inspiracao jsonb, notas text,
+  criado_em timestamptz not null default now()
+);
+alter table public.painel_conteudo enable row level security;
+create policy "dona faz tudo" on public.painel_conteudo for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());

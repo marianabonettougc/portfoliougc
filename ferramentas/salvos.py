@@ -6,8 +6,10 @@
 #   aparece na tela, não é salva em arquivo e não vai para lugar nenhum além
 #   do próprio Instagram).
 # - Lê a lista de salvos devagar (com pausas) para o Instagram não estranhar.
-# - Grava "salvos_instagram.json" na Mesa (Desktop): link, perfil, tipo e legenda
-#   de cada post. Esse arquivo vai no Laboratório criativo > "Enviar arquivo dos salvos".
+# - Grava "salvos_instagram.json" na Mesa (Desktop): link, perfil, tipo, legenda e a
+#   PASTA (coleção) de cada post, por exemplo "Gravar em outubro" e "Produzir vídeos assim".
+#   Esse arquivo vai no Laboratório criativo > "Enviar arquivo dos salvos" e as pastas
+#   aparecem no Painel de conteúdo.
 # Nada de foto ou vídeo é baixado.
 # =========================================================
 import getpass, json, os, random, sys, time
@@ -45,26 +47,59 @@ def main():
             return
         L.save_session_to_file(sessao)  # guarda só o login (não a senha) para não pedir de novo
 
+    saida, vistos = [], {}
+
+    def guardar(codigo, tipo_num, produto, dono, legenda, data, colecao):
+        tipo = "Reel" if (tipo_num == 2 or produto == "clips") else ("Carrossel" if tipo_num == 8 else "Post")
+        caminho = "reel" if tipo == "Reel" else "p"
+        if codigo in vistos:
+            if colecao and not saida[vistos[codigo]].get("colecao"):
+                saida[vistos[codigo]]["colecao"] = colecao
+            return
+        vistos[codigo] = len(saida)
+        saida.append({"link": f"https://www.instagram.com/{caminho}/{codigo}/", "codigo": codigo, "perfil": dono,
+                      "tipo": tipo, "legenda": (legenda or "")[:4000], "publicado_em": data, "colecao": colecao})
+
+    # 1) as pastas (coleções) dos salvos
+    try:
+        cols = L.context.get_iphone_json("api/v1/collections/list/", {"collection_types": '["MEDIA"]'})
+        colecoes = [(c.get("collection_id"), c.get("collection_name")) for c in cols.get("items", []) if c.get("collection_id")]
+    except Exception as e:
+        print("Não consegui ler as pastas dos salvos (vou trazer todos sem pasta):", e)
+        colecoes = []
+    if colecoes:
+        print("Pastas encontradas: " + ", ".join(n for _, n in colecoes))
+    for cid, nome in colecoes:
+        print(f"\nLendo a pasta \"{nome}\"...")
+        max_id, paginas = None, 0
+        try:
+            while paginas < 40:
+                params = {"max_id": max_id} if max_id else {}
+                r = L.context.get_iphone_json(f"api/v1/feed/collection/{cid}/posts/", params)
+                for it in r.get("items", []):
+                    m = it.get("media") or it
+                    cap = (m.get("caption") or {}).get("text") if isinstance(m.get("caption"), dict) else None
+                    data = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(m.get("taken_at", 0))) if m.get("taken_at") else None
+                    guardar(m.get("code"), m.get("media_type"), m.get("product_type"), (m.get("user") or {}).get("username"), cap, data, nome)
+                paginas += 1
+                print(f"  {len(saida)} salvos lidos...")
+                if not r.get("more_available") or not r.get("next_max_id"):
+                    break
+                max_id = r.get("next_max_id")
+                time.sleep(random.uniform(2.5, 5))
+        except Exception as e:
+            print(f"  O Instagram interrompeu a pasta \"{nome}\". Vou seguir com o que já li.", e)
+        time.sleep(random.uniform(3, 6))
+
+    # 2) o resto dos salvos (sem pasta)
     perfil = instaloader.Profile.own_profile(L.context)
-    saida, vistos = [], set()
-    print("\nLendo seus salvos (vai devagar de propósito)...")
+    print("\nLendo os outros salvos (vai devagar de propósito)...")
     try:
         for i, post in enumerate(perfil.get_saved_posts()):
             if i >= LIMITE:
                 break
-            if post.shortcode in vistos:
-                continue
-            vistos.add(post.shortcode)
-            tipo = "Reel" if post.is_video else ("Carrossel" if post.typename == "GraphSidecar" else "Post")
-            caminho = "reel" if post.is_video else "p"
-            saida.append({
-                "link": f"https://www.instagram.com/{caminho}/{post.shortcode}/",
-                "codigo": post.shortcode,
-                "perfil": post.owner_username,
-                "tipo": tipo,
-                "legenda": (post.caption or "")[:4000],
-                "publicado_em": post.date_utc.isoformat() + "Z",
-            })
+            guardar(post.shortcode, 2 if post.is_video else (8 if post.typename == "GraphSidecar" else 1), None,
+                    post.owner_username, post.caption, post.date_utc.isoformat() + "Z", None)
             if len(saida) % 12 == 0:
                 print(f"  {len(saida)} salvos lidos...")
                 time.sleep(random.uniform(2.5, 5))
@@ -76,7 +111,7 @@ def main():
     mesa = os.path.expanduser("~/Desktop")
     arquivo = os.path.join(mesa if os.path.isdir(mesa) else os.path.expanduser("~"), "salvos_instagram.json")
     with open(arquivo, "w", encoding="utf-8") as f:
-        json.dump({"origem": "instaloader", "usuario": usuario, "salvos": saida}, f, ensure_ascii=False, indent=1)
+        json.dump({"origem": "instaloader", "usuario": usuario, "pastas": [n for _, n in colecoes], "salvos": saida}, f, ensure_ascii=False, indent=1)
     print(f"\nPronto! {len(saida)} salvos em: {arquivo}")
     print("Agora abra o painel > Criatividade > Laboratório criativo > Enviar arquivo dos salvos.\n")
 

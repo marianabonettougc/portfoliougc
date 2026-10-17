@@ -58,7 +58,7 @@
     try {
       const j = JSON.parse(texto);
       if (!j || j.origem !== "instaloader" || !Array.isArray(j.salvos)) return null;
-      return j.salvos.map((x) => { const l = linkLimpo(x.link); return l ? { ...l, perfil: x.perfil, tipo: ["Reel", "Carrossel", "Post"].includes(x.tipo) ? x.tipo : null, legenda: x.legenda } : null; }).filter(Boolean);
+      return j.salvos.map((x) => { const l = linkLimpo(x.link); return l ? { ...l, perfil: x.perfil, tipo: ["Reel", "Carrossel", "Post"].includes(x.tipo) ? x.tipo : null, legenda: x.legenda, colecao: x.colecao || null } : null; }).filter(Boolean);
     } catch (e) { return null; }
   }
   // datas do arquivo do Instagram: {"string_map_data":{"Saved on":{"href":...,"timestamp":...}}}
@@ -88,8 +88,13 @@
     const existentes = new Set(st.lista.map((r) => r.codigo));
     // itens do programa salvos.py já vêm com perfil, tipo e legenda: aí o processar pula a leitura pelo Apify
     const novos = itens.filter((i) => !existentes.has(i.codigo)).map((i) => ({ link: i.link, codigo: i.codigo, salvo_em: (datas && datas[i.codigo]) || null, status: "novo", etapa: "Nova",
-      ...(i.tipo ? { perfil: i.perfil || null, tipo: i.tipo, legenda: i.legenda || null } : {}) }));
-    if (!novos.length) return 0;
+      ...(i.tipo ? { perfil: i.perfil || null, tipo: i.tipo, legenda: i.legenda || null } : {}), ...(i.colecao ? { colecao: i.colecao } : {}) }));
+    // posts que já estavam aqui ganham a pasta do Instagram (Gravar em..., Produzir vídeos assim)
+    for (const i of itens.filter((x) => x.colecao && existentes.has(x.codigo))) {
+      const r = st.lista.find((x) => x.codigo === i.codigo);
+      if (r && r.colecao !== i.colecao) await banco().from("laboratorio").update({ colecao: i.colecao }).eq("id", r.id);
+    }
+    if (!novos.length) { if (itens.some((x) => x.colecao)) await carregar(); return 0; }
     for (let k = 0; k < novos.length; k += 200) {
       const { error } = await banco().from("laboratorio").upsert(novos.slice(k, k + 200), { onConflict: "link", ignoreDuplicates: true });
       if (error) throw new Error(error.message);
@@ -209,7 +214,7 @@
           <p class="lab-ajuda">No Instagram: <b>Sua atividade › Baixar suas informações › Algumas das suas informações › Salvos</b>, formato JSON. Quando chegar o e-mail, baixe, abra o .zip e envie aqui o arquivo <b>saved_posts.json</b>.</p>
           <label class="btn" style="cursor:pointer">${ic.arquivo}Enviar arquivo dos salvos<input type="file" id="lab-arquivo" accept=".json,.html,.htm,.txt" hidden></label>
           <details class="lab-mac"><summary>Mais rápido, pelo Mac (na hora, sem esperar e-mail)</summary>
-            <p class="lab-ajuda">Abra o app <b>Terminal</b> no Mac, cole a linha abaixo e aperte Enter. Ele pede o seu usuário e a senha do Instagram ali mesmo (a senha não aparece, não fica salva e não vem para o painel), lê os seus salvos devagar e grava o arquivo <b>salvos_instagram.json</b> na Mesa. Depois é só enviar esse arquivo aqui em cima. Se o Mac pedir para instalar as "ferramentas de linha de comando", aceite e rode de novo.</p>
+            <p class="lab-ajuda">Abra o app <b>Terminal</b> no Mac, cole a linha abaixo e aperte Enter. Ele pede o seu usuário e a senha do Instagram ali mesmo (a senha não aparece, não fica salva e não vem para o painel), lê os seus salvos devagar (com o nome de cada pasta, como "Gravar em outubro" e "Produzir vídeos assim", que vão para o Painel de conteúdo) e grava o arquivo <b>salvos_instagram.json</b> na Mesa. Depois é só enviar esse arquivo aqui em cima. Se o Mac pedir para instalar as "ferramentas de linha de comando", aceite e rode de novo.</p>
             <div class="lab-comando"><code id="lab-cmd">curl -fsSL https://marianabonetto.com.br/ferramentas/salvos.py -o ~/salvos.py && python3 ~/salvos.py</code><button class="btn" type="button" id="lab-copiar">Copiar</button></div>
             <p class="lab-ajuda">Vai com calma: usar programas no Instagram tem um risco pequeno de ele pedir confirmação ou bloquear por um tempo. Rodar no seu próprio Mac, com a sua internet e de vez em quando, é o jeito mais seguro.</p>
           </details>
