@@ -158,8 +158,8 @@ ESTRUTURA DE UGC
     const Ctx = window.AudioContext || window.webkitAudioContext;
     const tmp = new Ctx();
     let dec;
-    try { dec = await tmp.decodeAudioData(await arquivo.arrayBuffer()); }
-    catch (e) { return []; } // vídeo sem som
+    try { dec = await new Promise((ok, falha) => { arquivo.arrayBuffer().then((b) => { const r = tmp.decodeAudioData(b, ok, falha); if (r && r.then) r.then(ok, falha); }, falha); }); }
+    catch (e) { return null; } // não deu para abrir o áudio aqui: o editor escuta tocando o vídeo
     finally { try { tmp.close(); } catch (e) { /* segue */ } }
     const taxa = 16000;
     const off = new OfflineAudioContext(1, Math.max(1, Math.ceil(dec.duration * taxa)), taxa);
@@ -167,6 +167,40 @@ ESTRUTURA DE UGC
     const mono = (await off.startRendering()).getChannelData(0);
     const pedaco = 600 * taxa, partes = [];
     for (let i = 0; i < mono.length; i += pedaco) partes.push({ blob: wav(mono.subarray(i, i + pedaco), taxa), inicio: i / taxa });
+    return partes;
+  }
+  const IPHONE = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  // plano B: toca o vídeo (sem som na caixa) e grava o áudio que sai dele, em tempo real
+  async function audioTocando(c) {
+    audio(); if (ac.state === "suspended") await ac.resume();
+    ligarClipe(c);
+    const v = c.el, taxa = ac.sampleRate, blocos = [];
+    const rec = ac.createScriptProcessor(4096, 1, 1), mudo = ac.createGain();
+    mudo.gain.value = 0; rec.connect(mudo); mudo.connect(ac.destination);
+    c.no.disconnect(); c.no.connect(rec);
+    rec.onaudioprocess = (e) => { if (!v.paused) blocos.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+    v.currentTime = 0; await esperarEvento(v, "seeked");
+    v.muted = false; v.playbackRate = 1;
+    try { await v.play(); } catch (e) { c.no.disconnect(); c.no.connect(mestre); rec.disconnect(); throw new Error("O iPhone não deixou tocar o vídeo para ouvir. Toque em Editar automático de novo."); }
+    await new Promise((ok) => {
+      const passo = () => {
+        const ult = st.etapas[st.etapas.length - 1];
+        if (ult) { ult.texto = ult.texto.replace(/ \d+%$/, "") + " " + Math.round((v.currentTime / (v.duration || 1)) * 100) + "%"; pintarEtapas(); }
+        if (v.ended || v.currentTime >= (v.duration || 0) - 0.05) { ok(); return; }
+        setTimeout(passo, 300);
+      };
+      passo();
+    });
+    v.pause(); rec.disconnect(); mudo.disconnect(); c.no.disconnect(); c.no.connect(mestre);
+    const total = blocos.reduce((n, b) => n + b.length, 0);
+    if (!total) return [];
+    const junto = new Float32Array(total); let pos = 0; for (const b of blocos) { junto.set(b, pos); pos += b.length; }
+    const alvo = 16000, off = new OfflineAudioContext(1, Math.ceil((total / taxa) * alvo), alvo);
+    const buf = off.createBuffer(1, total, taxa); buf.getChannelData(0).set(junto);
+    const src = off.createBufferSource(); src.buffer = buf; src.connect(off.destination); src.start();
+    const mono = (await off.startRendering()).getChannelData(0);
+    const pedaco = 600 * alvo, partes = [];
+    for (let i = 0; i < mono.length; i += pedaco) partes.push({ blob: wav(mono.subarray(i, i + pedaco), alvo), inicio: i / alvo });
     return partes;
   }
   function wav(amostras, taxa) {
@@ -344,12 +378,15 @@ ESTRUTURA DE UGC
     if (!st.clipes.length) { toast("Envie o vídeo bruto primeiro.", true); return; }
     if (st.trabalhando) return;
     st.trabalhando = true; st.etapas = []; st.correcoes = []; pintar();
+    try { audio(); if (ac.state === "suspended") ac.resume(); } catch (e) { /* segue */ }
     try {
       let offset = 0;
       for (const [i, c] of st.clipes.entries()) {
         if (!c.palavras) {
           etapa(`Ouvindo o clipe ${i + 1} de ${st.clipes.length}`);
-          const partes = await audioDoVideo(c.arquivo);
+          let partes = IPHONE && c.arquivo.size > 150e6 ? null : await audioDoVideo(c.arquivo);
+          // iPhone/Safari não abre o áudio de .MOV (ou o arquivo é grande demais): escuta tocando o vídeo
+          if (!partes) { etapa(`Ouvindo o clipe ${i + 1} tocando (no iPhone leva o tempo do vídeo, deixe a tela ligada)`); partes = await audioTocando(c); }
           c.palavras = [];
           for (const p of partes) {
             const form = new FormData(); form.append("acao", "transcrever"); form.append("arquivo", p.blob, "audio.wav");
@@ -366,6 +403,7 @@ ESTRUTURA DE UGC
         st.titulo = st.plano.titulo || "";
         st.tituloDestaque = st.plano.titulo_destaque || "";
       } else {
+        etapa("Não consegui ouvir fala nesse vídeo, então ficou sem legenda e sem cortes. Se ele tem fala, me avise.", "erro");
         st.plano = { titulo: "", remover: [], destaques: [], zooms: [], efeitos: [], broll: [], dicas: ["Não ouvi fala nesse vídeo, então não cortei silêncios nem pus legenda. Dá para pôr título e efeitos à mão."], musica: "" };
       }
       etapa("Montando a linha do tempo");
