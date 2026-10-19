@@ -12,6 +12,13 @@
 //    (sintetizados aqui mesmo, sem arquivo);
 // 4. prévia num canvas 9:16 e exportação em MP4 (MediaRecorder, em tempo real),
 //    mais a legenda em .srt para usar no CapCut.
+// Estilo CapCut (referências de out/2026: vídeo dela da Eudora e da Rafa Chagas): legenda
+// Poppins média, minúscula, amarela clarinha com sombra suave, 1 a 4 palavras por vez;
+// palavras chamativas grandes (Fredoka, cor viva, sombra dura) com frase manuscrita
+// (Caveat); título em caixinhas pastel com figurinhas, cursor e moldura de seleção;
+// confete e tremidinha nos momentos fortes. Nunca mexe na cor do vídeo (isso ela faz no
+// CapCut). Editor de legendas: mudar o texto, juntar com a próxima, apagar e marcar como
+// chamativa (fica guardado por palavra, então sobrevive a correções e reedições).
 // O padrão de edição (tirado das referências que ela mandou) fica na tabela
 // configuracoes, chave "padrao_edicao", e ela pode editar.
 // Roteiro (opcional): ela cola o que tinha idealizado (cenas, falas, voice-over) ou puxa
@@ -36,6 +43,12 @@
   const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
   const uid = () => Math.random().toString(36).slice(2, 9);
 
+  const MARCA_REFS = "REFERÊNCIAS NOVAS (out/2026";
+  const REFS_NOVAS = `REFERÊNCIAS NOVAS (out/2026, valem acima do resto: vídeo dela da Eudora e os da Rafa Chagas)
+- Legenda: Poppins média, minúscula, amarelo clarinho (ou branco), sem contorno, só sombra suave; no meio da tela, 1 a 4 palavras por vez.
+- Palavras chamativas: a palavra forte entra grande em fonte arredondada pesada, cor viva (verde-limão, lilás, amarelo), sombra dura, com pop; o resto da frase pequeno em letra manuscrita.
+- Título do gancho em caixinhas pastel empilhadas com texto preto forte, clique de mouse em cada uma, figurinhas (estrela, flor, bolinhas) e cursor com moldura de seleção.
+- Confete verde-limão e tremidinha nos momentos fortes. Nunca mexer na cor do vídeo.`;
   const PADRAO = `PADRÃO DE EDIÇÃO DA MARI (tirado das referências que ela gosta)
 
 RITMO
@@ -45,13 +58,15 @@ RITMO
 - Narração "uma frase em cima da outra": fala uma frase, volta um pouco e fala a outra, sem respiro.
 - Zoom leve alternado entre um corte e outro para esconder o pulo da imagem.
 
-LEGENDA
-- Palavra por palavra (1, no máximo 2 palavras), sincronizada com a fala. A mesma legenda o vídeo todo.
-- Fonte sem serifa fina, branca, sem contorno, no espaço vazio perto do rosto.
-- Nada cobre o rosto.
-- Palavra de destaque (benefício, número, nome do produto) pode ganhar cor.
+LEGENDA (estilo CapCut que ela escolheu: vídeo dela da Eudora e os da Rafa Chagas)
+- Fonte sem serifa arredondada, peso médio (Poppins 500), tudo minúsculo, amarelo clarinho (ou branco), sem contorno, só sombra preta suave. Tamanho pequeno a médio.
+- Fica no meio da tela (perto do peito), 1 a 4 palavras por vez, sincronizada com a fala.
+- Nada cobre o rosto. Nada de efeito de cor no vídeo (a cor ela ajusta no CapCut).
+- Palavras chamativas: a palavra forte da frase (benefício, número, produto, virada) entra grande, numa fonte arredondada bem pesada, em cor viva (verde-limão, lilás, amarelo), com sombra dura, levemente torta, com pop; o resto da frase aparece pequeno em letra manuscrita em cima.
 
 TÍTULOS E GRAFISMOS
+- Título do gancho em caixinhas coloridas pastel (azul-céu, amarelo, rosa) empilhadas, texto preto bem forte minúsculo, cada caixinha entrando com clique de mouse; figurinhas em volta (estrela amarela com contorno preto, florzinha branca, bolinhas brilhantes) e um cursor de mouse com moldura de seleção, como se estivesse editando no CapCut.
+- Confete verde-limão e uma tremidinha nos momentos fortes.
 - Título criativo no começo (modelos do CapCut tipo "mesclador" ou título feito no Canva com fundo transparente, animado).
 - Título condensado (curto) em duas fontes: uma forte e a palavra de destaque em serifa itálica (a Bia usa Scholar itálico + Buzzi). Estrelinhas copiadas de "star character" do Google perto do destaque.
 - O título entra em etapas (parte 1, depois parte 2, depois parte 3), cada parte com um clique de mouse ("mouse click sound"). Todas as partes saem juntas.
@@ -87,23 +102,24 @@ ESTRUTURA DE UGC
 - Gancho forte, contexto curto, demonstração do produto, prova ou benefício, CTA ("comenta X", "salva").`;
 
   const EFEITOS = { woosh: "Woosh", pop: "Pop", click: "Click", shutter: "Shutter", typing: "Typing", riser: "Riser", hit: "Hit", ding: "Ding" };
-  const ESTILOS = { minimal: "Fina e branca (estilo das referências)", bold: "Forte com contorno", caixa: "Caixinha bege" };
-  const TITULOS = { etapas: "Em etapas com clique (duas fontes e estrelinhas)", frase: "Frase gigante na tela (3 cores)", caixa: "Caixinhas" };
+  const ESTILOS = { capcut: "CapCut (Poppins média, minúscula, sombra suave)", minimal: "Fina e branca", bold: "Forte com contorno", caixa: "Caixinha bege" };
+  const TITULOS = { capcut: "Caixinhas coloridas com figurinhas e cursor (CapCut)", etapas: "Em etapas com clique (duas fontes e estrelinhas)", frase: "Frase gigante na tela (3 cores)", caixa: "Caixinhas" };
+  const CORES_CHAMATIVA = ["#c6f432", "#cdb6ff", "#ffe45c", "#ffb3d9"];
   const DUR_TITULO = 2.8;
 
   const st = {
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { sonsTitulo: true, estilo: "minimal", altura: 0.7, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "etapas", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
-    correcoes: [], corrigindo: false, lembrar: true,
+    opc: { sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: true, sonsChamativas: true, confete: true, tremer: true, flash: false, altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "capcut", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
+    correcoes: [], corrigindo: false, lembrar: true, editLeg: {},
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
-  try { const salvo = JSON.parse(localStorage.getItem("ed-opc") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); } catch (e) { /* sem armazenamento */ }
-  const OPC_VISUAIS = ["estilo", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"];
-  function guardarOpc() { try { localStorage.setItem("ed-opc", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
+  try { const salvo = JSON.parse(localStorage.getItem("ed-opc2") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); } catch (e) { /* sem armazenamento */ }
+  const OPC_VISUAIS = ["estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"];
+  function guardarOpc() { try { localStorage.setItem("ed-opc2", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
   function toast(texto, erro) {
@@ -121,6 +137,8 @@ ESTRUTURA DE UGC
     try {
       const { data } = await banco().from("configuracoes").select("valor").eq("chave", "padrao_edicao").maybeSingle();
       if (data && data.valor) { st.padrao = String(data.valor); st.padraoSalvo = true; }
+      // uma vez: acrescenta no padrão salvo o estudo das referências novas (CapCut, out/2026)
+      if (st.padraoSalvo && !st.padrao.includes(MARCA_REFS)) { try { await salvarPadrao(st.padrao.trim() + "\n\n" + REFS_NOVAS); } catch (e) { /* tenta na próxima */ } }
     } catch (e) { /* fica o padrão de fábrica */ }
   }
   async function salvarPadrao(texto) {
@@ -184,7 +202,7 @@ ESTRUTURA DE UGC
       try { const el = await carregarVideo(a); st.clipes.push({ id: uid(), nome: a.name, arquivo: a, el, dur: el.duration || 0, w: el.videoWidth, h: el.videoHeight, palavras: null }); }
       catch (e) { toast(e.message, true); }
     }
-    st.plano = null; st.segs = [];
+    st.plano = null; st.segs = []; st.editLeg = {};
     pintar();
   }
 
@@ -308,7 +326,7 @@ ESTRUTURA DE UGC
     for (const c of st.clipes) for (const w of c.palavras || []) {
       const o = paraFinal(c.offset + w.s); if (o == null) continue;
       const fim = paraFinal(Math.min(c.offset + w.e, c.offset + c.dur - 0.01));
-      palavras.push({ w: w.w, o0: o, o1: fim != null && fim > o ? fim : o + 0.25, g: c.offset + w.s });
+      palavras.push({ w: w.w, o0: o, o1: fim != null && fim > o ? fim : o + 0.25, g: c.offset + w.s, k: chaveLeg(c.offset + w.s) });
     }
     // cada destaque vai para a palavra mais perto do tempo que a IA marcou (de preferência a mesma palavra)
     const limpa = (x) => String(x || "").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
@@ -317,13 +335,33 @@ ESTRUTURA DE UGC
       const alvo = perto.find((x) => d.palavra && limpa(x.w) === limpa(d.palavra)) || perto.sort((a, b) => Math.abs(a.g - d.t) - Math.abs(b.g - d.t))[0];
       if (alvo) alvo.destaque = true;
     }
-    st.legendas = agrupar(palavras);
+    st.legendas = aplicarEdicoes(agrupar(palavras));
     // efeitos e zooms do plano no tempo final
     st.efeitos = (p.efeitos || []).map((e) => ({ id: uid(), t: paraFinalPerto(e.t), tipo: e.tipo, por_que: e.por_que || "" })).filter((e) => e.t != null);
     st.efeitos = st.efeitos.filter((e) => !(e.t < 0.4 && e.tipo === "pop"));
     sonsDoTitulo();
     st.zooms = (p.zooms || []).map((z) => paraFinalPerto(z.t)).filter((t) => t != null);
+    // momentos fortes (hit, ding, riser) ganham tremidinha e confete
+    st.fortes = st.efeitos.filter((e) => ["hit", "ding"].includes(e.tipo)).map((e) => e.t);
   }
+  // ---------- legendas: chave por palavra e edições dela ----------
+  function chaveLeg(g) { return Math.round(g * 100); }
+  function aplicarEdicoes(grupos) {
+    const ed = st.editLeg, saida = [];
+    for (let i = 0; i < grupos.length; i++) {
+      let g = grupos[i];
+      const e = ed[g.palavras[0].k] || {};
+      if (e.juntar && grupos[i + 1]) { const prox = grupos[++i]; g = { ...g, palavras: [...g.palavras, ...prox.palavras], o1: prox.o1 }; const e2 = ed[prox.palavras[0].k] || {}; if (e2.texto && !e.texto) g.texto = g.palavras.map((w) => w.w).join(" "); }
+      if (e.oculta) continue;
+      if (e.texto != null) g.texto = e.texto;
+      if (e.chamativa != null) g.chamativa = e.chamativa; else g.chamativa = g.palavras.some((w) => w.destaque);
+      g.k = g.palavras[0].k;
+      saida.push(g);
+    }
+    // som de pop quando entra uma palavra chamativa
+    return saida;
+  }
+  const textoLeg = (g) => g.texto != null ? g.texto : g.palavras.map((w) => w.w).join(" ");
   // título em partes (até 3): cada parte entra num tempo, com um clique de mouse (estilo das referências)
   function partesTitulo() {
     const palavras = String(st.titulo || "").trim().split(/\s+/).filter(Boolean);
@@ -339,12 +377,15 @@ ESTRUTURA DE UGC
   function sonsDoTitulo() {
     st.efeitos = st.efeitos.filter((e) => !e.doTitulo);
     if (st.titulo && st.opc.titulo && st.opc.sonsTitulo !== false) {
-      if (st.opc.estiloTitulo === "etapas") partesTitulo().forEach((p, i) => st.efeitos.push({ id: uid(), t: p.t, tipo: "click", por_que: `título, parte ${i + 1}`, doTitulo: true }));
+      if (st.opc.estiloTitulo === "etapas" || st.opc.estiloTitulo === "capcut") partesTitulo().forEach((p, i) => st.efeitos.push({ id: uid(), t: p.t, tipo: "click", por_que: `título, parte ${i + 1}`, doTitulo: true }));
       else st.efeitos.push({ id: uid(), t: 0.05, tipo: "pop", por_que: "entrada do título", doTitulo: true });
     }
+    st.efeitos = st.efeitos.filter((e) => !e.daChamativa);
+    if (st.opc.chamativas && st.opc.sonsChamativas) for (const g of st.legendas || []) if (g.chamativa && !(st.opc.titulo && st.titulo && g.o0 < DUR_TITULO)) st.efeitos.push({ id: uid(), t: Math.max(0, g.o0 - 0.02), tipo: "pop", por_que: "palavra chamativa", daChamativa: true });
     st.efeitos.sort((a, b) => a.t - b.t);
   }
   function agrupar(palavras) {
+    if (st.opc.estilo === "capcut") return agruparN(palavras, Math.max(1, Math.min(5, Number(st.opc.porLegenda) || 3)));
     const grupos = [];
     for (const w of palavras) {
       const g = grupos[grupos.length - 1];
@@ -354,6 +395,17 @@ ESTRUTURA DE UGC
       else grupos.push({ palavras: [w], o0: w.o0, o1: w.o1, curta, fimFrase: /[.!?,]$/.test(w.w) });
     }
     grupos.forEach((g, i) => { const prox = grupos[i + 1]; g.o1 = prox ? Math.min(prox.o0, Math.max(g.o1, g.o0 + 0.18)) : g.o1 + 0.3; });
+    return grupos;
+  }
+  // CapCut: até N palavras por legenda, quebra em pontuação e em pausas; palavra de destaque fica sozinha
+  function agruparN(palavras, n) {
+    const grupos = [];
+    for (const w of palavras) {
+      const g = grupos[grupos.length - 1];
+      if (g && g.palavras.length < n && w.o0 - g.o1 < 0.35 && !g.fimFrase && !g.palavras.some((x) => x.destaque) && !w.destaque) { g.palavras.push(w); g.o1 = w.o1; g.fimFrase = /[.!?,;:]$/.test(w.w); }
+      else grupos.push({ palavras: [w], o0: w.o0, o1: w.o1, fimFrase: /[.!?,;:]$/.test(w.w) });
+    }
+    grupos.forEach((g, i) => { const prox = grupos[i + 1]; g.o1 = prox ? Math.min(prox.o0, Math.max(g.o1 + 0.12, g.o0 + 0.25)) : g.o1 + 0.3; });
     return grupos;
   }
   function paraFinal(g) { const s = st.segs.find((x) => g >= x.g0 && g < x.g1); return s ? s.o0 + (g - s.g0) : null; }
@@ -389,15 +441,19 @@ ESTRUTURA DE UGC
     const clipe = s ? st.clipes[s.ci] : st.clipes[0];
     if (clipe && clipe.el.readyState >= 2) {
       const v = clipe.el, vw = v.videoWidth || 9, vh = v.videoHeight || 16;
-      const z = (s ? s.zoom : 1) * zoomEm(t);
+      const tr = tremida(t);
+      const z = (s ? s.zoom : 1) * zoomEm(t) * (1 + tr.z);
       const esc0 = Math.max(W / vw, H / vh) * z;
       const dw = vw * esc0, dh = vh * esc0;
-      c2d.drawImage(v, (W - dw) / 2, (H - dh) * 0.42, dw, dh);
+      c2d.drawImage(v, (W - dw) / 2 + tr.x * W, (H - dh) * 0.42 + tr.y * H, dw, dh);
     }
     const u = W / 1080;
-    // legenda
+    // flash rápido nas trocas de clipe
+    if (st.opc.flash && s) { const i = st.segs.indexOf(s), ant = st.segs[i - 1]; const d = t - s.o0; if (ant && ant.ci !== s.ci && d < 0.12) { c2d.fillStyle = `rgba(255,255,255,${0.85 * (1 - d / 0.12)})`; c2d.fillRect(0, 0, W, H); } }
+    // legenda (ou palavra chamativa)
     const g = st.legendas.find((x) => t >= x.o0 && t < x.o1);
-    if (g && !(st.opc.titulo && st.titulo && t < DUR_TITULO - 0.2)) desenharLegenda(g, u, W, H);
+    if (g && !(st.opc.titulo && st.titulo && t < DUR_TITULO - 0.2)) { if (g.chamativa && st.opc.chamativas) desenharChamativa(g, t, u, W, H); else desenharLegenda(g, u, W, H); }
+    if (st.opc.confete) desenharConfete(t, u, W, H);
     // título do gancho
     if (st.opc.titulo && st.titulo && t < DUR_TITULO) desenharTitulo(t, u, W, H);
   }
@@ -416,7 +472,8 @@ ESTRUTURA DE UGC
     const peso = est === "minimal" ? 300 : est === "bold" ? 800 : 600;
     const fonte = `${peso} ${tam}px Poppins, "Helvetica Neue", Arial, sans-serif`;
     c2d.font = fonte; c2d.textAlign = "left"; c2d.textBaseline = "middle";
-    const partes = g.palavras.map((w) => ({ t: textoDe(w), destaque: w.destaque }));
+    if (est === "capcut") return legendaCapcut(g, u, W, H);
+    const partes = g.texto != null ? [{ t: textoDe({ w: g.texto }), destaque: false }] : g.palavras.map((w) => ({ t: textoDe(w), destaque: w.destaque }));
     const espaco = c2d.measureText(" ").width;
     const largura = partes.reduce((s, p) => s + c2d.measureText(p.t).width, 0) + espaco * (partes.length - 1);
     let x = (W - largura) / 2;
@@ -437,6 +494,127 @@ ESTRUTURA DE UGC
     }
     c2d.restore();
   }
+
+  // ---------- estilo CapCut ----------
+  const FREDOKA = (tam) => `700 ${tam}px Fredoka, Poppins, "Helvetica Neue", Arial, sans-serif`;
+  const CAVEAT = (tam) => `700 ${tam}px Caveat, "Segoe Script", cursive`;
+  const MONT = (tam) => `800 ${tam}px Montserrat, Poppins, "Helvetica Neue", Arial, sans-serif`;
+  function legendaCapcut(g, u, W, H) {
+    const tam = 74 * u, y = H * st.opc.altura;
+    let texto = textoLeg(g).replace(/^[,.;:!?]+|[,.;:]+$/g, "");
+    texto = st.opc.maiusculas ? texto.toUpperCase() : texto.toLowerCase();
+    const linhas = quebrar(texto, W * 0.8, `500 ${tam}px Poppins, "Helvetica Neue", Arial, sans-serif`);
+    const k = Math.min(1, (st.t - g.o0) / 0.09), escala = 0.92 + 0.08 * suave(Math.max(0, k));
+    c2d.save(); c2d.translate(W / 2, y); c2d.scale(escala, escala); c2d.translate(-W / 2, -y);
+    c2d.textAlign = "center"; c2d.textBaseline = "middle";
+    c2d.shadowColor = "rgba(0,0,0,.55)"; c2d.shadowBlur = 16 * u; c2d.shadowOffsetY = 3 * u;
+    c2d.fillStyle = st.opc.corLegenda || "#fff3b0";
+    linhas.forEach((l, i) => c2d.fillText(l, W / 2, y + (i - (linhas.length - 1) / 2) * tam * 1.12));
+    c2d.restore();
+  }
+  // palavra chamativa: frase pequena manuscrita em cima e a palavra forte grande, cor viva e sombra dura
+  function desenharChamativa(g, t, u, W, H) {
+    const idx = st.legendas.filter((x) => x.chamativa && x.o0 <= g.o0).length - 1;
+    const cor = CORES_CHAMATIVA[idx % CORES_CHAMATIVA.length];
+    const limpa = (x) => String(x).replace(/^[,.;:!?"']+|[,.;:!?"']+$/g, "");
+    let forte, resto;
+    if (g.texto != null) { const ws = limpa(g.texto).split(/\s+/); forte = ws.pop(); resto = ws.join(" "); }
+    else { const d = g.palavras.find((w) => w.destaque) || g.palavras.reduce((m, w) => (limpa(w.w).length > limpa(m.w).length ? w : m)); forte = limpa(d.w); resto = g.palavras.filter((w) => w !== d).map((w) => limpa(w.w)).join(" "); }
+    forte = forte.toLowerCase(); resto = resto.toLowerCase();
+    const y = H * Math.min(st.opc.altura, 0.5) - 20 * u;
+    const d = t - g.o0, k = Math.min(1, d / 0.16);
+    const esc0 = d < 0.16 ? 0.4 + 0.75 * suave(k) : 1.15 - 0.15 * Math.min(1, (d - 0.16) / 0.12);
+    const rot = (idx % 2 ? 3 : -3) * Math.PI / 180;
+    let tam = 168 * u; c2d.font = FREDOKA(tam);
+    const w = c2d.measureText(forte).width; if (w > W * 0.84) { tam *= (W * 0.84) / w; c2d.font = FREDOKA(tam); }
+    c2d.save(); c2d.translate(W / 2, y); c2d.rotate(rot); c2d.scale(esc0, esc0);
+    c2d.textAlign = "center"; c2d.textBaseline = "middle";
+    if (resto) { c2d.font = CAVEAT(78 * u); c2d.shadowColor = "rgba(0,0,0,.5)"; c2d.shadowBlur = 12 * u; c2d.fillStyle = "#ffffff"; c2d.fillText(resto, 0, -tam * 0.78); c2d.shadowColor = "transparent"; c2d.shadowBlur = 0; }
+    c2d.font = FREDOKA(tam);
+    c2d.fillStyle = "#111"; c2d.fillText(forte, 7 * u, 8 * u);
+    c2d.fillStyle = cor; c2d.fillText(forte, 0, 0);
+    c2d.restore();
+  }
+  // confete verde-limão caindo nos momentos fortes e nas palavras chamativas
+  function desenharConfete(t, u, W, H) {
+    const momentos = [...(st.fortes || []), ...st.legendas.filter((x) => x.chamativa && st.opc.chamativas && !(st.opc.titulo && st.titulo && x.o0 < DUR_TITULO)).map((x) => x.o0)];
+    const m = momentos.filter((x) => t >= x && t < x + 1.3).pop(); if (m == null) return;
+    const d = t - m;
+    for (let i = 0; i < 46; i++) {
+      const r1 = Math.abs(Math.sin(m * 97 + i * 12.9898) * 43758.5453) % 1, r2 = Math.abs(Math.sin(m * 31 + i * 78.233) * 12345.678) % 1;
+      const x = r1 * W + Math.sin(d * 6 + i) * 30 * u, y = -40 * u + (0.2 + r2 * 0.6) * H * d * 1.1 + 600 * u * d * d * 0.5;
+      if (y > H) continue;
+      c2d.save(); c2d.globalAlpha = Math.max(0, 1 - d / 1.3); c2d.translate(x, y); c2d.rotate(d * 8 + i);
+      c2d.fillStyle = ["#c6f432", "#ffffff", "#ffe45c"][i % 3]; c2d.fillRect(-7 * u, -3 * u, 14 * u, 6 * u); c2d.restore();
+    }
+  }
+  // tremidinha curta nos momentos fortes (efeito "impacto")
+  function tremida(t) {
+    if (!st.opc.tremer) return { x: 0, y: 0, z: 0 };
+    for (const m of st.fortes || []) { const d = t - m; if (d >= 0 && d < 0.28) { const a = (1 - d / 0.28) * 0.012; return { x: Math.sin(d * 90) * a, y: Math.cos(d * 70) * a, z: a * 2 }; } }
+    return { x: 0, y: 0, z: 0 };
+  }
+  // título CapCut: caixinhas pastel empilhadas com texto preto, figurinhas, cursor e moldura de seleção
+  function tituloCapcut(t, u, W, H) {
+    const saida = t > DUR_TITULO - 0.3 ? Math.max(0, (DUR_TITULO - t) / 0.3) : 1;
+    const partes = partesTitulo(), fundos = ["#bfe3ff", "#fff1a6", "#ffc9e3"], y0 = H * 0.22, alt = 150 * u;
+    c2d.save(); c2d.globalAlpha = saida; c2d.textAlign = "center"; c2d.textBaseline = "middle";
+    const caixas = [];
+    partes.forEach((p, i) => {
+      if (t < p.t) return;
+      let tam = 92 * u; c2d.font = MONT(tam);
+      const texto = p.texto.toLowerCase();
+      let w = c2d.measureText(texto).width; if (w > W * 0.78) { tam *= (W * 0.78) / w; c2d.font = MONT(tam); w = c2d.measureText(texto).width; }
+      const k = Math.min(1, (t - p.t) / 0.14), esc0 = k < 1 ? 0.5 + 0.62 * suave(k) : 1.12 - 0.12 * Math.min(1, (t - p.t - 0.14) / 0.1);
+      const y = y0 + (i - (partes.length - 1) / 2) * alt, rot = (i % 2 ? 2 : -2) * Math.PI / 180, padX = 34 * u, bh = tam * 1.35;
+      c2d.save(); c2d.translate(W / 2, y); c2d.rotate(rot); c2d.scale(esc0, esc0);
+      c2d.fillStyle = fundos[i % 3]; arredondado(-w / 2 - padX, -bh / 2, w + padX * 2, bh, 22 * u); c2d.fill();
+      c2d.fillStyle = "#111"; c2d.fillText(texto, 0, 4 * u);
+      c2d.restore();
+      caixas.push({ x: W / 2, y, w: w + padX * 2, h: bh, t0: p.t, i });
+    });
+    if (caixas.length) {
+      const a = caixas[0], ult = caixas[caixas.length - 1], gira = Math.sin(t * 4) * 0.25;
+      estrelaContorno(a.x - a.w / 2 - 10 * u, a.y - a.h * 0.75, 40 * u, gira);
+      flor(a.x + a.w / 2 + 34 * u, a.y - 6 * u, 34 * u, t);
+      bolinha(ult.x + ult.w / 2 + 40 * u, ult.y + 10 * u, 22 * u, "#ff8fc8");
+      bolinha(ult.x + ult.w / 2 + 84 * u, ult.y - 26 * u, 15 * u, "#8fd0ff");
+      // moldura de seleção na caixa que acabou de entrar, com cursor de mouse
+      const d = t - ult.t0;
+      if (d < 0.45) {
+        c2d.save(); c2d.strokeStyle = "#2f8cff"; c2d.lineWidth = 4 * u; c2d.setLineDash([12 * u, 8 * u]);
+        c2d.strokeRect(ult.x - ult.w / 2 - 12 * u, ult.y - ult.h / 2 - 12 * u, ult.w + 24 * u, ult.h + 24 * u); c2d.setLineDash([]);
+        c2d.fillStyle = "#fff";
+        for (const [cx, cy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const hx = ult.x + cx * (ult.w / 2 + 12 * u), hy = ult.y + cy * (ult.h / 2 + 12 * u); c2d.beginPath(); c2d.arc(hx, hy, 9 * u, 0, Math.PI * 2); c2d.fill(); c2d.stroke(); }
+        c2d.restore();
+      }
+      const ant = caixas[caixas.length - 2] || { x: W * 0.85, y: H * 0.08, w: 0, h: 0 };
+      const km = Math.min(1, d / 0.25), cx = ant.x + ant.w * 0.3 + (ult.x + ult.w * 0.3 - ant.x - ant.w * 0.3) * suave(km), cy = ant.y + ant.h * 0.35 + (ult.y + ult.h * 0.35 - ant.y - ant.h * 0.35) * suave(km);
+      cursor(cx, cy, 46 * u * (d > 0.25 && d < 0.33 ? 0.85 : 1));
+    }
+    c2d.restore();
+  }
+  function estrelaContorno(x, y, r, rot) {
+    c2d.save(); c2d.translate(x, y); c2d.rotate(rot); c2d.beginPath();
+    for (let i = 0; i < 10; i++) { const a = (Math.PI / 5) * i - Math.PI / 2, rr = i % 2 ? r * 0.45 : r; c2d.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+    c2d.closePath(); c2d.fillStyle = "#ffd426"; c2d.fill(); c2d.lineWidth = r * 0.12; c2d.strokeStyle = "#111"; c2d.lineJoin = "round"; c2d.stroke(); c2d.restore();
+  }
+  function flor(x, y, r, t) {
+    c2d.save(); c2d.translate(x, y); c2d.rotate(t * 0.8);
+    c2d.fillStyle = "#ffffff"; c2d.strokeStyle = "rgba(0,0,0,.25)"; c2d.lineWidth = r * 0.05;
+    for (let i = 0; i < 8; i++) { c2d.save(); c2d.rotate((Math.PI / 4) * i); c2d.beginPath(); c2d.ellipse(0, -r * 0.58, r * 0.26, r * 0.5, 0, 0, Math.PI * 2); c2d.fill(); c2d.stroke(); c2d.restore(); }
+    c2d.beginPath(); c2d.arc(0, 0, r * 0.3, 0, Math.PI * 2); c2d.fillStyle = "#ffcc33"; c2d.fill(); c2d.restore();
+  }
+  function bolinha(x, y, r, cor) {
+    const gr = c2d.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
+    gr.addColorStop(0, "#ffffff"); gr.addColorStop(0.35, cor); gr.addColorStop(1, cor);
+    c2d.save(); c2d.fillStyle = gr; c2d.beginPath(); c2d.arc(x, y, r, 0, Math.PI * 2); c2d.fill(); c2d.restore();
+  }
+  function cursor(x, y, s) {
+    c2d.save(); c2d.translate(x, y); c2d.beginPath();
+    c2d.moveTo(0, 0); c2d.lineTo(0, s); c2d.lineTo(s * 0.27, s * 0.76); c2d.lineTo(s * 0.45, s * 1.1); c2d.lineTo(s * 0.6, s * 1.03); c2d.lineTo(s * 0.43, s * 0.7); c2d.lineTo(s * 0.75, s * 0.7); c2d.closePath();
+    c2d.fillStyle = "#fff"; c2d.fill(); c2d.lineWidth = s * 0.07; c2d.strokeStyle = "#111"; c2d.lineJoin = "round"; c2d.stroke(); c2d.restore();
+  }
   const SERIFA = (tam) => `italic 400 ${tam}px "DM Serif Display", Georgia, serif`;
   const BASTAO = (tam) => `800 ${tam}px Poppins, "Helvetica Neue", Arial, sans-serif`;
   function estrela(x, y, r, cor) {
@@ -445,6 +623,7 @@ ESTRUTURA DE UGC
     c2d.closePath(); c2d.fill(); c2d.restore();
   }
   function desenharTitulo(t, u, W, H) {
+    if (st.opc.estiloTitulo === "capcut") return tituloCapcut(t, u, W, H);
     if (st.opc.estiloTitulo === "etapas") return tituloEtapas(t, u, W, H);
     if (st.opc.estiloTitulo === "frase") return tituloFrase(t, u, W, H);
     return tituloCaixa(t, u, W, H);
@@ -635,7 +814,7 @@ ESTRUTURA DE UGC
   }
   function srt() {
     const f = (s) => { const ms = Math.round(s * 1000), h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, ss = Math.floor(ms / 1000) % 60; return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(ss).padStart(2, "0")},${String(ms % 1000).padStart(3, "0")}`; };
-    return st.legendas.map((g, i) => `${i + 1}\n${f(g.o0)} --> ${f(g.o1)}\n${g.palavras.map((w) => w.w).join(" ")}\n`).join("\n");
+    return st.legendas.map((g, i) => `${i + 1}\n${f(g.o0)} --> ${f(g.o1)}\n${textoLeg(g)}\n`).join("\n");
   }
   function baixar(nome, conteudo, tipo) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([conteudo], { type: tipo })); a.download = nome; a.click(); }
 
@@ -673,6 +852,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
             <ol class="ed-etapas" id="ed-etapas"></ol>
           </section>
           <section class="ed-cartao" id="ed-ajustes"></section>
+          <section class="ed-cartao" id="ed-legendas" hidden></section>
         </div>
         <div class="ed-col-meio">
           <div class="ed-tela"><canvas id="ed-canvas" width="1080" height="1920"></canvas><div class="ed-vazio" id="ed-vazio">${ic.filme}<span>A prévia aparece aqui</span></div></div>
@@ -724,13 +904,13 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <button class="icone-btn" type="button" data-tirar="${c.id}" aria-label="Tirar clipe" ${st.trabalhando || st.exportando ? "disabled" : ""}>${ic.x}</button></div>`).join("");
     $$("[data-tirar]", sec).forEach((b) => b.addEventListener("click", () => {
       const c = st.clipes.find((x) => x.id === b.dataset.tirar); if (!c) return;
-      c.el.remove(); URL.revokeObjectURL(c.el.src); st.clipes = st.clipes.filter((x) => x !== c); st.segs = []; st.plano = null; pintar();
+      c.el.remove(); URL.revokeObjectURL(c.el.src); st.clipes = st.clipes.filter((x) => x !== c); st.segs = []; st.plano = null; st.editLeg = {}; pintar();
     }));
     const bt = $("#ed-editar", sec);
     bt.disabled = st.trabalhando || st.exportando || !st.clipes.length;
     bt.innerHTML = st.trabalhando ? "Editando…" : `${ic.brilho}${st.plano ? "Editar de novo" : "Editar automático"}`;
     $("#ed-vazio", sec).hidden = Boolean(st.segs.length);
-    pintarEtapas(); pintarAjustes(); pintarPlano(); pintarControles(); pintarFinal();
+    pintarEtapas(); pintarAjustes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal();
     if (st.segs.length && !st.tocando) desenhar(st.t);
   }
   function pintarEtapas() {
@@ -768,6 +948,9 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <label class="ed-rotulo" for="ed-altura">Altura da legenda</label>
       <input type="range" id="ed-altura" min="0.35" max="0.88" step="0.01" value="${o.altura}">
       <div class="ed-linha"><label class="ed-rotulo" for="ed-cor">Cor do destaque</label><input type="color" id="ed-cor" value="${o.cor}"></div>
+      ${o.estilo === "capcut" ? `<div class="ed-linha"><label class="ed-rotulo" for="ed-por">Palavras por legenda</label><select class="entrada" id="ed-por">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(o.porLegenda) === n ? "selected" : ""}>${n}</option>`).join("")}</select></div>
+      <div class="ed-linha"><label class="ed-rotulo" for="ed-cor-leg">Cor da legenda</label><span class="ed-cores">${["#fff3b0", "#ffffff", "#ffe45c"].map((c) => `<button type="button" class="ed-cor${o.corLegenda === c ? " ativa" : ""}" data-cor-leg="${c}" style="background:${c}" aria-label="Cor ${c}"></button>`).join("")}<input type="color" id="ed-cor-leg" value="${o.corLegenda}"></span></div>` : ""}
+      <div class="ed-chks">${chk("chamativas", "Palavras chamativas (grandes, coloridas)")}${chk("sonsChamativas", "Pop nas palavras chamativas")}${chk("confete", "Confete nos momentos fortes")}${chk("tremer", "Tremidinha no impacto")}${chk("flash", "Flash na troca de cena")}</div>
       <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("titulo", "Mostrar título")}${chk("sonsTitulo", "Som de clique no título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}</div>
       <label class="ed-rotulo" for="ed-vol">Volume dos efeitos</label>
       <input type="range" id="ed-vol" min="0" max="1.2" step="0.05" value="${o.vol}">
@@ -777,7 +960,10 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $("#ed-titulo-txt", box).addEventListener("change", () => { sonsDoTitulo(); pintarPlano(); });
     $("#ed-estilo-titulo", box).addEventListener("change", (e) => { o.estiloTitulo = e.target.value; sonsDoTitulo(); pintarPlano(); if (!st.tocando) { st.t = Math.min(st.t, 1.2); desenhar(st.t); } });
     box.onchange = guardarOpc;
-    $("#ed-estilo", box).addEventListener("change", (e) => { o.estilo = e.target.value; redesenhar(); });
+    $("#ed-estilo", box).addEventListener("change", (e) => { o.estilo = e.target.value; remontar(); });
+    const por = $("#ed-por", box); if (por) por.addEventListener("change", (e) => { o.porLegenda = Number(e.target.value); remontar(); });
+    const corLeg = $("#ed-cor-leg", box); if (corLeg) corLeg.addEventListener("input", (e) => { o.corLegenda = e.target.value; redesenhar(); });
+    $$("[data-cor-leg]", box).forEach((b) => b.addEventListener("click", () => { o.corLegenda = b.dataset.corLeg; guardarOpc(); pintarAjustes(); redesenhar(); }));
     $("#ed-altura", box).addEventListener("input", (e) => { o.altura = Number(e.target.value); redesenhar(); });
     $("#ed-cor", box).addEventListener("input", (e) => { o.cor = e.target.value; redesenhar(); });
     $("#ed-vol", box).addEventListener("input", (e) => { o.vol = Number(e.target.value); });
@@ -785,11 +971,37 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $$("[data-opc]", box).forEach((c) => c.addEventListener("change", () => {
       o[c.dataset.opc] = c.checked;
       // cortes mudam a linha do tempo inteira: monta de novo (os efeitos voltam aos do plano)
-      if (["silencio", "erros", "zoomCortes"].includes(c.dataset.opc)) { if (st.tocando) parar(); montar(); st.t = Math.min(st.t, st.duracao); pintar(); }
+      if (["silencio", "erros", "zoomCortes", "chamativas", "sonsChamativas"].includes(c.dataset.opc)) remontar();
       else { if (c.dataset.opc === "titulo" || c.dataset.opc === "sonsTitulo") { sonsDoTitulo(); pintarPlano(); } redesenhar(); }
     }));
   }
   function redesenhar() { if (!st.tocando) desenhar(st.t); }
+  function remontar() { if (st.tocando) parar(); montar(); st.t = Math.min(st.t, st.duracao); guardarOpc(); pintar(); }
+
+  // ---------- editor de legendas (como no CapCut) ----------
+  function pintarLegendas() {
+    const box = $("#ed-legendas"); if (!box) return;
+    if (!st.segs.length || !st.legendas.length) { box.hidden = true; return; }
+    box.hidden = false;
+    const n = Object.keys(st.editLeg).length;
+    box.innerHTML = `<div class="ed-titulo-linha"><h3 class="ed-titulo">Legendas</h3><span class="ed-sub">${st.legendas.length}${n ? ` · <button type="button" class="login-link" id="ed-leg-desfazer">desfazer edições</button>` : ""}</span></div>
+      <p class="ed-obs">Corrija o texto, junte com a próxima, apague ou marque ★ para virar palavra chamativa. Toque no tempo para ver na prévia.</p>
+      <div class="ed-legs">${st.legendas.map((g, i) => `<div class="ed-leg${g.chamativa ? " cham" : ""}" data-i="${i}"><button type="button" class="ed-ir" data-ir>${tempo(g.o0)}</button>
+        <input class="entrada" data-txt value="${esc(textoLeg(g))}" aria-label="Texto da legenda">
+        <button type="button" class="icone-btn" data-cham title="Palavra chamativa" aria-label="Palavra chamativa">${g.chamativa ? "★" : "☆"}</button>
+        <button type="button" class="icone-btn" data-juntar title="Juntar com a próxima" aria-label="Juntar com a próxima" ${i === st.legendas.length - 1 ? "disabled" : ""}>⤵</button>
+        <button type="button" class="icone-btn" data-apagar title="Apagar legenda" aria-label="Apagar legenda">${ic.x}</button></div>`).join("")}</div>`;
+    const editar = (g, mud) => { const k = g.k; st.editLeg[k] = { ...(st.editLeg[k] || {}), ...mud }; if (st.tocando) parar(); montar(); pintarLegendas(); pintarPlano(); redesenhar(); };
+    $$(".ed-leg", box).forEach((l) => {
+      const g = st.legendas[Number(l.dataset.i)];
+      $("[data-ir]", l).addEventListener("click", () => irPara(g.o0 + 0.02));
+      $("[data-txt]", l).addEventListener("change", (e) => { const v = e.target.value.trim(); if (!v) editar(g, { oculta: true }); else editar(g, { texto: v }); });
+      $("[data-cham]", l).addEventListener("click", () => editar(g, { chamativa: !g.chamativa }));
+      $("[data-juntar]", l).addEventListener("click", () => editar(g, { juntar: true, texto: undefined }));
+      $("[data-apagar]", l).addEventListener("click", () => editar(g, { oculta: true }));
+    });
+    const d = $("#ed-leg-desfazer", box); if (d) d.addEventListener("click", () => { st.editLeg = {}; if (st.tocando) parar(); montar(); pintar(); });
+  }
 
   function pintarPlano() {
     const box = $("#ed-plano"); if (!box) return;
@@ -867,10 +1079,10 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const sec = document.getElementById("aba-" + ABA);
     if (!sec) return;
     if (!st.pronto) {
-      if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;600;800&display=swap"; document.head.appendChild(l); }
+      if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;500;600;800&family=Montserrat:wght@800&family=Fredoka:wght@700&family=Caveat:wght@700&display=swap"; document.head.appendChild(l); }
       montarTela(sec); st.pronto = true;
       carregarPadrao();
-      try { await Promise.all(["300 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"'].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
+      try { await Promise.all(["300 40px Poppins", "500 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"', "800 40px Montserrat", "700 40px Fredoka", "700 40px Caveat"].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
     }
     pintar();
   }

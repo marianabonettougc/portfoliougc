@@ -92,7 +92,7 @@ Responda SOMENTE um JSON:
 
 Regras:
 - "remover": quando ela repete uma frase (tomada errada), fique com a ÚLTIMA versão e marque as anteriores para tirar. Tire também "vamos de novo", "peraí", gaguejos e falas que não são do roteiro. Use os tempos da fala. Não marque silêncios (o painel já corta).
-- "destaques": 1 a cada 4 ou 5 segundos, só palavras que carregam a ideia (benefício, número, nome do produto).
+- "destaques": as PALAVRAS CHAMATIVAS (viram texto grande colorido na tela, com pop): 1 a cada 5 a 7 segundos, só palavras que carregam a ideia (benefício, número, nome do produto, a virada da frase). Nunca palavrinhas como "de", "que", "eu".
 - "zooms": 1 a cada 5 a 8 segundos, em frases de ênfase.
 - "efeitos": riser logo antes do gancho/revelação, hit logo depois da revelação, pop quando entra texto na tela (o painel já põe sozinho os cliques do título, não marque pop para o título), woosh nas mudanças de assunto, click/shutter em listas e cortes rápidos, typing quando ela fala de algo escrito. Exagere um pouco no começo e depois use com moderação (no máximo 1 a cada 3 segundos).
 - Todos os tempos em segundos do bruto, com 1 casa decimal.${c.roteiro ? `
@@ -111,21 +111,28 @@ Regras:
 
 // correção: ela comenta o que não gostou e a IA devolve o plano corrigido, os ajustes visuais
 // (estilo da legenda, título, cor, volume dos efeitos...) e uma regra curta para o padrão
-const OPC_VALORES = `estilo: "minimal" (fina e branca) | "bold" (forte com contorno) | "caixa" (caixinha bege)
-estiloTitulo: "etapas" (em etapas com clique) | "frase" (frase gigante, 3 cores) | "caixa" (caixinhas)
+const OPC_VALORES = `estilo: "capcut" (Poppins média, minúscula, sombra suave, o padrão dela) | "minimal" (fina e branca) | "bold" (forte com contorno) | "caixa" (caixinha bege)
+corLegenda: cor da legenda capcut em hexadecimal (padrão "#fff3b0", amarelo clarinho)
+porLegenda: palavras por legenda no estilo capcut, de 1 a 4
+chamativas: true ou false (palavras de destaque viram texto grande colorido com sombra dura e frase manuscrita)
+sonsChamativas: true ou false (pop quando entra palavra chamativa)
+confete, tremer (tremidinha no impacto), flash (flash na troca de cena): true ou false
+estiloTitulo: "capcut" (caixinhas pastel com figurinhas e cursor, o padrão dela) | "etapas" (em etapas com clique) | "frase" (frase gigante, 3 cores) | "caixa" (caixinhas)
 altura: número de 0.35 (legenda no alto) a 0.88 (legenda bem embaixo)
 cor: cor do destaque em hexadecimal, ex. "#f2c14e"
 vol: volume dos efeitos de 0 a 1.2
 sonsTitulo: true ou false (o painel põe sozinho cliques/pop na entrada do título; false tira esses sons)
 maiusculas, titulo, efeitos, silencio, erros, zoomCortes, zoomEnfase: true ou false (efeitos false tira todos os sons)`;
 const OPC_OK: Record<string, (v: any) => any> = {
-  estilo: (v) => ["minimal", "bold", "caixa"].includes(v) ? v : undefined,
-  estiloTitulo: (v) => ["etapas", "frase", "caixa"].includes(v) ? v : undefined,
+  estilo: (v) => ["capcut", "minimal", "bold", "caixa"].includes(v) ? v : undefined,
+  estiloTitulo: (v) => ["capcut", "etapas", "frase", "caixa"].includes(v) ? v : undefined,
+  corLegenda: (v) => /^#[0-9a-f]{6}$/i.test(String(v)) ? String(v) : undefined,
+  porLegenda: (v) => [1, 2, 3, 4].includes(Number(v)) ? Number(v) : undefined,
   altura: (v) => Number.isFinite(Number(v)) ? Math.min(0.88, Math.max(0.35, Number(v))) : undefined,
   cor: (v) => /^#[0-9a-f]{6}$/i.test(String(v)) ? String(v) : undefined,
   vol: (v) => Number.isFinite(Number(v)) ? Math.min(1.2, Math.max(0, Number(v))) : undefined,
 };
-for (const k of ["sonsTitulo", "maiusculas", "titulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"]) OPC_OK[k] = (v) => typeof v === "boolean" ? v : undefined;
+for (const k of ["chamativas", "sonsChamativas", "confete", "tremer", "flash", "sonsTitulo", "maiusculas", "titulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"]) OPC_OK[k] = (v) => typeof v === "boolean" ? v : undefined;
 
 async function corrigir(chave: string, c: any) {
   const palavras = (Array.isArray(c.palavras) ? c.palavras : []).slice(0, 3000);
@@ -153,7 +160,7 @@ Responda SOMENTE um JSON com o plano inteiro já corrigido (mesmo formato do pla
 "opc": só os ajustes visuais que mudam (ex. {"estilo":"bold","maiusculas":true}),
 "resposta": 1 ou 2 frases curtas dizendo o que você mudou,
 "regra": uma regra curta e geral para o padrão de edição dela valer nos próximos vídeos (ex. "Legenda em maiúsculas, forte com contorno, no meio da tela"), ou "" se a correção só vale para este vídeo.
-Regras: efeitos só destes tipos: woosh, pop, click, shutter, typing, riser, hit, ding. Tempos em segundos do bruto. Português do Brasil. Nunca use travessão.`;
+Se ela pedir para corrigir o TEXTO de uma legenda, explique na resposta que ela pode editar direto na lista de Legendas (o texto da legenda não muda por aqui). Regras: efeitos só destes tipos: woosh, pop, click, shutter, typing, riser, hit, ding. Tempos em segundos do bruto. Português do Brasil. Nunca use travessão.`;
   const r = await fetch(`${GROQ}/chat/completions`, {
     method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.2, max_tokens: 4500, reasoning_effort: "low", response_format: { type: "json_object" }, messages: [{ role: "user", content: pedido }] }),

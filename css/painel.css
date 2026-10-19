@@ -1087,3 +1087,13 @@ button.menu-grupo:hover{color:var(--texto)}
 .ed-corr-eu{background:var(--bege);align-self:flex-end;max-width:92%}
 .ed-corr-ia{background:#f3e6d6;max-width:92%}
 .ed-corr-ia small{display:block;color:var(--suave);margin-top:3px}
+/* Edição de vídeos: editor de legendas e cores */
+.ed-legs{display:flex;flex-direction:column;gap:4px;max-height:420px;overflow:auto;padding-right:2px}
+.ed-leg{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:4px;align-items:center}
+.ed-leg input{height:32px;font-size:12.5px;min-width:0}
+.ed-leg .icone-btn{width:28px;height:28px;font-size:15px}
+.ed-leg.cham input{border-color:#9cc417;background:#f6ffd9}
+.ed-leg.cham [data-cham]{color:#7a9a10}
+.ed-cores{display:flex;align-items:center;gap:6px}
+.ed-cor{width:24px;height:24px;border-radius:50%;border:1px solid var(--linha-forte);cursor:pointer;padding:0}
+.ed-cor.ativa{outline:2px solid var(--texto);outline-offset:2px}
