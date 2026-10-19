@@ -18,6 +18,10 @@
 // um post do Painel de conteúdo; a IA usa para escolher as tomadas, o título, o b-roll e
 // os efeitos, e mostra o "Roteiro x gravação" (bloco gravado, faltou ou mudou).
 // O rascunho do roteiro fica guardado neste navegador.
+// Correções: depois de editar, ela escreve o que não gostou (legenda, efeitos, cortes,
+// título...) e a IA devolve o plano corrigido e os ajustes visuais (acao "corrigir"); a
+// linha do tempo é remontada sem transcrever de novo. Com "Lembrar nas próximas", a regra
+// vai para o padrão de edição dela e os ajustes visuais ficam guardados neste navegador.
 // Nada do vídeo sai do computador dela, só o áudio vai para transcrever.
 // =========================================================
 (function () {
@@ -91,9 +95,15 @@ ESTRUTURA DE UGC
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { estilo: "minimal", altura: 0.7, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "etapas", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
+    opc: { sonsTitulo: true, estilo: "minimal", altura: 0.7, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "etapas", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
+    correcoes: [], corrigindo: false, lembrar: true,
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
+
+  // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
+  try { const salvo = JSON.parse(localStorage.getItem("ed-opc") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); } catch (e) { /* sem armazenamento */ }
+  const OPC_VISUAIS = ["estilo", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"];
+  function guardarOpc() { try { localStorage.setItem("ed-opc", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
   function toast(texto, erro) {
@@ -185,10 +195,41 @@ ESTRUTURA DE UGC
     if (texto) st.etapas.push({ texto, estado: estado || "andando" });
     pintarEtapas();
   }
+  const palavrasBrutas = () => st.clipes.flatMap((c) => (c.palavras || []).map((w) => ({ w: w.w, s: +(w.s + c.offset).toFixed(2), e: +(w.e + c.offset).toFixed(2) })));
+
+  // ---------- correção da edição ----------
+  async function corrigir(texto) {
+    texto = String(texto || "").trim();
+    if (!texto) { toast("Escreva o que você quer mudar.", true); return; }
+    if (!st.plano || st.corrigindo) return;
+    st.corrigindo = true; pintarPlano();
+    try {
+      const r = await chamar({ acao: "corrigir", comentario: texto, plano: st.plano, titulo: st.titulo, opc: Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])),
+        palavras: palavrasBrutas().map((w) => ({ w: w.w, s: w.s })), duracao: st.clipes.reduce((s, c) => s + c.dur, 0), padrao: st.padrao, roteiro: st.roteiro.trim() || undefined, historico: st.correcoes.map((c) => c.texto) });
+      if (st.tocando) parar();
+      const check = st.plano.roteiro_check;
+      st.plano = { ...r.plano, roteiro_check: (r.plano.roteiro_check || []).length ? r.plano.roteiro_check : check };
+      if (r.plano.titulo) { st.titulo = r.plano.titulo; st.tituloDestaque = r.plano.titulo_destaque || st.tituloDestaque; }
+      Object.assign(st.opc, r.opc || {});
+      st.correcoes.push({ texto, resposta: r.resposta || "Corrigido.", regra: r.regra || "" });
+      montar(); st.t = 0;
+      if (st.lembrar) {
+        guardarOpc();
+        if (r.regra && !st.padrao.includes(r.regra)) {
+          const marca = "CORREÇÕES QUE ELA PEDIU (valem sempre):";
+          const novo = st.padrao.includes(marca) ? st.padrao.replace(marca, marca + "\n- " + r.regra) : st.padrao.trim() + "\n\n" + marca + "\n- " + r.regra;
+          try { await salvarPadrao(novo); } catch (e) { toast("Corrigi, mas não consegui guardar no padrão: " + e.message, true); }
+        }
+      }
+      toast(r.resposta || "Edição corrigida. Dá o play.");
+    } catch (e) { toast(e.message, true); }
+    st.corrigindo = false; pintar();
+  }
+
   async function editar() {
     if (!st.clipes.length) { toast("Envie o vídeo bruto primeiro.", true); return; }
     if (st.trabalhando) return;
-    st.trabalhando = true; st.etapas = []; pintar();
+    st.trabalhando = true; st.etapas = []; st.correcoes = []; pintar();
     try {
       let offset = 0;
       for (const [i, c] of st.clipes.entries()) {
@@ -204,7 +245,7 @@ ESTRUTURA DE UGC
         }
         c.offset = offset; offset += c.dur;
       }
-      const todas = st.clipes.flatMap((c) => c.palavras.map((w) => ({ w: w.w, s: +(w.s + c.offset).toFixed(2), e: +(w.e + c.offset).toFixed(2) })));
+      const todas = palavrasBrutas();
       if (todas.length) {
         etapa("Pensando na edição (cortes, título, zoom e efeitos)");
         st.plano = await chamar({ acao: "plano", palavras: todas, duracao: offset, padrao: st.padrao, tema: st.tema, roteiro: st.roteiro.trim() || undefined });
@@ -297,7 +338,7 @@ ESTRUTURA DE UGC
   }
   function sonsDoTitulo() {
     st.efeitos = st.efeitos.filter((e) => !e.doTitulo);
-    if (st.titulo && st.opc.titulo) {
+    if (st.titulo && st.opc.titulo && st.opc.sonsTitulo !== false) {
       if (st.opc.estiloTitulo === "etapas") partesTitulo().forEach((p, i) => st.efeitos.push({ id: uid(), t: p.t, tipo: "click", por_que: `título, parte ${i + 1}`, doTitulo: true }));
       else st.efeitos.push({ id: uid(), t: 0.05, tipo: "pop", por_que: "entrada do título", doTitulo: true });
     }
@@ -727,7 +768,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <label class="ed-rotulo" for="ed-altura">Altura da legenda</label>
       <input type="range" id="ed-altura" min="0.35" max="0.88" step="0.01" value="${o.altura}">
       <div class="ed-linha"><label class="ed-rotulo" for="ed-cor">Cor do destaque</label><input type="color" id="ed-cor" value="${o.cor}"></div>
-      <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("titulo", "Mostrar título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}</div>
+      <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("titulo", "Mostrar título")}${chk("sonsTitulo", "Som de clique no título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}</div>
       <label class="ed-rotulo" for="ed-vol">Volume dos efeitos</label>
       <input type="range" id="ed-vol" min="0" max="1.2" step="0.05" value="${o.vol}">
       <label class="ed-rotulo" for="ed-qual">Qualidade do arquivo</label>
@@ -735,6 +776,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $("#ed-titulo-txt", box).addEventListener("input", (e) => { st.titulo = e.target.value; if (!st.tocando) desenhar(Math.min(st.t, 1.2)); });
     $("#ed-titulo-txt", box).addEventListener("change", () => { sonsDoTitulo(); pintarPlano(); });
     $("#ed-estilo-titulo", box).addEventListener("change", (e) => { o.estiloTitulo = e.target.value; sonsDoTitulo(); pintarPlano(); if (!st.tocando) { st.t = Math.min(st.t, 1.2); desenhar(st.t); } });
+    box.onchange = guardarOpc;
     $("#ed-estilo", box).addEventListener("change", (e) => { o.estilo = e.target.value; redesenhar(); });
     $("#ed-altura", box).addEventListener("input", (e) => { o.altura = Number(e.target.value); redesenhar(); });
     $("#ed-cor", box).addEventListener("input", (e) => { o.cor = e.target.value; redesenhar(); });
@@ -744,7 +786,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       o[c.dataset.opc] = c.checked;
       // cortes mudam a linha do tempo inteira: monta de novo (os efeitos voltam aos do plano)
       if (["silencio", "erros", "zoomCortes"].includes(c.dataset.opc)) { if (st.tocando) parar(); montar(); st.t = Math.min(st.t, st.duracao); pintar(); }
-      else { if (c.dataset.opc === "titulo") { sonsDoTitulo(); pintarPlano(); } redesenhar(); }
+      else { if (c.dataset.opc === "titulo" || c.dataset.opc === "sonsTitulo") { sonsDoTitulo(); pintarPlano(); } redesenhar(); }
     }));
   }
   function redesenhar() { if (!st.tocando) desenhar(st.t); }
@@ -753,7 +795,14 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const box = $("#ed-plano"); if (!box) return;
     if (!st.plano || !st.segs.length) { box.innerHTML = `<section class="ed-cartao ed-dica"><h3 class="ed-titulo">Como funciona</h3><ol class="ed-passos"><li>Grave do seu jeito, pode ser em várias partes e com tomadas erradas.</li><li>Envie os arquivos aqui e clique em <b>Editar automático</b>.</li><li>Eu escuto, corto, legendo, ponho zoom, título e efeitos no seu padrão.</li><li>Confira a prévia, ajuste o que quiser e baixe o MP4.</li></ol><p class="ed-obs">O vídeo não sai do seu computador: só o áudio vai para a transcrição. A exportação acontece em tempo real, então deixe esta aba aberta até terminar.</p></section>`; return; }
     const p = st.plano, bruto = st.clipes.reduce((s, c) => s + c.dur, 0);
-    box.innerHTML = `<section class="ed-cartao">
+    box.innerHTML = `<section class="ed-cartao ed-corrigir">
+        <h3 class="ed-titulo">Corrigir a edição</h3>
+        ${st.correcoes.map((c) => `<div class="ed-corr"><p class="ed-corr-eu">${esc(c.texto)}</p><p class="ed-corr-ia">${esc(c.resposta)}${c.regra && st.lembrar ? `<small>Guardei no seu padrão: ${esc(c.regra)}</small>` : ""}</p></div>`).join("")}
+        <textarea class="entrada" id="ed-corr-txt" rows="4" placeholder="Diga o que não ficou bom. Ex.: a legenda está fina demais, quero maiúscula e forte no meio da tela; tire os efeitos de clique; o woosh tem que entrar só nas trocas de cena; corte o começo até eu falar o gancho." ${st.corrigindo ? "disabled" : ""}></textarea>
+        <label class="ed-chk"><input type="checkbox" id="ed-corr-lembrar" ${st.lembrar ? "checked" : ""}> Lembrar nas próximas edições (vai para o seu padrão)</label>
+        <button class="btn btn-principal" type="button" id="ed-corr-btn" ${st.corrigindo ? "disabled" : ""}>${st.corrigindo ? "Corrigindo…" : ic.brilho + "Corrigir edição"}</button>
+      </section>
+      <section class="ed-cartao">
         <h3 class="ed-titulo">O que eu fiz</h3>
         <div class="ed-resumo"><div><b>${tempo(bruto)}</b><span>bruto</span></div><div><b>${tempo(st.duracao)}</b><span>editado</span></div><div><b>${st.segs.length}</b><span>planos</span></div><div><b>${st.legendas.length}</b><span>legendas</span></div></div>
         ${(p.remover || []).length && st.opc.erros ? `<details class="ed-det"><summary>${p.remover.length} trecho${p.remover.length > 1 ? "s" : ""} tirado${p.remover.length > 1 ? "s" : ""} (tomada errada, gaguejo)</summary><ul>${p.remover.map((r) => `<li>${tempo(r.de)} a ${tempo(r.ate)} do bruto · ${esc(r.motivo)}</li>`).join("")}</ul></details>` : ""}
@@ -769,6 +818,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
         <ul class="ed-lista ed-check">${p.roteiro_check.map((r) => `<li class="ed-st-${esc(r.status)}"><span>${r.status === "gravado" ? "✓" : r.status === "faltou" ? "faltou" : "mudou"}</span><div><b>${esc(r.bloco)}</b>${r.obs ? `<small>${esc(r.obs)}</small>` : ""}</div></li>`).join("")}</ul></section>` : ""}
       ${(p.broll || []).length ? `<section class="ed-cartao"><h3 class="ed-titulo">B-roll para gravar</h3><ul class="ed-lista">${p.broll.map((b) => `<li><span>${b.t != null && paraFinalPerto(b.t) != null ? tempo(paraFinalPerto(b.t)) : ""}</span>${esc(b.ideia)}</li>`).join("")}</ul></section>` : ""}
       ${p.musica || (p.dicas || []).length ? `<section class="ed-cartao"><h3 class="ed-titulo">Dicas do editor</h3>${p.musica ? `<p class="ed-obs"><b>Música:</b> ${esc(p.musica)}</p>` : ""}<ul class="ed-lista">${(p.dicas || []).map((d) => `<li>${esc(d)}</li>`).join("")}</ul></section>` : ""}`;
+    $("#ed-corr-btn", box).addEventListener("click", () => corrigir($("#ed-corr-txt", box).value));
+    $("#ed-corr-lembrar", box).addEventListener("change", (e) => { st.lembrar = e.target.checked; });
     $$(".ed-efeito", box).forEach((l) => {
       const e = st.efeitos.find((x) => x.id === l.dataset.id);
       $("[data-ouvir]", l).addEventListener("click", () => { audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(e.tipo, ac.currentTime + (e.tipo === "riser" ? 1.2 : 0.02), st.opc.vol); });

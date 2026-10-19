@@ -10,6 +10,9 @@
 //   voice-over que tinha idealizado), a edição segue o roteiro: escolhe a tomada que bate
 //   com a fala escrita, usa o gancho do roteiro no título, tira b-roll e efeitos das
 //   direções de cena e devolve "roteiro_check" (bloco gravado, faltou ou mudou).
+// - JSON { acao: "corrigir", comentario, plano, opc, titulo, palavras, padrao, roteiro, historico }:
+//   ela comenta o que não gostou; volta o plano corrigido, os ajustes visuais que mudam
+//   (legenda, título, cor, efeitos), o que foi feito e uma regra para guardar no padrão.
 // Segredo: GROQ_API_KEY (só no Supabase). Só a dona do painel pode usar.
 // =========================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -42,6 +45,22 @@ async function transcrever(chave: string, arquivo: File) {
   if (!r.ok) throw new Error(r.status === 429 ? "O limite grátis do Groq acabou por agora. Espere um pouco e tente de novo." : "O Whisper não conseguiu transcrever: " + (j?.error?.message || r.status));
   const palavras = (Array.isArray(j.words) ? j.words : []).map((w: any) => ({ w: String(w.word || "").trim(), s: num(w.start) ?? 0, e: num(w.end) ?? 0 })).filter((w: any) => w.w);
   return { texto: String(j.text || "").trim(), palavras, duracao: num(j.duration) };
+}
+
+function normalizar(a: any) {
+  const lista = (x: unknown) => (Array.isArray(x) ? x : []);
+  return {
+    titulo: txt(a.titulo, 60),
+    titulo_destaque: txt(a.titulo_destaque, 30),
+    remover: lista(a.remover).map((x: any) => ({ de: num(x.de), ate: num(x.ate), motivo: txt(x.motivo, 60) })).filter((x: any) => x.de != null && x.ate != null && x.ate > x.de),
+    destaques: lista(a.destaques).map((x: any) => ({ t: num(x.t), palavra: txt(x.palavra, 40) })).filter((x: any) => x.t != null),
+    zooms: lista(a.zooms).map((x: any) => ({ t: num(x.t) })).filter((x: any) => x.t != null),
+    efeitos: lista(a.efeitos).map((x: any) => ({ t: num(x.t), tipo: String(x.tipo || "").toLowerCase().trim(), por_que: txt(x.por_que, 80) })).filter((x: any) => x.t != null && EFEITOS.includes(x.tipo)),
+    broll: lista(a.broll).map((x: any) => ({ t: num(x.t), ideia: txt(x.ideia, 200) })).filter((x: any) => x.ideia),
+    musica: txt(a.musica, 200),
+    dicas: lista(a.dicas).map((x: any) => txt(x, 200)).filter(Boolean).slice(0, 4),
+    roteiro_check: lista(a.roteiro_check).map((x: any) => ({ bloco: txt(x.bloco, 80), status: ["gravado", "faltou", "mudou"].includes(String(x.status).toLowerCase().trim()) ? String(x.status).toLowerCase().trim() : "gravado", t: num(x.t), obs: txt(x.obs, 220) })).filter((x: any) => x.bloco).slice(0, 20),
+  };
 }
 
 async function plano(chave: string, c: any) {
@@ -87,20 +106,65 @@ Regras:
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(r.status === 429 ? "O limite grátis da IA deste minuto acabou. Espere um pouquinho e tente de novo." : "A IA não respondeu agora. Tente de novo.");
+  return normalizar(lerJson(String(j.choices?.[0]?.message?.content || "")));
+}
+
+// correção: ela comenta o que não gostou e a IA devolve o plano corrigido, os ajustes visuais
+// (estilo da legenda, título, cor, volume dos efeitos...) e uma regra curta para o padrão
+const OPC_VALORES = `estilo: "minimal" (fina e branca) | "bold" (forte com contorno) | "caixa" (caixinha bege)
+estiloTitulo: "etapas" (em etapas com clique) | "frase" (frase gigante, 3 cores) | "caixa" (caixinhas)
+altura: número de 0.35 (legenda no alto) a 0.88 (legenda bem embaixo)
+cor: cor do destaque em hexadecimal, ex. "#f2c14e"
+vol: volume dos efeitos de 0 a 1.2
+sonsTitulo: true ou false (o painel põe sozinho cliques/pop na entrada do título; false tira esses sons)
+maiusculas, titulo, efeitos, silencio, erros, zoomCortes, zoomEnfase: true ou false (efeitos false tira todos os sons)`;
+const OPC_OK: Record<string, (v: any) => any> = {
+  estilo: (v) => ["minimal", "bold", "caixa"].includes(v) ? v : undefined,
+  estiloTitulo: (v) => ["etapas", "frase", "caixa"].includes(v) ? v : undefined,
+  altura: (v) => Number.isFinite(Number(v)) ? Math.min(0.88, Math.max(0.35, Number(v))) : undefined,
+  cor: (v) => /^#[0-9a-f]{6}$/i.test(String(v)) ? String(v) : undefined,
+  vol: (v) => Number.isFinite(Number(v)) ? Math.min(1.2, Math.max(0, Number(v))) : undefined,
+};
+for (const k of ["sonsTitulo", "maiusculas", "titulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"]) OPC_OK[k] = (v) => typeof v === "boolean" ? v : undefined;
+
+async function corrigir(chave: string, c: any) {
+  const palavras = (Array.isArray(c.palavras) ? c.palavras : []).slice(0, 3000);
+  const fala = palavras.map((p: any) => `[${Number(p.s).toFixed(1)}] ${p.w}`).join(" ");
+  const atual = { titulo: txt(c.titulo, 60), ...(c.plano || {}) };
+  delete (atual as any).roteiro_check;
+  const pedido = `Você é videomaker e editor de Reels de uma criadora brasileira de UGC. Você editou um vídeo e ela pediu correções. Corrija a edição exatamente como ela pediu.
+
+PADRÃO DE EDIÇÃO DELA (tirado das referências que ela mandou):
+${txt(c.padrao, 4000)}
+
+${c.roteiro ? "ROTEIRO DELA:\n" + txt(c.roteiro, 2000) + "\n\n" : ""}FALA DO VÍDEO BRUTO (segundo em que cada palavra começa):
+${fala}
+
+PLANO ATUAL DA EDIÇÃO:
+${JSON.stringify(atual).slice(0, 6000)}
+
+AJUSTES VISUAIS ATUAIS: ${JSON.stringify(c.opc || {})}
+AJUSTES POSSÍVEIS:
+${OPC_VALORES}
+
+${Array.isArray(c.historico) && c.historico.length ? "CORREÇÕES QUE ELA JÁ PEDIU NESTE VÍDEO (continue respeitando): " + c.historico.slice(-5).map((h: unknown) => txt(h, 300)).join(" | ") + "\n\n" : ""}O QUE ELA PEDIU AGORA: ${txt(c.comentario, 1500)}
+
+Responda SOMENTE um JSON com o plano inteiro já corrigido (mesmo formato do plano atual, com todos os campos, mesmo os que não mudaram), mais:
+"opc": só os ajustes visuais que mudam (ex. {"estilo":"bold","maiusculas":true}),
+"resposta": 1 ou 2 frases curtas dizendo o que você mudou,
+"regra": uma regra curta e geral para o padrão de edição dela valer nos próximos vídeos (ex. "Legenda em maiúsculas, forte com contorno, no meio da tela"), ou "" se a correção só vale para este vídeo.
+Regras: efeitos só destes tipos: woosh, pop, click, shutter, typing, riser, hit, ding. Tempos em segundos do bruto. Português do Brasil. Nunca use travessão.`;
+  const r = await fetch(`${GROQ}/chat/completions`, {
+    method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.2, max_tokens: 4500, reasoning_effort: "low", response_format: { type: "json_object" }, messages: [{ role: "user", content: pedido }] }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(r.status === 429 ? "O limite grátis da IA deste minuto acabou. Espere um pouquinho e tente de novo." : "A IA não respondeu agora. Tente de novo.");
   const a = lerJson(String(j.choices?.[0]?.message?.content || ""));
-  const lista = (x: unknown) => (Array.isArray(x) ? x : []);
-  return {
-    titulo: txt(a.titulo, 60),
-    titulo_destaque: txt(a.titulo_destaque, 30),
-    remover: lista(a.remover).map((x: any) => ({ de: num(x.de), ate: num(x.ate), motivo: txt(x.motivo, 60) })).filter((x: any) => x.de != null && x.ate != null && x.ate > x.de),
-    destaques: lista(a.destaques).map((x: any) => ({ t: num(x.t), palavra: txt(x.palavra, 40) })).filter((x: any) => x.t != null),
-    zooms: lista(a.zooms).map((x: any) => ({ t: num(x.t) })).filter((x: any) => x.t != null),
-    efeitos: lista(a.efeitos).map((x: any) => ({ t: num(x.t), tipo: String(x.tipo || "").toLowerCase().trim(), por_que: txt(x.por_que, 80) })).filter((x: any) => x.t != null && EFEITOS.includes(x.tipo)),
-    broll: lista(a.broll).map((x: any) => ({ t: num(x.t), ideia: txt(x.ideia, 200) })).filter((x: any) => x.ideia),
-    musica: txt(a.musica, 200),
-    dicas: lista(a.dicas).map((x: any) => txt(x, 200)).filter(Boolean).slice(0, 4),
-    roteiro_check: lista(a.roteiro_check).map((x: any) => ({ bloco: txt(x.bloco, 80), status: ["gravado", "faltou", "mudou"].includes(String(x.status).toLowerCase().trim()) ? String(x.status).toLowerCase().trim() : "gravado", t: num(x.t), obs: txt(x.obs, 220) })).filter((x: any) => x.bloco).slice(0, 20),
-  };
+  const novo = normalizar(a);
+  const opc: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(a.opc || {})) { const f = OPC_OK[k]; const ok = f ? f(v) : undefined; if (ok !== undefined) opc[k] = ok; }
+  return { plano: novo, opc, resposta: txt(a.resposta, 400), regra: txt(a.regra, 300) };
 }
 
 Deno.serve(async (req) => {
@@ -121,6 +185,7 @@ Deno.serve(async (req) => {
     }
     const corpo = await req.json().catch(() => ({}));
     if (corpo.acao === "plano") return resposta(await plano(chave, corpo));
+    if (corpo.acao === "corrigir") return resposta(await corrigir(chave, corpo));
     return resposta({ error: "Ação desconhecida." }, 400);
   } catch (e) {
     console.error(e);

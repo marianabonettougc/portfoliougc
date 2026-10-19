@@ -1078,3 +1078,12 @@ button.menu-grupo:hover{color:var(--texto)}
 .ed-check .ed-st-gravado > span{color:#5b7a4a}
 .ed-check .ed-st-faltou > span{color:#a0522d}
 .ed-check .ed-st-mudou > span{color:#b8892c}
+
+/* Edição de vídeos: correções */
+.ed-corrigir{border-color:#c9a27e}
+.ed-corrigir textarea{width:100%;min-height:96px;height:auto;resize:vertical;font-size:12.5px;line-height:1.5}
+.ed-corr{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
+.ed-corr p{margin:0;padding:7px 10px;border-radius:10px;font-size:12.5px}
+.ed-corr-eu{background:var(--bege);align-self:flex-end;max-width:92%}
+.ed-corr-ia{background:#f3e6d6;max-width:92%}
+.ed-corr-ia small{display:block;color:var(--suave);margin-top:3px}
