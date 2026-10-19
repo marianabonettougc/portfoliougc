@@ -529,3 +529,17 @@ alter table public.chaves_push enable row level security;
 -- a cada minuto o banco chama a função para mandar os avisos que venceram
 create extension if not exists pg_cron;
 select cron.schedule('disparar-lembretes', '* * * * *', $$select net.http_post(url := 'https://ztpzcmeiypnstswasxdw.supabase.co/functions/v1/notificacoes', body := '{"acao":"disparar"}'::jsonb, headers := '{"Content-Type":"application/json"}'::jsonb, timeout_milliseconds := 20000)$$);
+
+-- ---------------------------------------------------------------------
+-- EDIÇÃO DE VÍDEOS: projetos salvos (js/edicao.js). O vídeo fica no aparelho dela; aqui vai
+-- só a memória da edição (tema, roteiro, transcrição, plano, ajustes, legendas, correções).
+-- ---------------------------------------------------------------------
+create table if not exists public.edicao_projetos (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now()
+);
+alter table public.edicao_projetos enable row level security;
+create policy "dona faz tudo" on public.edicao_projetos for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());

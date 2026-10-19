@@ -950,8 +950,8 @@ button.menu-grupo:hover{color:var(--texto)}
 .ed-passos{margin:0;padding-left:18px;font-size:13px;line-height:1.55;display:flex;flex-direction:column;gap:6px}
 .ed-obs{margin:0;font-size:12.5px;line-height:1.5;color:var(--suave)}
 .ed-padrao{width:100%;box-sizing:border-box;font-size:13px;line-height:1.5;resize:vertical}
-.ed-videos{position:fixed;left:-9999px;top:0;width:2px;height:2px;overflow:hidden;opacity:0;pointer-events:none}
-.ed-videos video{width:2px;height:2px}
+.ed-videos{position:fixed;left:0;bottom:0;width:96px;height:96px;overflow:hidden;opacity:.01;pointer-events:none;z-index:-1}
+.ed-videos video{width:96px;height:96px}
 @media(max-width:1100px){.ed-grade{grid-template-columns:minmax(0,1fr) minmax(260px,340px)}.ed-col-dir{grid-column:1/-1}}
 @media(max-width:700px){.ed-grade{grid-template-columns:1fr}.ed-col-esq{display:contents}.ed-col-esq>.ed-cartao:first-child{order:1}.ed-col-meio{order:2}#ed-ajustes{order:3}.ed-col-dir{order:4}.ed-col-meio{position:static;max-width:360px;width:100%;margin:0 auto}.ed-chks{grid-template-columns:1fr}}
 
@@ -1101,3 +1101,11 @@ button.menu-grupo:hover{color:var(--texto)}
 .ed-cartao[hidden]{display:none}
 .ed-espera{opacity:.75}
 .ed-espera textarea{width:100%;resize:none}
+
+/* Edição de vídeos: projetos */
+.ed-projeto{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:-4px 0 14px}
+.ed-projeto select{max-width:340px;flex:1 1 220px}
+.ed-proj-status{color:var(--suave);font-size:11.5px}
+.ed-pendentes{font-size:12.5px;line-height:1.5}
+.ed-pendentes .ok{color:#5b7a4a;font-weight:600}
+@media(max-width:700px){#ed-legendas{order:3}}

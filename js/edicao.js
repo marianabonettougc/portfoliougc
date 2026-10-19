@@ -19,6 +19,12 @@
 // confete e tremidinha nos momentos fortes. Nunca mexe na cor do vídeo (isso ela faz no
 // CapCut). Editor de legendas: mudar o texto, juntar com a próxima, apagar e marcar como
 // chamativa (fica guardado por palavra, então sobrevive a correções e reedições).
+// Projetos (tabela edicao_projetos): cada vídeo vira um projeto salvo sozinho (tema, roteiro,
+// transcrição, plano, ajustes, legendas editadas, correções). O vídeo em si fica no
+// aparelho dela: ao abrir um projeto ela escolhe de novo os mesmos arquivos e a edição volta
+// inteira, sem transcrever nem gastar IA de novo.
+// iPhone: o Safari só mostra o quadro do vídeo depois de tocar, então cada clipe dá um
+// play mudo e pausa logo que carrega (senão a prévia fica preta).
 // O padrão de edição (tirado das referências que ela mandou) fica na tabela
 // configuracoes, chave "padrao_edicao", e ela pode editar.
 // Roteiro (opcional): ela cola o que tinha idealizado (cenas, falas, voice-over) ou puxa
@@ -112,14 +118,14 @@ ESTRUTURA DE UGC
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
     opc: { sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: true, sonsChamativas: true, confete: true, tremer: true, flash: false, altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "capcut", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
-    correcoes: [], corrigindo: false, lembrar: true, editLeg: {},
+    correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, projeto: null, projetos: [], pendentes: null, salvando: "",
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
   try { const salvo = JSON.parse(localStorage.getItem("ed-opc2") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); } catch (e) { /* sem armazenamento */ }
   const OPC_VISUAIS = ["estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"];
-  function guardarOpc() { try { localStorage.setItem("ed-opc2", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
+  function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc2", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
   function toast(texto, erro) {
@@ -188,22 +194,111 @@ ESTRUTURA DE UGC
       v.src = URL.createObjectURL(arquivo);
       // vídeo gravado pelo navegador (WebM) às vezes vem sem duração: pula pro fim para descobrir
       v.onloadedmetadata = () => {
-        if (isFinite(v.duration)) { ok(v); return; }
-        const achou = () => { if (!isFinite(v.duration)) return; v.removeEventListener("durationchange", achou); v.currentTime = 0; ok(v); };
+        if (isFinite(v.duration)) { preparar(v).then(() => ok(v)); return; }
+        const achou = () => { if (!isFinite(v.duration)) return; v.removeEventListener("durationchange", achou); v.currentTime = 0; preparar(v).then(() => ok(v)); };
         v.addEventListener("durationchange", achou); v.currentTime = 1e9;
       };
       v.onerror = () => falha(new Error(`Não consegui abrir "${arquivo.name}". Tente exportar em MP4 (H.264) ou MOV.`));
       $("#ed-videos").appendChild(v);
     });
   }
+  // iPhone/Safari: um play mudo rapidinho faz o vídeo ter quadro para desenhar na prévia
+  async function preparar(v) {
+    if (v.readyState >= 2) return;
+    try { v.muted = true; await v.play(); v.pause(); v.currentTime = 0; } catch (e) { /* segue: desenha quando tocar */ }
+    v.muted = false;
+  }
   async function adicionarClipes(arquivos) {
+    const pend = st.pendentes;
     for (const a of arquivos) {
       if (!/^video\//.test(a.type) && !/\.(mp4|mov|m4v|webm)$/i.test(a.name)) { toast(`"${a.name}" não é vídeo.`, true); continue; }
-      try { const el = await carregarVideo(a); st.clipes.push({ id: uid(), nome: a.name, arquivo: a, el, dur: el.duration || 0, w: el.videoWidth, h: el.videoHeight, palavras: null }); }
-      catch (e) { toast(e.message, true); }
+      try {
+        const el = await carregarVideo(a), clipe = { id: uid(), nome: a.name, arquivo: a, el, dur: el.duration || 0, w: el.videoWidth, h: el.videoHeight, palavras: null };
+        // abrindo um projeto: o arquivo certo recupera a transcrição salva
+        if (pend) { const i = pend.findIndex((x) => !x.usado && (x.nome === a.name || Math.abs((x.dur || 0) - clipe.dur) < 0.25)); if (i >= 0) { pend[i].usado = true; clipe.palavras = pend[i].palavras || null; clipe.ordem = i; } }
+        st.clipes.push(clipe);
+      } catch (e) { toast(e.message, true); }
     }
-    st.plano = null; st.segs = []; st.editLeg = {};
-    pintar();
+    if (pend) {
+      st.clipes.sort((x, y) => (x.ordem ?? 99) - (y.ordem ?? 99));
+      if (pend.every((x) => x.usado)) {
+        st.pendentes = null;
+        let off = 0; st.clipes.forEach((c) => { c.offset = off; off += c.dur; });
+        if (st.plano) { montar(); if (st.efeitosSalvos) { st.efeitos = st.efeitosSalvos; st.efeitosSalvos = null; } st.t = 0; toast("Projeto aberto do jeito que você deixou."); }
+      }
+      pintar(); return;
+    }
+    st.plano = null; st.segs = []; st.editLeg = {}; st.correcoes = [];
+    pintar(); salvarDepois();
+  }
+
+  // ---------- projetos (memória da edição) ----------
+  const dadosProjeto = () => ({
+    tema: st.tema, roteiro: st.roteiro, opc: st.opc, plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, editLeg: st.editLeg, correcoes: st.correcoes,
+    efeitos: st.efeitos.filter((e) => !e.doTitulo && !e.daChamativa).map(({ id, ...e }) => e),
+    clipes: (st.clipes.length ? st.clipes : st.pendentes || []).map((c) => ({ nome: c.nome, dur: Math.round((c.dur || 0) * 100) / 100, palavras: c.palavras || null })),
+  });
+  let tempoSalvar = null;
+  function salvarDepois() { clearTimeout(tempoSalvar); tempoSalvar = setTimeout(salvarProjeto, 1500); }
+  async function salvarProjeto() {
+    if (st.pendentes) return; // ainda esperando ela escolher os arquivos do projeto aberto
+    if (!st.clipes.length && !st.roteiro.trim() && !st.projeto) return;
+    const nome = (st.projeto && st.projeto.nomeFixo) || st.tema.trim() || (st.clipes[0] ? st.clipes[0].nome.replace(/\.[^.]+$/, "") : "") || "Projeto sem nome";
+    st.salvando = "salvando"; pintarProjeto();
+    try {
+      const linha = { nome: nome.slice(0, 120), dados: dadosProjeto(), atualizado_em: new Date().toISOString() };
+      if (st.projeto && st.projeto.id) { const { error } = await banco().from("edicao_projetos").update(linha).eq("id", st.projeto.id); if (error) throw error; st.projeto.nome = linha.nome; }
+      else { const { data, error } = await banco().from("edicao_projetos").insert(linha).select("id,nome,atualizado_em").single(); if (error) throw error; st.projeto = { id: data.id, nome: data.nome }; }
+      st.salvando = "salvo";
+      const p = st.projetos.find((x) => x.id === st.projeto.id); if (p) { p.nome = linha.nome; p.atualizado_em = linha.atualizado_em; } else st.projetos.unshift({ id: st.projeto.id, nome: linha.nome, atualizado_em: linha.atualizado_em });
+    } catch (e) { st.salvando = "erro"; }
+    pintarProjeto();
+  }
+  async function carregarProjetos() {
+    try { const { data } = await banco().from("edicao_projetos").select("id,nome,atualizado_em").order("atualizado_em", { ascending: false }).limit(60); st.projetos = data || []; } catch (e) { st.projetos = []; }
+    pintarProjeto();
+  }
+  function limparTudo() {
+    if (st.tocando) parar();
+    st.clipes.forEach((c) => { try { c.el.remove(); URL.revokeObjectURL(c.el.src); } catch (e) { /* segue */ } });
+    Object.assign(st, { clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "" });
+  }
+  async function abrirProjeto(id) {
+    const { data, error } = await banco().from("edicao_projetos").select("*").eq("id", id).maybeSingle();
+    if (error || !data) { toast("Não consegui abrir esse projeto.", true); return; }
+    limparTudo();
+    const d = data.dados || {};
+    st.projeto = { id: data.id, nome: data.nome };
+    st.tema = d.tema || ""; st.roteiro = d.roteiro || ""; st.plano = d.plano || null; st.titulo = d.titulo || ""; st.tituloDestaque = d.tituloDestaque || "";
+    st.editLeg = d.editLeg || {}; st.correcoes = d.correcoes || [];
+    if (d.opc) Object.assign(st.opc, d.opc);
+    st.efeitosSalvos = Array.isArray(d.efeitos) ? d.efeitos.map((e) => ({ ...e, id: uid() })) : null;
+    st.pendentes = (d.clipes || []).length ? d.clipes.map((c) => ({ ...c, usado: false })) : null;
+    const sec = document.getElementById("aba-" + ABA);
+    if (sec) { $("#ed-tema", sec).value = st.tema; $("#ed-roteiro", sec).value = st.roteiro; $("#ed-roteiro-box", sec).open = Boolean(st.roteiro); }
+    pintar(); pintarProjeto();
+  }
+  function novoProjeto() {
+    limparTudo(); st.projeto = null;
+    const sec = document.getElementById("aba-" + ABA);
+    if (sec) { $("#ed-tema", sec).value = ""; $("#ed-roteiro", sec).value = ""; }
+    pintar(); pintarProjeto();
+  }
+  function pintarProjeto() {
+    const box = $("#ed-projeto"); if (!box) return;
+    const quando = (iso) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    box.innerHTML = `<select class="entrada" id="ed-proj-sel" aria-label="Meus projetos"><option value="">${st.projeto ? "Trocar de projeto…" : "Meus projetos…"}</option>${st.projetos.map((p) => `<option value="${p.id}" ${st.projeto && st.projeto.id === p.id ? "selected" : ""}>${esc(p.nome)} · ${quando(p.atualizado_em)}</option>`).join("")}</select>
+      <button class="btn" type="button" id="ed-proj-novo">${ic.mais}Novo projeto</button>
+      ${st.projeto ? `<button class="icone-btn" type="button" id="ed-proj-apagar" title="Apagar este projeto" aria-label="Apagar este projeto">${ic.x}</button>` : ""}
+      <small class="ed-proj-status">${st.salvando === "salvando" ? "salvando…" : st.salvando === "salvo" ? "salvo ✓" : st.salvando === "erro" ? "não salvou" : ""}</small>`;
+    $("#ed-proj-sel", box).addEventListener("change", (e) => { if (e.target.value) abrirProjeto(e.target.value); });
+    $("#ed-proj-novo", box).addEventListener("click", novoProjeto);
+    const ap = $("#ed-proj-apagar", box);
+    if (ap) ap.addEventListener("click", async () => {
+      if (!confirm(`Apagar o projeto "${st.projeto.nome}"? O vídeo no seu aparelho não é apagado.`)) return;
+      await banco().from("edicao_projetos").delete().eq("id", st.projeto.id);
+      st.projetos = st.projetos.filter((p) => p.id !== st.projeto.id); novoProjeto();
+    });
   }
 
   // ---------- o trabalho do editor ----------
@@ -240,6 +335,7 @@ ESTRUTURA DE UGC
         }
       }
       toast(r.resposta || "Edição corrigida. Dá o play.");
+      salvarDepois();
     } catch (e) { toast(e.message, true); }
     st.corrigindo = false; pintar();
   }
@@ -275,6 +371,7 @@ ESTRUTURA DE UGC
       etapa("Montando a linha do tempo");
       montar();
       etapa("Pronto! Dá o play para ver a prévia.", "ok");
+      salvarDepois();
       st.t = 0; desenhar(0);
     } catch (e) {
       const ult = st.etapas[st.etapas.length - 1]; if (ult) ult.estado = "erro";
@@ -834,6 +931,7 @@ ESTRUTURA DE UGC
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga ed">
       <header class="cr-cabeca cr-cabeca-linha"><div><h2>Edição de vídeos</h2><p>Mande o vídeo bruto e eu edito no seu padrão: corto silêncios e tomadas erradas, ponho legenda palavra por palavra, zoom, título no gancho e efeitos sonoros. Você vê a prévia e baixa o MP4.</p></div>
         <div class="cr-acoes-topo"><button class="btn" type="button" id="ed-ver-padrao">Meu padrão de edição</button></div></header>
+      <div class="ed-projeto" id="ed-projeto"></div>
       <div class="ed-grade">
         <div class="ed-col-esq">
           <section class="ed-cartao">
@@ -870,8 +968,9 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     soltar.addEventListener("dragleave", () => soltar.classList.remove("arrastando"));
     soltar.addEventListener("drop", (e) => { e.preventDefault(); soltar.classList.remove("arrastando"); adicionarClipes([...e.dataTransfer.files]); });
     $("#ed-editar", sec).addEventListener("click", editar);
-    $("#ed-tema", sec).addEventListener("input", (e) => { st.tema = e.target.value; });
-    $("#ed-roteiro", sec).addEventListener("input", (e) => { st.roteiro = e.target.value; try { localStorage.setItem("ed-roteiro", st.roteiro); } catch (er) { /* sem armazenamento */ } });
+    $("#ed-tema", sec).addEventListener("input", (e) => { st.tema = e.target.value; salvarDepois(); });
+    carregarProjetos();
+    $("#ed-roteiro", sec).addEventListener("input", (e) => { st.roteiro = e.target.value; try { localStorage.setItem("ed-roteiro", st.roteiro); } catch (er) { /* sem armazenamento */ } salvarDepois(); });
     $("#ed-puxar", sec).addEventListener("change", (e) => {
       const p = st.posts.find((x) => String(x.id) === e.target.value); e.target.value = "";
       if (!p) return;
@@ -900,14 +999,14 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   function pintar() {
     const sec = document.getElementById("aba-" + ABA);
     if (!sec || !$("#ed-clipes", sec)) return;
-    $("#ed-clipes", sec).innerHTML = st.clipes.map((c, i) => `<div class="ed-clipe"><span class="ed-num">${i + 1}</span><div><b>${esc(c.nome)}</b><small>${tempo(c.dur)}${c.w ? ` · ${c.w}x${c.h}` : ""}${c.palavras ? ` · ${c.palavras.length} palavras ouvidas` : ""}</small></div>
+    $("#ed-clipes", sec).innerHTML = (st.pendentes ? `<div class="faixa ed-pendentes"><b>Projeto "${esc(st.projeto ? st.projeto.nome : "")}"</b>: escolha de novo ${st.pendentes.length > 1 ? "os vídeos" : "o vídeo"} deste projeto para a edição voltar como você deixou: ${st.pendentes.map((x) => `<span class="${x.usado ? "ok" : ""}">${esc(x.nome)}${x.usado ? " ✓" : ""}</span>`).join(", ")}.</div>` : "") + st.clipes.map((c, i) => `<div class="ed-clipe"><span class="ed-num">${i + 1}</span><div><b>${esc(c.nome)}</b><small>${tempo(c.dur)}${c.w ? ` · ${c.w}x${c.h}` : ""}${c.palavras ? ` · ${c.palavras.length} palavras ouvidas` : ""}</small></div>
       <button class="icone-btn" type="button" data-tirar="${c.id}" aria-label="Tirar clipe" ${st.trabalhando || st.exportando ? "disabled" : ""}>${ic.x}</button></div>`).join("");
     $$("[data-tirar]", sec).forEach((b) => b.addEventListener("click", () => {
       const c = st.clipes.find((x) => x.id === b.dataset.tirar); if (!c) return;
       c.el.remove(); URL.revokeObjectURL(c.el.src); st.clipes = st.clipes.filter((x) => x !== c); st.segs = []; st.plano = null; st.editLeg = {}; pintar();
     }));
     const bt = $("#ed-editar", sec);
-    bt.disabled = st.trabalhando || st.exportando || !st.clipes.length;
+    bt.disabled = st.trabalhando || st.exportando || !st.clipes.length || Boolean(st.pendentes);
     bt.innerHTML = st.trabalhando ? "Editando…" : `${ic.brilho}${st.plano ? "Editar de novo" : "Editar automático"}`;
     $("#ed-vazio", sec).hidden = Boolean(st.segs.length);
     pintarEtapas(); pintarAjustes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal();
@@ -991,7 +1090,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
         <button type="button" class="icone-btn" data-cham title="Palavra chamativa" aria-label="Palavra chamativa">${g.chamativa ? "★" : "☆"}</button>
         <button type="button" class="icone-btn" data-juntar title="Juntar com a próxima" aria-label="Juntar com a próxima" ${i === st.legendas.length - 1 ? "disabled" : ""}>⤵</button>
         <button type="button" class="icone-btn" data-apagar title="Apagar legenda" aria-label="Apagar legenda">${ic.x}</button></div>`).join("")}</div>`;
-    const editar = (g, mud) => { const k = g.k; st.editLeg[k] = { ...(st.editLeg[k] || {}), ...mud }; if (st.tocando) parar(); montar(); pintarLegendas(); pintarPlano(); redesenhar(); };
+    const editar = (g, mud) => { const k = g.k; st.editLeg[k] = { ...(st.editLeg[k] || {}), ...mud }; if (st.tocando) parar(); montar(); pintarLegendas(); pintarPlano(); redesenhar(); salvarDepois(); };
     $$(".ed-leg", box).forEach((l) => {
       const g = st.legendas[Number(l.dataset.i)];
       $("[data-ir]", l).addEventListener("click", () => irPara(g.o0 + 0.02));
