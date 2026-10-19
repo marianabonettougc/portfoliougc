@@ -1065,3 +1065,16 @@ button.menu-grupo:hover{color:var(--texto)}
 .lb-item.atrasado small{color:#a0522d}
 .lb-acoes{display:flex;gap:6px;flex-shrink:0}
 @media (max-width:560px){.lb-item{flex-direction:column;align-items:flex-start}}
+
+/* Edição de vídeos: roteiro */
+.ed-roteiro{display:flex;flex-direction:column;gap:8px}
+.ed-roteiro summary{cursor:pointer;font-size:13px;margin-bottom:6px}
+.ed-roteiro summary small{color:var(--suave);font-weight:400}
+.ed-roteiro textarea{width:100%;min-height:190px;height:auto;resize:vertical;font-size:12.5px;line-height:1.5;margin:6px 0}
+.ed-roteiro select{width:100%}
+.ed-check li{display:flex;gap:8px;align-items:flex-start}
+.ed-check li > span{flex-shrink:0;min-width:42px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--suave)}
+.ed-check li small{display:block;color:var(--suave)}
+.ed-check .ed-st-gravado > span{color:#5b7a4a}
+.ed-check .ed-st-faltou > span{color:#a0522d}
+.ed-check .ed-st-mudou > span{color:#b8892c}

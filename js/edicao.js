@@ -14,6 +14,10 @@
 //    mais a legenda em .srt para usar no CapCut.
 // O padrão de edição (tirado das referências que ela mandou) fica na tabela
 // configuracoes, chave "padrao_edicao", e ela pode editar.
+// Roteiro (opcional): ela cola o que tinha idealizado (cenas, falas, voice-over) ou puxa
+// um post do Painel de conteúdo; a IA usa para escolher as tomadas, o título, o b-roll e
+// os efeitos, e mostra o "Roteiro x gravação" (bloco gravado, faltou ou mudou).
+// O rascunho do roteiro fica guardado neste navegador.
 // Nada do vídeo sai do computador dela, só o áudio vai para transcrever.
 // =========================================================
 (function () {
@@ -88,7 +92,7 @@ ESTRUTURA DE UGC
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
     opc: { estilo: "minimal", altura: 0.7, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "etapas", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
-    tema: "", arquivoFinal: null,
+    tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
   let tempoToast = null;
@@ -203,7 +207,7 @@ ESTRUTURA DE UGC
       const todas = st.clipes.flatMap((c) => c.palavras.map((w) => ({ w: w.w, s: +(w.s + c.offset).toFixed(2), e: +(w.e + c.offset).toFixed(2) })));
       if (todas.length) {
         etapa("Pensando na edição (cortes, título, zoom e efeitos)");
-        st.plano = await chamar({ acao: "plano", palavras: todas, duracao: offset, padrao: st.padrao, tema: st.tema });
+        st.plano = await chamar({ acao: "plano", palavras: todas, duracao: offset, padrao: st.padrao, tema: st.tema, roteiro: st.roteiro.trim() || undefined });
         st.titulo = st.plano.titulo || "";
         st.tituloDestaque = st.plano.titulo_destaque || "";
       } else {
@@ -616,6 +620,14 @@ ESTRUTURA DE UGC
             <label class="ed-soltar" id="ed-soltar">${ic.filme}<b>Enviar vídeo bruto</b><small>Pode mandar vários clipes, eles entram na ordem. MP4 ou MOV.</small><input type="file" id="ed-arquivo" accept="video/*,.mov,.mp4,.m4v,.webm" multiple hidden></label>
             <div id="ed-clipes"></div>
             <input class="entrada" id="ed-tema" placeholder="Tema ou marca do vídeo (opcional, ajuda no título)">
+            <details class="ed-roteiro" id="ed-roteiro-box"${st.roteiro ? " open" : ""}><summary><b>Seu roteiro</b> <small>(opcional, deixa a edição bem mais certeira)</small></summary>
+              <select class="entrada" id="ed-puxar" aria-label="Puxar roteiro do Painel de conteúdo"><option value="">Puxar de um post do Painel de conteúdo…</option></select>
+              <textarea class="entrada" id="ed-roteiro" rows="9" placeholder="Cole aqui o que você idealizou: as falas, as cenas, o voice-over e o texto na tela. Ex.:
+GANCHO: Motivos plausíveis para trocar de shampoo [close no frasco na mão]
+CENA 2: aplicando no cabelo, voice-over: ...
+CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
+              <small class="ed-obs">Eu comparo com o que você gravou: fico com a tomada mais fiel ao roteiro, uso o seu gancho no título, transformo as direções de cena em b-roll e efeitos e te aviso se faltou gravar algum bloco.</small>
+            </details>
             <button class="btn btn-principal ed-botao-grande" type="button" id="ed-editar">${ic.brilho}Editar automático</button>
             <ol class="ed-etapas" id="ed-etapas"></ol>
           </section>
@@ -638,8 +650,30 @@ ESTRUTURA DE UGC
     soltar.addEventListener("drop", (e) => { e.preventDefault(); soltar.classList.remove("arrastando"); adicionarClipes([...e.dataTransfer.files]); });
     $("#ed-editar", sec).addEventListener("click", editar);
     $("#ed-tema", sec).addEventListener("input", (e) => { st.tema = e.target.value; });
+    $("#ed-roteiro", sec).addEventListener("input", (e) => { st.roteiro = e.target.value; try { localStorage.setItem("ed-roteiro", st.roteiro); } catch (er) { /* sem armazenamento */ } });
+    $("#ed-puxar", sec).addEventListener("change", (e) => {
+      const p = st.posts.find((x) => String(x.id) === e.target.value); e.target.value = "";
+      if (!p) return;
+      const texto = [p.hook && "GANCHO: " + p.hook, p.desenvolvimento, p.cta && "CTA: " + p.cta].filter(Boolean).join("\n");
+      if (st.roteiro.trim() && !confirm("Trocar o roteiro que está no campo por este?")) return;
+      st.roteiro = texto; $("#ed-roteiro", sec).value = texto; try { localStorage.setItem("ed-roteiro", texto); } catch (er) { /* sem armazenamento */ }
+      if (!st.tema && p.tema) { st.tema = p.tema; $("#ed-tema", sec).value = p.tema; }
+      $("#ed-roteiro-box", sec).open = true;
+    });
+    carregarPosts();
     $("#ed-ver-padrao", sec).addEventListener("click", abrirPadrao);
     prepararCanvas();
+  }
+
+  // posts do Painel de conteúdo com roteiro, para puxar para o campo
+  async function carregarPosts() {
+    try {
+      const { data } = await banco().from("painel_conteudo").select("id,tema,formato,data,hook,desenvolvimento,cta").not("desenvolvimento", "is", null).order("data", { ascending: false, nullsFirst: false }).limit(60);
+      st.posts = data || [];
+    } catch (e) { st.posts = []; }
+    const sel = $("#ed-puxar"); if (!sel) return;
+    sel.hidden = !st.posts.length;
+    sel.innerHTML = `<option value="">Puxar de um post do Painel de conteúdo…</option>` + st.posts.map((p) => `<option value="${p.id}">${p.data ? p.data.slice(8, 10) + "/" + p.data.slice(5, 7) + " · " : ""}${esc(p.formato || "")} · ${esc(String(p.tema || "Sem tema").slice(0, 60))}</option>`).join("");
   }
 
   function pintar() {
@@ -731,6 +765,8 @@ ESTRUTURA DE UGC
           <small title="${esc(e.por_que)}">${esc(e.por_que)}</small><button class="icone-btn" type="button" data-apagar aria-label="Apagar">${ic.x}</button></div>`).join("") || `<p class="ed-obs">Nenhum efeito.</p>`}</div>
         <div class="ed-add-efeito"><select class="entrada" id="ed-novo-tipo" aria-label="Novo efeito">${Object.entries(EFEITOS).map(([k, t]) => `<option value="${k}">${t}</option>`).join("")}</select><button class="btn" type="button" id="ed-add-efeito">${ic.mais}Pôr aqui (${tempo(st.t)})</button></div>
       </section>
+      ${(p.roteiro_check || []).length ? `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Roteiro x gravação</h3><span class="ed-sub">${p.roteiro_check.filter((r) => r.status === "gravado").length} de ${p.roteiro_check.length} gravados</span></div>
+        <ul class="ed-lista ed-check">${p.roteiro_check.map((r) => `<li class="ed-st-${esc(r.status)}"><span>${r.status === "gravado" ? "✓" : r.status === "faltou" ? "faltou" : "mudou"}</span><div><b>${esc(r.bloco)}</b>${r.obs ? `<small>${esc(r.obs)}</small>` : ""}</div></li>`).join("")}</ul></section>` : ""}
       ${(p.broll || []).length ? `<section class="ed-cartao"><h3 class="ed-titulo">B-roll para gravar</h3><ul class="ed-lista">${p.broll.map((b) => `<li><span>${b.t != null && paraFinalPerto(b.t) != null ? tempo(paraFinalPerto(b.t)) : ""}</span>${esc(b.ideia)}</li>`).join("")}</ul></section>` : ""}
       ${p.musica || (p.dicas || []).length ? `<section class="ed-cartao"><h3 class="ed-titulo">Dicas do editor</h3>${p.musica ? `<p class="ed-obs"><b>Música:</b> ${esc(p.musica)}</p>` : ""}<ul class="ed-lista">${(p.dicas || []).map((d) => `<li>${esc(d)}</li>`).join("")}</ul></section>` : ""}`;
     $$(".ed-efeito", box).forEach((l) => {

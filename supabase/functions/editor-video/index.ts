@@ -6,7 +6,10 @@
 // - JSON { acao: "plano", palavras, duracao, padrao, tema }: a IA lê a fala com os
 //   tempos e o padrão de edição da Mari e devolve o plano: título do gancho,
 //   trechos para tirar (repetição, erro, gaguejo), palavras de destaque, zooms,
-//   efeitos sonoros, ideias de b-roll e dicas.
+//   efeitos sonoros, ideias de b-roll e dicas. Se ela colar o roteiro (cenas, falas e
+//   voice-over que tinha idealizado), a edição segue o roteiro: escolhe a tomada que bate
+//   com a fala escrita, usa o gancho do roteiro no título, tira b-roll e efeitos das
+//   direções de cena e devolve "roteiro_check" (bloco gravado, faltou ou mudou).
 // Segredo: GROQ_API_KEY (só no Supabase). Só a dona do painel pode usar.
 // =========================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -50,7 +53,10 @@ async function plano(chave: string, c: any) {
 PADRÃO DE EDIÇÃO:
 ${txt(c.padrao, 6000)}
 
-${c.tema ? "TEMA / MARCA: " + txt(c.tema, 300) + "\n" : ""}DURAÇÃO DO BRUTO: ${num(c.duracao) ?? "?"} s
+${c.tema ? "TEMA / MARCA: " + txt(c.tema, 300) + "\n" : ""}${c.roteiro ? `ROTEIRO QUE ELA IDEALIZOU (cenas, falas, voice-over e direções; use como guia da edição):
+${txt(c.roteiro, 3500)}
+
+` : ""}DURAÇÃO DO BRUTO: ${num(c.duracao) ?? "?"} s
 FALA (cada palavra com o segundo em que começa, no tempo do vídeo bruto):
 ${fala}
 
@@ -62,18 +68,22 @@ Responda SOMENTE um JSON:
 "efeitos":[{"t":0.0,"tipo":"woosh | pop | click | shutter | typing | riser | hit | ding","por_que":"curto"}],
 "broll":[{"t":0.0,"ideia":"o que gravar de apoio para cobrir esse trecho, 1 frase"}],
 "musica":"clima de música sugerido, 1 frase",
-"dicas":["até 4 dicas curtas e concretas para esse vídeo"]}
+"dicas":["até 4 dicas curtas e concretas para esse vídeo"]${c.roteiro ? `,
+"roteiro_check":[{"bloco":"nome curto do bloco ou cena do roteiro","status":"gravado | faltou | mudou","t":0.0,"obs":"curto: onde está na fala, o que faltou gravar ou o que ficou diferente"}]` : ""}}
 
 Regras:
 - "remover": quando ela repete uma frase (tomada errada), fique com a ÚLTIMA versão e marque as anteriores para tirar. Tire também "vamos de novo", "peraí", gaguejos e falas que não são do roteiro. Use os tempos da fala. Não marque silêncios (o painel já corta).
 - "destaques": 1 a cada 4 ou 5 segundos, só palavras que carregam a ideia (benefício, número, nome do produto).
 - "zooms": 1 a cada 5 a 8 segundos, em frases de ênfase.
 - "efeitos": riser logo antes do gancho/revelação, hit logo depois da revelação, pop quando entra texto na tela (o painel já põe sozinho os cliques do título, não marque pop para o título), woosh nas mudanças de assunto, click/shutter em listas e cortes rápidos, typing quando ela fala de algo escrito. Exagere um pouco no começo e depois use com moderação (no máximo 1 a cada 3 segundos).
-- Todos os tempos em segundos do bruto, com 1 casa decimal.
+- Todos os tempos em segundos do bruto, com 1 casa decimal.${c.roteiro ? `
+- COM ROTEIRO: compare a fala com o roteiro bloco a bloco. Quando ela gravou o mesmo trecho mais de uma vez, fique com a tomada mais fiel ao roteiro (se empatar, a última) e marque as outras em "remover". Não corte falas que estão no roteiro. Fala fora do roteiro que parece bastidor ou erro vai para "remover".
+- COM ROTEIRO: o título sai do gancho do roteiro (condensado). Direções de cena, texto na tela e voice-over do roteiro viram "broll" (no tempo do bloco correspondente, dizendo "do roteiro: ...") e efeitos (texto na tela = pop, troca de cena = woosh).
+- COM ROTEIRO: "roteiro_check" com todos os blocos do roteiro, na ordem. "faltou" quando o bloco não aparece na fala (diga o que gravar), "mudou" quando ela falou diferente de um jeito que muda a ideia. "t" é o segundo do bruto onde o bloco começa (0 se faltou).` : ""}
 - Português do Brasil. Nunca use travessão.`;
   const r = await fetch(`${GROQ}/chat/completions`, {
     method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.3, max_tokens: 4000, reasoning_effort: "low", response_format: { type: "json_object" }, messages: [{ role: "user", content: pedido }] }),
+    body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.3, max_tokens: 4500, reasoning_effort: "low", response_format: { type: "json_object" }, messages: [{ role: "user", content: pedido }] }),
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(r.status === 429 ? "O limite grátis da IA deste minuto acabou. Espere um pouquinho e tente de novo." : "A IA não respondeu agora. Tente de novo.");
@@ -89,6 +99,7 @@ Regras:
     broll: lista(a.broll).map((x: any) => ({ t: num(x.t), ideia: txt(x.ideia, 200) })).filter((x: any) => x.ideia),
     musica: txt(a.musica, 200),
     dicas: lista(a.dicas).map((x: any) => txt(x, 200)).filter(Boolean).slice(0, 4),
+    roteiro_check: lista(a.roteiro_check).map((x: any) => ({ bloco: txt(x.bloco, 80), status: ["gravado", "faltou", "mudou"].includes(String(x.status).toLowerCase().trim()) ? String(x.status).toLowerCase().trim() : "gravado", t: num(x.t), obs: txt(x.obs, 220) })).filter((x: any) => x.bloco).slice(0, 20),
   };
 }
 
