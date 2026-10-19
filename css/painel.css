@@ -1097,3 +1097,7 @@ button.menu-grupo:hover{color:var(--texto)}
 .ed-cores{display:flex;align-items:center;gap:6px}
 .ed-cor{width:24px;height:24px;border-radius:50%;border:1px solid var(--linha-forte);cursor:pointer;padding:0}
 .ed-cor.ativa{outline:2px solid var(--texto);outline-offset:2px}
+
+.ed-cartao[hidden]{display:none}
+.ed-espera{opacity:.75}
+.ed-espera textarea{width:100%;resize:none}
