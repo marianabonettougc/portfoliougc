@@ -122,6 +122,7 @@ IDEIA PARA DEPOIS
   async function aplicarFonte(nome, buf) {
     const ff = new FontFace("MinhaFonte", buf);
     await ff.load(); document.fonts.add(ff); st.minhaFonte = nome;
+    const bt = $("#ed-fonte-topo"); if (bt && bt.firstChild) bt.firstChild.textContent = "Fonte: " + nome + " ✓ (trocar)";
   }
   async function carregarMinhaFonte() {
     try {
@@ -137,7 +138,7 @@ IDEIA PARA DEPOIS
   async function enviarFonte(arq) {
     if (arq.size > 3 * 1024 * 1024) { toast("Esse arquivo de fonte passou de 3 MB.", true); return; }
     try {
-      const buf = await arq.arrayBuffer(), nome = arq.name.replace(/\.[^.]+$/, "");
+      const buf = await arq.arrayBuffer(), nome = arq.name.replace(/\.[^.]+$/, "").replace(/^[0-9a-f]{8}-/i, "");
       await aplicarFonte(nome, buf.slice(0));
       const { error } = await banco().from("configuracoes").upsert({ chave: "fonte_legenda", valor: JSON.stringify({ nome, b64: b64DeBuffer(buf) }) }, { onConflict: "chave" });
       if (error) throw new Error(error.message);
@@ -1034,7 +1035,7 @@ IDEIA PARA DEPOIS
   function montarTela(sec) {
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga ed">
       <header class="cr-cabeca cr-cabeca-linha"><div><h2>Edição de vídeos</h2><p>Mande o vídeo bruto e eu edito no seu padrão: corto silêncios e tomadas erradas, ponho legenda palavra por palavra, zoom, título no gancho e efeitos sonoros. Você vê a prévia e baixa o MP4.</p></div>
-        <div class="cr-acoes-topo"><button class="btn" type="button" id="ed-ver-padrao">Meu padrão de edição</button></div></header>
+        <div class="cr-acoes-topo"><label class="btn" id="ed-fonte-topo">Minha fonte<input type="file" id="ed-fonte-arq-topo" accept=".ttf,.otf,.woff,.woff2,font/*" hidden></label><button class="btn" type="button" id="ed-ver-padrao">Meu padrão de edição</button></div></header>
       <div class="ed-projeto" id="ed-projeto"></div>
       <div class="ed-grade">
         <div class="ed-col-esq">
@@ -1086,6 +1087,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     });
     carregarPosts();
     $("#ed-ver-padrao", sec).addEventListener("click", abrirPadrao);
+    $("#ed-fonte-arq-topo", sec).addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) enviarFonte(f); });
     prepararCanvas();
   }
 
