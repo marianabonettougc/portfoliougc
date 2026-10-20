@@ -53,73 +53,31 @@
   const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
   const uid = () => Math.random().toString(36).slice(2, 9);
 
-  const MARCA_REFS = "REFERÊNCIAS NOVAS (out/2026";
-  const REFS_NOVAS = `REFERÊNCIAS NOVAS (out/2026, valem acima do resto: vídeo dela da Eudora e os da Rafa Chagas)
-- Legenda: Poppins média, minúscula, amarelo clarinho (ou branco), sem contorno, só sombra suave; no meio da tela, 1 a 4 palavras por vez.
-- Palavras chamativas: a palavra forte entra grande em fonte arredondada pesada, cor viva (verde-limão, lilás, amarelo), sombra dura, com pop; o resto da frase pequeno em letra manuscrita.
-- Título do gancho limpo, sem caixinhas, figurinhas ou cursor.
-- Confete verde-limão e tremidinha nos momentos fortes. Nunca mexer na cor do vídeo.`;
-  const MARCA_REFS2 = "REFERÊNCIAS ATUAIS (out/2026, v2";
-  const REFS_V2 = `REFERÊNCIAS ATUAIS (out/2026, v2: valem acima de tudo; vídeos dela DdIK7JosJYp, Daa8wYaCgkQ, DaN7lnRi16X e referências DeMvcGFt4Ap, DWzaZKBj6I7, DJQEn0vA8Vi, DeIOo6btYw7, DecyDPaJ_Zs)
-- Fonte da legenda: Bootzy (do CapCut). Legenda amarela clarinha ou branca, minúscula, 1 a 4 palavras por vez, sombra suave, perto do meio da tela; pode subir para o canto de cima quando o meio estiver ocupado por produto.
-- Alternativa usada por ela e pelas referências: serifada itálica branca ou amarela (estilo "diário"), com estrelinhas amarelas em volta do texto do gancho.
-- Palavra forte da frase em destaque grande; título curto no começo; figurinhas pontuais (estrelas, capacete, coração).
-- B-roll de produto cobrindo a fala (close do produto, detalhe, print de tela/busca), cortes secos e zoom rápido nas viradas.
-- Sons do próprio produto sincronizados com o gesto (chuveiro, spray, secador, embalagem) e pop/ding quando entra texto; confete nos momentos de alegria.
-- Título do gancho limpo (serifada itálica, sem caixinhas, figurinhas nem cursor: ela odiou esse estilo).
-- Nunca mexer na cor do vídeo.`;
-  const MARCA_SEM_CAIXA = "NUNCA caixinhas coloridas no título";
-  const PADRAO = `PADRÃO DE EDIÇÃO DA MARI (tirado das referências que ela gosta)
+  const MARCA_V3 = "SÓ ESTAS REFERÊNCIAS (out/2026, v3)";
+  const PADRAO = `PADRÃO DE EDIÇÃO DA MARI. SÓ ESTAS REFERÊNCIAS (out/2026, v3): DaN7lnRi16X, Daa8wYaCgkQ e DdIK7JosJYp (vídeos dela), DbT3IhlRUgA e DWzaZKBj6I7. Ignore qualquer referência ou estilo antigo.
 
 RITMO
-- Cortes secos, sem transição enfeitada. Corta todo silêncio, respiração e tomada errada.
-- Planos curtos: no vídeo de referência que mais performou (800 mil views) a média é de 1 a 1,5 s por plano, muitos entre 0,4 e 0,9 s.
-- Nos 3 primeiros segundos, exagerar: título criativo e efeito sonoro forte para prender.
-- Narração "uma frase em cima da outra": fala uma frase, volta um pouco e fala a outra, sem respiro.
-- Zoom leve alternado entre um corte e outro para esconder o pulo da imagem.
+- Cortes secos (jump cut), sem transição enfeitada. Corta todo silêncio, respiração e tomada errada.
+- B-roll de produto cobrindo a fala: close do produto, detalhe, uso real (chinelo no pé, perfume na pele), print de tela quando falar de busca ou app.
+- Zoom leve só para esconder o pulo entre cortes e nas frases de ênfase.
 
-LEGENDA (estilo CapCut que ela escolheu: vídeo dela da Eudora e os da Rafa Chagas)
-- Fonte sem serifa arredondada, peso médio (Poppins 500), tudo minúsculo, amarelo clarinho (ou branco), sem contorno, só sombra preta suave. Tamanho pequeno a médio.
-- Fica no meio da tela (perto do peito), 1 a 4 palavras por vez, sincronizada com a fala.
-- Nada cobre o rosto. Nada de efeito de cor no vídeo (a cor ela ajusta no CapCut).
-- Palavras chamativas: a palavra forte da frase (benefício, número, produto, virada) entra grande, numa fonte arredondada bem pesada, em cor viva (verde-limão, lilás, amarelo), com sombra dura, levemente torta, com pop; o resto da frase aparece pequeno em letra manuscrita em cima.
+LEGENDA
+- Minúscula, de 2 a 4 palavras por vez, no meio da tela, sombra suave para ler em fundo claro. Nunca em maiúsculas, nunca negrito pesado, nunca contorno.
+- Fonte dela: Bootzy (do CapCut), amarelo clarinho, como no vídeo da Eudora. Alternativa dos vídeos dela: serifada itálica.
+- Nada cobre o rosto.
 
-TÍTULOS E GRAFISMOS
-- Título do gancho limpo: frase curta em serifada itálica, amarelo clarinho, sombra suave. NUNCA caixinhas coloridas, figurinhas ou cursor de mouse (ela odiou).
-- Confete verde-limão e uma tremidinha nos momentos fortes.
-- Título criativo no começo (modelos do CapCut tipo "mesclador" ou título feito no Canva com fundo transparente, animado).
-- Título condensado (curto) em duas fontes: uma forte e a palavra de destaque em serifa itálica (a Bia usa Scholar itálico + Buzzi). Estrelinhas copiadas de "star character" do Google perto do destaque.
-- O título entra em etapas (parte 1, depois parte 2, depois parte 3), cada parte com um clique de mouse ("mouse click sound"). Todas as partes saem juntas.
-- Frase gigante ocupando a tela logo no início: entende em 1 segundo, quebra o padrão do feed e já filtra o público certo. Sempre as mesmas 2 fontes e 3 cores (assinatura). Fundo claro pede cores vibrantes; fundo escuro pede tons pastel.
-- Setas desenhadas à mão e sublinhado tipo marca-texto para apontar detalhes.
-- Logo da marca sempre visível no produto.
+TÍTULO
+- Curto e limpo no começo, sem caixinhas, figurinhas, cursor ou cores fortes.
 
-IMAGEM
-- Cor natural e luz quente. Ajuste de cor copiando uma foto aesthetic do Pinterest no CapCut (deixa clarinho).
-- Roupa de cor oposta ao cenário para destacar, unhas feitas, softbox mais luz do sol.
-- Receitas e produtos: gravação de cima.
-- Exportar em 4K, taxa de quadros maior.
+O QUE NÃO USAR (ela pediu)
+- Confete, palavras gigantes coloridas, caixinhas no título, legenda branca em maiúsculas e negrito, tremida.
+- Nunca mexer na cor do vídeo (a cor ela ajusta no CapCut).
 
-EFEITOS SONOROS (quando usar)
-- Riser: antes de algo importante, para criar tensão (começo do vídeo).
-- Woosh: transições, zoom in e zoom out.
-- Hit: logo depois de revelar algo importante.
-- Pop, click, mouse: quando um texto ou algo aparece na tela.
-- Camera shutter: cortes rápidos e transições.
-- Keyboard / typing: quando algo é digitado na tela.
-- UI sounds: quando aparece uma animação.
-- Reverse: para encerrar música que não tem final.
-- UGC de produto: som do próprio produto (ASMR) sincronizado com o gesto: chuveiro, spray ("Shaker"), escova ("Touch & scratch hair"), creme ("Sticky sound").
-- Não achou um efeito? Busque "efeitos sonoros" ou "SFX" no YouTube ou TikTok, grave a tela e extraia o áudio.
+EFEITOS SONOROS (com moderação)
+- Pop ou ding quando entra um texto ou produto; woosh na troca de assunto; som do próprio produto junto do gesto (spray do perfume, embalagem).
 
-ANÚNCIOS (como a editora dos ADS da Rafa faz)
-- Gancho visual com b-roll do dia a dia (viagem, rotina), não gravação montada: ela grava e manda, o anúncio nasce em cima disso.
-- Efeitos sonoros geram identificação e prendem; junto com o texto na tela, seguram até o fim.
-- Destacar as palavras-chave que geram desejo enquanto a pessoa assiste.
-- Volume: criativo de anúncio satura rápido, então é preciso produzir vários.
-
-ESTRUTURA DE UGC
-- Gancho forte, contexto curto, demonstração do produto, prova ou benefício, CTA ("comenta X", "salva").`;
+IDEIA PARA DEPOIS
+- Texto atrás da pessoa (DbT3IhlRUgA): o título fica atrás do corpo dela.`;
 
   const EFEITOS = { woosh: "Woosh", pop: "Pop", click: "Click", shutter: "Shutter", typing: "Typing", riser: "Riser", hit: "Hit", ding: "Ding" };
   const ESTILOS = { capcut: "CapCut (Poppins média, minúscula, sombra suave)", minimal: "Fina e branca", bold: "Forte com contorno", caixa: "Caixinha bege" };
@@ -137,15 +95,15 @@ ESTRUTURA DE UGC
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { fonteLeg: "montserrat", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: true, sonsChamativas: true, confete: true, tremer: true, flash: false, altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
+    opc: { fonteLeg: "poppins", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
     correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, projeto: null, projetos: [], pendentes: null, salvando: "",
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
-  try { const salvo = JSON.parse(localStorage.getItem("ed-opc2") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
+  try { const salvo = JSON.parse(localStorage.getItem("ed-opc3") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
   const OPC_VISUAIS = ["fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"];
-  function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc2", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
+  function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc3", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
   function toast(texto, erro) {
@@ -191,9 +149,8 @@ ESTRUTURA DE UGC
     try {
       const { data } = await banco().from("configuracoes").select("valor").eq("chave", "padrao_edicao").maybeSingle();
       if (data && data.valor) { st.padrao = String(data.valor); st.padraoSalvo = true; }
-      // uma vez: acrescenta no padrão salvo o estudo das referências novas (CapCut, out/2026)
-      if (st.padraoSalvo && !st.padrao.includes(MARCA_SEM_CAIXA)) { try { await salvarPadrao(st.padrao.trim() + "\n- " + MARCA_SEM_CAIXA + ", figurinhas ou cursor de mouse (ela odiou). Título limpo em serifada itálica."); } catch (e) { /* tenta na próxima */ } }
-      if (st.padraoSalvo && !st.padrao.includes(MARCA_REFS2)) { try { await salvarPadrao(st.padrao.trim() + "\n\n" + REFS_V2); } catch (e) { /* tenta na próxima */ } }
+      // uma vez: troca o padrão salvo pelo v3 (só as 5 referências que ela escolheu)
+      if (!st.padrao.includes(MARCA_V3)) { try { await salvarPadrao(PADRAO); } catch (e) { st.padrao = PADRAO; } }
     } catch (e) { /* fica o padrão de fábrica */ }
   }
   async function salvarPadrao(texto) {
@@ -378,7 +335,7 @@ ESTRUTURA DE UGC
   }
 
   // ---------- projetos (memória da edição) ----------
-  const dadosProjeto = () => ({
+  const dadosProjeto = () => ({ versao: 3,
     tema: st.tema, roteiro: st.roteiro, opc: st.opc, plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, editLeg: st.editLeg, correcoes: st.correcoes,
     efeitos: st.efeitos.filter((e) => !e.doTitulo && !e.daChamativa).map(({ id, ...e }) => e),
     clipes: (st.clipes.length ? st.clipes : st.pendentes || []).map((c) => ({ nome: c.nome, dur: Math.round((c.dur || 0) * 100) / 100, palavras: c.palavras || null })),
@@ -416,7 +373,7 @@ ESTRUTURA DE UGC
     st.projeto = { id: data.id, nome: data.nome };
     st.tema = d.tema || ""; st.roteiro = d.roteiro || ""; st.plano = d.plano || null; st.titulo = d.titulo || ""; st.tituloDestaque = d.tituloDestaque || "";
     st.editLeg = d.editLeg || {}; st.correcoes = d.correcoes || [];
-    if (d.opc) Object.assign(st.opc, d.opc);
+    if (d.opc && d.versao >= 3) Object.assign(st.opc, d.opc);
     if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
     st.efeitosSalvos = Array.isArray(d.efeitos) ? d.efeitos.map((e) => ({ ...e, id: uid() })) : null;
     st.pendentes = (d.clipes || []).length ? d.clipes.map((c) => ({ ...c, usado: false })) : null;
@@ -469,7 +426,7 @@ ESTRUTURA DE UGC
       const check = st.plano.roteiro_check;
       st.plano = { ...r.plano, roteiro_check: (r.plano.roteiro_check || []).length ? r.plano.roteiro_check : check };
       if (r.plano.titulo) { st.titulo = r.plano.titulo; st.tituloDestaque = r.plano.titulo_destaque || st.tituloDestaque; }
-      Object.assign(st.opc, r.opc || {}); if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
+      Object.assign(st.opc, r.opc || {}); st.opc.confete = false; if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
       st.correcoes.push({ texto, resposta: r.resposta || "Corrigido.", regra: r.regra || "" });
       montar(); st.t = 0;
       if (st.lembrar) {
@@ -702,7 +659,7 @@ ESTRUTURA DE UGC
     // legenda (ou palavra chamativa)
     const g = st.legendas.find((x) => t >= x.o0 && t < x.o1);
     if (g && !(st.opc.titulo && st.titulo && t < DUR_TITULO - 0.2)) { if (g.chamativa && st.opc.chamativas) desenharChamativa(g, t, u, W, H); else desenharLegenda(g, u, W, H); }
-    if (st.opc.confete) desenharConfete(t, u, W, H);
+    // confete removido: ela não quer mais (out/2026)
     // título do gancho
     if (st.opc.titulo && st.titulo && t < DUR_TITULO) desenharTitulo(t, u, W, H);
   }
@@ -1158,7 +1115,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-sombra">Sombra</label><select class="entrada" id="ed-sombra"><option value="suave" ${o.sombra !== "dura" ? "selected" : ""}>Suave</option><option value="dura" ${o.sombra === "dura" ? "selected" : ""}>Dura (deslocada)</option></select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-por">Palavras por legenda</label><select class="entrada" id="ed-por">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(o.porLegenda) === n ? "selected" : ""}>${n}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-cor-leg">Cor da legenda</label><span class="ed-cores">${["#fff3b0", "#ffffff", "#ffe45c"].map((c) => `<button type="button" class="ed-cor${o.corLegenda === c ? " ativa" : ""}" data-cor-leg="${c}" style="background:${c}" aria-label="Cor ${c}"></button>`).join("")}<input type="color" id="ed-cor-leg" value="${o.corLegenda}"></span></div>` : ""}
-      <div class="ed-chks">${chk("chamativas", "Palavras chamativas (grandes, coloridas)")}${chk("sonsChamativas", "Pop nas palavras chamativas")}${chk("confete", "Confete nos momentos fortes")}${chk("tremer", "Tremidinha no impacto")}${chk("flash", "Flash na troca de cena")}</div>
+      <div class="ed-chks">${chk("chamativas", "Palavras chamativas (grandes, coloridas)")}${chk("sonsChamativas", "Pop nas palavras chamativas")}${chk("tremer", "Tremidinha no impacto")}${chk("flash", "Flash na troca de cena")}</div>
       <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("titulo", "Mostrar título")}${chk("sonsTitulo", "Som de clique no título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}</div>
       <label class="ed-rotulo" for="ed-vol">Volume dos efeitos</label>
       <input type="range" id="ed-vol" min="0" max="1.2" step="0.05" value="${o.vol}">
