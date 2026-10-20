@@ -717,6 +717,80 @@
   .row-item.job-linha{ grid-template-columns:minmax(0,1fr) 200px 120px 190px 152px; }
   .job-datas{ font-size:13px; }
   .search input{ font-size:13.5px; }
+  /* Financeiro CPF em painel (PainelCPF): cartões brancos arredondados, lilás e verde-limão */
+  .fx{ --fx-lil:#7b61e8; --fx-lil2:#b3a1f5; --fx-lil3:#d9cffb; --fx-lil4:#efeafd; --fx-lim:#93cf6b; --fx-lim2:#dcefc4; --fx-amb:#f0c766; --fx-ver:#d0574a; --fx-ver2:#f8dfdc; --fx-cinza:#f2f0f5; --fx-txt:#1f1b2d; --fx-suave:#7d778c; color:var(--fx-txt); }
+  .fx-topo{ display:flex; justify-content:space-between; align-items:flex-end; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+  .fx-topo h1{ font-family:Poppins; font-size:30px; font-weight:600; margin:0; letter-spacing:-.01em; }
+  .fx-topo p{ margin:4px 0 0; color:var(--fx-suave); font-size:14px; }
+  .fx-abas{ display:inline-flex; gap:4px; background:#fff; border-radius:999px; padding:5px; flex-wrap:wrap; box-shadow:0 1px 0 rgba(0,0,0,.03); }
+  .fx-aba{ border:0; background:transparent; padding:8px 15px; border-radius:999px; font:500 13.5px Poppins,sans-serif; color:var(--fx-txt); cursor:pointer; white-space:nowrap; }
+  .fx-aba.on{ background:var(--fx-txt); color:#fff; }
+  .fx-linha{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .fx-mes{ display:inline-flex; align-items:center; gap:4px; background:#fff; border-radius:999px; padding:4px 6px; font:500 13.5px Poppins,sans-serif; }
+  .fx-mes button{ border:0; background:transparent; width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--fx-txt); }
+  .fx-mes button:hover{ background:var(--fx-cinza); }
+  .fx-btn{ border:0; background:var(--fx-txt); color:#fff; border-radius:999px; padding:10px 18px; font:500 13.5px Poppins,sans-serif; display:inline-flex; align-items:center; gap:7px; cursor:pointer; }
+  .fx-btn.claro{ background:#fff; color:var(--fx-txt); border:1px solid #e6e2ee; }
+  .fx-kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:14px; margin-bottom:14px; }
+  .fx-kpi{ background:#fff; border-radius:20px; padding:16px 18px; min-height:96px; display:flex; flex-direction:column; justify-content:space-between; }
+  .fx-kpi.lil{ background:var(--fx-lil3); } .fx-kpi.lim{ background:var(--fx-lim2); } .fx-kpi.ver{ background:var(--fx-ver2); }
+  .fx-kpi-t{ display:flex; justify-content:space-between; align-items:center; font-size:13px; color:#4a4458; gap:8px; }
+  .fx-kpi-ic{ width:30px; height:30px; border-radius:50%; border:1px solid rgba(0,0,0,.08); display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.6); flex-shrink:0; }
+  .fx-kpi-v{ font:600 25px Poppins,sans-serif; letter-spacing:-.02em; display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .fx-kpi-s{ font-size:11.5px; color:var(--fx-suave); margin-top:2px; }
+  .fx-chip{ font:600 10.5px Poppins,sans-serif; padding:3px 8px; border-radius:999px; background:#e7f5dc; color:#3c7a20; white-space:nowrap; }
+  .fx-chip.mal{ background:#fbe3e0; color:#b3402f; } .fx-chip.neutro{ background:var(--fx-cinza); color:var(--fx-suave); } .fx-chip.amb{ background:#fbefcf; color:#8a6410; }
+  .fx-grade{ display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:14px; margin-bottom:14px; }
+  .fx-grade.meio{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+  .fx-caixa{ background:#fff; border-radius:22px; padding:20px; min-width:0; }
+  .fx-caixa h3{ font:500 18px Poppins,sans-serif; margin:0; letter-spacing:-.01em; }
+  .fx-caixa .sub{ font-size:12px; color:var(--fx-suave); margin:3px 0 14px; }
+  .fx-cab{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .fx-cat{ display:grid; grid-template-columns:30px minmax(0,1fr) minmax(60px,130px) 92px 58px; align-items:center; gap:10px; padding:7px 0; font-size:13.5px; }
+  .fx-cat-ic{ width:30px; height:30px; border-radius:50%; background:var(--fx-cinza); display:flex; align-items:center; justify-content:center; }
+  .fx-barra{ height:10px; border-radius:99px; background:var(--fx-cinza); overflow:hidden; }
+  .fx-barra i{ display:block; height:100%; border-radius:99px; background:var(--fx-lil); }
+  .fx-num{ text-align:right; font-weight:600; font-variant-numeric:tabular-nums; }
+  .fx-pessoa{ display:grid; grid-template-columns:36px minmax(0,1fr) minmax(60px,110px) 44px; align-items:center; gap:10px; padding:7px 0; font-size:13.5px; }
+  .fx-av{ width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font:600 13px Poppins,sans-serif; color:#fff; }
+  .fx-pessoa small, .fx-cat small{ display:block; color:var(--fx-suave); font-size:11px; }
+  .fx-dica{ background:var(--fx-lim2); border-radius:14px; padding:10px 13px; font-size:12.5px; display:flex; gap:8px; align-items:flex-start; margin-top:10px; }
+  .fx-colunas{ display:flex; align-items:flex-end; gap:8px; height:220px; padding-top:28px; overflow-x:auto; }
+  .fx-col{ flex:1; min-width:46px; display:flex; flex-direction:column; justify-content:flex-end; height:100%; }
+  .fx-col b{ font:600 12.5px Poppins,sans-serif; margin-bottom:5px; white-space:nowrap; }
+  .fx-col .pilar{ border-radius:12px 12px 6px 6px; background:var(--fx-lil3); min-height:4px; }
+  .fx-col span{ font-size:11.5px; margin-top:6px; } .fx-col small{ font-size:10.5px; color:var(--fx-suave); }
+  .fx-duplas{ display:flex; gap:3px; align-items:flex-end; height:100%; }
+  .fx-duplas div{ flex:1; border-radius:8px 8px 4px 4px; min-height:3px; }
+  .fx-mapa{ overflow-x:auto; }
+  .fx-mapa table{ border-collapse:separate; border-spacing:4px; width:100%; min-width:640px; font-size:11px; }
+  .fx-mapa th{ font-weight:500; color:var(--fx-suave); font-size:10.5px; }
+  .fx-mapa td.n{ font-size:12px; white-space:nowrap; padding-right:6px; max-width:150px; overflow:hidden; text-overflow:ellipsis; }
+  .fx-mapa td.c.clica{ cursor:pointer; } .fx-mapa td.c.clica:hover{ outline:2px solid var(--fx-txt); }
+  .fx-mapa td.c{ height:34px; border-radius:9px; text-align:center; font-weight:600; background:var(--fx-cinza); color:#fff; min-width:44px; }
+  .fx-legenda{ display:flex; gap:12px; flex-wrap:wrap; font-size:11px; color:var(--fx-suave); margin-top:8px; align-items:center; }
+  .fx-legenda i{ display:inline-block; width:14px; height:8px; border-radius:4px; margin-right:4px; vertical-align:middle; }
+  .fx-consultora{ background:var(--fx-lim2); border-radius:22px; padding:18px 20px; }
+  .fx-consultora h3{ display:flex; align-items:center; gap:8px; }
+  .fx-passo{ display:flex; gap:11px; padding:11px 0; border-top:1px solid rgba(0,0,0,.07); font-size:13.5px; line-height:1.5; }
+  .fx-passo:first-of-type{ border-top:0; }
+  .fx-passo .nn{ width:24px; height:24px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font:600 12px Poppins,sans-serif; flex-shrink:0; }
+  .fx-cartoes{ display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:14px; }
+  .fx-plast{ border-radius:20px; padding:16px 18px; background:#fff; display:flex; flex-direction:column; gap:10px; }
+  .fx-plast .frente{ border-radius:14px; padding:14px; color:#fff; background:linear-gradient(135deg,#8c74ef,#5d45c9); min-height:84px; display:flex; flex-direction:column; justify-content:space-between; }
+  .fx-plast.quitado .frente{ background:linear-gradient(135deg,#a9d98a,#6ea94a); }
+  .fx-plast.atraso .frente{ background:linear-gradient(135deg,#e48a7e,#c0503f); }
+  .fx-plast .frente b{ font:600 16px Poppins,sans-serif; } .fx-plast .frente small{ opacity:.85; font-size:11.5px; }
+  .fx-par{ display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; font-size:12px; color:var(--fx-suave); }
+  .fx-par b{ display:block; color:var(--fx-txt); font-size:14px; font-weight:600; }
+  .fx-lista .item{ display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid #f0edf4; font-size:13.5px; }
+  .fx-lista .item:first-child{ border-top:0; }
+  .fx-lista .item .x{ flex:1; min-width:0; } .fx-lista .item .x small{ display:block; color:var(--fx-suave); font-size:11.5px; }
+  .fx-icone{ border:0; background:var(--fx-cinza); width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--fx-txt); flex-shrink:0; }
+  .fx-campo{ display:flex; align-items:center; gap:8px; background:var(--fx-cinza); border-radius:999px; padding:6px 8px 6px 14px; font-size:13px; }
+  .fx-campo input{ border:0; background:#fff; border-radius:999px; padding:7px 10px; width:110px; font:600 14px Poppins,sans-serif; }
+  @media (max-width:980px){ .fx-grade, .fx-grade.meio{ grid-template-columns:minmax(0,1fr); } }
+  @media (max-width:640px){ .fx-kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } .fx-kpi-v{ font-size:20px; } .fx-cat{ grid-template-columns:30px minmax(0,1fr) 80px; } .fx-cat .fx-barra{ grid-column:2 / 4; grid-row:2; } .fx-cat .fx-chip{ display:none; } .fx-topo h1{ font-size:25px; } .fx-caixa{ padding:16px; } }
 </style>
 </head>
 <body>
@@ -4428,8 +4502,8 @@ function TrafegoPago({state, updateState}){
 }
 
 /* ================= FINANCEIRO ================= */
-function TransModal({onClose, onSave, initial, job, onAnexar}){
-  const [f,setF] = useState(initial || {tipo:"receita", descricao:"", valor:"", moeda:"BRL", data:"", status:"Pendente"});
+function TransModal({onClose, onSave, initial, job, onAnexar, padrao}){
+  const [f,setF] = useState(initial || {tipo:"receita", descricao:"", valor:"", moeda:"BRL", data:"", status:"Pendente", ...(padrao||{})});
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
   return (
     <Modal title={initial ? "Editar registro" : "Novo Registro"} onClose={onClose}>
@@ -4503,128 +4577,463 @@ function FinanceiroCPF({state, updateState}){
       });
     });
   },[]);
-  const visao = {...state, transacoes: state.transacoesCpf || [], jobs: []};
-  const salvar = (next) => updateState({...state, transacoesCpf: next.transacoes || []});
   const salvarFinanca = (f) => updateState(atual=>({...atual, financaCpf: f}));
-  return <Financeiro state={visao} updateState={salvar} pessoal financa={state.financaCpf} onFinanca={salvarFinanca}/>;
+  return <PainelCPF state={state} updateState={updateState} financa={state.financaCpf} onFinanca={salvarFinanca}/>;
 }
 
-// Aba "Cartões e dívidas" do Financeiro CPF: cartões, empréstimos, reserva e saldos, editáveis
-function CartoesDividas({financa, onFinanca}){
-  const f = financa || {cartoes:[], emprestimos:[], contas:[], reserva:{atual:0}};
-  const num = (v) => v===""||v===null||v===undefined ? null : Number(String(v).replace(",","."));
-  const mudar = (lista, id, campo, valor) => onFinanca({...f, [lista]: (f[lista]||[]).map(x=>x.id===id ? {...x, [campo]: valor} : x)});
-  const tirar = (lista, id, nome) => { if(confirm(`Tirar "${nome}"?`)) onFinanca({...f, [lista]: (f[lista]||[]).filter(x=>x.id!==id)}); };
-  const novo = (lista, base) => onFinanca({...f, [lista]: [...(f[lista]||[]), {id:uid(), ...base}]});
-  const ativos = (f.cartoes||[]).filter(c=>c.status!=="Quitado");
-  const dividaCartoes = (f.cartoes||[]).reduce((a,c)=>a+Number(c.divida||0),0);
-  const faturas = ativos.reduce((a,c)=>a+Number(c.faturaAtual||0),0);
-  const limiteLivre = (f.cartoes||[]).reduce((a,c)=>a+Number(c.disponivel||0),0);
-  const empAtivos = (f.emprestimos||[]).filter(e=>e.status!=="Quitado");
-  const saldoEmp = empAtivos.reduce((a,e)=>a+Number(e.saldo||0),0);
-  const parcelasMes = empAtivos.reduce((a,e)=>a+Number(e.parcela||0),0);
-  const corStatus = (s) => s==="Quitado" ? "green" : (s==="Atraso"||s==="Atrasado") ? "pink" : s==="Em redução" ? "yellow" : "blue";
-  const inp = {padding:"7px 9px", borderRadius:9, border:"1px solid var(--line)", width:"100%", minWidth:0, fontSize:13.5, background:"#fff"};
-  const Num = ({v, on}) => <input type="number" step="0.01" defaultValue={v ?? ""} style={inp} onBlur={e=>{ const n = num(e.target.value); if(n!==v) on(n); }}/>;
-  const Txt = ({v, on, w}) => <input defaultValue={v ?? ""} style={{...inp, ...(w?{width:w}:{})}} onBlur={e=>{ if(e.target.value!==(v??"")) on(e.target.value); }}/>;
-  const Rot = ({children}) => <div style={{fontSize:11.5, color:"var(--graphite-soft)", marginBottom:3}}>{children}</div>;
-  const Status = ({v, on, opcoes}) => <select value={v||""} onChange={e=>on(e.target.value)} style={inp}>{opcoes.map(o=><option key={o}>{o}</option>)}</select>;
+// ---------- Financeiro CPF em painel (inspirado no modelo que a Mari mandou) ----------
+// Abas: Visão geral, Cartões, Empréstimos, Entradas, Sair das dívidas e Lançamentos (a tela antiga,
+// para criar e editar qualquer registro). Tudo sai de state.transacoesCpf e state.financaCpf.
+const FX_MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const fxK = (v) => { v = Number(v)||0; if(window.OCULTAR_VALORES) return "•••"; return Math.abs(v)>=1000 ? (v/1000).toLocaleString("pt-BR",{maximumFractionDigits:1})+"k" : Math.round(v).toLocaleString("pt-BR"); };
+const fxPct = (a,b) => b ? Math.round((a-b)/Math.abs(b)*100) : null;
+const fxDoMes = (tx, y, m) => tx.filter(t=>{ const d = new Date(t.data+"T00:00:00"); return d.getFullYear()===y && d.getMonth()===m; });
+const fxSoma = (l) => l.reduce((a,t)=>a+Number(t.valor||0),0);
+const fxNum = (v) => v===""||v===null||v===undefined ? null : Number(String(v).replace(",","."));
+// quanto ainda falta pagar de um cartão: a dívida anotada ou, sem ela, as faturas que faltam
+function fxDividaCartao(c, tx){
+  if(c.status==="Quitado") return 0;
+  if(Number(c.divida)>0) return Number(c.divida);
+  return fxSoma(tx.filter(t=>t.id && t.id.startsWith("cpff-"+c.id+"-") && t.status!=="Confirmado"));
+}
+const fxDividaEmp = (e) => e.status==="Quitado" ? 0 : Number(e.saldo||0);
+function fxPlano(dividas, extra, metodo){
+  const lista = dividas.map(d=>({...d, resta:d.saldo, quitada:null})).filter(d=>d.resta>0);
+  const ordem = [...lista].sort((a,b)=> metodo==="avalanche" ? ((b.juros||0)-(a.juros||0) || a.resta-b.resta) : (a.resta-b.resta));
+  const linha = []; let mes = 0;
+  while(lista.some(d=>d.resta>0.5) && mes<120){
+    mes++;
+    let livre = Number(extra)||0;
+    lista.forEach(d=>{ if(d.resta<=0.5){ livre += d.minimo; return; } const p = Math.min(d.minimo, d.resta); d.resta -= p; livre += d.minimo - p; });
+    for(const d of ordem){ if(livre<=0) break; const x = lista.find(y=>y.id===d.id); if(x.resta<=0.5) continue; const p = Math.min(livre, x.resta); x.resta -= p; livre -= p; }
+    lista.forEach(d=>{ if(d.resta<=0.5 && d.quitada===null){ d.resta = 0; d.quitada = mes; } });
+    linha.push(lista.reduce((a,d)=>a+d.resta,0));
+  }
+  return {ordem: ordem.map(d=>lista.find(x=>x.id===d.id)), meses: lista.some(d=>d.resta>0.5) ? null : mes, linha};
+}
+const fxMesDaqui = (n) => { const d = new Date(); d.setMonth(d.getMonth()+n); return FX_MESES[d.getMonth()]+"/"+String(d.getFullYear()).slice(2); };
+
+function FxKpi({titulo, valor, chip, chipTom, sub, icone, tom}){
   return (
-    <div>
-      <div className="grid" style={{gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))", gap:16, marginBottom:18}}>
-        {[["Faturas abertas", faturas, "credit_card", "#F6E3C6", "#8A5A20"],
-          ["Dívida nos cartões", dividaCartoes, "trending_down", "#f6e0dc", "#b8473a"],
-          ["Limite disponível", limiteLivre, "account_balance", "#e2e9f1", "#4a6a8a"],
-          ["Saldo dos empréstimos", saldoEmp, "request_quote", "#f6e0dc", "#b8473a"],
-          ["Parcelas por mês", parcelasMes, "event_repeat", "#E7E1F3", "#6B4E8A"],
-          ["Reserva", (f.reserva||{}).atual, "savings", "#DCEBDD", "#2F6B3E"]
-        ].map(([label,val,icon,bg,fg])=>(
-          <div key={label} className="card" style={{padding:16}}>
-            <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:10}}>
-              <span style={{width:30,height:30, borderRadius:9, background:bg, color:fg, display:"flex", alignItems:"center", justifyContent:"center"}}><Icon name={icon} size={16}/></span>
-              <span style={{fontSize:13, color:"var(--graphite-soft)"}}>{label}</span>
-            </div>
-            <div style={{fontFamily:"Poppins", fontSize:20, fontWeight:700}}>{fmtMoney(val)}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="card" style={{marginBottom:18}}>
-        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, gap:10, flexWrap:"wrap"}}>
-          <h3 style={{margin:0}}>Cartões ({(f.cartoes||[]).length})</h3>
-          <button className="btn btn-ghost btn-sm" onClick={()=>novo("cartoes", {nome:"Novo cartão", status:"Ativo", divida:0})}><Icon name="add" size={15}/>Cartão</button>
-        </div>
-        {(f.cartoes||[]).map(c=>(
-          <div key={c.id} style={{borderTop:"1px solid var(--line)", padding:"12px 0"}}>
-            <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8, flexWrap:"wrap"}}>
-              <Icon name="credit_card" size={18}/>
-              <Txt v={c.nome} on={v=>mudar("cartoes",c.id,"nome",v)} w={180}/>
-              <Badge tone={corStatus(c.status)}>{c.status||"Ativo"}</Badge>
-              <span style={{flex:1}}/>
-              <button className="icon-btn" title="Tirar cartão" onClick={()=>tirar("cartoes",c.id,c.nome)}><Icon name="delete" size={18}/></button>
-            </div>
-            <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))", gap:10}}>
-              <div><Rot>Limite</Rot><Num v={c.limite} on={v=>mudar("cartoes",c.id,"limite",v)}/></div>
-              <div><Rot>Disponível</Rot><Num v={c.disponivel} on={v=>mudar("cartoes",c.id,"disponivel",v)}/></div>
-              <div><Rot>Fatura atual</Rot><Num v={c.faturaAtual} on={v=>mudar("cartoes",c.id,"faturaAtual",v)}/></div>
-              <div><Rot>Próxima fatura</Rot><Num v={c.proximaFatura} on={v=>mudar("cartoes",c.id,"proximaFatura",v)}/></div>
-              <div><Rot>Dívida total</Rot><Num v={c.divida} on={v=>mudar("cartoes",c.id,"divida",v)}/></div>
-              <div><Rot>Parcelas futuras</Rot><Num v={c.parcelasFuturas} on={v=>mudar("cartoes",c.id,"parcelasFuturas",v)}/></div>
-              <div><Rot>Vence dia</Rot><Txt v={c.vencimento} on={v=>mudar("cartoes",c.id,"vencimento",v)}/></div>
-              <div><Rot>Juros (% ao mês)</Rot><Num v={c.juros} on={v=>mudar("cartoes",c.id,"juros",v)}/></div>
-              <div><Rot>Situação</Rot><Status v={c.status} on={v=>mudar("cartoes",c.id,"status",v)} opcoes={["Ativo","Em redução","Atrasado","Quitado"]}/></div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="card" style={{marginBottom:18}}>
-        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, gap:10, flexWrap:"wrap"}}>
-          <h3 style={{margin:0}}>Empréstimos ({(f.emprestimos||[]).length})</h3>
-          <button className="btn btn-ghost btn-sm" onClick={()=>novo("emprestimos", {nome:"Novo empréstimo", status:"Ativo", pagas:0})}><Icon name="add" size={15}/>Empréstimo</button>
-        </div>
-        {(f.emprestimos||[]).map(e=>(
-          <div key={e.id} style={{borderTop:"1px solid var(--line)", padding:"12px 0"}}>
-            <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8, flexWrap:"wrap"}}>
-              <Icon name="request_quote" size={18}/>
-              <Txt v={e.nome} on={v=>mudar("emprestimos",e.id,"nome",v)} w={240}/>
-              <Badge tone={corStatus(e.status)}>{e.status||"Ativo"}</Badge>
-              {e.totalParcelas>0 && <span style={{fontSize:13, color:"var(--graphite-soft)"}}>{e.pagas||0} de {e.totalParcelas} pagas</span>}
-              <span style={{flex:1}}/>
-              <button className="icon-btn" title="Tirar empréstimo" onClick={()=>tirar("emprestimos",e.id,e.nome)}><Icon name="delete" size={18}/></button>
-            </div>
-            <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))", gap:10}}>
-              <div><Rot>Parcela</Rot><Num v={e.parcela} on={v=>mudar("emprestimos",e.id,"parcela",v)}/></div>
-              <div><Rot>Parcelas pagas</Rot><Num v={e.pagas} on={v=>mudar("emprestimos",e.id,"pagas",v)}/></div>
-              <div><Rot>Total de parcelas</Rot><Num v={e.totalParcelas} on={v=>mudar("emprestimos",e.id,"totalParcelas",v)}/></div>
-              <div><Rot>Saldo devedor</Rot><Num v={e.saldo} on={v=>mudar("emprestimos",e.id,"saldo",v)}/></div>
-              <div><Rot>Para quitar hoje</Rot><Num v={e.quitacao} on={v=>mudar("emprestimos",e.id,"quitacao",v)}/></div>
-              <div><Rot>Valor pego</Rot><Num v={e.valorOriginal} on={v=>mudar("emprestimos",e.id,"valorOriginal",v)}/></div>
-              <div><Rot>Total com juros</Rot><Num v={e.totalComJuros} on={v=>mudar("emprestimos",e.id,"totalComJuros",v)}/></div>
-              <div><Rot>Vence dia</Rot><Txt v={e.vencimento} on={v=>mudar("emprestimos",e.id,"vencimento",v)}/></div>
-              <div><Rot>Situação</Rot><Status v={e.status} on={v=>mudar("emprestimos",e.id,"status",v)} opcoes={["Ativo","Atraso","Quitado"]}/></div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="card">
-        <h3 style={{marginTop:0}}>Reserva e saldo nas contas</h3>
-        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:12}}>
-          <div><Rot>Reserva guardada</Rot><Num v={(f.reserva||{}).atual} on={v=>onFinanca({...f, reserva:{...(f.reserva||{}), atual:v}})}/></div>
-          <div><Rot>Guardar por mês</Rot><Num v={f.aporteReserva} on={v=>onFinanca({...f, aporteReserva:v})}/></div>
-          <div><Rot>Para dívidas por mês</Rot><Num v={f.orcamentoDividas} on={v=>onFinanca({...f, orcamentoDividas:v})}/></div>
-          {(f.contas||[]).map(c=>(
-            <div key={c.id}><Rot>Saldo {c.nome}</Rot><Num v={c.saldo} on={v=>mudar("contas",c.id,"saldo",v)}/></div>
-          ))}
-        </div>
-        {(f.compras||[]).length>0 && <p style={{fontSize:13, color:"var(--graphite-soft)", marginBottom:0}}>Compras anotadas: {(f.compras||[]).map(x=>`${x.nome} ${fmtMoney(x.valor)} no ${x.cartao} (${new Date(x.data+"T00:00:00").toLocaleDateString("pt-BR")})`).join(" · ")}</p>}
-        {f.importadoDe && <p style={{fontSize:12, color:"var(--graphite-soft)", marginBottom:0}}>Trazido da sua planilha antiga ({f.importadoDe}).</p>}
+    <div className={"fx-kpi "+(tom||"")}>
+      <div className="fx-kpi-t"><span>{titulo}</span><span className="fx-kpi-ic"><Icon name={icone} size={16}/></span></div>
+      <div>
+        <div className="fx-kpi-v">{valor}{chip && <span className={"fx-chip "+(chipTom||"")}>{chip}</span>}</div>
+        {sub && <div className="fx-kpi-s">{sub}</div>}
       </div>
     </div>
   );
 }
-function Financeiro({state, updateState, go, pessoal, financa, onFinanca}){
+const fxCorItem = (i) => ["#7b61e8","#93cf6b","#f0b950","#e7857a","#5aa5d6","#b3a1f5","#6ea94a","#c879c8"][i%8];
+
+function PainelCPF({state, updateState, financa, onFinanca}){
+  const tx = state.transacoesCpf || [];
+  const f = financa || {cartoes:[], emprestimos:[], contas:[], reserva:{atual:0}};
+  const hoje = new Date();
+  const [aba, setAba] = useState("Visão geral");
+  const [ref, setRef] = useState({y:hoje.getFullYear(), m:hoje.getMonth()});
+  const [modal, setModal] = useState(null);
+  const [extra, setExtra] = useState(f.orcamentoDividas ?? 130);
+  const [metodo, setMetodo] = useState("avalanche");
+  const andar = (n) => setRef(r=>{ const d = new Date(r.y, r.m+n, 1); return {y:d.getFullYear(), m:d.getMonth()}; });
+  const ant = (()=>{ const d = new Date(ref.y, ref.m-1, 1); return {y:d.getFullYear(), m:d.getMonth()}; })();
+
+  const salvarTx = (lista) => updateState(atual=>({...atual, transacoesCpf: lista(atual.transacoesCpf||[])}));
+  const salvarUm = (t) => { salvarTx(l=> l.some(x=>x.id===t.id) ? l.map(x=>x.id===t.id?t:x) : [...l, t]); setModal(null); };
+  const alternar = (t) => salvarTx(l=>l.map(x=>x.id===t.id ? {...x, status: x.status==="Confirmado"?"Pendente":"Confirmado", atrasado: undefined} : x));
+  const mudarLista = (lista, item) => { onFinanca({...f, [lista]: (f[lista]||[]).some(x=>x.id===item.id) ? f[lista].map(x=>x.id===item.id?item:x) : [...(f[lista]||[]), item]}); setModal(null); };
+  const tirar = (lista, item) => { if(confirm(`Tirar "${item.nome}"?`)) onFinanca({...f, [lista]: f[lista].filter(x=>x.id!==item.id)}); };
+
+  // números do mês
+  const doMes = fxDoMes(tx, ref.y, ref.m), doAnt = fxDoMes(tx, ant.y, ant.m);
+  const ent = fxSoma(doMes.filter(t=>t.tipo==="receita")), entAnt = fxSoma(doAnt.filter(t=>t.tipo==="receita"));
+  const sai = fxSoma(doMes.filter(t=>t.tipo==="despesa")), saiAnt = fxSoma(doAnt.filter(t=>t.tipo==="despesa"));
+  const sobra = ent - sai;
+  const cartoes = f.cartoes||[], emps = f.emprestimos||[];
+  const dividaCartoes = cartoes.reduce((a,c)=>a+fxDividaCartao(c, tx),0);
+  const dividaEmps = emps.reduce((a,e)=>a+fxDividaEmp(e),0);
+  const divida = dividaCartoes + dividaEmps;
+  const reserva = Number((f.reserva||{}).atual||0);
+  const hojeIso = todayISO();
+  const atrasados = tx.filter(t=>t.tipo==="despesa" && t.status!=="Confirmado" && (t.atrasado || t.data < hojeIso.slice(0,8)+"01"));
+  const empAtraso = emps.filter(e=>e.status==="Atraso" || e.status==="Atrasado");
+  const aReceber = tx.filter(t=>t.tipo==="receita" && t.status!=="Confirmado").sort((a,b)=>a.data.localeCompare(b.data));
+
+  // média dos últimos 3 meses fechados
+  const ult3 = [1,2,3].map(n=>{ const d = new Date(hoje.getFullYear(), hoje.getMonth()-n, 1); const l = fxDoMes(tx, d.getFullYear(), d.getMonth()); return {e: fxSoma(l.filter(t=>t.tipo==="receita")), s: fxSoma(l.filter(t=>t.tipo==="despesa"))}; });
+  const mediaEnt = ult3.reduce((a,x)=>a+x.e,0)/3, mediaSai = ult3.reduce((a,x)=>a+x.s,0)/3;
+  const fixasMes = fxSoma(doMes.filter(t=>t.tipo==="despesa" && /Conta/.test(t.categoria||"")));
+
+  // dívidas para o plano
+  const dividas = [
+    ...cartoes.filter(c=>fxDividaCartao(c,tx)>0).map(c=>({id:"c"+c.id, nome:c.nome, tipo:"Cartão", saldo:fxDividaCartao(c,tx), juros:Number(c.juros)||0, minimo: Math.max(1, Number(c.proximaFatura)||Number(c.faturaAtual)||fxDividaCartao(c,tx)/12)})),
+    ...emps.filter(e=>fxDividaEmp(e)>0).map(e=>({id:"e"+e.id, nome:e.nome, tipo:"Empréstimo", saldo:fxDividaEmp(e), juros:Number(e.juros)||0, minimo: Math.max(1, Number(e.parcela)||fxDividaEmp(e)/12)}))
+  ];
+  const plano = fxPlano(dividas, extra, metodo);
+  const planoSemExtra = fxPlano(dividas, 0, metodo);
+
+  // conselhos da consultora
+  const conselhos = [];
+  if(atrasados.length || empAtraso.length){
+    const nomes = [...new Set([...atrasados.map(t=>t.descricao), ...empAtraso.map(e=>e.nome)])];
+    conselhos.push(<span><b>Primeiro, apague o fogo:</b> {nomes.length} {nomes.length>1?"contas aparecem":"conta aparece"} vencida{nomes.length>1?"s":""} sem pagamento ({nomes.slice(0,4).join(", ")}{nomes.length>4?"…":""}){atrasados.length?<>, somando {fmtMoney(fxSoma(atrasados))}</>:null}. Se já pagou, toque no quadradinho dela no Mapa de pagamentos para dar baixa. O que estiver mesmo atrasado vem antes de tudo: atraso cobra multa e juros todo dia e suja o nome. Ligue e negocie o valor à vista com desconto ou um parcelamento que caiba.</span>);
+  }
+  const caro = [...cartoes].filter(c=>fxDividaCartao(c,tx)>0 && Number(c.juros)>0).sort((a,b)=>b.juros-a.juros)[0];
+  if(caro) conselhos.push(<span><b>O dinheiro extra vai para o {caro.nome}</b>, que cobra {String(caro.juros).replace(".",",")}% ao mês. Juros de cartão são os mais caros que existem: nunca pague só o mínimo nem entre no rotativo. Empréstimo a 9% ao mês custa menos que cartão a {Math.round(caro.juros)}%.</span>);
+  if(mediaEnt || mediaSai){
+    const s = mediaEnt - mediaSai;
+    conselhos.push(s<0
+      ? <span><b>Nos últimos 3 meses saiu mais do que entrou:</b> em média entraram {fmtMoney(mediaEnt)} e saíram {fmtMoney(mediaSai)} por mês ({fmtMoney(s)}). Enquanto isso não virar, a dívida cresce. Corte compras novas no cartão até a conta fechar no positivo.</span>
+      : <span><b>Sobram em média {fmtMoney(s)} por mês</b> (últimos 3 meses). Separe essa sobra no dia que o dinheiro cair e mande direto para a dívida da vez, antes de gastar.</span>);
+  }
+  const quitados = cartoes.filter(c=>c.status==="Quitado");
+  if(quitados.length) conselhos.push(<span><b>{quitados.map(c=>c.nome).join(", ")} já {quitados.length>1?"estão quitados":"está quitado"}.</b> Guarde na gaveta e não use. Cada cartão quitado que volta a ser usado empurra a data de sair das dívidas.</span>);
+  const estourados = cartoes.filter(c=>Number(c.limite)>0 && c.status!=="Quitado" && (1-Number(c.disponivel||0)/Number(c.limite))>0.8);
+  if(estourados.length) conselhos.push(<span><b>{estourados.map(c=>c.nome).join(", ")} com mais de 80% do limite usado.</b> Isso derruba o score e deixa você sem folga. Não faça compra nova neles até baixar de 30%.</span>);
+  if(fixasMes>0 && reserva < fixasMes) conselhos.push(<span><b>Reserva de {fmtMoney(reserva)}</b> ainda não cobre um mês de contas fixas ({fmtMoney(fixasMes)}). Mantenha os {fmtMoney(f.aporteReserva||100)} por mês até chegar lá: é ela que evita uma dívida nova quando aparecer um imprevisto.</span>);
+  if(aReceber.length) conselhos.push(<span><b>Tem {fmtMoney(fxSoma(aReceber))} para receber</b> ({aReceber.slice(0,3).map(t=>t.descricao.split(" (")[0]).join(", ")}{aReceber.length>3?"…":""}). Quando cair, decida antes para onde vai: a dívida da vez primeiro.</span>);
+
+  // saídas por categoria no mês
+  const cats = {};
+  doMes.filter(t=>t.tipo==="despesa").forEach(t=>{ const c = t.categoria||"Outros"; cats[c] = (cats[c]||0)+Number(t.valor||0); });
+  const catsAnt = {};
+  doAnt.filter(t=>t.tipo==="despesa").forEach(t=>{ const c = t.categoria||"Outros"; catsAnt[c] = (catsAnt[c]||0)+Number(t.valor||0); });
+  const listaCats = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const maxCat = Math.max(1, ...listaCats.map(x=>x[1]));
+  const icCat = {"Cartão":"credit_card","Empréstimo":"request_quote","Conta fixa":"home","Conta":"receipt_long","Outros":"category"};
+
+  // ano: entradas x saídas por mês
+  const anoMeses = FX_MESES.map((nome,i)=>{ const l = fxDoMes(tx, ref.y, i); return {nome, i, e: fxSoma(l.filter(t=>t.tipo==="receita")), s: fxSoma(l.filter(t=>t.tipo==="despesa"))}; });
+  const maxAno = Math.max(1, ...anoMeses.map(x=>Math.max(x.e,x.s)));
+
+  // mapa de pagamentos do ano (cartões e empréstimos)
+  const linhasMapa = {};
+  tx.filter(t=>t.tipo==="despesa" && /^cpf[fe]-/.test(t.id||"") && t.data.startsWith(String(ref.y))).forEach(t=>{
+    const k = t.descricao; (linhasMapa[k] = linhasMapa[k] || Array(12).fill(null))[Number(t.data.slice(5,7))-1] = t;
+  });
+  const maxMapa = Math.max(1, ...Object.values(linhasMapa).flat().filter(Boolean).map(t=>Number(t.valor)));
+  const corCelula = (t) => {
+    if(!t) return {};
+    if(t.status==="Confirmado"){ const a = 0.35 + 0.65*Math.min(1, Number(t.valor)/maxMapa); return {background:`rgba(123,97,232,${a.toFixed(2)})`}; }
+    if(t.atrasado || t.data < hojeIso.slice(0,8)+"01") return {background:"#e7857a"};
+    return {background:"#f6f3fb", color:"#7d778c"};
+  };
+
+  const usoCartoes = cartoes.filter(c=>Number(c.limite)>0).map(c=>({...c, uso: Math.max(0, Math.min(1, 1-Number(c.disponivel||0)/Number(c.limite)))})).sort((a,b)=>b.uso-a.uso);
+  const delta = (a,b,inverter) => { const p = fxPct(a,b); if(p===null) return null; const bom = inverter ? p<=0 : p>=0; return [(p>0?"↑ ":p<0?"↓ ":"")+Math.abs(p)+"%", bom?"":"mal"]; };
+  const dEnt = delta(ent, entAnt), dSai = delta(sai, saiAnt, true);
+
+  const camposCartao = [
+    {key:"nome", label:"Nome do cartão"}, {key:"limite", label:"Limite", type:"number"}, {key:"disponivel", label:"Disponível agora", type:"number"},
+    {key:"faturaAtual", label:"Fatura atual", type:"number"}, {key:"proximaFatura", label:"Próxima fatura", type:"number"},
+    {key:"divida", label:"Dívida total (tudo que falta pagar)", type:"number"}, {key:"parcelasFuturas", label:"Parcelas futuras", type:"number"},
+    {key:"vencimento", label:"Vence dia"}, {key:"juros", label:"Juros (% ao mês)", type:"number"},
+    {key:"status", label:"Situação", type:"select", options:["Ativo","Em redução","Atrasado","Quitado"]}
+  ];
+  const camposEmp = [
+    {key:"nome", label:"Nome"}, {key:"parcela", label:"Valor da parcela", type:"number"}, {key:"pagas", label:"Parcelas pagas", type:"number"},
+    {key:"totalParcelas", label:"Total de parcelas", type:"number"}, {key:"saldo", label:"Saldo devedor", type:"number"},
+    {key:"quitacao", label:"Valor para quitar hoje", type:"number"}, {key:"valorOriginal", label:"Valor pego", type:"number"},
+    {key:"totalComJuros", label:"Total com juros", type:"number"}, {key:"vencimento", label:"Vence dia"}, {key:"juros", label:"Juros (% ao mês)", type:"number"},
+    {key:"status", label:"Situação", type:"select", options:["Ativo","Atraso","Quitado"]}
+  ];
+  const numerar = (campos, x) => { const o = {...x}; campos.filter(c=>c.type==="number").forEach(c=>{ o[c.key] = fxNum(o[c.key]); }); return o; };
+  const paraForm = (x) => { const o = {...x}; Object.keys(o).forEach(k=>{ if(o[k]===null||o[k]===undefined) o[k]=""; }); return o; };
+
+  const SeletorMes = () => (
+    <div className="fx-mes">
+      <button onClick={()=>andar(-1)} aria-label="Mês anterior"><Icon name="chevron_left" size={18}/></button>
+      <span style={{minWidth:120, textAlign:"center"}}>{monthNames[ref.m]} {ref.y}</span>
+      <button onClick={()=>andar(1)} aria-label="Próximo mês"><Icon name="chevron_right" size={18}/></button>
+    </div>
+  );
+
+  const Consultora = ({max}) => (
+    <div className="fx-consultora">
+      <h3 style={{margin:"0 0 4px", font:"500 18px Poppins, sans-serif"}}><Icon name="auto_awesome" size={19}/>Sua consultora financeira</h3>
+      <p style={{fontSize:12, color:"#4f5a43", margin:"0 0 6px"}}>O que fazer agora, na ordem, olhando os seus números.</p>
+      {conselhos.length===0 ? <p style={{fontSize:13.5}}>Tudo em dia por aqui.</p> :
+        conselhos.slice(0, max||conselhos.length).map((c,i)=><div className="fx-passo" key={i}><span className="nn">{i+1}</span><div>{c}</div></div>)}
+      {plano.meses!==null && dividas.length>0 && <div className="fx-passo"><span className="nn"><Icon name="flag" size={14}/></span><div><b>Seguindo o plano, você sai das dívidas em {fxMesDaqui(plano.meses)}</b> ({plano.meses} meses), colocando {fmtMoney(extra)} a mais por mês. <a href="#" onClick={e=>{e.preventDefault(); setAba("Sair das dívidas");}}>Ver o plano</a></div></div>}
+    </div>
+  );
+
+  return (
+    <div className="fx">
+      <div className="fx-topo">
+        <div>
+          <h1>Financeiro CPF</h1>
+          <p>{monthNames[ref.m]} {ref.y} · comparado com {monthNames[ant.m].toLowerCase()}</p>
+        </div>
+        <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
+          <button className="fx-btn claro" onClick={()=>setModal({tipo:"tx", t:{tipo:"despesa", status:"Pendente", moeda:"BRL", data:todayISO()}})}><Icon name="remove" size={16}/>Saída</button>
+          <button className="fx-btn" onClick={()=>setModal({tipo:"tx", t:{tipo:"receita", status:"Pendente", moeda:"BRL", data:todayISO()}})}><Icon name="add" size={16}/>Entrada</button>
+        </div>
+      </div>
+      <div className="fx-linha">
+        <div className="fx-abas">
+          {["Visão geral","Cartões","Empréstimos","Entradas","Sair das dívidas","Lançamentos"].map(a=><button key={a} className={"fx-aba"+(aba===a?" on":"")} onClick={()=>setAba(a)}>{a}</button>)}
+        </div>
+        {aba!=="Lançamentos" && aba!=="Sair das dívidas" && <SeletorMes/>}
+      </div>
+
+      {aba==="Visão geral" && <>
+        <div className="fx-kpis">
+          <FxKpi titulo="Entrou no mês" valor={fmtMoney(ent)} chip={dEnt&&dEnt[0]} chipTom={dEnt&&dEnt[1]} icone="south_west" sub={`${fmtMoney(fxSoma(doMes.filter(t=>t.tipo==="receita"&&t.status!=="Confirmado")))} ainda a receber`}/>
+          <FxKpi titulo="Saiu no mês" valor={fmtMoney(sai)} chip={dSai&&dSai[0]} chipTom={dSai&&dSai[1]} icone="north_east" sub={`${fmtMoney(fxSoma(doMes.filter(t=>t.tipo==="despesa"&&t.status!=="Confirmado")))} ainda a pagar`}/>
+          <FxKpi tom={sobra>=0?"lil":"ver"} titulo={sobra>=0?"Sobra do mês":"Faltou no mês"} valor={fmtMoney(sobra)} icone="account_balance_wallet" sub="entradas menos saídas"/>
+          <FxKpi titulo="Dívida total" valor={fmtMoney(divida)} icone="trending_down" sub={`${fmtMoney(dividaCartoes)} cartões · ${fmtMoney(dividaEmps)} empréstimos`}/>
+          <FxKpi tom="lim" titulo="Livre das dívidas em" valor={plano.meses===null ? "—" : fxMesDaqui(plano.meses)} chip={plano.meses===null?null:plano.meses+" meses"} chipTom="neutro" icone="flag" sub={`reserva guardada: ${fmtMoney(reserva)}`}/>
+        </div>
+        <div className="fx-grade">
+          <div className="fx-caixa">
+            <div className="fx-cab"><div><h3>Para onde foi o dinheiro</h3><p className="sub">Saídas de {monthNames[ref.m].toLowerCase()} por tipo{listaCats[0] ? ` · ${listaCats[0][0]} leva ${Math.round(listaCats[0][1]/Math.max(1,sai)*100)}%` : ""}</p></div></div>
+            {listaCats.length===0 ? <p className="sub">Nenhuma saída neste mês.</p> : listaCats.map(([c,v],i)=>{ const d = delta(v, catsAnt[c]||0, true); return (
+              <div className="fx-cat" key={c}>
+                <span className="fx-cat-ic"><Icon name={icCat[c]||"category"} size={16}/></span>
+                <span>{c}<small>{doMes.filter(t=>t.tipo==="despesa"&&(t.categoria||"Outros")===c).length} lançamentos</small></span>
+                <div className="fx-barra"><i style={{width:(v/maxCat*100)+"%", background:i===0?"#7b61e8":i===1?"#9c87f0":i===2?"#c4b6f7":"#93cf6b"}}/></div>
+                <span className="fx-num">{fmtMoney(v)}</span>
+                {d ? <span className={"fx-chip "+d[1]}>{d[0]}</span> : <span/>}
+              </div>); })}
+          </div>
+          <div className="fx-caixa">
+            <h3>Uso do limite</h3><p className="sub">Quanto do limite de cada cartão está tomado</p>
+            {usoCartoes.slice(0,5).map((c,i)=>(
+              <div className="fx-pessoa" key={c.id}>
+                <span className="fx-av" style={{background:fxCorItem(i)}}>{c.nome.slice(0,2).toUpperCase()}</span>
+                <span>{c.nome}<small>{fmtMoney(c.limite)} de limite</small></span>
+                <div className="fx-barra"><i style={{width:(c.uso*100)+"%", background:c.uso>0.8?"#e7857a":c.uso>0.3?"#9c87f0":"#93cf6b"}}/></div>
+                <span className="fx-num">{Math.round(c.uso*100)}%</span>
+              </div>
+            ))}
+            {usoCartoes.length===0 && <p className="sub">Coloque o limite dos cartões na aba Cartões.</p>}
+            {estourados[0] && <div className="fx-dica"><Icon name="auto_awesome" size={16}/><span>Segure compras no {estourados[0].nome}: abaixo de 30% de uso o score sobe.</span></div>}
+          </div>
+        </div>
+        <div className="fx-grade">
+          <div className="fx-caixa">
+            <div className="fx-cab"><div><h3>Entrou x saiu em {ref.y}</h3><p className="sub">Lilás é o que entrou, rosa é o que saiu. Mês verde fechou no positivo.</p></div></div>
+            <div className="fx-colunas">
+              {anoMeses.map(x=>(
+                <div className="fx-col" key={x.i} style={{opacity: x.e||x.s ? 1 : .35}}>
+                  <b style={{color: x.e-x.s>=0 ? "#3c7a20" : "#b3402f"}}>{x.e||x.s ? fxK(x.e-x.s) : ""}</b>
+                  <div className="fx-duplas" style={{height:"75%"}}>
+                    <div style={{height:(x.e/maxAno*100)+"%", background: x.i===ref.m ? "#7b61e8" : "#c4b6f7"}} title={"Entrou "+fmtMoney(x.e)}/>
+                    <div style={{height:(x.s/maxAno*100)+"%", background: x.i===ref.m ? "#e7857a" : "#f3c2bb"}} title={"Saiu "+fmtMoney(x.s)}/>
+                  </div>
+                  <span style={{fontWeight:x.i===ref.m?700:400}}>{x.nome}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <Consultora max={4}/>
+        </div>
+        <div className="fx-caixa" style={{marginBottom:14}}>
+          <div className="fx-cab"><div><h3>Mapa de pagamentos {ref.y}</h3><p className="sub">Faturas e parcelas mês a mês. Quanto mais escuro, maior o valor pago. Toque num quadradinho para marcar como pago.</p></div></div>
+          <div className="fx-mapa"><table><thead><tr><th></th>{FX_MESES.map(m=><th key={m}>{m}</th>)}</tr></thead><tbody>
+            {Object.entries(linhasMapa).map(([nome, cel])=>(
+              <tr key={nome}><td className="n" title={nome}>{nome.replace(/^Fatura |^Parcela /,"")}</td>
+                {cel.map((t,i)=><td key={i} className={"c"+(t?" clica":"")} style={corCelula(t)} onClick={t ? ()=>alternar(t) : undefined} title={t ? `${nome}: ${fmtMoney(t.valor)} (${t.status==="Confirmado"?"pago":(t.atrasado || t.data < hojeIso.slice(0,8)+"01")?"vencido":"a pagar"}). Toque para marcar como ${t.status==="Confirmado"?"a pagar":"pago"}.` : ""}>{t ? fxK(t.valor) : ""}</td>)}
+              </tr>
+            ))}
+          </tbody></table></div>
+          <div className="fx-legenda"><span><i style={{background:"#c4b6f7"}}/><i style={{background:"#7b61e8"}}/>pago</span><span><i style={{background:"#f6f3fb", border:"1px solid #e6e2ee"}}/>a pagar</span><span><i style={{background:"#e7857a"}}/>vencido sem baixa</span></div>
+        </div>
+      </>}
+
+      {aba==="Cartões" && <>
+        <div className="fx-kpis">
+          <FxKpi titulo="Limite total" valor={fmtMoney(cartoes.reduce((a,c)=>a+Number(c.limite||0),0))} icone="credit_card" sub={`${cartoes.length} cartões`}/>
+          <FxKpi titulo="Limite disponível" valor={fmtMoney(cartoes.reduce((a,c)=>a+Number(c.disponivel||0),0))} icone="account_balance" />
+          <FxKpi tom="lil" titulo="Faturas deste mês" valor={fmtMoney(fxSoma(doMes.filter(t=>t.categoria==="Cartão")))} icone="receipt_long" sub={`${fmtMoney(fxSoma(doMes.filter(t=>t.categoria==="Cartão"&&t.status!=="Confirmado")))} a pagar`}/>
+          <FxKpi titulo="Dívida nos cartões" valor={fmtMoney(dividaCartoes)} icone="trending_down"/>
+          <FxKpi tom="lim" titulo="Quitados" valor={`${quitados.length} de ${cartoes.length}`} icone="verified"/>
+        </div>
+        <div className="fx-linha"><span/><button className="fx-btn claro" onClick={()=>setModal({tipo:"cartao", x:{id:uid(), nome:"", status:"Ativo"}})}><Icon name="add" size={16}/>Novo cartão</button></div>
+        <div className="fx-cartoes">
+          {[...cartoes].sort((a,b)=>fxDividaCartao(b,tx)-fxDividaCartao(a,tx)).map(c=>{ const uso = Number(c.limite)>0 ? Math.max(0,Math.min(1,1-Number(c.disponivel||0)/Number(c.limite))) : null; const faturaMes = doMes.find(t=>t.id && t.id.startsWith("cpff-"+c.id+"-")); return (
+            <div key={c.id} className={"fx-plast"+(c.status==="Quitado"?" quitado":(c.status==="Atrasado"?" atraso":""))}>
+              <div className="frente">
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}><b>{c.nome}</b><span className="fx-chip neutro" style={{background:"rgba(255,255,255,.25)", color:"#fff"}}>{c.status||"Ativo"}</span></div>
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"flex-end"}}><small>{c.vencimento ? "vence dia "+c.vencimento : "sem vencimento"}{c.juros ? " · "+String(c.juros).replace(".",",")+"% a.m." : ""}</small><Icon name="contactless" size={20}/></div>
+              </div>
+              {uso!==null && <div><div style={{display:"flex", justifyContent:"space-between", fontSize:11.5, color:"#7d778c", marginBottom:4}}><span>Limite usado</span><span>{Math.round(uso*100)}% de {fmtMoney(c.limite)}</span></div><div className="fx-barra"><i style={{width:(uso*100)+"%", background:uso>0.8?"#e7857a":uso>0.3?"#9c87f0":"#93cf6b"}}/></div></div>}
+              <div className="fx-par">
+                <span>Fatura de {FX_MESES[ref.m].toLowerCase()}<b>{faturaMes ? fmtMoney(faturaMes.valor) : "—"}</b></span>
+                <span>Situação da fatura<b>{faturaMes ? (faturaMes.status==="Confirmado" ? "Paga" : faturaMes.atrasado ? "Atrasada" : "A pagar") : "—"}</b></span>
+                <span>Próxima fatura<b>{fmtMoney(c.proximaFatura)}</b></span>
+                <span>Falta pagar<b>{fmtMoney(fxDividaCartao(c,tx))}</b></span>
+              </div>
+              <div style={{display:"flex", gap:6, justifyContent:"flex-end"}}>
+                {faturaMes && <button className="fx-icone" title={faturaMes.status==="Confirmado"?"Marcar como a pagar":"Marcar fatura como paga"} onClick={()=>alternar(faturaMes)}><Icon name="check" size={16} style={{color:faturaMes.status==="Confirmado"?"#3c7a20":undefined}}/></button>}
+                <button className="fx-icone" title="Editar" onClick={()=>setModal({tipo:"cartao", x:c})}><Icon name="edit" size={16}/></button>
+                <button className="fx-icone" title="Tirar" onClick={()=>tirar("cartoes", c)}><Icon name="delete" size={16}/></button>
+              </div>
+            </div>); })}
+        </div>
+      </>}
+
+      {aba==="Empréstimos" && <>
+        <div className="fx-kpis">
+          <FxKpi titulo="Saldo devedor" valor={fmtMoney(dividaEmps)} icone="request_quote" sub={`${emps.filter(e=>fxDividaEmp(e)>0).length} empréstimos com saldo`}/>
+          <FxKpi titulo="Parcelas deste mês" valor={fmtMoney(fxSoma(doMes.filter(t=>t.categoria==="Empréstimo")))} icone="event_repeat"/>
+          <FxKpi tom="lim" titulo="Quitar hoje sairia" valor={fmtMoney(emps.filter(e=>fxDividaEmp(e)>0).reduce((a,e)=>a+Number(e.quitacao||e.saldo||0),0))} icone="savings" sub={`economia de ${fmtMoney(emps.filter(e=>fxDividaEmp(e)>0).reduce((a,e)=>a+Math.max(0,Number(e.saldo||0)-Number(e.quitacao||e.saldo||0)),0))} em juros`}/>
+          <FxKpi tom={empAtraso.length?"ver":""} titulo="Em atraso" valor={String(empAtraso.length)} icone="warning"/>
+          <FxKpi tom="lil" titulo="Quitados" valor={`${emps.filter(e=>e.status==="Quitado").length} de ${emps.length}`} icone="verified"/>
+        </div>
+        <div className="fx-linha"><span/><button className="fx-btn claro" onClick={()=>setModal({tipo:"emp", x:{id:uid(), nome:"", status:"Ativo", pagas:0}})}><Icon name="add" size={16}/>Novo empréstimo</button></div>
+        <div className="fx-cartoes">
+          {[...emps].sort((a,b)=>fxDividaEmp(b)-fxDividaEmp(a)).map(e=>{ const prog = Number(e.totalParcelas)>0 ? Math.min(1, Number(e.pagas||0)/Number(e.totalParcelas)) : null; const econ = Math.max(0, Number(e.saldo||0)-Number(e.quitacao||e.saldo||0)); return (
+            <div key={e.id} className={"fx-plast"+(e.status==="Quitado"?" quitado":(e.status==="Atraso"?" atraso":""))}>
+              <div className="frente">
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}><b style={{fontSize:14.5}}>{e.nome}</b><span className="fx-chip" style={{background:"rgba(255,255,255,.25)", color:"#fff"}}>{e.status||"Ativo"}</span></div>
+                <small>{e.vencimento ? "vence dia "+e.vencimento : "sem vencimento"}{e.juros ? " · "+String(e.juros).replace(".",",")+"% a.m." : ""}</small>
+              </div>
+              {prog!==null && <div><div style={{display:"flex", justifyContent:"space-between", fontSize:11.5, color:"#7d778c", marginBottom:4}}><span>{e.pagas||0} de {e.totalParcelas} parcelas pagas</span><span>{Math.round(prog*100)}%</span></div><div className="fx-barra"><i style={{width:(prog*100)+"%", background:"#93cf6b"}}/></div></div>}
+              <div className="fx-par">
+                <span>Parcela<b>{fmtMoney(e.parcela)}</b></span>
+                <span>Saldo devedor<b>{fmtMoney(e.saldo)}</b></span>
+                <span>Quitar hoje<b>{e.quitacao ? fmtMoney(e.quitacao) : "—"}</b></span>
+                <span>Economia quitando<b style={{color:econ>0?"#3c7a20":undefined}}>{econ>0 ? fmtMoney(econ) : "—"}</b></span>
+              </div>
+              <div style={{display:"flex", gap:6, justifyContent:"flex-end"}}>
+                <button className="fx-icone" title="Editar" onClick={()=>setModal({tipo:"emp", x:e})}><Icon name="edit" size={16}/></button>
+                <button className="fx-icone" title="Tirar" onClick={()=>tirar("emprestimos", e)}><Icon name="delete" size={16}/></button>
+              </div>
+            </div>); })}
+        </div>
+      </>}
+
+      {aba==="Entradas" && (()=>{
+        const doAno = tx.filter(t=>t.tipo==="receita" && t.data.startsWith(String(ref.y)));
+        const porCat = {}; doAno.forEach(t=>{ const c = t.categoria||"Outros"; porCat[c] = (porCat[c]||0)+Number(t.valor||0); });
+        const catsE = Object.entries(porCat).sort((a,b)=>b[1]-a[1]); const maxE = Math.max(1, ...catsE.map(x=>x[1]));
+        const mesesComValor = anoMeses.filter(x=>x.e>0);
+        const entMes = doMes.filter(t=>t.tipo==="receita").sort((a,b)=>a.data.localeCompare(b.data));
+        return <>
+          <div className="fx-kpis">
+            <FxKpi titulo={"Entrou em "+monthNames[ref.m].toLowerCase()} valor={fmtMoney(ent)} chip={dEnt&&dEnt[0]} chipTom={dEnt&&dEnt[1]} icone="south_west"/>
+            <FxKpi titulo={"Total de "+ref.y} valor={fmtMoney(fxSoma(doAno))} icone="calendar_month"/>
+            <FxKpi tom="lil" titulo="Média por mês" valor={fmtMoney(mesesComValor.length ? fxSoma(doAno)/mesesComValor.length : 0)} icone="equalizer" sub={`${mesesComValor.length} meses com entrada`}/>
+            <FxKpi titulo="A receber" valor={fmtMoney(fxSoma(aReceber))} icone="hourglass_top" sub={`${aReceber.length} pagamentos`}/>
+            <FxKpi tom="lim" titulo="Maior fonte" valor={catsE[0] ? catsE[0][0] : "—"} icone="star" sub={catsE[0] ? `${Math.round(catsE[0][1]/Math.max(1,fxSoma(doAno))*100)}% do ano` : ""}/>
+          </div>
+          <div className="fx-grade">
+            <div className="fx-caixa">
+              <h3>Entradas mês a mês</h3><p className="sub">{ref.y} · clique num mês para ver os detalhes</p>
+              <div className="fx-colunas">
+                {anoMeses.map(x=>(
+                  <div className="fx-col" key={x.i} style={{cursor:"pointer"}} onClick={()=>setRef({y:ref.y, m:x.i})}>
+                    <b>{x.e ? fxK(x.e) : ""}</b>
+                    <div className="pilar" style={{height:(x.e/Math.max(1,...anoMeses.map(z=>z.e))*75)+"%", background: x.i===ref.m ? "#93cf6b" : "#d9cffb"}}/>
+                    <span style={{fontWeight:x.i===ref.m?700:400}}>{x.nome}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="fx-caixa">
+              <h3>De onde vem</h3><p className="sub">Entradas de {ref.y} por tipo</p>
+              {catsE.map(([c,v],i)=>(
+                <div className="fx-pessoa" key={c}>
+                  <span className="fx-av" style={{background:fxCorItem(i)}}>{c.slice(0,2).toUpperCase()}</span>
+                  <span>{c}<small>{doAno.filter(t=>(t.categoria||"Outros")===c).length} entradas</small></span>
+                  <div className="fx-barra"><i style={{width:(v/maxE*100)+"%", background:fxCorItem(i)}}/></div>
+                  <span className="fx-num" style={{fontSize:12}}>{fxK(v)}</span>
+                </div>
+              ))}
+              <div className="fx-dica"><Icon name="auto_awesome" size={16}/><span>Entrada boa não é para gastar mais: decida no dia que cair quanto vai para a dívida e quanto vai para a reserva.</span></div>
+            </div>
+          </div>
+          <div className="fx-grade meio">
+            <div className="fx-caixa fx-lista">
+              <h3>Entradas de {monthNames[ref.m].toLowerCase()}</h3><p className="sub">Toque no ✓ quando o dinheiro cair</p>
+              {entMes.length===0 && <p className="sub">Nenhuma entrada neste mês.</p>}
+              {entMes.map(t=>(
+                <div className="item" key={t.id}>
+                  <div className="x"><b>{t.descricao}</b><small>{new Date(t.data+"T00:00:00").toLocaleDateString("pt-BR")}{t.categoria?" · "+t.categoria:""}{t.obs?" · "+t.obs:""}</small></div>
+                  <span className={"fx-chip "+(t.status==="Confirmado"?"":"amb")}>{t.status==="Confirmado"?"Recebido":"A receber"}</span>
+                  <span className="fx-num">{fmtMoney(t.valor)}</span>
+                  <button className="fx-icone" title="Recebido ou a receber" onClick={()=>alternar(t)}><Icon name="check" size={16} style={{color:t.status==="Confirmado"?"#3c7a20":undefined}}/></button>
+                  <button className="fx-icone" title="Editar" onClick={()=>setModal({tipo:"tx", t})}><Icon name="edit" size={16}/></button>
+                </div>
+              ))}
+            </div>
+            <div className="fx-caixa fx-lista">
+              <h3>Ainda vai cair</h3><p className="sub">Tudo que está a receber, por data</p>
+              {aReceber.length===0 && <p className="sub">Nada pendente.</p>}
+              {aReceber.map(t=>(
+                <div className="item" key={t.id}>
+                  <div className="x"><b>{t.descricao}</b><small>{new Date(t.data+"T00:00:00").toLocaleDateString("pt-BR")}{t.data<hojeIso?" · atrasado":""}</small></div>
+                  <span className="fx-num">{fmtMoney(t.valor)}</span>
+                  <button className="fx-icone" title="Marcar como recebido" onClick={()=>alternar(t)}><Icon name="check" size={16}/></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>;
+      })()}
+
+      {aba==="Sair das dívidas" && <>
+        <div className="fx-kpis">
+          <FxKpi titulo="Dívida total hoje" valor={fmtMoney(divida)} icone="trending_down" sub={`${dividas.length} dívidas abertas`}/>
+          <FxKpi titulo="Pagamentos mínimos" valor={fmtMoney(dividas.reduce((a,d)=>a+d.minimo,0))} icone="event_repeat" sub="por mês, somando tudo"/>
+          <FxKpi tom="lil" titulo="Livre em" valor={plano.meses===null ? "mais de 10 anos" : fxMesDaqui(plano.meses)} icone="flag" sub={plano.meses===null ? "" : `${plano.meses} meses com ${fmtMoney(extra)} a mais`}/>
+          <FxKpi titulo="Sem o extra" valor={planoSemExtra.meses===null ? "mais de 10 anos" : fxMesDaqui(planoSemExtra.meses)} icone="hourglass_empty" sub="pagando só o mínimo"/>
+          {(()=>{ const v = [...plano.ordem].filter(d=>d.quitada).sort((a,b)=>a.quitada-b.quitada)[0]; return <FxKpi tom="lim" titulo="Primeira vitória" valor={v ? fxMesDaqui(v.quitada) : "—"} icone="bolt" sub={v ? v.nome+" zerado" : ""}/>; })()}
+        </div>
+        <div className="fx-grade">
+          <div className="fx-caixa">
+            <div className="fx-cab" style={{flexWrap:"wrap"}}>
+              <div><h3>Seu plano, dívida por dívida</h3><p className="sub">Paga o mínimo de todas e joga o extra numa só. Quando ela acaba, o valor dela vai para a próxima.</p></div>
+              <div className="fx-abas" style={{background:"var(--fx-cinza, #f2f0f5)"}}>
+                <button className={"fx-aba"+(metodo==="avalanche"?" on":"")} onClick={()=>setMetodo("avalanche")}>Juros maior primeiro</button>
+                <button className={"fx-aba"+(metodo==="bola"?" on":"")} onClick={()=>setMetodo("bola")}>Menor dívida primeiro</button>
+              </div>
+            </div>
+            <div className="fx-campo" style={{margin:"6px 0 14px", width:"fit-content", maxWidth:"100%", flexWrap:"wrap"}}>
+              Quanto consigo colocar a mais por mês
+              <input type="number" value={extra} onChange={e=>setExtra(Number(e.target.value)||0)} onBlur={()=>onFinanca({...f, orcamentoDividas: extra})}/>
+            </div>
+            <div className="fx-lista">
+              {plano.ordem.map((d,i)=>(
+                <div className="item" key={d.id}>
+                  <span className="fx-av" style={{background:i===0?"#7b61e8":"#c4b6f7", width:30, height:30, fontSize:12}}>{i+1}</span>
+                  <div className="x"><b>{d.nome}</b><small>{d.tipo} · mínimo {fmtMoney(d.minimo)}/mês{d.juros?` · ${String(d.juros).replace(".",",")}% a.m.`:""}</small></div>
+                  <span className="fx-num" style={{minWidth:90}}>{fmtMoney(d.saldo)}</span>
+                  <span className="fx-chip neutro" style={{minWidth:64, textAlign:"center"}}>{d.quitada ? fxMesDaqui(d.quitada) : "—"}</span>
+                </div>
+              ))}
+              {dividas.length===0 && <p className="sub">Nenhuma dívida aberta. 🎉</p>}
+            </div>
+            <p style={{fontSize:11.5, color:"#7d778c", marginBottom:0}}>Estimativa: usa a dívida e o mínimo anotados em Cartões e Empréstimos e não soma juros novos (as parcelas já têm juros). Se entrar compra nova no cartão, a data anda para frente.</p>
+          </div>
+          <Consultora/>
+        </div>
+        {plano.linha.length>0 && <div className="fx-caixa" style={{marginBottom:14}}>
+          <h3>A dívida caindo</h3><p className="sub">Quanto ainda vai faltar no fim de cada mês, seguindo o plano</p>
+          <div className="fx-colunas" style={{height:200}}>
+            {[divida, ...plano.linha].filter((_,i,a)=> a.length<=18 || i%Math.ceil(a.length/18)===0 || i===a.length-1).map((v,i,a)=>(
+              <div className="fx-col" key={i}>
+                <b style={{fontSize:11}}>{fxK(v)}</b>
+                <div className="pilar" style={{height:(v/Math.max(1,divida)*75)+"%", background: v<=0.5 ? "#93cf6b" : i===0 ? "#7b61e8" : "#d9cffb"}}/>
+                <span style={{fontSize:10.5}}>{i===0 ? "Hoje" : ""}</span>
+              </div>
+            ))}
+          </div>
+        </div>}
+      </>}
+
+      {aba==="Lançamentos" && <Financeiro state={{...state, transacoes: tx, jobs: []}} updateState={(next)=>updateState(atual=>({...atual, transacoesCpf: next.transacoes || []}))} pessoal semTopo/>}
+
+      {modal && modal.tipo==="tx" && <TransModal initial={modal.t.id ? modal.t : null} onClose={()=>setModal(null)} onSave={salvarUm} {...(modal.t.id ? {} : {padrao: modal.t})}/>}
+      {modal && modal.tipo==="cartao" && <GenericModal title={modal.x.nome ? "Editar cartão" : "Novo cartão"} fields={camposCartao} initial={paraForm(modal.x)} onClose={()=>setModal(null)} onSave={(x)=>mudarLista("cartoes", numerar(camposCartao, x))}/>}
+      {modal && modal.tipo==="emp" && <GenericModal title={modal.x.nome ? "Editar empréstimo" : "Novo empréstimo"} fields={camposEmp} initial={paraForm(modal.x)} onClose={()=>setModal(null)} onSave={(x)=>mudarLista("emprestimos", numerar(camposEmp, x))}/>}
+    </div>
+  );
+}
+
+function Financeiro({state, updateState, go, pessoal, semTopo}){
   const [modal,setModal] = useState(false);
   const [editing,setEditing] = useState(null);
   const now = new Date();
@@ -4704,16 +5113,17 @@ function Financeiro({state, updateState, go, pessoal, financa, onFinanca}){
 
   return (
     <div>
-      <div className="page-head">
+      {!semTopo && <div className="page-head">
         <div>
           <h1 className="page-title">{pessoal ? "Financeiro CPF" : "Financeiro CNPJ"}</h1>
           <p className="page-sub">{pessoal ? "Suas contas pessoais, separadas da empresa" : "Controle seus ganhos e pagamentos"}</p>
         </div>
         <button className="btn btn-primary" onClick={()=>setModal(true)}><Icon name="add" size={17}/>Novo Registro</button>
-      </div>
+      </div>}
+      {semTopo && <div style={{display:"flex", justifyContent:"flex-end", marginBottom:12}}><button className="btn btn-primary" onClick={()=>setModal(true)}><Icon name="add" size={17}/>Novo Registro</button></div>}
 
       <div className="tabs" style={{marginBottom:18, flexWrap:"wrap"}}>
-        {(pessoal ? ["Transações","Cartões e dívidas","Histórico Financeiro","Previsão","Evolução"] : ["Transações","Histórico Financeiro","Previsão","Evolução","Performance","Contabilidade"]).map(t=>
+        {(pessoal ? ["Transações","Histórico Financeiro","Previsão","Evolução"] : ["Transações","Histórico Financeiro","Previsão","Evolução","Performance","Contabilidade"]).map(t=>
           <div key={t} className={"tab "+(pageTab===t?"active":"")} onClick={()=>setPageTab(t)}>{t}</div>
         )}
       </div>
@@ -4996,7 +5406,6 @@ function Financeiro({state, updateState, go, pessoal, financa, onFinanca}){
         );
       })()}
 
-      {pageTab==="Cartões e dívidas" && pessoal && <CartoesDividas financa={financa} onFinanca={onFinanca}/>}
       {pageTab==="Performance" && !pessoal && <Performance state={state} updateState={updateState} embutido/>}
       {pageTab==="Contabilidade" && (()=>{
         const anoAtual = now.getFullYear();
