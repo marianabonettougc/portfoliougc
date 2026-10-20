@@ -314,7 +314,7 @@ ESTRUTURA DE UGC
       try {
         const el = await carregarVideo(a), clipe = { id: uid(), nome: a.name, arquivo: a, el, dur: el.duration || 0, w: el.videoWidth, h: el.videoHeight, palavras: null };
         // abrindo um projeto: o arquivo certo recupera a transcrição salva
-        if (pend) { const i = pend.findIndex((x) => !x.usado && (x.nome === a.name || Math.abs((x.dur || 0) - clipe.dur) < 0.25)); if (i >= 0) { pend[i].usado = true; clipe.palavras = pend[i].palavras || null; clipe.ordem = i; } }
+        if (pend) { const i = pend.findIndex((x) => !x.usado && (x.nome === a.name || Math.abs((x.dur || 0) - clipe.dur) < 0.25)); if (i >= 0) { pend[i].usado = true; clipe.palavras = pend[i].palavras && pend[i].palavras.length ? pend[i].palavras : null; clipe.ordem = i; } }
         st.clipes.push(clipe);
       } catch (e) { toast(e.message, true); }
     }
@@ -447,7 +447,7 @@ ESTRUTURA DE UGC
     try {
       let offset = 0;
       for (const [i, c] of st.clipes.entries()) {
-        if (!c.palavras) {
+        if (!c.palavras || !c.palavras.length) {
           etapa(`Ouvindo o clipe ${i + 1} de ${st.clipes.length}`);
           // 1º: tira a faixa de áudio de dentro do MP4/MOV (não depende do navegador abrir o áudio)
           let partes = await audioDoArquivo(c.arquivo);
