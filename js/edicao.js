@@ -53,8 +53,8 @@
   const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
   const uid = () => Math.random().toString(36).slice(2, 9);
 
-  const MARCA_V3 = "SÓ ESTAS REFERÊNCIAS (out/2026, v4)";
-  const PADRAO = `PADRÃO DE EDIÇÃO DA MARI. SÓ ESTAS REFERÊNCIAS (out/2026, v4): DaN7lnRi16X, Daa8wYaCgkQ e DdIK7JosJYp (vídeos dela), DbT3IhlRUgA e DWzaZKBj6I7. Ignore qualquer referência ou estilo antigo.
+  const MARCA_V3 = "SÓ ESTAS REFERÊNCIAS (out/2026, v5)";
+  const PADRAO = `PADRÃO DE EDIÇÃO DA MARI. SÓ ESTAS REFERÊNCIAS (out/2026, v5): DaN7lnRi16X, Daa8wYaCgkQ e DdIK7JosJYp (vídeos dela), DbT3IhlRUgA e DWzaZKBj6I7. Ignore qualquer referência ou estilo antigo.
 
 RITMO
 - Cortes secos (jump cut), sem transição enfeitada. Corta todo silêncio, respiração e tomada errada.
@@ -74,13 +74,14 @@ O QUE NÃO USAR (ela pediu)
 - Nunca mexer na cor do vídeo (a cor ela ajusta no CapCut).
 
 DINAMISMO E EFEITOS SONOROS (ela gosta de vídeo bem dinâmico, que chama atenção)
+- Sons que ela usa (Floratta Blue Crystal): spray no borrifo do produto, brilho (sparkle) baixinho na névoa ou no produto brilhando, whoosh suave no corte para o rosto, riser curto antes de revelar o produto, ding de cristal quando o produto aparece inteiro e quando fala o nome da marca, pop quando aparece texto escrito (notas do perfume, nome do produto, pergunta do CTA), whoosh curto alternado com clique nos cortes de close, som de mensagem chegando quando entra print de WhatsApp, tique-taque de relógio quando fala de fixação ou "no fim do dia". Nada por cima de áudio de prova (áudio de WhatsApp, depoimento).
 - Muitos efeitos sonoros: 1 a cada 1,5 a 2 segundos. Woosh nas trocas de assunto e nos zooms, clique/shutter nos cortes rápidos, pop e ding quando entra texto, produto ou informação, riser antes de revelar algo e hit logo depois, typing quando aparece algo escrito, som do próprio produto junto do gesto (spray, embalagem, chuveiro).
 - Cortes rápidos sem respiro, zoom rápido (punch) nos cortes de ênfase, troca de plano a cada 1 a 2 segundos quando der (b-roll).
 
 IDEIA PARA DEPOIS
 - Texto atrás da pessoa (DbT3IhlRUgA): o título fica atrás do corpo dela.`;
 
-  const EFEITOS = { woosh: "Woosh", pop: "Pop", click: "Click", shutter: "Shutter", typing: "Typing", riser: "Riser", hit: "Hit", ding: "Ding" };
+  const EFEITOS = { woosh: "Woosh", suave: "Whoosh suave", pop: "Pop", click: "Click", shutter: "Shutter", typing: "Typing", riser: "Riser", hit: "Hit", ding: "Ding", cristal: "Ding de cristal", brilho: "Brilho (sparkle)", spray: "Spray / borrifo", mensagem: "Mensagem chegando", relogio: "Tique-taque" };
   const ESTILOS = { capcut: "CapCut (Poppins média, minúscula, sombra suave)", minimal: "Fina e branca", bold: "Forte com contorno", caixa: "Caixinha bege" };
   const TITULOS = { simples: "Limpo, serifada itálica (sem caixinhas)", etapas: "Em etapas com clique (duas fontes e estrelinhas)", frase: "Frase gigante na tela (3 cores)", caixa: "Caixinhas" };
   // fontes da legenda: "minha" é a fonte que ela enviou (Bootzy do CapCut), guardada em configuracoes "fonte_legenda"
@@ -96,7 +97,7 @@ IDEIA PARA DEPOIS
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
+    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
     correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, projeto: null, projetos: [], pendentes: null, salvando: "",
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
@@ -565,7 +566,7 @@ IDEIA PARA DEPOIS
     const passo = nivel === "muito" ? 1 : nivel === "medio" ? 2 : 3;
     const livre = (t, raio = 0.3) => !st.efeitos.some((e) => Math.abs(e.t - t) < raio);
     const add = (t, tipo, por_que) => { if (t >= 0 && t < st.duracao && livre(t)) st.efeitos.push({ id: uid(), t, tipo, por_que, auto: true }); };
-    const ciclo = ["woosh", "click", "shutter", "woosh", "pop"];
+    const ciclo = ["woosh", "click", "suave", "shutter", "click"];
     let n = 0;
     st.segs.forEach((sg, i) => {
       if (!i) return;
@@ -945,6 +946,28 @@ IDEIA PARA DEPOIS
       const f = ac.createBiquadFilter(), gn = ac.createGain(); f.type = "lowpass"; f.frequency.value = 900; f.connect(gn); gn.connect(saida); env(gn, q, 0.9, 0.002, 0.25); ruido(q, 0.3, f);
     } else if (tipo === "ding") {
       [1320, 1980, 2640].forEach((fr, i) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = "sine"; o.frequency.value = fr; o.connect(g); g.connect(saida); env(g, q, 0.45 / (i + 1), 0.005, 0.9); o.start(q); o.stop(q + 1); });
+    } else if (tipo === "suave") {
+      // whoosh suave: respiro de ar, grave e curto
+      const f = ac.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 0.7; const g = ac.createGain(); f.connect(g); g.connect(saida);
+      f.frequency.setValueAtTime(400, q); f.frequency.exponentialRampToValueAtTime(1600, q + 0.25); f.frequency.exponentialRampToValueAtTime(300, q + 0.6);
+      env(g, q, 0.7, 0.25, 0.4); ruido(q, 0.7, f);
+    } else if (tipo === "cristal") {
+      // ding de cristal: parciais inarmônicas brilhantes com cauda longa
+      [[2093, 0.35], [3136, 0.22], [4186, 0.16], [5274, 0.1], [6272, 0.07]].forEach(([fr, a], i) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = "sine"; o.frequency.value = fr * (1 + i * 0.003); o.connect(g); g.connect(saida); env(g, q + i * 0.012, a, 0.003, 1.6); o.start(q); o.stop(q + 1.8); });
+    } else if (tipo === "brilho") {
+      // sparkle: pinguinhos agudos aleatórios, bem baixinho
+      for (let i = 0; i < 9; i++) { const t0 = q + i * 0.045 + Math.random() * 0.03, o = ac.createOscillator(), g = ac.createGain(); o.type = "sine"; o.frequency.value = 3000 + Math.random() * 3500; o.connect(g); g.connect(saida); env(g, t0, 0.12, 0.002, 0.18); o.start(t0); o.stop(t0 + 0.22); }
+    } else if (tipo === "spray") {
+      // borrifo de perfume: chiado agudo curto com ataque rápido
+      const f = ac.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 3500; const f2 = ac.createBiquadFilter(); f2.type = "peaking"; f2.frequency.value = 7000; f2.gain.value = 6;
+      const g = ac.createGain(); f.connect(f2); f2.connect(g); g.connect(saida);
+      g.gain.setValueAtTime(0.0001, q); g.gain.exponentialRampToValueAtTime(0.9, q + 0.02); g.gain.setValueAtTime(0.9, q + 0.28); g.gain.exponentialRampToValueAtTime(0.0001, q + 0.45); ruido(q, 0.48, f);
+    } else if (tipo === "mensagem") {
+      // mensagem chegando: duas notas rápidas subindo
+      [[880, 0], [1320, 0.11]].forEach(([fr, d]) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = "triangle"; o.frequency.value = fr; o.connect(g); g.connect(saida); env(g, q + d, 0.5, 0.004, 0.22); o.start(q + d); o.stop(q + d + 0.3); });
+    } else if (tipo === "relogio") {
+      // tique-taque rápido por 1 segundo
+      for (let i = 0; i < 6; i++) { const t0 = q + i * 0.17, f = ac.createBiquadFilter(), g = ac.createGain(); f.type = "bandpass"; f.frequency.value = i % 2 ? 2400 : 3200; f.Q.value = 6; f.connect(g); g.connect(saida); env(g, t0, 0.9, 0.001, 0.025); ruido(t0, 0.03, f); }
     }
   }
 

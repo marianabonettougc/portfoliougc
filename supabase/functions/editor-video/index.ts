@@ -29,7 +29,7 @@ const resposta = (corpo: unknown, status = 200) =>
 const txt = (x: unknown, n = 300) => String(x ?? "").replace(/\s*[—–]\s*/g, ", ").trim().slice(0, n);
 const num = (x: unknown) => { const n = Number(x); return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null; };
 const lerJson = (t: string) => { try { return JSON.parse(t); } catch { const m = t.match(/\{[\s\S]*\}/); try { return m ? JSON.parse(m[0]) : {}; } catch { return {}; } } };
-const EFEITOS = ["woosh", "pop", "click", "shutter", "typing", "riser", "hit", "ding"];
+const EFEITOS = ["woosh", "suave", "pop", "click", "shutter", "typing", "riser", "hit", "ding", "cristal", "brilho", "spray", "mensagem", "relogio"];
 
 async function transcrever(chave: string, arquivo: File) {
   if (arquivo.size > 25 * 1024 * 1024) throw new Error("Esse trecho de áudio passou de 25 MB.");
@@ -84,7 +84,7 @@ Responda SOMENTE um JSON:
 "remover":[{"de":0.0,"ate":0.0,"motivo":"repetição | erro | gaguejo | fala de bastidor"}],
 "destaques":[{"t":0.0,"palavra":"palavra forte que merece cor de destaque"}],
 "zooms":[{"t":0.0}],
-"efeitos":[{"t":0.0,"tipo":"woosh | pop | click | shutter | typing | riser | hit | ding","por_que":"curto"}],
+"efeitos":[{"t":0.0,"tipo":"woosh | suave | pop | click | shutter | typing | riser | hit | ding | cristal | brilho | spray | mensagem | relogio","por_que":"curto"}],
 "broll":[{"t":0.0,"ideia":"o que gravar de apoio para cobrir esse trecho, 1 frase"}],
 "musica":"clima de música sugerido, 1 frase",
 "dicas":["até 4 dicas curtas e concretas para esse vídeo"]${c.roteiro ? `,
@@ -94,7 +94,7 @@ Regras:
 - "remover": quando ela repete uma frase (tomada errada), fique com a ÚLTIMA versão e marque as anteriores para tirar. Tire também "vamos de novo", "peraí", gaguejos e falas que não são do roteiro. Use os tempos da fala. Não marque silêncios (o painel já corta).
 - "destaques": as PALAVRAS CHAMATIVAS (viram texto grande colorido na tela, com pop): 1 a cada 5 a 7 segundos, só palavras que carregam a ideia (benefício, número, nome do produto, a virada da frase). Nunca palavrinhas como "de", "que", "eu".
 - "zooms": 1 a cada 3 a 5 segundos, em frases de ênfase (ela gosta de dinamismo).
-- "efeitos": riser logo antes do gancho/revelação, hit logo depois da revelação, pop quando entra texto na tela (o painel já põe sozinho os cliques do título, não marque pop para o título), woosh nas mudanças de assunto, click/shutter em listas e cortes rápidos, typing quando ela fala de algo escrito. Ela gosta de vídeo bem dinâmico: 1 efeito a cada 1,5 a 2 segundos, exagerando nos 3 primeiros segundos. O painel já põe sozinho sons nos cortes e nas entradas de legenda; marque aqui os momentos de sentido (revelação, produto aparecendo, lista, digitação, gesto do produto).
+- "efeitos": riser logo antes do gancho/revelação, hit logo depois da revelação, pop quando entra texto na tela (o painel já põe sozinho os cliques do título, não marque pop para o título), woosh nas mudanças de assunto, click/shutter em listas e cortes rápidos, typing quando ela fala de algo escrito, spray quando ela borrifa ou aplica o produto (perfume, spray de cabelo), brilho (sparkle, bem baixinho) quando o produto brilha ou na névoa, suave (whoosh suave) no corte para o rosto ou em momento delicado, cristal (ding de cristal) quando o produto aparece inteiro e quando ela fala o nome do produto ou da marca, mensagem quando entra print de conversa/WhatsApp, relogio (tique-taque) quando ela fala de fixação, duração ou "no fim do dia". Nunca ponha efeito por cima de áudio de prova (áudio de WhatsApp, depoimento). Ela gosta de vídeo bem dinâmico: 1 efeito a cada 1,5 a 2 segundos, exagerando nos 3 primeiros segundos. O painel já põe sozinho sons nos cortes e nas entradas de legenda; marque aqui os momentos de sentido (revelação, produto aparecendo, lista, digitação, gesto do produto).
 - Todos os tempos em segundos do bruto, com 1 casa decimal.${c.roteiro ? `
 - COM ROTEIRO: compare a fala com o roteiro bloco a bloco. Quando ela gravou o mesmo trecho mais de uma vez, fique com a tomada mais fiel ao roteiro (se empatar, a última) e marque as outras em "remover". Não corte falas que estão no roteiro. Fala fora do roteiro que parece bastidor ou erro vai para "remover".
 - COM ROTEIRO: o título sai do gancho do roteiro (condensado). Direções de cena, texto na tela e voice-over do roteiro viram "broll" (no tempo do bloco correspondente, dizendo "do roteiro: ...") e efeitos (texto na tela = pop, troca de cena = woosh).
@@ -164,7 +164,7 @@ Responda SOMENTE um JSON com o plano inteiro já corrigido (mesmo formato do pla
 "opc": só os ajustes visuais que mudam (ex. {"estilo":"bold","maiusculas":true}),
 "resposta": 1 ou 2 frases curtas dizendo o que você mudou,
 "regra": uma regra curta e geral para o padrão de edição dela valer nos próximos vídeos (ex. "Legenda em maiúsculas, forte com contorno, no meio da tela"), ou "" se a correção só vale para este vídeo.
-Se ela pedir para corrigir o TEXTO de uma legenda, explique na resposta que ela pode editar direto na lista de Legendas (o texto da legenda não muda por aqui). Regras: efeitos só destes tipos: woosh, pop, click, shutter, typing, riser, hit, ding. Tempos em segundos do bruto. Português do Brasil. Nunca use travessão.`;
+Se ela pedir para corrigir o TEXTO de uma legenda, explique na resposta que ela pode editar direto na lista de Legendas (o texto da legenda não muda por aqui). Regras: efeitos só destes tipos: woosh, suave, pop, click, shutter, typing, riser, hit, ding, cristal, brilho, spray, mensagem, relogio. Tempos em segundos do bruto. Português do Brasil. Nunca use travessão.`;
   const r = await fetch(`${GROQ}/chat/completions`, {
     method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.2, max_tokens: 4500, reasoning_effort: "low", response_format: { type: "json_object" }, messages: [{ role: "user", content: pedido }] }),
