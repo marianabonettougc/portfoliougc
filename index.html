@@ -1138,7 +1138,7 @@ const caseDestaque = {
 // ================================
 // NICHOS (botões de filtro, nesta ordem). Não tem aba "Todos": o site abre mostrando todos os trabalhos.
 // ================================
-const nichos = ["Maternidade", "Cabelo", "Autoestima | Beleza | Moda", "Tech | Apps | Cursos", "Casa e decoração", "Diversos | Bem Estar | Fit", "Fotos"];
+const nichos = ["Maternidade", "Cabelo", "Autoestima | Beleza", "Moda", "Tech | Apps | Cursos", "Casa e decoração", "Diversos | Bem Estar | Fit", "Fotos"];
 
 // ================================
 // TRABALHOS POR NICHO
@@ -1177,18 +1177,19 @@ const trabalhos = [
   { nicho: "Cabelo",           titulo: "Kit de salão", formato: "Experiência de compra", marca: "Amo Beleza", logo: "logos/parceiros/amo-beleza.webp", link: "https://youtube.com/shorts/st7pYL3CS3s" },
   { nicho: "Cabelo",           titulo: "Retoque de raiz", formato: "Demonstração", marca: "L'Oréal Paris", logo: "logos/parceiros/loreal-paris.webp", link: "https://youtube.com/shorts/s3qqIZqkBmg" },
   { nicho: "Cabelo",           titulo: "Cabelo cacheado", formato: "Unboxing", marca: "NatuHair", logo: "logos/parceiros/natu-hair.webp", link: "https://youtube.com/shorts/oRVIDauEygc" },
-  // Autoestima | Beleza | Moda: vídeos (link do YouTube + logo da marca na bolinha + formato embaixo)
-  { nicho: "Autoestima | Beleza | Moda", titulo: "Desodorante", formato: "Problema x solução", marca: "Dove", logo: "logos/parceiros/dove.webp", link: "https://youtube.com/shorts/_zJueOYj45c" },
-  { nicho: "Autoestima | Beleza | Moda", titulo: "Clínica de estética", formato: "Experiência", marca: "Espaço Lazzie", logo: "logos/parceiros/lazzie.webp", link: "https://youtube.com/shorts/bdeAhDveOvI" },
-  { nicho: "Autoestima | Beleza | Moda", titulo: "Hidratante e fragrância", formato: "Educacional", marca: "Natura", logo: "logos/parceiros/natura.webp", link: "https://youtube.com/shorts/7uoQ1sg93Fo" },
-  { nicho: "Autoestima | Beleza | Moda", titulo: "Cuidado com as axilas", formato: "Rotina de cuidados", marca: "Dove", logo: "logos/parceiros/dove.webp", link: "https://youtube.com/shorts/9o2d6d46Pe8" },
-  { nicho: "Autoestima | Beleza | Moda", titulo: "Protetor solar", formato: "Trend", marca: "L'Oréal Paris", logo: "logos/parceiros/loreal-paris.webp", link: "https://youtube.com/shorts/JR9mYHbpBlQ" },
-  { nicho: "Autoestima | Beleza | Moda", titulo: "Dia das mães", formato: "Storytelling", marca: "Natura", logo: "logos/parceiros/natura.webp", link: "https://youtube.com/shorts/OWdcec9Aq8Q" },
-  { nicho: "Autoestima | Beleza | Moda", titulo: "Pijamas de inverno", formato: "Humor", marca: "Shein", logo: "logos/parceiros/shein.webp", link: "https://youtube.com/shorts/k8s2tSKWyhQ" },
-  { nicho: "Autoestima | Beleza | Moda", titulo: "Variedade de looks", formato: "Testemunho", marca: "Shein", logo: "logos/parceiros/shein.webp", link: "https://youtube.com/shorts/3ihtUcj9R8E" },
-  { nicho: "Autoestima | Beleza | Moda", titulo: "Pijamas", formato: "Problema x solução", marca: "Shein", logo: "logos/parceiros/shein.webp", link: "https://youtube.com/shorts/AMjBFONgTxk" },
-  { nicho: "Autoestima | Beleza | Moda", titulo: "Melhores lojas da Shein", formato: "Review", marca: "Shein", logo: "logos/parceiros/shein.webp", link: "https://youtube.com/shorts/2WuH7LVaMY8" },
-  { nicho: "Autoestima | Beleza | Moda", titulo: "Looks de mãe na escola", formato: "Identificação", marca: "Shein", logo: "logos/parceiros/shein.webp", link: "https://youtube.com/shorts/LFs7e3PP8IE" },
+  // Autoestima | Beleza: vídeos (link do YouTube + logo da marca na bolinha + formato embaixo)
+  { nicho: "Autoestima | Beleza", titulo: "Desodorante", formato: "Problema x solução", marca: "Dove", logo: "logos/parceiros/dove.webp", link: "https://youtube.com/shorts/_zJueOYj45c" },
+  { nicho: "Autoestima | Beleza", titulo: "Clínica de estética", formato: "Experiência", marca: "Espaço Lazzie", logo: "logos/parceiros/lazzie.webp", link: "https://youtube.com/shorts/bdeAhDveOvI" },
+  { nicho: "Autoestima | Beleza", titulo: "Hidratante e fragrância", formato: "Educacional", marca: "Natura", logo: "logos/parceiros/natura.webp", link: "https://youtube.com/shorts/7uoQ1sg93Fo" },
+  { nicho: "Autoestima | Beleza", titulo: "Cuidado com as axilas", formato: "Rotina de cuidados", marca: "Dove", logo: "logos/parceiros/dove.webp", link: "https://youtube.com/shorts/9o2d6d46Pe8" },
+  { nicho: "Autoestima | Beleza", titulo: "Protetor solar", formato: "Trend", marca: "L'Oréal Paris", logo: "logos/parceiros/loreal-paris.webp", link: "https://youtube.com/shorts/JR9mYHbpBlQ" },
+  { nicho: "Autoestima | Beleza", titulo: "Dia das mães", formato: "Storytelling", marca: "Natura", logo: "logos/parceiros/natura.webp", link: "https://youtube.com/shorts/OWdcec9Aq8Q" },
+  // Moda: aba própria (out/2026), vídeos da Shein
+  { nicho: "Moda", titulo: "Pijamas de inverno", formato: "Humor", marca: "Shein", logo: "logos/parceiros/shein.webp", link: "https://youtube.com/shorts/k8s2tSKWyhQ" },
+  { nicho: "Moda", titulo: "Variedade de looks", formato: "Testemunho", marca: "Shein", logo: "logos/parceiros/shein.webp", link: "https://youtube.com/shorts/3ihtUcj9R8E" },
+  { nicho: "Moda", titulo: "Pijamas", formato: "Problema x solução", marca: "Shein", logo: "logos/parceiros/shein.webp", link: "https://youtube.com/shorts/AMjBFONgTxk" },
+  { nicho: "Moda", titulo: "Melhores lojas da Shein", formato: "Review", marca: "Shein", logo: "logos/parceiros/shein.webp", link: "https://youtube.com/shorts/2WuH7LVaMY8" },
+  { nicho: "Moda", titulo: "Looks de mãe na escola", formato: "Identificação", marca: "Shein", logo: "logos/parceiros/shein.webp", link: "https://youtube.com/shorts/LFs7e3PP8IE" },
   // Tech | Apps | Cursos: vídeos (link do YouTube + logo da marca na bolinha + formato embaixo)
   { nicho: "Tech | Apps | Cursos", titulo: "App de marketplace", formato: "Problema x identificação", marca: "Mercado Livre", logo: "logos/parceiros/mercado-livre.webp", link: "https://youtube.com/shorts/EN_K3AY8rF8" },
   { nicho: "Tech | Apps | Cursos", titulo: "App de marketplace", formato: "Problema x solução", marca: "Mercado Livre", logo: "logos/parceiros/mercado-livre.webp", link: "https://youtube.com/shorts/r2RdhAfJ2l4" },
@@ -1746,7 +1747,7 @@ const degrades = [
 // Menu de nichos em cima + uma linha por nicho embaixo, cada uma com setinhas (igual ao site de referência).
 // Trabalhos com nicho antigo entram no nicho do menu que combina com ele:
 const NICHO_DO_MENU = {
-  "Beleza": "Autoestima | Beleza | Moda", "Skincare": "Autoestima | Beleza | Moda", "Moda": "Autoestima | Beleza | Moda",
+  "Beleza": "Autoestima | Beleza", "Skincare": "Autoestima | Beleza", "Autoestima | Beleza | Moda": "Autoestima | Beleza",
   "Fitness": "Diversos | Bem Estar | Fit", "Tech": "Tech | Apps | Cursos"
 };
 const nichoDoTrabalho = (t) => NICHO_DO_MENU[t.nicho] || t.nicho;
