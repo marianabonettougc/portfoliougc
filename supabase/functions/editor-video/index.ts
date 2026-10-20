@@ -39,7 +39,7 @@ async function transcrever(chave: string, arquivo: File) {
   f.append("language", "pt");
   f.append("timestamp_granularities[]", "word");
   f.append("timestamp_granularities[]", "segment");
-  f.append("file", arquivo, "audio.wav");
+  f.append("file", arquivo, /\.(m4a|mp4|wav|mp3|webm|ogg)$/i.test(arquivo.name || "") ? arquivo.name : "audio.wav");
   const r = await fetch(`${GROQ}/audio/transcriptions`, { method: "POST", headers: { Authorization: `Bearer ${chave}` }, body: f });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(r.status === 429 ? "O limite grátis do Groq acabou por agora. Espere um pouco e tente de novo." : "O Whisper não conseguiu transcrever: " + (j?.error?.message || r.status));

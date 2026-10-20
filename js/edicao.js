@@ -23,6 +23,9 @@
 // transcrição, plano, ajustes, legendas editadas, correções). O vídeo em si fica no
 // aparelho dela: ao abrir um projeto ela escolhe de novo os mesmos arquivos e a edição volta
 // inteira, sem transcrever nem gastar IA de novo.
+// Áudio para transcrever: 1º tira a faixa AAC de dentro do MP4/MOV com mp4box.js (sem
+// decodificar; .MOV do iPhone tem o esds achado "na mão" em ascNoMoov) e manda um .m4a;
+// 2º decodeAudioData (wav 16 kHz); 3º toca o vídeo e grava o áudio (audioTocando).
 // iPhone: o Safari só mostra o quadro do vídeo depois de tocar, então cada clipe dá um
 // play mudo e pausa logo que carrega (senão a prévia fica preta).
 // O padrão de edição (tirado das referências que ela mandou) fica na tabela
@@ -169,6 +172,68 @@ ESTRUTURA DE UGC
     for (let i = 0; i < mono.length; i += pedaco) partes.push({ blob: wav(mono.subarray(i, i + pedaco), taxa), inicio: i / taxa });
     return partes;
   }
+  // ---------- áudio direto do arquivo (MP4/MOV com AAC, como os do iPhone) ----------
+  // mp4box.js lê o arquivo em pedaços, pega as amostras AAC da faixa de áudio e monta um .m4a
+  // só com elas; esse .m4a vai direto para o Whisper (fica bem pequeno, ~1 MB por minuto).
+  let mp4boxPronto = null;
+  function carregarMp4box() {
+    if (window.MP4Box) return Promise.resolve();
+    if (!mp4boxPronto) mp4boxPronto = new Promise((ok, falha) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/mp4box@0.5.2/dist/mp4box.all.min.js"; sc.onload = ok; sc.onerror = () => { mp4boxPronto = null; falha(new Error("mp4box")); }; document.head.appendChild(sc); });
+    return mp4boxPronto;
+  }
+  function descritorEsds(asc) {
+    const d = (tag, bytes) => [tag, bytes.length, ...bytes];
+    const dsi = d(5, [...asc]);
+    const dcd = d(4, [0x40, 0x15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...dsi]);
+    return new Uint8Array(d(3, [0, 0, 0, ...dcd, ...d(6, [2])]));
+  }
+  // acha a caixa "esds" e devolve o AudioSpecificConfig (descritor 5) que está dentro dela
+  function ascNoMoov(b) {
+    for (let i = 4; i < b.length - 8; i++) {
+      if (b[i] !== 0x65 || b[i + 1] !== 0x73 || b[i + 2] !== 0x64 || b[i + 3] !== 0x73) continue; // "esds"
+      let pos = i + 8; // pula fourcc + versão/flags
+      const ler = () => { const tag = b[pos++]; let tam = 0, k = 0, x; do { x = b[pos++]; tam = (tam << 7) | (x & 0x7f); k++; } while (x & 0x80 && k < 4); return { tag, tam }; };
+      let d = ler(); if (d.tag !== 3) continue;
+      pos += 2; const fl = b[pos++]; if (fl & 0x80) pos += 2; if (fl & 0x40) pos += 1 + b[pos]; if (fl & 0x20) pos += 2;
+      d = ler(); if (d.tag !== 4) continue;
+      pos += 13;
+      d = ler(); if (d.tag !== 5 || !d.tam || pos + d.tam > b.length) continue;
+      return b.slice(pos, pos + d.tam);
+    }
+    return null;
+  }
+  async function audioDoArquivo(arquivo) {
+    if (!/\.(mp4|mov|m4v)$/i.test(arquivo.name) && !/mp4|quicktime/.test(arquivo.type)) return null;
+    try { await carregarMp4box(); } catch (e) { return null; }
+    try {
+      const M = window.MP4Box, ent = M.createFile(), amostras = [];
+      let faixa = null, parar = false;
+      ent.onError = () => { parar = true; };
+      ent.onReady = (info) => {
+        faixa = (info.audioTracks || [])[0];
+        if (!faixa || !/^mp4a/i.test(faixa.codec)) { parar = true; faixa = null; return; }
+        ent.setExtractionOptions(faixa.id, null, { nbSamples: 2000 }); ent.start();
+      };
+      ent.onSamples = (id, u, lista) => { for (const a of lista) amostras.push({ data: a.data.slice(0), duration: a.duration, dts: a.dts, cts: a.cts }); ent.releaseUsedSamples(id, lista[lista.length - 1].number + 1); };
+      const passo = 8 * 1024 * 1024;
+      for (let pos = 0; pos < arquivo.size && !parar; pos += passo) { const b = await arquivo.slice(pos, pos + passo).arrayBuffer(); b.fileStart = pos; ent.appendBuffer(b); }
+      ent.flush();
+      if (!faixa || !amostras.length) { st.motivoAudio = `faixa ${Boolean(faixa)} amostras ${amostras.length}`; return null; }
+      const entrada = ent.getTrackById(faixa.id).mdia.minf.stbl.stsd.entries[0];
+      const acha = (d, tag) => (!d ? null : d.tag === tag ? d : (d.descs || []).map((x) => acha(x, tag)).find(Boolean));
+      let asc = entrada.esds && acha(entrada.esds.esd, 5) ? acha(entrada.esds.esd, 5).data : null;
+      // .MOV do iPhone: o mp4box não entra na caixa de áudio do QuickTime, então procura o esds no moov "na mão"
+      if (!asc && ent.moov) asc = ascNoMoov(new Uint8Array(await arquivo.slice(ent.moov.start, ent.moov.start + ent.moov.size).arrayBuffer()));
+      if (!asc) { st.motivoAudio = "sem esds"; return null; }
+      const BP = window.BoxParser || M.BoxParser, esds = new BP.esdsBox(); esds.version = 0; esds.flags = 0; esds.data = descritorEsds(asc);
+      const sai = M.createFile();
+      const tid = sai.addTrack({ type: "mp4a", hdlr: "soun", name: "audio", timescale: faixa.timescale, samplerate: faixa.audio.sample_rate, channel_count: faixa.audio.channel_count, samplesize: 16, description: esds });
+      for (const a of amostras) sai.addSample(tid, a.data, { duration: a.duration, dts: a.dts, cts: a.cts, is_sync: true });
+      const blob = new Blob([sai.getBuffer()], { type: "audio/mp4" });
+      if (blob.size > 24 * 1024 * 1024) { st.motivoAudio = "grande"; return null; }
+      return [{ blob, inicio: 0, nome: "audio.m4a" }];
+    } catch (e) { st.motivoAudio = "erro " + e.message; return null; }
+  }
   const IPHONE = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   // plano B: toca o vídeo (sem som na caixa) e grava o áudio que sai dele, em tempo real
   async function audioTocando(c) {
@@ -193,7 +258,7 @@ ESTRUTURA DE UGC
     });
     v.pause(); rec.disconnect(); mudo.disconnect(); c.no.disconnect(); c.no.connect(mestre);
     const total = blocos.reduce((n, b) => n + b.length, 0);
-    if (!total) return [];
+    if (!total || !blocos.some((b) => b.some((x) => Math.abs(x) > 1e-4))) throw new Error("O iPhone não me deixou ouvir o áudio deste vídeo. Tente pelo computador, ou exporte o vídeo como MP4 e envie de novo.");
     const junto = new Float32Array(total); let pos = 0; for (const b of blocos) { junto.set(b, pos); pos += b.length; }
     const alvo = 16000, off = new OfflineAudioContext(1, Math.ceil((total / taxa) * alvo), alvo);
     const buf = off.createBuffer(1, total, taxa); buf.getChannelData(0).set(junto);
@@ -384,12 +449,14 @@ ESTRUTURA DE UGC
       for (const [i, c] of st.clipes.entries()) {
         if (!c.palavras) {
           etapa(`Ouvindo o clipe ${i + 1} de ${st.clipes.length}`);
-          let partes = IPHONE && c.arquivo.size > 150e6 ? null : await audioDoVideo(c.arquivo);
+          // 1º: tira a faixa de áudio de dentro do MP4/MOV (não depende do navegador abrir o áudio)
+          let partes = await audioDoArquivo(c.arquivo);
+          if (!partes) partes = IPHONE && c.arquivo.size > 150e6 ? null : await audioDoVideo(c.arquivo);
           // iPhone/Safari não abre o áudio de .MOV (ou o arquivo é grande demais): escuta tocando o vídeo
           if (!partes) { etapa(`Ouvindo o clipe ${i + 1} tocando (no iPhone leva o tempo do vídeo, deixe a tela ligada)`); partes = await audioTocando(c); }
           c.palavras = [];
           for (const p of partes) {
-            const form = new FormData(); form.append("acao", "transcrever"); form.append("arquivo", p.blob, "audio.wav");
+            const form = new FormData(); form.append("acao", "transcrever"); form.append("arquivo", p.blob, p.nome || "audio.wav");
             const r = await chamar(form);
             c.palavras.push(...(r.palavras || []).map((w) => ({ w: w.w, s: w.s + p.inicio, e: w.e + p.inicio })));
           }
@@ -1227,5 +1294,5 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   }
   document.addEventListener("painel:aba", (e) => { if (e.detail === ABA) abrirAba(); else if (st.tocando && !st.exportando) parar(); });
   if (location.hash === "#" + ABA) setTimeout(abrirAba, 600);
-  window.painelEdicao = { estado: st }; // usado nos testes
+  window.painelEdicao = { estado: st, audioDoArquivo }; // usado nos testes
 })();
