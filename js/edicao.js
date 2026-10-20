@@ -53,8 +53,8 @@
   const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
   const uid = () => Math.random().toString(36).slice(2, 9);
 
-  const MARCA_V3 = "SÓ ESTAS REFERÊNCIAS (out/2026, v3)";
-  const PADRAO = `PADRÃO DE EDIÇÃO DA MARI. SÓ ESTAS REFERÊNCIAS (out/2026, v3): DaN7lnRi16X, Daa8wYaCgkQ e DdIK7JosJYp (vídeos dela), DbT3IhlRUgA e DWzaZKBj6I7. Ignore qualquer referência ou estilo antigo.
+  const MARCA_V3 = "SÓ ESTAS REFERÊNCIAS (out/2026, v4)";
+  const PADRAO = `PADRÃO DE EDIÇÃO DA MARI. SÓ ESTAS REFERÊNCIAS (out/2026, v4): DaN7lnRi16X, Daa8wYaCgkQ e DdIK7JosJYp (vídeos dela), DbT3IhlRUgA e DWzaZKBj6I7. Ignore qualquer referência ou estilo antigo.
 
 RITMO
 - Cortes secos (jump cut), sem transição enfeitada. Corta todo silêncio, respiração e tomada errada.
@@ -63,18 +63,19 @@ RITMO
 
 LEGENDA
 - Minúscula, de 2 a 4 palavras por vez, no meio da tela, sombra suave para ler em fundo claro. Nunca em maiúsculas, nunca negrito pesado, nunca contorno.
-- Fonte dela: Bootzy (do CapCut), amarelo clarinho, como no vídeo da Eudora. Alternativa dos vídeos dela: serifada itálica.
+- Fonte dela: Bootzy (do CapCut, sem serifa grossa e apertada, tipo Helvetica Bold), amarelo clarinho, como no vídeo da Eudora. Alternativa dos vídeos dela: serifada itálica.
 - Nada cobre o rosto.
 
 TÍTULO
 - Curto e limpo no começo, sem caixinhas, figurinhas, cursor ou cores fortes.
 
 O QUE NÃO USAR (ela pediu)
-- Confete, palavras gigantes coloridas, caixinhas no título, legenda branca em maiúsculas e negrito, tremida.
+- Confete, palavras gigantes coloridas, caixinhas no título, legenda branca em maiúsculas e negrito.
 - Nunca mexer na cor do vídeo (a cor ela ajusta no CapCut).
 
-EFEITOS SONOROS (com moderação)
-- Pop ou ding quando entra um texto ou produto; woosh na troca de assunto; som do próprio produto junto do gesto (spray do perfume, embalagem).
+DINAMISMO E EFEITOS SONOROS (ela gosta de vídeo bem dinâmico, que chama atenção)
+- Muitos efeitos sonoros: 1 a cada 1,5 a 2 segundos. Woosh nas trocas de assunto e nos zooms, clique/shutter nos cortes rápidos, pop e ding quando entra texto, produto ou informação, riser antes de revelar algo e hit logo depois, typing quando aparece algo escrito, som do próprio produto junto do gesto (spray, embalagem, chuveiro).
+- Cortes rápidos sem respiro, zoom rápido (punch) nos cortes de ênfase, troca de plano a cada 1 a 2 segundos quando der (b-roll).
 
 IDEIA PARA DEPOIS
 - Texto atrás da pessoa (DbT3IhlRUgA): o título fica atrás do corpo dela.`;
@@ -83,9 +84,9 @@ IDEIA PARA DEPOIS
   const ESTILOS = { capcut: "CapCut (Poppins média, minúscula, sombra suave)", minimal: "Fina e branca", bold: "Forte com contorno", caixa: "Caixinha bege" };
   const TITULOS = { simples: "Limpo, serifada itálica (sem caixinhas)", etapas: "Em etapas com clique (duas fontes e estrelinhas)", frase: "Frase gigante na tela (3 cores)", caixa: "Caixinhas" };
   // fontes da legenda: "minha" é a fonte que ela enviou (Bootzy do CapCut), guardada em configuracoes "fonte_legenda"
-  const FONTES_LEG = { minha: "Minha fonte (Bootzy)", montserrat: "Sem serifa forte (Montserrat)", poppins: "Sem serifa média (Poppins)", nunito: "Arredondada forte (Nunito)", dmserif: "Serifada itálica (DM Serif)", instrument: "Serifada itálica fina (Instrument Serif)" };
+  const FONTES_LEG = { minha: "Minha fonte (Bootzy)", arimo: "Parecida com a Bootzy (Arimo)", montserrat: "Sem serifa forte (Montserrat)", poppins: "Sem serifa média (Poppins)", nunito: "Arredondada forte (Nunito)", dmserif: "Serifada itálica (DM Serif)", instrument: "Serifada itálica fina (Instrument Serif)" };
   const fonteLeg = (tam) => ({
-    minha: `${tam}px "MinhaFonte", Montserrat, sans-serif`, montserrat: `700 ${tam}px Montserrat, Poppins, sans-serif`, poppins: `500 ${tam}px Poppins, sans-serif`,
+    minha: `${tam}px "MinhaFonte", Arimo, Arial, sans-serif`, arimo: `700 ${tam}px Arimo, "Helvetica Neue", Arial, sans-serif`, montserrat: `700 ${tam}px Montserrat, Poppins, sans-serif`, poppins: `500 ${tam}px Poppins, sans-serif`,
     nunito: `800 ${tam}px Nunito, Poppins, sans-serif`, dmserif: `italic 400 ${tam * 1.12}px "DM Serif Display", Georgia, serif`, instrument: `italic 400 ${tam * 1.28}px "Instrument Serif", Georgia, serif`,
   })[st.opc.fonteLeg] || `700 ${tam}px Montserrat, Poppins, sans-serif`;
   const CORES_CHAMATIVA = ["#c6f432", "#cdb6ff", "#ffe45c", "#ffb3d9"];
@@ -95,14 +96,14 @@ IDEIA PARA DEPOIS
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { fonteLeg: "poppins", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
+    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
     correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, projeto: null, projetos: [], pendentes: null, salvando: "",
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
   try { const salvo = JSON.parse(localStorage.getItem("ed-opc3") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
-  const OPC_VISUAIS = ["fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"];
+  const OPC_VISUAIS = ["sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"];
   function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc3", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
@@ -129,6 +130,7 @@ IDEIA PARA DEPOIS
       const v = typeof data.valor === "string" ? JSON.parse(data.valor) : data.valor;
       const bin = atob(v.b64), buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
       await aplicarFonte(v.nome || "Minha fonte", buf.buffer);
+      if (["arimo", "poppins", "montserrat"].includes(st.opc.fonteLeg)) st.opc.fonteLeg = "minha"; // a Bootzy dela vira a padrão
       pintarAjustes(); redesenhar();
     } catch (e) { /* sem fonte própria */ }
   }
@@ -498,8 +500,9 @@ IDEIA PARA DEPOIS
       if (!st.opc.silencio || !c.palavras || !c.palavras.length) { faixas.push([c.offset, fim]); continue; }
       let atual = null;
       for (const w of c.palavras) {
-        const a = Math.max(c.offset, c.offset + w.s - 0.08), b = Math.min(fim, c.offset + w.e + 0.14);
-        if (atual && a - atual[1] < 0.3) atual[1] = Math.max(atual[1], b); else { if (atual) faixas.push(atual); atual = [a, b]; }
+        const rap = st.opc.ritmo === "rapido";
+        const a = Math.max(c.offset, c.offset + w.s - (rap ? 0.05 : 0.08)), b = Math.min(fim, c.offset + w.e + (rap ? 0.08 : 0.14));
+        if (atual && a - atual[1] < (rap ? 0.16 : 0.3)) atual[1] = Math.max(atual[1], b); else { if (atual) faixas.push(atual); atual = [a, b]; }
       }
       if (atual) faixas.push(atual);
     }
@@ -547,8 +550,45 @@ IDEIA PARA DEPOIS
     st.efeitos = st.efeitos.filter((e) => !(e.t < 0.4 && e.tipo === "pop"));
     sonsDoTitulo();
     st.zooms = (p.zooms || []).map((z) => paraFinalPerto(z.t)).filter((t) => t != null);
-    // momentos fortes (hit, ding, riser) ganham tremidinha e confete
+    sonsAutomaticos();
+    // momentos fortes (hit, ding, riser) ganham tremidinha
     st.fortes = st.efeitos.filter((e) => ["hit", "ding"].includes(e.tipo)).map((e) => e.t);
+  }
+  // ---------- dinamismo: efeitos sonoros automáticos nos cortes e nas entradas de texto ----------
+  // como nas referências dela: som em quase todo corte (woosh, clique, shutter alternados), pop
+  // quando a legenda troca de frase, riser no começo e hit logo depois do gancho.
+  function sonsAutomaticos() {
+    st.efeitos = st.efeitos.filter((e) => !e.auto);
+    const nivel = st.opc.sfxAuto;
+    if (!nivel || nivel === "desligado") return;
+    const passo = nivel === "muito" ? 1 : nivel === "medio" ? 2 : 3;
+    const livre = (t, raio = 0.3) => !st.efeitos.some((e) => Math.abs(e.t - t) < raio);
+    const add = (t, tipo, por_que) => { if (t >= 0 && t < st.duracao && livre(t)) st.efeitos.push({ id: uid(), t, tipo, por_que, auto: true }); };
+    const ciclo = ["woosh", "click", "shutter", "woosh", "pop"];
+    let n = 0;
+    st.segs.forEach((sg, i) => {
+      if (!i) return;
+      const trocaClipe = st.segs[i - 1].ci !== sg.ci;
+      if (trocaClipe || i % passo === 0) add(Math.max(0, sg.o0 - 0.04), trocaClipe ? "woosh" : ciclo[n++ % ciclo.length], trocaClipe ? "troca de cena" : "corte");
+    });
+    // pop quando entra frase nova (a cada 2 ou 3 legendas, sem exagerar)
+    const cada = nivel === "muito" ? 2 : nivel === "medio" ? 3 : 5;
+    st.legendas.forEach((g, i) => { if (i && i % cada === 0) add(g.o0, "pop", "texto entrando"); });
+    // abertura: riser antes do fim do gancho e hit na virada
+    if (st.duracao > 4) { add(Math.min(2.2, st.duracao * 0.3), "hit", "fim do gancho"); }
+    st.efeitos.sort((a, b) => a.t - b.t);
+  }
+  // transição visual nos cortes: zoom rápido (punch) e, na troca de cena, um deslize curto
+  function transicaoEm(t) {
+    const tipo = st.opc.transicao;
+    if (!tipo || tipo === "nenhuma" || !st.segs.length) return { z: 0, x: 0 };
+    const s = segNoFinal(t), i = st.segs.indexOf(s);
+    if (i <= 0) return { z: 0, x: 0 };
+    const d = t - s.o0, troca = st.segs[i - 1].ci !== s.ci;
+    let z = 0, x = 0;
+    if (d >= 0 && d < 0.2) z = 0.09 * (1 - suave(d / 0.2));
+    if (tipo === "deslize" && troca && d >= 0 && d < 0.16) x = 0.22 * (1 - suave(d / 0.16));
+    return { z, x };
   }
   // ---------- legendas: chave por palavra e edições dela ----------
   function chaveLeg(g) { return Math.round(g * 100); }
@@ -647,11 +687,13 @@ IDEIA PARA DEPOIS
     const clipe = s ? st.clipes[s.ci] : st.clipes[0];
     if (clipe && clipe.el.readyState >= 2) {
       const v = clipe.el, vw = v.videoWidth || 9, vh = v.videoHeight || 16;
-      const tr = tremida(t);
-      const z = (s ? s.zoom : 1) * zoomEm(t) * (1 + tr.z);
+      const tr = tremida(t), tc = transicaoEm(t);
+      const z = (s ? s.zoom : 1) * zoomEm(t) * (1 + tr.z) * (1 + tc.z);
       const esc0 = Math.max(W / vw, H / vh) * z;
-      const dw = vw * esc0, dh = vh * esc0;
-      c2d.drawImage(v, (W - dw) / 2 + tr.x * W, (H - dh) * 0.42 + tr.y * H, dw, dh);
+      const dw = vw * esc0, dh = vh * esc0, x0 = (W - dw) / 2 + (tr.x + tc.x) * W, y0 = (H - dh) * 0.42 + tr.y * H;
+      c2d.drawImage(v, x0, y0, dw, dh);
+      // rastro do deslize (dá a sensação de movimento rápido)
+      if (tc.x > 0.01) { c2d.save(); c2d.globalAlpha = 0.35; c2d.drawImage(v, x0 - tc.x * W * 0.6, y0, dw, dh); c2d.restore(); }
     }
     const u = W / 1080;
     // flash rápido nas trocas de clipe
@@ -1115,6 +1157,9 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-sombra">Sombra</label><select class="entrada" id="ed-sombra"><option value="suave" ${o.sombra !== "dura" ? "selected" : ""}>Suave</option><option value="dura" ${o.sombra === "dura" ? "selected" : ""}>Dura (deslocada)</option></select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-por">Palavras por legenda</label><select class="entrada" id="ed-por">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(o.porLegenda) === n ? "selected" : ""}>${n}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-cor-leg">Cor da legenda</label><span class="ed-cores">${["#fff3b0", "#ffffff", "#ffe45c"].map((c) => `<button type="button" class="ed-cor${o.corLegenda === c ? " ativa" : ""}" data-cor-leg="${c}" style="background:${c}" aria-label="Cor ${c}"></button>`).join("")}<input type="color" id="ed-cor-leg" value="${o.corLegenda}"></span></div>` : ""}
+      <div class="ed-linha"><label class="ed-rotulo" for="ed-sfx">Efeitos sonoros automáticos</label><select class="entrada" id="ed-sfx">${[["desligado", "Desligado"], ["pouco", "Pouco"], ["medio", "Médio"], ["muito", "Muito (bem dinâmico)"]].map(([k, t]) => `<option value="${k}" ${o.sfxAuto === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+      <div class="ed-linha"><label class="ed-rotulo" for="ed-trans">Transição nos cortes</label><select class="entrada" id="ed-trans">${[["nenhuma", "Nenhuma"], ["punch", "Zoom rápido"], ["deslize", "Zoom rápido + deslize na troca de cena"]].map(([k, t]) => `<option value="${k}" ${o.transicao === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+      <div class="ed-linha"><label class="ed-rotulo" for="ed-ritmo">Ritmo dos cortes</label><select class="entrada" id="ed-ritmo"><option value="rapido" ${o.ritmo !== "normal" ? "selected" : ""}>Rápido (corta respiros)</option><option value="normal" ${o.ritmo === "normal" ? "selected" : ""}>Normal</option></select></div>
       <div class="ed-chks">${chk("chamativas", "Palavras chamativas (grandes, coloridas)")}${chk("sonsChamativas", "Pop nas palavras chamativas")}${chk("tremer", "Tremidinha no impacto")}${chk("flash", "Flash na troca de cena")}</div>
       <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("titulo", "Mostrar título")}${chk("sonsTitulo", "Som de clique no título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}</div>
       <label class="ed-rotulo" for="ed-vol">Volume dos efeitos</label>
@@ -1126,6 +1171,9 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $("#ed-estilo-titulo", box).addEventListener("change", (e) => { o.estiloTitulo = e.target.value; sonsDoTitulo(); pintarPlano(); if (!st.tocando) { st.t = Math.min(st.t, 1.2); desenhar(st.t); } });
     box.onchange = guardarOpc;
     $("#ed-estilo", box).addEventListener("change", (e) => { o.estilo = e.target.value; remontar(); });
+    $("#ed-sfx", box).addEventListener("change", (e) => { o.sfxAuto = e.target.value; sonsAutomaticos(); guardarOpc(); pintarPlano(); });
+    $("#ed-trans", box).addEventListener("change", (e) => { o.transicao = e.target.value; guardarOpc(); redesenhar(); });
+    $("#ed-ritmo", box).addEventListener("change", (e) => { o.ritmo = e.target.value; remontar(); });
     const fsel = $("#ed-fonte", box); if (fsel) fsel.addEventListener("change", (e) => { o.fonteLeg = e.target.value; guardarOpc(); redesenhar(); });
     const som = $("#ed-sombra", box); if (som) som.addEventListener("change", (e) => { o.sombra = e.target.value; guardarOpc(); redesenhar(); });
     const farq = $("#ed-fonte-arq", box); if (farq) farq.addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) enviarFonte(f); });
@@ -1249,10 +1297,10 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const sec = document.getElementById("aba-" + ABA);
     if (!sec) return;
     if (!st.pronto) {
-      if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;500;600;800&family=Montserrat:wght@700;800&family=Nunito:wght@800&family=Instrument+Serif:ital@1&family=Fredoka:wght@700&family=Caveat:wght@700&display=swap"; document.head.appendChild(l); }
+      if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;500;600;800&family=Montserrat:wght@700;800&family=Nunito:wght@800&family=Arimo:wght@700&family=Instrument+Serif:ital@1&family=Fredoka:wght@700&family=Caveat:wght@700&display=swap"; document.head.appendChild(l); }
       montarTela(sec); st.pronto = true;
       carregarPadrao(); carregarMinhaFonte();
-      try { await Promise.all(["300 40px Poppins", "500 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"', "800 40px Montserrat", "700 40px Montserrat", "800 40px Nunito", 'italic 40px "Instrument Serif"', "700 40px Fredoka", "700 40px Caveat"].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
+      try { await Promise.all(["300 40px Poppins", "500 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"', "800 40px Montserrat", "700 40px Montserrat", "800 40px Nunito", "700 40px Arimo", 'italic 40px "Instrument Serif"', "700 40px Fredoka", "700 40px Caveat"].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
     }
     pintar();
   }
