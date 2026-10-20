@@ -58,6 +58,14 @@
 - Palavras chamativas: a palavra forte entra grande em fonte arredondada pesada, cor viva (verde-limão, lilás, amarelo), sombra dura, com pop; o resto da frase pequeno em letra manuscrita.
 - Título do gancho em caixinhas pastel empilhadas com texto preto forte, clique de mouse em cada uma, figurinhas (estrela, flor, bolinhas) e cursor com moldura de seleção.
 - Confete verde-limão e tremidinha nos momentos fortes. Nunca mexer na cor do vídeo.`;
+  const MARCA_REFS2 = "REFERÊNCIAS ATUAIS (out/2026, v2";
+  const REFS_V2 = `REFERÊNCIAS ATUAIS (out/2026, v2: valem acima de tudo; vídeos dela DdIK7JosJYp, Daa8wYaCgkQ, DaN7lnRi16X e referências DeMvcGFt4Ap, DWzaZKBj6I7, DJQEn0vA8Vi, DeIOo6btYw7, DecyDPaJ_Zs)
+- Fonte da legenda: Bootzy (do CapCut). Legenda amarela clarinha ou branca, minúscula, 1 a 4 palavras por vez, sombra suave, perto do meio da tela; pode subir para o canto de cima quando o meio estiver ocupado por produto.
+- Alternativa usada por ela e pelas referências: serifada itálica branca ou amarela (estilo "diário"), com estrelinhas amarelas em volta do texto do gancho.
+- Palavra forte da frase em destaque grande; título curto no começo; figurinhas pontuais (estrelas, capacete, coração).
+- B-roll de produto cobrindo a fala (close do produto, detalhe, print de tela/busca), cortes secos e zoom rápido nas viradas.
+- Sons do próprio produto sincronizados com o gesto (chuveiro, spray, secador, embalagem) e pop/ding quando entra texto; confete nos momentos de alegria.
+- Nunca mexer na cor do vídeo.`;
   const PADRAO = `PADRÃO DE EDIÇÃO DA MARI (tirado das referências que ela gosta)
 
 RITMO
@@ -113,6 +121,12 @@ ESTRUTURA DE UGC
   const EFEITOS = { woosh: "Woosh", pop: "Pop", click: "Click", shutter: "Shutter", typing: "Typing", riser: "Riser", hit: "Hit", ding: "Ding" };
   const ESTILOS = { capcut: "CapCut (Poppins média, minúscula, sombra suave)", minimal: "Fina e branca", bold: "Forte com contorno", caixa: "Caixinha bege" };
   const TITULOS = { capcut: "Caixinhas coloridas com figurinhas e cursor (CapCut)", etapas: "Em etapas com clique (duas fontes e estrelinhas)", frase: "Frase gigante na tela (3 cores)", caixa: "Caixinhas" };
+  // fontes da legenda: "minha" é a fonte que ela enviou (Bootzy do CapCut), guardada em configuracoes "fonte_legenda"
+  const FONTES_LEG = { minha: "Minha fonte (Bootzy)", montserrat: "Sem serifa forte (Montserrat)", poppins: "Sem serifa média (Poppins)", nunito: "Arredondada forte (Nunito)", dmserif: "Serifada itálica (DM Serif)", instrument: "Serifada itálica fina (Instrument Serif)" };
+  const fonteLeg = (tam) => ({
+    minha: `${tam}px "MinhaFonte", Montserrat, sans-serif`, montserrat: `700 ${tam}px Montserrat, Poppins, sans-serif`, poppins: `500 ${tam}px Poppins, sans-serif`,
+    nunito: `800 ${tam}px Nunito, Poppins, sans-serif`, dmserif: `italic 400 ${tam * 1.12}px "DM Serif Display", Georgia, serif`, instrument: `italic 400 ${tam * 1.28}px "Instrument Serif", Georgia, serif`,
+  })[st.opc.fonteLeg] || `700 ${tam}px Montserrat, Poppins, sans-serif`;
   const CORES_CHAMATIVA = ["#c6f432", "#cdb6ff", "#ffe45c", "#ffb3d9"];
   const DUR_TITULO = 2.8;
 
@@ -120,14 +134,14 @@ ESTRUTURA DE UGC
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: true, sonsChamativas: true, confete: true, tremer: true, flash: false, altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "capcut", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
+    opc: { fonteLeg: "montserrat", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: true, sonsChamativas: true, confete: true, tremer: true, flash: false, altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "capcut", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
     correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, projeto: null, projetos: [], pendentes: null, salvando: "",
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
   try { const salvo = JSON.parse(localStorage.getItem("ed-opc2") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); } catch (e) { /* sem armazenamento */ }
-  const OPC_VISUAIS = ["estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"];
+  const OPC_VISUAIS = ["fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"];
   function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc2", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
@@ -141,13 +155,41 @@ ESTRUTURA DE UGC
     tempoToast = setTimeout(() => t.classList.remove("visivel"), erro ? 5200 : 2600);
   }
 
+  // ---------- minha fonte (Bootzy) ----------
+  const b64DeBuffer = (buf) => { const u = new Uint8Array(buf); let s2 = ""; for (let i = 0; i < u.length; i += 32768) s2 += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return btoa(s2); };
+  async function aplicarFonte(nome, buf) {
+    const ff = new FontFace("MinhaFonte", buf);
+    await ff.load(); document.fonts.add(ff); st.minhaFonte = nome;
+  }
+  async function carregarMinhaFonte() {
+    try {
+      const { data } = await banco().from("configuracoes").select("valor").eq("chave", "fonte_legenda").maybeSingle();
+      if (!data || !data.valor) return;
+      const v = typeof data.valor === "string" ? JSON.parse(data.valor) : data.valor;
+      const bin = atob(v.b64), buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+      await aplicarFonte(v.nome || "Minha fonte", buf.buffer);
+      pintarAjustes(); redesenhar();
+    } catch (e) { /* sem fonte própria */ }
+  }
+  async function enviarFonte(arq) {
+    if (arq.size > 3 * 1024 * 1024) { toast("Esse arquivo de fonte passou de 3 MB.", true); return; }
+    try {
+      const buf = await arq.arrayBuffer(), nome = arq.name.replace(/\.[^.]+$/, "");
+      await aplicarFonte(nome, buf.slice(0));
+      const { error } = await banco().from("configuracoes").upsert({ chave: "fonte_legenda", valor: JSON.stringify({ nome, b64: b64DeBuffer(buf) }) }, { onConflict: "chave" });
+      if (error) throw new Error(error.message);
+      st.opc.fonteLeg = "minha"; guardarOpc(); pintarAjustes(); redesenhar();
+      toast(`Fonte "${nome}" guardada. Ela vale para as próximas edições.`);
+    } catch (e) { toast("Não consegui usar esse arquivo de fonte: " + e.message, true); }
+  }
+
   // ---------- padrão de edição (tabela configuracoes) ----------
   async function carregarPadrao() {
     try {
       const { data } = await banco().from("configuracoes").select("valor").eq("chave", "padrao_edicao").maybeSingle();
       if (data && data.valor) { st.padrao = String(data.valor); st.padraoSalvo = true; }
       // uma vez: acrescenta no padrão salvo o estudo das referências novas (CapCut, out/2026)
-      if (st.padraoSalvo && !st.padrao.includes(MARCA_REFS)) { try { await salvarPadrao(st.padrao.trim() + "\n\n" + REFS_NOVAS); } catch (e) { /* tenta na próxima */ } }
+      if (st.padraoSalvo && !st.padrao.includes(MARCA_REFS2)) { try { await salvarPadrao(st.padrao.trim() + "\n\n" + REFS_V2); } catch (e) { /* tenta na próxima */ } }
     } catch (e) { /* fica o padrão de fábrica */ }
   }
   async function salvarPadrao(texto) {
@@ -705,11 +747,13 @@ ESTRUTURA DE UGC
     const tam = 74 * u, y = H * st.opc.altura;
     let texto = textoLeg(g).replace(/^[,.;:!?]+|[,.;:]+$/g, "");
     texto = st.opc.maiusculas ? texto.toUpperCase() : texto.toLowerCase();
-    const linhas = quebrar(texto, W * 0.8, `500 ${tam}px Poppins, "Helvetica Neue", Arial, sans-serif`);
+    const fonte = fonteLeg(tam), linhas = quebrar(texto, W * 0.8, fonte);
     const k = Math.min(1, (st.t - g.o0) / 0.09), escala = 0.92 + 0.08 * suave(Math.max(0, k));
     c2d.save(); c2d.translate(W / 2, y); c2d.scale(escala, escala); c2d.translate(-W / 2, -y);
     c2d.textAlign = "center"; c2d.textBaseline = "middle";
-    c2d.shadowColor = "rgba(0,0,0,.55)"; c2d.shadowBlur = 16 * u; c2d.shadowOffsetY = 3 * u;
+    c2d.font = fonte;
+    if (st.opc.sombra === "dura") { c2d.shadowColor = "rgba(0,0,0,.8)"; c2d.shadowBlur = 0; c2d.shadowOffsetX = 4 * u; c2d.shadowOffsetY = 5 * u; }
+    else { c2d.shadowColor = "rgba(0,0,0,.55)"; c2d.shadowBlur = 16 * u; c2d.shadowOffsetY = 3 * u; }
     c2d.fillStyle = st.opc.corLegenda || "#fff3b0";
     linhas.forEach((l, i) => c2d.fillText(l, W / 2, y + (i - (linhas.length - 1) / 2) * tam * 1.12));
     c2d.restore();
@@ -1152,7 +1196,11 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <label class="ed-rotulo" for="ed-altura">Altura da legenda</label>
       <input type="range" id="ed-altura" min="0.35" max="0.88" step="0.01" value="${o.altura}">
       <div class="ed-linha"><label class="ed-rotulo" for="ed-cor">Cor do destaque</label><input type="color" id="ed-cor" value="${o.cor}"></div>
-      ${o.estilo === "capcut" ? `<div class="ed-linha"><label class="ed-rotulo" for="ed-por">Palavras por legenda</label><select class="entrada" id="ed-por">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(o.porLegenda) === n ? "selected" : ""}>${n}</option>`).join("")}</select></div>
+      ${o.estilo === "capcut" ? `<label class="ed-rotulo" for="ed-fonte">Fonte da legenda</label>
+      <select class="entrada" id="ed-fonte">${Object.entries(FONTES_LEG).filter(([k]) => k !== "minha" || st.minhaFonte).map(([k, t]) => `<option value="${k}" ${o.fonteLeg === k ? "selected" : ""}>${k === "minha" ? esc(st.minhaFonte) : t}</option>`).join("")}</select>
+      <label class="btn ed-enviar-fonte">${st.minhaFonte ? "Trocar minha fonte" : "Enviar minha fonte (Bootzy)"}<input type="file" id="ed-fonte-arq" accept=".ttf,.otf,.woff,.woff2,font/*" hidden></label>
+      <div class="ed-linha"><label class="ed-rotulo" for="ed-sombra">Sombra</label><select class="entrada" id="ed-sombra"><option value="suave" ${o.sombra !== "dura" ? "selected" : ""}>Suave</option><option value="dura" ${o.sombra === "dura" ? "selected" : ""}>Dura (deslocada)</option></select></div>
+      <div class="ed-linha"><label class="ed-rotulo" for="ed-por">Palavras por legenda</label><select class="entrada" id="ed-por">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(o.porLegenda) === n ? "selected" : ""}>${n}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-cor-leg">Cor da legenda</label><span class="ed-cores">${["#fff3b0", "#ffffff", "#ffe45c"].map((c) => `<button type="button" class="ed-cor${o.corLegenda === c ? " ativa" : ""}" data-cor-leg="${c}" style="background:${c}" aria-label="Cor ${c}"></button>`).join("")}<input type="color" id="ed-cor-leg" value="${o.corLegenda}"></span></div>` : ""}
       <div class="ed-chks">${chk("chamativas", "Palavras chamativas (grandes, coloridas)")}${chk("sonsChamativas", "Pop nas palavras chamativas")}${chk("confete", "Confete nos momentos fortes")}${chk("tremer", "Tremidinha no impacto")}${chk("flash", "Flash na troca de cena")}</div>
       <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("titulo", "Mostrar título")}${chk("sonsTitulo", "Som de clique no título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}</div>
@@ -1165,6 +1213,9 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $("#ed-estilo-titulo", box).addEventListener("change", (e) => { o.estiloTitulo = e.target.value; sonsDoTitulo(); pintarPlano(); if (!st.tocando) { st.t = Math.min(st.t, 1.2); desenhar(st.t); } });
     box.onchange = guardarOpc;
     $("#ed-estilo", box).addEventListener("change", (e) => { o.estilo = e.target.value; remontar(); });
+    const fsel = $("#ed-fonte", box); if (fsel) fsel.addEventListener("change", (e) => { o.fonteLeg = e.target.value; guardarOpc(); redesenhar(); });
+    const som = $("#ed-sombra", box); if (som) som.addEventListener("change", (e) => { o.sombra = e.target.value; guardarOpc(); redesenhar(); });
+    const farq = $("#ed-fonte-arq", box); if (farq) farq.addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) enviarFonte(f); });
     const por = $("#ed-por", box); if (por) por.addEventListener("change", (e) => { o.porLegenda = Number(e.target.value); remontar(); });
     const corLeg = $("#ed-cor-leg", box); if (corLeg) corLeg.addEventListener("input", (e) => { o.corLegenda = e.target.value; redesenhar(); });
     $$("[data-cor-leg]", box).forEach((b) => b.addEventListener("click", () => { o.corLegenda = b.dataset.corLeg; guardarOpc(); pintarAjustes(); redesenhar(); }));
@@ -1285,10 +1336,10 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const sec = document.getElementById("aba-" + ABA);
     if (!sec) return;
     if (!st.pronto) {
-      if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;500;600;800&family=Montserrat:wght@800&family=Fredoka:wght@700&family=Caveat:wght@700&display=swap"; document.head.appendChild(l); }
+      if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;500;600;800&family=Montserrat:wght@700;800&family=Nunito:wght@800&family=Instrument+Serif:ital@1&family=Fredoka:wght@700&family=Caveat:wght@700&display=swap"; document.head.appendChild(l); }
       montarTela(sec); st.pronto = true;
-      carregarPadrao();
-      try { await Promise.all(["300 40px Poppins", "500 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"', "800 40px Montserrat", "700 40px Fredoka", "700 40px Caveat"].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
+      carregarPadrao(); carregarMinhaFonte();
+      try { await Promise.all(["300 40px Poppins", "500 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"', "800 40px Montserrat", "700 40px Montserrat", "800 40px Nunito", 'italic 40px "Instrument Serif"', "700 40px Fredoka", "700 40px Caveat"].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
     }
     pintar();
   }

@@ -112,6 +112,8 @@ Regras:
 // correção: ela comenta o que não gostou e a IA devolve o plano corrigido, os ajustes visuais
 // (estilo da legenda, título, cor, volume dos efeitos...) e uma regra curta para o padrão
 const OPC_VALORES = `estilo: "capcut" (Poppins média, minúscula, sombra suave, o padrão dela) | "minimal" (fina e branca) | "bold" (forte com contorno) | "caixa" (caixinha bege)
+fonteLeg: fonte da legenda: "minha" (a Bootzy que ela enviou, a preferida dela) | "montserrat" (sem serifa forte) | "poppins" (sem serifa média) | "nunito" (arredondada forte) | "dmserif" (serifada itálica) | "instrument" (serifada itálica fina)
+sombra: "suave" | "dura" (sombra preta deslocada)
 corLegenda: cor da legenda capcut em hexadecimal (padrão "#fff3b0", amarelo clarinho)
 porLegenda: palavras por legenda no estilo capcut, de 1 a 4
 chamativas: true ou false (palavras de destaque viram texto grande colorido com sombra dura e frase manuscrita)
@@ -126,6 +128,8 @@ maiusculas, titulo, efeitos, silencio, erros, zoomCortes, zoomEnfase: true ou fa
 const OPC_OK: Record<string, (v: any) => any> = {
   estilo: (v) => ["capcut", "minimal", "bold", "caixa"].includes(v) ? v : undefined,
   estiloTitulo: (v) => ["capcut", "etapas", "frase", "caixa"].includes(v) ? v : undefined,
+  fonteLeg: (v) => ["minha", "montserrat", "poppins", "nunito", "dmserif", "instrument"].includes(v) ? v : undefined,
+  sombra: (v) => ["suave", "dura"].includes(v) ? v : undefined,
   corLegenda: (v) => /^#[0-9a-f]{6}$/i.test(String(v)) ? String(v) : undefined,
   porLegenda: (v) => [1, 2, 3, 4].includes(Number(v)) ? Number(v) : undefined,
   altura: (v) => Number.isFinite(Number(v)) ? Math.min(0.88, Math.max(0.35, Number(v))) : undefined,
