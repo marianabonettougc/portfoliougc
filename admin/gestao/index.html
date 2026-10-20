@@ -4476,12 +4476,155 @@ function TransModal({onClose, onSave, initial, job, onAnexar}){
 
 // Financeiro CPF: a mesma tela do Financeiro, mas com registros próprios (state.transacoesCpf),
 // sem misturar com a empresa e sem ligação com os jobs
+// Na primeira abertura, traz a planilha pessoal antiga (backup de 22/08/2026) que fica guardada
+// só no banco (função financa_cpf_backup, só a dona lê): entradas, contas, faturas e parcelas viram
+// lançamentos, e cartões, empréstimos, reserva e saldos vão para a aba "Cartões e dívidas".
+function expandirBackupCpf(b){
+  const tx = [];
+  (b.rec||[]).forEach(([id,descricao,valor,data,ok,categoria,obs])=>tx.push({id:"cpfi-"+id, tipo:"receita", descricao, valor, moeda:"BRL", data, status: ok?"Confirmado":"Pendente", categoria, obs: obs||undefined, origem:"cpf-backup"}));
+  (b.ser||[]).forEach(s=>s.v.forEach(([ym,valor,st])=>{
+    const y = Math.floor(ym/100), m = ym%100;
+    tx.push({id:`cpf${s.p}-${s.id}-${y}-${m}`, tipo:"despesa", descricao:s.n, valor, moeda:"BRL", data:`${y}-${String(m).padStart(2,"0")}-${String(s.d).padStart(2,"0")}`, status: st===1?"Confirmado":"Pendente", atrasado: st===2||undefined, categoria:s.c, origem:"cpf-backup"});
+  }));
+  return tx;
+}
 function FinanceiroCPF({state, updateState}){
+  const buscou = useRef(false);
+  useEffect(()=>{
+    if(state.financaCpf || buscou.current) return;
+    buscou.current = true;
+    supabaseClient.rpc("financa_cpf_backup").then(({data})=>{
+      if(!data || !data.financa) return;
+      const novos = expandirBackupCpf(data);
+      updateState(atual=>{
+        if(atual.financaCpf) return atual;
+        const ja = new Set((atual.transacoesCpf||[]).map(t=>t.id));
+        return {...atual, financaCpf: data.financa, transacoesCpf: [...(atual.transacoesCpf||[]), ...novos.filter(t=>!ja.has(t.id))]};
+      });
+    });
+  },[]);
   const visao = {...state, transacoes: state.transacoesCpf || [], jobs: []};
   const salvar = (next) => updateState({...state, transacoesCpf: next.transacoes || []});
-  return <Financeiro state={visao} updateState={salvar} pessoal/>;
+  const salvarFinanca = (f) => updateState(atual=>({...atual, financaCpf: f}));
+  return <Financeiro state={visao} updateState={salvar} pessoal financa={state.financaCpf} onFinanca={salvarFinanca}/>;
 }
-function Financeiro({state, updateState, go, pessoal}){
+
+// Aba "Cartões e dívidas" do Financeiro CPF: cartões, empréstimos, reserva e saldos, editáveis
+function CartoesDividas({financa, onFinanca}){
+  const f = financa || {cartoes:[], emprestimos:[], contas:[], reserva:{atual:0}};
+  const num = (v) => v===""||v===null||v===undefined ? null : Number(String(v).replace(",","."));
+  const mudar = (lista, id, campo, valor) => onFinanca({...f, [lista]: (f[lista]||[]).map(x=>x.id===id ? {...x, [campo]: valor} : x)});
+  const tirar = (lista, id, nome) => { if(confirm(`Tirar "${nome}"?`)) onFinanca({...f, [lista]: (f[lista]||[]).filter(x=>x.id!==id)}); };
+  const novo = (lista, base) => onFinanca({...f, [lista]: [...(f[lista]||[]), {id:uid(), ...base}]});
+  const ativos = (f.cartoes||[]).filter(c=>c.status!=="Quitado");
+  const dividaCartoes = (f.cartoes||[]).reduce((a,c)=>a+Number(c.divida||0),0);
+  const faturas = ativos.reduce((a,c)=>a+Number(c.faturaAtual||0),0);
+  const limiteLivre = (f.cartoes||[]).reduce((a,c)=>a+Number(c.disponivel||0),0);
+  const empAtivos = (f.emprestimos||[]).filter(e=>e.status!=="Quitado");
+  const saldoEmp = empAtivos.reduce((a,e)=>a+Number(e.saldo||0),0);
+  const parcelasMes = empAtivos.reduce((a,e)=>a+Number(e.parcela||0),0);
+  const corStatus = (s) => s==="Quitado" ? "green" : (s==="Atraso"||s==="Atrasado") ? "pink" : s==="Em redução" ? "yellow" : "blue";
+  const inp = {padding:"7px 9px", borderRadius:9, border:"1px solid var(--line)", width:"100%", minWidth:0, fontSize:13.5, background:"#fff"};
+  const Num = ({v, on}) => <input type="number" step="0.01" defaultValue={v ?? ""} style={inp} onBlur={e=>{ const n = num(e.target.value); if(n!==v) on(n); }}/>;
+  const Txt = ({v, on, w}) => <input defaultValue={v ?? ""} style={{...inp, ...(w?{width:w}:{})}} onBlur={e=>{ if(e.target.value!==(v??"")) on(e.target.value); }}/>;
+  const Rot = ({children}) => <div style={{fontSize:11.5, color:"var(--graphite-soft)", marginBottom:3}}>{children}</div>;
+  const Status = ({v, on, opcoes}) => <select value={v||""} onChange={e=>on(e.target.value)} style={inp}>{opcoes.map(o=><option key={o}>{o}</option>)}</select>;
+  return (
+    <div>
+      <div className="grid" style={{gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))", gap:16, marginBottom:18}}>
+        {[["Faturas abertas", faturas, "credit_card", "#F6E3C6", "#8A5A20"],
+          ["Dívida nos cartões", dividaCartoes, "trending_down", "#f6e0dc", "#b8473a"],
+          ["Limite disponível", limiteLivre, "account_balance", "#e2e9f1", "#4a6a8a"],
+          ["Saldo dos empréstimos", saldoEmp, "request_quote", "#f6e0dc", "#b8473a"],
+          ["Parcelas por mês", parcelasMes, "event_repeat", "#E7E1F3", "#6B4E8A"],
+          ["Reserva", (f.reserva||{}).atual, "savings", "#DCEBDD", "#2F6B3E"]
+        ].map(([label,val,icon,bg,fg])=>(
+          <div key={label} className="card" style={{padding:16}}>
+            <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:10}}>
+              <span style={{width:30,height:30, borderRadius:9, background:bg, color:fg, display:"flex", alignItems:"center", justifyContent:"center"}}><Icon name={icon} size={16}/></span>
+              <span style={{fontSize:13, color:"var(--graphite-soft)"}}>{label}</span>
+            </div>
+            <div style={{fontFamily:"Poppins", fontSize:20, fontWeight:700}}>{fmtMoney(val)}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{marginBottom:18}}>
+        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, gap:10, flexWrap:"wrap"}}>
+          <h3 style={{margin:0}}>Cartões ({(f.cartoes||[]).length})</h3>
+          <button className="btn btn-ghost btn-sm" onClick={()=>novo("cartoes", {nome:"Novo cartão", status:"Ativo", divida:0})}><Icon name="add" size={15}/>Cartão</button>
+        </div>
+        {(f.cartoes||[]).map(c=>(
+          <div key={c.id} style={{borderTop:"1px solid var(--line)", padding:"12px 0"}}>
+            <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8, flexWrap:"wrap"}}>
+              <Icon name="credit_card" size={18}/>
+              <Txt v={c.nome} on={v=>mudar("cartoes",c.id,"nome",v)} w={180}/>
+              <Badge tone={corStatus(c.status)}>{c.status||"Ativo"}</Badge>
+              <span style={{flex:1}}/>
+              <button className="icon-btn" title="Tirar cartão" onClick={()=>tirar("cartoes",c.id,c.nome)}><Icon name="delete" size={18}/></button>
+            </div>
+            <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))", gap:10}}>
+              <div><Rot>Limite</Rot><Num v={c.limite} on={v=>mudar("cartoes",c.id,"limite",v)}/></div>
+              <div><Rot>Disponível</Rot><Num v={c.disponivel} on={v=>mudar("cartoes",c.id,"disponivel",v)}/></div>
+              <div><Rot>Fatura atual</Rot><Num v={c.faturaAtual} on={v=>mudar("cartoes",c.id,"faturaAtual",v)}/></div>
+              <div><Rot>Próxima fatura</Rot><Num v={c.proximaFatura} on={v=>mudar("cartoes",c.id,"proximaFatura",v)}/></div>
+              <div><Rot>Dívida total</Rot><Num v={c.divida} on={v=>mudar("cartoes",c.id,"divida",v)}/></div>
+              <div><Rot>Parcelas futuras</Rot><Num v={c.parcelasFuturas} on={v=>mudar("cartoes",c.id,"parcelasFuturas",v)}/></div>
+              <div><Rot>Vence dia</Rot><Txt v={c.vencimento} on={v=>mudar("cartoes",c.id,"vencimento",v)}/></div>
+              <div><Rot>Juros (% ao mês)</Rot><Num v={c.juros} on={v=>mudar("cartoes",c.id,"juros",v)}/></div>
+              <div><Rot>Situação</Rot><Status v={c.status} on={v=>mudar("cartoes",c.id,"status",v)} opcoes={["Ativo","Em redução","Atrasado","Quitado"]}/></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{marginBottom:18}}>
+        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, gap:10, flexWrap:"wrap"}}>
+          <h3 style={{margin:0}}>Empréstimos ({(f.emprestimos||[]).length})</h3>
+          <button className="btn btn-ghost btn-sm" onClick={()=>novo("emprestimos", {nome:"Novo empréstimo", status:"Ativo", pagas:0})}><Icon name="add" size={15}/>Empréstimo</button>
+        </div>
+        {(f.emprestimos||[]).map(e=>(
+          <div key={e.id} style={{borderTop:"1px solid var(--line)", padding:"12px 0"}}>
+            <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8, flexWrap:"wrap"}}>
+              <Icon name="request_quote" size={18}/>
+              <Txt v={e.nome} on={v=>mudar("emprestimos",e.id,"nome",v)} w={240}/>
+              <Badge tone={corStatus(e.status)}>{e.status||"Ativo"}</Badge>
+              {e.totalParcelas>0 && <span style={{fontSize:13, color:"var(--graphite-soft)"}}>{e.pagas||0} de {e.totalParcelas} pagas</span>}
+              <span style={{flex:1}}/>
+              <button className="icon-btn" title="Tirar empréstimo" onClick={()=>tirar("emprestimos",e.id,e.nome)}><Icon name="delete" size={18}/></button>
+            </div>
+            <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))", gap:10}}>
+              <div><Rot>Parcela</Rot><Num v={e.parcela} on={v=>mudar("emprestimos",e.id,"parcela",v)}/></div>
+              <div><Rot>Parcelas pagas</Rot><Num v={e.pagas} on={v=>mudar("emprestimos",e.id,"pagas",v)}/></div>
+              <div><Rot>Total de parcelas</Rot><Num v={e.totalParcelas} on={v=>mudar("emprestimos",e.id,"totalParcelas",v)}/></div>
+              <div><Rot>Saldo devedor</Rot><Num v={e.saldo} on={v=>mudar("emprestimos",e.id,"saldo",v)}/></div>
+              <div><Rot>Para quitar hoje</Rot><Num v={e.quitacao} on={v=>mudar("emprestimos",e.id,"quitacao",v)}/></div>
+              <div><Rot>Valor pego</Rot><Num v={e.valorOriginal} on={v=>mudar("emprestimos",e.id,"valorOriginal",v)}/></div>
+              <div><Rot>Total com juros</Rot><Num v={e.totalComJuros} on={v=>mudar("emprestimos",e.id,"totalComJuros",v)}/></div>
+              <div><Rot>Vence dia</Rot><Txt v={e.vencimento} on={v=>mudar("emprestimos",e.id,"vencimento",v)}/></div>
+              <div><Rot>Situação</Rot><Status v={e.status} on={v=>mudar("emprestimos",e.id,"status",v)} opcoes={["Ativo","Atraso","Quitado"]}/></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card">
+        <h3 style={{marginTop:0}}>Reserva e saldo nas contas</h3>
+        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:12}}>
+          <div><Rot>Reserva guardada</Rot><Num v={(f.reserva||{}).atual} on={v=>onFinanca({...f, reserva:{...(f.reserva||{}), atual:v}})}/></div>
+          <div><Rot>Guardar por mês</Rot><Num v={f.aporteReserva} on={v=>onFinanca({...f, aporteReserva:v})}/></div>
+          <div><Rot>Para dívidas por mês</Rot><Num v={f.orcamentoDividas} on={v=>onFinanca({...f, orcamentoDividas:v})}/></div>
+          {(f.contas||[]).map(c=>(
+            <div key={c.id}><Rot>Saldo {c.nome}</Rot><Num v={c.saldo} on={v=>mudar("contas",c.id,"saldo",v)}/></div>
+          ))}
+        </div>
+        {(f.compras||[]).length>0 && <p style={{fontSize:13, color:"var(--graphite-soft)", marginBottom:0}}>Compras anotadas: {(f.compras||[]).map(x=>`${x.nome} ${fmtMoney(x.valor)} no ${x.cartao} (${new Date(x.data+"T00:00:00").toLocaleDateString("pt-BR")})`).join(" · ")}</p>}
+        {f.importadoDe && <p style={{fontSize:12, color:"var(--graphite-soft)", marginBottom:0}}>Trazido da sua planilha antiga ({f.importadoDe}).</p>}
+      </div>
+    </div>
+  );
+}
+function Financeiro({state, updateState, go, pessoal, financa, onFinanca}){
   const [modal,setModal] = useState(false);
   const [editing,setEditing] = useState(null);
   const now = new Date();
@@ -4544,9 +4687,9 @@ function Financeiro({state, updateState, go, pessoal}){
             </span>
           )}
           <div><strong>{t.descricao}</strong></div>
-          <div style={{fontSize:13.5, color:"var(--graphite-soft)"}}>{new Date(t.data+"T00:00:00").toLocaleDateString('pt-BR')}</div>
+          <div style={{fontSize:13.5, color:"var(--graphite-soft)"}}>{new Date(t.data+"T00:00:00").toLocaleDateString('pt-BR')}{pessoal && t.categoria ? " · "+t.categoria : ""}{pessoal && t.obs ? " · "+t.obs : ""}</div>
         </div>
-        <Badge tone={t.status==="Confirmado" ? "green" : "yellow"}>{t.status==="Confirmado" ? "Recebido" : "Pendente"}</Badge>
+        <Badge tone={t.status==="Confirmado" ? "green" : t.atrasado ? "pink" : "yellow"}>{t.status==="Confirmado" ? (t.tipo==="despesa" ? "Pago" : "Recebido") : t.atrasado ? "Atrasado" : "Pendente"}</Badge>
         <div style={{fontWeight:700, color: t.tipo==="despesa" ? "var(--wine)" : "var(--moss)", minWidth:100, textAlign:"right"}}>{t.tipo==="despesa" ? "- " : "+ "}{fmtMoneyCur(t.valor, t.moeda)}</div>
         <div style={{display:"flex", gap:6}}>
           <button className="icon-btn" title={t.status==="Confirmado" ? "Marcar como pendente" : "Marcar como recebido"} onClick={()=>toggleStatus(t.id)}>
@@ -4570,7 +4713,7 @@ function Financeiro({state, updateState, go, pessoal}){
       </div>
 
       <div className="tabs" style={{marginBottom:18, flexWrap:"wrap"}}>
-        {(pessoal ? ["Transações","Histórico Financeiro","Previsão","Evolução"] : ["Transações","Histórico Financeiro","Previsão","Evolução","Performance","Contabilidade"]).map(t=>
+        {(pessoal ? ["Transações","Cartões e dívidas","Histórico Financeiro","Previsão","Evolução"] : ["Transações","Histórico Financeiro","Previsão","Evolução","Performance","Contabilidade"]).map(t=>
           <div key={t} className={"tab "+(pageTab===t?"active":"")} onClick={()=>setPageTab(t)}>{t}</div>
         )}
       </div>
@@ -4853,6 +4996,7 @@ function Financeiro({state, updateState, go, pessoal}){
         );
       })()}
 
+      {pageTab==="Cartões e dívidas" && pessoal && <CartoesDividas financa={financa} onFinanca={onFinanca}/>}
       {pageTab==="Performance" && !pessoal && <Performance state={state} updateState={updateState} embutido/>}
       {pageTab==="Contabilidade" && (()=>{
         const anoAtual = now.getFullYear();
