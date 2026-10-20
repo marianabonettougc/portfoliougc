@@ -15,7 +15,8 @@
 // Estilo CapCut (referências de out/2026: vídeo dela da Eudora e da Rafa Chagas): legenda
 // Poppins média, minúscula, amarela clarinha com sombra suave, 1 a 4 palavras por vez;
 // palavras chamativas grandes (Fredoka, cor viva, sombra dura) com frase manuscrita
-// (Caveat); título em caixinhas pastel com figurinhas, cursor e moldura de seleção;
+// (Caveat); título limpo em serifada itálica, sem caixinhas, figurinhas nem cursor (ela
+// pediu para tirar: o título "capcut" de caixinhas foi removido e vira "simples");
 // confete e tremidinha nos momentos fortes. Nunca mexe na cor do vídeo (isso ela faz no
 // CapCut). Editor de legendas: mudar o texto, juntar com a próxima, apagar e marcar como
 // chamativa (fica guardado por palavra, então sobrevive a correções e reedições).
@@ -56,7 +57,7 @@
   const REFS_NOVAS = `REFERÊNCIAS NOVAS (out/2026, valem acima do resto: vídeo dela da Eudora e os da Rafa Chagas)
 - Legenda: Poppins média, minúscula, amarelo clarinho (ou branco), sem contorno, só sombra suave; no meio da tela, 1 a 4 palavras por vez.
 - Palavras chamativas: a palavra forte entra grande em fonte arredondada pesada, cor viva (verde-limão, lilás, amarelo), sombra dura, com pop; o resto da frase pequeno em letra manuscrita.
-- Título do gancho em caixinhas pastel empilhadas com texto preto forte, clique de mouse em cada uma, figurinhas (estrela, flor, bolinhas) e cursor com moldura de seleção.
+- Título do gancho limpo, sem caixinhas, figurinhas ou cursor.
 - Confete verde-limão e tremidinha nos momentos fortes. Nunca mexer na cor do vídeo.`;
   const MARCA_REFS2 = "REFERÊNCIAS ATUAIS (out/2026, v2";
   const REFS_V2 = `REFERÊNCIAS ATUAIS (out/2026, v2: valem acima de tudo; vídeos dela DdIK7JosJYp, Daa8wYaCgkQ, DaN7lnRi16X e referências DeMvcGFt4Ap, DWzaZKBj6I7, DJQEn0vA8Vi, DeIOo6btYw7, DecyDPaJ_Zs)
@@ -65,7 +66,9 @@
 - Palavra forte da frase em destaque grande; título curto no começo; figurinhas pontuais (estrelas, capacete, coração).
 - B-roll de produto cobrindo a fala (close do produto, detalhe, print de tela/busca), cortes secos e zoom rápido nas viradas.
 - Sons do próprio produto sincronizados com o gesto (chuveiro, spray, secador, embalagem) e pop/ding quando entra texto; confete nos momentos de alegria.
+- Título do gancho limpo (serifada itálica, sem caixinhas, figurinhas nem cursor: ela odiou esse estilo).
 - Nunca mexer na cor do vídeo.`;
+  const MARCA_SEM_CAIXA = "NUNCA caixinhas coloridas no título";
   const PADRAO = `PADRÃO DE EDIÇÃO DA MARI (tirado das referências que ela gosta)
 
 RITMO
@@ -82,7 +85,7 @@ LEGENDA (estilo CapCut que ela escolheu: vídeo dela da Eudora e os da Rafa Chag
 - Palavras chamativas: a palavra forte da frase (benefício, número, produto, virada) entra grande, numa fonte arredondada bem pesada, em cor viva (verde-limão, lilás, amarelo), com sombra dura, levemente torta, com pop; o resto da frase aparece pequeno em letra manuscrita em cima.
 
 TÍTULOS E GRAFISMOS
-- Título do gancho em caixinhas coloridas pastel (azul-céu, amarelo, rosa) empilhadas, texto preto bem forte minúsculo, cada caixinha entrando com clique de mouse; figurinhas em volta (estrela amarela com contorno preto, florzinha branca, bolinhas brilhantes) e um cursor de mouse com moldura de seleção, como se estivesse editando no CapCut.
+- Título do gancho limpo: frase curta em serifada itálica, amarelo clarinho, sombra suave. NUNCA caixinhas coloridas, figurinhas ou cursor de mouse (ela odiou).
 - Confete verde-limão e uma tremidinha nos momentos fortes.
 - Título criativo no começo (modelos do CapCut tipo "mesclador" ou título feito no Canva com fundo transparente, animado).
 - Título condensado (curto) em duas fontes: uma forte e a palavra de destaque em serifa itálica (a Bia usa Scholar itálico + Buzzi). Estrelinhas copiadas de "star character" do Google perto do destaque.
@@ -120,7 +123,7 @@ ESTRUTURA DE UGC
 
   const EFEITOS = { woosh: "Woosh", pop: "Pop", click: "Click", shutter: "Shutter", typing: "Typing", riser: "Riser", hit: "Hit", ding: "Ding" };
   const ESTILOS = { capcut: "CapCut (Poppins média, minúscula, sombra suave)", minimal: "Fina e branca", bold: "Forte com contorno", caixa: "Caixinha bege" };
-  const TITULOS = { capcut: "Caixinhas coloridas com figurinhas e cursor (CapCut)", etapas: "Em etapas com clique (duas fontes e estrelinhas)", frase: "Frase gigante na tela (3 cores)", caixa: "Caixinhas" };
+  const TITULOS = { simples: "Limpo, serifada itálica (sem caixinhas)", etapas: "Em etapas com clique (duas fontes e estrelinhas)", frase: "Frase gigante na tela (3 cores)", caixa: "Caixinhas" };
   // fontes da legenda: "minha" é a fonte que ela enviou (Bootzy do CapCut), guardada em configuracoes "fonte_legenda"
   const FONTES_LEG = { minha: "Minha fonte (Bootzy)", montserrat: "Sem serifa forte (Montserrat)", poppins: "Sem serifa média (Poppins)", nunito: "Arredondada forte (Nunito)", dmserif: "Serifada itálica (DM Serif)", instrument: "Serifada itálica fina (Instrument Serif)" };
   const fonteLeg = (tam) => ({
@@ -134,13 +137,13 @@ ESTRUTURA DE UGC
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { fonteLeg: "montserrat", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: true, sonsChamativas: true, confete: true, tremer: true, flash: false, altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "capcut", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
+    opc: { fonteLeg: "montserrat", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: true, sonsChamativas: true, confete: true, tremer: true, flash: false, altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.6, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
     correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, projeto: null, projetos: [], pendentes: null, salvando: "",
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
-  try { const salvo = JSON.parse(localStorage.getItem("ed-opc2") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); } catch (e) { /* sem armazenamento */ }
+  try { const salvo = JSON.parse(localStorage.getItem("ed-opc2") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
   const OPC_VISUAIS = ["fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"];
   function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc2", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
@@ -189,6 +192,7 @@ ESTRUTURA DE UGC
       const { data } = await banco().from("configuracoes").select("valor").eq("chave", "padrao_edicao").maybeSingle();
       if (data && data.valor) { st.padrao = String(data.valor); st.padraoSalvo = true; }
       // uma vez: acrescenta no padrão salvo o estudo das referências novas (CapCut, out/2026)
+      if (st.padraoSalvo && !st.padrao.includes(MARCA_SEM_CAIXA)) { try { await salvarPadrao(st.padrao.trim() + "\n- " + MARCA_SEM_CAIXA + ", figurinhas ou cursor de mouse (ela odiou). Título limpo em serifada itálica."); } catch (e) { /* tenta na próxima */ } }
       if (st.padraoSalvo && !st.padrao.includes(MARCA_REFS2)) { try { await salvarPadrao(st.padrao.trim() + "\n\n" + REFS_V2); } catch (e) { /* tenta na próxima */ } }
     } catch (e) { /* fica o padrão de fábrica */ }
   }
@@ -413,6 +417,7 @@ ESTRUTURA DE UGC
     st.tema = d.tema || ""; st.roteiro = d.roteiro || ""; st.plano = d.plano || null; st.titulo = d.titulo || ""; st.tituloDestaque = d.tituloDestaque || "";
     st.editLeg = d.editLeg || {}; st.correcoes = d.correcoes || [];
     if (d.opc) Object.assign(st.opc, d.opc);
+    if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
     st.efeitosSalvos = Array.isArray(d.efeitos) ? d.efeitos.map((e) => ({ ...e, id: uid() })) : null;
     st.pendentes = (d.clipes || []).length ? d.clipes.map((c) => ({ ...c, usado: false })) : null;
     const sec = document.getElementById("aba-" + ABA);
@@ -464,7 +469,7 @@ ESTRUTURA DE UGC
       const check = st.plano.roteiro_check;
       st.plano = { ...r.plano, roteiro_check: (r.plano.roteiro_check || []).length ? r.plano.roteiro_check : check };
       if (r.plano.titulo) { st.titulo = r.plano.titulo; st.tituloDestaque = r.plano.titulo_destaque || st.tituloDestaque; }
-      Object.assign(st.opc, r.opc || {});
+      Object.assign(st.opc, r.opc || {}); if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
       st.correcoes.push({ texto, resposta: r.resposta || "Corrigido.", regra: r.regra || "" });
       montar(); st.t = 0;
       if (st.lembrar) {
@@ -621,7 +626,7 @@ ESTRUTURA DE UGC
   function sonsDoTitulo() {
     st.efeitos = st.efeitos.filter((e) => !e.doTitulo);
     if (st.titulo && st.opc.titulo && st.opc.sonsTitulo !== false) {
-      if (st.opc.estiloTitulo === "etapas" || st.opc.estiloTitulo === "capcut") partesTitulo().forEach((p, i) => st.efeitos.push({ id: uid(), t: p.t, tipo: "click", por_que: `título, parte ${i + 1}`, doTitulo: true }));
+      if (st.opc.estiloTitulo === "etapas") partesTitulo().forEach((p, i) => st.efeitos.push({ id: uid(), t: p.t, tipo: "click", por_que: `título, parte ${i + 1}`, doTitulo: true }));
       else st.efeitos.push({ id: uid(), t: 0.05, tipo: "pop", por_que: "entrada do título", doTitulo: true });
     }
     st.efeitos = st.efeitos.filter((e) => !e.daChamativa);
@@ -800,66 +805,17 @@ ESTRUTURA DE UGC
     for (const m of st.fortes || []) { const d = t - m; if (d >= 0 && d < 0.28) { const a = (1 - d / 0.28) * 0.012; return { x: Math.sin(d * 90) * a, y: Math.cos(d * 70) * a, z: a * 2 }; } }
     return { x: 0, y: 0, z: 0 };
   }
-  // título CapCut: caixinhas pastel empilhadas com texto preto, figurinhas, cursor e moldura de seleção
-  function tituloCapcut(t, u, W, H) {
+  // título limpo: frase curta em serifada itálica, cor da legenda, sombra suave, entra subindo de leve
+  function tituloSimples(t, u, W, H) {
     const saida = t > DUR_TITULO - 0.3 ? Math.max(0, (DUR_TITULO - t) / 0.3) : 1;
-    const partes = partesTitulo(), fundos = ["#bfe3ff", "#fff1a6", "#ffc9e3"], y0 = H * 0.22, alt = 150 * u;
-    c2d.save(); c2d.globalAlpha = saida; c2d.textAlign = "center"; c2d.textBaseline = "middle";
-    const caixas = [];
-    partes.forEach((p, i) => {
-      if (t < p.t) return;
-      let tam = 92 * u; c2d.font = MONT(tam);
-      const texto = p.texto.toLowerCase();
-      let w = c2d.measureText(texto).width; if (w > W * 0.78) { tam *= (W * 0.78) / w; c2d.font = MONT(tam); w = c2d.measureText(texto).width; }
-      const k = Math.min(1, (t - p.t) / 0.14), esc0 = k < 1 ? 0.5 + 0.62 * suave(k) : 1.12 - 0.12 * Math.min(1, (t - p.t - 0.14) / 0.1);
-      const y = y0 + (i - (partes.length - 1) / 2) * alt, rot = (i % 2 ? 2 : -2) * Math.PI / 180, padX = 34 * u, bh = tam * 1.35;
-      c2d.save(); c2d.translate(W / 2, y); c2d.rotate(rot); c2d.scale(esc0, esc0);
-      c2d.fillStyle = fundos[i % 3]; arredondado(-w / 2 - padX, -bh / 2, w + padX * 2, bh, 22 * u); c2d.fill();
-      c2d.fillStyle = "#111"; c2d.fillText(texto, 0, 4 * u);
-      c2d.restore();
-      caixas.push({ x: W / 2, y, w: w + padX * 2, h: bh, t0: p.t, i });
-    });
-    if (caixas.length) {
-      const a = caixas[0], ult = caixas[caixas.length - 1], gira = Math.sin(t * 4) * 0.25;
-      estrelaContorno(a.x - a.w / 2 - 10 * u, a.y - a.h * 0.75, 40 * u, gira);
-      flor(a.x + a.w / 2 + 34 * u, a.y - 6 * u, 34 * u, t);
-      bolinha(ult.x + ult.w / 2 + 40 * u, ult.y + 10 * u, 22 * u, "#ff8fc8");
-      bolinha(ult.x + ult.w / 2 + 84 * u, ult.y - 26 * u, 15 * u, "#8fd0ff");
-      // moldura de seleção na caixa que acabou de entrar, com cursor de mouse
-      const d = t - ult.t0;
-      if (d < 0.45) {
-        c2d.save(); c2d.strokeStyle = "#2f8cff"; c2d.lineWidth = 4 * u; c2d.setLineDash([12 * u, 8 * u]);
-        c2d.strokeRect(ult.x - ult.w / 2 - 12 * u, ult.y - ult.h / 2 - 12 * u, ult.w + 24 * u, ult.h + 24 * u); c2d.setLineDash([]);
-        c2d.fillStyle = "#fff";
-        for (const [cx, cy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const hx = ult.x + cx * (ult.w / 2 + 12 * u), hy = ult.y + cy * (ult.h / 2 + 12 * u); c2d.beginPath(); c2d.arc(hx, hy, 9 * u, 0, Math.PI * 2); c2d.fill(); c2d.stroke(); }
-        c2d.restore();
-      }
-      const ant = caixas[caixas.length - 2] || { x: W * 0.85, y: H * 0.08, w: 0, h: 0 };
-      const km = Math.min(1, d / 0.25), cx = ant.x + ant.w * 0.3 + (ult.x + ult.w * 0.3 - ant.x - ant.w * 0.3) * suave(km), cy = ant.y + ant.h * 0.35 + (ult.y + ult.h * 0.35 - ant.y - ant.h * 0.35) * suave(km);
-      cursor(cx, cy, 46 * u * (d > 0.25 && d < 0.33 ? 0.85 : 1));
-    }
+    const k = Math.min(1, t / 0.35), y = H * 0.24 + (1 - suave(k)) * 30 * u;
+    let tam = 118 * u; const fonte = (x) => `italic 400 ${x}px "DM Serif Display", Georgia, serif`;
+    const linhas = quebrar(st.titulo.toLowerCase(), W * 0.82, fonte(tam));
+    c2d.save(); c2d.globalAlpha = saida * suave(k); c2d.font = fonte(tam); c2d.textAlign = "center"; c2d.textBaseline = "middle";
+    c2d.shadowColor = "rgba(0,0,0,.5)"; c2d.shadowBlur = 18 * u; c2d.shadowOffsetY = 3 * u;
+    c2d.fillStyle = st.opc.corLegenda || "#fff3b0";
+    linhas.forEach((l, i) => c2d.fillText(l, W / 2, y + (i - (linhas.length - 1) / 2) * tam * 1.05));
     c2d.restore();
-  }
-  function estrelaContorno(x, y, r, rot) {
-    c2d.save(); c2d.translate(x, y); c2d.rotate(rot); c2d.beginPath();
-    for (let i = 0; i < 10; i++) { const a = (Math.PI / 5) * i - Math.PI / 2, rr = i % 2 ? r * 0.45 : r; c2d.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
-    c2d.closePath(); c2d.fillStyle = "#ffd426"; c2d.fill(); c2d.lineWidth = r * 0.12; c2d.strokeStyle = "#111"; c2d.lineJoin = "round"; c2d.stroke(); c2d.restore();
-  }
-  function flor(x, y, r, t) {
-    c2d.save(); c2d.translate(x, y); c2d.rotate(t * 0.8);
-    c2d.fillStyle = "#ffffff"; c2d.strokeStyle = "rgba(0,0,0,.25)"; c2d.lineWidth = r * 0.05;
-    for (let i = 0; i < 8; i++) { c2d.save(); c2d.rotate((Math.PI / 4) * i); c2d.beginPath(); c2d.ellipse(0, -r * 0.58, r * 0.26, r * 0.5, 0, 0, Math.PI * 2); c2d.fill(); c2d.stroke(); c2d.restore(); }
-    c2d.beginPath(); c2d.arc(0, 0, r * 0.3, 0, Math.PI * 2); c2d.fillStyle = "#ffcc33"; c2d.fill(); c2d.restore();
-  }
-  function bolinha(x, y, r, cor) {
-    const gr = c2d.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
-    gr.addColorStop(0, "#ffffff"); gr.addColorStop(0.35, cor); gr.addColorStop(1, cor);
-    c2d.save(); c2d.fillStyle = gr; c2d.beginPath(); c2d.arc(x, y, r, 0, Math.PI * 2); c2d.fill(); c2d.restore();
-  }
-  function cursor(x, y, s) {
-    c2d.save(); c2d.translate(x, y); c2d.beginPath();
-    c2d.moveTo(0, 0); c2d.lineTo(0, s); c2d.lineTo(s * 0.27, s * 0.76); c2d.lineTo(s * 0.45, s * 1.1); c2d.lineTo(s * 0.6, s * 1.03); c2d.lineTo(s * 0.43, s * 0.7); c2d.lineTo(s * 0.75, s * 0.7); c2d.closePath();
-    c2d.fillStyle = "#fff"; c2d.fill(); c2d.lineWidth = s * 0.07; c2d.strokeStyle = "#111"; c2d.lineJoin = "round"; c2d.stroke(); c2d.restore();
   }
   const SERIFA = (tam) => `italic 400 ${tam}px "DM Serif Display", Georgia, serif`;
   const BASTAO = (tam) => `800 ${tam}px Poppins, "Helvetica Neue", Arial, sans-serif`;
@@ -869,7 +825,7 @@ ESTRUTURA DE UGC
     c2d.closePath(); c2d.fill(); c2d.restore();
   }
   function desenharTitulo(t, u, W, H) {
-    if (st.opc.estiloTitulo === "capcut") return tituloCapcut(t, u, W, H);
+    if (st.opc.estiloTitulo === "simples" || st.opc.estiloTitulo === "capcut") return tituloSimples(t, u, W, H);
     if (st.opc.estiloTitulo === "etapas") return tituloEtapas(t, u, W, H);
     if (st.opc.estiloTitulo === "frase") return tituloFrase(t, u, W, H);
     return tituloCaixa(t, u, W, H);

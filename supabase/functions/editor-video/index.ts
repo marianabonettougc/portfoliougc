@@ -119,7 +119,7 @@ porLegenda: palavras por legenda no estilo capcut, de 1 a 4
 chamativas: true ou false (palavras de destaque viram texto grande colorido com sombra dura e frase manuscrita)
 sonsChamativas: true ou false (pop quando entra palavra chamativa)
 confete, tremer (tremidinha no impacto), flash (flash na troca de cena): true ou false
-estiloTitulo: "capcut" (caixinhas pastel com figurinhas e cursor, o padrão dela) | "etapas" (em etapas com clique) | "frase" (frase gigante, 3 cores) | "caixa" (caixinhas)
+estiloTitulo: "simples" (limpo, serifada itálica, o padrão dela; NUNCA use caixinhas, ela odiou) | "etapas" (em etapas com clique) | "frase" (frase gigante, 3 cores) | "caixa" (caixinhas)
 altura: número de 0.35 (legenda no alto) a 0.88 (legenda bem embaixo)
 cor: cor do destaque em hexadecimal, ex. "#f2c14e"
 vol: volume dos efeitos de 0 a 1.2
@@ -127,7 +127,7 @@ sonsTitulo: true ou false (o painel põe sozinho cliques/pop na entrada do títu
 maiusculas, titulo, efeitos, silencio, erros, zoomCortes, zoomEnfase: true ou false (efeitos false tira todos os sons)`;
 const OPC_OK: Record<string, (v: any) => any> = {
   estilo: (v) => ["capcut", "minimal", "bold", "caixa"].includes(v) ? v : undefined,
-  estiloTitulo: (v) => ["capcut", "etapas", "frase", "caixa"].includes(v) ? v : undefined,
+  estiloTitulo: (v) => ["simples", "etapas", "frase", "caixa"].includes(v) ? v : undefined,
   fonteLeg: (v) => ["minha", "montserrat", "poppins", "nunito", "dmserif", "instrument"].includes(v) ? v : undefined,
   sombra: (v) => ["suave", "dura"].includes(v) ? v : undefined,
   corLegenda: (v) => /^#[0-9a-f]{6}$/i.test(String(v)) ? String(v) : undefined,
