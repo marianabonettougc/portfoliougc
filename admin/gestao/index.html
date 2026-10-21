@@ -717,8 +717,8 @@
   .row-item.job-linha{ grid-template-columns:minmax(0,1fr) 200px 120px 190px 152px; }
   .job-datas{ font-size:13px; }
   .search input{ font-size:13.5px; }
-  /* Financeiro CPF em painel (PainelCPF): cartões brancos arredondados, lilás e verde-limão */
-  .fx{ --fx-lil:#7b61e8; --fx-lil2:#b3a1f5; --fx-lil3:#d9cffb; --fx-lil4:#efeafd; --fx-lim:#93cf6b; --fx-lim2:#dcefc4; --fx-amb:#f0c766; --fx-ver:#d0574a; --fx-ver2:#f8dfdc; --fx-cinza:#f2f0f5; --fx-txt:#1f1b2d; --fx-suave:#7d778c; color:var(--fx-txt); }
+  /* Financeiro CPF em painel (PainelCPF): cartões arredondados na paleta da Mari (bege, marrom, terracota e verde do painel) */
+  .fx{ --fx-lil:#6b4a35; --fx-lil2:#a87058; --fx-lil3:#ead9c6; --fx-lil4:#f3e8dc; --fx-lim:#4f7a54; --fx-lim2:#e4eee2; --fx-amb:#c9973b; --fx-ver:#b8473a; --fx-ver2:#f6e0dc; --fx-cinza:#f1e8dd; --fx-txt:#3d2b20; --fx-suave:#7a6355; color:var(--fx-txt); }
   .fx-topo{ display:flex; justify-content:space-between; align-items:flex-end; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
   .fx-topo h1{ font-family:Poppins; font-size:30px; font-weight:600; margin:0; letter-spacing:-.01em; }
   .fx-topo p{ margin:4px 0 0; color:var(--fx-suave); font-size:14px; }
@@ -730,16 +730,16 @@
   .fx-mes button{ border:0; background:transparent; width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--fx-txt); }
   .fx-mes button:hover{ background:var(--fx-cinza); }
   .fx-btn{ border:0; background:var(--fx-txt); color:#fff; border-radius:999px; padding:10px 18px; font:500 13.5px Poppins,sans-serif; display:inline-flex; align-items:center; gap:7px; cursor:pointer; }
-  .fx-btn.claro{ background:#fff; color:var(--fx-txt); border:1px solid #e6e2ee; }
+  .fx-btn.claro{ background:#fff; color:var(--fx-txt); border:1px solid #e3d3c0; }
   .fx-kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:14px; margin-bottom:14px; }
-  .fx-kpi{ background:#fff; border-radius:20px; padding:16px 18px; min-height:96px; display:flex; flex-direction:column; justify-content:space-between; }
+  .fx-kpi{ background:var(--card-bg,#fffdf9); border-radius:20px; padding:16px 18px; min-height:96px; display:flex; flex-direction:column; justify-content:space-between; }
   .fx-kpi.lil{ background:var(--fx-lil3); } .fx-kpi.lim{ background:var(--fx-lim2); } .fx-kpi.ver{ background:var(--fx-ver2); }
-  .fx-kpi-t{ display:flex; justify-content:space-between; align-items:center; font-size:13px; color:#4a4458; gap:8px; }
+  .fx-kpi-t{ display:flex; justify-content:space-between; align-items:center; font-size:13px; color:#5b4535; gap:8px; }
   .fx-kpi-ic{ width:30px; height:30px; border-radius:50%; border:1px solid rgba(0,0,0,.08); display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.6); flex-shrink:0; }
   .fx-kpi-v{ font:600 25px Poppins,sans-serif; letter-spacing:-.02em; display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px; }
   .fx-kpi-s{ font-size:11.5px; color:var(--fx-suave); margin-top:2px; }
-  .fx-chip{ font:600 10.5px Poppins,sans-serif; padding:3px 8px; border-radius:999px; background:#e7f5dc; color:#3c7a20; white-space:nowrap; }
-  .fx-chip.mal{ background:#fbe3e0; color:#b3402f; } .fx-chip.neutro{ background:var(--fx-cinza); color:var(--fx-suave); } .fx-chip.amb{ background:#fbefcf; color:#8a6410; }
+  .fx-chip{ font:600 10.5px Poppins,sans-serif; padding:3px 8px; border-radius:999px; background:#e4eee2; color:#4f7a54; white-space:nowrap; }
+  .fx-chip.mal{ background:#f6e0dc; color:#b8473a; } .fx-chip.neutro{ background:var(--fx-cinza); color:var(--fx-suave); } .fx-chip.amb{ background:#f7ebcd; color:#9a6b12; }
   .fx-grade{ display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:14px; margin-bottom:14px; }
   .fx-grade.meio{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
   .fx-caixa{ background:#fff; border-radius:22px; padding:20px; min-width:0; }
@@ -777,13 +777,13 @@
   .fx-passo .nn{ width:24px; height:24px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font:600 12px Poppins,sans-serif; flex-shrink:0; }
   .fx-cartoes{ display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:14px; }
   .fx-plast{ border-radius:20px; padding:16px 18px; background:#fff; display:flex; flex-direction:column; gap:10px; }
-  .fx-plast .frente{ border-radius:14px; padding:14px; color:#fff; background:linear-gradient(135deg,#8c74ef,#5d45c9); min-height:84px; display:flex; flex-direction:column; justify-content:space-between; }
-  .fx-plast.quitado .frente{ background:linear-gradient(135deg,#a9d98a,#6ea94a); }
-  .fx-plast.atraso .frente{ background:linear-gradient(135deg,#e48a7e,#c0503f); }
+  .fx-plast .frente{ border-radius:14px; padding:14px; color:#fff; background:linear-gradient(135deg,#8a6650,#5a3d2b); min-height:84px; display:flex; flex-direction:column; justify-content:space-between; }
+  .fx-plast.quitado .frente{ background:linear-gradient(135deg,#7fa583,#4f7a54); }
+  .fx-plast.atraso .frente{ background:linear-gradient(135deg,#cf7a6c,#b8473a); }
   .fx-plast .frente b{ font:600 16px Poppins,sans-serif; } .fx-plast .frente small{ opacity:.85; font-size:11.5px; }
   .fx-par{ display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; font-size:12px; color:var(--fx-suave); }
   .fx-par b{ display:block; color:var(--fx-txt); font-size:14px; font-weight:600; }
-  .fx-lista .item{ display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid #f0edf4; font-size:13.5px; }
+  .fx-lista .item{ display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid #efe3d5; font-size:13.5px; }
   .fx-lista .item:first-child{ border-top:0; }
   .fx-lista .item .x{ flex:1; min-width:0; } .fx-lista .item .x small{ display:block; color:var(--fx-suave); font-size:11.5px; }
   .fx-icone{ border:0; background:var(--fx-cinza); width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--fx-txt); flex-shrink:0; }
@@ -4624,7 +4624,7 @@ function FxKpi({titulo, valor, chip, chipTom, sub, icone, tom}){
     </div>
   );
 }
-const fxCorItem = (i) => ["#7b61e8","#93cf6b","#f0b950","#e7857a","#5aa5d6","#b3a1f5","#6ea94a","#c879c8"][i%8];
+const fxCorItem = (i) => ["#6b4a35","#4f7a54","#c9973b","#b8473a","#4a6a8a","#d3a98f","#7fa583","#8a6650"][i%8];
 
 function PainelCPF({state, updateState, financa, onFinanca}){
   const tx = state.transacoesCpf || [];
@@ -4714,9 +4714,9 @@ function PainelCPF({state, updateState, financa, onFinanca}){
   const maxMapa = Math.max(1, ...Object.values(linhasMapa).flat().filter(Boolean).map(t=>Number(t.valor)));
   const corCelula = (t) => {
     if(!t) return {};
-    if(t.status==="Confirmado"){ const a = 0.35 + 0.65*Math.min(1, Number(t.valor)/maxMapa); return {background:`rgba(123,97,232,${a.toFixed(2)})`}; }
-    if(t.atrasado || t.data < hojeIso.slice(0,8)+"01") return {background:"#e7857a"};
-    return {background:"#f6f3fb", color:"#7d778c"};
+    if(t.status==="Confirmado"){ const a = 0.35 + 0.65*Math.min(1, Number(t.valor)/maxMapa); return {background:`rgba(107,74,53,${a.toFixed(2)})`}; }
+    if(t.atrasado || t.data < hojeIso.slice(0,8)+"01") return {background:"#b8473a"};
+    return {background:"#f6eee4", color:"#7a6355"};
   };
 
   const usoCartoes = cartoes.filter(c=>Number(c.limite)>0).map(c=>({...c, uso: Math.max(0, Math.min(1, 1-Number(c.disponivel||0)/Number(c.limite)))})).sort((a,b)=>b.uso-a.uso);
@@ -4751,7 +4751,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
   const Consultora = ({max}) => (
     <div className="fx-consultora">
       <h3 style={{margin:"0 0 4px", font:"500 18px Poppins, sans-serif"}}><Icon name="auto_awesome" size={19}/>Sua consultora financeira</h3>
-      <p style={{fontSize:12, color:"#4f5a43", margin:"0 0 6px"}}>O que fazer agora, na ordem, olhando os seus números.</p>
+      <p style={{fontSize:12, color:"#4f6a52", margin:"0 0 6px"}}>O que fazer agora, na ordem, olhando os seus números.</p>
       {conselhos.length===0 ? <p style={{fontSize:13.5}}>Tudo em dia por aqui.</p> :
         conselhos.slice(0, max||conselhos.length).map((c,i)=><div className="fx-passo" key={i}><span className="nn">{i+1}</span><div>{c}</div></div>)}
       {plano.meses!==null && dividas.length>0 && <div className="fx-passo"><span className="nn"><Icon name="flag" size={14}/></span><div><b>Seguindo o plano, você sai das dívidas em {fxMesDaqui(plano.meses)}</b> ({plano.meses} meses), colocando {fmtMoney(extra)} a mais por mês. <a href="#" onClick={e=>{e.preventDefault(); setAba("Sair das dívidas");}}>Ver o plano</a></div></div>}
@@ -4792,7 +4792,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
               <div className="fx-cat" key={c}>
                 <span className="fx-cat-ic"><Icon name={icCat[c]||"category"} size={16}/></span>
                 <span>{c}<small>{doMes.filter(t=>t.tipo==="despesa"&&(t.categoria||"Outros")===c).length} lançamentos</small></span>
-                <div className="fx-barra"><i style={{width:(v/maxCat*100)+"%", background:i===0?"#7b61e8":i===1?"#9c87f0":i===2?"#c4b6f7":"#93cf6b"}}/></div>
+                <div className="fx-barra"><i style={{width:(v/maxCat*100)+"%", background:i===0?"#6b4a35":i===1?"#a87058":i===2?"#cdb39b":"#4f7a54"}}/></div>
                 <span className="fx-num">{fmtMoney(v)}</span>
                 {d ? <span className={"fx-chip "+d[1]}>{d[0]}</span> : <span/>}
               </div>); })}
@@ -4803,7 +4803,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
               <div className="fx-pessoa" key={c.id}>
                 <span className="fx-av" style={{background:fxCorItem(i)}}>{c.nome.slice(0,2).toUpperCase()}</span>
                 <span>{c.nome}<small>{fmtMoney(c.limite)} de limite</small></span>
-                <div className="fx-barra"><i style={{width:(c.uso*100)+"%", background:c.uso>0.8?"#e7857a":c.uso>0.3?"#9c87f0":"#93cf6b"}}/></div>
+                <div className="fx-barra"><i style={{width:(c.uso*100)+"%", background:c.uso>0.8?"#b8473a":c.uso>0.3?"#a87058":"#4f7a54"}}/></div>
                 <span className="fx-num">{Math.round(c.uso*100)}%</span>
               </div>
             ))}
@@ -4813,14 +4813,14 @@ function PainelCPF({state, updateState, financa, onFinanca}){
         </div>
         <div className="fx-grade">
           <div className="fx-caixa">
-            <div className="fx-cab"><div><h3>Entrou x saiu em {ref.y}</h3><p className="sub">Lilás é o que entrou, rosa é o que saiu. Mês verde fechou no positivo.</p></div></div>
+            <div className="fx-cab"><div><h3>Entrou x saiu em {ref.y}</h3><p className="sub">Marrom é o que entrou, terracota é o que saiu. Mês verde fechou no positivo.</p></div></div>
             <div className="fx-colunas">
               {anoMeses.map(x=>(
                 <div className="fx-col" key={x.i} style={{opacity: x.e||x.s ? 1 : .35}}>
-                  <b style={{color: x.e-x.s>=0 ? "#3c7a20" : "#b3402f"}}>{x.e||x.s ? fxK(x.e-x.s) : ""}</b>
+                  <b style={{color: x.e-x.s>=0 ? "#4f7a54" : "#b8473a"}}>{x.e||x.s ? fxK(x.e-x.s) : ""}</b>
                   <div className="fx-duplas" style={{height:"75%"}}>
-                    <div style={{height:(x.e/maxAno*100)+"%", background: x.i===ref.m ? "#7b61e8" : "#c4b6f7"}} title={"Entrou "+fmtMoney(x.e)}/>
-                    <div style={{height:(x.s/maxAno*100)+"%", background: x.i===ref.m ? "#e7857a" : "#f3c2bb"}} title={"Saiu "+fmtMoney(x.s)}/>
+                    <div style={{height:(x.e/maxAno*100)+"%", background: x.i===ref.m ? "#6b4a35" : "#cdb39b"}} title={"Entrou "+fmtMoney(x.e)}/>
+                    <div style={{height:(x.s/maxAno*100)+"%", background: x.i===ref.m ? "#b8473a" : "#e7b9b0"}} title={"Saiu "+fmtMoney(x.s)}/>
                   </div>
                   <span style={{fontWeight:x.i===ref.m?700:400}}>{x.nome}</span>
                 </div>
@@ -4838,7 +4838,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
               </tr>
             ))}
           </tbody></table></div>
-          <div className="fx-legenda"><span><i style={{background:"#c4b6f7"}}/><i style={{background:"#7b61e8"}}/>pago</span><span><i style={{background:"#f6f3fb", border:"1px solid #e6e2ee"}}/>a pagar</span><span><i style={{background:"#e7857a"}}/>vencido sem baixa</span></div>
+          <div className="fx-legenda"><span><i style={{background:"#cdb39b"}}/><i style={{background:"#6b4a35"}}/>pago</span><span><i style={{background:"#f6eee4", border:"1px solid #e3d3c0"}}/>a pagar</span><span><i style={{background:"#b8473a"}}/>vencido sem baixa</span></div>
         </div>
       </>}
 
@@ -4858,7 +4858,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
                 <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}><b>{c.nome}</b><span className="fx-chip neutro" style={{background:"rgba(255,255,255,.25)", color:"#fff"}}>{c.status||"Ativo"}</span></div>
                 <div style={{display:"flex", justifyContent:"space-between", alignItems:"flex-end"}}><small>{c.vencimento ? "vence dia "+c.vencimento : "sem vencimento"}{c.juros ? " · "+String(c.juros).replace(".",",")+"% a.m." : ""}</small><Icon name="contactless" size={20}/></div>
               </div>
-              {uso!==null && <div><div style={{display:"flex", justifyContent:"space-between", fontSize:11.5, color:"#7d778c", marginBottom:4}}><span>Limite usado</span><span>{Math.round(uso*100)}% de {fmtMoney(c.limite)}</span></div><div className="fx-barra"><i style={{width:(uso*100)+"%", background:uso>0.8?"#e7857a":uso>0.3?"#9c87f0":"#93cf6b"}}/></div></div>}
+              {uso!==null && <div><div style={{display:"flex", justifyContent:"space-between", fontSize:11.5, color:"#7a6355", marginBottom:4}}><span>Limite usado</span><span>{Math.round(uso*100)}% de {fmtMoney(c.limite)}</span></div><div className="fx-barra"><i style={{width:(uso*100)+"%", background:uso>0.8?"#b8473a":uso>0.3?"#a87058":"#4f7a54"}}/></div></div>}
               <div className="fx-par">
                 <span>Fatura de {FX_MESES[ref.m].toLowerCase()}<b>{faturaMes ? fmtMoney(faturaMes.valor) : "—"}</b></span>
                 <span>Situação da fatura<b>{faturaMes ? (faturaMes.status==="Confirmado" ? "Paga" : faturaMes.atrasado ? "Atrasada" : "A pagar") : "—"}</b></span>
@@ -4866,7 +4866,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
                 <span>Falta pagar<b>{fmtMoney(fxDividaCartao(c,tx))}</b></span>
               </div>
               <div style={{display:"flex", gap:6, justifyContent:"flex-end"}}>
-                {faturaMes && <button className="fx-icone" title={faturaMes.status==="Confirmado"?"Marcar como a pagar":"Marcar fatura como paga"} onClick={()=>alternar(faturaMes)}><Icon name="check" size={16} style={{color:faturaMes.status==="Confirmado"?"#3c7a20":undefined}}/></button>}
+                {faturaMes && <button className="fx-icone" title={faturaMes.status==="Confirmado"?"Marcar como a pagar":"Marcar fatura como paga"} onClick={()=>alternar(faturaMes)}><Icon name="check" size={16} style={{color:faturaMes.status==="Confirmado"?"#4f7a54":undefined}}/></button>}
                 <button className="fx-icone" title="Editar" onClick={()=>setModal({tipo:"cartao", x:c})}><Icon name="edit" size={16}/></button>
                 <button className="fx-icone" title="Tirar" onClick={()=>tirar("cartoes", c)}><Icon name="delete" size={16}/></button>
               </div>
@@ -4890,12 +4890,12 @@ function PainelCPF({state, updateState, financa, onFinanca}){
                 <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}><b style={{fontSize:14.5}}>{e.nome}</b><span className="fx-chip" style={{background:"rgba(255,255,255,.25)", color:"#fff"}}>{e.status||"Ativo"}</span></div>
                 <small>{e.vencimento ? "vence dia "+e.vencimento : "sem vencimento"}{e.juros ? " · "+String(e.juros).replace(".",",")+"% a.m." : ""}</small>
               </div>
-              {prog!==null && <div><div style={{display:"flex", justifyContent:"space-between", fontSize:11.5, color:"#7d778c", marginBottom:4}}><span>{e.pagas||0} de {e.totalParcelas} parcelas pagas</span><span>{Math.round(prog*100)}%</span></div><div className="fx-barra"><i style={{width:(prog*100)+"%", background:"#93cf6b"}}/></div></div>}
+              {prog!==null && <div><div style={{display:"flex", justifyContent:"space-between", fontSize:11.5, color:"#7a6355", marginBottom:4}}><span>{e.pagas||0} de {e.totalParcelas} parcelas pagas</span><span>{Math.round(prog*100)}%</span></div><div className="fx-barra"><i style={{width:(prog*100)+"%", background:"#4f7a54"}}/></div></div>}
               <div className="fx-par">
                 <span>Parcela<b>{fmtMoney(e.parcela)}</b></span>
                 <span>Saldo devedor<b>{fmtMoney(e.saldo)}</b></span>
                 <span>Quitar hoje<b>{e.quitacao ? fmtMoney(e.quitacao) : "—"}</b></span>
-                <span>Economia quitando<b style={{color:econ>0?"#3c7a20":undefined}}>{econ>0 ? fmtMoney(econ) : "—"}</b></span>
+                <span>Economia quitando<b style={{color:econ>0?"#4f7a54":undefined}}>{econ>0 ? fmtMoney(econ) : "—"}</b></span>
               </div>
               <div style={{display:"flex", gap:6, justifyContent:"flex-end"}}>
                 <button className="fx-icone" title="Editar" onClick={()=>setModal({tipo:"emp", x:e})}><Icon name="edit" size={16}/></button>
@@ -4926,7 +4926,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
                 {anoMeses.map(x=>(
                   <div className="fx-col" key={x.i} style={{cursor:"pointer"}} onClick={()=>setRef({y:ref.y, m:x.i})}>
                     <b>{x.e ? fxK(x.e) : ""}</b>
-                    <div className="pilar" style={{height:(x.e/Math.max(1,...anoMeses.map(z=>z.e))*75)+"%", background: x.i===ref.m ? "#93cf6b" : "#d9cffb"}}/>
+                    <div className="pilar" style={{height:(x.e/Math.max(1,...anoMeses.map(z=>z.e))*75)+"%", background: x.i===ref.m ? "#4f7a54" : "#ead9c6"}}/>
                     <span style={{fontWeight:x.i===ref.m?700:400}}>{x.nome}</span>
                   </div>
                 ))}
@@ -4954,7 +4954,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
                   <div className="x"><b>{t.descricao}</b><small>{new Date(t.data+"T00:00:00").toLocaleDateString("pt-BR")}{t.categoria?" · "+t.categoria:""}{t.obs?" · "+t.obs:""}</small></div>
                   <span className={"fx-chip "+(t.status==="Confirmado"?"":"amb")}>{t.status==="Confirmado"?"Recebido":"A receber"}</span>
                   <span className="fx-num">{fmtMoney(t.valor)}</span>
-                  <button className="fx-icone" title="Recebido ou a receber" onClick={()=>alternar(t)}><Icon name="check" size={16} style={{color:t.status==="Confirmado"?"#3c7a20":undefined}}/></button>
+                  <button className="fx-icone" title="Recebido ou a receber" onClick={()=>alternar(t)}><Icon name="check" size={16} style={{color:t.status==="Confirmado"?"#4f7a54":undefined}}/></button>
                   <button className="fx-icone" title="Editar" onClick={()=>setModal({tipo:"tx", t})}><Icon name="edit" size={16}/></button>
                 </div>
               ))}
@@ -4986,7 +4986,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
           <div className="fx-caixa">
             <div className="fx-cab" style={{flexWrap:"wrap"}}>
               <div><h3>Seu plano, dívida por dívida</h3><p className="sub">Paga o mínimo de todas e joga o extra numa só. Quando ela acaba, o valor dela vai para a próxima.</p></div>
-              <div className="fx-abas" style={{background:"var(--fx-cinza, #f2f0f5)"}}>
+              <div className="fx-abas" style={{background:"var(--fx-cinza, #f1e8dd)"}}>
                 <button className={"fx-aba"+(metodo==="avalanche"?" on":"")} onClick={()=>setMetodo("avalanche")}>Juros maior primeiro</button>
                 <button className={"fx-aba"+(metodo==="bola"?" on":"")} onClick={()=>setMetodo("bola")}>Menor dívida primeiro</button>
               </div>
@@ -4998,7 +4998,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
             <div className="fx-lista">
               {plano.ordem.map((d,i)=>(
                 <div className="item" key={d.id}>
-                  <span className="fx-av" style={{background:i===0?"#7b61e8":"#c4b6f7", width:30, height:30, fontSize:12}}>{i+1}</span>
+                  <span className="fx-av" style={{background:i===0?"#6b4a35":"#cdb39b", width:30, height:30, fontSize:12}}>{i+1}</span>
                   <div className="x"><b>{d.nome}</b><small>{d.tipo} · mínimo {fmtMoney(d.minimo)}/mês{d.juros?` · ${String(d.juros).replace(".",",")}% a.m.`:""}</small></div>
                   <span className="fx-num" style={{minWidth:90}}>{fmtMoney(d.saldo)}</span>
                   <span className="fx-chip neutro" style={{minWidth:64, textAlign:"center"}}>{d.quitada ? fxMesDaqui(d.quitada) : "—"}</span>
@@ -5006,7 +5006,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
               ))}
               {dividas.length===0 && <p className="sub">Nenhuma dívida aberta. 🎉</p>}
             </div>
-            <p style={{fontSize:11.5, color:"#7d778c", marginBottom:0}}>Estimativa: usa a dívida e o mínimo anotados em Cartões e Empréstimos e não soma juros novos (as parcelas já têm juros). Se entrar compra nova no cartão, a data anda para frente.</p>
+            <p style={{fontSize:11.5, color:"#7a6355", marginBottom:0}}>Estimativa: usa a dívida e o mínimo anotados em Cartões e Empréstimos e não soma juros novos (as parcelas já têm juros). Se entrar compra nova no cartão, a data anda para frente.</p>
           </div>
           <Consultora/>
         </div>
@@ -5016,7 +5016,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
             {[divida, ...plano.linha].filter((_,i,a)=> a.length<=18 || i%Math.ceil(a.length/18)===0 || i===a.length-1).map((v,i,a)=>(
               <div className="fx-col" key={i}>
                 <b style={{fontSize:11}}>{fxK(v)}</b>
-                <div className="pilar" style={{height:(v/Math.max(1,divida)*75)+"%", background: v<=0.5 ? "#93cf6b" : i===0 ? "#7b61e8" : "#d9cffb"}}/>
+                <div className="pilar" style={{height:(v/Math.max(1,divida)*75)+"%", background: v<=0.5 ? "#4f7a54" : i===0 ? "#6b4a35" : "#ead9c6"}}/>
                 <span style={{fontSize:10.5}}>{i===0 ? "Hoje" : ""}</span>
               </div>
             ))}
