@@ -40,6 +40,13 @@
 // linha do tempo é remontada sem transcrever de novo. Com "Lembrar nas próximas", a regra
 // vai para o padrão de edição dela e os ajustes visuais ficam guardados neste navegador.
 // Nada do vídeo sai do computador dela, só o áudio vai para transcrever.
+// Revisar cortes (ideia do reel-editor da getgitgirl, MIT): a transcrição aparece palavra por palavra
+// e ela toca para cortar ou devolver qualquer palavra (st.marcas, por chaveLeg); vícios de fala
+// ("éé", "ahn", "hum"...) já saem cortados (opc.vicios) e "tipo"/"né" ficam sugeridos. Ritmo tem
+// três níveis (normal, rápido e turbo). Voz no volume do Instagram: compressor + ganho na fala.
+// Capa do Reels: 6 quadros do vídeo editado (ou a barra para o quadro exato), título com sombra
+// suave, painel creme ou degradê escuro, e PNG em 1080x1920, 1080x1440 (3:4) e 1080x1080; as
+// escolhas ficam no projeto (st.capa).
 // =========================================================
 (function () {
   "use strict";
@@ -92,10 +99,10 @@ IDEIA PARA DEPOIS
   const TITULOS = { simples: "Limpo, serifada itálica (sem caixinhas)", etapas: "Em etapas com clique (duas fontes e estrelinhas)", frase: "Frase gigante na tela (3 cores)", caixa: "Caixinhas" };
   // fontes da legenda: "minha" é a fonte que ela enviou (Bootzy do CapCut), guardada em configuracoes "fonte_legenda"
   const FONTES_LEG = { minha: "Minha fonte (Bootzy)", arimo: "Parecida com a Bootzy (Arimo)", montserrat: "Sem serifa forte (Montserrat)", poppins: "Sem serifa média (Poppins)", nunito: "Arredondada forte (Nunito)", dmserif: "Serifada itálica (DM Serif)", instrument: "Serifada itálica fina (Instrument Serif)" };
-  const fonteLeg = (tam) => ({
+  const fonteLeg = (tam, chave = st.opc.fonteLeg) => ({
     minha: `${tam}px "MinhaFonte", Arimo, Arial, sans-serif`, arimo: `700 ${tam}px Arimo, "Helvetica Neue", Arial, sans-serif`, montserrat: `700 ${tam}px Montserrat, Poppins, sans-serif`, poppins: `500 ${tam}px Poppins, sans-serif`,
     nunito: `800 ${tam}px Nunito, Poppins, sans-serif`, dmserif: `italic 400 ${tam * 1.12}px "DM Serif Display", Georgia, serif`, instrument: `italic 400 ${tam * 1.28}px "Instrument Serif", Georgia, serif`,
-  })[st.opc.fonteLeg] || `700 ${tam}px Montserrat, Poppins, sans-serif`;
+  })[chave] || `700 ${tam}px Montserrat, Poppins, sans-serif`;
   const CORES_CHAMATIVA = ["#c6f432", "#cdb6ff", "#ffe45c", "#ffb3d9"];
   const DUR_TITULO = 2.8;
 
@@ -103,14 +110,14 @@ IDEIA PARA DEPOIS
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e" },
-    correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, projeto: null, projetos: [], pendentes: null, salvando: "",
+    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true },
+    correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, projeto: null, projetos: [], pendentes: null, salvando: "",
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
   try { const salvo = JSON.parse(localStorage.getItem("ed-opc3") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
-  const OPC_VISUAIS = ["sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"];
+  const OPC_VISUAIS = ["sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte"];
   function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc3", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
@@ -346,7 +353,7 @@ IDEIA PARA DEPOIS
 
   // ---------- projetos (memória da edição) ----------
   const dadosProjeto = () => ({ versao: 3,
-    tema: st.tema, roteiro: st.roteiro, opc: st.opc, plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, editLeg: st.editLeg, correcoes: st.correcoes,
+    tema: st.tema, roteiro: st.roteiro, opc: st.opc, plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, editLeg: st.editLeg, marcas: st.marcas, capa: st.capa, correcoes: st.correcoes,
     efeitos: st.efeitos.filter((e) => !e.doTitulo && !e.daChamativa).map(({ id, ...e }) => e),
     clipes: (st.clipes.length ? st.clipes : st.pendentes || []).map((c) => ({ nome: c.nome, dur: Math.round((c.dur || 0) * 100) / 100, palavras: c.palavras || null })),
   });
@@ -373,7 +380,8 @@ IDEIA PARA DEPOIS
   function limparTudo() {
     if (st.tocando) parar();
     st.clipes.forEach((c) => { try { c.el.remove(); URL.revokeObjectURL(c.el.src); } catch (e) { /* segue */ } });
-    Object.assign(st, { clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "" });
+    const capaBox = $("#ed-capa"); if (capaBox) capaBox.dataset.pronto = "";
+    Object.assign(st, { clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "" });
   }
   async function abrirProjeto(id) {
     const { data, error } = await banco().from("edicao_projetos").select("*").eq("id", id).maybeSingle();
@@ -382,7 +390,7 @@ IDEIA PARA DEPOIS
     const d = data.dados || {};
     st.projeto = { id: data.id, nome: data.nome };
     st.tema = d.tema || ""; st.roteiro = d.roteiro || ""; st.plano = d.plano || null; st.titulo = d.titulo || ""; st.tituloDestaque = d.tituloDestaque || "";
-    st.editLeg = d.editLeg || {}; st.correcoes = d.correcoes || [];
+    st.editLeg = d.editLeg || {}; st.marcas = d.marcas || {}; st.capa = d.capa || null; st.correcoes = d.correcoes || [];
     if (d.opc && d.versao >= 3) Object.assign(st.opc, d.opc);
     if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
     st.efeitosSalvos = Array.isArray(d.efeitos) ? d.efeitos.map((e) => ({ ...e, id: uid() })) : null;
@@ -507,21 +515,53 @@ IDEIA PARA DEPOIS
       const fim = c.offset + c.dur;
       if (!st.opc.silencio || !c.palavras || !c.palavras.length) { faixas.push([c.offset, fim]); continue; }
       let atual = null;
+      const R = RITMOS[st.opc.ritmo] || RITMOS.rapido;
       for (const w of c.palavras) {
-        const rap = st.opc.ritmo === "rapido";
-        const a = Math.max(c.offset, c.offset + w.s - (rap ? 0.05 : 0.08)), b = Math.min(fim, c.offset + w.e + (rap ? 0.08 : 0.14));
-        if (atual && a - atual[1] < (rap ? 0.16 : 0.3)) atual[1] = Math.max(atual[1], b); else { if (atual) faixas.push(atual); atual = [a, b]; }
+        const a = Math.max(c.offset, c.offset + w.s - R.antes), b = Math.min(fim, c.offset + w.e + R.depois);
+        if (atual && a - atual[1] < R.junta) atual[1] = Math.max(atual[1], b); else { if (atual) faixas.push(atual); atual = [a, b]; }
       }
       if (atual) faixas.push(atual);
     }
     let lista = faixas;
-    if (st.opc.erros && st.plano) for (const r of st.plano.remover || []) {
+    const tirar = (de, ate) => {
       const nova = [];
-      for (const [a, b] of lista) { if (r.ate <= a || r.de >= b) { nova.push([a, b]); continue; } if (r.de > a) nova.push([a, r.de]); if (r.ate < b) nova.push([r.ate, b]); }
+      for (const [a, b] of lista) { if (ate <= a || de >= b) { nova.push([a, b]); continue; } if (de > a) nova.push([a, de]); if (ate < b) nova.push([ate, b]); }
       lista = nova;
+    };
+    const mantidas = palavrasRevisao().filter((w) => st.marcas[w.k] === "manter");
+    if (st.opc.erros && st.plano) for (const r of st.plano.remover || []) {
+      // palavra que ela devolveu dentro de um trecho que a IA tirou: abre um buraco só para ela
+      let de = r.de;
+      for (const w of mantidas.filter((x) => x.g >= r.de && x.g < r.ate).sort((a, b) => a.g - b.g)) { if (w.corteDe > de) tirar(de, w.corteDe); de = Math.max(de, w.corteAte); }
+      if (r.ate > de) tirar(de, r.ate);
     }
+    // palavras que ela cortou na revisão e os vícios de fala
+    for (const w of palavrasRevisao()) if (cortada(w)) tirar(w.corteDe, w.corteAte);
     return lista.filter(([a, b]) => b - a >= 0.15);
   }
+  // ritmo dos cortes: quanto de respiro fica antes e depois da fala e a partir de que pausa corta
+  const RITMOS = { normal: { antes: 0.08, depois: 0.14, junta: 0.3 }, rapido: { antes: 0.05, depois: 0.08, junta: 0.16 }, turbo: { antes: 0.03, depois: 0.05, junta: 0.08 } };
+  // vícios de fala que saem sozinhos ("é" fica, porque também é verbo) e muletas só sugeridas
+  const VICIOS = new Set(["éé", "ééé", "eh", "ehh", "ah", "ahn", "ãh", "ãã", "hã", "hãã", "hum", "humm", "hmm", "hm", "uhm", "uh", "um", "mmm", "aham"]);
+  const MULETAS = new Set(["tipo", "né", "sabe", "assim", "então", "basicamente", "enfim"]);
+  const limpaPalavra = (x) => String(x || "").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  // todas as palavras no tempo do bruto, com o pedaço a cortar (até o meio do espaço com as vizinhas)
+  function palavrasRevisao() {
+    const lista = [];
+    for (const c of st.clipes) {
+      const ws = c.palavras || [];
+      ws.forEach((w, i) => {
+        const g = c.offset + w.s, ge = c.offset + w.e, ant = ws[i - 1], prox = ws[i + 1];
+        const l = limpaPalavra(w.w);
+        lista.push({ w: w.w, g, ge, k: chaveLeg(g), vicio: VICIOS.has(l), muleta: MULETAS.has(l),
+          corteDe: Math.max(ant ? c.offset + (ant.e + w.s) / 2 : c.offset, g - 0.04), corteAte: Math.min(prox ? c.offset + (w.e + prox.s) / 2 : c.offset + c.dur, ge + 0.04) });
+      });
+    }
+    return lista;
+  }
+  function cortada(w) { const m = st.marcas[w.k]; return m === "cortar" || (m !== "manter" && w.vicio && st.opc.vicios); }
+  function tiradaPelaIA(w) { return st.opc.erros && st.plano && (st.plano.remover || []).some((r) => w.g >= r.de && w.g < r.ate) && st.marcas[w.k] !== "manter"; }
+
   function montar() {
     const faixas = faixasMantidas();
     st.segs = [];
@@ -912,10 +952,28 @@ IDEIA PARA DEPOIS
     const d = ruidoBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     return ac;
   }
+  // voz no volume do Instagram: compressor leve e ganho na fala (os efeitos não passam por aqui)
+  let voz = null;
+  function cadeiaVoz() {
+    if (voz) return voz;
+    const comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -26; comp.knee.value = 8; comp.ratio.value = 3; comp.attack.value = 0.006; comp.release.value = 0.12;
+    const ganho = ac.createGain(), lim = ac.createDynamicsCompressor();
+    lim.threshold.value = -2; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.05;
+    comp.connect(ganho); ganho.connect(lim); lim.connect(mestre);
+    voz = { entrada: ac.createGain(), comp, ganho };
+    ajustarVoz();
+    return voz;
+  }
+  function ajustarVoz() {
+    if (!voz) return;
+    try { voz.entrada.disconnect(); } catch (e) { /* ainda não ligado */ }
+    if (st.opc.vozForte) { voz.entrada.connect(voz.comp); voz.ganho.gain.value = 1.7; } else voz.entrada.connect(mestre);
+  }
   function ligarClipe(c) {
     audio();
     if (c.no) return;
-    c.no = ac.createMediaElementSource(c.el); c.no.connect(mestre);
+    c.no = ac.createMediaElementSource(c.el); c.no.connect(cadeiaVoz().entrada);
   }
   function ruido(quando, dur, destino) { const s = ac.createBufferSource(); s.buffer = ruidoBuf; s.connect(destino); s.start(quando, Math.random(), dur); return s; }
   function env(g, quando, pico, ataque, queda) { g.gain.setValueAtTime(0.0001, quando); g.gain.exponentialRampToValueAtTime(pico, quando + ataque); g.gain.exponentialRampToValueAtTime(0.0001, quando + ataque + queda); }
@@ -1084,12 +1142,14 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
             <ol class="ed-etapas" id="ed-etapas"></ol>
           </section>
           <section class="ed-cartao" id="ed-ajustes"></section>
+          <section class="ed-cartao" id="ed-cortes" hidden></section>
           <section class="ed-cartao" id="ed-legendas" hidden></section>
         </div>
         <div class="ed-col-meio">
           <div class="ed-tela"><canvas id="ed-canvas" width="1080" height="1920"></canvas><div class="ed-vazio" id="ed-vazio">${ic.filme}<span>A prévia aparece aqui</span></div></div>
           <div class="ed-controles" id="ed-controles"></div>
           <div id="ed-final"></div>
+          <section class="ed-cartao ed-capa" id="ed-capa" hidden></section>
         </div>
         <div class="ed-col-dir" id="ed-plano"></div>
       </div>
@@ -1144,7 +1204,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     bt.disabled = st.trabalhando || st.exportando || !st.clipes.length || Boolean(st.pendentes);
     bt.innerHTML = st.trabalhando ? "Editando…" : `${ic.brilho}${st.plano ? "Editar de novo" : "Editar automático"}`;
     $("#ed-vazio", sec).hidden = Boolean(st.segs.length);
-    pintarEtapas(); pintarAjustes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal();
+    pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa();
     if (st.segs.length && !st.tocando) desenhar(st.t);
   }
   function pintarEtapas() {
@@ -1190,9 +1250,9 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-cor-leg">Cor da legenda</label><span class="ed-cores">${["#fff3b0", "#ffffff", "#ffe45c"].map((c) => `<button type="button" class="ed-cor${o.corLegenda === c ? " ativa" : ""}" data-cor-leg="${c}" style="background:${c}" aria-label="Cor ${c}"></button>`).join("")}<input type="color" id="ed-cor-leg" value="${o.corLegenda}"></span></div>` : ""}
       <div class="ed-linha"><label class="ed-rotulo" for="ed-sfx">Efeitos sonoros automáticos</label><select class="entrada" id="ed-sfx">${[["desligado", "Desligado"], ["pouco", "Pouco"], ["medio", "Médio"], ["muito", "Muito (bem dinâmico)"]].map(([k, t]) => `<option value="${k}" ${o.sfxAuto === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-trans">Transição nos cortes</label><select class="entrada" id="ed-trans">${[["nenhuma", "Nenhuma"], ["punch", "Zoom rápido"], ["deslize", "Zoom rápido + deslize na troca de cena"]].map(([k, t]) => `<option value="${k}" ${o.transicao === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
-      <div class="ed-linha"><label class="ed-rotulo" for="ed-ritmo">Ritmo dos cortes</label><select class="entrada" id="ed-ritmo"><option value="rapido" ${o.ritmo !== "normal" ? "selected" : ""}>Rápido (corta respiros)</option><option value="normal" ${o.ritmo === "normal" ? "selected" : ""}>Normal</option></select></div>
+      <div class="ed-linha"><label class="ed-rotulo" for="ed-ritmo">Ritmo dos cortes</label><select class="entrada" id="ed-ritmo">${[["normal", "Normal (deixa respiro)"], ["rapido", "Rápido (corta respiros)"], ["turbo", "Turbo (sem nenhuma pausa)"]].map(([k, t]) => `<option value="${k}" ${(o.ritmo || "rapido") === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-chks">${chk("chamativas", "Palavras chamativas (grandes, coloridas)")}${chk("sonsChamativas", "Pop nas palavras chamativas")}${chk("tremer", "Tremidinha no impacto")}${chk("flash", "Flash na troca de cena")}</div>
-      <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("titulo", "Mostrar título")}${chk("sonsTitulo", "Som de clique no título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}</div>
+      <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("vicios", "Tirar vícios (éé, ahn, hum)")}${chk("vozForte", "Voz no volume do Instagram")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("titulo", "Mostrar título")}${chk("sonsTitulo", "Som de clique no título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}</div>
       <label class="ed-rotulo" for="ed-vol">Volume dos efeitos</label>
       <input type="range" id="ed-vol" min="0" max="1.2" step="0.05" value="${o.vol}">
       <label class="ed-rotulo" for="ed-qual">Qualidade do arquivo</label>
@@ -1218,7 +1278,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $$("[data-opc]", box).forEach((c) => c.addEventListener("change", () => {
       o[c.dataset.opc] = c.checked;
       // cortes mudam a linha do tempo inteira: monta de novo (os efeitos voltam aos do plano)
-      if (["silencio", "erros", "zoomCortes", "chamativas", "sonsChamativas"].includes(c.dataset.opc)) remontar();
+      if (c.dataset.opc === "vozForte") { ajustarVoz(); guardarOpc(); return; }
+      if (["silencio", "erros", "zoomCortes", "chamativas", "sonsChamativas", "vicios"].includes(c.dataset.opc)) { remontar(); pintarCortes(); }
       else { if (c.dataset.opc === "titulo" || c.dataset.opc === "sonsTitulo") { sonsDoTitulo(); pintarPlano(); } redesenhar(); }
     }));
   }
@@ -1226,6 +1287,143 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   function remontar() { if (st.tocando) parar(); montar(); st.t = Math.min(st.t, st.duracao); guardarOpc(); pintar(); }
 
   // ---------- editor de legendas (como no CapCut) ----------
+  // ---------- revisar cortes: toca na palavra para cortar ou devolver ----------
+  function pintarCortes() {
+    const box = $("#ed-cortes"); if (!box) return;
+    const ws = palavrasRevisao();
+    if (!st.segs.length || !ws.length) { box.hidden = true; return; }
+    box.hidden = false;
+    const aberto = box.querySelector("details") ? box.querySelector("details").open : false;
+    const linhas = []; let atual = [];
+    ws.forEach((w, i) => {
+      atual.push(w);
+      const prox = ws[i + 1];
+      if (!prox || prox.g - w.ge > 0.6 || /[.!?]$/.test(w.w)) { linhas.push(atual); atual = []; }
+    });
+    const nCort = ws.filter(cortada).length, nVic = ws.filter((w) => w.vicio && cortada(w)).length, nIA = ws.filter((w) => !cortada(w) && tiradaPelaIA(w)).length;
+    box.innerHTML = `<details${aberto ? " open" : ""}><summary class="ed-titulo-linha"><h3 class="ed-titulo">Revisar cortes</h3><span class="ed-sub">${nCort + nIA} palavra${nCort + nIA === 1 ? "" : "s"} fora</span></summary>
+      <p class="ed-obs">Toque numa palavra para cortar ou devolver. <span class="ed-p cortada">riscada</span> = você cortou ou é vício de fala, <span class="ed-p ia">apagada</span> = tomada errada que eu tirei, <span class="ed-p muleta">sublinhada</span> = muleta (tipo, né) que você pode cortar.${nVic ? ` Tirei ${nVic} vício${nVic > 1 ? "s" : ""} de fala sozinha.` : ""}</p>
+      <div class="ed-revisao">${linhas.map((l) => `<p><button type="button" class="ed-ir" data-ir="${l[0].g}">${tempo(l[0].g)}</button> ${l.map((w) => `<button type="button" class="ed-p${cortada(w) ? " cortada" : tiradaPelaIA(w) ? " ia" : w.muleta ? " muleta" : ""}" data-k="${w.k}" data-vicio="${w.vicio ? 1 : ""}">${esc(w.w)}</button>`).join(" ")}</p>`).join("")}</div>
+      ${Object.keys(st.marcas).length ? `<button type="button" class="login-link" id="ed-cortes-desfazer">desfazer o que eu mudei aqui</button>` : ""}</details>`;
+    $$(".ed-p[data-k]", box).forEach((b) => b.addEventListener("click", () => {
+      const w = ws.find((x) => String(x.k) === b.dataset.k); if (!w) return;
+      const fora = cortada(w) || tiradaPelaIA(w);
+      st.marcas[w.k] = fora ? "manter" : "cortar";
+      if (!fora && w.vicio && st.opc.vicios) delete st.marcas[w.k];
+      if (st.tocando) parar(); montar(); pintar(); salvarDepois();
+    }));
+    $$("[data-ir]", box).forEach((b) => b.addEventListener("click", () => { const t = paraFinalPerto(Number(b.dataset.ir)); if (t != null) irPara(t + 0.02); }));
+    const d = $("#ed-cortes-desfazer", box); if (d) d.addEventListener("click", () => { st.marcas = {}; if (st.tocando) parar(); montar(); pintar(); salvarDepois(); });
+  }
+
+  // ---------- capa do Reels ----------
+  const CAPA_PADRAO = () => ({ t: Math.min(1, st.duracao / 3), titulo: st.titulo || "", estilo: "sombra", cor: "#ffffff", pos: 420, tam: 110, fonte: st.opc.fonteLeg, guias: true });
+  let capaOcupada = false;
+  async function quadroEm(t, ctx, w, h) {
+    const s = segNoFinal(t); if (!s) return false;
+    const v = st.clipes[s.ci].el;
+    v.currentTime = Math.min(s.b - 0.02, s.a + Math.max(0, t - s.o0));
+    await esperarEvento(v, "seeked");
+    const vw = v.videoWidth || 1080, vh = v.videoHeight || 1920, esc2 = Math.max(w / vw, h / vh);
+    ctx.drawImage(v, (w - vw * esc2) / 2, (h - vh * esc2) / 2, vw * esc2, vh * esc2);
+    return true;
+  }
+  function textoCapa(ctx, c) {
+    let tam = c.tam;
+    ctx.font = fonteLeg(tam, c.fonte); ctx.textAlign = "center"; ctx.textBaseline = "top";
+    const linhas = [];
+    for (const par of String(c.titulo || "").split("\n")) {
+      let linha = "";
+      for (const pal of par.split(/\s+/).filter(Boolean)) { const tenta = linha ? linha + " " + pal : pal; if (ctx.measureText(tenta).width > 920 && linha) { linhas.push(linha); linha = pal; } else linha = tenta; }
+      linhas.push(linha);
+    }
+    if (!linhas.join("").trim()) return;
+    tam = Math.min(tam, 1560 / Math.max(1, linhas.length) / 1.12); ctx.font = fonteLeg(tam, c.fonte);
+    const alt = linhas.length * tam * 1.12, y0 = Math.max(120, Math.min(c.pos, 1800 - alt));
+    if (c.estilo === "escuro") { const g = ctx.createLinearGradient(0, Math.max(0, y0 - 120), 0, Math.min(1920, y0 + alt + 170)); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(0.3, "rgba(0,0,0,.6)"); g.addColorStop(0.75, "rgba(0,0,0,.6)"); g.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = g; ctx.fillRect(0, 0, 1080, 1920); }
+    if (c.estilo === "painel") { ctx.fillStyle = "#fff7f0"; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(50, y0 - 30, 980, alt + 60, 30); else ctx.rect(50, y0 - 30, 980, alt + 60); ctx.fill(); }
+    ctx.fillStyle = c.estilo === "painel" && c.cor.toLowerCase() === "#ffffff" ? "#3d2b20" : c.cor;
+    ctx.shadowColor = "rgba(0,0,0,.55)"; ctx.shadowBlur = c.estilo === "painel" ? 0 : 16; ctx.shadowOffsetY = c.estilo === "painel" ? 0 : 6;
+    linhas.forEach((l, i) => ctx.fillText(st.opc.maiusculas ? l.toUpperCase() : l, 540, y0 + i * tam * 1.12));
+    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+  }
+  async function desenharCapa(comGuias) {
+    const cv = $("#ed-capa-canvas"); if (!cv || capaOcupada || st.tocando) return;
+    capaOcupada = true;
+    try {
+      const ctx = cv.getContext("2d"), c = st.capa;
+      ctx.clearRect(0, 0, 1080, 1920); ctx.fillStyle = "#000"; ctx.fillRect(0, 0, 1080, 1920);
+      await quadroEm(c.t, ctx, 1080, 1920);
+      textoCapa(ctx, c);
+      if (comGuias !== false && c.guias) { ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.lineWidth = 4; ctx.setLineDash([16, 12]); [1440, 1080].forEach((hh) => ctx.strokeRect(20, (1920 - hh) / 2, 1040, hh)); ctx.setLineDash([]); }
+    } finally { capaOcupada = false; }
+  }
+  function pintarCapa() {
+    const box = $("#ed-capa"); if (!box) return;
+    if (!st.segs.length) { box.hidden = true; return; }
+    box.hidden = false;
+    if (!st.capa) st.capa = CAPA_PADRAO();
+    const c = st.capa;
+    if (box.dataset.pronto === "1") { const r = $("#ed-capa-t", box); if (r) r.max = Math.max(0.1, st.duracao - 0.05).toFixed(2); return; } // já montada: só redesenha quando ela mexe
+    box.dataset.pronto = "1";
+    box.innerHTML = `<div class="ed-titulo-linha"><h3 class="ed-titulo">Capa do Reels</h3><span class="ed-sub">PNG pronto para postar</span></div>
+      <div class="ed-capa-grade"><canvas id="ed-capa-canvas" width="1080" height="1920" aria-label="Prévia da capa"></canvas>
+      <div class="ed-capa-campos">
+        <button class="btn" type="button" id="ed-capa-opcoes">${ic.brilho}Mostrar 6 opções de quadro</button>
+        <div class="ed-capa-quadros" id="ed-capa-quadros"></div>
+        <label class="ed-rotulo" for="ed-capa-t">Quadro exato <output id="ed-capa-tempo">${tempo(c.t)}</output></label>
+        <input type="range" id="ed-capa-t" min="0" max="${Math.max(0.1, st.duracao - 0.05).toFixed(2)}" step="0.04" value="${c.t}">
+        <label class="ed-rotulo" for="ed-capa-titulo">Título da capa</label>
+        <textarea class="entrada" id="ed-capa-titulo" rows="2" maxlength="120" placeholder="Ex.: o hidratante que salvou minha pele">${esc(c.titulo)}</textarea>
+        <div class="ed-linha"><label class="ed-rotulo" for="ed-capa-estilo">Estilo</label><select class="entrada" id="ed-capa-estilo">${[["sombra", "Sombra suave"], ["painel", "Painel creme"], ["escuro", "Degradê escuro"]].map(([k, t]) => `<option value="${k}" ${c.estilo === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+        <div class="ed-linha"><label class="ed-rotulo" for="ed-capa-fonte">Fonte</label><select class="entrada" id="ed-capa-fonte">${Object.entries(FONTES_LEG).filter(([k]) => k !== "minha" || st.minhaFonte).map(([k, t]) => `<option value="${k}" ${c.fonte === k ? "selected" : ""}>${k === "minha" ? esc(st.minhaFonte) : t}</option>`).join("")}</select></div>
+        <div class="ed-linha"><label class="ed-rotulo" for="ed-capa-cor">Cor do texto</label><input type="color" id="ed-capa-cor" value="${c.cor}"></div>
+        <label class="ed-rotulo" for="ed-capa-pos">Altura do título</label><input type="range" id="ed-capa-pos" min="120" max="1500" step="10" value="${c.pos}">
+        <label class="ed-rotulo" for="ed-capa-tam">Tamanho</label><input type="range" id="ed-capa-tam" min="48" max="160" value="${c.tam}">
+        <label class="ed-chk"><input type="checkbox" id="ed-capa-guias" ${c.guias ? "checked" : ""}> Mostrar onde corta no 3:4 e no quadrado (não sai no PNG)</label>
+        <div class="ed-capa-baixar"><button class="btn btn-principal" type="button" data-capa="1920">${ic.baixar}Capa 9:16</button><button class="btn" type="button" data-capa="1440">3:4 (grade do perfil)</button><button class="btn" type="button" data-capa="1080">Quadrada</button></div>
+      </div></div>`;
+    const mexeu = () => { desenharCapa(); salvarDepois(); };
+    $("#ed-capa-t", box).addEventListener("input", (e) => { c.t = Number(e.target.value); $("#ed-capa-tempo", box).textContent = tempo(c.t); mexeu(); });
+    $("#ed-capa-titulo", box).addEventListener("input", (e) => { c.titulo = e.target.value; mexeu(); });
+    $("#ed-capa-estilo", box).addEventListener("change", (e) => { c.estilo = e.target.value; mexeu(); });
+    $("#ed-capa-fonte", box).addEventListener("change", (e) => { c.fonte = e.target.value; mexeu(); });
+    $("#ed-capa-cor", box).addEventListener("input", (e) => { c.cor = e.target.value; mexeu(); });
+    $("#ed-capa-pos", box).addEventListener("input", (e) => { c.pos = Number(e.target.value); mexeu(); });
+    $("#ed-capa-tam", box).addEventListener("input", (e) => { c.tam = Number(e.target.value); mexeu(); });
+    $("#ed-capa-guias", box).addEventListener("change", (e) => { c.guias = e.target.checked; mexeu(); });
+    $("#ed-capa-opcoes", box).addEventListener("click", async () => {
+      if (st.tocando) parar();
+      const lista = $("#ed-capa-quadros", box); lista.innerHTML = "";
+      const mini = document.createElement("canvas"); mini.width = 135; mini.height = 240; const mctx = mini.getContext("2d");
+      for (let i = 0; i < 6; i++) {
+        const t = st.duracao * (i + 1) / 7;
+        while (capaOcupada) await espera(30);
+        capaOcupada = true; try { mctx.fillStyle = "#000"; mctx.fillRect(0, 0, 135, 240); await quadroEm(t, mctx, 135, 240); } finally { capaOcupada = false; }
+        const b = document.createElement("button"); b.type = "button"; b.className = "ed-capa-op";
+        b.innerHTML = `<img src="${mini.toDataURL("image/jpeg", 0.8)}" alt="Quadro em ${tempo(t)}"><small>${tempo(t)}</small>`;
+        b.addEventListener("click", () => { c.t = t; $("#ed-capa-t", box).value = t; $("#ed-capa-tempo", box).textContent = tempo(t); mexeu(); });
+        lista.appendChild(b);
+      }
+      desenharCapa();
+    });
+    $$("[data-capa]", box).forEach((b) => b.addEventListener("click", async () => {
+      await document.fonts.ready;
+      while (capaOcupada) await espera(30);
+      await desenharCapa(false);
+      const hh = Number(b.dataset.capa), out = document.createElement("canvas"); out.width = 1080; out.height = hh;
+      out.getContext("2d").drawImage($("#ed-capa-canvas"), 0, (1920 - hh) / 2, 1080, hh, 0, 0, 1080, hh);
+      desenharCapa();
+      out.toBlob((blob) => {
+        if (!blob) { toast("Não consegui gerar a capa.", true); return; }
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+        a.download = `${(st.clipes[0] ? st.clipes[0].nome.replace(/\.[^.]+$/, "") : "reels")}-capa-1080x${hh}.png`; a.click();
+        toast("Capa baixada. Confira o corte antes de postar.");
+      }, "image/png");
+    }));
+    desenharCapa();
+  }
+
   function pintarLegendas() {
     const box = $("#ed-legendas"); if (!box) return;
     if (!st.segs.length || !st.legendas.length) { box.hidden = true; return; }

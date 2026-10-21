@@ -37,6 +37,8 @@ async function transcrever(chave: string, arquivo: File) {
   f.append("model", "whisper-large-v3-turbo");
   f.append("response_format", "verbose_json");
   f.append("language", "pt");
+  // prompt cheio de vícios: faz o Whisper escrever os "éé", "ahn" e "hum" (senão ele esconde dentro das palavras vizinhas)
+  f.append("prompt", "Éé, então, ahn, hum, tipo assim, né? Éé, hã, sabe?");
   f.append("timestamp_granularities[]", "word");
   f.append("timestamp_granularities[]", "segment");
   f.append("file", arquivo, /\.(m4a|mp4|wav|mp3|webm|ogg)$/i.test(arquivo.name || "") ? arquivo.name : "audio.wav");

@@ -1111,3 +1111,28 @@ button.menu-grupo:hover{color:var(--texto)}
 @media(max-width:700px){#ed-legendas{order:3}}
 
 .ed-enviar-fonte{cursor:pointer;align-self:flex-start;font-size:12px}
+
+/* Edição: revisar cortes palavra por palavra e capa do Reels */
+.ed-cortes details > summary{list-style:none;cursor:pointer}
+#ed-cortes summary{list-style:none;cursor:pointer}
+#ed-cortes summary::-webkit-details-marker{display:none}
+#ed-cortes summary .ed-titulo::after{content:" ▾";font-size:.8em;color:var(--suave)}
+.ed-revisao{max-height:360px;overflow:auto;display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.9;padding-right:2px}
+.ed-revisao p{margin:0}
+.ed-revisao .ed-ir{margin-right:4px}
+.ed-p{border:0;background:transparent;padding:1px 3px;border-radius:6px;font:inherit;color:inherit;cursor:pointer}
+.ed-p:hover{background:var(--linha)}
+.ed-p.cortada{text-decoration:line-through;color:#b4473a;background:rgba(180,71,58,.08)}
+.ed-p.ia{opacity:.4;text-decoration:line-through}
+.ed-p.muleta{text-decoration:underline dotted #a0522d;text-underline-offset:3px}
+.ed-obs .ed-p{cursor:default;padding:0 3px}
+.ed-capa-grade{display:grid;grid-template-columns:1fr;gap:12px;align-items:start}
+#ed-capa-canvas{width:100%;max-width:230px;height:auto;border-radius:12px;background:#000;display:block;margin:0 auto}
+.ed-capa-campos{display:flex;flex-direction:column;gap:8px;min-width:0}
+.ed-capa-quadros{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+.ed-capa-quadros:empty{display:none}
+.ed-capa-op{border:1px solid var(--linha);background:#fff;border-radius:8px;padding:0;overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
+.ed-capa-op img{width:100%;display:block;aspect-ratio:9/16;object-fit:cover}
+.ed-capa-op small{font-size:10px;padding:2px 0;text-align:center}
+.ed-capa-baixar{display:flex;flex-wrap:wrap;gap:6px}
+@media (max-width:620px){.ed-capa-quadros{grid-template-columns:repeat(3,1fr)}}
