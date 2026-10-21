@@ -312,9 +312,9 @@
   .miniatura .bf-dias{font-size:.62rem;flex-shrink:0}
   .miniatura .bf-texto{font-size:.56rem;min-width:0;overflow:hidden;text-overflow:ellipsis}
   .miniatura .bf-link{font-size:.56rem;margin-left:4px;flex-shrink:0}
-  /* celular: foto do Sobre mim grande, em cima do texto */
-  .miniatura .sobre-grid{grid-template-columns:minmax(0,1fr);gap:40px;max-width:760px}
-  .miniatura .sobre-foto{max-width:640px;width:100%;margin:0 auto;aspect-ratio:4/5}
+  /* celular: foto do Sobre mim ao lado do texto (ela preferiu assim), maior que antes e acompanhando a leitura */
+  .miniatura .sobre-grid{grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:34px;max-width:none;align-items:start}
+  .miniatura .sobre-foto{max-width:none;width:100%;margin:0;aspect-ratio:3/4;position:sticky;top:110px}
   /* celular: respiro entre o título das Categorias, o texto e os nichos */
   .miniatura .categorias-topo{max-width:none;margin-bottom:34px}
   .miniatura .categorias-sub{margin-top:26px;line-height:1.7}
