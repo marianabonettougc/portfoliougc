@@ -1247,3 +1247,6 @@ button.menu-grupo:hover{color:var(--texto)}
 .rr-ouvi{margin:6px 0 0;font-size:15px;line-height:1.7}
 .rr-ouvi .rr-ts{margin-right:6px;padding:0}
 .rr-flash{margin-left:4px}
+/* caixa "Pedir ajuste" logo embaixo do vídeo */
+.rr-ajustar textarea.entrada{min-height:96px;font-size:14px;line-height:1.5}
+.rr-ajustar-acoes{display:flex;gap:8px;flex-wrap:wrap}
