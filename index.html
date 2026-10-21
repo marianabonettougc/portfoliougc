@@ -259,7 +259,7 @@
   .player-barra::before{content:"";position:absolute;left:0;right:0;height:4px;border-radius:4px;background:rgba(255,253,249,.35)}
   .player-barra i{position:absolute;left:0;height:4px;border-radius:4px;background:#fff;width:0}
   .player-tempo{font-size:.78rem;font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
-  .player-aviso-som{position:absolute;left:50%;top:18px;transform:translateX(-50%);z-index:5;border:0;border-radius:999px;padding:9px 16px;background:#fffdf9;color:#3d2b20;font-weight:600;font-size:.82rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+  .player-aviso-som{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;border:0;border-radius:999px;padding:14px 22px;background:#fffdf9;color:#3d2b20;font-weight:700;font-size:.95rem;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:nowrap}
   .player-aviso-som[hidden]{display:none}
   .player-fechar{position:absolute;top:14px;right:14px;z-index:101;width:46px;height:46px;border-radius:50%;border:0;background:#fffdf9;color:#3d2b20;font-size:1.6rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .player-fechar:hover{transform:scale(1.06)}
@@ -1549,7 +1549,7 @@ janela.innerHTML = `<button class="player-fechar" type="button" aria-label="Fech
     <div class="player-recorte"><p class="player-carregando">carregando...</p><div id="player-alvo"></div></div>
     <button class="player-escudo" type="button" aria-label="Pausar ou continuar o vídeo"></button>
     <div class="player-pausa" hidden><span>${ICONES.play}</span></div>
-    <button class="player-aviso-som" type="button" hidden>Toque para ativar o som</button>
+    <button class="player-aviso-som" type="button" hidden>🔊 Toque para ouvir com som</button>
     <div class="player-controles">
       <button class="player-btn-play" type="button" aria-label="Pausar">${ICONES.pausa}</button>
       <div class="player-barra" role="slider" aria-label="Posição do vídeo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><i></i></div>
@@ -1619,6 +1619,7 @@ function atualizarTempo() {
 }
 function alternarPlay() {
   if (!player || !player.getPlayerState) return;
+  if (player.isMuted && player.isMuted()) { player.unMute(); player.setVolume(100); player.playVideo(); avisoSom.hidden = true; setTimeout(atualizarBotoes, 150); return; }
   if (player.getPlayerState() === 1) player.pauseVideo(); else { player.playVideo(); semLegenda(player); }
 }
 function alternarSom() {
@@ -1696,7 +1697,7 @@ function abrirPlayer(d) {
     player = new YT.Player("player-alvo", {
       videoId: id,
       host: "https://www.youtube-nocookie.com",
-      playerVars: { autoplay: 1, controls: simples ? 1 : 0, cc_load_policy: 0, disablekb: simples ? 0 : 1, fs: simples ? 1 : 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1, loop: 1, playlist: id, vq: "hd1080" },
+      playerVars: { autoplay: 1, mute: 0, controls: simples ? 1 : 0, cc_load_policy: 0, disablekb: simples ? 0 : 1, fs: simples ? 1 : 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1, loop: 1, playlist: id, vq: "hd1080" },
       events: {
         onReady: (e) => {
           const p = e.target;
@@ -1707,13 +1708,18 @@ function abrirPlayer(d) {
           semLegenda(p);
           try { p.setPlaybackQuality("hd1080"); } catch (e) {} // sempre a maior resolução que o vídeo tiver
           p.unMute(); p.setVolume(100); p.playVideo();
-          // se o navegador não deixar começar com som, começa sem som e mostra o aviso para ativar
-          setTimeout(() => {
+          // abre COM SOM. Só se o navegador bloquear de verdade (nem tocando nem carregando depois de 3 s)
+          // é que começa sem som e mostra o aviso grande para ativar; antes ele cortava o som cedo demais
+          const conferir = (tentativa) => {
             if (!player || player !== p) return;
-            if (p.getPlayerState() !== 1 && p.getPlayerState() !== 3) { p.mute(); p.playVideo(); avisoSom.hidden = false; }
-            semLegenda(p);
-            atualizarBotoes();
-          }, 700);
+            const est = p.getPlayerState();
+            if (est === 1) { if (p.isMuted()) { p.unMute(); p.setVolume(100); } atualizarBotoes(); return; }
+            if (est === 3 && tentativa < 8) { setTimeout(() => conferir(tentativa + 1), 500); return; } // ainda carregando
+            if (tentativa < 6) { p.playVideo(); setTimeout(() => conferir(tentativa + 1), 500); return; }
+            p.mute(); p.playVideo(); avisoSom.hidden = false;
+            semLegenda(p); atualizarBotoes();
+          };
+          setTimeout(() => conferir(0), 500);
           clearInterval(relogio);
           relogio = setInterval(atualizarTempo, 250);
         },
@@ -2331,7 +2337,7 @@ else registrarVisita(false);
     "Qual é o seu nome?": "What's your name?", "Confere o e-mail, por favor.": "Please check the email.", "Escreve uma mensagem pra mim.": "Please write me a message.",
     "Não consegui enviar agora. Tenta de novo ou me chama no WhatsApp, por favor.": "I couldn't send it right now. Please try again or message me on WhatsApp.",
     "Abri o seu e-mail com a mensagem já pronta para mim. É só clicar em enviar que eu respondo em até 24h úteis.": "I opened your email with the message ready for me. Just click send and I'll reply within 24 business hours.",
-    "carregando...": "loading...", "Toque para ativar o som": "Tap to turn on sound",
+    "carregando...": "loading...", "Toque para ativar o som": "Tap to turn on sound", "🔊 Toque para ouvir com som": "🔊 Tap to hear with sound",
     "Investimentos UGC": "UGC pricing", "Contrate 1 vez": "One-time hire", "1 vídeo": "1 video", "Com recorrência": "Recurring", "(mínimo 3 meses)": "(3-month minimum)", "Adicionais": "Add-ons",
     "3 fotos": "3 photos", "Roteiro": "Script", "Gravação": "Filming", "Edição": "Editing", "Direito de uso em ADS por 06 meses": "6-month ad usage rights",
     // atributos (leitores de tela, campos)
