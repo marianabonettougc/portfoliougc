@@ -15,6 +15,12 @@
 <title>Mari Bonetto | Portfólio UGC</title>
 <meta name="description" content="Mari Bonetto, UGC Creator em Valinhos, SP. Conteúdo que parece indicação de amiga antes de parecer anúncio.">
 <meta name="theme-color" content="#f6efe6">
+<!-- vídeos: abre a conexão com o YouTube logo no começo, para o player abrir mais rápido -->
+<link rel="preconnect" href="https://www.youtube-nocookie.com">
+<link rel="preconnect" href="https://www.youtube.com">
+<link rel="preconnect" href="https://i.ytimg.com">
+<link rel="preconnect" href="https://www.google.com">
+<link rel="dns-prefetch" href="https://jnn-pa.googleapis.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Serif+Display:ital@0;1&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -232,7 +238,7 @@
   @supports (height:1dvh){.player-caixa{height:min(82dvh,calc((100vw - 40px) * 16 / 9))}}
   .player-caixa.horizontal{height:auto;width:min(1100px,100%);aspect-ratio:16/9}
   /* Player próprio: o vídeo do YouTube roda por baixo, sem nenhum botão ou texto do YouTube aparecendo */
-  .player-recorte{position:absolute;inset:0;overflow:hidden;background:#000}
+  .player-recorte{position:absolute;inset:0;overflow:hidden;background:#000 center/cover no-repeat}
   /* o player é desenhado 3x maior e reduzido: o YouTube escolhe a qualidade pelo tamanho do player, então assim ele manda em HD (1080p ou mais) */
   .player-recorte iframe{position:absolute;top:-100%;left:-424.075%;width:948.15%;height:300%;border:0;pointer-events:none;transform:scale(.346667)}
   .player-caixa.horizontal .player-recorte iframe{top:0;left:0;width:100%;height:100%;transform:none}
@@ -1457,7 +1463,7 @@ const temMouse = window.matchMedia("(hover: hover) and (pointer: fine)").matches
 // 1) Os vídeos rodam SOZINHOS, SEM SOM, em loop, enquanto aparecem na tela (igual ao site de referência).
 //    Clicar abre o vídeo grande, com som. Usa o player oficial do YouTube: sem legenda automática e sem botões por cima.
 const previas = new Map();            // card -> { p: player do YouTube, alvo }
-const MAX_PREVIAS = 6;                // no máximo 6 vídeos rodando juntos (para o site não ficar pesado)
+const MAX_PREVIAS = temMouse ? 5 : 3;  // vídeos rodando juntos (menos no celular, para sobrar internet para o vídeo que ela abrir)
 const cardsLigados = new WeakSet();
 const observadorPrevias = "IntersectionObserver" in window
   ? new IntersectionObserver((entradas) => entradas.forEach((e) => (e.isIntersecting ? ligarPrevia(e.target) : desligarPrevia(e.target))), { threshold: 0.5 })
@@ -1480,6 +1486,7 @@ function ligarPrevia(midia) {
           const f = ev.target.getIframe();
           f.classList.add("previa"); f.tabIndex = -1; f.setAttribute("aria-hidden", "true"); f.title = "Prévia do vídeo sem som";
           ev.target.mute(); semLegenda(ev.target);
+          try { ev.target.setPlaybackQuality("small"); } catch (e) {} // prévia sem som: qualidade baixa, carrega rápido
           if (janela.hidden) ev.target.playVideo();
         },
         onStateChange: (ev) => {
@@ -1524,6 +1531,10 @@ function ligarPrevias(raiz) {
   });
 }
 ligarPrevias(document);
+// deixa o player do YouTube pronto logo depois que a página carrega, para o primeiro vídeo abrir rápido
+const aquecerYoutube = () => carregarApiYoutube().catch(() => {});
+if (document.readyState === "complete") setTimeout(aquecerYoutube, 800); else window.addEventListener("load", () => setTimeout(aquecerYoutube, 800));
+document.addEventListener("pointerdown", (e) => { if (e.target.closest && e.target.closest(".video-midia, .video-card, .case-video")) aquecerYoutube(); }, { passive: true });
 
 // 2) Clicar no card: o vídeo abre numa janela grande AQUI NO SITE, com som, num player limpo (sem nada do YouTube por cima)
 const ICONES = {"play": "<svg viewBox=\"0 0 24 24\"><path d=\"M8 5v14l11-7z\"/></svg>", "pausa": "<svg viewBox=\"0 0 24 24\"><path d=\"M7 5h4v14H7zM13 5h4v14h-4z\"/></svg>", "som": "<svg viewBox=\"0 0 24 24\"><path d=\"M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z\"/></svg>", "mudo": "<svg viewBox=\"0 0 24 24\"><path d=\"M4 9v6h4l5 4V5L8 9H4zm12.6 3 2.7-2.7-1.4-1.4-2.7 2.7-2.7-2.7-1.4 1.4 2.7 2.7-2.7 2.7 1.4 1.4 2.7-2.7 2.7 2.7 1.4-1.4z\"/></svg>"};
@@ -1557,7 +1568,7 @@ const tempo = janela.querySelector(".player-tempo");
 let player = null, relogio = null, focoAntes = null;
 const mmss = (t) => { t = Math.max(0, Math.floor(t || 0)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
 
-// carrega a API oficial do YouTube só quando alguém clica no primeiro vídeo
+// carrega a API oficial do YouTube (logo depois que a página abre, ou no primeiro toque num vídeo)
 let apiYoutube = null;
 function carregarApiYoutube() {
   if (window.YT && window.YT.Player) return Promise.resolve();
@@ -1649,6 +1660,7 @@ function fecharPlayer() {
   player = null;
   const recorte = janela.querySelector(".player-recorte");
   recorte.innerHTML = '<p class="player-carregando">carregando...</p><div id="player-alvo"></div>';
+  recorte.style.backgroundImage = "";
   caixaPlayer.classList.remove("simples");
   caixaPlayer.querySelectorAll(".video-logo").forEach((el) => el.remove());
   avisoSom.hidden = true;
@@ -1670,6 +1682,8 @@ function abrirPlayer(d) {
   btnPlay.innerHTML = ICONES.pausa;
   barra.querySelector("i").style.width = "0";
   tempo.textContent = "0:00 / 0:00";
+  // enquanto o player carrega, a capa do vídeo já aparece (não fica tela preta)
+  janela.querySelector(".player-recorte").style.backgroundImage = `url("https://i.ytimg.com/vi/${id}/hq720.jpg"),url("${capa}")`;
   janela.hidden = false;
   document.body.style.overflow = "hidden";
   janela.querySelector(".player-fechar").focus();
@@ -1682,7 +1696,7 @@ function abrirPlayer(d) {
     player = new YT.Player("player-alvo", {
       videoId: id,
       host: "https://www.youtube-nocookie.com",
-      playerVars: { autoplay: 1, controls: simples ? 1 : 0, cc_load_policy: 0, disablekb: simples ? 0 : 1, fs: simples ? 1 : 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1, loop: 1, playlist: id },
+      playerVars: { autoplay: 1, controls: simples ? 1 : 0, cc_load_policy: 0, disablekb: simples ? 0 : 1, fs: simples ? 1 : 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1, loop: 1, playlist: id, vq: "hd1080" },
       events: {
         onReady: (e) => {
           const p = e.target;
@@ -1691,18 +1705,19 @@ function abrirPlayer(d) {
           iframe.title = `Vídeo: ${d.titulo || d.marca || "case"}`;
           iframe.tabIndex = -1;
           semLegenda(p);
+          try { p.setPlaybackQuality("hd1080"); } catch (e) {} // sempre a maior resolução que o vídeo tiver
           p.unMute(); p.setVolume(100); p.playVideo();
           // se o navegador não deixar começar com som, começa sem som e mostra o aviso para ativar
           setTimeout(() => {
             if (!player || player !== p) return;
-            if (p.getPlayerState() !== 1) { p.mute(); p.playVideo(); avisoSom.hidden = false; }
+            if (p.getPlayerState() !== 1 && p.getPlayerState() !== 3) { p.mute(); p.playVideo(); avisoSom.hidden = false; }
             semLegenda(p);
             atualizarBotoes();
-          }, 1300);
+          }, 700);
           clearInterval(relogio);
           relogio = setInterval(atualizarTempo, 250);
         },
-        onStateChange: (e) => { if (e.data === 1 || e.data === 3) semLegenda(e.target); atualizarBotoes(); },
+        onStateChange: (e) => { if (e.data === 1 || e.data === 3) semLegenda(e.target); if (e.data === 1) { try { e.target.setPlaybackQuality("hd1080"); } catch (er) {} } atualizarBotoes(); },
         onApiChange: (e) => semLegenda(e.target)
       }
     });
