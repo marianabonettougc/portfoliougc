@@ -85,6 +85,11 @@
   .menu ul{display:flex;gap:2px;list-style:none;margin:0;padding:0}
   .menu a{display:block;padding:8px 14px;border-radius:999px;text-decoration:none;font-weight:600;font-size:.97rem;transition:background .2s}
   .menu a:hover{background:rgba(107,74,53,.1)}
+  /* Botão de idioma PT | EN (topo fixo e topo da capa) */
+  .idioma{display:inline-flex;gap:2px;padding:3px;border:1px solid rgba(107,74,53,.35);border-radius:999px;background:rgba(255,253,249,.7);flex-shrink:0}
+  .idioma button{border:0;background:transparent;border-radius:999px;padding:6px 11px;font-family:"Poppins",sans-serif;font-weight:600;font-size:.72rem;letter-spacing:.08em;color:#3d2b20;cursor:pointer;line-height:1}
+  .idioma button.ativo{background:#3d2b20;color:#fff}
+  .idioma button:focus-visible{outline:2px solid var(--cafe);outline-offset:2px}
   .hamburguer{display:none;width:46px;height:46px;border-radius:50%;border:1.5px dashed var(--tracejado);background:var(--papel);cursor:pointer;align-items:center;justify-content:center}
   .hamburguer span,.hamburguer span::before,.hamburguer span::after{display:block;width:20px;height:2.5px;background:var(--cafe);border-radius:3px;transition:transform .25s ease,background .2s}
   .hamburguer span{position:relative}
@@ -683,7 +688,8 @@
     .capa-texto > *{margin-left:auto;margin-right:auto}
     .capa-redes{justify-content:center}
     .capa-foto{position:relative;left:auto;order:3;height:auto;width:min(86%,460px);max-width:none;margin:10px auto 0}
-    .hamburguer{display:inline-flex}
+    .hamburguer{display:inline-flex;order:3}
+    .topo .idioma{margin-left:auto;margin-right:10px;order:2}
     .menu{position:absolute;top:calc(100% + 6px);left:16px;right:16px;background:var(--papel);border:1.5px dashed var(--tracejado);border-radius:var(--raio);box-shadow:var(--sombra-hover);padding:10px;display:none}
     .menu.aberto{display:block}
     .menu ul{flex-direction:column}
@@ -787,6 +793,7 @@
         <li><a href="#contato">Contato</a></li>
       </ul>
     </nav>
+    <div class="idioma" role="group" aria-label="Idioma"><button type="button" data-idioma="pt" class="ativo" aria-pressed="true">PT</button><button type="button" data-idioma="en" aria-pressed="false">EN</button></div>
   </div>
 </header>
 
@@ -818,6 +825,7 @@
           <li><a href="#contato">Contato</a></li>
         </ul>
       </nav>
+      <div class="idioma" role="group" aria-label="Idioma"><button type="button" data-idioma="pt" class="ativo" aria-pressed="true">PT</button><button type="button" data-idioma="en" aria-pressed="false">EN</button></div>
     </div>
     <!-- FOTO DA CAPA: PNG recortado com IA, fundo transparente. Para trocar, salve a nova foto na mesma pasta do index.html e mude o src abaixo -->
     <img class="capa-foto" src="mari-bonetto-capa-poltrona.webp" alt="Mari Bonetto sorrindo, sentada numa poltrona branca, de blusa de tricô marrom ombro a ombro e calça bege" width="1150" height="985" fetchpriority="high">
@@ -2215,6 +2223,185 @@ document.addEventListener("click", (e) => {
 carregarVideosDoPainel();
 if (new URLSearchParams(location.search).has("teste-banco")) testarBanco();
 else registrarVisita(false);
+
+/* =========================================================
+   IDIOMA: botão PT | EN no topo. Em inglês, troca os textos da página pelo dicionário abaixo
+   (texto exato em português -> inglês) e volta ao original em PT. Vale também para o que o
+   script desenha depois (vídeos, tarja, formulário). Escolha salva em localStorage "idioma";
+   ?lang=en abre direto em inglês.
+   ========================================================= */
+(function () {
+  const EN = {
+    "Pular para o conteúdo": "Skip to content", "Sobre": "About", "Destaques": "Highlights", "Trabalhos": "Work", "Serviços": "Services", "Números": "Numbers", "Contato": "Contact",
+    "roteiros validados para performance": "performance-proven scripts", "poucas vagas para gravar em novembro": "only a few November shoot slots left",
+    "reserve a sua agenda de novembro": "book your November slot", "vídeo de e-commerce que vende no dia": "e-commerce videos that sell on the day",
+    "reservar agenda": "book a slot", "Hoje é Black Friday!": "Black Friday is today!", "Falta 1 dia pra Black Friday": "1 day to Black Friday",
+    "UGC Creator · Valinhos/SP": "UGC Creator · Valinhos, Brazil", "Início": "Home", "Sobre mim": "About me", "Categorias": "Categories", "Marcas": "Brands",
+    "Conteúdo que aproxima": "Content that brings", "marcas e pessoas.": "brands and people together.",
+    "Cada detalhe pensado para prender atenção, gerar conexão e conversão.": "Every detail designed to grab attention, build connection and drive conversion.",
+    "marcas atendidas": "brands served", "vídeos entregues": "videos delivered", "de views nas redes": "views on social media",
+    "Oi, eu sou a": "Hi, I'm", "Tenho": "I'm", "31 anos": "31 years old",
+    ", moro em Valinhos, interior de SP, sou mãe de duas meninas e de três gatinhas.": ", I live in Valinhos, in the countryside of São Paulo, and I'm a mom of two girls and three cats.",
+    "Faz quase um ano que comecei no UGC e, nesse período,": "I started in UGC almost a year ago and, since then,", "mais de 80 marcas": "more than 80 brands", "já confiaram no meu trabalho.": "have trusted my work.",
+    "Meus conteúdos refletem muito do que vivo hoje. Em": "My content reflects a lot of what I live today. In", "beleza e autocuidado": "beauty and self-care",
+    ", compartilho minha rotina com cabelos com progressiva e luzes, cuidados com quebra e queda, além de produtos para pele e corpo. Também falo sobre minha jornada após": ", I share my routine with straightened, highlighted hair, care for breakage and hair loss, plus skin and body products. I also talk about my journey after",
+    "perder 23 kg": "losing 23 kg (50 lb)", "e sobre me reencontrar com a moda, vivendo uma fase em que finalmente eu escolho as roupas que quero usar, e não o contrário.": "and finding my way back to fashion, in a phase where I finally choose the clothes I want to wear, not the other way around.",
+    "Também compartilho conteúdos sobre": "I also create content about", "maternidade, rotina fitness, casa, organização, achadinhos": "motherhood, fitness routine, home, organization, great finds",
+    "e produtos que facilitam a rotina de uma dona de casa, sempre trazendo situações e experiências que fazem parte da minha vida.": "and products that make a homemaker's routine easier, always bringing situations and experiences that are part of my life.",
+    "Sou detalhista e comprometida em entregar conteúdos que despertam interesse e confiança, sem deixar de lado aquilo que mais gosto de colocar no meu trabalho:": "I'm detail-oriented and committed to delivering content that sparks interest and trust, without leaving out what I love putting into my work the most:",
+    "verdade e identificação.": "honesty and relatability.",
+    "Marcas que confiam no meu trabalho": "Brands that trust my work", "Meus cases de sucesso": "My success cases", "visualizações": "views", "Cartão de todos": "Cartão de Todos",
+    "Case: Pantene Biotinamina": "Case study: Pantene Biotinamina", "Notas": "Notes",
+    "O vídeo começou com uma cena impossível de ignorar:": "The video opened with a scene impossible to ignore:", "um tufo de cabelo nas mãos": "a clump of hair in my hands",
+    ", enquanto a frase “": ", while the line “", "Eu quase fiquei careca": "I almost went bald", "” reforça o impacto da cena.": "” amplifies the impact of the scene.",
+    "A imagem, combinada a uma": "The image, combined with a", "dor comum": "common pain point", "para quem sofre com queda e quebra,": "for anyone dealing with hair loss and breakage,",
+    "despertou curiosidade": "sparked curiosity", "e": "and", "identificação logo nos primeiros segundos": "relatability within the first seconds",
+    "A estratégia foi transformar uma situação cotidiana em um gancho visual forte, conduzindo a audiência para a história e para a solução apresentada pela marca.": "The strategy was to turn an everyday situation into a strong visual hook, guiding the audience into the story and to the solution presented by the brand.",
+    "O resultado": "The result", ": mais de": ": more than", "100 mil visualizações": "100K views",
+    ", além de alto engajamento e comentários de pessoas que se identificaram com a situação.": ", plus high engagement and comments from people who related to the situation.",
+    "E o resultado para o meu trabalho foi além das métricas: depois desse conteúdo, fui": "And the result for my work went beyond the metrics: after this content, I was",
+    "recontratada pela Pantene em mais de 4 campanhas": "rehired by Pantene for more than 4 campaigns",
+    "Como podemos trabalhar": "How we can work together", "Vídeo UGC": "UGC video",
+    "Vídeo vertical com roteiro, gravação e edição, falando do produto como quem indica para uma amiga.": "Vertical video with script, filming and editing, talking about the product like recommending it to a friend.",
+    "Corte para anúncio": "Ad cuts", "Versões curtas com ganchos diferentes, prontas para testar nos anúncios da sua marca.": "Short versions with different hooks, ready to test in your brand's ads.",
+    "Fotos do produto": "Product photos", "Fotos do produto em uso, com luz natural e cenário de casa, para site, anúncio e redes.": "Photos of the product in use, with natural light and a home setting, for website, ads and social media.",
+    "A experiência de abrir a caixa pela primeira vez, com reação real e detalhes da embalagem.": "The experience of opening the box for the first time, with a real reaction and packaging details.",
+    "Publicação no meu perfil": "Post on my profile", "O conteúdo publicado no meu Instagram, em collab com a sua marca.": "The content posted on my Instagram, as a collab with your brand.",
+    "Pacote mensal": "Monthly package", "Uma quantidade fixa de vídeos por mês, com planejamento junto e prioridade na agenda.": "A fixed number of videos per month, with joint planning and priority booking.",
+    "Que tipo de": "What kind of", "conteúdo": "content", "você precisa?": "do you need?",
+    "Navegue pelos nichos. Cada linha é uma especialidade. Clique nas setinhas para ver mais.": "Browse the niches. Each row is a specialty. Click the arrows to see more.",
+    "Cabelo": "Hair", "Autoestima | Beleza": "Self-esteem | Beauty", "Moda": "Fashion", "Tech | Apps | Cursos": "Tech | Apps | Courses", "Maternidade": "Motherhood",
+    "Casa e decoração": "Home and decor", "Diversos | Bem Estar | Fit": "Lifestyle | Wellness | Fitness", "Fotos": "Photos",
+    "Excesso de fonte de calor": "Too much heat styling", "Problema x solução": "Problem x solution", "Linha de tratamento": "Treatment line", "Queda de cabelo": "Hair loss", "Teste": "Test",
+    "Praticidade sem fonte de calor": "Easy styling without heat", "Depoimento": "Testimonial", "Tinta de cabelo": "Hair dye", "Controle de frizz": "Frizz control", "Experiência": "Experience",
+    "Babyliss automático": "Automatic curler", "Kit de salão": "Salon kit", "Experiência de compra": "Shopping experience", "Retoque de raiz": "Root touch-up", "Demonstração": "Demo",
+    "Cabelo cacheado": "Curly hair", "Desodorante": "Deodorant", "Clínica de estética": "Aesthetics clinic", "Hidratante e fragrância": "Moisturizer and fragrance", "Educacional": "Educational",
+    "Cuidado com as axilas": "Underarm care", "Rotina de cuidados": "Care routine", "Protetor solar": "Sunscreen", "Dia das mães": "Mother's Day", "Pijamas de inverno": "Winter pajamas", "Humor": "Humor",
+    "Variedade de looks": "Outfit variety", "Testemunho": "Testimonial", "Pijamas": "Pajamas", "Melhores lojas da Shein": "Best Shein stores", "Looks de mãe na escola": "School-run mom outfits",
+    "Identificação": "Relatability", "App de marketplace": "Marketplace app", "Problema x identificação": "Problem x relatability", "App de Pix parcelado": "Buy-now-pay-later app",
+    "Trend + storytelling": "Trend + storytelling", "Faculdade EAD": "Online college", "Curso de inglês kids": "English course for kids", "Seguro de vida, casa e médico": "Life, home and health insurance",
+    "Revenda Cacau Show": "Cacau Show reselling", "App de moeda digital": "Digital currency app", "Roupa infantil": "Kids' clothing", "Pomada infantil": "Baby ointment", "Brinquedo": "Toy",
+    "Livros personalizados": "Personalized books", "Assinatura de suco": "Juice subscription", "Experiência pessoal": "Personal experience", "Óculos kids": "Kids' sunglasses",
+    "Demonstração + dica": "Demo + tip", "Livro kids Black Friday": "Kids' book Black Friday", "Produto para cabelo": "Hair product", "Sabão líquido": "Liquid detergent", "Robô aspirador": "Robot vacuum",
+    "Triturador elétrico": "Electric chopper", "Mini máquina de bolo": "Mini cake maker", "Pote de armazenamento": "Storage container", "Mini liquidificador": "Mini blender", "Caixa de som": "Speaker",
+    "Sabão em pó": "Laundry powder", "Dia dos pais": "Father's Day", "Storytelling achadinhos": "Great-finds storytelling", "Ômega 3": "Omega 3", "Problema e humor": "Problem and humor",
+    "Alimentação no inverno": "Winter nutrition",
+    "Algumas marcas que já trabalhei": "Some brands I've worked with", "+80 parceiros já testaram e aprovaram meus conteúdos": "80+ partners have tested and approved my content",
+    "Hora de": "Time to", "criar": "create", "Análise de marca": "Brand analysis", "Briefing + conteúdo": "Briefing + content", "Gravação e edição": "Filming and editing", "Acompanhamento": "Follow-up",
+    "O primeiro passo é o estudo da marca para entender as maiores necessidades e dores. Assim como a compreensão do público-alvo para conteúdos mais estratégicos.": "The first step is studying the brand to understand its biggest needs and pain points, along with the target audience, for more strategic content.",
+    "Ideias e roteiros dos conteúdos que serão criados para a marca, desenvolvidos pela creator e enviados para a marca anteriormente.": "Ideas and scripts for the content to be created, developed by the creator and sent to the brand in advance.",
+    "Momento de gravação e edição em alta qualidade para a marca, além da entrega e pós-venda. Prazo de 7 dias úteis para entrega após o recebimento.": "High-quality filming and editing for the brand, plus delivery and after-sales support. Delivery within 7 business days after receiving the product.",
+    "Contate-me": "Contact me", "Vamos criar algo": "Shall we create something", "juntos": "together",
+    "Conta um pouco sobre sua marca e o que você quer alcançar. Respondo em até 24h úteis.": "Tell me a bit about your brand and what you want to achieve. I reply within 24 business hours.",
+    "📍 Valinhos - SP | Todo o Brasil": "📍 Valinhos, SP | All of Brazil", "Nome": "Name", "Marca / Empresa": "Brand / Company", "Orçamento estimado": "Estimated budget", "Conta sobre o projeto": "Tell me about the project",
+    "Enviar mensagem": "Send message", "Enviando...": "Sending...", "Mensagem recebida!": "Message received!", "Vou te responder em até 24h úteis no e-mail que você deixou.": "I'll reply within 24 business hours to the email you left.",
+    "Qual é o seu nome?": "What's your name?", "Confere o e-mail, por favor.": "Please check the email.", "Escreve uma mensagem pra mim.": "Please write me a message.",
+    "Não consegui enviar agora. Tenta de novo ou me chama no WhatsApp, por favor.": "I couldn't send it right now. Please try again or message me on WhatsApp.",
+    "Abri o seu e-mail com a mensagem já pronta para mim. É só clicar em enviar que eu respondo em até 24h úteis.": "I opened your email with the message ready for me. Just click send and I'll reply within 24 business hours.",
+    "carregando...": "loading...", "Toque para ativar o som": "Tap to turn on sound",
+    "Investimentos UGC": "UGC pricing", "Contrate 1 vez": "One-time hire", "1 vídeo": "1 video", "Com recorrência": "Recurring", "(mínimo 3 meses)": "(3-month minimum)", "Adicionais": "Add-ons",
+    "3 fotos": "3 photos", "Roteiro": "Script", "Gravação": "Filming", "Edição": "Editing", "Direito de uso em ADS por 06 meses": "6-month ad usage rights",
+    // atributos (leitores de tela, campos)
+    "Abrir menu": "Open menu", "Fechar menu": "Close menu", "Menu principal": "Main menu", "Seções do portfólio": "Portfolio sections", "Redes sociais": "Social media", "Meus números": "My numbers",
+    "Marcas com quem já trabalhei": "Brands I've worked with", "Ver anteriores": "Previous", "Ver mais": "More", "Nichos": "Niches", "Logos das marcas": "Brand logos", "5 de 5 estrelas": "5 out of 5 stars",
+    "Seu nome": "Your name", "voce@marca.com": "you@brand.com", "Nome da marca": "Brand name", "Ex: R$ 1.000 a R$ 5.000": "E.g. R$ 1,000 to R$ 5,000",
+    "Categoria, formato, prazo, objetivo da campanha...": "Category, format, deadline, campaign goal...", "Vídeo": "Video", "Fechar vídeo": "Close video", "Pausar ou continuar o vídeo": "Pause or play the video",
+    "Pausar": "Pause", "Continuar": "Play", "Posição do vídeo": "Video position", "Tirar o som": "Mute", "Ativar o som": "Unmute", "Idioma": "Language",
+    "Mari Bonetto sorrindo, sentada numa poltrona branca, de blusa de tricô marrom ombro a ombro e calça bege": "Mari Bonetto smiling, sitting on a white armchair in an off-the-shoulder brown knit top and beige pants",
+    "Mari Bonetto sorrindo, de blusa marrom, segurando uma claquete escrita UGC Creator e Mari Bonetto": "Mari Bonetto smiling in a brown top, holding a clapperboard that reads UGC Creator and Mari Bonetto",
+    "Instagram UGC @maribonettougc (abre em outra aba)": "UGC Instagram @maribonettougc (opens in a new tab)", "TikTok @maribonettougc (abre em outra aba)": "TikTok @maribonettougc (opens in a new tab)",
+    "Mari Bonetto sentada no chão do estúdio entre tripés de luz, segurando o celular perto do rosto e sorrindo, com câmera, notebook e microfone ao redor": "Mari Bonetto sitting on the studio floor among light stands, holding her phone near her face and smiling, with a camera, laptop and microphone around her",
+    "Mari Bonetto sorrindo ao lado de caixas de produtos, cercada por seis feedbacks de marcas com cinco estrelas: Fernanda da Open English, Nicoli da Publi Americanas, Thaina da Nivea Potinhos, Nath da Midas Time, Nat do Mercado Livre e Julia do Marketing Omo": "Mari Bonetto smiling next to product boxes, surrounded by six five-star brand reviews: Fernanda from Open English, Nicoli from Publi Americanas, Thaina from Nivea Potinhos, Nath from Midas Time, Nat from Mercado Livre and Julia from Omo Marketing",
+    // feedbacks (texto para leitores de tela)
+    "Sua entrega foi COMPLETA, até mencionei isso aqui dentro, você pensou em todos os detalhes e nos deu a chance de escolher o que acharíamos melhor e isso sem sombra de dúvidas é maravilhoso. Além do que, a qualidade do seu conteúdo é impecável, edição, qualidade de vídeo e qualidade das fotos. Adoraria trabalhar com você novamente, vou te deixar no topo da nossa lista de renovação futura!!!!!": "Your delivery was COMPLETE, I even mentioned it internally. You thought of every detail and gave us the chance to choose what we thought was best, which is truly wonderful. On top of that, the quality of your content is flawless: editing, video quality and photo quality. I'd love to work with you again, I'll keep you at the top of our renewal list!!!!!",
+    "Obrigada pela parceria 💙": "Thank you for the partnership 💙",
+    "Foi ótimo trabalhar com vc!! A comunicação foi sempre clara, rápida e organizada, o que facilitou muito o processo. O conteúdo que você entregou estava super alinhado com o briefing e com as expectativas ❤️❤️": "It was great working with you!! Communication was always clear, fast and organized, which made the process much easier. The content you delivered was perfectly aligned with the brief and expectations ❤️❤️",
+    "amiga. foi super tranquilo tocar essa campanha contigo até porque você entendeu muito bem a proposta do briefing e trouxe um conteúdo com uma linguagem muito orgânica": "girl, running this campaign with you was so easy, because you really understood the brief and brought content with a very organic tone",
+    "foi ótimo, de verdade mesmo ❤️": "it was great, truly ❤️",
+    "Oi Mari, eu sabia que você faria um ÓTIMO trabalho, ainda bem que fechamos um vídeo hahaha": "Hi Mari, I knew you'd do a GREAT job, glad we booked a video hahaha",
+    "Seu vídeo ficou ótimo, parabéns 🥰": "Your video turned out great, congrats 🥰",
+    "Você é um mulher muito bonita e entendeu a proposta que gostaríamos, enviei um roteiro e você conseguiu deixa-lo dinâmico e transmitiu todas as qualidades do body shaper, deixou o vídeo super dinâmico e criativo 💜": "You're a beautiful woman and you understood what we wanted. I sent a script and you made it dynamic and conveyed all the qualities of the body shaper, the video was super dynamic and creative 💜",
+    "Adoramos como você desenvolveu o roteiro e o vídeo ✨": "We loved how you developed the script and the video ✨", "Aprovadissimo! 🥰": "Totally approved! 🥰",
+    "foi ótimo.": "it was great.", "entendeu o briefing, respondeu rapidamente e entregou dentro do prazo! 💜": "understood the brief, replied quickly and delivered on time! 💜",
+    "Amor, ficou muito bom, o conteúdo ficou ótimo, arrasou mesmo 💜💜💜": "Love, it turned out really good, the content is great, you nailed it 💜💜💜",
+    "Marketing Omo": "Omo Marketing", "+5 mi": "+5M"
+  };
+  const REGRAS = [
+    [/^Faltam (\d+) dias pra Black Friday$/, "$1 days to Black Friday"],
+    [/^Assistir (.+) aqui no site$/, (m, x) => "Watch " + (EN[x] || x) + " here"],
+    [/^(\d+) vídeos$/, "$1 videos"], [/^Economize (R\$[\d.,]+)$/, "Save $1"],
+    [/^Mensagem recebida, (.+)!$/, "Message received, $1!"], [/^Quase lá, (.+)!$/, "Almost there, $1!"]
+  ];
+  const norm = (s) => s.replace(/\s+/g, " ").trim();
+  function traduzir(s) {
+    const k = norm(s);
+    if (!k) return null;
+    if (Object.prototype.hasOwnProperty.call(EN, k)) return EN[k];
+    for (const [re, sub] of REGRAS) { if (sub && re.test(k)) return k.replace(re, sub); }
+    return null;
+  }
+  const ATRIBUTOS = ["placeholder", "aria-label", "alt", "title"];
+  const textos = new Map();   // nó de texto -> original em português
+  const atribs = new Map();   // elemento -> {atributo: original}
+  let idioma = "pt", mexendo = false;
+
+  function emIngles(raiz) {
+    const w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
+    const nos = []; let n;
+    if (raiz.nodeType === 3) nos.push(raiz); else while ((n = w.nextNode())) nos.push(n);
+    nos.forEach((no) => {
+      const pai = no.parentElement;
+      if (!pai || /^(SCRIPT|STYLE|NOSCRIPT)$/.test(pai.tagName) || pai.closest("[data-sem-traducao]")) return;
+      const atual = no.nodeValue, en = traduzir(atual);
+      if (en === null || norm(atual) === en) return;
+      if (!textos.has(no)) textos.set(no, atual);
+      no.nodeValue = atual.match(/^\s*/)[0] + en + atual.match(/\s*$/)[0];
+    });
+    if (raiz.nodeType !== 1) return;
+    [raiz, ...raiz.querySelectorAll("[placeholder],[aria-label],[alt],[title]")].forEach((el) => {
+      ATRIBUTOS.forEach((a) => {
+        const v = el.getAttribute && el.getAttribute(a); if (!v) return;
+        const en = traduzir(v); if (en === null || en === v) return;
+        const o = atribs.get(el) || {}; if (!(a in o)) o[a] = v; atribs.set(el, o);
+        el.setAttribute(a, en);
+      });
+    });
+  }
+  function emPortugues() {
+    textos.forEach((pt, no) => { if (no.isConnected) { const en = traduzir(pt); if (en !== null && norm(no.nodeValue) === en) no.nodeValue = pt; } });
+    atribs.forEach((o, el) => { Object.entries(o).forEach(([a, pt]) => el.setAttribute(a, pt)); });
+    textos.clear(); atribs.clear();
+  }
+  const TITULO_PT = document.title, meta = document.querySelector('meta[name="description"]'), DESC_PT = meta && meta.content;
+  function aplicar(novo, salvar) {
+    idioma = novo === "en" ? "en" : "pt";
+    mexendo = true;
+    if (idioma === "en") emIngles(document.body); else emPortugues();
+    document.documentElement.lang = idioma === "en" ? "en" : "pt-BR";
+    document.title = idioma === "en" ? "Mari Bonetto | UGC Portfolio" : TITULO_PT;
+    if (meta) meta.content = idioma === "en" ? "Mari Bonetto, UGC Creator in Valinhos, Brazil. Content that feels like a friend's recommendation before it feels like an ad." : DESC_PT;
+    document.querySelectorAll(".idioma button").forEach((b) => { const on = b.dataset.idioma === idioma; b.classList.toggle("ativo", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+    mexendo = false;
+    if (salvar) { try { localStorage.setItem("idioma", idioma); } catch (e) {} }
+  }
+  // o que o script desenha ou troca depois (tarja, carrosséis, player, formulário) também vai para o inglês
+  new MutationObserver((lista) => {
+    if (idioma !== "en" || mexendo) return;
+    mexendo = true;
+    lista.forEach((m) => {
+      if (m.type === "characterData") emIngles(m.target);
+      else if (m.type === "attributes") emIngles(m.target);
+      else m.addedNodes.forEach((n) => { if (n.nodeType === 1 || n.nodeType === 3) emIngles(n); });
+    });
+    mexendo = false;
+  }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATRIBUTOS });
+
+  document.querySelectorAll(".idioma button").forEach((b) => b.addEventListener("click", () => aplicar(b.dataset.idioma, true)));
+  let inicial = "pt";
+  try { inicial = localStorage.getItem("idioma") || "pt"; } catch (e) {}
+  const q = new URLSearchParams(location.search).get("lang"); if (q) inicial = q.toLowerCase().startsWith("en") ? "en" : "pt";
+  if (inicial === "en") aplicar("en", false);
+})();
 </script>
 </body>
 </html>
