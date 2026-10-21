@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#f6efe6">
+<title>Finanças Bonetto</title>
+<!-- App financeiro do casal (Mari e Eduardo Bonetto): finanças pessoais (CPF) de cada um,
+     com dashboard, cartões, empréstimos, reserva e investimentos e uma consultora financeira
+     em cada aba. Dados na tabela financeiro_contas; acesso só para a Mari e os e-mails que ela
+     libera (financeiro_membros). O painel da Mari (/admin) continua só dela. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../admin/icones/icone-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Finanças">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/financeiro.css?v=202610212359">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/banco.js?v=202610212359"></script>
+</head>
+<body>
+<div id="raiz"><p class="fn-carregando">Carregando…</p></div>
+<div class="fn-toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="../js/financeiro.js?v=202610212359"></script>
+</body>
+</html>

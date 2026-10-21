@@ -543,3 +543,16 @@ create table if not exists public.edicao_projetos (
 );
 alter table public.edicao_projetos enable row level security;
 create policy "dona faz tudo" on public.edicao_projetos for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+-- Finanças Bonetto (/financeiro): app do casal (Mari e Eduardo). Sem dados aqui.
+create table if not exists public.financeiro_membros (email text primary key, nome text, criado_em timestamptz not null default now());
+alter table public.financeiro_membros enable row level security;
+create policy "dona gerencia membros" on public.financeiro_membros for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+create or replace function public.e_membro_financeiro() returns boolean language sql stable security definer set search_path = public, auth as $$
+  select public.e_a_dona() or exists (select 1 from public.financeiro_membros m where lower(m.email) = lower(coalesce(auth.jwt() ->> 'email', '')))
+$$;
+revoke all on function public.e_membro_financeiro() from public, anon;
+grant execute on function public.e_membro_financeiro() to authenticated;
+create table if not exists public.financeiro_contas (id text primary key, nome text not null, dados jsonb not null default '{}'::jsonb, atualizado_em timestamptz not null default now(), atualizado_por text);
+alter table public.financeiro_contas enable row level security;
+create policy "casal le e grava" on public.financeiro_contas for all to authenticated using (public.e_membro_financeiro()) with check (public.e_membro_financeiro());
