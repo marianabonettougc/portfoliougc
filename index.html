@@ -300,6 +300,18 @@
   /* site reduzido no celular: textos maiores (quase tudo é medido em rem, então cresce junto) */
   html.miniatura{font-size:22px}
   .miniatura .sobre-grid{align-items:start}
+  /* celular (site reduzido): tarja da Black Friday numa linha só, pequena, como na referência da Lara */
+  .miniatura .tarja-bf{flex-wrap:nowrap;gap:0 12px;padding:9px 18px;font-size:.6rem;white-space:nowrap}
+  .miniatura .bf-selo{font-size:.42rem;padding:4px 9px;letter-spacing:.14em;flex-shrink:0}
+  .miniatura .bf-dias{font-size:.62rem;flex-shrink:0}
+  .miniatura .bf-texto{font-size:.56rem;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .miniatura .bf-link{font-size:.56rem;margin-left:4px;flex-shrink:0}
+  /* celular: foto do Sobre mim grande, em cima do texto */
+  .miniatura .sobre-grid{grid-template-columns:minmax(0,1fr);gap:40px;max-width:760px}
+  .miniatura .sobre-foto{max-width:640px;width:100%;margin:0 auto;aspect-ratio:4/5}
+  /* celular: respiro entre o título das Categorias, o texto e os nichos */
+  .miniatura .categorias-topo{max-width:none;margin-bottom:34px}
+  .miniatura .categorias-sub{margin-top:26px;line-height:1.7}
   .miniatura .capa-nome{font-size:5rem}
   /* celular: setinhas grandes para o dedo, nichos e títulos das linhas legíveis */
   .miniatura .seta{width:76px;height:76px}
@@ -351,7 +363,9 @@
   .sobretitulo::before{content:"";width:28px;height:1px;background:var(--cafe-2)}
   .categorias-topo h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(2.2rem,4.6vw,3.4rem);line-height:1.02;letter-spacing:-.02em;color:var(--cafe);margin:0}
   .categorias-topo h2 em{font-style:italic;color:#a87c5a}
-  .categorias-sub{margin:14px 0 0;font-size:.95rem;line-height:1.6;color:var(--texto-suave)}
+  .categorias-sub{margin:22px 0 0;font-size:.95rem;line-height:1.75;color:var(--texto-suave)}
+  .categorias-topo .sobretitulo{margin-bottom:14px}
+  .categorias-topo{margin-bottom:30px}
   .filtros{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
   .filtro{padding:7px 14px;border-radius:999px;border:1px solid rgba(107,74,53,.22);background:#fbf8f3;font-weight:500;font-size:.85rem;color:var(--texto);cursor:pointer;transition:background .2s,color .2s,border-color .2s}
   .filtro:hover{border-color:var(--cafe)}
@@ -915,7 +929,7 @@
       <div class="categorias-topo revelar">
         <p class="sobretitulo">Categorias</p>
         <h2 id="titulo-trabalhos">Que tipo de <em>conteúdo</em> você precisa?</h2>
-        <p class="categorias-sub">Navegue pelos nichos. Cada linha é uma especialidade. Clique nas setinhas para ver mais.</p>
+        <p class="categorias-sub">Navegue pelos nichos: cada linha é uma especialidade. Toque em qualquer vídeo para assistir e use as setas para ver mais.</p>
       </div>
       <!-- Menu de nichos (leva até a linha do nicho) -->
       <nav class="filtros revelar" id="filtros" aria-label="Nichos"></nav>
@@ -2273,7 +2287,7 @@ else registrarVisita(false);
     "Publicação no meu perfil": "Post on my profile", "O conteúdo publicado no meu Instagram, em collab com a sua marca.": "The content posted on my Instagram, as a collab with your brand.",
     "Pacote mensal": "Monthly package", "Uma quantidade fixa de vídeos por mês, com planejamento junto e prioridade na agenda.": "A fixed number of videos per month, with joint planning and priority booking.",
     "Que tipo de": "What kind of", "conteúdo": "content", "você precisa?": "do you need?",
-    "Navegue pelos nichos. Cada linha é uma especialidade. Clique nas setinhas para ver mais.": "Browse the niches. Each row is a specialty. Click the arrows to see more.",
+    "Navegue pelos nichos: cada linha é uma especialidade. Toque em qualquer vídeo para assistir e use as setas para ver mais.": "Browse by niche: each row is a specialty. Tap any video to watch it and use the arrows to see more.",
     "Cabelo": "Hair", "Autoestima | Beleza": "Self-esteem | Beauty", "Moda": "Fashion", "Tech | Apps | Cursos": "Tech | Apps | Courses", "Maternidade": "Motherhood",
     "Casa e decoração": "Home and decor", "Diversos | Bem Estar | Fit": "Lifestyle | Wellness | Fitness", "Fotos": "Photos",
     "Excesso de fonte de calor": "Too much heat styling", "Problema x solução": "Problem x solution", "Linha de tratamento": "Treatment line", "Queda de cabelo": "Hair loss", "Teste": "Test",
