@@ -455,7 +455,13 @@ IDEIA PARA DEPOIS
     const volume = /(volume|mais baixo|mais alto|abaix|baixinho|altura do som|alto demais|muito alto)/.test(t);
     if (new RegExp(`(muitos?|mais|bastante|aument\\w*|encher|cheio de|varios?)( de| os| as)? ${SONS}`).test(t) && !volume) o.sons = "muitos";
     if ((new RegExp(`(poucos?|menos|diminu\\w*|reduz\\w*|menor quantidade|alguns|uns)( os| as| de| a| o| quantidade de)? ${SONS}`).test(t) || new RegExp(`${SONS}[^.;!?]{0,25}(demais|exagerad|diminu|reduz|menos)`).test(t)) && !volume) o.sons = "poucos";
-    if (/(impacto|frases? fortes?|momentos? fortes?|so no principal|so nos momentos)/.test(t) && new RegExp(SONS).test(t)) o.sons = "impacto";
+    if (/(impacto|frases? fortes?|momentos? fortes?|momentos? chave|principais|importantes|so no principal|so nos momentos|so nas? (frases?|falas?|fracas?|partes?))/.test(t) && new RegExp(SONS).test(t)) o.sons = "impacto";
+    // vídeo que já vem pré-editado: edição leve (o padrão dela): não recorta, não legenda, não põe título,
+    // só sons nos momentos-chave (a não ser que ela peça outra quantidade)
+    if (/pre.?editad|ja (esta|ta|vem|veio|foi) (pre.?)?editad|ja (cortei|legendei|editei)|ja esta cortad|ja tem legenda/.test(t)) {
+      Object.assign(o, { preEditado: true, legenda: false, titulo: false, chamativas: false, silencio: false, erros: false, vicios: false, zoomCortes: false, dinamismo: o.dinamismo || "normal" });
+      if (!o.sons || (o.sons === "poucos" && /so n/.test(t))) o.sons = o.sons === "muitos" ? "muitos" : "impacto";
+    }
     if (nao(SONS) && !so) o.sons = "nenhum";
     if (so && new RegExp(SONS).test(t.split(/\b(so|apenas|somente)\b/).pop()) && !o.sons) o.sons = /alguns|poucos|uns/.test(t) ? "poucos" : "medio";
     if (volume && new RegExp(SONS).test(t)) o.vol = /(mais alto|aument|alto demais nao|nao (da|esta) pra ouvir|baixo demais)/.test(t) ? 0.65 : 0.22;
@@ -472,9 +478,10 @@ IDEIA PARA DEPOIS
 
   function descreverRegras(o) {
     const d = [];
-    if ("legenda" in o) d.push(o.legenda ? "com legenda" : "sem legenda");
-    if ("titulo" in o) d.push(o.titulo ? "com título" : "sem título");
-    if (o.silencio === false) d.push("sem recortar a fala");
+    if ("legenda" in o && !o.preEditado) d.push(o.legenda ? "com legenda" : "sem legenda");
+    if ("titulo" in o && !o.preEditado) d.push(o.titulo ? "com título" : "sem título");
+    if (o.preEditado) d.push("vídeo já pré-editado: não refiz cortes, legenda nem título");
+    else if (o.silencio === false) d.push("sem recortar a fala");
     if (o.sons) d.push({ nenhum: "sem efeitos sonoros", impacto: "efeitos só nas frases de impacto", poucos: "poucos efeitos sonoros", medio: "efeitos na medida", muitos: "muitos efeitos sonoros" }[o.sons]);
     if ("vol" in o) d.push(o.vol > 0.4 ? "efeitos mais altos" : "efeitos mais baixinhos");
     if (o.dinamismo === "dinamico") d.push("dinâmico: cortes sem pausa, zoom entrando e saindo, transição e flash na troca de cena");
@@ -506,7 +513,7 @@ IDEIA PARA DEPOIS
       if (r.plano.titulo) { st.titulo = r.plano.titulo; st.tituloDestaque = r.plano.titulo_destaque || st.tituloDestaque; }
       const locais = regrasDoPedido(texto);
       if (r.opc && r.opc.sfxAuto && !locais.sons) locais.sons = { desligado: "nenhum", pouco: "poucos", medio: "medio", muito: "muitos" }[r.opc.sfxAuto];
-      Object.assign(st.opc, r.opc || {}, locais); r.opc = { ...(r.opc || {}), ...locais }; ajustarVoz(); st.opc.confete = false; if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
+      const { preEditado: _pe, ...locaisOpc } = locais; Object.assign(st.opc, r.opc || {}, locaisOpc); r.opc = { ...(r.opc || {}), ...locaisOpc }; ajustarVoz(); st.opc.confete = false; if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
       st.correcoes.push({ texto, resposta: r.resposta || "Corrigido.", regra: r.regra || "" });
       montar(); st.t = 0;
       // o que mudou de verdade (para ela ver que ajustou, ou saber que não deu)
@@ -576,7 +583,7 @@ IDEIA PARA DEPOIS
       }
       etapa("Montando a linha do tempo");
       // o que ela escreveu em "O que você quer nesta edição" vale com certeza
-      Object.assign(st.opc, (st.plano && st.plano.opc) || {}, regrasDoPedido(st.pedidos));
+      Object.assign(st.opc, (st.plano && st.plano.opc) || {}, (({ preEditado, ...x }) => x)(regrasDoPedido(st.pedidos)));
       if (st.plano) delete st.plano.opc;
       ajustarVoz();
       montar();
