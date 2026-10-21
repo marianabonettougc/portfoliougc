@@ -110,14 +110,14 @@ IDEIA PARA DEPOIS
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1 },
-    pedidos: "", correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, aba: "video", projeto: null, projetos: [], pendentes: null, salvando: "",
+    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1, legenda: true },
+    pedidos: "", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, aba: "video", projeto: null, projetos: [], pendentes: null, salvando: "",
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
   try { const salvo = JSON.parse(localStorage.getItem("ed-opc3") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
-  const OPC_VISUAIS = ["sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg"];
+  const OPC_VISUAIS = ["sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg", "legenda"];
   function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc3", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
@@ -343,7 +343,7 @@ IDEIA PARA DEPOIS
       if (pend.every((x) => x.usado)) {
         st.pendentes = null;
         let off = 0; st.clipes.forEach((c) => { c.offset = off; off += c.dur; });
-        if (st.plano) { montar(); if (st.efeitosSalvos) { st.efeitos = st.efeitosSalvos; st.efeitosSalvos = null; } st.t = 0; toast("Projeto aberto do jeito que você deixou."); }
+        if (st.plano) { montar(); if (st.efeitosSalvos && !(st.manual.sons.length || st.manual.tirados.length)) { st.efeitos = st.efeitosSalvos; } st.efeitosSalvos = null; st.t = 0; toast("Projeto aberto do jeito que você deixou."); }
       }
       pintar(); return;
     }
@@ -353,7 +353,7 @@ IDEIA PARA DEPOIS
 
   // ---------- projetos (memória da edição) ----------
   const dadosProjeto = () => ({ versao: 3,
-    tema: st.tema, roteiro: st.roteiro, pedidos: st.pedidos, opc: st.opc, plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, editLeg: st.editLeg, marcas: st.marcas, capa: st.capa, correcoes: st.correcoes,
+    tema: st.tema, roteiro: st.roteiro, pedidos: st.pedidos, manual: st.manual, opc: st.opc, plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, editLeg: st.editLeg, marcas: st.marcas, capa: st.capa, correcoes: st.correcoes,
     efeitos: st.efeitos.filter((e) => !e.doTitulo && !e.daChamativa).map(({ id, ...e }) => e),
     clipes: (st.clipes.length ? st.clipes : st.pendentes || []).map((c) => ({ nome: c.nome, dur: Math.round((c.dur || 0) * 100) / 100, palavras: c.palavras || null })),
   });
@@ -381,7 +381,7 @@ IDEIA PARA DEPOIS
     if (st.tocando) parar();
     st.clipes.forEach((c) => { try { c.el.remove(); URL.revokeObjectURL(c.el.src); } catch (e) { /* segue */ } });
     const capaBox = $("#ed-capa"); if (capaBox) capaBox.dataset.pronto = "";
-    Object.assign(st, { clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, aba: "video", correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "", pedidos: "" });
+    Object.assign(st, { clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, aba: "video", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "", pedidos: "" });
   }
   async function abrirProjeto(id) {
     const { data, error } = await banco().from("edicao_projetos").select("*").eq("id", id).maybeSingle();
@@ -389,7 +389,7 @@ IDEIA PARA DEPOIS
     limparTudo();
     const d = data.dados || {};
     st.projeto = { id: data.id, nome: data.nome };
-    st.tema = d.tema || ""; st.roteiro = d.roteiro || ""; st.pedidos = d.pedidos || ""; st.plano = d.plano || null; st.titulo = d.titulo || ""; st.tituloDestaque = d.tituloDestaque || "";
+    st.tema = d.tema || ""; st.roteiro = d.roteiro || ""; st.pedidos = d.pedidos || ""; st.manual = { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [], ...(d.manual || {}) }; st.plano = d.plano || null; st.titulo = d.titulo || ""; st.tituloDestaque = d.tituloDestaque || "";
     st.editLeg = d.editLeg || {}; st.marcas = d.marcas || {}; st.capa = d.capa || null; st.correcoes = d.correcoes || [];
     if (d.opc && d.versao >= 3) Object.assign(st.opc, d.opc);
     if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
@@ -429,6 +429,32 @@ IDEIA PARA DEPOIS
     if (texto) st.etapas.push({ texto, estado: estado || "andando" });
     pintarEtapas();
   }
+  // pedidos escritos por ela que o painel entende sozinho, sem depender da IA
+  // ("sem legenda", "só efeitos e transições", "sem título", "sem zoom", "legenda maior"...)
+  function regrasDoPedido(texto) {
+    const t = " " + String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") + " ";
+    // "não ... legenda" (até umas 6 palavras entre eles), "sem legenda", "tira a legenda", "nada de legenda"
+    const nao = (alvo) => new RegExp(`(\\bsem|\\bnao\\b[^.;!?,]{0,45}?|\\btir[ae]r?|nada de|zero)\\s*(a |as |o |os |de |nenhum |nenhuma )?${alvo}\\b`).test(t);
+    const o = {};
+    const so = /\b(so|apenas|somente)( [a-z]+){0,4} (efeitos?|sons?|transic)/.test(t);
+    if (nao("legendas?") || so) o.legenda = false;
+    if (/\b(com|quero|coloca|coloque|pode por|ponha) (a )?legendas?\b/.test(t) && !nao("legendas?")) o.legenda = true;
+    if (nao("titulos?") || so) o.titulo = false;
+    if (so) { o.chamativas = false; o.silencio = false; o.erros = false; o.vicios = false; }
+    if (so && /(efeitos?|sons?)/.test(t.split(/\b(so|apenas|somente)\b/).pop())) o.efeitos = true;
+    if (nao("cortes?") || nao("cortar") || /nao (corta|corte|cortar)/.test(t)) { o.silencio = false; o.erros = false; o.vicios = false; }
+    if (nao("zooms?")) { o.zoomCortes = false; o.zoomEnfase = false; }
+    if (nao("(efeitos? sonoros?|sons?|barulhos?)") && o.efeitos !== true) o.efeitos = false;
+    if (nao("transic(ao|oes)")) o.transicao = "nenhuma";
+    if (/legenda (maior|grande|maiores)/.test(t)) o.tamLeg = 1.25;
+    if (/legenda (menor|pequena|menores)/.test(t)) o.tamLeg = 0.85;
+    if (/(bem |mais |muito )dinamic|muitos? (efeitos?|sons?)|mais (efeitos?|sons?)/.test(t)) { o.sfxAuto = "muito"; o.efeitos = true; }
+    if (/(poucos?|alguns|menos) (efeitos?|sons?)/.test(t)) o.sfxAuto = "pouco";
+    if (/maiuscul/.test(t) && !/sem maiuscul|nao.{0,12}maiuscul/.test(t)) o.maiusculas = true;
+    if (/minuscul/.test(t)) o.maiusculas = false;
+    return o;
+  }
+
   // o padrão dela + os pedidos para este vídeo (vão juntos para a IA, com prioridade)
   const padraoComPedidos = () => st.pedidos.trim() ? `${st.padrao}\n\nPEDIDOS DELA PARA ESTE VÍDEO (prioridade máxima, valem mais que o padrão):\n${st.pedidos.trim()}` : st.padrao;
   const palavrasBrutas = () => st.clipes.flatMap((c) => (c.palavras || []).map((w) => ({ w: w.w, s: +(w.s + c.offset).toFixed(2), e: +(w.e + c.offset).toFixed(2) })));
@@ -447,7 +473,8 @@ IDEIA PARA DEPOIS
       const check = st.plano.roteiro_check;
       st.plano = { ...r.plano, roteiro_check: (r.plano.roteiro_check || []).length ? r.plano.roteiro_check : check };
       if (r.plano.titulo) { st.titulo = r.plano.titulo; st.tituloDestaque = r.plano.titulo_destaque || st.tituloDestaque; }
-      Object.assign(st.opc, r.opc || {}); ajustarVoz(); st.opc.confete = false; if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
+      const locais = regrasDoPedido(texto);
+      Object.assign(st.opc, r.opc || {}, locais); r.opc = { ...(r.opc || {}), ...locais }; ajustarVoz(); st.opc.confete = false; if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
       st.correcoes.push({ texto, resposta: r.resposta || "Corrigido.", regra: r.regra || "" });
       montar(); st.t = 0;
       // o que mudou de verdade (para ela ver que ajustou, ou saber que não deu)
@@ -458,7 +485,7 @@ IDEIA PARA DEPOIS
       if (st.zooms.length !== antes.zo) mud.push(`zooms ${antes.zo} → ${st.zooms.length}`);
       if (st.titulo !== antes.tit) mud.push("título");
       if (JSON.stringify(st.plano.destaques || []) !== antes.dest) mud.push("palavras de destaque");
-      const nomesOpc = { estilo: "estilo da legenda", fonteLeg: "fonte", corLegenda: "cor da legenda", porLegenda: "palavras por legenda", tamLeg: "tamanho da legenda", altura: "altura da legenda", sombra: "sombra", estiloTitulo: "estilo do título", ritmo: "ritmo", sfxAuto: "sons automáticos", transicao: "transição", vol: "volume dos efeitos", maiusculas: "maiúsculas", cor: "cor do destaque", sonsTitulo: "som do título", vicios: "vícios de fala", vozForte: "volume da voz", efeitos: "efeitos sonoros", titulo: "título na tela", zoomCortes: "zoom nos cortes", zoomEnfase: "zoom na ênfase", chamativas: "palavras chamativas", flash: "flash", tremer: "tremidinha", silencio: "corte de silêncios", erros: "tomadas erradas" };
+      const nomesOpc = { estilo: "estilo da legenda", fonteLeg: "fonte", corLegenda: "cor da legenda", porLegenda: "palavras por legenda", tamLeg: "tamanho da legenda", altura: "altura da legenda", sombra: "sombra", estiloTitulo: "estilo do título", ritmo: "ritmo", sfxAuto: "sons automáticos", transicao: "transição", vol: "volume dos efeitos", maiusculas: "maiúsculas", cor: "cor do destaque", sonsTitulo: "som do título", legenda: "legenda", vicios: "vícios de fala", vozForte: "volume da voz", efeitos: "efeitos sonoros", titulo: "título na tela", zoomCortes: "zoom nos cortes", zoomEnfase: "zoom na ênfase", chamativas: "palavras chamativas", flash: "flash", tremer: "tremidinha", silencio: "corte de silêncios", erros: "tomadas erradas" };
       Object.keys(r.opc || {}).forEach((k) => { if (antes.opc[k] !== st.opc[k]) mud.push(nomesOpc[k] || k); });
       const ultima = st.correcoes[st.correcoes.length - 1];
       ultima.mudou = mud;
@@ -514,7 +541,15 @@ IDEIA PARA DEPOIS
         st.plano = { titulo: "", remover: [], destaques: [], zooms: [], efeitos: [], broll: [], dicas: ["Não ouvi fala nesse vídeo, então não cortei silêncios nem pus legenda. Dá para pôr título e efeitos à mão."], musica: "" };
       }
       etapa("Montando a linha do tempo");
+      // o que ela escreveu em "O que você quer nesta edição" vale com certeza
+      Object.assign(st.opc, (st.plano && st.plano.opc) || {}, regrasDoPedido(st.pedidos));
+      if (st.plano) delete st.plano.opc;
+      ajustarVoz();
       montar();
+      const ouvidas = palavrasBrutas();
+      etapa(ouvidas.length ? `Ouvi o seu vídeo: ${ouvidas.length} palavras (veja abaixo em "O que eu ouvi").` : "Não ouvi fala no vídeo.", ouvidas.length ? "ok" : "erro");
+      const reg = regrasDoPedido(st.pedidos);
+      if (Object.keys(reg).length) etapa("Segui o que você pediu: " + Object.entries(reg).map(([k, v]) => ({ legenda: v ? "com legenda" : "sem legenda", titulo: v ? "com título" : "sem título", efeitos: v ? "com sons" : "sem sons", silencio: v ? "" : "sem recortar a fala", zoomCortes: v ? "" : "sem zoom", transicao: v === "nenhuma" ? "sem transição" : "", tamLeg: v > 1 ? "legenda maior" : "legenda menor", sfxAuto: v === "muito" ? "muitos sons" : v === "pouco" ? "poucos sons" : "", maiusculas: v ? "maiúsculas" : "minúsculas" })[k]).filter(Boolean).join(", ") + ".", "ok");
       etapa("Pronto! Dá o play para ver a prévia.", "ok");
       st.aba = "cortes";
       salvarDepois();
@@ -556,6 +591,10 @@ IDEIA PARA DEPOIS
     }
     // palavras que ela cortou na revisão e os vícios de fala
     for (const w of palavrasRevisao()) if (cortada(w)) tirar(w.corteDe, w.corteAte);
+    // planos que ela apagou na linha do tempo
+    for (const [de, ate] of st.manual.cortes || []) tirar(de, ate);
+    // divisões que ela fez ("Dividir aqui"): o plano vira dois
+    for (const g of st.manual.divisoes || []) { const nova = []; for (const [a, b] of lista) { if (g > a + 0.15 && g < b - 0.15) nova.push([a, g], [g, b]); else nova.push([a, b]); } lista = nova; }
     return lista.filter(([a, b]) => b - a >= 0.15);
   }
   // ritmo dos cortes: quanto de respiro fica antes e depois da fala e a partir de que pausa corta
@@ -613,10 +652,14 @@ IDEIA PARA DEPOIS
     }
     st.legendas = aplicarEdicoes(agrupar(palavras));
     // efeitos e zooms do plano no tempo final
-    st.efeitos = (p.efeitos || []).map((e) => ({ id: uid(), t: paraFinalPerto(e.t), tipo: e.tipo, por_que: e.por_que || "" })).filter((e) => e.t != null);
+    const tirados = new Set(st.manual.tirados || []);
+    st.efeitos = (p.efeitos || []).map((e) => ({ id: uid(), t: paraFinalPerto(e.t), tipo: e.tipo, por_que: e.por_que || "", chave: `p:${e.tipo}@${Math.round(e.t * 10)}` })).filter((e) => e.t != null && !tirados.has(e.chave));
+    for (const m of st.manual.sons || []) { const t = paraFinal(m.g); if (t != null) st.efeitos.push({ id: m.id, t, tipo: m.tipo, por_que: "você pôs", manual: true }); }
     st.efeitos = st.efeitos.filter((e) => !(e.t < 0.4 && e.tipo === "pop"));
     sonsDoTitulo();
     st.zooms = (p.zooms || []).map((z) => paraFinalPerto(z.t)).filter((t) => t != null);
+    st.zoomsManuais = (st.manual.zooms || []).map(paraFinal).filter((t) => t != null);
+    st.flashes = (st.manual.flashes || []).map(paraFinal).filter((t) => t != null);
     sonsAutomaticos();
     // momentos fortes (hit, ding, riser) ganham tremidinha
     st.fortes = st.efeitos.filter((e) => ["hit", "ding"].includes(e.tipo)).map((e) => e.t);
@@ -630,7 +673,8 @@ IDEIA PARA DEPOIS
     if (!nivel || nivel === "desligado") return;
     const passo = nivel === "muito" ? 1 : nivel === "medio" ? 2 : 3;
     const livre = (t, raio = 0.3) => !st.efeitos.some((e) => Math.abs(e.t - t) < raio);
-    const add = (t, tipo, por_que) => { if (t >= 0 && t < st.duracao && livre(t)) st.efeitos.push({ id: uid(), t, tipo, por_que, auto: true }); };
+    const tiradosAuto = new Set((st.manual.tirados || []).filter((k) => k.startsWith("a:")));
+    const add = (t, tipo, por_que) => { const chave = `a:${Math.round(t * 10)}`; if (t >= 0 && t < st.duracao && livre(t) && !tiradosAuto.has(chave)) st.efeitos.push({ id: uid(), t, tipo, por_que, auto: true, chave }); };
     const ciclo = ["woosh", "click", "suave", "shutter", "click"];
     let n = 0;
     st.segs.forEach((sg, i) => {
@@ -736,7 +780,7 @@ IDEIA PARA DEPOIS
   }
   function zoomEm(t) {
     let z = 1;
-    if (st.opc.zoomEnfase) for (const zt of st.zooms) {
+    for (const zt of [...(st.opc.zoomEnfase ? st.zooms : []), ...(st.zoomsManuais || [])]) {
       const d = t - zt;
       if (d < -0.15 || d > 1.4) continue;
       const k = d < 0 ? (d + 0.15) / 0.15 : d < 1.1 ? 1 : 1 - (d - 1.1) / 0.3;
@@ -765,9 +809,11 @@ IDEIA PARA DEPOIS
     const u = W / 1080;
     // flash rápido nas trocas de clipe
     if (st.opc.flash && s) { const i = st.segs.indexOf(s), ant = st.segs[i - 1]; const d = t - s.o0; if (ant && ant.ci !== s.ci && d < 0.12) { c2d.fillStyle = `rgba(255,255,255,${0.85 * (1 - d / 0.12)})`; c2d.fillRect(0, 0, W, H); } }
+    // flash que ela pôs à mão na linha do tempo
+    for (const f of st.flashes || []) { const d = t - f; if (d >= 0 && d < 0.14) { c2d.fillStyle = `rgba(255,255,255,${0.85 * (1 - d / 0.14)})`; c2d.fillRect(0, 0, W, H); } }
     // legenda (ou palavra chamativa)
     const g = st.legendas.find((x) => t >= x.o0 && t < x.o1);
-    if (g && !(st.opc.titulo && st.titulo && t < DUR_TITULO - 0.2)) { if (g.chamativa && st.opc.chamativas) desenharChamativa(g, t, u, W, H); else desenharLegenda(g, u, W, H); }
+    if (g && st.opc.legenda !== false && !(st.opc.titulo && st.titulo && t < DUR_TITULO - 0.2)) { if (g.chamativa && st.opc.chamativas) desenharChamativa(g, t, u, W, H); else desenharLegenda(g, u, W, H); }
     // confete removido: ela não quer mais (out/2026)
     // título do gancho
     if (st.opc.titulo && st.titulo && t < DUR_TITULO) desenharTitulo(t, u, W, H);
@@ -1172,6 +1218,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
               <button class="btn btn-principal ed-botao-grande" type="button" id="ed-editar">${ic.brilho}Editar automático</button>
               <ol class="ed-etapas" id="ed-etapas"></ol>
             </section>
+            <section class="ed-cartao" id="ed-ouvi" hidden></section>
           </div>
           <div class="rr-painel" data-painel="cortes" hidden><section class="ed-cartao" id="ed-cortes" hidden></section><p class="rr-vazio">Os cortes aparecem aqui depois que eu editar o vídeo.</p></div>
           <div class="rr-painel" data-painel="legendas" hidden><section class="ed-cartao" id="ed-legendas" hidden></section><p class="rr-vazio">As legendas aparecem aqui depois que eu editar o vídeo.</p></div>
@@ -1220,6 +1267,29 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $$(".rr-painel").forEach((pn) => { pn.hidden = pn.dataset.painel !== st.aba; });
   }
 
+  // ---------- edições à mão (como no CapCut), guardadas no tempo do bruto ----------
+  const brutoDe = (t) => { const sg = segNoFinal(t); return sg ? sg.g0 + Math.max(0, t - sg.o0) : null; };
+  function mexeuManual(remontarTudo) { if (st.tocando) parar(); if (remontarTudo) montar(); else { montar(); } pintar(); salvarDepois(); }
+  const hist = (k) => { (st.manual.hist = st.manual.hist || []).push(k); };
+  function porSom(tipo, t = st.t) { const g = brutoDe(t); if (g == null) return; hist("sons"); st.manual.sons.push({ id: uid(), g: +g.toFixed(2), tipo }); mexeuManual(); audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(tipo, ac.currentTime + 0.02, st.opc.vol); }
+  function tirarSom(e, quieto) {
+    if (e.manual) st.manual.sons = st.manual.sons.filter((m) => m.id !== e.id);
+    else if (e.chave) { hist("tirados"); st.manual.tirados.push(e.chave); }
+    st.sel = null; if (!quieto) mexeuManual();
+  }
+  function porZoom() { const g = brutoDe(st.t); if (g != null) { hist("zooms"); st.manual.zooms.push(+g.toFixed(2)); mexeuManual(); } }
+  function porFlash() { const g = brutoDe(st.t); if (g != null) { hist("flashes"); st.manual.flashes.push(+g.toFixed(2)); mexeuManual(); } }
+  function dividir() { const g = brutoDe(st.t); if (g == null) return; hist("divisoes"); (st.manual.divisoes = st.manual.divisoes || []).push(+g.toFixed(2)); mexeuManual(); const i = st.segs.findIndex((x) => x.g0 >= g - 0.01); if (i >= 0) { st.sel = { tipo: "plano", i }; pintarLinha(); } }
+  function apagarPlano(sg) { if (st.segs.length <= 1) { toast("Esse é o único plano. Use Dividir aqui para separar o trecho que quer apagar.", true); return; } hist("cortes"); st.manual.cortes.push([+sg.g0.toFixed(2), +sg.g1.toFixed(2)]); st.sel = null; mexeuManual(); toast("Plano apagado. Para voltar, use Desfazer na linha do tempo."); }
+  function desfazerManual() {
+    const m = st.manual; m.divisoes = m.divisoes || [];
+    const ult = [["cortes", m.cortes], ["divisoes", m.divisoes], ["sons", m.sons], ["zooms", m.zooms], ["flashes", m.flashes], ["tirados", m.tirados]].find(([, l]) => l.length);
+    // desfaz o último tipo mexido (guardamos a ordem num histórico simples)
+    const h = (st.manual.hist || []).pop();
+    if (h && m[h] && m[h].length) m[h].pop(); else if (ult) ult[1].pop(); else return;
+    mexeuManual();
+  }
+
   // ---------- linha do tempo: planos, legendas e efeitos ----------
   function pintarLinha() {
     const box = $("#ed-linha"); if (!box) return;
@@ -1228,15 +1298,56 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const d = st.duracao, pct = (t) => (Math.max(0, Math.min(d, t)) / d * 100).toFixed(3) + "%";
     const larg = Math.max(100, Math.round(d * 7));
     const marcas = []; for (let t = 0; t <= d; t += d > 60 ? 10 : 5) marcas.push(t);
-    box.innerHTML = `<div class="rr-linha-rolar"><div class="rr-linha-dentro" style="width:${larg}%">
-      <div class="rr-regua">${marcas.map((t) => `<span style="left:${pct(t)}">${tempo(t).replace(/,\d$/, "")}</span>`).join("")}</div>
-      <div class="rr-trilha rr-t-leg">${st.legendas.map((g, i) => `<button type="button" class="rr-chip" data-ir="${g.o0}" style="left:${pct(g.o0)};width:calc(${pct(g.o1 - g.o0)} - 3px)" title="${esc(textoLeg(g))}"><b>T</b> ${esc(textoLeg(g))}</button>`).join("")}</div>
-      <div class="rr-trilha rr-t-planos">${st.segs.map((sg, i) => `<button type="button" class="rr-plano-bl${i % 2 ? " par" : ""}${sg.zoom > 1 ? " zoom" : ""}" data-ir="${sg.o0}" style="left:${pct(sg.o0)};width:calc(${pct(sg.o1 - sg.o0)} - 2px)" title="Plano ${i + 1}${sg.zoom > 1 ? " com zoom" : ""}"></button>`).join("")}</div>
-      <div class="rr-trilha rr-t-sons">${st.efeitos.map((e) => `<button type="button" class="rr-som" data-ir="${Math.max(0, e.t - 0.3)}" style="left:${pct(e.t)}" title="${esc((EFEITOS[e.tipo] || e.tipo) + (e.por_que ? ": " + e.por_que : ""))}"></button>`).join("")}</div>
+    const sel = st.sel || {}, o = st.opc, m = st.manual;
+    const temDesfazer = (m.divisoes || []).length || m.cortes.length || m.sons.length || m.zooms.length || m.flashes.length || m.tirados.length;
+    const efSel = sel.tipo === "som" ? st.efeitos.find((e) => e.id === sel.id) : null;
+    box.innerHTML = `<div class="rr-ferramentas">
+        <button type="button" class="btn btn-principal" data-f="play">${st.tocando ? ic.pausa + "Pausar" : ic.play + "Play"}</button>
+        <span class="rr-tempo-f">${tempo(st.t)}</span>
+        <label class="rr-liga"><input type="checkbox" data-o="legenda" ${o.legenda !== false ? "checked" : ""}> Legenda</label>
+        <label class="rr-liga"><input type="checkbox" data-o="titulo" ${o.titulo ? "checked" : ""}> Título</label>
+        <label class="rr-liga"><input type="checkbox" data-o="efeitos" ${o.efeitos ? "checked" : ""}> Sons</label>
+        <span class="rr-sep"></span>
+        <select class="entrada" id="rr-som-tipo" aria-label="Efeito sonoro">${Object.entries(EFEITOS).map(([k, t]) => `<option value="${k}">${t}</option>`).join("")}</select>
+        <button type="button" class="btn" data-f="som">${ic.som}+ Som aqui</button>
+        <button type="button" class="btn" data-f="zoom">+ Zoom aqui</button>
+        <button type="button" class="btn" data-f="flash">+ Flash aqui</button>
+        <button type="button" class="btn" data-f="dividir">Dividir aqui</button>
+        ${sel.tipo === "plano" ? `<button type="button" class="btn rr-perigo" data-f="apagar-plano">Apagar este plano</button>` : ""}
+        ${efSel ? `<span class="rr-sel">${esc(EFEITOS[efSel.tipo] || efSel.tipo)} em ${tempo(efSel.t)}</span><button type="button" class="btn" data-f="ouvir-som">${ic.som}Ouvir</button><button type="button" class="btn rr-perigo" data-f="tirar-som">Tirar este som</button>` : ""}
+        ${sel.tipo === "zoom" ? `<button type="button" class="btn rr-perigo" data-f="tirar-zoom">Tirar este zoom</button>` : ""}
+        ${sel.tipo === "flash" ? `<button type="button" class="btn rr-perigo" data-f="tirar-flash">Tirar este flash</button>` : ""}
+        ${temDesfazer ? `<button type="button" class="btn" data-f="desfazer">Desfazer</button>` : ""}
+      </div>
+      <div class="rr-linha-rolar"><div class="rr-linha-dentro" style="width:${larg}%">
+      <div class="rr-regua" data-buscar>${marcas.map((t) => `<span style="left:${pct(t)}">${tempo(t).replace(/,\d$/, "")}</span>`).join("")}</div>
+      <div class="rr-trilha rr-t-leg${o.legenda === false ? " desligada" : ""}">${st.legendas.map((g) => `<button type="button" class="rr-chip" data-ir="${g.o0}" style="left:${pct(g.o0)};width:calc(${pct(g.o1 - g.o0)} - 3px)" title="${esc(textoLeg(g))}"><b>T</b> ${esc(textoLeg(g))}</button>`).join("")}</div>
+      <div class="rr-trilha rr-t-planos">${st.segs.map((sg, i) => `<button type="button" class="rr-plano-bl${i % 2 ? " par" : ""}${sg.zoom > 1 ? " zoom" : ""}${sel.tipo === "plano" && sel.i === i ? " sel" : ""}" data-plano="${i}" style="left:${pct(sg.o0)};width:calc(${pct(sg.o1 - sg.o0)} - 2px)" title="Plano ${i + 1}: toque para escolher"></button>`).join("")}</div>
+      <div class="rr-trilha rr-t-fx">${(st.zoomsManuais || []).map((t, i) => `<button type="button" class="rr-zoom${sel.tipo === "zoom" && sel.i === i ? " sel" : ""}" data-zoom="${i}" style="left:${pct(t)}" title="Zoom em ${tempo(t)}">Z</button>`).join("")}${(st.flashes || []).map((t, i) => `<button type="button" class="rr-flash${sel.tipo === "flash" && sel.i === i ? " sel" : ""}" data-flash="${i}" style="left:${pct(t)}" title="Flash em ${tempo(t)}">F</button>`).join("")}</div>
+      <div class="rr-trilha rr-t-sons${o.efeitos ? "" : " desligada"}">${st.efeitos.map((e) => `<button type="button" class="rr-som${e.manual ? " manual" : ""}${sel.tipo === "som" && sel.id === e.id ? " sel" : ""}" data-som="${e.id}" style="left:${pct(e.t)}" title="${esc((EFEITOS[e.tipo] || e.tipo) + (e.por_que ? ": " + e.por_que : ""))}"></button>`).join("")}</div>
       <span class="rr-agulha" id="ed-agulha" style="left:${pct(st.t)}"></span>
     </div></div>
-    <p class="rr-legenda-linha"><span class="rr-chip-mini"></span> legendas · <span class="rr-plano-mini"></span> planos (mais escuro = zoom) · <span class="rr-som-mini"></span> efeitos sonoros · toque para ir até o ponto</p>`;
+    <p class="rr-legenda-linha"><span class="rr-chip-mini"></span> legendas · <span class="rr-plano-mini"></span> planos (Dividir aqui separa, toque no plano para apagar) · Z zoom · F flash · <span class="rr-som-mini"></span> sons (toque para ouvir ou tirar) · toque na régua para ir até o ponto</p>`;
+    const f = (k) => box.querySelector(`[data-f="${k}"]`);
+    f("play").addEventListener("click", () => { if (st.tocando) parar(); else tocar(st.t); setTimeout(pintarLinha, 50); });
+    $$("[data-o]", box).forEach((c) => c.addEventListener("change", () => { o[c.dataset.o] = c.checked; if (c.dataset.o === "titulo") sonsDoTitulo(); guardarOpc(); pintar(); }));
+    f("som").addEventListener("click", () => porSom($("#rr-som-tipo", box).value));
+    f("zoom").addEventListener("click", porZoom);
+    f("flash").addEventListener("click", porFlash);
+    f("dividir").addEventListener("click", dividir);
+    if (f("apagar-plano")) f("apagar-plano").addEventListener("click", () => apagarPlano(st.segs[sel.i]));
+    if (f("tirar-som")) f("tirar-som").addEventListener("click", () => tirarSom(efSel));
+    if (f("ouvir-som")) f("ouvir-som").addEventListener("click", () => { audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(efSel.tipo, ac.currentTime + 0.02, o.vol); });
+    if (f("tirar-zoom")) f("tirar-zoom").addEventListener("click", () => { st.manual.zooms.splice(sel.i, 1); st.sel = null; mexeuManual(); });
+    if (f("tirar-flash")) f("tirar-flash").addEventListener("click", () => { st.manual.flashes.splice(sel.i, 1); st.sel = null; mexeuManual(); });
+    if (f("desfazer")) f("desfazer").addEventListener("click", desfazerManual);
     $$("[data-ir]", box).forEach((b) => b.addEventListener("click", () => irPara(Number(b.dataset.ir) + 0.02)));
+    $$("[data-plano]", box).forEach((b) => b.addEventListener("click", () => { const i = Number(b.dataset.plano); st.sel = { tipo: "plano", i }; irPara(st.segs[i].o0 + 0.02); pintarLinha(); }));
+    $$("[data-som]", box).forEach((b) => b.addEventListener("click", () => { const e = st.efeitos.find((x) => x.id === b.dataset.som); if (!e) return; st.sel = { tipo: "som", id: e.id }; irPara(Math.max(0, e.t - 0.02)); pintarLinha(); }));
+    $$("[data-zoom]", box).forEach((b) => b.addEventListener("click", () => { st.sel = { tipo: "zoom", i: Number(b.dataset.zoom) }; pintarLinha(); }));
+    $$("[data-flash]", box).forEach((b) => b.addEventListener("click", () => { st.sel = { tipo: "flash", i: Number(b.dataset.flash) }; pintarLinha(); }));
+    const regua = $("[data-buscar]", box);
+    regua.addEventListener("click", (e) => { const r = regua.getBoundingClientRect(); irPara(Math.max(0, Math.min(d - 0.05, (e.clientX - r.left) / r.width * d))); });
   }
 
   // posts do Painel de conteúdo com roteiro, para puxar para o campo
@@ -1263,8 +1374,19 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     bt.disabled = st.trabalhando || st.exportando || !st.clipes.length || Boolean(st.pendentes);
     bt.innerHTML = st.trabalhando ? "Editando…" : `${ic.brilho}${st.plano ? "Editar de novo" : "Editar automático"}`;
     $("#ed-vazio", sec).hidden = Boolean(st.segs.length);
-    pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa(); pintarLinha(); pintarAbas(); pintarModo();
+    pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa(); pintarLinha(); pintarAbas(); pintarModo(); pintarOuvi();
     if (st.segs.length && !st.tocando) desenhar(st.t);
+  }
+  // o que o painel ouviu do vídeo (a fala transcrita, com tempo), para ela conferir
+  function pintarOuvi() {
+    const box = $("#ed-ouvi"); if (!box) return;
+    const ws = palavrasBrutas();
+    if (!ws.length) { box.hidden = true; return; }
+    box.hidden = false;
+    const aberto = box.querySelector("details") && box.querySelector("details").open;
+    box.innerHTML = `<details${aberto ? " open" : ""}><summary class="ed-titulo-linha"><h3 class="ed-titulo">O que eu ouvi no vídeo</h3><span class="ed-sub">${ws.length} palavras</span></summary>
+      <p class="ed-obs">Eu escuto o áudio do vídeo que você enviou e escrevo a fala com o tempo de cada palavra (não uso o roteiro para isso). Música e barulhos eu não transcrevo, só a fala.</p>
+      <p class="rr-ouvi">${ws.map((w, i) => (i && w.s - ws[i - 1].e > 0.7 ? `</p><p class="rr-ouvi"><span class="rr-ts">${tempo(w.s)}</span> ` : i ? "" : `<span class="rr-ts">${tempo(w.s)}</span> `) + esc(w.w)).join(" ")}</p></details>`;
   }
   function pintarModo() {
     const p = $("#ed-modo"); if (!p) return;
@@ -1277,6 +1399,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     ol.innerHTML = st.etapas.map((e) => `<li class="${e.estado}">${esc(e.texto)}</li>`).join("");
   }
   function pintarControles() {
+    const fp = document.querySelector('#ed-linha [data-f="play"]'); if (fp) fp.innerHTML = st.tocando && !st.exportando ? ic.pausa + "Pausar" : ic.play + "Play";
     const box = $("#ed-controles"); if (!box) return;
     const ok = st.segs.length > 0;
     box.innerHTML = `<button class="btn btn-principal" type="button" id="ed-play" ${!ok || st.exportando ? "disabled" : ""}>${st.tocando && !st.exportando ? ic.pausa + "Pausar" : ic.play + "Play"}</button>
@@ -1319,7 +1442,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-trans">Transição nos cortes</label><select class="entrada" id="ed-trans">${[["nenhuma", "Nenhuma"], ["punch", "Zoom rápido"], ["deslize", "Zoom rápido + deslize na troca de cena"]].map(([k, t]) => `<option value="${k}" ${o.transicao === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-ritmo">Ritmo dos cortes</label><select class="entrada" id="ed-ritmo">${[["normal", "Normal (deixa respiro)"], ["rapido", "Rápido (corta respiros)"], ["turbo", "Turbo (sem nenhuma pausa)"]].map(([k, t]) => `<option value="${k}" ${(o.ritmo || "rapido") === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-chks">${chk("chamativas", "Palavras chamativas (grandes, coloridas)")}${chk("sonsChamativas", "Pop nas palavras chamativas")}${chk("tremer", "Tremidinha no impacto")}${chk("flash", "Flash na troca de cena")}</div>
-      <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("vicios", "Tirar vícios (éé, ahn, hum)")}${chk("vozForte", "Voz no volume do Instagram")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("titulo", "Mostrar título")}${chk("sonsTitulo", "Som de clique no título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}</div>
+      <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("vicios", "Tirar vícios (éé, ahn, hum)")}${chk("vozForte", "Voz no volume do Instagram")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("legenda", "Mostrar legenda")}${chk("titulo", "Mostrar título")}${chk("sonsTitulo", "Som de clique no título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}</div>
       <label class="ed-rotulo" for="ed-vol">Volume dos efeitos</label>
       <input type="range" id="ed-vol" min="0" max="1.2" step="0.05" value="${o.vol}">
       <label class="ed-rotulo" for="ed-qual">Qualidade do arquivo</label>
@@ -1551,10 +1674,10 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       const e = st.efeitos.find((x) => x.id === l.dataset.id);
       $("[data-ouvir]", l).addEventListener("click", () => { audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(e.tipo, ac.currentTime + (e.tipo === "riser" ? 1.2 : 0.02), st.opc.vol); });
       $("[data-ir]", l).addEventListener("click", () => irPara(Math.max(0, e.t - 0.6)));
-      $("[data-tipo]", l).addEventListener("change", (ev) => { e.tipo = ev.target.value; });
-      $("[data-apagar]", l).addEventListener("click", () => { st.efeitos = st.efeitos.filter((x) => x !== e); pintarPlano(); });
+      $("[data-tipo]", l).addEventListener("change", (ev) => { const novo = ev.target.value; tirarSom(e, true); porSom(novo, e.t); });
+      $("[data-apagar]", l).addEventListener("click", () => { tirarSom(e); });
     });
-    $("#ed-add-efeito", box).addEventListener("click", () => { st.efeitos.push({ id: uid(), t: st.t, tipo: $("#ed-novo-tipo", box).value, por_que: "você pôs" }); st.efeitos.sort((a, b) => a.t - b.t); pintarPlano(); });
+    $("#ed-add-efeito", box).addEventListener("click", () => porSom($("#ed-novo-tipo", box).value));
   }
   async function irPara(t) {
     if (st.tocando) parar();

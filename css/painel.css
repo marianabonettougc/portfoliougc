@@ -1224,3 +1224,26 @@ button.menu-grupo:hover{color:var(--texto)}
 .rr-painel[hidden]{display:none}
 .rr-regua span:first-child{transform:none}
 .rr-frase{align-items:start}
+/* linha do tempo editável (como no CapCut) */
+.rr-ferramentas{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
+.rr-ferramentas .btn{height:32px;padding:0 12px;font-size:12.5px}
+.rr-ferramentas select.entrada{height:32px;width:auto;max-width:170px;padding:0 8px;font-size:12.5px}
+.rr-tempo-f{font:500 12px "JetBrains Mono",monospace;color:var(--rr-suave);min-width:52px}
+.rr-liga{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:0 6px}
+.rr-liga input{accent-color:var(--principal)}
+.rr-sep{width:1px;height:22px;background:var(--rr-linha);margin:0 4px}
+.rr-sel{font-size:12px;color:var(--rr-suave)}
+.rr .btn.rr-perigo{border-color:var(--vermelho);color:var(--vermelho)}
+.rr-trilha.desligada{opacity:.3}
+.rr-t-fx{height:22px}
+.rr-zoom,.rr-flash{position:absolute;top:1px;width:20px;height:20px;margin-left:-10px;border-radius:50%;border:0;font:700 10px "Poppins",sans-serif;color:#fff;background:var(--principal);cursor:pointer}
+.rr-flash{background:#c9973b}
+.rr-som.manual{background:var(--terracota)}
+.rr-plano-bl.sel,.rr-som.sel,.rr-zoom.sel,.rr-flash.sel{outline:3px solid var(--texto);outline-offset:1px}
+.rr-regua{cursor:pointer}
+#ed-ouvi summary{list-style:none;cursor:pointer}
+#ed-ouvi summary::-webkit-details-marker{display:none}
+#ed-ouvi summary .ed-titulo::after{content:" ▾";color:var(--suave)}
+.rr-ouvi{margin:6px 0 0;font-size:15px;line-height:1.7}
+.rr-ouvi .rr-ts{margin-right:6px;padding:0}
+.rr-flash{margin-left:4px}
