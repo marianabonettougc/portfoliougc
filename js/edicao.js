@@ -99,6 +99,8 @@ IDEIA PARA DEPOIS
   const TITULOS = { simples: "Limpo, serifada itálica (sem caixinhas)", etapas: "Em etapas com clique (duas fontes e estrelinhas)", frase: "Frase gigante na tela (3 cores)", caixa: "Caixinhas" };
   // fontes da legenda: "minha" é a fonte que ela enviou (Bootzy do CapCut), guardada em configuracoes "fonte_legenda"
   const FONTES_LEG = { minha: "Minha fonte (Bootzy)", arimo: "Parecida com a Bootzy (Arimo)", montserrat: "Sem serifa forte (Montserrat)", poppins: "Sem serifa média (Poppins)", nunito: "Arredondada forte (Nunito)", dmserif: "Serifada itálica (DM Serif)", instrument: "Serifada itálica fina (Instrument Serif)" };
+  const QTD_SONS = [["nenhum", "Nenhum"], ["impacto", "Só nas frases de impacto"], ["poucos", "Poucos"], ["medio", "Médio"], ["muitos", "Muitos (1 a cada 2 s, seu padrão)"]];
+  const DINAMISMO = [["calmo", "Calmo (sem zoom nem transição)"], ["normal", "Normal"], ["dinamico", "Dinâmico (zoom entrando e saindo, transição, seu padrão)"]];
   const fonteLeg = (tam, chave = st.opc.fonteLeg) => ({
     minha: `${tam}px "MinhaFonte", Arimo, Arial, sans-serif`, arimo: `700 ${tam}px Arimo, "Helvetica Neue", Arial, sans-serif`, montserrat: `700 ${tam}px Montserrat, Poppins, sans-serif`, poppins: `500 ${tam}px Poppins, sans-serif`,
     nunito: `800 ${tam}px Nunito, Poppins, sans-serif`, dmserif: `italic 400 ${tam * 1.12}px "DM Serif Display", Georgia, serif`, instrument: `italic 400 ${tam * 1.28}px "Instrument Serif", Georgia, serif`,
@@ -110,14 +112,14 @@ IDEIA PARA DEPOIS
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1, legenda: true },
+    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1, legenda: true, sons: "muitos", dinamismo: "dinamico" },
     pedidos: "", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, aba: "video", projeto: null, projetos: [], pendentes: null, salvando: "",
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
   try { const salvo = JSON.parse(localStorage.getItem("ed-opc3") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
-  const OPC_VISUAIS = ["sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg", "legenda"];
+  const OPC_VISUAIS = ["sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg", "legenda", "sons", "dinamismo"];
   function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc3", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
@@ -444,15 +446,44 @@ IDEIA PARA DEPOIS
     if (so && /(efeitos?|sons?)/.test(t.split(/\b(so|apenas|somente)\b/).pop())) o.efeitos = true;
     if (nao("cortes?") || nao("cortar") || /nao (corta|corte|cortar)/.test(t)) { o.silencio = false; o.erros = false; o.vicios = false; }
     if (nao("zooms?")) { o.zoomCortes = false; o.zoomEnfase = false; }
-    if (nao("(efeitos? sonoros?|sons?|barulhos?)") && o.efeitos !== true) o.efeitos = false;
+
     if (nao("transic(ao|oes)")) o.transicao = "nenhuma";
     if (/legenda (maior|grande|maiores)/.test(t)) o.tamLeg = 1.25;
     if (/legenda (menor|pequena|menores)/.test(t)) o.tamLeg = 0.85;
-    if (/(bem |mais |muito )dinamic|muitos? (efeitos?|sons?)|mais (efeitos?|sons?)/.test(t)) { o.sfxAuto = "muito"; o.efeitos = true; }
-    if (/(poucos?|alguns|menos) (efeitos?|sons?)/.test(t)) o.sfxAuto = "pouco";
+    // quantidade de efeitos sonoros
+    const SONS = "(efeitos?( sonoros?)?|sons?|barulhinhos?|sfx)";
+    const volume = /(volume|mais baixo|mais alto|abaix|baixinho|altura do som|alto demais|muito alto)/.test(t);
+    if (new RegExp(`(muitos?|mais|bastante|aument\\w*|encher|cheio de|varios?)( de| os| as)? ${SONS}`).test(t) && !volume) o.sons = "muitos";
+    if ((new RegExp(`(poucos?|menos|diminu\\w*|reduz\\w*|menor quantidade|alguns|uns)( os| as| de| a| o| quantidade de)? ${SONS}`).test(t) || new RegExp(`${SONS}[^.;!?]{0,25}(demais|exagerad|diminu|reduz|menos)`).test(t)) && !volume) o.sons = "poucos";
+    if (/(impacto|frases? fortes?|momentos? fortes?|so no principal|so nos momentos)/.test(t) && new RegExp(SONS).test(t)) o.sons = "impacto";
+    if (nao(SONS) && !so) o.sons = "nenhum";
+    if (so && new RegExp(SONS).test(t.split(/\b(so|apenas|somente)\b/).pop()) && !o.sons) o.sons = /alguns|poucos|uns/.test(t) ? "poucos" : "medio";
+    if (volume && new RegExp(SONS).test(t)) o.vol = /(mais alto|aument|alto demais nao|nao (da|esta) pra ouvir|baixo demais)/.test(t) ? 0.65 : 0.22;
+    // dinamismo: cortes, transição, zoom entrando e saindo
+    if (/dinamic|(corte|cortes)[^.;!?]{0,30}(transic|zoom)|transic[^.;!?]{0,30}zoom|zoom (in|out|entrando|saindo)|diminuicao de zoom|mais cortes|mais ritmo|ritmo (rapido|acelerado)|mais agil/.test(t) && !/(menos|sem|nao)[^.;!?]{0,8}dinamic/.test(t)) {
+      o.dinamismo = "dinamico"; o.ritmo = "turbo"; o.zoomCortes = true; o.zoomEnfase = true; if (o.transicao !== "nenhuma") o.transicao = "deslize";
+      if (!so) { o.silencio = true; o.erros = true; }
+    }
+    if (/(mais calmo|menos dinamic|sem dinamismo|mais lento|menos cortes|menos zoom|mais tranquilo)/.test(t)) { o.dinamismo = "calmo"; o.ritmo = "normal"; }
     if (/maiuscul/.test(t) && !/sem maiuscul|nao.{0,12}maiuscul/.test(t)) o.maiusculas = true;
     if (/minuscul/.test(t)) o.maiusculas = false;
     return o;
+  }
+
+  function descreverRegras(o) {
+    const d = [];
+    if ("legenda" in o) d.push(o.legenda ? "com legenda" : "sem legenda");
+    if ("titulo" in o) d.push(o.titulo ? "com título" : "sem título");
+    if (o.silencio === false) d.push("sem recortar a fala");
+    if (o.sons) d.push({ nenhum: "sem efeitos sonoros", impacto: "efeitos só nas frases de impacto", poucos: "poucos efeitos sonoros", medio: "efeitos na medida", muitos: "muitos efeitos sonoros" }[o.sons]);
+    if ("vol" in o) d.push(o.vol > 0.4 ? "efeitos mais altos" : "efeitos mais baixinhos");
+    if (o.dinamismo === "dinamico") d.push("dinâmico: cortes sem pausa, zoom entrando e saindo, transição e flash na troca de cena");
+    if (o.dinamismo === "calmo") d.push("mais calmo: sem zoom nem transição");
+    if (o.zoomEnfase === false) d.push("sem zoom");
+    if (o.transicao === "nenhuma") d.push("sem transição");
+    if (o.tamLeg) d.push(o.tamLeg > 1 ? "legenda maior" : "legenda menor");
+    if ("maiusculas" in o) d.push(o.maiusculas ? "legenda em maiúsculas" : "legenda em minúsculas");
+    return d;
   }
 
   // o padrão dela + os pedidos para este vídeo (vão juntos para a IA, com prioridade)
@@ -474,6 +505,7 @@ IDEIA PARA DEPOIS
       st.plano = { ...r.plano, roteiro_check: (r.plano.roteiro_check || []).length ? r.plano.roteiro_check : check };
       if (r.plano.titulo) { st.titulo = r.plano.titulo; st.tituloDestaque = r.plano.titulo_destaque || st.tituloDestaque; }
       const locais = regrasDoPedido(texto);
+      if (r.opc && r.opc.sfxAuto && !locais.sons) locais.sons = { desligado: "nenhum", pouco: "poucos", medio: "medio", muito: "muitos" }[r.opc.sfxAuto];
       Object.assign(st.opc, r.opc || {}, locais); r.opc = { ...(r.opc || {}), ...locais }; ajustarVoz(); st.opc.confete = false; if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
       st.correcoes.push({ texto, resposta: r.resposta || "Corrigido.", regra: r.regra || "" });
       montar(); st.t = 0;
@@ -485,12 +517,14 @@ IDEIA PARA DEPOIS
       if (st.zooms.length !== antes.zo) mud.push(`zooms ${antes.zo} → ${st.zooms.length}`);
       if (st.titulo !== antes.tit) mud.push("título");
       if (JSON.stringify(st.plano.destaques || []) !== antes.dest) mud.push("palavras de destaque");
-      const nomesOpc = { estilo: "estilo da legenda", fonteLeg: "fonte", corLegenda: "cor da legenda", porLegenda: "palavras por legenda", tamLeg: "tamanho da legenda", altura: "altura da legenda", sombra: "sombra", estiloTitulo: "estilo do título", ritmo: "ritmo", sfxAuto: "sons automáticos", transicao: "transição", vol: "volume dos efeitos", maiusculas: "maiúsculas", cor: "cor do destaque", sonsTitulo: "som do título", legenda: "legenda", vicios: "vícios de fala", vozForte: "volume da voz", efeitos: "efeitos sonoros", titulo: "título na tela", zoomCortes: "zoom nos cortes", zoomEnfase: "zoom na ênfase", chamativas: "palavras chamativas", flash: "flash", tremer: "tremidinha", silencio: "corte de silêncios", erros: "tomadas erradas" };
+      const nomesOpc = { estilo: "estilo da legenda", fonteLeg: "fonte", corLegenda: "cor da legenda", porLegenda: "palavras por legenda", tamLeg: "tamanho da legenda", altura: "altura da legenda", sombra: "sombra", estiloTitulo: "estilo do título", ritmo: "ritmo", sfxAuto: "sons automáticos", transicao: "transição", vol: "volume dos efeitos", maiusculas: "maiúsculas", cor: "cor do destaque", sonsTitulo: "som do título", legenda: "legenda", sons: "quantidade de efeitos", dinamismo: "dinamismo", vicios: "vícios de fala", vozForte: "volume da voz", efeitos: "efeitos sonoros", titulo: "título na tela", zoomCortes: "zoom nos cortes", zoomEnfase: "zoom na ênfase", chamativas: "palavras chamativas", flash: "flash", tremer: "tremidinha", silencio: "corte de silêncios", erros: "tomadas erradas" };
       Object.keys(r.opc || {}).forEach((k) => { if (antes.opc[k] !== st.opc[k]) mud.push(nomesOpc[k] || k); });
       const ultima = st.correcoes[st.correcoes.length - 1];
       ultima.mudou = mud;
+      const entendi = descreverRegras(locais);
+      if (entendi.length) ultima.resposta = "Entendi: " + entendi.join("; ") + ". " + (ultima.resposta || "");
       if (!mud.length) ultima.resposta += " (Atenção: nada mudou no vídeo. Tente dizer de outro jeito, com o momento e o que quer, ou ajuste direto nas abas Cortes, Legendas e Visual.)";
-      sonsAutomaticos(); pintar();
+      pintar();
       irPara(0);
       if (st.lembrar) {
         guardarOpc();
@@ -549,7 +583,7 @@ IDEIA PARA DEPOIS
       const ouvidas = palavrasBrutas();
       etapa(ouvidas.length ? `Ouvi o seu vídeo: ${ouvidas.length} palavras (veja abaixo em "O que eu ouvi").` : "Não ouvi fala no vídeo.", ouvidas.length ? "ok" : "erro");
       const reg = regrasDoPedido(st.pedidos);
-      if (Object.keys(reg).length) etapa("Segui o que você pediu: " + Object.entries(reg).map(([k, v]) => ({ legenda: v ? "com legenda" : "sem legenda", titulo: v ? "com título" : "sem título", efeitos: v ? "com sons" : "sem sons", silencio: v ? "" : "sem recortar a fala", zoomCortes: v ? "" : "sem zoom", transicao: v === "nenhuma" ? "sem transição" : "", tamLeg: v > 1 ? "legenda maior" : "legenda menor", sfxAuto: v === "muito" ? "muitos sons" : v === "pouco" ? "poucos sons" : "", maiusculas: v ? "maiúsculas" : "minúsculas" })[k]).filter(Boolean).join(", ") + ".", "ok");
+      if (Object.keys(reg).length) etapa("Segui o que você pediu: " + descreverRegras(reg).join("; ") + ".", "ok");
       etapa("Pronto! Dá o play para ver a prévia.", "ok");
       st.aba = "cortes";
       salvarDepois();
@@ -634,7 +668,7 @@ IDEIA PARA DEPOIS
     }
     st.duracao = out;
     // zoom alternado nos cortes (só quando o corte é dentro do mesmo clipe, o "pulo" da imagem)
-    st.segs.forEach((s, i) => { const ant = st.segs[i - 1]; s.zoom = ant && ant.ci === s.ci && st.opc.zoomCortes ? (ant.zoom > 1 ? 1 : 1.08) : 1; });
+    st.segs.forEach((s, i) => { const ant = st.segs[i - 1]; s.zoom = ant && ant.ci === s.ci && st.opc.zoomCortes && st.opc.dinamismo !== "calmo" ? (ant.zoom > 1 ? 1 : st.opc.dinamismo === "dinamico" ? 1.12 : 1.08) : 1; });
     const p = st.plano || {};
     // legendas palavra por palavra
     const palavras = [];
@@ -662,6 +696,8 @@ IDEIA PARA DEPOIS
     st.flashes = (st.manual.flashes || []).map(paraFinal).filter((t) => t != null);
     sonsAutomaticos();
     // momentos fortes (hit, ding, riser) ganham tremidinha
+    filtrarSonsPelaQuantidade();
+    zoomsDoDinamismo();
     st.fortes = st.efeitos.filter((e) => ["hit", "ding"].includes(e.tipo)).map((e) => e.t);
   }
   // ---------- dinamismo: efeitos sonoros automáticos nos cortes e nas entradas de texto ----------
@@ -669,7 +705,7 @@ IDEIA PARA DEPOIS
   // quando a legenda troca de frase, riser no começo e hit logo depois do gancho.
   function sonsAutomaticos() {
     st.efeitos = st.efeitos.filter((e) => !e.auto);
-    const nivel = st.opc.sfxAuto;
+    const nivel = { nenhum: "desligado", impacto: "desligado", poucos: "pouco", medio: "medio", muitos: "muito" }[st.opc.sons] || st.opc.sfxAuto;
     if (!nivel || nivel === "desligado") return;
     const passo = nivel === "muito" ? 1 : nivel === "medio" ? 2 : 3;
     const livre = (t, raio = 0.3) => !st.efeitos.some((e) => Math.abs(e.t - t) < raio);
@@ -689,9 +725,42 @@ IDEIA PARA DEPOIS
     if (st.duracao > 4) { add(Math.min(2.2, st.duracao * 0.3), "hit", "fim do gancho"); }
     st.efeitos.sort((a, b) => a.t - b.t);
   }
+  // quantidade de sons que ela pediu: "nenhum", "impacto" (só nas frases de impacto),
+  // "poucos", "medio" ou "muitos" (1 a cada 1,5 a 2 s, o padrão dela). Os que ela pôs à mão ficam sempre.
+  const SONS_IMPACTO = ["hit", "ding", "cristal", "riser", "brilho", "spray"];
+  function filtrarSonsPelaQuantidade() {
+    const q = st.opc.sons || "medio";
+    const espacar = (lista, gap) => { const out = []; let ultimo = -99; for (const e of [...lista].sort((a, b) => a.t - b.t)) { if (e.manual || e.doTitulo) { out.push(e); continue; } if (e.t - ultimo >= gap) { out.push(e); ultimo = e.t; } } return out; };
+    if (q === "nenhum") { st.efeitos = st.efeitos.filter((e) => e.manual); return; }
+    if (q === "impacto") {
+      const fortes = [...(st.plano && st.plano.destaques || []).map((d) => paraFinalPerto(d.t)).filter((t) => t != null)];
+      st.efeitos = espacar(st.efeitos.filter((e) => e.manual || e.doTitulo || (!e.auto && (SONS_IMPACTO.includes(e.tipo) || fortes.some((f) => Math.abs(f - e.t) < 0.8)))), 2.5);
+      return;
+    }
+    if (q === "poucos") { st.efeitos = espacar(st.efeitos.filter((e) => e.manual || e.doTitulo || !e.auto || /troca de cena/.test(e.por_que || "")), 3.2); return; }
+    if (q === "muitos") {
+      // completa até ficar 1 som a cada ~1,8 s, alternando woosh, clique e pop nos cortes e nas legendas
+      const pontos = [...st.segs.map((sg) => sg.o0), ...st.legendas.map((g) => g.o0)].filter((t) => t > 0.3).sort((a, b) => a - b);
+      const ciclo = ["woosh", "click", "pop", "suave", "shutter"]; let n = 0;
+      for (const t of pontos) { if (!st.efeitos.some((e) => Math.abs(e.t - t) < 0.9)) st.efeitos.push({ id: uid(), t, tipo: ciclo[n++ % ciclo.length], por_que: "ritmo", auto: true, chave: `a:${Math.round(t * 10)}` }); }
+      const tirados = new Set(st.manual.tirados || []); st.efeitos = st.efeitos.filter((e) => !e.chave || !tirados.has(e.chave));
+      st.efeitos.sort((a, b) => a.t - b.t);
+    }
+  }
+  // dinamismo: "dinamico" = zoom entrando e saindo a cada ~2,5 s nas falas longas, punch nos cortes,
+  // deslize e flash na troca de cena (as referências dela); "calmo" = sem zoom nem transição
+  function zoomsDoDinamismo() {
+    st.zoomsAuto = [];
+    if (st.opc.dinamismo !== "dinamico") return;
+    let i = 0;
+    for (const sg of st.segs) {
+      for (let t = sg.o0 + 1.1; t < sg.o1 - 0.9; t += 2.5) st.zoomsAuto.push({ t, tipo: i++ % 2 ? "out" : "in" });
+    }
+  }
+
   // transição visual nos cortes: zoom rápido (punch) e, na troca de cena, um deslize curto
   function transicaoEm(t) {
-    const tipo = st.opc.transicao;
+    const tipo = st.opc.dinamismo === "calmo" ? "nenhuma" : st.opc.dinamismo === "dinamico" && st.opc.transicao !== "nenhuma" ? "deslize" : st.opc.transicao;
     if (!tipo || tipo === "nenhuma" || !st.segs.length) return { z: 0, x: 0 };
     const s = segNoFinal(t), i = st.segs.indexOf(s);
     if (i <= 0) return { z: 0, x: 0 };
@@ -780,6 +849,11 @@ IDEIA PARA DEPOIS
   }
   function zoomEm(t) {
     let z = 1;
+    for (const a of st.zoomsAuto || []) {
+      const d = t - a.t;
+      if (a.tipo === "in") { if (d < 0 || d > 2.4) continue; const k = d < 0.35 ? d / 0.35 : d < 2 ? 1 : 1 - (d - 2) / 0.4; z = Math.max(z, 1 + 0.1 * suave(Math.max(0, Math.min(1, k)))); }
+      else { if (d < 0 || d > 0.8) continue; z = Math.max(z, 1 + 0.14 * (1 - suave(d / 0.8))); } // começa perto e abre
+    }
     for (const zt of [...(st.opc.zoomEnfase ? st.zooms : []), ...(st.zoomsManuais || [])]) {
       const d = t - zt;
       if (d < -0.15 || d > 1.4) continue;
@@ -808,7 +882,7 @@ IDEIA PARA DEPOIS
     }
     const u = W / 1080;
     // flash rápido nas trocas de clipe
-    if (st.opc.flash && s) { const i = st.segs.indexOf(s), ant = st.segs[i - 1]; const d = t - s.o0; if (ant && ant.ci !== s.ci && d < 0.12) { c2d.fillStyle = `rgba(255,255,255,${0.85 * (1 - d / 0.12)})`; c2d.fillRect(0, 0, W, H); } }
+    if ((st.opc.flash || st.opc.dinamismo === "dinamico") && s) { const i = st.segs.indexOf(s), ant = st.segs[i - 1]; const d = t - s.o0; if (ant && ant.ci !== s.ci && d < 0.12) { c2d.fillStyle = `rgba(255,255,255,${0.85 * (1 - d / 0.12)})`; c2d.fillRect(0, 0, W, H); } }
     // flash que ela pôs à mão na linha do tempo
     for (const f of st.flashes || []) { const d = t - f; if (d >= 0 && d < 0.14) { c2d.fillStyle = `rgba(255,255,255,${0.85 * (1 - d / 0.14)})`; c2d.fillRect(0, 0, W, H); } }
     // legenda (ou palavra chamativa)
@@ -1438,7 +1512,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-sombra">Sombra</label><select class="entrada" id="ed-sombra"><option value="suave" ${o.sombra !== "dura" ? "selected" : ""}>Suave</option><option value="dura" ${o.sombra === "dura" ? "selected" : ""}>Dura (deslocada)</option></select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-por">Palavras por legenda</label><select class="entrada" id="ed-por">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(o.porLegenda) === n ? "selected" : ""}>${n}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-cor-leg">Cor da legenda</label><span class="ed-cores">${["#fff3b0", "#ffffff", "#ffe45c"].map((c) => `<button type="button" class="ed-cor${o.corLegenda === c ? " ativa" : ""}" data-cor-leg="${c}" style="background:${c}" aria-label="Cor ${c}"></button>`).join("")}<input type="color" id="ed-cor-leg" value="${o.corLegenda}"></span></div>` : ""}
-      <div class="ed-linha"><label class="ed-rotulo" for="ed-sfx">Efeitos sonoros automáticos</label><select class="entrada" id="ed-sfx">${[["desligado", "Desligado"], ["pouco", "Pouco"], ["medio", "Médio"], ["muito", "Muito (bem dinâmico)"]].map(([k, t]) => `<option value="${k}" ${o.sfxAuto === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+      <div class="ed-linha"><label class="ed-rotulo" for="ed-sons">Quantidade de efeitos sonoros</label><select class="entrada" id="ed-sons">${QTD_SONS.map(([k, t]) => `<option value="${k}" ${o.sons === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+      <div class="ed-linha"><label class="ed-rotulo" for="ed-dina">Dinamismo</label><select class="entrada" id="ed-dina">${DINAMISMO.map(([k, t]) => `<option value="${k}" ${o.dinamismo === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-trans">Transição nos cortes</label><select class="entrada" id="ed-trans">${[["nenhuma", "Nenhuma"], ["punch", "Zoom rápido"], ["deslize", "Zoom rápido + deslize na troca de cena"]].map(([k, t]) => `<option value="${k}" ${o.transicao === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-ritmo">Ritmo dos cortes</label><select class="entrada" id="ed-ritmo">${[["normal", "Normal (deixa respiro)"], ["rapido", "Rápido (corta respiros)"], ["turbo", "Turbo (sem nenhuma pausa)"]].map(([k, t]) => `<option value="${k}" ${(o.ritmo || "rapido") === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-chks">${chk("chamativas", "Palavras chamativas (grandes, coloridas)")}${chk("sonsChamativas", "Pop nas palavras chamativas")}${chk("tremer", "Tremidinha no impacto")}${chk("flash", "Flash na troca de cena")}</div>
@@ -1452,7 +1527,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $("#ed-estilo-titulo", box).addEventListener("change", (e) => { o.estiloTitulo = e.target.value; sonsDoTitulo(); pintarPlano(); if (!st.tocando) { st.t = Math.min(st.t, 1.2); desenhar(st.t); } });
     box.onchange = guardarOpc;
     $("#ed-estilo", box).addEventListener("change", (e) => { o.estilo = e.target.value; remontar(); });
-    $("#ed-sfx", box).addEventListener("change", (e) => { o.sfxAuto = e.target.value; sonsAutomaticos(); guardarOpc(); pintarPlano(); });
+    $("#ed-sons", box).addEventListener("change", (e) => { o.sons = e.target.value; remontar(); });
+    $("#ed-dina", box).addEventListener("change", (e) => { o.dinamismo = e.target.value; remontar(); });
     $("#ed-trans", box).addEventListener("change", (e) => { o.transicao = e.target.value; guardarOpc(); redesenhar(); });
     $("#ed-ritmo", box).addEventListener("change", (e) => { o.ritmo = e.target.value; remontar(); });
     const fsel = $("#ed-fonte", box); if (fsel) fsel.addEventListener("change", (e) => { o.fonteLeg = e.target.value; guardarOpc(); redesenhar(); });
