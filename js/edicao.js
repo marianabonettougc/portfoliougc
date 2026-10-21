@@ -110,14 +110,14 @@ IDEIA PARA DEPOIS
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true },
-    correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, aba: "video", projeto: null, projetos: [], pendentes: null, salvando: "",
+    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1 },
+    pedidos: "", correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, aba: "video", projeto: null, projetos: [], pendentes: null, salvando: "",
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
   try { const salvo = JSON.parse(localStorage.getItem("ed-opc3") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
-  const OPC_VISUAIS = ["sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte"];
+  const OPC_VISUAIS = ["sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg"];
   function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc3", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
@@ -353,7 +353,7 @@ IDEIA PARA DEPOIS
 
   // ---------- projetos (memória da edição) ----------
   const dadosProjeto = () => ({ versao: 3,
-    tema: st.tema, roteiro: st.roteiro, opc: st.opc, plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, editLeg: st.editLeg, marcas: st.marcas, capa: st.capa, correcoes: st.correcoes,
+    tema: st.tema, roteiro: st.roteiro, pedidos: st.pedidos, opc: st.opc, plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, editLeg: st.editLeg, marcas: st.marcas, capa: st.capa, correcoes: st.correcoes,
     efeitos: st.efeitos.filter((e) => !e.doTitulo && !e.daChamativa).map(({ id, ...e }) => e),
     clipes: (st.clipes.length ? st.clipes : st.pendentes || []).map((c) => ({ nome: c.nome, dur: Math.round((c.dur || 0) * 100) / 100, palavras: c.palavras || null })),
   });
@@ -381,7 +381,7 @@ IDEIA PARA DEPOIS
     if (st.tocando) parar();
     st.clipes.forEach((c) => { try { c.el.remove(); URL.revokeObjectURL(c.el.src); } catch (e) { /* segue */ } });
     const capaBox = $("#ed-capa"); if (capaBox) capaBox.dataset.pronto = "";
-    Object.assign(st, { clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, aba: "video", correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "" });
+    Object.assign(st, { clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, aba: "video", correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "", pedidos: "" });
   }
   async function abrirProjeto(id) {
     const { data, error } = await banco().from("edicao_projetos").select("*").eq("id", id).maybeSingle();
@@ -389,20 +389,20 @@ IDEIA PARA DEPOIS
     limparTudo();
     const d = data.dados || {};
     st.projeto = { id: data.id, nome: data.nome };
-    st.tema = d.tema || ""; st.roteiro = d.roteiro || ""; st.plano = d.plano || null; st.titulo = d.titulo || ""; st.tituloDestaque = d.tituloDestaque || "";
+    st.tema = d.tema || ""; st.roteiro = d.roteiro || ""; st.pedidos = d.pedidos || ""; st.plano = d.plano || null; st.titulo = d.titulo || ""; st.tituloDestaque = d.tituloDestaque || "";
     st.editLeg = d.editLeg || {}; st.marcas = d.marcas || {}; st.capa = d.capa || null; st.correcoes = d.correcoes || [];
     if (d.opc && d.versao >= 3) Object.assign(st.opc, d.opc);
     if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
     st.efeitosSalvos = Array.isArray(d.efeitos) ? d.efeitos.map((e) => ({ ...e, id: uid() })) : null;
     st.pendentes = (d.clipes || []).length ? d.clipes.map((c) => ({ ...c, usado: false })) : null;
     const sec = document.getElementById("aba-" + ABA);
-    if (sec) { $("#ed-tema", sec).value = st.tema; $("#ed-roteiro", sec).value = st.roteiro; $("#ed-roteiro-box", sec).open = Boolean(st.roteiro); }
+    if (sec) { $("#ed-tema", sec).value = st.tema; $("#ed-roteiro", sec).value = st.roteiro; $("#ed-pedidos", sec).value = st.pedidos; $("#ed-roteiro-box", sec).open = Boolean(st.roteiro); }
     pintar(); pintarProjeto();
   }
   function novoProjeto() {
     limparTudo(); st.projeto = null;
     const sec = document.getElementById("aba-" + ABA);
-    if (sec) { $("#ed-tema", sec).value = ""; $("#ed-roteiro", sec).value = ""; }
+    if (sec) { $("#ed-tema", sec).value = ""; $("#ed-roteiro", sec).value = ""; $("#ed-pedidos", sec).value = ""; }
     pintar(); pintarProjeto();
   }
   function pintarProjeto() {
@@ -429,6 +429,8 @@ IDEIA PARA DEPOIS
     if (texto) st.etapas.push({ texto, estado: estado || "andando" });
     pintarEtapas();
   }
+  // o padrão dela + os pedidos para este vídeo (vão juntos para a IA, com prioridade)
+  const padraoComPedidos = () => st.pedidos.trim() ? `${st.padrao}\n\nPEDIDOS DELA PARA ESTE VÍDEO (prioridade máxima, valem mais que o padrão):\n${st.pedidos.trim()}` : st.padrao;
   const palavrasBrutas = () => st.clipes.flatMap((c) => (c.palavras || []).map((w) => ({ w: w.w, s: +(w.s + c.offset).toFixed(2), e: +(w.e + c.offset).toFixed(2) })));
 
   // ---------- correção da edição ----------
@@ -439,14 +441,30 @@ IDEIA PARA DEPOIS
     st.corrigindo = true; pintarPlano();
     try {
       const r = await chamar({ acao: "corrigir", comentario: texto, plano: st.plano, titulo: st.titulo, opc: Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])),
-        palavras: palavrasBrutas().map((w) => ({ w: w.w, s: w.s })), duracao: st.clipes.reduce((s, c) => s + c.dur, 0), padrao: st.padrao, roteiro: st.roteiro.trim() || undefined, historico: st.correcoes.map((c) => c.texto) });
+        palavras: palavrasBrutas().map((w) => ({ w: w.w, s: w.s })), duracao: st.clipes.reduce((s, c) => s + c.dur, 0), padrao: padraoComPedidos(), roteiro: st.roteiro.trim() || undefined, historico: st.correcoes.map((c) => c.texto) });
       if (st.tocando) parar();
+      const antes = { dur: st.duracao, ef: st.efeitos.length, zo: st.zooms.length, tit: st.titulo, opc: { ...st.opc }, rem: JSON.stringify((st.plano || {}).remover || []), dest: JSON.stringify((st.plano || {}).destaques || []) };
       const check = st.plano.roteiro_check;
       st.plano = { ...r.plano, roteiro_check: (r.plano.roteiro_check || []).length ? r.plano.roteiro_check : check };
       if (r.plano.titulo) { st.titulo = r.plano.titulo; st.tituloDestaque = r.plano.titulo_destaque || st.tituloDestaque; }
-      Object.assign(st.opc, r.opc || {}); st.opc.confete = false; if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
+      Object.assign(st.opc, r.opc || {}); ajustarVoz(); st.opc.confete = false; if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
       st.correcoes.push({ texto, resposta: r.resposta || "Corrigido.", regra: r.regra || "" });
       montar(); st.t = 0;
+      // o que mudou de verdade (para ela ver que ajustou, ou saber que não deu)
+      const mud = [];
+      if (Math.abs(st.duracao - antes.dur) > 0.05) mud.push(`duração ${tempo(antes.dur)} → ${tempo(st.duracao)}`);
+      if (JSON.stringify(st.plano.remover || []) !== antes.rem) mud.push("cortes");
+      if (st.efeitos.length !== antes.ef) mud.push(`efeitos ${antes.ef} → ${st.efeitos.length}`);
+      if (st.zooms.length !== antes.zo) mud.push(`zooms ${antes.zo} → ${st.zooms.length}`);
+      if (st.titulo !== antes.tit) mud.push("título");
+      if (JSON.stringify(st.plano.destaques || []) !== antes.dest) mud.push("palavras de destaque");
+      const nomesOpc = { estilo: "estilo da legenda", fonteLeg: "fonte", corLegenda: "cor da legenda", porLegenda: "palavras por legenda", tamLeg: "tamanho da legenda", altura: "altura da legenda", sombra: "sombra", estiloTitulo: "estilo do título", ritmo: "ritmo", sfxAuto: "sons automáticos", transicao: "transição", vol: "volume dos efeitos", maiusculas: "maiúsculas", cor: "cor do destaque", sonsTitulo: "som do título", vicios: "vícios de fala", vozForte: "volume da voz", efeitos: "efeitos sonoros", titulo: "título na tela", zoomCortes: "zoom nos cortes", zoomEnfase: "zoom na ênfase", chamativas: "palavras chamativas", flash: "flash", tremer: "tremidinha", silencio: "corte de silêncios", erros: "tomadas erradas" };
+      Object.keys(r.opc || {}).forEach((k) => { if (antes.opc[k] !== st.opc[k]) mud.push(nomesOpc[k] || k); });
+      const ultima = st.correcoes[st.correcoes.length - 1];
+      ultima.mudou = mud;
+      if (!mud.length) ultima.resposta += " (Atenção: nada mudou no vídeo. Tente dizer de outro jeito, com o momento e o que quer, ou ajuste direto nas abas Cortes, Legendas e Visual.)";
+      sonsAutomaticos(); pintar();
+      irPara(0);
       if (st.lembrar) {
         guardarOpc();
         if (r.regra && !st.padrao.includes(r.regra)) {
@@ -455,7 +473,7 @@ IDEIA PARA DEPOIS
           try { await salvarPadrao(novo); } catch (e) { toast("Corrigi, mas não consegui guardar no padrão: " + e.message, true); }
         }
       }
-      toast(r.resposta || "Edição corrigida. Dá o play.");
+      toast(ultima.mudou.length ? "Ajustei: " + ultima.mudou.join(", ") + ". Dá o play." : "Não mudou nada no vídeo. Tente explicar de outro jeito.", !ultima.mudou.length);
       salvarDepois();
     } catch (e) { toast(e.message, true); }
     st.corrigindo = false; pintar();
@@ -488,7 +506,7 @@ IDEIA PARA DEPOIS
       const todas = palavrasBrutas();
       if (todas.length) {
         etapa("Pensando na edição (cortes, título, zoom e efeitos)");
-        st.plano = await chamar({ acao: "plano", palavras: todas, duracao: offset, padrao: st.padrao, tema: st.tema, roteiro: st.roteiro.trim() || undefined });
+        st.plano = await chamar({ acao: "plano", palavras: todas, duracao: offset, padrao: padraoComPedidos(), tema: st.tema, roteiro: st.roteiro.trim() || undefined });
         st.titulo = st.plano.titulo || "";
         st.tituloDestaque = st.plano.titulo_destaque || "";
       } else {
@@ -797,7 +815,7 @@ IDEIA PARA DEPOIS
   const CAVEAT = (tam) => `700 ${tam}px Caveat, "Segoe Script", cursive`;
   const MONT = (tam) => `800 ${tam}px Montserrat, Poppins, "Helvetica Neue", Arial, sans-serif`;
   function legendaCapcut(g, u, W, H) {
-    const tam = 74 * u, y = H * st.opc.altura;
+    const tam = 74 * u * (Number(st.opc.tamLeg) || 1), y = H * st.opc.altura;
     let texto = textoLeg(g).replace(/^[,.;:!?]+|[,.;:]+$/g, "");
     texto = st.opc.maiusculas ? texto.toUpperCase() : texto.toLowerCase();
     const fonte = fonteLeg(tam), linhas = quebrar(texto, W * 0.8, fonte);
@@ -1125,7 +1143,7 @@ IDEIA PARA DEPOIS
     // abas em pílula à direita e a linha do tempo com legendas e efeitos embaixo
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga ed rr">
       <header class="rr-cabeca"><div><h2 class="rr-h1">edição de reels</h2><p class="rr-lede">Mande o bruto e eu edito no seu padrão. Você revisa cada corte, legenda e efeito antes de baixar.</p></div>
-        <div class="cr-acoes-topo"><label class="btn" id="ed-fonte-topo">Minha fonte<input type="file" id="ed-fonte-arq-topo" accept=".ttf,.otf,.woff,.woff2,font/*" hidden></label><button class="btn" type="button" id="ed-ver-padrao">Meu padrão de edição</button></div></header>
+        <div class="cr-acoes-topo"><button class="btn" type="button" id="ed-ver-padrao">Meu padrão de edição</button></div></header>
       <div class="ed-projeto" id="ed-projeto"></div>
       <div class="rr-wrap">
         <aside class="rr-lado">
@@ -1149,6 +1167,8 @@ CENA 2: aplicando no cabelo, voice-over: ...
 CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
                 <small class="ed-obs">Eu comparo com o que você gravou: fico com a tomada mais fiel ao roteiro, uso o seu gancho no título, transformo as direções de cena em b-roll e efeitos e te aviso se faltou gravar algum bloco.</small>
               </details>
+              <label class="ed-rotulo" for="ed-pedidos">O que você quer nesta edição</label>
+              <textarea class="entrada" id="ed-pedidos" rows="3" placeholder="Ex.: comece direto na fala do produto; legenda maior; muitos efeitos de brilho; zoom quando eu mostrar o frasco; corte o final depois do CTA.">${esc(st.pedidos)}</textarea>
               <button class="btn btn-principal ed-botao-grande" type="button" id="ed-editar">${ic.brilho}Editar automático</button>
               <ol class="ed-etapas" id="ed-etapas"></ol>
             </section>
@@ -1171,6 +1191,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     soltar.addEventListener("drop", (e) => { e.preventDefault(); soltar.classList.remove("arrastando"); adicionarClipes([...e.dataTransfer.files]); });
     $("#ed-editar", sec).addEventListener("click", editar);
     $("#ed-tema", sec).addEventListener("input", (e) => { st.tema = e.target.value; salvarDepois(); });
+    $("#ed-pedidos", sec).addEventListener("input", (e) => { st.pedidos = e.target.value; salvarDepois(); });
     carregarProjetos();
     $("#ed-roteiro", sec).addEventListener("input", (e) => { st.roteiro = e.target.value; try { localStorage.setItem("ed-roteiro", st.roteiro); } catch (er) { /* sem armazenamento */ } salvarDepois(); });
     $("#ed-puxar", sec).addEventListener("change", (e) => {
@@ -1184,7 +1205,6 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     });
     carregarPosts();
     $("#ed-ver-padrao", sec).addEventListener("click", abrirPadrao);
-    $("#ed-fonte-arq-topo", sec).addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) enviarFonte(f); });
     prepararCanvas();
   }
 
@@ -1290,6 +1310,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       ${o.estilo === "capcut" ? `<label class="ed-rotulo" for="ed-fonte">Fonte da legenda</label>
       <select class="entrada" id="ed-fonte">${Object.entries(FONTES_LEG).filter(([k]) => k !== "minha" || st.minhaFonte).map(([k, t]) => `<option value="${k}" ${o.fonteLeg === k ? "selected" : ""}>${k === "minha" ? esc(st.minhaFonte) : t}</option>`).join("")}</select>
       <label class="btn ed-enviar-fonte">${st.minhaFonte ? "Trocar minha fonte" : "Enviar minha fonte (Bootzy)"}<input type="file" id="ed-fonte-arq" accept=".ttf,.otf,.woff,.woff2,font/*" hidden></label>
+      <label class="ed-rotulo" for="ed-tamleg">Tamanho da legenda</label>
+      <input type="range" id="ed-tamleg" min="0.7" max="1.5" step="0.05" value="${o.tamLeg || 1}">
       <div class="ed-linha"><label class="ed-rotulo" for="ed-sombra">Sombra</label><select class="entrada" id="ed-sombra"><option value="suave" ${o.sombra !== "dura" ? "selected" : ""}>Suave</option><option value="dura" ${o.sombra === "dura" ? "selected" : ""}>Dura (deslocada)</option></select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-por">Palavras por legenda</label><select class="entrada" id="ed-por">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(o.porLegenda) === n ? "selected" : ""}>${n}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-cor-leg">Cor da legenda</label><span class="ed-cores">${["#fff3b0", "#ffffff", "#ffe45c"].map((c) => `<button type="button" class="ed-cor${o.corLegenda === c ? " ativa" : ""}" data-cor-leg="${c}" style="background:${c}" aria-label="Cor ${c}"></button>`).join("")}<input type="color" id="ed-cor-leg" value="${o.corLegenda}"></span></div>` : ""}
@@ -1311,6 +1333,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $("#ed-trans", box).addEventListener("change", (e) => { o.transicao = e.target.value; guardarOpc(); redesenhar(); });
     $("#ed-ritmo", box).addEventListener("change", (e) => { o.ritmo = e.target.value; remontar(); });
     const fsel = $("#ed-fonte", box); if (fsel) fsel.addEventListener("change", (e) => { o.fonteLeg = e.target.value; guardarOpc(); redesenhar(); });
+    const tl = $("#ed-tamleg", box); if (tl) tl.addEventListener("input", (e) => { o.tamLeg = Number(e.target.value); redesenhar(); });
     const som = $("#ed-sombra", box); if (som) som.addEventListener("change", (e) => { o.sombra = e.target.value; guardarOpc(); redesenhar(); });
     const farq = $("#ed-fonte-arq", box); if (farq) farq.addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) enviarFonte(f); });
     const por = $("#ed-por", box); if (por) por.addEventListener("change", (e) => { o.porLegenda = Number(e.target.value); remontar(); });
@@ -1501,7 +1524,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const p = st.plano, bruto = st.clipes.reduce((s, c) => s + c.dur, 0);
     box.innerHTML = `<section class="ed-cartao ed-corrigir">
         <h3 class="ed-titulo">Corrigir a edição</h3>
-        ${st.correcoes.map((c) => `<div class="ed-corr"><p class="ed-corr-eu">${esc(c.texto)}</p><p class="ed-corr-ia">${esc(c.resposta)}${c.regra && st.lembrar ? `<small>Guardei no seu padrão: ${esc(c.regra)}</small>` : ""}</p></div>`).join("")}
+        ${st.correcoes.map((c) => `<div class="ed-corr"><p class="ed-corr-eu">${esc(c.texto)}</p><p class="ed-corr-ia">${esc(c.resposta)}${c.mudou && c.mudou.length ? `<small>Mudou: ${esc(c.mudou.join(", "))}</small>` : ""}${c.regra && st.lembrar ? `<small>Guardei no seu padrão: ${esc(c.regra)}</small>` : ""}</p></div>`).join("")}
         <textarea class="entrada" id="ed-corr-txt" rows="4" placeholder="Diga o que não ficou bom. Ex.: a legenda está fina demais, quero maiúscula e forte no meio da tela; tire os efeitos de clique; o woosh tem que entrar só nas trocas de cena; corte o começo até eu falar o gancho." ${st.corrigindo ? "disabled" : ""}></textarea>
         <label class="ed-chk"><input type="checkbox" id="ed-corr-lembrar" ${st.lembrar ? "checked" : ""}> Lembrar nas próximas edições (vai para o seu padrão)</label>
         <button class="btn btn-principal" type="button" id="ed-corr-btn" ${st.corrigindo ? "disabled" : ""}>${st.corrigindo ? "Corrigindo…" : ic.brilho + "Corrigir edição"}</button>

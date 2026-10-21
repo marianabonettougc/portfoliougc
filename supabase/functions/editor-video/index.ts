@@ -114,10 +114,15 @@ Regras:
 // correção: ela comenta o que não gostou e a IA devolve o plano corrigido, os ajustes visuais
 // (estilo da legenda, título, cor, volume dos efeitos...) e uma regra curta para o padrão
 const OPC_VALORES = `estilo: "capcut" (Poppins média, minúscula, sombra suave, o padrão dela) | "minimal" (fina e branca) | "bold" (forte com contorno) | "caixa" (caixinha bege)
-fonteLeg: fonte da legenda: "minha" (a Bootzy que ela enviou, a preferida dela) | "montserrat" (sem serifa forte) | "poppins" (sem serifa média) | "nunito" (arredondada forte) | "dmserif" (serifada itálica) | "instrument" (serifada itálica fina)
+fonteLeg: fonte da legenda: "minha" (a Bootzy que ela enviou, a preferida dela e o padrão da legenda de fala) | "arimo" (parecida com a Bootzy) | "montserrat" (sem serifa forte) | "poppins" (sem serifa média) | "nunito" (arredondada forte) | "dmserif" (serifada itálica) | "instrument" (serifada itálica fina)
 sombra: "suave" | "dura" (sombra preta deslocada)
 corLegenda: cor da legenda capcut em hexadecimal (padrão "#fff3b0", amarelo clarinho)
 porLegenda: palavras por legenda no estilo capcut, de 1 a 4
+tamLeg: tamanho da legenda, de 0.7 (menor) a 1.5 (bem maior); 1 é o normal
+ritmo: "normal" (deixa respiro) | "rapido" (corta respiros) | "turbo" (sem nenhuma pausa)
+sfxAuto: sons automáticos nos cortes e nas legendas: "desligado" | "pouco" | "medio" | "muito"
+transicao: "nenhuma" | "punch" (zoom rápido nos cortes) | "deslize" (zoom rápido + deslize na troca de cena)
+vicios: true ou false (tira éé, ahn, hum); vozForte: true ou false (voz no volume do Instagram)
 chamativas: true ou false (palavras de destaque viram texto grande colorido com sombra dura e frase manuscrita)
 sonsChamativas: true ou false (pop quando entra palavra chamativa)
 confete, tremer (tremidinha no impacto), flash (flash na troca de cena): true ou false
@@ -130,7 +135,11 @@ maiusculas, titulo, efeitos, silencio, erros, zoomCortes, zoomEnfase: true ou fa
 const OPC_OK: Record<string, (v: any) => any> = {
   estilo: (v) => ["capcut", "minimal", "bold", "caixa"].includes(v) ? v : undefined,
   estiloTitulo: (v) => ["simples", "etapas", "frase", "caixa"].includes(v) ? v : undefined,
-  fonteLeg: (v) => ["minha", "montserrat", "poppins", "nunito", "dmserif", "instrument"].includes(v) ? v : undefined,
+  fonteLeg: (v) => ["minha", "arimo", "montserrat", "poppins", "nunito", "dmserif", "instrument"].includes(v) ? v : undefined,
+  tamLeg: (v) => Number.isFinite(Number(v)) ? Math.min(1.5, Math.max(0.7, Number(v))) : undefined,
+  ritmo: (v) => ["normal", "rapido", "turbo"].includes(v) ? v : undefined,
+  sfxAuto: (v) => ["desligado", "pouco", "medio", "muito"].includes(v) ? v : undefined,
+  transicao: (v) => ["nenhuma", "punch", "deslize"].includes(v) ? v : undefined,
   sombra: (v) => ["suave", "dura"].includes(v) ? v : undefined,
   corLegenda: (v) => /^#[0-9a-f]{6}$/i.test(String(v)) ? String(v) : undefined,
   porLegenda: (v) => [1, 2, 3, 4].includes(Number(v)) ? Number(v) : undefined,
@@ -138,7 +147,7 @@ const OPC_OK: Record<string, (v: any) => any> = {
   cor: (v) => /^#[0-9a-f]{6}$/i.test(String(v)) ? String(v) : undefined,
   vol: (v) => Number.isFinite(Number(v)) ? Math.min(1.2, Math.max(0, Number(v))) : undefined,
 };
-for (const k of ["chamativas", "sonsChamativas", "confete", "tremer", "flash", "sonsTitulo", "maiusculas", "titulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase"]) OPC_OK[k] = (v) => typeof v === "boolean" ? v : undefined;
+for (const k of ["chamativas", "sonsChamativas", "confete", "tremer", "flash", "sonsTitulo", "maiusculas", "titulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte"]) OPC_OK[k] = (v) => typeof v === "boolean" ? v : undefined;
 
 async function corrigir(chave: string, c: any) {
   const palavras = (Array.isArray(c.palavras) ? c.palavras : []).slice(0, 3000);
@@ -166,15 +175,18 @@ Responda SOMENTE um JSON com o plano inteiro já corrigido (mesmo formato do pla
 "opc": só os ajustes visuais que mudam (ex. {"estilo":"bold","maiusculas":true}),
 "resposta": 1 ou 2 frases curtas dizendo o que você mudou,
 "regra": uma regra curta e geral para o padrão de edição dela valer nos próximos vídeos (ex. "Legenda em maiúsculas, forte com contorno, no meio da tela"), ou "" se a correção só vale para este vídeo.
+IMPORTANTE: o pedido dela TEM que mudar o vídeo. Traduza cada pedido em mudança concreta no plano (remover com os tempos certos para cortar trechos, efeitos com tempo e tipo, zooms, destaques, título) ou nos ajustes visuais (opc). Exemplos: "corta o começo até eu falar X" = remover de 0 até o tempo da palavra X; "tira os cliques" = tirar efeitos click/shutter e sfxAuto "pouco"; "mais dinâmico" = mais efeitos e zooms, ritmo "turbo", sfxAuto "muito"; "legenda maior" = tamLeg maior. Mantenha no plano tudo que ela não pediu para mudar. Se algo não der para fazer com esses recursos, diga claramente na resposta o que não deu e como ela faz à mão (abas Cortes, Legendas e Visual).
 Se ela pedir para corrigir o TEXTO de uma legenda, explique na resposta que ela pode editar direto na lista de Legendas (o texto da legenda não muda por aqui). Regras: efeitos só destes tipos: woosh, suave, pop, click, shutter, typing, riser, hit, ding, cristal, brilho, spray, mensagem, relogio. Tempos em segundos do bruto. Português do Brasil. Nunca use travessão.`;
   const r = await fetch(`${GROQ}/chat/completions`, {
     method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.2, max_tokens: 4500, reasoning_effort: "low", response_format: { type: "json_object" }, messages: [{ role: "user", content: pedido }] }),
+    body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.2, max_tokens: 8000, reasoning_effort: "low", response_format: { type: "json_object" }, messages: [{ role: "user", content: pedido }] }),
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(r.status === 429 ? "O limite grátis da IA deste minuto acabou. Espere um pouquinho e tente de novo." : "A IA não respondeu agora. Tente de novo.");
   const a = lerJson(String(j.choices?.[0]?.message?.content || ""));
-  const novo = normalizar(a);
+  if (!a || typeof a !== "object" || (!a.opc && !Array.isArray(a.efeitos) && !Array.isArray(a.remover) && !a.titulo)) throw new Error("Não consegui aplicar essa correção agora. Tente de novo.");
+  // o que a IA não devolveu continua como estava (resposta pela metade não apaga a edição)
+  const novo = normalizar({ ...(c.plano || {}), titulo: c.titulo, ...a });
   const opc: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(a.opc || {})) { const f = OPC_OK[k]; const ok = f ? f(v) : undefined; if (ok !== undefined) opc[k] = ok; }
   return { plano: novo, opc, resposta: txt(a.resposta, 400), regra: txt(a.regra, 300) };
