@@ -78,6 +78,12 @@ DINAMISMO E EFEITOS SONOROS (ela gosta de vídeo bem dinâmico, que chama atenç
 - Muitos efeitos sonoros: 1 a cada 1,5 a 2 segundos. Woosh nas trocas de assunto e nos zooms, clique/shutter nos cortes rápidos, pop e ding quando entra texto, produto ou informação, riser antes de revelar algo e hit logo depois, typing quando aparece algo escrito, som do próprio produto junto do gesto (spray, embalagem, chuveiro).
 - Cortes rápidos sem respiro, zoom rápido (punch) nos cortes de ênfase, troca de plano a cada 1 a 2 segundos quando der (b-roll).
 
+REFERÊNCIA: VÍDEO PRÉ-EDITADO (Floratta Blue Crystal, out/2026)
+- Quando ela manda um vídeo que já vem pré-editado (cortes, título, textos e b-roll prontos), a edição é leve: poucos efeitos, só nos momentos-chave. Não refazer cortes nem legenda.
+- Sons usados nele (6 em 82 s, uns 20 a 25% do volume da voz): pop baixinho quando o título do gancho aparece; brilho quando entra a figurinha do produto; whoosh suave no corte para o b-roll do produto; spray quando o dedo aperta a válvula; som de mensagem quando ela pega o celular, antes do áudio de prova (nunca por cima dele); clique de câmera quando entra a gravação de tela.
+- Efeitos de cena usados nele: aproximação lenta (até 6%) durante o título do gancho; aproximação lenta (até 8%) no b-roll de close do produto; flash branco rápido (0,1 s) no corte para o produto; zoom de ênfase de 8% que volta ao normal em 1,3 s em 2 cortes de volta para o rosto.
+- Versão final do mesmo vídeo, depois que ela colocou legenda (1 palavra no meio da tela) e música de fundo e pediu para ficar dinâmico: 44 sons em 82 s (1 a cada 2 s, uns 12 a 20% do volume): clique ou whoosh suave em todo corte e em todo zoom, pop quando entra texto, brilho e ding de cristal quando o frasco aparece e quando fala a marca, riser curto antes do close do produto, spray em todo borrifo, tique-taque quando fala de fixação, mensagem antes do áudio de prova. Zoom alternado (100% e 110 a 112%, entrando um pouco mais perto e assentando) a cada 3 a 4 s nas falas longas, sempre numa pausa da fala; aproximação lenta nos b-rolls e no frasco na mão; flash branco no corte para o produto e na volta da gravação de tela. Zoom centrado um pouco acima do meio para não cortar o rosto nem a legenda. Nada durante o áudio de prova além de uma aproximação lenta.
+
 IDEIA PARA DEPOIS
 - Texto atrás da pessoa (DbT3IhlRUgA): o título fica atrás do corpo dela.`;
 
