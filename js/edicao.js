@@ -111,7 +111,7 @@ IDEIA PARA DEPOIS
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
     opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true },
-    correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, projeto: null, projetos: [], pendentes: null, salvando: "",
+    correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, aba: "video", projeto: null, projetos: [], pendentes: null, salvando: "",
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
@@ -381,7 +381,7 @@ IDEIA PARA DEPOIS
     if (st.tocando) parar();
     st.clipes.forEach((c) => { try { c.el.remove(); URL.revokeObjectURL(c.el.src); } catch (e) { /* segue */ } });
     const capaBox = $("#ed-capa"); if (capaBox) capaBox.dataset.pronto = "";
-    Object.assign(st, { clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "" });
+    Object.assign(st, { clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, aba: "video", correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "" });
   }
   async function abrirProjeto(id) {
     const { data, error } = await banco().from("edicao_projetos").select("*").eq("id", id).maybeSingle();
@@ -498,6 +498,7 @@ IDEIA PARA DEPOIS
       etapa("Montando a linha do tempo");
       montar();
       etapa("Pronto! Dá o play para ver a prévia.", "ok");
+      st.aba = "cortes";
       salvarDepois();
       st.t = 0; desenhar(0);
     } catch (e) {
@@ -1120,39 +1121,46 @@ IDEIA PARA DEPOIS
   };
 
   function montarTela(sec) {
-    sec.innerHTML = `<div class="cr-pagina cr-pagina-larga ed">
-      <header class="cr-cabeca cr-cabeca-linha"><div><h2>Edição de vídeos</h2><p>Mande o vídeo bruto e eu edito no seu padrão: corto silêncios e tomadas erradas, ponho legenda palavra por palavra, zoom, título no gancho e efeitos sonoros. Você vê a prévia e baixa o MP4.</p></div>
+    // visual "reel review" (referência do editor da getgitgirl): player 9:16 fixo à esquerda,
+    // abas em pílula à direita e a linha do tempo com legendas e efeitos embaixo
+    sec.innerHTML = `<div class="cr-pagina cr-pagina-larga ed rr">
+      <header class="rr-cabeca"><div><h2 class="rr-h1">edição de reels</h2><p class="rr-lede">Mande o bruto e eu edito no seu padrão. Você revisa cada corte, legenda e efeito antes de baixar.</p></div>
         <div class="cr-acoes-topo"><label class="btn" id="ed-fonte-topo">Minha fonte<input type="file" id="ed-fonte-arq-topo" accept=".ttf,.otf,.woff,.woff2,font/*" hidden></label><button class="btn" type="button" id="ed-ver-padrao">Meu padrão de edição</button></div></header>
       <div class="ed-projeto" id="ed-projeto"></div>
-      <div class="ed-grade">
-        <div class="ed-col-esq">
-          <section class="ed-cartao">
-            <label class="ed-soltar" id="ed-soltar">${ic.filme}<b>Enviar vídeo bruto</b><small>Pode mandar vários clipes, eles entram na ordem. MP4 ou MOV.</small><input type="file" id="ed-arquivo" accept="video/*,.mov,.mp4,.m4v,.webm" multiple hidden></label>
-            <div id="ed-clipes"></div>
-            <input class="entrada" id="ed-tema" placeholder="Tema ou marca do vídeo (opcional, ajuda no título)">
-            <details class="ed-roteiro" id="ed-roteiro-box"${st.roteiro ? " open" : ""}><summary><b>Seu roteiro</b> <small>(opcional, deixa a edição bem mais certeira)</small></summary>
-              <select class="entrada" id="ed-puxar" aria-label="Puxar roteiro do Painel de conteúdo"><option value="">Puxar de um post do Painel de conteúdo…</option></select>
-              <textarea class="entrada" id="ed-roteiro" rows="9" placeholder="Cole aqui o que você idealizou: as falas, as cenas, o voice-over e o texto na tela. Ex.:
+      <div class="rr-wrap">
+        <aside class="rr-lado">
+          <div class="ed-tela rr-player"><canvas id="ed-canvas" width="1080" height="1920"></canvas><div class="ed-vazio" id="ed-vazio">${ic.filme}<span>A prévia aparece aqui</span></div><span class="rr-relogio" id="ed-relogio">0:00,0</span></div>
+          <div class="ed-controles" id="ed-controles"></div>
+          <p class="rr-modo" id="ed-modo"></p>
+          <div id="ed-final"></div>
+        </aside>
+        <div class="rr-principal">
+          <nav class="rr-abas" role="tablist" aria-label="Etapas da edição" id="ed-abas"></nav>
+          <div class="rr-painel" data-painel="video">
+            <section class="ed-cartao">
+              <label class="ed-soltar" id="ed-soltar">${ic.filme}<b>Enviar vídeo bruto</b><small>Pode mandar vários clipes, eles entram na ordem. MP4 ou MOV.</small><input type="file" id="ed-arquivo" accept="video/*,.mov,.mp4,.m4v,.webm" multiple hidden></label>
+              <div id="ed-clipes"></div>
+              <input class="entrada" id="ed-tema" placeholder="Tema ou marca do vídeo (opcional, ajuda no título)">
+              <details class="ed-roteiro" id="ed-roteiro-box"${st.roteiro ? " open" : ""}><summary><b>Seu roteiro</b> <small>(opcional, deixa a edição bem mais certeira)</small></summary>
+                <select class="entrada" id="ed-puxar" aria-label="Puxar roteiro do Painel de conteúdo"><option value="">Puxar de um post do Painel de conteúdo…</option></select>
+                <textarea class="entrada" id="ed-roteiro" rows="9" placeholder="Cole aqui o que você idealizou: as falas, as cenas, o voice-over e o texto na tela. Ex.:
 GANCHO: Motivos plausíveis para trocar de shampoo [close no frasco na mão]
 CENA 2: aplicando no cabelo, voice-over: ...
 CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
-              <small class="ed-obs">Eu comparo com o que você gravou: fico com a tomada mais fiel ao roteiro, uso o seu gancho no título, transformo as direções de cena em b-roll e efeitos e te aviso se faltou gravar algum bloco.</small>
-            </details>
-            <button class="btn btn-principal ed-botao-grande" type="button" id="ed-editar">${ic.brilho}Editar automático</button>
-            <ol class="ed-etapas" id="ed-etapas"></ol>
-          </section>
-          <section class="ed-cartao" id="ed-ajustes"></section>
-          <section class="ed-cartao" id="ed-cortes" hidden></section>
-          <section class="ed-cartao" id="ed-legendas" hidden></section>
+                <small class="ed-obs">Eu comparo com o que você gravou: fico com a tomada mais fiel ao roteiro, uso o seu gancho no título, transformo as direções de cena em b-roll e efeitos e te aviso se faltou gravar algum bloco.</small>
+              </details>
+              <button class="btn btn-principal ed-botao-grande" type="button" id="ed-editar">${ic.brilho}Editar automático</button>
+              <ol class="ed-etapas" id="ed-etapas"></ol>
+            </section>
+          </div>
+          <div class="rr-painel" data-painel="cortes" hidden><section class="ed-cartao" id="ed-cortes" hidden></section><p class="rr-vazio">Os cortes aparecem aqui depois que eu editar o vídeo.</p></div>
+          <div class="rr-painel" data-painel="legendas" hidden><section class="ed-cartao" id="ed-legendas" hidden></section><p class="rr-vazio">As legendas aparecem aqui depois que eu editar o vídeo.</p></div>
+          <div class="rr-painel" data-painel="visual" hidden><section class="ed-cartao" id="ed-ajustes" hidden></section><p class="rr-vazio">Título, fonte, cor e ritmo aparecem aqui depois que eu editar o vídeo.</p></div>
+          <div class="rr-painel" data-painel="sons" hidden><div class="rr-plano" id="ed-plano"></div></div>
+          <div class="rr-painel" data-painel="capa" hidden><section class="ed-cartao ed-capa" id="ed-capa" hidden></section><p class="rr-vazio">A capa aparece aqui depois que eu editar o vídeo.</p></div>
         </div>
-        <div class="ed-col-meio">
-          <div class="ed-tela"><canvas id="ed-canvas" width="1080" height="1920"></canvas><div class="ed-vazio" id="ed-vazio">${ic.filme}<span>A prévia aparece aqui</span></div></div>
-          <div class="ed-controles" id="ed-controles"></div>
-          <div id="ed-final"></div>
-          <section class="ed-cartao ed-capa" id="ed-capa" hidden></section>
-        </div>
-        <div class="ed-col-dir" id="ed-plano"></div>
       </div>
+      <section class="rr-linha" id="ed-linha" hidden aria-label="Linha do tempo"></section>
       <div id="ed-videos" class="ed-videos" aria-hidden="true"></div>
     </div>`;
     const entrada = $("#ed-arquivo", sec);
@@ -1180,6 +1188,37 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     prepararCanvas();
   }
 
+  // ---------- abas (visual reel review) ----------
+  const ABAS = [["video", "Vídeo"], ["cortes", "Cortes"], ["legendas", "Legendas"], ["visual", "Visual"], ["sons", "Sons e correções"], ["capa", "Capa"]];
+  function pintarAbas() {
+    const nav = $("#ed-abas"); if (!nav) return;
+    const pronto = st.segs.length > 0;
+    if (!pronto && st.aba !== "video") st.aba = "video";
+    const conta = { cortes: palavrasRevisao().filter((w) => cortada(w) || tiradaPelaIA(w)).length, legendas: st.legendas.length, sons: st.efeitos.length };
+    nav.innerHTML = ABAS.map(([k, t]) => `<button type="button" role="tab" class="rr-aba" data-aba="${k}" aria-selected="${st.aba === k}" ${k !== "video" && !pronto ? "disabled" : ""}>${t}${pronto && conta[k] ? `<span class="rr-n">${conta[k]}</span>` : ""}</button>`).join("");
+    $$("[data-aba]", nav).forEach((b) => b.addEventListener("click", () => { st.aba = b.dataset.aba; pintarAbas(); if (st.aba === "capa") desenharCapa(); }));
+    $$(".rr-painel").forEach((pn) => { pn.hidden = pn.dataset.painel !== st.aba; });
+  }
+
+  // ---------- linha do tempo: planos, legendas e efeitos ----------
+  function pintarLinha() {
+    const box = $("#ed-linha"); if (!box) return;
+    if (!st.segs.length || !st.duracao) { box.hidden = true; return; }
+    box.hidden = false;
+    const d = st.duracao, pct = (t) => (Math.max(0, Math.min(d, t)) / d * 100).toFixed(3) + "%";
+    const larg = Math.max(100, Math.round(d * 7));
+    const marcas = []; for (let t = 0; t <= d; t += d > 60 ? 10 : 5) marcas.push(t);
+    box.innerHTML = `<div class="rr-linha-rolar"><div class="rr-linha-dentro" style="width:${larg}%">
+      <div class="rr-regua">${marcas.map((t) => `<span style="left:${pct(t)}">${tempo(t).replace(/,\d$/, "")}</span>`).join("")}</div>
+      <div class="rr-trilha rr-t-leg">${st.legendas.map((g, i) => `<button type="button" class="rr-chip" data-ir="${g.o0}" style="left:${pct(g.o0)};width:calc(${pct(g.o1 - g.o0)} - 3px)" title="${esc(textoLeg(g))}"><b>T</b> ${esc(textoLeg(g))}</button>`).join("")}</div>
+      <div class="rr-trilha rr-t-planos">${st.segs.map((sg, i) => `<button type="button" class="rr-plano-bl${i % 2 ? " par" : ""}${sg.zoom > 1 ? " zoom" : ""}" data-ir="${sg.o0}" style="left:${pct(sg.o0)};width:calc(${pct(sg.o1 - sg.o0)} - 2px)" title="Plano ${i + 1}${sg.zoom > 1 ? " com zoom" : ""}"></button>`).join("")}</div>
+      <div class="rr-trilha rr-t-sons">${st.efeitos.map((e) => `<button type="button" class="rr-som" data-ir="${Math.max(0, e.t - 0.3)}" style="left:${pct(e.t)}" title="${esc((EFEITOS[e.tipo] || e.tipo) + (e.por_que ? ": " + e.por_que : ""))}"></button>`).join("")}</div>
+      <span class="rr-agulha" id="ed-agulha" style="left:${pct(st.t)}"></span>
+    </div></div>
+    <p class="rr-legenda-linha"><span class="rr-chip-mini"></span> legendas · <span class="rr-plano-mini"></span> planos (mais escuro = zoom) · <span class="rr-som-mini"></span> efeitos sonoros · toque para ir até o ponto</p>`;
+    $$("[data-ir]", box).forEach((b) => b.addEventListener("click", () => irPara(Number(b.dataset.ir) + 0.02)));
+  }
+
   // posts do Painel de conteúdo com roteiro, para puxar para o campo
   async function carregarPosts() {
     try {
@@ -1204,8 +1243,14 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     bt.disabled = st.trabalhando || st.exportando || !st.clipes.length || Boolean(st.pendentes);
     bt.innerHTML = st.trabalhando ? "Editando…" : `${ic.brilho}${st.plano ? "Editar de novo" : "Editar automático"}`;
     $("#ed-vazio", sec).hidden = Boolean(st.segs.length);
-    pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa();
+    pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa(); pintarLinha(); pintarAbas(); pintarModo();
     if (st.segs.length && !st.tocando) desenhar(st.t);
+  }
+  function pintarModo() {
+    const p = $("#ed-modo"); if (!p) return;
+    if (!st.segs.length) { p.textContent = ""; return; }
+    const bruto = st.clipes.reduce((a, c) => a + c.dur, 0);
+    p.innerHTML = `Corte: <b>${tempo(bruto)}</b> → <b>${tempo(st.duracao)}</b> · ${st.segs.length} planos · ${st.legendas.length} legendas · ${st.efeitos.length} sons`;
   }
   function pintarEtapas() {
     const ol = $("#ed-etapas"); if (!ol) return;
@@ -1226,7 +1271,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       const v = st.clipes[s.ci].el; v.currentTime = s.a + (st.t - s.o0); await esperarEvento(v, "seeked"); desenhar(st.t);
     });
   }
-  function atualizarTempo() { const t = $("#ed-tempo"); if (t) t.textContent = `${tempo(st.t)} / ${tempo(st.duracao)}`; const b = $("#ed-barra"); if (b && st.tocando) b.value = st.t; }
+  function atualizarTempo() { const t = $("#ed-tempo"); if (t) t.textContent = `${tempo(st.t)} / ${tempo(st.duracao)}`; const r = $("#ed-relogio"); if (r) r.textContent = tempo(st.t); const ag = $("#ed-agulha"); if (ag && st.duracao) ag.style.left = (Math.min(st.t, st.duracao) / st.duracao * 100).toFixed(3) + "%"; const b = $("#ed-barra"); if (b && st.tocando) b.value = st.t; }
 
   function pintarAjustes() {
     const box = $("#ed-ajustes"); if (!box) return;
@@ -1293,7 +1338,6 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const ws = palavrasRevisao();
     if (!st.segs.length || !ws.length) { box.hidden = true; return; }
     box.hidden = false;
-    const aberto = box.querySelector("details") ? box.querySelector("details").open : false;
     const linhas = []; let atual = [];
     ws.forEach((w, i) => {
       atual.push(w);
@@ -1301,10 +1345,11 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       if (!prox || prox.g - w.ge > 0.6 || /[.!?]$/.test(w.w)) { linhas.push(atual); atual = []; }
     });
     const nCort = ws.filter(cortada).length, nVic = ws.filter((w) => w.vicio && cortada(w)).length, nIA = ws.filter((w) => !cortada(w) && tiradaPelaIA(w)).length;
-    box.innerHTML = `<details${aberto ? " open" : ""}><summary class="ed-titulo-linha"><h3 class="ed-titulo">Revisar cortes</h3><span class="ed-sub">${nCort + nIA} palavra${nCort + nIA === 1 ? "" : "s"} fora</span></summary>
-      <p class="ed-obs">Toque numa palavra para cortar ou devolver. <span class="ed-p cortada">riscada</span> = você cortou ou é vício de fala, <span class="ed-p ia">apagada</span> = tomada errada que eu tirei, <span class="ed-p muleta">sublinhada</span> = muleta (tipo, né) que você pode cortar.${nVic ? ` Tirei ${nVic} vício${nVic > 1 ? "s" : ""} de fala sozinha.` : ""}</p>
-      <div class="ed-revisao">${linhas.map((l) => `<p><button type="button" class="ed-ir" data-ir="${l[0].g}">${tempo(l[0].g)}</button> ${l.map((w) => `<button type="button" class="ed-p${cortada(w) ? " cortada" : tiradaPelaIA(w) ? " ia" : w.muleta ? " muleta" : ""}" data-k="${w.k}" data-vicio="${w.vicio ? 1 : ""}">${esc(w.w)}</button>`).join(" ")}</p>`).join("")}</div>
-      ${Object.keys(st.marcas).length ? `<button type="button" class="login-link" id="ed-cortes-desfazer">desfazer o que eu mudei aqui</button>` : ""}</details>`;
+    box.innerHTML = `<p class="rr-lede">Toque numa palavra para cortar ou devolver. A prévia segue o que você marcar.${nVic ? ` Tirei ${nVic} vício${nVic > 1 ? "s" : ""} de fala sozinha.` : ""}</p>
+      <div class="rr-tally"><span><b>${nCort + nIA}</b> palavras fora</span><span><b>${tempo(st.clipes.reduce((a, c) => a + c.dur, 0))}</b> bruto</span><span><b>${tempo(st.duracao)}</b> editado</span></div>
+      <p class="rr-chaves"><span class="ed-p cortada">cortada</span><span class="ed-p ia">tomada errada</span><span class="ed-p vicio">vício</span><span class="ed-p muleta">muleta (tipo, né)</span></p>
+      <div class="ed-revisao">${linhas.map((l) => `<div class="rr-frase"><button type="button" class="rr-ts" data-ir="${l[0].g}">${tempo(l[0].g)}</button><p>${l.map((w) => `<button type="button" class="ed-p${cortada(w) ? (w.vicio && st.marcas[w.k] !== "cortar" ? " vicio" : " cortada") : tiradaPelaIA(w) ? " ia" : w.muleta ? " muleta" : ""}" data-k="${w.k}">${esc(w.w)}</button>`).join("")}</p></div>`).join("")}</div>
+      ${Object.keys(st.marcas).length ? `<button type="button" class="login-link" id="ed-cortes-desfazer">desfazer o que eu mudei aqui</button>` : ""}`;
     $$(".ed-p[data-k]", box).forEach((b) => b.addEventListener("click", () => {
       const w = ws.find((x) => String(x.k) === b.dataset.k); if (!w) return;
       const fora = cortada(w) || tiradaPelaIA(w);
@@ -1491,7 +1536,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   async function irPara(t) {
     if (st.tocando) parar();
     st.t = t; const s = segNoFinal(t); if (!s) return;
-    const v = st.clipes[s.ci].el; v.currentTime = s.a + (t - s.o0); await esperarEvento(v, "seeked"); desenhar(t); pintarControles();
+    const v = st.clipes[s.ci].el; v.currentTime = s.a + (t - s.o0); await esperarEvento(v, "seeked"); desenhar(t); pintarControles(); atualizarTempo();
   }
   function pintarFinal() {
     const box = $("#ed-final"); if (!box) return;
@@ -1526,7 +1571,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const sec = document.getElementById("aba-" + ABA);
     if (!sec) return;
     if (!st.pronto) {
-      if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;500;600;800&family=Montserrat:wght@700;800&family=Nunito:wght@800&family=Arimo:wght@700&family=Instrument+Serif:ital@1&family=Fredoka:wght@700&family=Caveat:wght@700&display=swap"; document.head.appendChild(l); }
+      if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;500;600;800&family=Montserrat:wght@700;800&family=Nunito:wght@800&family=Arimo:wght@700&family=Instrument+Serif:ital@1&family=Fredoka:wght@700&family=Caveat:wght@700&family=Figtree:wght@400;500;700;800&family=JetBrains+Mono:wght@500&display=swap"; document.head.appendChild(l); }
       montarTela(sec); st.pronto = true;
       carregarPadrao(); carregarMinhaFonte();
       try { await Promise.all(["300 40px Poppins", "500 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"', "800 40px Montserrat", "700 40px Montserrat", "800 40px Nunito", "700 40px Arimo", 'italic 40px "Instrument Serif"', "700 40px Fredoka", "700 40px Caveat"].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
