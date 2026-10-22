@@ -405,3 +405,7 @@ a{color:var(--principal)}
 .fn-ano th[scope=row] button.nome:hover{color:var(--principal);text-decoration:underline}
 .fn-ano-item.sub th[scope=row] button.nome{font-weight:500;max-width:160px}
 @media (max-width:900px){.fn-ano th[scope=row] button.nome{max-width:120px;white-space:normal;line-height:1.25}.fn-ano-item.sub th[scope=row] button.nome{max-width:112px}}
+.fn-caixa.min .fn-cab .fn-perfis{display:none}
+.fn-consultora.min > :not(h3){display:none}
+.fn-consultora h3 .fn-min-btn{margin-left:auto;font-family:"Poppins",system-ui,sans-serif}
+.fn-consultora h3 .fn-min-btn svg{stroke:currentColor;width:17px;height:17px}

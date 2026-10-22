@@ -248,7 +248,8 @@
     return out;
   }
   function blocoConsultora(lista, titulo) {
-    return `<section class="fn-consultora"><h3>${ICONE.brilho} ${esc(titulo || "Sua consultora financeira")}</h3><p>O que fazer agora, na ordem, olhando os seus números.</p>
+    const chave = "cons-" + st.aba;
+    return `<section class="fn-consultora${minimo(chave, false) ? " min" : ""}"><h3>${ICONE.brilho} ${esc(titulo || "Sua consultora financeira")}${botaoMin(chave, false)}</h3><p>O que fazer agora, na ordem, olhando os seus números.</p>
       ${lista.map((c, i) => `<div class="fn-passo${c.alerta ? " alerta" : ""}"><span class="nn">${c.alerta ? "!" : i + 1}</span><div><b>${esc(c.t)}</b><small>${esc(c.x)}</small></div></div>`).join("")}</section>`;
   }
 
@@ -357,7 +358,8 @@
   function blocoPlano(dividas, p) {
     const d = D();
     if (!dividas.length) return "";
-    return `<div class="fn-caixa" style="margin-bottom:14px"><div class="fn-cab"><div><h3>Plano para sair das dívidas</h3><p class="sub">Paga o mínimo de todas e joga o extra numa só. Quando ela acaba, o valor dela vai para a próxima.</p></div>
+    const m = minimo("dash-plano", false);
+    return `<div class="fn-caixa${m ? " min" : ""}" style="margin-bottom:14px"><div class="fn-cab"><div><h3>Plano para sair das dívidas</h3><p class="sub">${m ? `${p.ordem.length} dívida${p.ordem.length === 1 ? "" : "s"} · livre ${p.meses !== null ? "em " + mesDaqui(p.meses) : "em mais de 10 anos"} · toque na setinha para ver` : "Paga o mínimo de todas e joga o extra numa só. Quando ela acaba, o valor dela vai para a próxima."}</p></div>${botaoMin("dash-plano", false)}
         <div class="fn-perfis" style="min-width:260px"><button type="button" data-metodo="avalanche" class="${st.metodo === "avalanche" ? "on" : ""}">Juros maior primeiro</button><button type="button" data-metodo="bola" class="${st.metodo === "bola" ? "on" : ""}">Menor dívida primeiro</button></div></div>
       <div class="fn-campo" style="max-width:320px;margin-bottom:10px"><label for="fn-extra">Quanto consigo pôr a mais por mês (além dos mínimos)</label><input class="fn-entrada" id="fn-extra" inputmode="decimal" value="${esc(d.extra)}"></div>
       <div class="fn-lista">${p.ordem.map((x, i) => `<div class="fn-item"><span class="fn-av" style="width:28px;height:28px;font-size:12px;background:${i ? "#cdb39b" : "#6b4a35"}">${i + 1}</span><div class="x"><b>${esc(x.nome)}</b><small>${x.tipo} · mínimo ${R$(x.minimo)}/mês${x.juros ? ` · ${String(x.juros).replace(".", ",")}% a.m.` : ""}</small></div><span class="fn-valor">${R$(x.saldo)}</span><span class="fn-chip neutro">${x.quitada ? mesDaqui(x.quitada) : "–"}</span></div>`).join("")}</div>
