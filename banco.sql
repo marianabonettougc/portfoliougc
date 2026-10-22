@@ -556,3 +556,12 @@ grant execute on function public.e_membro_financeiro() to authenticated;
 create table if not exists public.financeiro_contas (id text primary key, nome text not null, dados jsonb not null default '{}'::jsonb, atualizado_em timestamptz not null default now(), atualizado_por text);
 alter table public.financeiro_contas enable row level security;
 create policy "casal le e grava" on public.financeiro_contas for all to authenticated using (public.e_membro_financeiro()) with check (public.e_membro_financeiro());
+-- Perfil separado: cada um vê só a própria linha.
+alter table public.financeiro_membros add column if not exists perfil text not null default 'eduardo';
+create or replace function public.perfil_financeiro() returns text language sql stable security definer set search_path = public, auth as $$
+  select case when public.e_a_dona() then 'mari' else (select m.perfil from public.financeiro_membros m where lower(m.email) = lower(coalesce(auth.jwt() ->> 'email', '')) limit 1) end
+$$;
+revoke all on function public.perfil_financeiro() from public, anon;
+grant execute on function public.perfil_financeiro() to authenticated;
+alter policy "casal le e grava" on public.financeiro_contas using (id = public.perfil_financeiro()) with check (id = public.perfil_financeiro());
+create policy "cada um no seu perfil" on public.financeiro_contas for all to authenticated using (id = public.perfil_financeiro()) with check (id = public.perfil_financeiro());

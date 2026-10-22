@@ -7,7 +7,7 @@
   --fundo:#f6efe6; --cartao:#fffdf9; --bege:#efe5d8; --bege2:#e6d6c4; --linha:rgba(107,74,53,.14); --linha-forte:rgba(107,74,53,.28);
   --texto:#3d2b20; --suave:#7a6355; --principal:#6b4a35; --principal2:#8a6650; --terracota:#a87058; --terracota-suave:#f3e3d8;
   --verde:#4f7a54; --verde-suave:#e4eee2; --vermelho:#b8473a; --vermelho-suave:#f6e0dc; --amarelo:#9a6b12; --amarelo-suave:#f7ebcd; --azul:#4a6a8a;
-  --raio:18px; --sombra:0 6px 18px rgba(61,43,32,.06);
+  --cel-ok:#e4eee2; --cel-amb:#f7ebcd; --raio:18px; --sombra:0 6px 18px rgba(61,43,32,.06);
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -159,7 +159,7 @@ a{color:var(--principal)}
 .fn-passo .nn{width:26px;height:26px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
 .fn-passo.alerta .nn{background:var(--vermelho);color:#fff}
 .fn-passo b{font-weight:600}
-.fn-passo small{display:block;color:#4f6a52;margin-top:3px}
+.fn-passo small{display:block;color:var(--suave);margin-top:3px}
 
 /* formulário (janela) */
 .fn-janela{border:0;border-radius:22px;padding:0;width:min(460px,calc(100vw - 24px));background:var(--cartao);color:var(--texto);box-shadow:0 20px 60px rgba(0,0,0,.25)}
@@ -193,10 +193,65 @@ a{color:var(--principal)}
   .fn-topo-acoes [data-olho]{display:none}
   .fn-topo-acoes .fn-btn{justify-content:center}
   .fn-baixo{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--cartao);border-top:1px solid var(--linha);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
-  .fn-baixo button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--suave);padding:6px 2px;border-radius:12px;cursor:pointer}
+  .fn-baixo{overflow-x:auto;scrollbar-width:none}
+  .fn-baixo button{flex:1 0 64px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--suave);padding:6px 2px;border-radius:12px;cursor:pointer}
   .fn-baixo button.on{color:var(--principal);background:var(--bege)}
   .fn-baixo svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   .fn-tabela .esconde{display:none}
 }
 .fn-celular-topo{display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-.fn-celular-topo .fn-perfis{flex:1;max-width:260px}
+.fn-celular-topo .fn-dono{flex:1;font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:19px}
+.fn-dono{font-weight:600;font-size:13px;color:var(--suave);padding:0 8px}
+.fn-dica{font-size:12.5px;color:var(--suave);margin:0;max-width:560px}
+
+/* compras do cartão e conferência da fatura */
+.fn-compras{border-top:1px dashed var(--linha-forte);padding-top:10px}
+.fn-compras .fn-cab{align-items:center;font-size:13px;margin-bottom:2px}
+.fn-compras .fn-item{padding:7px 0;font-size:12.5px}
+.fn-conferir{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bege);border-radius:12px;padding:8px 10px;margin-top:6px;font-size:12.5px}
+.fn-conferir label{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--suave)}
+.fn-conferir input{width:110px;padding:6px 8px;text-align:right}
+.fn-bateu{font-size:12px;margin:6px 0 0;padding:7px 10px;border-radius:10px;line-height:1.4}
+.fn-bateu.ok{background:var(--verde-suave);color:var(--verde);font-weight:600}
+.fn-bateu.mal{background:var(--amarelo-suave);color:var(--amarelo)}
+.fn-auto{font-size:10.5px;color:var(--suave);background:var(--bege);border-radius:99px;padding:1px 7px;white-space:nowrap}
+
+/* ano a ano (orçamento do ano, igual planilha) */
+.fn-ano{border-collapse:separate;border-spacing:0;width:100%;min-width:1080px;font-size:12.5px}
+.fn-ano th,.fn-ano td{padding:0;border-bottom:1px solid var(--linha);white-space:nowrap}
+.fn-ano tbody + tbody .fn-ano-cab > *{padding-top:22px}
+.fn-ano-cab > *{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--suave);font-weight:700;padding:8px 6px;border-bottom:2px solid var(--principal)!important;text-align:left}
+.fn-ano-cab .num{text-align:right}
+.fn-ano-cab .hoje{color:var(--principal)}
+.fn-ano th[scope=row]{text-align:left;font-weight:600;padding:8px 10px;position:sticky;left:0;background:var(--cartao);z-index:1;max-width:170px;overflow:hidden;text-overflow:ellipsis}
+.fn-ano td.dia{color:var(--suave);font-size:11px;padding:0 6px}
+.fn-ano td.num{text-align:right}
+.fn-ano td.num button{width:100%;border:0;background:transparent;padding:8px 6px;text-align:right;cursor:pointer;font-variant-numeric:tabular-nums;border-radius:6px;color:var(--suave)}
+.fn-ano td.num button:hover{outline:1px solid var(--linha-forte)}
+.fn-ano td.ok button,.fn-ano td.amb button,.fn-ano td.mal button{color:var(--texto);font-weight:600}
+.fn-ano td.ok{background:var(--cel-ok)} .fn-ano td.amb{background:var(--cel-amb)} .fn-ano td.mal{background:var(--vermelho-suave)}
+.fn-ano td.tot{font-weight:700;padding:8px 8px;color:var(--suave)}
+.fn-ano-tot td.num,.fn-ano-tot th{padding:9px 6px;font-weight:700;font-variant-numeric:tabular-nums}
+.fn-ano-tot.entra > *{color:var(--verde)} .fn-ano-tot.sai > *{color:var(--vermelho)} .fn-ano-tot.sobra > *{color:var(--principal);border-top:2px solid var(--linha-forte)}
+.fn-tend{width:60px;height:18px;display:block;margin:0 8px}
+
+/* painel do Eduardo: cores da planilha dele (turquesa, verde e amarelo) */
+.tema-edu{
+  --fundo:#f1f8f8; --cartao:#ffffff; --bege:#e2f3f3; --bege2:#c9e9e9; --linha:rgba(47,156,157,.16); --linha-forte:rgba(47,156,157,.32);
+  --texto:#2d4a4b; --suave:#6f8f90; --principal:#2f9c9d; --principal2:#4fb8b8; --terracota:#7cbf4e; --terracota-suave:#e6f4dc;
+  --verde:#4f8f2a; --verde-suave:#e3f3d6; --vermelho:#d9534f; --vermelho-suave:#fbe1df; --amarelo:#8a7400; --amarelo-suave:#fdf7c4;
+  --cel-ok:#d6efc2; --cel-amb:#fdf6a8; --sombra:0 6px 18px rgba(45,74,75,.07);
+}
+.tema-edu .fn-btn.principal:hover{background:#25898a}
+.tema-edu .fn-kpi.bom{background:#e3f3d6}
+.tema-edu .fn-plast .frente{background:linear-gradient(135deg,#6fcbcb,#2f9c9d)}
+.tema-edu .fn-plast.quitado .frente{background:linear-gradient(135deg,#a6d98a,#5a9e33)}
+.tema-edu .fn-plast.atraso .frente{background:linear-gradient(135deg,#ee8f8b,#d9534f)}
+.tema-edu .fn-consultora{background:#e6f5f5;border-color:#bfe3e3}
+.tema-edu .fn-passo{border-top-color:rgba(47,156,157,.14)}
+.tema-edu .fn-passo small{color:#56777a}
+.tema-edu .fn-topo h1,.tema-edu .fn-marca b{color:#7f8c8c;text-transform:uppercase;letter-spacing:.02em;font-family:Georgia,"DM Serif Display",serif;font-weight:700;font-size:26px}
+.tema-edu .fn-marca b{font-size:17px}
+.tema-edu .fn-topo h1 em{color:var(--principal);font-style:normal}
+.tema-edu .fn-ano-cab > *{border-bottom-color:#6fcbcb!important}
+.tema-edu .fn-janela::backdrop{background:rgba(20,50,50,.45)}
