@@ -60,7 +60,7 @@
   };
   ICONE.entradas = ICONE.entra; ICONE.saidas = ICONE.sai;
 
-  const st = { sessao: null, email: "", dona: false, perfis: {}, atual: "mari", aba: "dash", ref: (() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })(), metodo: "avalanche", salvando: null };
+  const st = { sessao: null, email: "", dona: false, perfis: {}, atual: "mari", aba: "dash", ref: (() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })(), anoAba: "saida", metodo: "avalanche", salvando: null };
   const vazio = () => ({ cartoes: [], emprestimos: [], lancamentos: [], reserva: { atual: 0, metaMeses: 6, aporte: 0 }, investimentos: [], contas: [], compras: [], extra: 150 });
   const D = () => st.perfis[st.atual] || (st.perfis[st.atual] = vazio());
 
@@ -302,8 +302,7 @@
       <main class="fn-principal">
         <div class="fn-celular-topo"><b class="fn-dono">${esc(p.nome)}</b><button class="fn-icone" type="button" data-olho aria-label="Esconder valores">${ICONE.olho}</button><button class="fn-icone" type="button" data-sair aria-label="Sair">${ICONE.sair}</button></div>
         <div class="fn-topo"><div><h1>${TITULO[st.aba]} <em>${esc(p.curto)}</em></h1><p>${st.aba === "acesso" ? "Quem pode entrar nas finanças" : st.aba === "anual" ? `Orçamento de ${st.ref.y}, mês a mês` : `${MESES[st.ref.m]} de ${st.ref.y}`}</p></div>
-          <div class="fn-topo-acoes">${st.aba === "anual" ? `<div class="fn-mes"><button type="button" data-mes="-12" aria-label="Ano anterior">‹</button><span>${st.ref.y}</span><button type="button" data-mes="12" aria-label="Próximo ano">›</button></div>
-            <button class="fn-btn" type="button" data-linha-fixa>${ICONE.mais}Conta fixa no ano</button>` : ""}${st.aba !== "acesso" && st.aba !== "anual" ? `<div class="fn-mes"><button type="button" data-mes="-1" aria-label="Mês anterior">‹</button><span>${MESES[st.ref.m]} ${st.ref.y}</span><button type="button" data-mes="1" aria-label="Próximo mês">›</button></div>
+          <div class="fn-topo-acoes">${st.aba === "anual" ? `<div class="fn-mes"><button type="button" data-mes="-12" aria-label="Ano anterior">‹</button><span>${st.ref.y}</span><button type="button" data-mes="12" aria-label="Próximo ano">›</button></div>` : ""}${st.aba !== "acesso" && st.aba !== "anual" ? `<div class="fn-mes"><button type="button" data-mes="-1" aria-label="Mês anterior">‹</button><span>${MESES[st.ref.m]} ${st.ref.y}</span><button type="button" data-mes="1" aria-label="Próximo mês">›</button></div>
             <button class="fn-btn" type="button" data-novo="saida">${ICONE.sai}Saída</button><button class="fn-btn principal" type="button" data-novo="entrada">${ICONE.entra}Entrada</button>` : ""}<button class="fn-icone" type="button" data-olho title="Esconder valores" aria-label="Esconder valores">${ICONE.olho}</button></div></div>
         <div id="fn-conteudo">${{ dash: telaDash, entradas: () => telaMovimento("entrada"), saidas: () => telaMovimento("saida"), cartoes: telaCartoes, emprestimos: telaEmprestimos, reserva: telaReserva, anual: telaAnual, acesso: telaAcesso }[st.aba]()}</div>
       </main>
@@ -499,10 +498,16 @@
         ${kpi("Sobra no ano", R$(soma12(sobra)), "carteira", "renda menos despesas", soma12(sobra) >= 0 ? "destaque" : "ruim")}
         ${kpi("Meses no vermelho", String(sobra.filter((x) => x < 0).length), "queda", sobra.some((x) => x < 0) ? sobra.map((x, i) => (x < 0 ? MES3[i] : "")).filter(Boolean).join(", ") : "nenhum")}
       </div>
-      <div class="fn-caixa"><div class="fn-cab"><div><h3>Orçamento ${y}</h3><p class="sub">Toque num valor para editar, ou no + para lançar naquele mês. Verde = pago, amarelo = a pagar, vermelho = vencido.</p></div></div>
+      <div class="fn-ano-abas" role="tablist">
+        <button type="button" role="tab" data-ano-aba="saida" aria-selected="${st.anoAba === "saida"}" class="${st.anoAba === "saida" ? "on" : ""}">${ICONE.sai}Despesas <b>${R$(soma12(tS))}</b></button>
+        <button type="button" role="tab" data-ano-aba="entrada" aria-selected="${st.anoAba === "entrada"}" class="${st.anoAba === "entrada" ? "on" : ""}">${ICONE.entra}Entradas <b>${R$(soma12(tE))}</b></button>
+      </div>
+      <div class="fn-caixa fn-ano-caixa"><div class="fn-cab"><div><h3>${st.anoAba === "entrada" ? "Entradas" : "Despesas"} de ${y}</h3><p class="sub">Toque num valor para editar, ou no + para lançar naquele mês. O que você muda aqui já aparece no Dashboard, em Entradas, Saídas e Cartões. Verde = ${st.anoAba === "entrada" ? "recebido" : "pago"}, amarelo = ${st.anoAba === "entrada" ? "a receber" : "a pagar"}, vermelho = vencido.</p></div>
+          <button class="fn-btn principal" type="button" data-linha-fixa>${ICONE.mais}${st.anoAba === "entrada" ? "Nova entrada" : "Nova despesa"} no ano</button></div>
         <div class="fn-rolar"><table class="fn-ano">
-          <tbody>${cab("Tipo de renda")}${ents.map(linha).join("") || `<tr><td></td><td colspan="14" class="fn-vazio">Nenhuma entrada em ${y}.</td></tr>`}${totalLinha("Renda total", tE, "fn-ano-tot entra", "#4f7a54")}</tbody>
-          <tbody>${cab("Despesas")}${sais.map(linha).join("") || `<tr><td></td><td colspan="14" class="fn-vazio">Nenhuma despesa em ${y}.</td></tr>`}${totalLinha("Despesas totais", tS, "fn-ano-tot sai", "#b8473a")}</tbody>
+          ${st.anoAba === "entrada"
+            ? `<tbody>${cab("Tipo de renda")}${ents.map(linha).join("") || `<tr><td></td><td colspan="14" class="fn-vazio">Nenhuma entrada em ${y}.</td></tr>`}${totalLinha("Renda total", tE, "fn-ano-tot entra", "#4f7a54")}</tbody>`
+            : `<tbody>${cab("Despesas")}${sais.map(linha).join("") || `<tr><td></td><td colspan="14" class="fn-vazio">Nenhuma despesa em ${y}.</td></tr>`}${totalLinha("Despesas totais", tS, "fn-ano-tot sai", "#b8473a")}</tbody>`}
           <tbody>${totalLinha("Sobrou no mês", sobra, "fn-ano-tot sobra", "#6b4a35")}</tbody>
         </table></div></div>`;
   }
@@ -568,8 +573,8 @@
   }
   function contaFixaNoAno() {
     const mesAtual = st.ref.y === new Date().getFullYear() ? new Date().getMonth() : 0, meses = MESES.map((n, i) => [String(i), n]);
-    formulario(`Conta fixa em ${st.ref.y}`, [{ k: "tipo", rotulo: "É", tipo: "select", opcoes: [["saida", "Despesa"], ["entrada", "Renda"]], meia: true }, { k: "dia", rotulo: "Dia do mês", tipo: "num", meia: true }, { k: "descricao", rotulo: "Nome (ex.: Claro Móvel, Salário)", obrigatorio: true }, { k: "valor", rotulo: "Valor por mês (R$)", tipo: "num", obrigatorio: true, meia: true }, { k: "categoria", rotulo: "Tipo", tipo: "select", opcoes: [...new Set([...CAT_SAIDA, ...CAT_ENTRADA])], meia: true }, { k: "de", rotulo: "De", tipo: "select", opcoes: meses, meia: true }, { k: "ate", rotulo: "Até", tipo: "select", opcoes: meses, meia: true }],
-      { tipo: "saida", dia: 10, categoria: "Conta fixa", de: String(mesAtual), ate: "11" }, (v) => {
+    formulario(`${st.anoAba === "entrada" ? "Entrada" : "Despesa"} em ${st.ref.y}`, [{ k: "tipo", rotulo: "É", tipo: "select", opcoes: [["saida", "Despesa"], ["entrada", "Renda"]], meia: true }, { k: "dia", rotulo: "Dia do mês", tipo: "num", meia: true }, { k: "descricao", rotulo: "Nome (ex.: Claro Móvel, Salário)", obrigatorio: true }, { k: "valor", rotulo: "Valor por mês (R$)", tipo: "num", obrigatorio: true, meia: true }, { k: "categoria", rotulo: "Tipo", tipo: "select", opcoes: [...new Set([...CAT_SAIDA, ...CAT_ENTRADA])], meia: true }, { k: "de", rotulo: "De", tipo: "select", opcoes: meses, meia: true }, { k: "ate", rotulo: "Até", tipo: "select", opcoes: meses, meia: true }],
+      { tipo: st.anoAba, dia: st.anoAba === "entrada" ? 5 : 10, categoria: st.anoAba === "entrada" ? "Salário" : "Conta fixa", de: String(mesAtual), ate: "11" }, (v) => {
         const dia = String(Math.min(28, Math.max(1, Math.round(Number(v.dia) || 10)))).padStart(2, "0"), de = Number(v.de), ate = Math.max(de, Number(v.ate));
         for (let m = de; m <= ate; m++) D().lancamentos.push({ id: uid(), tipo: v.tipo, descricao: v.descricao, valor: Number(v.valor) || 0, data: `${ymDe(st.ref.y, m)}-${dia}`, pago: false, categoria: v.categoria });
         toast(`Lancei ${ate - de + 1} meses de ${v.descricao}.`);
@@ -625,6 +630,7 @@
     $$("[data-editar-compra]", raiz).forEach((b) => b.addEventListener("click", () => editarCompra(acha(d.compras, b.dataset.editarCompra))));
     $$("[data-conferir]", raiz).forEach((el) => el.addEventListener("change", () => { const c = acha(d.cartoes, el.dataset.conferir); if (!c) return; c.conferidas = c.conferidas || {}; c.conferidas[ymDe(st.ref.y, st.ref.m)] = el.value.trim() === "" ? null : num(el.value); salvar(); pintar(); }));
     $$("[data-novo-cat]", raiz).forEach((b) => b.addEventListener("click", () => editarLancamento(null, b.dataset.tipo, { categoria: b.dataset.novoCat, descricao: b.dataset.novoCat === "Conta fixa" ? "" : b.dataset.novoCat })));
+    $$("[data-ano-aba]", raiz).forEach((b) => b.addEventListener("click", () => { st.anoAba = b.dataset.anoAba; pintar(); }));
     $$("[data-linha-fixa]", raiz).forEach((b) => b.addEventListener("click", contaFixaNoAno));
     $$("[data-celula]", raiz).forEach((b) => b.addEventListener("click", () => {
       const [tipo, nomeL, cat, m, dia] = b.dataset.celula.split("|"), ym = ymDe(st.ref.y, Number(m));
