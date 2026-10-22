@@ -305,7 +305,7 @@
       </aside>
       <main class="fn-principal">
         <div class="fn-celular-topo"><b class="fn-dono">${esc(p.nome)}</b><button class="fn-icone" type="button" data-olho aria-label="Esconder valores">${ICONE.olho}</button><button class="fn-icone" type="button" data-sair aria-label="Sair">${ICONE.sair}</button></div>
-        <div class="fn-topo"><div><h1>${st.aba === "dash" && st.atual === "mari" ? "Oi, Mari! 💜" : `${TITULO[st.aba]} <em>${esc(p.curto)}</em>`}</h1><p>${st.aba === "dash" && st.atual === "mari" ? `Bom momento para cuidar das suas finanças · ${MESES[st.ref.m]} de ${st.ref.y}` : st.aba === "acesso" ? "Quem pode entrar nas finanças" : st.aba === "anual" ? `Orçamento de ${st.ref.y}, mês a mês` : `${MESES[st.ref.m]} de ${st.ref.y}`}</p></div>
+        <div class="fn-topo"><div><h1>${st.aba === "dash" ? (st.atual === "mari" ? "Oi, Mari! 💜" : "Oi, Eduardo! 💙") : `${TITULO[st.aba]} <em>${esc(p.curto)}</em>`}</h1><p>${st.aba === "dash" ? `Bom momento para cuidar das suas finanças · ${MESES[st.ref.m]} de ${st.ref.y}` : st.aba === "acesso" ? "Quem pode entrar nas finanças" : st.aba === "anual" ? `Orçamento de ${st.ref.y}, mês a mês` : `${MESES[st.ref.m]} de ${st.ref.y}`}</p></div>
           <div class="fn-topo-acoes">${st.aba === "anual" ? `<div class="fn-mes"><button type="button" data-mes="-12" aria-label="Ano anterior">‹</button><span>${st.ref.y}</span><button type="button" data-mes="12" aria-label="Próximo ano">›</button></div>` : ""}${st.aba !== "acesso" && st.aba !== "anual" ? `<div class="fn-mes"><button type="button" data-mes="-1" aria-label="Mês anterior">‹</button><span>${MESES[st.ref.m]} ${st.ref.y}</span><button type="button" data-mes="1" aria-label="Próximo mês">›</button></div>
             <button class="fn-btn" type="button" data-novo="saida">${ICONE.sai}Saída</button><button class="fn-btn principal" type="button" data-novo="entrada">${ICONE.entra}Entrada</button>` : ""}<button class="fn-icone" type="button" data-olho title="Esconder valores" aria-label="Esconder valores">${ICONE.olho}</button></div></div>
         <div id="fn-conteudo">${{ dash: telaDash, entradas: () => telaMovimento("entrada"), saidas: () => telaMovimento("saida"), cartoes: telaCartoes, emprestimos: telaEmprestimos, reserva: telaReserva, anual: telaAnual, acesso: telaAcesso }[st.aba]()}</div>
@@ -375,15 +375,16 @@
         ${kpi("Quitados", `${cs.filter((c) => c.status === "Quitado").length} de ${cs.length}`, "check", "", "bom")}
       </div>
       ${blocoConsultora(conselhosCartoes(), "Consultora: cartões")}
-      <div class="fn-cab" style="margin-bottom:12px"><p class="fn-dica">Lance cada compra no cartão: ela soma sozinha na fatura. No fim do mês, digite o valor que veio no banco para conferir.</p><div class="fn-acoes"><button class="fn-btn" type="button" data-novo-cartao>${ICONE.mais}Novo cartão</button><button class="fn-btn principal" type="button" data-nova-compra>${ICONE.mais}Compra no cartão</button></div></div>
+      <div class="fn-cab" style="margin-bottom:12px"><p class="fn-dica">Lance cada compra no cartão: ela soma sozinha na fatura. No fim do mês, digite o valor que veio no banco para conferir.</p><div class="fn-acoes"><button class="fn-btn" type="button" data-min-todos="c">Minimizar / abrir todos</button><button class="fn-btn" type="button" data-novo-cartao>${ICONE.mais}Novo cartão</button><button class="fn-btn principal" type="button" data-nova-compra>${ICONE.mais}Compra no cartão</button></div></div>
       <div class="fn-cartoes">${[...cs].sort((a, b) => dividaCartao(b) - dividaCartao(a)).map((c) => {
         const uso = Number(c.limite) > 0 ? Math.max(0, Math.min(1, 1 - dispCartao(c) / Number(c.limite))) : null;
         const fat = lm.find((l) => eDoCartao(l, c));
-        return `<div class="fn-plast${c.status === "Quitado" ? " quitado" : /atras/i.test(c.status || "") ? " atraso" : ""}"><div class="frente"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${esc(c.nome)}</b><span class="fn-chip neutro" style="background:rgba(255,255,255,.22);color:#fff">${esc(c.status || "Ativo")}</span></div><span class="num">•••• •••• •••• ${esc(c.final || "")}</span><div style="display:flex;justify-content:space-between"><small>${c.vencimento ? "vence dia " + esc(c.vencimento) : "sem vencimento"}${c.juros ? " · " + String(c.juros).replace(".", ",") + "% a.m." : ""}</small><small>disponível ${R$(dispCartao(c))}</small></div></div>
+        return `<div class="fn-plast${minimo("c" + c.id, c.status === "Quitado") ? " min" : ""}${c.status === "Quitado" ? " quitado" : /atras/i.test(c.status || "") ? " atraso" : ""}"><div class="frente"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${esc(c.nome)}</b><span class="fn-chip neutro" style="background:rgba(255,255,255,.22);color:#fff">${esc(c.status || "Ativo")}</span></div><span class="num">•••• •••• •••• ${esc(c.final || "")}</span><div style="display:flex;justify-content:space-between"><small>${c.vencimento ? "vence dia " + esc(c.vencimento) : "sem vencimento"}${c.juros ? " · " + String(c.juros).replace(".", ",") + "% a.m." : ""}</small><small>disponível ${R$(dispCartao(c))}</small></div></div>
           ${uso !== null ? `<div><div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--suave);margin-bottom:4px"><span>Limite usado</span><span>${Math.round(uso * 100)}% de ${R$(c.limite)}</span></div><div class="fn-barra"><i style="width:${(uso * 100).toFixed(1)}%;background:${uso > 0.8 ? "#b8473a" : uso > 0.3 ? "#a87058" : "#4f7a54"}"></i></div></div>` : ""}
           <div class="fn-par"><span>Fatura de ${MES3[st.ref.m].toLowerCase()}<b>${fat ? R$(fat.valor) : "–"}</b></span><span>Situação<b>${fat ? (fat.pago ? "Paga" : vencido(fat) ? "Vencida" : "A pagar") : "–"}</b></span><span>Próxima fatura<b>${R$(c.proximaFatura)}</b></span><span>Falta pagar<b>${R$(dividaCartao(c))}</b></span></div>
           ${c.status !== "Quitado" || comprasDaFatura(c, st.ref.y, st.ref.m).length ? blocoCompras(c) : ""}
-          <div class="fn-acoes">${fat ? `<button class="fn-btn pequeno" type="button" data-pagar="${esc(fat.id)}">${ICONE.check}${fat.pago ? "Desmarcar" : "Paguei a fatura"}</button>` : `<button class="fn-btn pequeno" type="button" data-fatura="${esc(c.id)}">${ICONE.mais}Lançar fatura</button>`}<button class="fn-icone" type="button" data-editar-c="${esc(c.id)}" aria-label="Editar">${ICONE.lapis}</button></div></div>`;
+          <div class="fn-resumo"><span>Fatura de ${MES3[st.ref.m].toLowerCase()}<b>${fat ? R$(fat.valor) : "–"}</b></span><span>Falta pagar<b>${R$(dividaCartao(c))}</b></span></div>
+          <div class="fn-acoes">${botaoMin("c" + c.id, c.status === "Quitado")}${fat ? `<button class="fn-btn pequeno" type="button" data-pagar="${esc(fat.id)}">${ICONE.check}${fat.pago ? "Desmarcar" : "Paguei a fatura"}</button>` : `<button class="fn-btn pequeno" type="button" data-fatura="${esc(c.id)}">${ICONE.mais}Lançar fatura</button>`}<button class="fn-icone" type="button" data-editar-c="${esc(c.id)}" aria-label="Editar">${ICONE.lapis}</button></div></div>`;
       }).join("") || `<p class="fn-vazio">Nenhum cartão ainda.</p>`}</div>`;
   }
   function telaEmprestimos() {
@@ -398,13 +399,14 @@
         ${kpi("Quitados", `${es.filter((e) => e.status === "Quitado").length} de ${es.length}`, "check", "", "destaque")}
       </div>
       ${blocoConsultora(conselhosEmprestimos(), "Consultora: empréstimos")}
-      <div class="fn-cab" style="margin-bottom:12px"><span></span><button class="fn-btn principal" type="button" data-novo-emp>${ICONE.mais}Novo empréstimo</button></div>
+      <div class="fn-cab" style="margin-bottom:12px"><span></span><div class="fn-acoes"><button class="fn-btn" type="button" data-min-todos="e">Minimizar / abrir todos</button><button class="fn-btn principal" type="button" data-novo-emp>${ICONE.mais}Novo empréstimo</button></div></div>
       <div class="fn-cartoes">${[...es].sort((a, b) => dividaEmp(b) - dividaEmp(a)).map((e) => {
         const prog = Number(e.totalParcelas) > 0 ? Math.min(1, Number(e.pagas || 0) / Number(e.totalParcelas)) : null, ec = Math.max(0, (Number(e.saldo) || 0) - (Number(e.quitacao) || Number(e.saldo) || 0));
-        return `<div class="fn-plast${e.status === "Quitado" ? " quitado" : /atras/i.test(e.status || "") ? " atraso" : ""}"><div class="frente"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(e.nome)}</b><span class="fn-chip neutro" style="background:rgba(255,255,255,.22);color:#fff">${esc(e.status || "Ativo")}</span></div><small>${e.vencimento ? "vence dia " + esc(e.vencimento) : "sem vencimento"}${e.juros ? " · " + String(e.juros).replace(".", ",") + "% a.m." : ""}</small></div>
+        return `<div class="fn-plast${minimo("e" + e.id, e.status === "Quitado") ? " min" : ""}${e.status === "Quitado" ? " quitado" : /atras/i.test(e.status || "") ? " atraso" : ""}"><div class="frente"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(e.nome)}</b><span class="fn-chip neutro" style="background:rgba(255,255,255,.22);color:#fff">${esc(e.status || "Ativo")}</span></div><small>${e.vencimento ? "vence dia " + esc(e.vencimento) : "sem vencimento"}${e.juros ? " · " + String(e.juros).replace(".", ",") + "% a.m." : ""}</small></div>
           ${prog !== null ? `<div><div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--suave);margin-bottom:4px"><span>${e.pagas || 0} de ${e.totalParcelas} parcelas pagas</span><span>${Math.round(prog * 100)}%</span></div><div class="fn-barra"><i style="width:${(prog * 100).toFixed(1)}%;background:#4f7a54"></i></div></div>` : ""}
           <div class="fn-par"><span>Parcela<b>${R$(e.parcela)}</b></span><span>Saldo devedor<b>${R$(e.saldo)}</b></span><span>Quitar hoje<b>${e.quitacao ? R$(e.quitacao) : "–"}</b></span><span>Economia quitando<b style="color:${ec ? "#4f7a54" : "inherit"}">${ec ? R$(ec) : "–"}</b></span></div>
-          <div class="fn-acoes">${e.status !== "Quitado" ? `<button class="fn-btn pequeno" type="button" data-parcela="${esc(e.id)}">${ICONE.check}Paguei a parcela</button>` : ""}<button class="fn-icone" type="button" data-editar-e="${esc(e.id)}" aria-label="Editar">${ICONE.lapis}</button></div></div>`;
+          <div class="fn-resumo"><span>Parcela<b>${R$(e.parcela)}</b></span><span>Saldo devedor<b>${R$(e.saldo)}</b></span></div>
+          <div class="fn-acoes">${botaoMin("e" + e.id, e.status === "Quitado")}${e.status !== "Quitado" ? `<button class="fn-btn pequeno" type="button" data-parcela="${esc(e.id)}">${ICONE.check}Paguei a parcela</button>` : ""}<button class="fn-icone" type="button" data-editar-e="${esc(e.id)}" aria-label="Editar">${ICONE.lapis}</button></div></div>`;
       }).join("") || `<p class="fn-vazio">Nenhum empréstimo ainda.</p>`}</div>`;
   }
   function telaReserva() {
@@ -434,6 +436,11 @@
           <button class="fn-btn pequeno" type="button" data-nova-conta style="margin-top:8px">${ICONE.mais}Conta</button></div>
       </div>`;
   }
+  // minimizar cartão/empréstimo (fica só o plástico e o resumo); quitados começam minimizados. Guardado neste aparelho.
+  let MIN = {}; try { MIN = JSON.parse(localStorage.getItem("fn-min") || "{}"); } catch (e) { MIN = {}; }
+  const minimo = (id, padrao) => (id in MIN ? MIN[id] : padrao);
+  const botaoMin = (id, padrao) => { const m = minimo(id, padrao); return `<button class="fn-icone fn-min-btn" type="button" data-min="${esc(id)}" data-padrao="${padrao ? 1 : 0}" aria-expanded="${!m}" title="${m ? "Ver tudo" : "Minimizar"}" aria-label="${m ? "Ver tudo" : "Minimizar"}"><svg viewBox="0 0 24 24"><path d="${m ? "M6 9l6 6 6-6" : "M6 15l6-6 6 6"}"/></svg></button>`; };
+  const guardarMin = () => { try { localStorage.setItem("fn-min", JSON.stringify(MIN)); } catch (e) { /* sem armazenamento */ } };
   function blocoCompras(c) {
     const ks = comprasDaFatura(c, st.ref.y, st.ref.m).sort((a, b) => String(b.data).localeCompare(String(a.data))), somado = ks.reduce((a, k) => a + k.parte.valor, 0);
     const ym = ymDe(st.ref.y, st.ref.m), conf = (c.conferidas || {})[ym], dif = conf != null ? Math.round((conf - somado) * 100) / 100 : null;
@@ -627,6 +634,12 @@
   function ligar() {
     const raiz = $("#raiz"), d = D(), acha = (lista, id) => (lista || []).find((x) => String(x.id) === String(id));
     $$("[data-aba]", raiz).forEach((b) => b.addEventListener("click", () => { st.aba = b.dataset.aba; pintar(); window.scrollTo(0, 0); }));
+    $$("[data-min]", raiz).forEach((b) => b.addEventListener("click", () => { MIN[b.dataset.min] = !minimo(b.dataset.min, b.dataset.padrao === "1"); guardarMin(); pintar(); }));
+    $$("[data-min-todos]", raiz).forEach((b) => b.addEventListener("click", () => {
+      const pre = b.dataset.minTodos, lista = pre === "c" ? d.cartoes : d.emprestimos, ids = lista.map((x) => pre + x.id);
+      const fechar = ids.some((id, i) => !minimo(id, lista[i].status === "Quitado"));
+      ids.forEach((id) => { MIN[id] = fechar; }); guardarMin(); pintar();
+    }));
     $$("[data-fab]", raiz).forEach((b) => b.addEventListener("click", () => folha("O que você quer lançar?", [
       { ic: ICONE.entra, t: "Entrada", acao: () => editarLancamento(null, "entrada") },
       { ic: ICONE.sai, t: "Saída", acao: () => editarLancamento(null, "saida") },
