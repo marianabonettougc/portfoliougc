@@ -60,7 +60,7 @@
   };
   ICONE.entradas = ICONE.entra; ICONE.saidas = ICONE.sai;
 
-  const st = { sessao: null, email: "", dona: false, perfis: {}, atual: "mari", aba: "dash", ref: (() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })(), anoAba: "saida", metodo: "avalanche", salvando: null };
+  const st = { sessao: null, email: "", dona: false, perfis: {}, atual: "mari", aba: "dash", ref: (() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })(), anoAba: "saida", anoAbertos: {}, metodo: "avalanche", salvando: null };
   const vazio = () => ({ cartoes: [], emprestimos: [], lancamentos: [], reserva: { atual: 0, metaMeses: 6, aporte: 0 }, investimentos: [], contas: [], compras: [], extra: 150 });
   const D = () => st.perfis[st.atual] || (st.perfis[st.atual] = vazio());
 
@@ -483,14 +483,21 @@
     const ents = grupos("entrada"), sais = grupos("saida");
     const totM = (gs) => Array.from({ length: 12 }, (_, m) => gs.reduce((a, g) => a + g.vals[m], 0));
     const tE = totM(ents), tS = totM(sais), soma12 = (v) => v.reduce((a, x) => a + x, 0);
-    const tend = (v, cor) => { const mx = Math.max(1, ...v); return `<svg class="fn-tend" viewBox="0 0 60 18" aria-hidden="true">${v.map((x, i) => `<rect x="${i * 5}" y="${(18 - x / mx * 17).toFixed(1)}" width="3.6" height="${(x / mx * 17).toFixed(1)}" fill="${cor}"/>`).join("")}</svg>`; };
+    const mesHoje = y === new Date().getFullYear() ? new Date().getMonth() : -1;
     const cel = (g, m) => {
-      const ls = g.meses[m], v = g.vals[m]; const cls = !ls.length ? "" : ls.every((l) => l.pago) ? "ok" : ls.some(vencido) ? "mal" : "amb";
-      return `<td class="num ${cls}"><button type="button" data-celula="${esc(g.tipo)}|${esc(g.nome)}|${esc(g.cat || "")}|${m}|${g.dia}" title="${ls.length ? "Editar" : "Lançar"} ${esc(g.nome)} em ${MESES[m]}">${ls.length ? K2(v) : "+"}</button></td>`;
+      const ls = g.meses[m], v = g.vals[m], cls = !ls.length ? "vazio" : ls.every((l) => l.pago) ? "ok" : ls.some(vencido) ? "mal" : "amb";
+      return `<td class="num${m === mesHoje ? " hoje" : ""}"><button type="button" class="v ${cls}" data-celula="${esc(g.tipo)}|${esc(g.nome)}|${esc(g.cat || "")}|${m}|${g.dia}" title="${ls.length ? R$(v) + " · editar" : "Lançar"} ${esc(g.nome)} em ${MESES[m]}" aria-label="${ls.length ? "Editar" : "Lançar"} ${esc(g.nome)} em ${MESES[m]}">${ls.length ? K0(v) : ""}</button></td>`;
     };
-    const linha = (g) => `<tr><td class="dia">${g.dia ? "dia " + g.dia : ""}</td><th scope="row">${esc(g.nome)}</th>${g.vals.map((_, m) => cel(g, m)).join("")}<td class="num tot">${R$(soma12(g.vals))}</td><td>${tend(g.vals, g.tipo === "entrada" ? "#4f7a54" : "#a87058")}</td></tr>`;
-    const totalLinha = (rot, v, cls, cor) => `<tr class="${cls}"><td></td><th scope="row">${rot}</th>${v.map((x) => `<td class="num">${x ? K2(x) : "–"}</td>`).join("")}<td class="num tot">${R$(soma12(v))}</td><td>${tend(v.map(Math.abs), cor)}</td></tr>`;
-    const cab = (t) => `<tr class="fn-ano-cab"><td>${t === "Despesas" ? "Vence" : ""}</td><th>${t}</th>${MES3.map((n, i) => `<th class="num${i === new Date().getMonth() && y === new Date().getFullYear() ? " hoje" : ""}">${n}</th>`).join("")}<th class="num">Total no ano</th><th>Tendência</th></tr>`;
+    const linha = (g, sub) => `<tr class="fn-ano-item${sub ? " sub" : ""}"><th scope="row"><span class="nome" title="${esc(g.nome)}">${esc(g.nome)}</span>${g.tipo === "saida" && g.dia ? `<small>vence dia ${g.dia}</small>` : sub ? "" : `<small>${esc(g.cat || "")}</small>`}</th>${g.vals.map((_, m) => cel(g, m)).join("")}<td class="num tot">${R$(soma12(g.vals))}</td></tr>`;
+    const porCat = (gs) => { const mp = new Map(); gs.forEach((g) => { const k = g.cat || "Outros"; if (!mp.has(k)) mp.set(k, []); mp.get(k).push(g); }); return [...mp.entries()].map(([cat, itens]) => ({ cat, itens, vals: totM(itens) })).sort((a, b) => soma12(b.vals) - soma12(a.vals)); };
+    const corpo = (gs, tipo) => porCat(gs).map((c) => {
+      if (c.itens.length === 1) return linha(c.itens[0], false);
+      const chave = tipo + "|" + c.cat, aberto = st.anoAbertos[chave] ?? c.itens.length <= 4;
+      return `<tr class="fn-ano-grupo${aberto ? " aberto" : ""}"><th scope="row"><button type="button" data-grupo="${esc(chave)}" aria-expanded="${aberto}"><span class="seta">›</span><span class="nome">${esc(c.cat)}</span><small>${c.itens.length} itens</small></button></th>${c.vals.map((v, m) => `<td class="num${m === mesHoje ? " hoje" : ""}">${v ? K0(v) : ""}</td>`).join("")}<td class="num tot">${R$(soma12(c.vals))}</td></tr>`
+        + (aberto ? c.itens.map((g) => linha(g, true)).join("") : "");
+    }).join("");
+    const totalLinha = (rot, v, cls) => `<tr class="fn-ano-tot ${cls}"><th scope="row">${rot}</th>${v.map((x, m) => `<td class="num${m === mesHoje ? " hoje" : ""}">${x ? K0(x) : "–"}</td>`).join("")}<td class="num tot">${R$(soma12(v))}</td></tr>`;
+    const cab = (t) => `<tr class="fn-ano-cab"><th>${t}</th>${MES3.map((n, i) => `<th class="num${i === mesHoje ? " hoje" : ""}">${n}</th>`).join("")}<th class="num">Total</th></tr>`;
     const sobra = tE.map((x, i) => x - tS[i]);
     return `<div class="fn-kpis">
         ${kpi(`Renda em ${y}`, R$(soma12(tE)), "entra", `média ${R$(soma12(tE) / 12)} por mês`, "bom")}
@@ -502,16 +509,18 @@
         <button type="button" role="tab" data-ano-aba="saida" aria-selected="${st.anoAba === "saida"}" class="${st.anoAba === "saida" ? "on" : ""}">${ICONE.sai}Despesas <b>${R$(soma12(tS))}</b></button>
         <button type="button" role="tab" data-ano-aba="entrada" aria-selected="${st.anoAba === "entrada"}" class="${st.anoAba === "entrada" ? "on" : ""}">${ICONE.entra}Entradas <b>${R$(soma12(tE))}</b></button>
       </div>
-      <div class="fn-caixa fn-ano-caixa"><div class="fn-cab"><div><h3>${st.anoAba === "entrada" ? "Entradas" : "Despesas"} de ${y}</h3><p class="sub">Toque num valor para editar, ou no + para lançar naquele mês. O que você muda aqui já aparece no Dashboard, em Entradas, Saídas e Cartões. Verde = ${st.anoAba === "entrada" ? "recebido" : "pago"}, amarelo = ${st.anoAba === "entrada" ? "a receber" : "a pagar"}, vermelho = vencido.</p></div>
+      <div class="fn-caixa fn-ano-caixa"><div class="fn-cab"><div><h3>${st.anoAba === "entrada" ? "Entradas" : "Despesas"} de ${y}</h3><p class="sub">Toque num valor para editar ou num espaço vazio para lançar naquele mês. O que você muda aqui já aparece no Dashboard, em Entradas, Saídas e Cartões. Verde = ${st.anoAba === "entrada" ? "recebido" : "pago"}, amarelo = ${st.anoAba === "entrada" ? "a receber" : "a pagar"}, vermelho = vencido.</p></div>
           <button class="fn-btn principal" type="button" data-linha-fixa>${ICONE.mais}${st.anoAba === "entrada" ? "Nova entrada" : "Nova despesa"} no ano</button></div>
         <div class="fn-rolar"><table class="fn-ano">
           ${st.anoAba === "entrada"
-            ? `<tbody>${cab("Tipo de renda")}${ents.map(linha).join("") || `<tr><td></td><td colspan="14" class="fn-vazio">Nenhuma entrada em ${y}.</td></tr>`}${totalLinha("Renda total", tE, "fn-ano-tot entra", "#4f7a54")}</tbody>`
-            : `<tbody>${cab("Despesas")}${sais.map(linha).join("") || `<tr><td></td><td colspan="14" class="fn-vazio">Nenhuma despesa em ${y}.</td></tr>`}${totalLinha("Despesas totais", tS, "fn-ano-tot sai", "#b8473a")}</tbody>`}
-          <tbody>${totalLinha("Sobrou no mês", sobra, "fn-ano-tot sobra", "#6b4a35")}</tbody>
+            ? `<tbody>${cab("Tipo de renda")}${corpo(ents, "entrada") || `<tr><td colspan="14" class="fn-vazio">Nenhuma entrada em ${y}.</td></tr>`}${totalLinha("Renda total", tE, "entra")}</tbody>`
+            : `<tbody>${cab("Despesas")}${corpo(sais, "saida") || `<tr><td colspan="14" class="fn-vazio">Nenhuma despesa em ${y}.</td></tr>`}${totalLinha("Despesas totais", tS, "sai")}</tbody>`}
+          <tbody>${totalLinha("Sobrou no mês", sobra, "sobra")}</tbody>
         </table></div></div>`;
   }
   const K2 = (v) => (ocultar ? "•••" : (Number(v) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  // na tabela do ano: sem centavos para caber e ficar limpo (o valor exato aparece ao passar o dedo/mouse e no total)
+  const K0 = (v) => (ocultar ? "•••" : Math.round(Number(v) || 0).toLocaleString("pt-BR"));
   function telaAcesso() {
     return `<div class="fn-caixa" style="max-width:640px"><h3>Quem pode entrar</h3><p class="sub">A Mari sempre entra. Coloque o e-mail do Eduardo para liberar: ele entra em marianabonetto.com.br/financeiro, toca em "Primeiro acesso" e cria a senha dele.</p>
       <div class="fn-lista" id="fn-membros"><p class="fn-vazio">Carregando…</p></div>
@@ -630,6 +639,7 @@
     $$("[data-editar-compra]", raiz).forEach((b) => b.addEventListener("click", () => editarCompra(acha(d.compras, b.dataset.editarCompra))));
     $$("[data-conferir]", raiz).forEach((el) => el.addEventListener("change", () => { const c = acha(d.cartoes, el.dataset.conferir); if (!c) return; c.conferidas = c.conferidas || {}; c.conferidas[ymDe(st.ref.y, st.ref.m)] = el.value.trim() === "" ? null : num(el.value); salvar(); pintar(); }));
     $$("[data-novo-cat]", raiz).forEach((b) => b.addEventListener("click", () => editarLancamento(null, b.dataset.tipo, { categoria: b.dataset.novoCat, descricao: b.dataset.novoCat === "Conta fixa" ? "" : b.dataset.novoCat })));
+    $$("[data-grupo]", raiz).forEach((b) => b.addEventListener("click", () => { st.anoAbertos[b.dataset.grupo] = b.getAttribute("aria-expanded") !== "true"; pintar(); }));
     $$("[data-ano-aba]", raiz).forEach((b) => b.addEventListener("click", () => { st.anoAba = b.dataset.anoAba; pintar(); }));
     $$("[data-linha-fixa]", raiz).forEach((b) => b.addEventListener("click", contaFixaNoAno));
     $$("[data-celula]", raiz).forEach((b) => b.addEventListener("click", () => {
