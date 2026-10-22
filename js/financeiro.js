@@ -750,6 +750,17 @@
   // (antes o painel abria por cima e a senha nunca era trocada)
   let recuperando = /type=recovery/.test(location.hash + location.search);
   if (banco) banco.auth.onAuthStateChange((ev) => { if (ev === "PASSWORD_RECOVERY") { recuperando = true; telaEntrar("nova"); } });
+  // versão nova publicada: recarrega sozinho quando o app volta para a tela (sem precisar limpar cache)
+  const MINHA_V = ((document.currentScript && document.currentScript.src) || "").match(/v=(\d+)/)?.[1] || (([...document.scripts].find((x) => /financeiro\.js/.test(x.src)) || {}).src || "").match(/v=(\d+)/)?.[1];
+  async function conferirVersao() {
+    try {
+      const h = await (await fetch(location.pathname + "?t=" + Date.now(), { cache: "no-store" })).text(), v = (h.match(/financeiro\.js\?v=(\d+)/) || [])[1];
+      const ocupado = document.querySelector("dialog[open]") || (document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName));
+      if (MINHA_V && v && v !== MINHA_V && !ocupado) location.reload();
+    } catch (e) { /* sem internet: tenta depois */ }
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) conferirVersao(); });
+  setInterval(conferirVersao, 5 * 60 * 1000);
   iniciar();
   window.financeiroApp = { estado: st, conselhosGerais, plano }; // usado nos testes
 })();
