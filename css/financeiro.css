@@ -257,26 +257,40 @@ a{color:var(--principal)}
 .fn-ano-caixa .fn-cab{margin-bottom:14px}
 .fn-ano-caixa{border-top-left-radius:0;border-top-right-radius:0}
 
-/* painel do Eduardo: cores da planilha dele (turquesa, verde e amarelo) */
+/* painel do Eduardo (out/2026): paleta azul-acinzentada da referência Payno (azul marinho suave, vidro claro) */
 .tema-edu{
-  --fundo:#f1f8f8; --cartao:#ffffff; --bege:#e2f3f3; --bege2:#c9e9e9; --linha:rgba(47,156,157,.16); --linha-forte:rgba(47,156,157,.32);
-  --texto:#2d4a4b; --suave:#6f8f90; --principal:#2f9c9d; --principal2:#4fb8b8; --terracota:#7cbf4e; --terracota-suave:#e6f4dc;
-  --verde:#4f8f2a; --verde-suave:#e3f3d6; --vermelho:#d9534f; --vermelho-suave:#fbe1df; --amarelo:#8a7400; --amarelo-suave:#fdf7c4;
-  --cel-ok:#d6efc2; --cel-amb:#fdf6a8; --sombra:0 6px 18px rgba(45,74,75,.07);
+  --fundo:#eef1f6; --cartao:rgba(255,255,255,.82); --bege:#e8edf4; --bege2:#d9e1ec; --linha:rgba(61,90,133,.12); --linha-forte:rgba(61,90,133,.26);
+  --texto:#1e2633; --suave:#8a94a6; --principal:#3d5a85; --principal2:#6b84aa; --terracota:#9fb2cd; --terracota-suave:#e8edf4;
+  --verde:#2f8f5b; --verde-suave:#e2f3ea; --vermelho:#d0545b; --vermelho-suave:#fbe6e7; --amarelo:#9a7417; --amarelo-suave:#f8efd6;
+  --cel-ok:#e2f3ea; --cel-amb:#f8efd6; --raio:20px; --sombra:0 8px 28px rgba(30,38,51,.06);
 }
-.tema-edu .fn-btn.principal:hover{background:#25898a}
-.tema-edu .fn-kpi.bom{background:#e3f3d6}
-.tema-edu .fn-plast .frente{background:linear-gradient(135deg,#6fcbcb,#2f9c9d)}
-.tema-edu .fn-plast.quitado .frente{background:linear-gradient(135deg,#a6d98a,#5a9e33)}
-.tema-edu .fn-plast.atraso .frente{background:linear-gradient(135deg,#ee8f8b,#d9534f)}
-.tema-edu .fn-consultora{background:#e6f5f5;border-color:#bfe3e3}
-.tema-edu .fn-passo{border-top-color:rgba(47,156,157,.14)}
-.tema-edu .fn-passo small{color:#56777a}
-.tema-edu .fn-topo h1,.tema-edu .fn-marca b{color:#7f8c8c;text-transform:uppercase;letter-spacing:.02em;font-family:Georgia,"DM Serif Display",serif;font-weight:700;font-size:26px}
-.tema-edu .fn-marca b{font-size:17px}
+.tema-edu{background:radial-gradient(1100px 420px at 55% -60px,#b9c7dc 0%,rgba(185,199,220,.35) 45%,transparent 75%),#eef1f6;background-attachment:fixed}
+.tema-edu .fn-lado{background:rgba(255,255,255,.6);backdrop-filter:blur(12px)}
+.tema-edu .fn-caixa,.tema-edu .fn-kpi,.tema-edu .fn-plast{border:1px solid rgba(255,255,255,.9);box-shadow:var(--sombra);backdrop-filter:blur(10px)}
+.tema-edu .fn-topo h1,.tema-edu .fn-marca b,.tema-edu .fn-entrar h1,.tema-edu .fn-consultora h3,.tema-edu .fn-janela h2{font-family:"Poppins",system-ui,sans-serif;font-weight:500;letter-spacing:-.02em}
+.tema-edu .fn-topo h1{font-size:27px}
 .tema-edu .fn-topo h1 em{color:var(--principal);font-style:normal}
-.tema-edu .fn-ano-cab > *{border-bottom-color:#6fcbcb!important}
-.tema-edu .fn-janela::backdrop{background:rgba(20,50,50,.45)}
+.tema-edu .fn-marca-ic{background:var(--principal);color:#fff;border-radius:50%}
+.tema-edu .fn-kpi-v{font-weight:500;letter-spacing:-.01em}
+.tema-edu .fn-kpi-v small{color:#a9b2c2;font-weight:400}
+.tema-edu .fn-kpi.destaque,.tema-edu .fn-kpi.bom{background:rgba(255,255,255,.82)}
+.tema-edu .fn-kpis .fn-kpi:first-child{background:linear-gradient(135deg,#3d5a85,#7f95b8);color:#fff;border:0}
+.tema-edu .fn-kpis .fn-kpi:first-child .fn-kpi-t,.tema-edu .fn-kpis .fn-kpi:first-child .fn-kpi-s{color:rgba(255,255,255,.85)}
+.tema-edu .fn-kpis .fn-kpi:first-child .fn-kpi-v small{color:rgba(255,255,255,.65)}
+.tema-edu .fn-kpis .fn-kpi:first-child .fn-kpi-ic{background:rgba(255,255,255,.22)!important;color:#fff}
+.tema-edu .fn-kpi.ruim{background:#fbe6e7}
+.tema-edu .fn-nav button{border-radius:14px}
+.tema-edu .fn-btn.principal{background:#3d5a85;border-color:#3d5a85}
+.tema-edu .fn-btn.principal:hover{background:#2f4a72}
+.tema-edu .fn-plast .frente{background:linear-gradient(120deg,#e9eef5 0%,#9fb2cd 45%,#3d5a85 100%);color:#fff}
+.tema-edu .fn-plast.quitado .frente{background:linear-gradient(120deg,#e3f3ea,#6fb48d 50%,#2f8f5b)}
+.tema-edu .fn-plast.atraso .frente{background:linear-gradient(120deg,#fbe6e7,#e28a8f 50%,#d0545b)}
+.tema-edu .fn-consultora{background:rgba(255,255,255,.7);border-color:rgba(255,255,255,.95)}
+.tema-edu .fn-passo{border-top-color:rgba(61,90,133,.1)}
+.tema-edu .fn-tabela th{background:#eef1f6;border:0;text-transform:uppercase;font-size:11px;letter-spacing:.04em}
+.tema-edu .fn-tabela th:first-child{border-radius:10px 0 0 10px} .tema-edu .fn-tabela th:last-child{border-radius:0 10px 10px 0}
+.tema-edu .fn-janela{background:#fff}
+.tema-edu .fn-janela::backdrop{background:rgba(30,38,51,.4)}
 
 @media (max-width:900px){
   .fn-ano th[scope=row]{width:132px;max-width:132px;padding-right:8px}
@@ -330,3 +344,36 @@ a{color:var(--principal)}
 .tema-mari .fn-perfis button.on{color:#fff}
 .tema-mari .fn-janela::backdrop{background:rgba(31,29,43,.4)}
 .tema-mari .fn-ano-abas button.on{box-shadow:inset 0 3px 0 var(--principal)}
+
+/* celular (os dois painéis): botão + flutuante, menu "Mais" e formulários que sobem de baixo */
+.fn-fab,.fn-folha{display:none}
+.fn-folha{border:0;padding:0;background:var(--cartao);color:var(--texto)}
+.fn-folha[open]{display:block}
+.fn-folha::backdrop{background:rgba(20,20,30,.4)}
+.fn-folha h2{font-size:15px;font-weight:600;margin:0 0 12px;color:var(--suave)}
+.fn-folha .grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.fn-folha .grade button{display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid var(--linha);background:var(--bege);border-radius:18px;padding:16px 6px;font-weight:600;font-size:12.5px;cursor:pointer;color:var(--texto)}
+.fn-folha .grade button svg{width:24px;height:24px;fill:none;stroke:var(--principal);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.fn-folha .fechar{width:100%;margin-top:12px}
+@media (max-width:900px){
+  body{-webkit-tap-highlight-color:transparent}
+  .fn-fab{display:flex;position:fixed;right:16px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:25;width:58px;height:58px;border-radius:50%;border:0;background:var(--principal);color:#fff;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(0,0,0,.22);cursor:pointer}
+  .fn-fab svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+  .fn-folha{position:fixed;inset:auto 0 0 0;margin:0;width:100%;max-width:100%;border-radius:24px 24px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));animation:fn-sobe .18s ease-out}
+  .fn-janela{margin:auto 0 0;width:100%;max-width:100%;border-radius:24px 24px 0 0;animation:fn-sobe .18s ease-out}
+  .fn-janela form{max-height:88vh;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
+  .fn-janela .fn-entrada{font-size:16px;padding:12px}
+  .fn-janela .rodape .fn-btn{flex:1;height:46px}
+  .fn-topo-acoes .fn-btn{display:none}
+  .fn-topo-acoes{grid-template-columns:1fr}
+  .fn-baixo{overflow:visible}
+  .fn-baixo button{flex:1 1 0;min-width:0}
+  .fn-principal{padding-bottom:150px}
+  .fn-item{padding:12px 0}
+  .fn-icone{width:38px;height:38px}
+  .fn-kpi-t{font-size:11.5px;gap:8px}
+  .fn-kpi-ic{width:30px;height:30px}
+}
+@keyframes fn-sobe{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.tema-edu .fn-folha,.tema-edu .fn-ano th[scope=row],.tema-edu .fn-ano-cab > *,.tema-edu .fn-baixo{background:#fff}
+.tema-edu .fn-celular-topo .fn-dono,.tema-mari .fn-celular-topo .fn-dono{font-family:"Poppins",system-ui,sans-serif;font-weight:600;font-size:15px;color:var(--suave)}

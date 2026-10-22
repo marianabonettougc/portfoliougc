@@ -2,7 +2,7 @@
 // FINANÇAS BONETTO (marianabonetto.com.br/financeiro)
 // App das finanças pessoais (CPF) da Mari e do Eduardo. Cada um entra com a própria senha e vê
 // só o seu perfil (linha "mari" ou "eduardo" da tabela financeiro_contas; o banco decide pela
-// função perfil_financeiro). O painel do Eduardo usa as cores da planilha dele (tema-edu).
+// função perfil_financeiro). O painel do Eduardo usa a paleta azul-acinzentada da referência Payno (tema-edu).
 // Abas: Dashboard, Entradas, Saídas, Cartões (compras por cartão somam sozinhas na fatura e no fim
 // do mês ele confere com o valor do banco), Empréstimos, Reserva & Investimentos, Ano a ano
 // (a planilha do ano, mês a mês) e (só a Mari) Acesso.
@@ -31,12 +31,13 @@
 
   const PERFIS = [{ id: "mari", nome: "Mari Bonetto", curto: "Mari" }, { id: "eduardo", nome: "Eduardo Bonetto", curto: "Eduardo" }];
   const ABAS = [["dash", "Dashboard"], ["entradas", "Entradas"], ["saidas", "Saídas"], ["cartoes", "Cartões"], ["emprestimos", "Empréstimos"], ["reserva", "Reserva & Investimentos"], ["anual", "Ano a ano"]];
+  const NO_CELULAR = ["dash", "entradas", "saidas", "cartoes"]; // menu de baixo no celular; o resto fica em "Mais"
   const CURTO = { dash: "Início", reserva: "Reserva", anual: "Ano" };
   const TITULO = { dash: "Visão geral", entradas: "Entradas", saidas: "Saídas", cartoes: "Cartões", emprestimos: "Empréstimos", reserva: "Reserva & Investimentos", anual: "Ano a ano", acesso: "Acesso" };
   const CAT_ENTRADA = ["Salário", "Vale", "Renda extra", "Publicidade", "UGC", "Trabalho", "Outros"];
   const CAT_SAIDA = ["Conta fixa", "Cartão", "Empréstimo", "Financiamento", "Dívida pessoal", "Mercado", "Casa", "Filhos", "Saúde", "Transporte", "Lazer", "Assinaturas", "Outros"];
-  // o painel do Eduardo usa as cores da planilha dele: troca as cores da Mari pelas dele no HTML
-  const CORES_EDU = { "#3d2b20": "#2d4a4b", "#7a6355": "#6f8f90", "#6b4a35": "#2f9c9d", "#a87058": "#7cbf4e", "#cdb39b": "#a9dcdc", "#e7c9b6": "#cfe9b9", "#efe5d8": "#e2f1f1", "#8a6650": "#4fb8b8", "#4f7a54": "#5a9e33", "#b8473a": "#d9534f", "#c9973b": "#e0c341", "#4a6a8a": "#4a7fb0", "#d3a98f": "#9bbf7a" };
+  // o painel do Eduardo usa a paleta azul-acinzentada da referência Payno: troca as cores da Mari pelas dele no HTML
+  const CORES_EDU = { "#3d2b20": "#1e2633", "#7a6355": "#8a94a6", "#6b4a35": "#3d5a85", "#a87058": "#9fb2cd", "#cdb39b": "#7f95b8", "#e7c9b6": "#c9d4e4", "#efe5d8": "#e8edf4", "#8a6650": "#5d77a0", "#4f7a54": "#2f8f5b", "#b8473a": "#d0545b", "#c9973b": "#c9a24a", "#4a6a8a": "#6fa3c9", "#d3a98f": "#b7c4d8" };
   // o painel da Mari (out/2026, pedido dela: "cansei do marrom") usa a paleta lilás das referências FinSet/Fincheck
   const CORES_MARI = { "#3d2b20": "#1f1d2b", "#7a6355": "#8a8798", "#6b4a35": "#7b6cf6", "#a87058": "#c3bbfb", "#cdb39b": "#a99ff8", "#e7c9b6": "#d6d0fd", "#efe5d8": "#f1effd", "#8a6650": "#9d92f8", "#4f7a54": "#2f9e5b", "#b8473a": "#e5484d", "#c9973b": "#f2b84b", "#4a6a8a": "#5ab4e6", "#d3a98f": "#f59ac0" };
   const tingir = (html) => { const mapa = st.atual === "eduardo" ? CORES_EDU : CORES_MARI; return html.replace(/#[0-9a-f]{6}/g, (c) => mapa[c] || c); };
@@ -60,6 +61,7 @@
     anual: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M9 4v16M15 4v16"/></svg>',
     brilho: '<svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></svg>',
   };
+  ICONE.mais3 = '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>';
   ICONE.entradas = ICONE.entra; ICONE.saidas = ICONE.sai;
 
   const st = { sessao: null, email: "", dona: false, perfis: {}, atual: "mari", aba: "dash", ref: (() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })(), anoAba: "saida", anoAbertos: {}, metodo: "avalanche", salvando: null };
@@ -308,7 +310,8 @@
             <button class="fn-btn" type="button" data-novo="saida">${ICONE.sai}Saída</button><button class="fn-btn principal" type="button" data-novo="entrada">${ICONE.entra}Entrada</button>` : ""}<button class="fn-icone" type="button" data-olho title="Esconder valores" aria-label="Esconder valores">${ICONE.olho}</button></div></div>
         <div id="fn-conteudo">${{ dash: telaDash, entradas: () => telaMovimento("entrada"), saidas: () => telaMovimento("saida"), cartoes: telaCartoes, emprestimos: telaEmprestimos, reserva: telaReserva, anual: telaAnual, acesso: telaAcesso }[st.aba]()}</div>
       </main>
-      <nav class="fn-baixo">${abas.map(([k, t]) => `<button type="button" data-aba="${k}" class="${st.aba === k ? "on" : ""}">${ICONE[k] || ""}${CURTO[k] || t}</button>`).join("")}</nav>
+      <nav class="fn-baixo">${NO_CELULAR.map((k) => `<button type="button" data-aba="${k}" class="${st.aba === k ? "on" : ""}">${ICONE[k] || ""}${CURTO[k] || TITULO[k]}</button>`).join("")}<button type="button" data-mais class="${NO_CELULAR.includes(st.aba) ? "" : "on"}">${ICONE.mais3}Mais</button></nav>
+      <button class="fn-fab" type="button" data-fab aria-label="Lançar entrada, saída ou compra">${ICONE.mais}</button>
     </div>`);
     ligar();
   }
@@ -328,7 +331,7 @@
         ${kpi("Saiu no mês", R$(sai), "sai", `${R$(soma(saidas(lm).filter((l) => !l.pago)))} a pagar`, "", dS)}
         ${kpi(sobra >= 0 ? "Sobrou no mês" : "Faltou no mês", R$(sobra), "carteira", "entradas menos saídas", sobra >= 0 ? "destaque" : "ruim")}
         ${kpi("Dívida total", R$(divTotal), "queda", `${dividas.length} dívida${dividas.length === 1 ? "" : "s"} aberta${dividas.length === 1 ? "" : "s"}`)}
-        ${kpi("Livre das dívidas", p.meses === null ? (dividas.length ? "+10 anos" : "Livre!") : mesDaqui(p.meses), "bandeira", p.meses ? `${p.meses} meses no plano` : "", "bom")}
+        ${kpi("Livre das dívidas", !dividas.length ? "Sem dívidas 🎉" : p.meses === null ? "+10 anos" : mesDaqui(p.meses), "bandeira", p.meses ? `${p.meses} meses no plano` : "", "bom")}
       </div>
       <div class="fn-grade">
         <div class="fn-caixa"><div class="fn-cab"><div><h3>Entrou x saiu em ${st.ref.y}</h3><p class="sub">Toque num mês para ver os detalhes</p></div></div>
@@ -610,10 +613,30 @@
     formulario(novo ? "Nova conta" : "Editar conta", [{ k: "nome", rotulo: "Banco / conta", obrigatorio: true }, { k: "saldo", rotulo: "Saldo", tipo: "num" }], c, (v) => { const x = { ...c, ...v }; const l = (D().contas = D().contas || []); const k = l.findIndex((y) => y.id === x.id); if (k >= 0) l[k] = x; else l.push(x); }, novo ? null : () => { D().contas = D().contas.filter((y) => y.id !== c.id); });
   }
 
+  // folha que sobe de baixo no celular (botão + e menu Mais)
+  function folha(titulo, itens) {
+    let f = $("#fn-folha"); if (!f) { f = document.createElement("dialog"); f.id = "fn-folha"; f.className = "fn-folha"; document.body.appendChild(f); }
+    f.innerHTML = tingir(`<h2>${esc(titulo)}</h2><div class="grade">${itens.map((x, i) => `<button type="button" data-i="${i}">${x.ic}${esc(x.t)}</button>`).join("")}</div><button class="fn-btn fechar" type="button" data-fechar>Fechar</button>`);
+    $$("[data-i]", f).forEach((b) => b.addEventListener("click", () => { f.close(); itens[Number(b.dataset.i)].acao(); }));
+    $("[data-fechar]", f).addEventListener("click", () => f.close());
+    f.addEventListener("click", (e) => { if (e.target === f) f.close(); });
+    f.showModal();
+  }
+
   // ---------- eventos ----------
   function ligar() {
     const raiz = $("#raiz"), d = D(), acha = (lista, id) => (lista || []).find((x) => String(x.id) === String(id));
     $$("[data-aba]", raiz).forEach((b) => b.addEventListener("click", () => { st.aba = b.dataset.aba; pintar(); window.scrollTo(0, 0); }));
+    $$("[data-fab]", raiz).forEach((b) => b.addEventListener("click", () => folha("O que você quer lançar?", [
+      { ic: ICONE.entra, t: "Entrada", acao: () => editarLancamento(null, "entrada") },
+      { ic: ICONE.sai, t: "Saída", acao: () => editarLancamento(null, "saida") },
+      { ic: ICONE.cartoes, t: "Compra no cartão", acao: () => editarCompra(null) },
+    ])));
+    $$("[data-mais]", raiz).forEach((b) => b.addEventListener("click", () => folha("Mais", [
+      ...[...ABAS, ...(st.dona ? [["acesso", "Acesso"]] : [])].filter(([k]) => !NO_CELULAR.includes(k)).map(([k, t]) => ({ ic: ICONE[k], t: k === "reserva" ? "Reserva e investimentos" : t, acao: () => { st.aba = k; pintar(); window.scrollTo(0, 0); } })),
+      { ic: ICONE.olho, t: ocultar ? "Mostrar valores" : "Esconder valores", acao: () => { ocultar = !ocultar; try { localStorage.setItem("fn-ocultar", ocultar ? "1" : "0"); } catch (e) { /* sem armazenamento */ } pintar(); } },
+      { ic: ICONE.sair, t: "Sair", acao: async () => { await banco.auth.signOut(); telaEntrar(); } },
+    ])));
     $$("[data-sair]", raiz).forEach((b) => b.addEventListener("click", async () => { await banco.auth.signOut(); telaEntrar(); }));
     $$("[data-olho]", raiz).forEach((b) => b.addEventListener("click", () => { ocultar = !ocultar; try { localStorage.setItem("fn-ocultar", ocultar ? "1" : "0"); } catch (e) { /* sem armazenamento */ } pintar(); }));
     $$("[data-mes]", raiz).forEach((b) => b.addEventListener("click", () => { const x = new Date(st.ref.y, st.ref.m + Number(b.dataset.mes), 1); st.ref = { y: x.getFullYear(), m: x.getMonth() }; pintar(); }));
@@ -668,7 +691,7 @@
     const { data: perfil } = await banco.rpc("perfil_financeiro");
     if (!perfil || !PERFIS.some((p) => p.id === perfil)) { await banco.auth.signOut(); telaEntrar("entrar", "Esse e-mail ainda não tem acesso. Peça para a Mari liberar na aba Acesso."); return; }
     st.atual = perfil; document.body.classList.toggle("tema-edu", perfil === "eduardo"); document.body.classList.toggle("tema-mari", perfil === "mari");
-    const tema = document.querySelector('meta[name="theme-color"]'); if (tema) tema.content = perfil === "eduardo" ? "#f1f8f8" : "#f4f2ff";
+    const tema = document.querySelector('meta[name="theme-color"]'); if (tema) tema.content = perfil === "eduardo" ? "#eef1f6" : "#f4f2ff";
     $("#raiz").innerHTML = `<p class="fn-carregando">Abrindo as finanças…</p>`;
     try { await carregar(); } catch (e) { $("#raiz").innerHTML = `<p class="fn-carregando">${esc(e.message)}</p>`; return; }
     pintar();
