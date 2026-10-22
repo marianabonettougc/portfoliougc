@@ -349,7 +349,7 @@
       </div>
       ${blocoConsultora(conselhosGerais())}
       ${blocoPlano(dividas, p)}
-      <div class="fn-caixa"><div class="fn-cab"><div><h3>Lançamentos de ${MESES[st.ref.m].toLowerCase()}</h3><p class="sub">${lm.length} lançamento${lm.length === 1 ? "" : "s"}</p></div></div>
+      <div class="fn-caixa${minimo("dash-lanc", false) ? " min" : ""}"><div class="fn-cab"><div><h3>Lançamentos de ${MESES[st.ref.m].toLowerCase()}</h3><p class="sub">${lm.length} lançamento${lm.length === 1 ? "" : "s"}${minimo("dash-lanc", false) ? " · toque na setinha para ver" : ""}</p></div>${botaoMin("dash-lanc", false)}</div>
         ${lm.length ? `<div class="fn-rolar"><table class="fn-tabela"><thead><tr><th>Data</th><th>Descrição</th><th class="esconde">Categoria</th><th>Situação</th><th class="num">Valor</th><th></th></tr></thead><tbody>
           ${[...lm].sort((a, b) => a.data.localeCompare(b.data)).map((l) => `<tr><td>${dataBR(l.data).slice(0, 5)}</td><td>${esc(l.descricao)}</td><td class="esconde"><span class="fn-tag">${esc(l.categoria || "")}</span></td><td><button class="fn-chip ${l.pago ? "" : vencido(l) ? "mal" : "amb"}" type="button" data-pagar="${esc(l.id)}" style="border:0;cursor:pointer">${l.pago ? (l.tipo === "entrada" ? "Recebido" : "Pago") : vencido(l) ? "Vencido" : "A " + (l.tipo === "entrada" ? "receber" : "pagar")}</button></td><td class="num"><span class="fn-valor ${l.tipo === "entrada" ? "entra" : "sai"}">${l.tipo === "entrada" ? "+" : "-"} ${R$(l.valor)}</span></td><td class="num"><button class="fn-icone" type="button" data-editar-l="${esc(l.id)}" aria-label="Editar">${ICONE.lapis}</button></td></tr>`).join("")}
         </tbody></table></div>` : `<p class="fn-vazio">Nenhum lançamento neste mês. Use os botões Entrada e Saída.</p>`}</div>`;
@@ -413,8 +413,9 @@
     const d = D(), res = Number(d.reserva.atual) || 0, custo = custoMensal(), meta = custo * (Number(d.reserva.metaMeses) || 6);
     const inv = d.investimentos || [], totInv = inv.reduce((a, i) => a + (Number(i.valor) || 0), 0), contas = d.contas || [];
     const falta = Math.max(0, meta - res), meses = Number(d.reserva.aporte) > 0 ? Math.ceil(falta / d.reserva.aporte) : null;
+    const movs = d.reserva.movs || [], sacadoAno = movs.filter((m) => m.tipo === "saque" && String(m.data).startsWith(st.ref.y + "-")).reduce((a, m) => a + (Number(m.valor) || 0), 0);
     return `<div class="fn-kpis">
-        ${kpi("Reserva guardada", R$(res), "reserva", meta ? `${Math.min(100, Math.round(res / meta * 100))}% da meta` : "", "bom")}
+        ${kpi("Reserva hoje", R$(res), "reserva", `${meta ? Math.min(100, Math.round(res / meta * 100)) + "% da meta · " : ""}sacado em ${st.ref.y}: ${R$(sacadoAno)}`, "bom")}
         ${kpi("Meta da reserva", R$(meta), "bandeira", `${d.reserva.metaMeses || 6} meses de ${R$(custo)}`)}
         ${kpi("Guardando por mês", R$(d.reserva.aporte), "entra", meses !== null ? (falta ? `meta em ${meses} meses` : "meta batida") : "defina o valor")}
         ${kpi("Investido", R$(totInv), "queda", `${inv.length} aplicaç${inv.length === 1 ? "ão" : "ões"}`, "destaque")}
@@ -423,12 +424,15 @@
       ${blocoConsultora(conselhosReserva(), "Consultora: reserva e investimentos")}
       <div class="fn-grade meio">
         <div class="fn-caixa"><h3>Reserva de segurança</h3><p class="sub">Dinheiro para imprevisto, que dá para tirar no mesmo dia</p>
-          <div class="fn-anel" style="margin-bottom:12px">${anel(meta ? res / meta : 0, meta ? Math.min(100, Math.round(res / meta * 100)) + "%" : "–")}<div><b style="font-size:20px">${R$(res)}</b><br><small style="color:var(--suave)">faltam ${R$(falta)}</small></div></div>
+          <div class="fn-anel" style="margin-bottom:12px">${anel(meta ? res / meta : 0, meta ? Math.min(100, Math.round(res / meta * 100)) + "%" : "–")}<div><small style="color:var(--suave)">Sobrou na reserva</small><br><b style="font-size:22px">${R$(res)}</b><br><small style="color:var(--suave)">faltam ${R$(falta)} para a meta</small></div></div>
+          <div class="fn-acoes" style="justify-content:flex-start;margin-bottom:14px"><button class="fn-btn perigo" type="button" data-mov-res="saque">${ICONE.sai}Fiz um saque</button><button class="fn-btn principal" type="button" data-mov-res="deposito">${ICONE.entra}Guardei dinheiro</button></div>
           <div class="duplo" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
             <div class="fn-campo"><label for="fn-res">Guardado</label><input class="fn-entrada" id="fn-res" inputmode="decimal" value="${esc(d.reserva.atual)}"></div>
             <div class="fn-campo"><label for="fn-aporte">Por mês</label><input class="fn-entrada" id="fn-aporte" inputmode="decimal" value="${esc(d.reserva.aporte)}"></div>
             <div class="fn-campo"><label for="fn-metam">Meta (meses)</label><input class="fn-entrada" id="fn-metam" inputmode="numeric" value="${esc(d.reserva.metaMeses || 6)}"></div></div>
-          <p style="font-size:11.5px;color:var(--suave);margin:10px 0 0">Gasto mensal usado na conta: média das saídas dos últimos 3 meses (${R$(custo)}).</p></div>
+          <p style="font-size:11.5px;color:var(--suave);margin:10px 0 0">Gasto mensal usado na conta: média das saídas dos últimos 3 meses (${R$(custo)}).</p>
+          <h3 style="margin-top:18px">Saques e depósitos</h3><p class="sub">Cada movimento atualiza quanto sobrou</p>
+          <div class="fn-lista">${movs.slice(0, 12).map((m) => `<div class="fn-item"><div class="x"><b>${m.tipo === "saque" ? "Saque" : "Guardei"}${m.obs ? " · " + esc(m.obs) : ""}</b><small>${dataBR(m.data)} · ficou ${R$(m.saldo)}</small></div><span class="fn-valor ${m.tipo === "saque" ? "sai" : "entra"}">${m.tipo === "saque" ? "-" : "+"} ${R$(m.valor)}</span><button class="fn-icone" type="button" data-apagar-mov="${esc(m.id)}" aria-label="Apagar movimento">${ICONE.lixo}</button></div>`).join("") || `<p class="fn-vazio">Nenhum saque ou depósito ainda.</p>`}</div></div>
         <div class="fn-caixa"><div class="fn-cab"><div><h3>Investimentos</h3><p class="sub">Onde o dinheiro está aplicado</p></div><button class="fn-btn pequeno" type="button" data-novo-inv>${ICONE.mais}Novo</button></div>
           <div class="fn-lista">${inv.map((i) => `<div class="fn-item"><div class="x"><b>${esc(i.nome)}</b><small>${esc(i.tipo || "")}${i.rendimento ? ` · rende ${String(i.rendimento).replace(".", ",")}% a.m.` : ""}${i.liquidez ? " · " + esc(i.liquidez) : ""}</small></div><span class="fn-valor">${R$(i.valor)}</span><button class="fn-icone" type="button" data-editar-i="${esc(i.id)}" aria-label="Editar">${ICONE.lapis}</button></div>`).join("") || `<p class="fn-vazio">Nenhum investimento cadastrado.</p>`}</div>
           <h3 style="margin-top:18px">Contas no banco</h3><p class="sub">Saldo de cada conta</p>
@@ -500,7 +504,7 @@
       const ls = g.meses[m], v = g.vals[m], cls = !ls.length ? "vazio" : ls.every((l) => l.pago) ? "ok" : ls.some(vencido) ? "mal" : "amb";
       return `<td class="num${m === mesHoje ? " hoje" : ""}"><button type="button" class="v ${cls}" data-celula="${esc(g.tipo)}|${esc(g.nome)}|${esc(g.cat || "")}|${m}|${g.dia}" title="${ls.length ? R$(v) + " · editar" : "Lançar"} ${esc(g.nome)} em ${MESES[m]}" aria-label="${ls.length ? "Editar" : "Lançar"} ${esc(g.nome)} em ${MESES[m]}">${ls.length ? K0(v) : ""}</button></td>`;
     };
-    const linha = (g, sub) => `<tr class="fn-ano-item${sub ? " sub" : ""}"><th scope="row"><span class="nome" title="${esc(g.nome)}">${esc(g.nome)}</span>${g.tipo === "saida" && g.dia ? `<small>vence dia ${g.dia}</small>` : sub ? "" : `<small>${esc(g.cat || "")}</small>`}</th>${g.vals.map((_, m) => cel(g, m)).join("")}<td class="num tot">${R$(soma12(g.vals))}</td></tr>`;
+    const linha = (g, sub) => `<tr class="fn-ano-item${sub ? " sub" : ""}"><th scope="row"><button type="button" class="nome" data-linha="${esc(g.tipo)}|${esc(g.nome)}" title="Editar ${esc(g.nome)} no ano todo">${esc(g.nome)}</button>${g.tipo === "saida" && g.dia ? `<small>vence dia ${g.dia}</small>` : sub ? "" : `<small>${esc(g.cat || "")}</small>`}</th>${g.vals.map((_, m) => cel(g, m)).join("")}<td class="num tot">${R$(soma12(g.vals))}</td></tr>`;
     const porCat = (gs) => { const mp = new Map(); gs.forEach((g) => { const k = g.cat || "Outros"; if (!mp.has(k)) mp.set(k, []); mp.get(k).push(g); }); return [...mp.entries()].map(([cat, itens]) => ({ cat, itens, vals: totM(itens) })).sort((a, b) => soma12(b.vals) - soma12(a.vals)); };
     const corpo = (gs, tipo) => porCat(gs).map((c) => {
       if (c.itens.length === 1) return linha(c.itens[0], false);
@@ -592,6 +596,29 @@
       toast(f ? `Somado na fatura de ${MESES[f.m].toLowerCase()} do ${c.nome}.` : "Compra salva.");
     }, novo ? null : () => { d.compras = d.compras.filter((y) => y.id !== k.id); });
   }
+  function editarLinha(tipo, nomeL) {
+    const y = st.ref.y, k = nomeL.trim().toLowerCase();
+    const ls = () => D().lancamentos.filter((x) => x.tipo === tipo && (x.descricao || "").trim().toLowerCase() === k && String(x.data).startsWith(y + "-"));
+    const a = ls(); if (!a.length) return;
+    if (a.every((l) => l.auto)) { toast("Essa fatura é a soma das compras. Edite as compras na aba Cartões."); st.aba = "cartoes"; pintar(); return; }
+    const meses = MESES.map((n, i) => [String(i), n]), com = a.map((l) => Number(l.data.slice(5, 7)) - 1);
+    formulario(`Editar "${nomeL}" em ${y}`, [{ k: "descricao", rotulo: "Nome", obrigatorio: true }, { k: "categoria", rotulo: "Tipo", tipo: "select", opcoes: tipo === "entrada" ? CAT_ENTRADA : CAT_SAIDA }, { k: "valor", rotulo: "Novo valor por mês (vazio = não muda)", tipo: "num", meia: true }, { k: "dia", rotulo: "Novo dia (vazio = não muda)", tipo: "num", meia: true }, { k: "de", rotulo: "Mudar de", tipo: "select", opcoes: meses, meia: true }, { k: "ate", rotulo: "Até", tipo: "select", opcoes: meses, meia: true }],
+      { descricao: a[0].descricao, categoria: a[0].categoria, valor: "", dia: "", de: String(Math.min(...com)), ate: String(Math.max(...com)) }, (v) => {
+        ls().filter((l) => !l.auto).forEach((l) => {
+          const m = Number(l.data.slice(5, 7)) - 1; l.descricao = v.descricao; l.categoria = v.categoria;
+          if (m >= Number(v.de) && m <= Number(v.ate)) { if (v.valor != null) l.valor = v.valor; if (v.dia != null) l.data = l.data.slice(0, 8) + String(Math.min(28, Math.max(1, Math.round(v.dia)))).padStart(2, "0"); }
+        });
+        toast("Linha atualizada em todo o painel.");
+      }, () => { const ids = new Set(ls().filter((l) => !l.auto).map((l) => l.id)); D().lancamentos = D().lancamentos.filter((l) => !ids.has(l.id)); toast(`Apaguei ${nomeL} de ${y}.`); });
+  }
+  function movReserva(tipo) {
+    formulario(tipo === "saque" ? "Saque da reserva" : "Guardar na reserva", [{ k: "valor", rotulo: "Valor (R$)", tipo: "num", obrigatorio: true, meia: true }, { k: "data", rotulo: "Data", tipo: "data", obrigatorio: true, meia: true }, { k: "obs", rotulo: tipo === "saque" ? "Para quê? (ex.: conserto do carro)" : "Observação" }], { data: hojeIso() }, (v) => {
+      const rs = D().reserva, val = Math.abs(Number(v.valor) || 0); rs.movs = rs.movs || [];
+      rs.atual = Math.round(((Number(rs.atual) || 0) + (tipo === "saque" ? -val : val)) * 100) / 100;
+      rs.movs.unshift({ id: uid(), tipo, valor: val, data: v.data, obs: v.obs, saldo: rs.atual });
+      toast(tipo === "saque" ? `Saque registrado. Sobrou ${R$(rs.atual)} na reserva.` : `Guardado! A reserva está com ${R$(rs.atual)}.`);
+    });
+  }
   function contaFixaNoAno() {
     const mesAtual = st.ref.y === new Date().getFullYear() ? new Date().getMonth() : 0, meses = MESES.map((n, i) => [String(i), n]);
     formulario(`${st.anoAba === "entrada" ? "Entrada" : "Despesa"} em ${st.ref.y}`, [{ k: "tipo", rotulo: "É", tipo: "select", opcoes: [["saida", "Despesa"], ["entrada", "Renda"]], meia: true }, { k: "dia", rotulo: "Dia do mês", tipo: "num", meia: true }, { k: "descricao", rotulo: "Nome (ex.: Claro Móvel, Salário)", obrigatorio: true }, { k: "valor", rotulo: "Valor por mês (R$)", tipo: "num", obrigatorio: true, meia: true }, { k: "categoria", rotulo: "Tipo", tipo: "select", opcoes: [...new Set([...CAT_SAIDA, ...CAT_ENTRADA])], meia: true }, { k: "de", rotulo: "De", tipo: "select", opcoes: meses, meia: true }, { k: "ate", rotulo: "Até", tipo: "select", opcoes: meses, meia: true }],
@@ -679,11 +706,18 @@
     $$("[data-novo-cat]", raiz).forEach((b) => b.addEventListener("click", () => editarLancamento(null, b.dataset.tipo, { categoria: b.dataset.novoCat, descricao: b.dataset.novoCat === "Conta fixa" ? "" : b.dataset.novoCat })));
     $$("[data-grupo]", raiz).forEach((b) => b.addEventListener("click", () => { st.anoAbertos[b.dataset.grupo] = b.getAttribute("aria-expanded") !== "true"; pintar(); }));
     $$("[data-ano-aba]", raiz).forEach((b) => b.addEventListener("click", () => { st.anoAba = b.dataset.anoAba; pintar(); }));
+    $$("[data-linha]", raiz).forEach((b) => b.addEventListener("click", () => { const [tipo, nomeL] = b.dataset.linha.split("|"); editarLinha(tipo, nomeL); }));
+    $$("[data-mov-res]", raiz).forEach((b) => b.addEventListener("click", () => movReserva(b.dataset.movRes)));
+    $$("[data-apagar-mov]", raiz).forEach((b) => b.addEventListener("click", () => {
+      const rs = d.reserva, m = (rs.movs || []).find((x) => x.id === b.dataset.apagarMov); if (!m || !confirm("Apagar esse movimento? O valor volta para a reserva como estava.")) return;
+      rs.atual = Math.round(((Number(rs.atual) || 0) + (m.tipo === "saque" ? m.valor : -m.valor)) * 100) / 100; rs.movs = rs.movs.filter((x) => x !== m); salvar(); pintar();
+    }));
     $$("[data-linha-fixa]", raiz).forEach((b) => b.addEventListener("click", contaFixaNoAno));
     $$("[data-celula]", raiz).forEach((b) => b.addEventListener("click", () => {
       const [tipo, nomeL, cat, m, dia] = b.dataset.celula.split("|"), ym = ymDe(st.ref.y, Number(m));
-      const l = d.lancamentos.find((x) => x.tipo === tipo && (x.descricao || "").trim().toLowerCase() === nomeL.trim().toLowerCase() && String(x.data).startsWith(ym));
-      if (l) editarLancamento(l); else editarLancamento(null, tipo, { descricao: nomeL, categoria: cat || (tipo === "entrada" ? "Salário" : "Outros"), data: `${ym}-${String(Math.min(28, Math.max(1, Number(dia) || 10))).padStart(2, "0")}`, pago: false });
+      const ls = d.lancamentos.filter((x) => x.tipo === tipo && (x.descricao || "").trim().toLowerCase() === nomeL.trim().toLowerCase() && String(x.data).startsWith(ym)), l = ls[0];
+      if (ls.length > 1) folha(`${nomeL} em ${MESES[Number(m)]}`, ls.map((x) => ({ ic: ICONE.lapis, t: `${dataBR(x.data).slice(0, 5)} · ${R$(x.valor)}`, acao: () => editarLancamento(x) })));
+      else if (l) editarLancamento(l); else editarLancamento(null, tipo, { descricao: nomeL, categoria: cat || (tipo === "entrada" ? "Salário" : "Outros"), data: `${ym}-${String(Math.min(28, Math.max(1, Number(dia) || 10))).padStart(2, "0")}`, pago: false });
     }));
     $$("[data-metodo]", raiz).forEach((b) => b.addEventListener("click", () => { st.metodo = b.dataset.metodo; pintar(); }));
     const ex = $("#fn-extra"); if (ex) ex.addEventListener("change", () => { d.extra = num(ex.value); salvar(); pintar(); });
