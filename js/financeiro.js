@@ -289,7 +289,7 @@
       if (modo === "entrar") { const { error } = await banco.auth.signInWithPassword({ email, password: senha }); if (error) return erro("E-mail ou senha não conferem."); return iniciar(); }
       if (modo === "criar") { const { data, error } = await banco.auth.signUp({ email, password: senha, options: { emailRedirectTo: location.origin + "/financeiro/" } }); if (error) return erro(/registered|already/i.test(error.message) ? "Esse e-mail já tem senha. Use Entrar ou Esqueci a senha." : "Não consegui criar: " + error.message); if (data && data.session) return iniciar(); return telaEntrar("entrar", "Pronto! Confirme no e-mail que acabei de mandar e depois entre aqui."); }
       if (modo === "esqueci") { await banco.auth.resetPasswordForEmail(email, { redirectTo: location.origin + "/financeiro/" }); return telaEntrar("entrar", "Se esse e-mail tiver acesso, chegou um link para criar a senha nova."); }
-      if (modo === "nova") { const { error } = await banco.auth.updateUser({ password: senha }); if (error) return erro("Não consegui salvar: " + error.message); toast("Senha nova salva."); return iniciar(); }
+      if (modo === "nova") { const { error } = await banco.auth.updateUser({ password: senha }); if (error) return erro("Não consegui salvar: " + error.message); recuperando = false; history.replaceState(null, "", location.pathname); toast("Senha nova salva."); return iniciar(); }
     });
   }
 
@@ -687,6 +687,7 @@
     if (!banco) { $("#raiz").innerHTML = `<p class="fn-carregando">Não carregou. Confira a internet e abra de novo.</p>`; return; }
     const { data } = await banco.auth.getSession();
     if (!data || !data.session) { telaEntrar(); return; }
+    if (recuperando) { telaEntrar("nova"); return; }
     st.sessao = data.session; st.email = (data.session.user.email || "").toLowerCase(); st.dona = st.email === window.BANCO_EMAIL_DONA;
     const { data: perfil } = await banco.rpc("perfil_financeiro");
     if (!perfil || !PERFIS.some((p) => p.id === perfil)) { await banco.auth.signOut(); telaEntrar("entrar", "Esse e-mail ainda não tem acesso. Peça para a Mari liberar na aba Acesso."); return; }
@@ -696,7 +697,10 @@
     try { await carregar(); } catch (e) { $("#raiz").innerHTML = `<p class="fn-carregando">${esc(e.message)}</p>`; return; }
     pintar();
   }
-  if (banco) banco.auth.onAuthStateChange((ev) => { if (ev === "PASSWORD_RECOVERY") telaEntrar("nova"); });
+  // link de "Esqueci a senha": abre a tela de senha nova e NÃO entra direto no painel
+  // (antes o painel abria por cima e a senha nunca era trocada)
+  let recuperando = /type=recovery/.test(location.hash + location.search);
+  if (banco) banco.auth.onAuthStateChange((ev) => { if (ev === "PASSWORD_RECOVERY") { recuperando = true; telaEntrar("nova"); } });
   iniciar();
   window.financeiroApp = { estado: st, conselhosGerais, plano }; // usado nos testes
 })();
