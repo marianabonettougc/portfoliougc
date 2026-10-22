@@ -37,7 +37,9 @@
   const CAT_SAIDA = ["Conta fixa", "Cartão", "Empréstimo", "Financiamento", "Dívida pessoal", "Mercado", "Casa", "Filhos", "Saúde", "Transporte", "Lazer", "Assinaturas", "Outros"];
   // o painel do Eduardo usa as cores da planilha dele: troca as cores da Mari pelas dele no HTML
   const CORES_EDU = { "#3d2b20": "#2d4a4b", "#7a6355": "#6f8f90", "#6b4a35": "#2f9c9d", "#a87058": "#7cbf4e", "#cdb39b": "#a9dcdc", "#e7c9b6": "#cfe9b9", "#efe5d8": "#e2f1f1", "#8a6650": "#4fb8b8", "#4f7a54": "#5a9e33", "#b8473a": "#d9534f", "#c9973b": "#e0c341", "#4a6a8a": "#4a7fb0", "#d3a98f": "#9bbf7a" };
-  const tingir = (html) => (st.atual === "eduardo" ? html.replace(/#[0-9a-f]{6}/g, (c) => CORES_EDU[c] || c) : html);
+  // o painel da Mari (out/2026, pedido dela: "cansei do marrom") usa a paleta lilás das referências FinSet/Fincheck
+  const CORES_MARI = { "#3d2b20": "#1f1d2b", "#7a6355": "#8a8798", "#6b4a35": "#7b6cf6", "#a87058": "#c3bbfb", "#cdb39b": "#a99ff8", "#e7c9b6": "#d6d0fd", "#efe5d8": "#f1effd", "#8a6650": "#9d92f8", "#4f7a54": "#2f9e5b", "#b8473a": "#e5484d", "#c9973b": "#f2b84b", "#4a6a8a": "#5ab4e6", "#d3a98f": "#f59ac0" };
+  const tingir = (html) => { const mapa = st.atual === "eduardo" ? CORES_EDU : CORES_MARI; return html.replace(/#[0-9a-f]{6}/g, (c) => mapa[c] || c); };
   const ICONE = {
     dash: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>',
     cartoes: '<svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg>',
@@ -249,7 +251,7 @@
   }
 
   // ---------- desenho ----------
-  const kpi = (t, v, ic, sub, tom, chip) => `<div class="fn-kpi ${tom || ""}"><div class="fn-kpi-t"><span class="fn-kpi-ic">${ICONE[ic] || ""}</span>${esc(t)}</div><div class="fn-kpi-v">${v}</div><div class="fn-kpi-s">${chip ? `<span class="fn-chip ${chip[1] || ""}">${chip[0]}</span>` : ""}${sub ? `<span>${sub}</span>` : ""}</div></div>`;
+  const kpi = (t, v, ic, sub, tom, chip) => `<div class="fn-kpi ${tom || ""}"><div class="fn-kpi-t"><span class="fn-kpi-ic">${ICONE[ic] || ""}</span>${esc(t)}</div><div class="fn-kpi-v">${String(v).replace(/,(\d{2})$/, '<small>,$1</small>')}</div><div class="fn-kpi-s">${chip ? `<span class="fn-chip ${chip[1] || ""}">${chip[0]}</span>` : ""}${sub ? `<span>${sub}</span>` : ""}</div></div>`;
   const delta = (a, b, inverter) => { const p = pct(a, b); if (p === null) return null; const bom = inverter ? p <= 0 : p >= 0; return [(p > 0 ? "▲ " : p < 0 ? "▼ " : "") + Math.abs(p) + "%", bom ? "" : "mal"]; };
   const CORES = ["#6b4a35", "#a87058", "#cdb39b", "#4f7a54", "#c9973b", "#4a6a8a", "#8a6650", "#d3a98f"];
   function rosca(itens, total, centro) {
@@ -301,7 +303,7 @@
       </aside>
       <main class="fn-principal">
         <div class="fn-celular-topo"><b class="fn-dono">${esc(p.nome)}</b><button class="fn-icone" type="button" data-olho aria-label="Esconder valores">${ICONE.olho}</button><button class="fn-icone" type="button" data-sair aria-label="Sair">${ICONE.sair}</button></div>
-        <div class="fn-topo"><div><h1>${TITULO[st.aba]} <em>${esc(p.curto)}</em></h1><p>${st.aba === "acesso" ? "Quem pode entrar nas finanças" : st.aba === "anual" ? `Orçamento de ${st.ref.y}, mês a mês` : `${MESES[st.ref.m]} de ${st.ref.y}`}</p></div>
+        <div class="fn-topo"><div><h1>${st.aba === "dash" && st.atual === "mari" ? "Oi, Mari! 💜" : `${TITULO[st.aba]} <em>${esc(p.curto)}</em>`}</h1><p>${st.aba === "dash" && st.atual === "mari" ? `Bom momento para cuidar das suas finanças · ${MESES[st.ref.m]} de ${st.ref.y}` : st.aba === "acesso" ? "Quem pode entrar nas finanças" : st.aba === "anual" ? `Orçamento de ${st.ref.y}, mês a mês` : `${MESES[st.ref.m]} de ${st.ref.y}`}</p></div>
           <div class="fn-topo-acoes">${st.aba === "anual" ? `<div class="fn-mes"><button type="button" data-mes="-12" aria-label="Ano anterior">‹</button><span>${st.ref.y}</span><button type="button" data-mes="12" aria-label="Próximo ano">›</button></div>` : ""}${st.aba !== "acesso" && st.aba !== "anual" ? `<div class="fn-mes"><button type="button" data-mes="-1" aria-label="Mês anterior">‹</button><span>${MESES[st.ref.m]} ${st.ref.y}</span><button type="button" data-mes="1" aria-label="Próximo mês">›</button></div>
             <button class="fn-btn" type="button" data-novo="saida">${ICONE.sai}Saída</button><button class="fn-btn principal" type="button" data-novo="entrada">${ICONE.entra}Entrada</button>` : ""}<button class="fn-icone" type="button" data-olho title="Esconder valores" aria-label="Esconder valores">${ICONE.olho}</button></div></div>
         <div id="fn-conteudo">${{ dash: telaDash, entradas: () => telaMovimento("entrada"), saidas: () => telaMovimento("saida"), cartoes: telaCartoes, emprestimos: telaEmprestimos, reserva: telaReserva, anual: telaAnual, acesso: telaAcesso }[st.aba]()}</div>
@@ -665,8 +667,8 @@
     st.sessao = data.session; st.email = (data.session.user.email || "").toLowerCase(); st.dona = st.email === window.BANCO_EMAIL_DONA;
     const { data: perfil } = await banco.rpc("perfil_financeiro");
     if (!perfil || !PERFIS.some((p) => p.id === perfil)) { await banco.auth.signOut(); telaEntrar("entrar", "Esse e-mail ainda não tem acesso. Peça para a Mari liberar na aba Acesso."); return; }
-    st.atual = perfil; document.body.classList.toggle("tema-edu", perfil === "eduardo");
-    const tema = document.querySelector('meta[name="theme-color"]'); if (tema && perfil === "eduardo") tema.content = "#f1f8f8";
+    st.atual = perfil; document.body.classList.toggle("tema-edu", perfil === "eduardo"); document.body.classList.toggle("tema-mari", perfil === "mari");
+    const tema = document.querySelector('meta[name="theme-color"]'); if (tema) tema.content = perfil === "eduardo" ? "#f1f8f8" : "#f4f2ff";
     $("#raiz").innerHTML = `<p class="fn-carregando">Abrindo as finanças…</p>`;
     try { await carregar(); } catch (e) { $("#raiz").innerHTML = `<p class="fn-carregando">${esc(e.message)}</p>`; return; }
     pintar();
