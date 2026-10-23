@@ -1269,6 +1269,6 @@ button.menu-grupo:hover{color:var(--texto)}
 .pc-grade3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .pc-tag{font-style:normal;font-size:9.5px;color:var(--suave);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pc-mix{grid-column:1/-1;margin:0;font-size:12px;color:var(--suave);line-height:1.6}
-.pc-mix b{color:var(--texto);font-weight:600}
+.pc-numeros .pc-mix b{font-family:inherit;font-size:12px;line-height:inherit;color:var(--texto);font-weight:600}
 @media(max-width:900px){.pc-ritmo{grid-template-columns:1fr 1fr}.pc-ritmo>.campo:nth-child(n+3){grid-column:1/-1}}
 @media(max-width:620px){.pc-perfil .pc-grade2,.pc-grade3{grid-template-columns:1fr}}
