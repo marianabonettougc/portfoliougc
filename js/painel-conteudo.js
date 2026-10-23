@@ -8,6 +8,12 @@
 // - Gerar ideias: função painel-conteudo (método de roteiro da Lara, que fica só no
 //   Supabase) devolve tema, tipo de UGC, funil, propósito, hook, desenvolvimento e CTA,
 //   inspirados nas pastas sem copiar as falas. As ideias entram nos próximos dias livres.
+// - Meu perfil de conteúdo (configuracoes chave "perfil_conteudo", JSON): quem ela é, objetivo,
+//   pilares, tom de voz, o que evitar e o ritmo (posts por semana, dias, horário, formatos,
+//   topo/meio/fundo por semana). A grade é distribuída AQUI antes de chamar a IA (planejarSlots):
+//   cada espaço do ritmo recebe pilar (rodízio, o menos usado primeiro), funil e formato, e a
+//   função painel-conteudo escreve a ideia exatamente naquele lugar. "Refazer com ajuste" na
+//   janela do post regera só aquele post no mesmo dia, pilar, funil e formato.
 // - Tudo fica na tabela painel_conteudo (só a dona). Cada post vai para Meus roteiros
 //   com um clique (window.painelRoteiros.salvarNoQuadro).
 // =========================================================
@@ -31,9 +37,24 @@
   const deIso = (s) => { const [a, m, d] = String(s).split("-").map(Number); return new Date(a, m - 1, d); };
   const semAcento = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
+  // mesmo padrão da função painel-conteudo (PERFIL_PADRAO); ela edita no cartão
+  const PERFIL_PADRAO = {
+    quem: "Criadora de conteúdo UGC e mãe. Não tenho um nicho fechado: crio beleza, moda, bem-estar, maternidade, achadinhos, cabelo, casa e tech, porque no UGC dá para trabalhar com tudo.",
+    objetivo: "Alinhar os conteúdos do Instagram para as marcas começarem a me seguir e me contratar. As pessoas precisam me conhecer.",
+    pilares: [
+      { nome: "Maternidade e autocuidado", descricao: "Me reencontrando depois de ser mãe: emagreci, voltei a cuidar de mim. Junta maternidade com beleza e autocuidado." },
+      { nome: "Beleza e cabelo", descricao: "Skincare, make, cuidados com o cabelo, produto em uso real." },
+      { nome: "Moda", descricao: "Looks do dia a dia de mãe, peças que funcionam, achados de roupa." },
+      { nome: "Bem-estar", descricao: "Rotina, hábitos, cuidar do corpo e da cabeça." },
+      { nome: "Achadinhos de casa e tech", descricao: "Coisas para casa e tecnologia que eu comprei e uso." },
+    ],
+    tom: 'Divertido e um pouco sarcástico, sem humor palhaço. Tom de amiga dando dica, como numa conversa: "amiga, olha, hoje eu comprei uma luminária, ela é maravilhosa, tem iluminação assim e assim, gostei bastante porque ela faz isso".',
+    evitar: "Vícios de linguagem e gírias (eu não falo desse jeito). Esquetes, personagens, ceninhas e historinhas: quero UGC falando para a câmera com o produto em uso real.",
+    ritmo: { porSemana: 3, dias: [0, 2, 4], horario: "12h", formatos: ["Reels", "Carrossel"], funil: { Topo: 1, Meio: 2, Fundo: 0 } },
+  };
   const CMD_WIN = 'irm https://marianabonetto.com.br/ferramentas/salvos.py -OutFile "$HOME\\salvos.py"; python "$HOME\\salvos.py"';
   const hoje = new Date();
-  const st = { pronto: false, mes: `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`, semana: 0, posts: [], lab: [], faltaTabela: false, gerando: false, transcrevendo: false };
+  const st = { pronto: false, mes: `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`, semana: 0, posts: [], lab: [], faltaTabela: false, gerando: false, transcrevendo: false, perfil: PERFIL_PADRAO };
 
   let tempoToast = null;
   function toast(texto, erro) {
@@ -53,8 +74,10 @@
     ]);
     if (a.error) { st.faltaTabela = true; st.posts = []; } else { st.faltaTabela = false; st.posts = a.data || []; }
     st.lab = b.error ? [] : (b.data || []);
-    const c = await banco().from("configuracoes").select("valor").eq("chave", "ntfy_topico").maybeSingle();
-    st.topico = (c.data && c.data.valor) || "";
+    const c = await banco().from("configuracoes").select("chave,valor").in("chave", ["ntfy_topico", "perfil_conteudo"]);
+    const cfg = Object.fromEntries((c.data || []).map((x) => [x.chave, x.valor]));
+    st.topico = cfg.ntfy_topico || "";
+    try { const p = JSON.parse(cfg.perfil_conteudo || ""); st.perfil = { ...PERFIL_PADRAO, ...p, ritmo: { ...PERFIL_PADRAO.ritmo, ...(p.ritmo || {}), funil: { ...PERFIL_PADRAO.ritmo.funil, ...((p.ritmo || {}).funil || {}) } } }; } catch (e) { st.perfil = PERFIL_PADRAO; }
   }
   async function salvar(post) {
     const campos = { ...post }; delete campos.id; delete campos.criado_em;
@@ -90,6 +113,49 @@
     for (let d = inicio; d <= ultimo && livres.length < qtd; d++) { const s = iso(new Date(a, m - 1, d)); if (!ocupados.has(s)) livres.push(s); }
     return livres;
   }
+  // espaços do ritmo dela no mês (dias da semana do perfil), cada um com pilar, funil e formato.
+  // modo "mes": todos os espaços livres do mês; modo "semana": só os da próxima semana com espaço.
+  function planejarSlots(modo) {
+    const r = st.perfil.ritmo || PERFIL_PADRAO.ritmo;
+    const [a, m] = st.mes.split("-").map(Number);
+    const ultimo = new Date(a, m, 0).getDate();
+    const inicio = a === hoje.getFullYear() && m === hoje.getMonth() + 1 ? hoje.getDate() + 1 : 1;
+    const dias = (r.dias && r.dias.length ? r.dias : [0, 2, 4]).slice().sort();
+    const ocupados = new Set(st.posts.filter((p) => p.data).map((p) => p.data));
+    const porSemana = Math.max(1, Number(r.porSemana) || dias.length);
+    // funil da semana: ex. Topo 1 + Meio 2 = [Topo, Meio, Meio], intercalado
+    const fun = r.funil || { Topo: 1, Meio: 2 };
+    const sequenciaFunil = [];
+    const restam = { Topo: Number(fun.Topo) || 0, Meio: Number(fun.Meio) || 0, Fundo: Number(fun.Fundo) || 0 };
+    while (sequenciaFunil.length < porSemana && (restam.Topo + restam.Meio + restam.Fundo) > 0) {
+      for (const f of ["Topo", "Meio", "Fundo"]) if (restam[f] > 0 && sequenciaFunil.length < porSemana) { sequenciaFunil.push(f); restam[f]--; }
+    }
+    while (sequenciaFunil.length < porSemana) sequenciaFunil.push("Meio");
+    const formatos = r.formatos && r.formatos.length ? r.formatos : ["Reels"];
+    const pilares = (st.perfil.pilares || []).map((x) => x.nome).filter(Boolean);
+    const uso = new Map(pilares.map((n) => [n, st.posts.filter((p) => p.pilar === n).length]));
+    const usoForm = new Map(formatos.map((f) => [f, st.posts.filter((p) => p.formato === f).length]));
+    const slots = [];
+    const semanas = semanasDoMes();
+    for (const sem of semanas) {
+      // dias do ritmo desta semana dentro do mês, a partir de amanhã
+      const daSemana = dias.map((k) => sem[k]).filter((d) => d.getMonth() === m - 1 && d.getDate() >= inicio).slice(0, porSemana);
+      const jaNaSemana = st.posts.filter((p) => p.data && sem.some((d) => iso(d) === p.data));
+      const funisUsados = jaNaSemana.map((p) => p.funil);
+      const faltam = sequenciaFunil.slice();
+      funisUsados.forEach((f) => { const i = faltam.indexOf(f); if (i >= 0) faltam.splice(i, 1); });
+      const livres = daSemana.filter((d) => !ocupados.has(iso(d))).slice(0, Math.max(0, porSemana - jaNaSemana.length));
+      livres.forEach((d, i) => {
+        const pilar = pilares.slice().sort((x, y) => uso.get(x) - uso.get(y) || pilares.indexOf(x) - pilares.indexOf(y))[0] || "";
+        if (pilar) uso.set(pilar, uso.get(pilar) + 1);
+        const formato = formatos.slice().sort((x, y) => usoForm.get(x) - usoForm.get(y))[0];
+        usoForm.set(formato, usoForm.get(formato) + 1);
+        slots.push({ data: iso(d), horario: r.horario || "12h", pilar, funil: faltam[i] || "Meio", formato });
+      });
+      if (modo === "semana" && slots.length) break;
+    }
+    return slots;
+  }
   // posts das pastas que ainda não viraram ideia neste mês
   function referenciasLivres() {
     const { gravar, assim } = pastasDoMes();
@@ -107,48 +173,108 @@
     }
     throw new Error("A IA está sem limite agora. Tente de novo daqui a alguns minutos.");
   }
-  // com posts nas pastas: uma ideia para cada post (com o link da referência); sem posts: ideias soltas
-  async function gerar(qtd, notas) {
+  // monta a grade no ritmo dela: cada espaço (dia + pilar + funil + formato) vira uma ideia com roteiro.
+  // Se houver posts nas pastas, cada espaço usa um como referência (com o link), até acabarem.
+  async function gerar(modo, notas) {
     if (st.gerando) return;
+    const slots = planejarSlots(modo);
+    if (!slots.length) { toast(`A grade de ${rotuloMes(st.mes)} já está cheia no seu ritmo. Aumente os posts por semana no seu perfil ou escolha outro mês.`, true); return; }
     const refs = referenciasLivres();
-    st.gerando = true; pintar();
+    st.gerando = true; st.progresso = `0 de ${slots.length}`; pintar();
     let feitas = 0;
     const base = { acao: "ideias", rotulo: rotuloMes(st.mes), notas };
     try {
-      if (refs.length) {
-        const alvo = refs.slice(0, 18);
-        for (let k = 0; k < alvo.length; k += 3) {
-          const lote = alvo.slice(k, k + 3);
-          const ideias = await chamarIdeias({ ...base, umaPorReferencia: true, quantidade: lote.length, evitar: st.posts.map((p) => p.tema),
-            inspiracoes: lote.map((p) => ({ perfil: p.perfil, tipo: p.tipo, colecao: p.colecao, legenda: p.legenda, transcricao: p.transcricao })) });
-          const dias = proximosDiasLivres(ideias.length);
-          for (const [n, x] of ideias.entries()) {
-            const r = lote[(x.referencia || n + 1) - 1] || lote[n] || lote[0];
-            await salvar({ data: dias[n] || null, horario: "12h", formato: x.formato, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, tipo_roteiro: x.tipo_roteiro, legenda: x.legenda, porque: x.porque, status: "Roteirizado",
-              inspiracao: { link: r.link, perfil: r.perfil ? "@" + r.perfil : x.inspirado_em, colecao: r.colecao, legenda: String(r.legenda || "").split("\n")[0].slice(0, 160), duracao_seg: x.duracao_seg } });
-            feitas++;
-          }
-          pintar();
+      for (let k = 0; k < slots.length; k += 3) {
+        const lote = slots.slice(k, k + 3);
+        const loteRefs = refs.splice(0, lote.length);
+        const comRef = loteRefs.length === lote.length;
+        const ideias = await chamarIdeias({ ...base, quantidade: lote.length, evitar: st.posts.map((p) => p.tema),
+          slots: lote.map((x) => ({ pilar: x.pilar, funil: x.funil, formato: x.formato })),
+          umaPorReferencia: comRef, inspiracoes: comRef ? loteRefs.map((p) => ({ perfil: p.perfil, tipo: p.tipo, colecao: p.colecao, legenda: p.legenda, transcricao: p.transcricao })) : [] });
+        for (const [n, x] of ideias.entries()) {
+          const sl = lote[n]; if (!sl) break;
+          const r = comRef ? loteRefs[n] : null;
+          await salvar({ data: sl.data, horario: sl.horario, pilar: sl.pilar || x.pilar || null, formato: sl.formato, funil: sl.funil, tema: x.tema, tipo_ugc: x.tipo_ugc, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, tipo_roteiro: x.tipo_roteiro, legenda: x.legenda, porque: x.porque, status: "Roteirizado",
+            inspiracao: r ? { link: r.link, perfil: r.perfil ? "@" + r.perfil : x.inspirado_em, colecao: r.colecao, legenda: String(r.legenda || "").split("\n")[0].slice(0, 160), duracao_seg: x.duracao_seg } : { perfil: x.inspirado_em, duracao_seg: x.duracao_seg } });
+          feitas++;
         }
-      } else {
-        const insp = [];
-        while (feitas < qtd) {
-          const ideias = await chamarIdeias({ ...base, quantidade: Math.min(3, qtd - feitas), inspiracoes: insp, evitar: st.posts.map((p) => p.tema) });
-          if (!ideias.length) break;
-          const dias = proximosDiasLivres(ideias.length);
-          for (const [n, x] of ideias.entries()) {
-            await salvar({ data: dias[n] || null, horario: "12h", formato: x.formato, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, tipo_roteiro: x.tipo_roteiro, legenda: x.legenda, porque: x.porque, status: "Roteirizado", inspiracao: { perfil: x.inspirado_em, duracao_seg: x.duracao_seg } });
-            feitas++;
-          }
-          pintar();
-        }
+        st.progresso = `${feitas} de ${slots.length}`;
+        pintar();
       }
-      toast(`${feitas} ideia${feitas === 1 ? "" : "s"} com roteiro na grade de ${rotuloMes(st.mes)}.`);
+      toast(`${feitas} post${feitas === 1 ? "" : "s"} com roteiro na grade de ${rotuloMes(st.mes)}.`);
     } catch (e) { toast(e.message, true); }
     st.gerando = false;
     const prim = st.posts.filter((p) => p.data && p.data >= iso(hoje)).map((p) => p.data).sort()[0] || st.posts.filter((p) => p.data).map((p) => p.data).sort()[0];
     if (prim) st.semana = semanaDe(prim);
     pintar();
+  }
+
+  // refaz um post no mesmo lugar (dia, pilar, funil, formato) com o ajuste que ela escreveu
+  async function refazer(p, ajuste) {
+    const notas = `REFAZER UM POST. Ajuste pedido: ${ajuste || "uma versão melhor, mais no meu tom"}. Versão anterior (não repita igual): tema "${p.tema || ""}", hook "${p.hook || ""}".`;
+    const ideias = await chamarIdeias({ acao: "ideias", rotulo: rotuloMes(st.mes), notas, quantidade: 1, evitar: st.posts.filter((x) => x.id !== p.id).map((x) => x.tema),
+      slots: [{ pilar: p.pilar || "", funil: p.funil || "Meio", formato: p.formato || "Reels" }] });
+    const x = ideias[0];
+    if (!x) throw new Error("A IA não devolveu a nova versão. Tente de novo.");
+    return salvar({ id: p.id, tema: x.tema, tipo_ugc: x.tipo_ugc, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, tipo_roteiro: x.tipo_roteiro, legenda: x.legenda, porque: x.porque, status: "Roteirizado" });
+  }
+
+  // ---------- meu perfil de conteúdo ----------
+  async function salvarPerfil(perfil) {
+    const { error } = await banco().from("configuracoes").upsert({ chave: "perfil_conteudo", valor: JSON.stringify(perfil), updated_at: new Date().toISOString() }, { onConflict: "chave" });
+    if (error) throw new Error(error.message);
+    st.perfil = perfil;
+  }
+  function pintarPerfil() {
+    const box = $("#pc-perfil"); if (!box) return;
+    const p = st.perfil, r = p.ritmo || PERFIL_PADRAO.ritmo;
+    // só redesenha quando o perfil muda (não apaga o que ela está digitando)
+    const assinatura = JSON.stringify(p);
+    if (box.dataset.v === assinatura) return;
+    box.dataset.v = assinatura;
+    const aberto = box.querySelector("details") ? box.querySelector("details").open : false;
+    const pil = (p.pilares || []).map((x) => x.nome + (x.descricao ? ": " + x.descricao : "")).join("\n");
+    const chk = (nome, valor, marcado, rot) => `<label class="pc-chk"><input type="checkbox" name="${nome}" value="${valor}" ${marcado ? "checked" : ""}>${rot}</label>`;
+    box.innerHTML = `<details ${aberto ? "open" : ""}><summary class="pc-perfil-cab"><span class="pc-h3">${ic.brilho}Meu perfil de <em>conteúdo</em></span>
+        <span class="pc-perfil-resumo">${esc(r.porSemana)} posts por semana · ${esc((r.dias || []).map((d) => DIAS[d]).join(", "))} · ${esc((r.formatos || []).join(" ou "))} · ${["Topo", "Meio", "Fundo"].filter((f) => Number(r.funil[f]) > 0).map((f) => `${r.funil[f]} ${f.toLowerCase()}`).join(" + ")} · ${(p.pilares || []).length} pilares</span></summary>
+      <form class="pc-perfil-form" id="pc-perfil-form">
+        <p class="pc-ajuda">Tudo o que a IA lê antes de montar a grade. Quanto mais específico, menos genérico sai.</p>
+        <div class="pc-grade2">
+          <label class="campo"><span>Quem eu sou</span><textarea name="quem" rows="3">${esc(p.quem)}</textarea></label>
+          <label class="campo"><span>Objetivo do perfil</span><textarea name="objetivo" rows="3">${esc(p.objetivo)}</textarea></label>
+        </div>
+        <label class="campo"><span>Pilares (um por linha: Nome: do que fala)</span><textarea name="pilares" rows="5">${esc(pil)}</textarea></label>
+        <div class="pc-grade2">
+          <label class="campo"><span>Tom de voz</span><textarea name="tom" rows="3">${esc(p.tom)}</textarea></label>
+          <label class="campo"><span>Nunca usar</span><textarea name="evitar" rows="3">${esc(p.evitar)}</textarea></label>
+        </div>
+        <div class="pc-ritmo">
+          <label class="campo"><span>Posts por semana</span><input type="number" name="porSemana" min="1" max="14" value="${esc(r.porSemana)}"></label>
+          <label class="campo"><span>Horário</span><input name="horario" value="${esc(r.horario || "12h")}"></label>
+          <div class="campo"><span>Dias de postar</span><div class="pc-chks">${DIAS.map((d, k) => chk("dias", k, (r.dias || []).includes(k), d)).join("")}</div></div>
+          <div class="campo"><span>Formatos</span><div class="pc-chks">${FORMATOS.map((f) => chk("formatos", f, (r.formatos || []).includes(f), f)).join("")}</div></div>
+          <div class="campo"><span>Por semana: topo · meio · fundo</span><div class="pc-chks">${FUNIS.map((f) => `<label class="pc-num">${f}<input type="number" name="funil_${f}" min="0" max="14" value="${esc(r.funil[f] || 0)}"></label>`).join("")}</div></div>
+        </div>
+        <div class="pc-linha"><button class="btn btn-principal" type="submit">Salvar meu perfil</button><button class="login-link" type="button" id="pc-perfil-padrao">voltar ao padrão</button></div>
+      </form></details>`;
+    $("#pc-perfil-form", box).addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const f = e.target, v = (n) => f.elements[n].value.trim();
+      const marcados = (n) => [...f.querySelectorAll(`[name=${n}]:checked`)].map((x) => x.value);
+      const pilares = v("pilares").split("\n").map((l) => l.trim()).filter(Boolean).map((l) => { const i = l.indexOf(":"); return i > 0 ? { nome: l.slice(0, i).trim(), descricao: l.slice(i + 1).trim() } : { nome: l, descricao: "" }; });
+      const funil = Object.fromEntries(FUNIS.map((x) => [x, Math.max(0, Number(v("funil_" + x)) || 0)]));
+      const dias = marcados("dias").map(Number);
+      const porSemana = Math.max(1, Number(v("porSemana")) || 3);
+      if (!pilares.length) { toast("Coloque pelo menos um pilar.", true); return; }
+      if (!dias.length) { toast("Marque os dias em que você quer postar.", true); return; }
+      if (dias.length < porSemana) { toast(`Você marcou ${dias.length} dia${dias.length === 1 ? "" : "s"} para ${porSemana} posts por semana. Marque mais dias.`, true); return; }
+      const somaFunil = funil.Topo + funil.Meio + funil.Fundo;
+      if (somaFunil !== porSemana) { toast(`Topo + meio + fundo somam ${somaFunil}, mas são ${porSemana} posts por semana. Ajuste para bater.`, true); return; }
+      const novo = { quem: v("quem"), objetivo: v("objetivo"), pilares, tom: v("tom"), evitar: v("evitar"),
+        ritmo: { porSemana, dias, horario: v("horario") || "12h", formatos: marcados("formatos").length ? marcados("formatos") : ["Reels"], funil } };
+      try { await salvarPerfil(novo); pintar(); toast("Perfil salvo. A próxima grade já sai com ele."); } catch (er) { toast("Não consegui salvar: " + er.message, true); }
+    });
+    $("#pc-perfil-padrao", box).addEventListener("click", async () => { if (!confirm("Voltar o perfil para o padrão?")) return; try { await salvarPerfil(PERFIL_PADRAO); pintar(); toast("Perfil voltou ao padrão."); } catch (er) { toast(er.message, true); } });
   }
 
   // ---------- arquivo das pastas (salvos_instagram.json do programa) ----------
@@ -246,12 +372,13 @@
         <div class="pc-quadro" id="pc-quadro"></div>
         <div class="pc-banco" id="pc-banco"></div>
       </div>
+      <section class="pc-cartao pc-perfil" id="pc-perfil"></section>
       <div class="pc-baixo">
         <section class="pc-cartao pc-gerar">
-          <h3 class="pc-h3">Montar a grade com ideias e roteiros</h3>
+          <h3 class="pc-h3">Gerar a grade no meu ritmo</h3>
           <p class="pc-ajuda" id="pc-gerar-ajuda"></p>
           <textarea class="entrada" id="pc-notas" rows="2" placeholder="Algum pedido? Ex.: foco em maternidade, uma publi de cabelo, conteúdo para atrair marcas de casa..."></textarea>
-          <div class="pc-linha"><select class="entrada" id="pc-qtd" aria-label="Quantas ideias"><option value="3">3 ideias</option><option value="6" selected>6 ideias</option><option value="9">9 ideias</option></select>
+          <div class="pc-linha"><select class="entrada" id="pc-qtd" aria-label="Quanto gerar"><option value="mes" selected>Mês completo</option><option value="semana">Só a próxima semana</option></select>
             <button class="btn btn-principal" type="button" id="pc-gerar"></button></div>
         </section>
         <section class="pc-cartao" id="pc-pastas"></section>
@@ -262,7 +389,8 @@
     sel.addEventListener("change", async () => { st.mes = sel.value; st.semana = 0; await carregar(); ajustarSemana(); pintar(); });
     $("#pc-ant", sec).addEventListener("click", () => { st.semana = Math.max(0, st.semana - 1); pintar(); });
     $("#pc-prox", sec).addEventListener("click", () => { st.semana = Math.min(semanasDoMes().length - 1, st.semana + 1); pintar(); });
-    $("#pc-gerar", sec).addEventListener("click", () => gerar(Number($("#pc-qtd", sec).value), $("#pc-notas", sec).value.trim()));
+    $("#pc-qtd", sec).addEventListener("change", pintar);
+    $("#pc-gerar", sec).addEventListener("click", () => gerar($("#pc-qtd", sec).value, $("#pc-notas", sec).value.trim()));
   }
   function ajustarSemana() {
     const [a, m] = st.mes.split("-").map(Number);
@@ -273,7 +401,7 @@
     const ok = p.status !== "Ideia";
     return `<button type="button" class="pc-post f-${esc(semAcento(p.formato || "reels"))}" data-id="${p.id}">
       <small>${esc((p.formato || "Reels").toUpperCase())}${p.tipo_roteiro && p.tipo_roteiro !== "Stories de bastidor" ? " · " + esc(p.tipo_roteiro === "Spec ad" ? "SPEC AD" : "VITRINE") : ""}</small>
-      <b>${esc(p.tema || "Sem tema")}</b>${p.inspiracao && p.inspiracao.link ? `<i>ref. ${esc(p.inspiracao.perfil || "")}</i>` : ""}
+      <b>${esc(p.tema || "Sem tema")}</b>${p.pilar || p.funil ? `<em class="pc-tag">${esc([p.pilar, p.funil].filter(Boolean).join(" · "))}</em>` : ""}${p.inspiracao && p.inspiracao.link ? `<i>ref. ${esc(p.inspiracao.perfil || "")}</i>` : ""}
       <span>${esc(p.horario || "")}${p.horario ? " · " : ""}${esc(p.status === "Ideia" ? "ideia" : p.status === "Roteirizado" ? "roteiro" : p.status.toLowerCase())}${ok ? " ✓" : ""}</span>
     </button>`;
   }
@@ -287,7 +415,11 @@
     const doMes = st.posts;
     const formatos = new Set(doMes.map((p) => p.formato).filter(Boolean)).size;
     const rot = doMes.filter((p) => p.status !== "Ideia").length;
-    $("#pc-numeros", sec).innerHTML = `<div><b>${doMes.length}</b><span>posts no mês</span></div><div><b>${formatos}</b><span>formatos em teste</span></div><div><b>${rot} de ${doMes.length}</b><span>roteirizados</span></div>`;
+    const nomesPil = (st.perfil.pilares || []).map((x) => x.nome);
+    const contaPil = nomesPil.map((n) => `${esc(n)} <b>${doMes.filter((p) => p.pilar === n).length}</b>`).join(" · ");
+    const contaFun = FUNIS.map((f) => `${f} <b>${doMes.filter((p) => p.funil === f).length}</b>`).join(" · ");
+    $("#pc-numeros", sec).innerHTML = `<div><b>${doMes.length}</b><span>posts no mês</span></div><div><b>${formatos}</b><span>formatos em teste</span></div><div><b>${rot} de ${doMes.length}</b><span>roteirizados</span></div>
+      <p class="pc-mix">Pilares: ${contaPil || "defina no seu perfil"}<br>Funil: ${contaFun}</p>`;
     const semanas = semanasDoMes(); st.semana = Math.min(st.semana, semanas.length - 1);
     const sem = semanas[st.semana], mesNum = Number(st.mes.split("-")[1]) - 1;
     $("#pc-semana-rot", sec).textContent = `Semana ${st.semana + 1} · ${sem[0].getDate()}/${pad(sem[0].getMonth() + 1)} a ${sem[6].getDate()}/${pad(sem[6].getMonth() + 1)}`;
@@ -318,11 +450,11 @@
     });
     const bt = $("#pc-gerar", sec);
     const livres = referenciasLivres().length;
-    bt.disabled = st.gerando; bt.innerHTML = st.gerando ? "Montando a grade…" : livres ? `${ic.brilho}Montar a grade (${Math.min(livres, 18)} ideia${livres === 1 ? "" : "s"})` : `${ic.brilho}Criar ideias do mês`;
-    $("#pc-qtd", sec).hidden = Boolean(livres);
-    $("#pc-gerar-ajuda", sec).textContent = livres
-      ? `Para cada post das suas pastas "Gravar em ${MESES[Number(st.mes.split("-")[1]) - 1]}" e "Produzir vídeos assim" eu crio uma ideia com o link da referência e o roteiro pronto para atrair marca (spec ad ou vitrine, hook, desenvolvimento com direção de cena, CTA, legenda com hashtags), pelo método da Lara e sem copiar as falas. Cada uma entra num dia livre.`
-      : "Uso o método da Lara e a lógica do spec ad (o vídeo que uma marca postaria como anúncio) para criar ideias com roteiro pronto: hook, desenvolvimento com direção de cena, CTA e legenda com hashtags. Quando os posts das suas pastas chegarem, cada ideia sai de um post, com o link da referência.";
+    const espacos = planejarSlots($("#pc-qtd", sec).value).length;
+    bt.disabled = st.gerando; bt.innerHTML = st.gerando ? `Montando a grade… ${esc(st.progresso || "")}` : espacos ? `${ic.brilho}Gerar ${espacos} post${espacos === 1 ? "" : "s"}` : `${ic.brilho}Grade cheia`;
+    const r = st.perfil.ritmo || PERFIL_PADRAO.ritmo;
+    $("#pc-gerar-ajuda", sec).textContent = `No seu ritmo (${r.porSemana} por semana, ${(r.dias || []).map((d) => DIAS[d]).join(", ")}), cada espaço livre ganha um pilar em rodízio, o funil da semana e o formato, e a IA escreve o roteiro no seu tom pelo método da Lara (hook, desenvolvimento com direção de cena, CTA e legenda).${livres ? ` ${livres} post${livres === 1 ? "" : "s"} das suas pastas entram como referência, com o link, sem copiar as falas.` : ""}`;
+    pintarPerfil();
     pintarPastas();
     pintarIphone();
   }
@@ -414,6 +546,10 @@
           <label class="campo"><span>Formato</span><select name="formato">${opt(FORMATOS, p.formato)}</select></label>
           <label class="campo"><span>Status</span><select name="status">${opt(STATUS, p.status)}</select></label>
         </div>
+        <div class="pc-grade2">
+          <label class="campo"><span>Pilar</span><select name="pilar"><option value=""></option>${opt([...new Set([...(st.perfil.pilares || []).map((x) => x.nome), ...(p.pilar ? [p.pilar] : [])])], p.pilar)}</select></label>
+          ${p.id ? `<div class="campo"><span>Não gostou? Refazer com ajuste</span><div class="pc-linha"><input class="entrada" id="pc-ajuste" placeholder="Ex.: mais leve, troca por produto de casa"><button class="btn" type="button" data-refazer>Refazer</button></div></div>` : ""}
+        </div>
         <div class="pc-grade3">
           <label class="campo"><span>Tipo de roteiro</span><select name="tipo_roteiro"><option value=""></option>${opt(ROTEIROS, p.tipo_roteiro)}</select></label>
           <label class="campo"><span>Tipo de UGC</span><select name="tipo_ugc"><option value=""></option>${opt(tipos, p.tipo_ugc)}</select></label>
@@ -438,6 +574,12 @@
     $("[data-salvar]", dlg).addEventListener("click", async () => {
       try { const o = ler(); if (o.data && !o.data.startsWith(st.mes)) { o.mes = o.data.slice(0, 7); } await salvar(o); if (o.mes && o.mes !== st.mes) st.posts = st.posts.filter((x) => x.mes === st.mes || !x.mes); dlg.close(); if (o.data) st.semana = semanaDe(o.data); pintar(); toast("Post salvo."); }
       catch (e) { toast("Não consegui salvar: " + e.message, true); }
+    });
+    const rf = $("[data-refazer]", dlg);
+    if (rf) rf.addEventListener("click", async () => {
+      rf.disabled = true; rf.textContent = "Refazendo…";
+      try { const o = ler(); await salvar({ ...o, id: p.id }); const novo = await refazer({ ...p, ...o }, $("#pc-ajuste", dlg).value.trim()); pintar(); abrir(novo); toast("Nova versão pronta."); }
+      catch (e) { toast(e.message, true); rf.disabled = false; rf.textContent = "Refazer"; }
     });
     const ex = $("[data-excluir]", dlg);
     if (ex) ex.addEventListener("click", async () => {
