@@ -74,9 +74,10 @@
     ]);
     if (a.error) { st.faltaTabela = true; st.posts = []; } else { st.faltaTabela = false; st.posts = a.data || []; }
     st.lab = b.error ? [] : (b.data || []);
-    const c = await banco().from("configuracoes").select("chave,valor").in("chave", ["ntfy_topico", "perfil_conteudo"]);
+    const c = await banco().from("configuracoes").select("chave,valor").in("chave", ["ntfy_topico", "perfil_conteudo", "temas_semana"]);
     const cfg = Object.fromEntries((c.data || []).map((x) => [x.chave, x.valor]));
     st.topico = cfg.ntfy_topico || "";
+    try { st.temas = JSON.parse(cfg.temas_semana || "{}") || {}; } catch (e) { st.temas = {}; }
     try { const p = JSON.parse(cfg.perfil_conteudo || ""); st.perfil = { ...PERFIL_PADRAO, ...p, ritmo: { ...PERFIL_PADRAO.ritmo, ...(p.ritmo || {}), funil: { ...PERFIL_PADRAO.ritmo.funil, ...((p.ritmo || {}).funil || {}) } } }; } catch (e) { st.perfil = PERFIL_PADRAO; }
   }
   async function salvar(post) {
@@ -368,8 +369,13 @@
         </div>
         <p class="pc-sub">abro, vejo o que gravar hoje e não perco tempo decidindo</p>
         <div class="pc-numeros" id="pc-numeros"></div>
-        <div class="pc-semana-nav"><button class="icone-btn" type="button" id="pc-ant" aria-label="Semana anterior">${ic.esq}</button><b id="pc-semana-rot"></b><button class="icone-btn" type="button" id="pc-prox" aria-label="Próxima semana">${ic.dir}</button></div>
-        <div class="pc-quadro" id="pc-quadro"></div>
+        <div class="pc-cal-cab">
+          <div><h3 class="pc-cal-tit">Calendário de <span id="pc-nsem"></span> semanas</h3>
+            <p class="pc-ajuda">Arraste um post para outro dia para mudar a data. No celular, abra o post e troque a data. O + em cada dia cria uma pauta para ele.</p></div>
+          <div class="pc-cal-nav"><button class="icone-btn" type="button" id="pc-ant" aria-label="Mês anterior">${ic.esq}</button><button class="icone-btn" type="button" id="pc-prox" aria-label="Próximo mês">${ic.dir}</button><button class="btn pc-btn-hoje" type="button" id="pc-hoje">Esta semana</button><span id="pc-semana-rot"></span></div>
+        </div>
+        <div class="pc-legenda" id="pc-legenda"></div>
+        <div class="pc-cal" id="pc-quadro"></div>
         <div class="pc-banco" id="pc-banco"></div>
       </div>
       <section class="pc-cartao pc-perfil" id="pc-perfil"></section>
@@ -387,8 +393,14 @@
     </div>`;
     const sel = $("#pc-mes", sec);
     sel.addEventListener("change", async () => { st.mes = sel.value; st.semana = 0; await carregar(); ajustarSemana(); pintar(); });
-    $("#pc-ant", sec).addEventListener("click", () => { st.semana = Math.max(0, st.semana - 1); pintar(); });
-    $("#pc-prox", sec).addEventListener("click", () => { st.semana = Math.min(semanasDoMes().length - 1, st.semana + 1); pintar(); });
+    const trocarMes = async (k) => { const [a, m] = st.mes.split("-").map(Number); const d = new Date(a, m - 1 + k, 1); st.mes = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; await carregar(); ajustarSemana(); pintar(); };
+    $("#pc-ant", sec).addEventListener("click", () => trocarMes(-1));
+    $("#pc-prox", sec).addEventListener("click", () => trocarMes(1));
+    $("#pc-hoje", sec).addEventListener("click", async () => {
+      const atual = `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`;
+      if (st.mes !== atual) { st.mes = atual; await carregar(); pintar(); }
+      ajustarSemana(); const alvo = $("#pc-sem-" + st.semana, sec); if (alvo) alvo.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
     $("#pc-qtd", sec).addEventListener("change", pintar);
     $("#pc-gerar", sec).addEventListener("click", () => gerar($("#pc-qtd", sec).value, $("#pc-notas", sec).value.trim()));
   }
@@ -397,13 +409,24 @@
     st.semana = a === hoje.getFullYear() && m === hoje.getMonth() + 1 ? semanaDe(iso(hoje)) : 0;
   }
 
+  // cor do cartão pelo pilar (na paleta dela); Stories aparecem como texto no dia, como na referência
+  const CORES_PIL = 6;
+  const indicePilar = (nome) => { const i = (st.perfil.pilares || []).findIndex((x) => x.nome === nome); return i < 0 ? -1 : i % CORES_PIL; };
+  const funilIc = '<svg class="traco pc-funil" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M7 10h10M10 15h4M11.5 19.5h1"/></svg>';
   function cartaoPost(p) {
-    const ok = p.status !== "Ideia";
-    return `<button type="button" class="pc-post f-${esc(semAcento(p.formato || "reels"))}" data-id="${p.id}">
-      <small>${esc((p.formato || "Reels").toUpperCase())}${p.tipo_roteiro && p.tipo_roteiro !== "Stories de bastidor" ? " · " + esc(p.tipo_roteiro === "Spec ad" ? "SPEC AD" : "VITRINE") : ""}</small>
-      <b>${esc(p.tema || "Sem tema")}</b>${p.pilar || p.funil ? `<em class="pc-tag">${esc([p.pilar, p.funil].filter(Boolean).join(" · "))}</em>` : ""}${p.inspiracao && p.inspiracao.link ? `<i>ref. ${esc(p.inspiracao.perfil || "")}</i>` : ""}
-      <span>${esc(p.horario || "")}${p.horario ? " · " : ""}${esc(p.status === "Ideia" ? "ideia" : p.status === "Roteirizado" ? "roteiro" : p.status.toLowerCase())}${ok ? " ✓" : ""}</span>
+    const status = p.status === "Ideia" ? "ideia" : p.status === "Roteirizado" ? "roteiro ✓" : String(p.status || "").toLowerCase() + " ✓";
+    if ((p.formato || "") === "Stories") return `<button type="button" class="pc-story" data-id="${p.id}"><b>Stories:</b> ${esc(p.tema || "sem tema")}<span>${esc(status)}</span></button>`;
+    const i = indicePilar(p.pilar);
+    return `<button type="button" class="pc-post pil-${i < 0 ? "x" : i}" data-id="${p.id}" title="${esc([p.pilar, p.tipo_roteiro].filter(Boolean).join(" · "))}">
+      <small>${funilIc}${esc([(p.funil || "").toUpperCase(), (p.formato || "Reels").toUpperCase()].filter(Boolean).join(" · "))}</small>
+      <b>${esc(p.tema || "Sem tema")}</b>
+      <span>${esc(p.horario || "")}${p.horario ? " · " : ""}${esc(status)}${p.tipo_roteiro === "Spec ad" ? " · spec ad" : p.tipo_roteiro === "Vitrine para marca" ? " · vitrine" : ""}</span>
     </button>`;
+  }
+  async function salvarTema(seg, texto) {
+    st.temas = { ...(st.temas || {}) }; if (texto) st.temas[seg] = texto; else delete st.temas[seg];
+    const { error } = await banco().from("configuracoes").upsert({ chave: "temas_semana", valor: JSON.stringify(st.temas), updated_at: new Date().toISOString() }, { onConflict: "chave" });
+    if (error) toast(error.message, true);
   }
 
   function pintar() {
@@ -421,23 +444,38 @@
     $("#pc-numeros", sec).innerHTML = `<div><b>${doMes.length}</b><span>posts no mês</span></div><div><b>${formatos}</b><span>formatos em teste</span></div><div><b>${rot} de ${doMes.length}</b><span>roteirizados</span></div>
       <p class="pc-mix">Pilares: ${contaPil || "defina no seu perfil"}<br>Funil: ${contaFun}</p>`;
     const semanas = semanasDoMes(); st.semana = Math.min(st.semana, semanas.length - 1);
-    const sem = semanas[st.semana], mesNum = Number(st.mes.split("-")[1]) - 1;
-    $("#pc-semana-rot", sec).textContent = `Semana ${st.semana + 1} · ${sem[0].getDate()}/${pad(sem[0].getMonth() + 1)} a ${sem[6].getDate()}/${pad(sem[6].getMonth() + 1)}`;
-    $("#pc-quadro", sec).innerHTML = sem.map((d, k) => {
-      const s = iso(d), fora = d.getMonth() !== mesNum, eHoje = s === iso(hoje);
-      const lista = doMes.filter((p) => p.data === s);
-      return `<div class="pc-dia${fora ? " fora" : ""}${eHoje ? " hoje" : ""}" data-dia="${s}">
-        <div class="pc-dia-cab"><span>${DIAS[k]}</span><small>${d.getDate()}</small></div>
-        ${lista.map(cartaoPost).join("")}
-        ${fora ? "" : `<button type="button" class="pc-add" data-novo="${s}" aria-label="Novo post">${ic.mais}</button>`}
-      </div>`;
+    const mesNum = Number(st.mes.split("-")[1]) - 1, br = (d) => `${d.getDate()}/${pad(d.getMonth() + 1)}`;
+    $("#pc-nsem", sec).textContent = semanas.length;
+    $("#pc-semana-rot", sec).textContent = `${br(semanas[0][0])} a ${br(semanas[semanas.length - 1][6])}`;
+    $("#pc-legenda", sec).innerHTML = (st.perfil.pilares || []).map((x, i) => `<span><i class="pil-${i % CORES_PIL}"></i>${esc(x.nome)}</span>`).join("") + `<span><i class="pil-st"></i>Stories (texto no dia)</span>`;
+    $("#pc-quadro", sec).innerHTML = semanas.map((sem, n) => {
+      const seg = iso(sem[0]), daSemana = doMes.filter((p) => p.data && p.data >= seg && p.data <= iso(sem[6]));
+      const fun = FUNIS.map((f) => `<span class="pc-fun" title="${f}">${funilIc}${f} ${daSemana.filter((p) => p.funil === f).length}</span>`).join("");
+      const tema = (st.temas || {})[seg];
+      return `<section class="pc-sem${sem.some((d) => iso(d) === iso(hoje)) ? " atual" : ""}" id="pc-sem-${n}">
+        <div class="pc-sem-cab"><b>Semana ${n + 1}</b><small>${br(sem[0])} a ${br(sem[6])}</small><span class="pc-chip">${daSemana.length} POST${daSemana.length === 1 ? "" : "S"}</span>${fun}
+          <button type="button" class="pc-tema${tema ? " tem" : ""}" data-tema="${seg}" title="Tema da semana (toque para mudar)">${tema ? esc(tema) : "+ tema da semana"}</button></div>
+        <div class="pc-quadro">${sem.map((d, k) => {
+          const s2 = iso(d), fora = d.getMonth() !== mesNum, eHoje = s2 === iso(hoje);
+          const lista = doMes.filter((p) => p.data === s2);
+          return `<div class="pc-dia${fora ? " fora" : ""}${eHoje ? " hoje" : ""}" data-dia="${s2}">
+            <div class="pc-dia-cab"><span>${DIAS[k]}</span><b>${d.getDate()}</b>${fora ? "" : `<button type="button" class="pc-add" data-novo="${s2}" aria-label="Novo post em ${d.getDate()}/${pad(d.getMonth() + 1)}">${ic.mais}</button>`}</div>
+            ${lista.map(cartaoPost).join("")}
+          </div>`;
+        }).join("")}</div>
+      </section>`;
     }).join("");
+    $$("[data-tema]", sec).forEach((b) => b.addEventListener("click", async () => {
+      const atual = (st.temas || {})[b.dataset.tema] || "";
+      const novo = prompt("Tema desta semana (ex.: Black Friday para marcas). Deixe vazio para tirar.", atual);
+      if (novo === null) return; await salvarTema(b.dataset.tema, novo.trim()); pintar();
+    }));
     const semData = doMes.filter((p) => !p.data);
     $("#pc-banco", sec).innerHTML = semData.length ? `<div class="pc-banco-cab">Banco de ideias <small>${semData.length} sem dia</small></div><div class="pc-banco-lista">${semData.map(cartaoPost).join("")}</div>` : "";
     $$("[data-id]", sec).forEach((b) => b.addEventListener("click", () => abrir(st.posts.find((p) => String(p.id) === b.dataset.id))));
     $$("[data-novo]", sec).forEach((b) => b.addEventListener("click", () => abrir({ data: b.dataset.novo, horario: "12h", formato: "Reels", status: "Ideia", funil: "Topo" })));
     // arrastar um post para outro dia
-    $$(".pc-post", sec).forEach((b) => { b.draggable = true; b.addEventListener("dragstart", (e) => e.dataTransfer.setData("text/plain", b.dataset.id)); });
+    $$(".pc-post, .pc-story", sec).forEach((b) => { b.draggable = true; b.addEventListener("dragstart", (e) => e.dataTransfer.setData("text/plain", b.dataset.id)); });
     $$(".pc-dia", sec).forEach((col) => {
       col.addEventListener("dragover", (e) => { e.preventDefault(); col.classList.add("alvo"); });
       col.addEventListener("dragleave", () => col.classList.remove("alvo"));
