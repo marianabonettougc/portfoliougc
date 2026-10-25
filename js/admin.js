@@ -255,25 +255,45 @@
   const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Meus roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
     prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Meus roteiros", central: "Referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar a partir de referência",
     meusroteiros: "Referências", modelos: "Modelos", biblioteca: "Referências",
-    financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Transcrever vídeo", laboratorio: "Criatividade: Laboratório criativo", editorial: "Criatividade: Biblioteca editorial", edicao: "Criatividade: Edição de vídeos", planejar: "Criatividade: Painel de conteúdo", notificacoes: "Notificações no celular" };
+    financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Referências: transcrever e analisar", laboratorio: "Referências: meus salvos", editorial: "Referências: perfis que eu acompanho", edicao: "Edição de vídeos", planejar: "Painel de conteúdo", notificacoes: "Configurações: notificações no celular" };
   // Abas do painel que são páginas do aplicativo Gestão UGC (aba do painel: página do aplicativo)
   const PAGINAS_APP = { dashboard: "dashboard", calendario: "planner", campanhas: "jobs", prospeccao: "prospeccao", followups: "followups",
     candidaturas: "candidaturas", trafego: "trafego", quadro: "roteiros", financeiro: "financeiro", 
     tiktokshop: "tiktokshop", config: "config", financeirocpf: "financeirocpf" };
+  // Áreas com partes (out/2026, pedido da Mari para tirar o que era repetido do menu): cada área é um item só
+  // no menu e as partes viram abas no topo da página (#sub-abas). "junto" = abas que acendem outra parte.
+  const AREAS = [
+    { menu: "portfolio", partes: [["portfolio", "Portfólio"], ["checklist", "Checklist do portfólio"]] },
+    { menu: "central", partes: [["central", "Vídeos transcritos"], ["transcritos", "Transcrever e analisar"], ["laboratorio", "Meus salvos do Instagram"], ["editorial", "Perfis que eu acompanho"]], junto: { analise: "transcritos" } },
+    { menu: "config", partes: [["config", "Configurações gerais"], ["notificacoes", "Notificações no celular"]] },
+  ];
+  const areaDe = (nome) => AREAS.find((a) => a.partes.some(([k]) => k === nome) || (a.junto && a.junto[nome]));
+  function pintarSubAbas(nome) {
+    const nav = $("#sub-abas"), area = areaDe(nome);
+    if (!area) { nav.hidden = true; nav.innerHTML = ""; return; }
+    const atual = (area.junto && area.junto[nome]) || nome;
+    nav.hidden = false;
+    nav.innerHTML = area.partes.map(([k, t]) => `<button type="button" class="sub-aba${k === atual ? " ativa" : ""}" data-sub="${k}" aria-current="${k === atual ? "page" : "false"}">${esc(t)}</button>`).join("");
+    nav.querySelectorAll("[data-sub]").forEach((b) => b.addEventListener("click", () => mostrarAba(b.dataset.sub)));
+  }
   let abaAtual = "portfolio";
   function mostrarAba(nome) {
     if (nome === "gestao") nome = "dashboard"; // a antiga aba Gestão UGC virou várias abas
     if (nome === "performance") nome = "financeiro"; // Performance agora fica dentro de Financeiro CNPJ: geral
     if (nome === "transcricao") nome = "transcritos"; // a Transcrição antiga foi trocada pela nova (js/roteiros-supadata.js)
     if (nome === "roteiros") nome = "quadro"; // o grupo Roteiros abre Meus roteiros (o Quadro de roteiros)
+    if (nome === "calendario") nome = "planejar"; // o Planner foi unido ao Painel de conteúdo (datas das publis aparecem lá)
+    if (nome === "financeirocpf") { window.open("/financeiro/", "_blank", "noopener"); nome = abaAtual && abaAtual !== "financeirocpf" ? abaAtual : "dashboard"; } // Financeiro CPF agora é o app de Finanças
     if (!TITULOS[nome]) nome = "portfolio";
     abaAtual = nome;
     // Planner (antigo Calendário) e UGC's & Publis (antiga Campanhas) são páginas do aplicativo Gestão UGC
     const paginaApp = PAGINAS_APP[nome] || "";
     const secao = paginaApp ? "gestao" : VISTAS_ROTEIRO[nome] ? "roteiros" : nome;
     $$(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + secao; });
-    $$(".menu-item").forEach((b) => { b.classList.toggle("ativo", b.dataset.aba === nome); b.setAttribute("aria-current", b.dataset.aba === nome ? "page" : "false"); });
-    const botao = $(`.menu-item[data-aba="${nome}"]`);
+    const noMenu = (areaDe(nome) || {}).menu || nome;
+    $$(".menu-item[data-aba]").forEach((b) => { b.classList.toggle("ativo", b.dataset.aba === noMenu); b.setAttribute("aria-current", b.dataset.aba === noMenu ? "page" : "false"); });
+    pintarSubAbas(nome);
+    const botao = $(`.menu-item[data-aba="${noMenu}"]`);
     if (botao) abrirSecao(botao.closest(".menu-secao"), true);
     abrirGrupo(botao && botao.dataset.pai ? botao.dataset.pai : (botao && botao.classList.contains("tem-sub") ? nome : ""));
     $("#titulo-aba").textContent = TITULOS[nome];
@@ -398,7 +418,7 @@
     $$(".menu-item.sub").forEach((b) => { b.hidden = b.dataset.pai !== pai; });
     $$(".menu-item.tem-sub").forEach((b) => { const aberto = b.dataset.aba === pai; b.classList.toggle("aberto", aberto); b.setAttribute("aria-expanded", aberto ? "true" : "false"); });
   }
-  $$(".menu-item").forEach((b) => b.addEventListener("click", () => {
+  $$(".menu-item[data-aba]").forEach((b) => b.addEventListener("click", () => {
     // clicar de novo no grupo que já está aberto fecha a lista
     if (b.classList.contains("tem-sub") && grupoAberto === b.dataset.aba) { abrirGrupo(""); return; }
     mostrarAba(b.dataset.aba);

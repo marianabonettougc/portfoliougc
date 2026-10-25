@@ -74,11 +74,31 @@
     ]);
     if (a.error) { st.faltaTabela = true; st.posts = []; } else { st.faltaTabela = false; st.posts = a.data || []; }
     st.lab = b.error ? [] : (b.data || []);
+    try {
+      const { data: ap } = await banco().from("app_state").select("data").limit(1).maybeSingle();
+      st.agenda = montarAgenda((ap && ap.data) || {});
+    } catch (e) { st.agenda = []; }
     const c = await banco().from("configuracoes").select("chave,valor").in("chave", ["ntfy_topico", "perfil_conteudo", "temas_semana"]);
     const cfg = Object.fromEntries((c.data || []).map((x) => [x.chave, x.valor]));
     st.topico = cfg.ntfy_topico || "";
     try { st.temas = JSON.parse(cfg.temas_semana || "{}") || {}; } catch (e) { st.temas = {}; }
     try { const p = JSON.parse(cfg.perfil_conteudo || ""); st.perfil = { ...PERFIL_PADRAO, ...p, ritmo: { ...PERFIL_PADRAO.ritmo, ...(p.ritmo || {}), funil: { ...PERFIL_PADRAO.ritmo.funil, ...((p.ritmo || {}).funil || {}) } } }; } catch (e) { st.perfil = PERFIL_PADRAO; }
+  }
+  // Planner unido ao Painel (out/2026): prazos das publis (UGC's & Publis) e itens do antigo Planner aparecem no calendário
+  function montarAgenda(est) {
+    const out = [], fim = /conclu|cancel|finaliz/i;
+    (est.jobs || []).forEach((j) => {
+      if (fim.test(j.status || "")) return;
+      const ent = j.entregaveis || {};
+      Object.values(ent).forEach((lista) => (Array.isArray(lista) ? lista : []).forEach((it) => {
+        if (it.concluido) return;
+        [["prazoRoteiro", "Roteiro"], ["prazoConteudo", "Entregar"], ["prazoPostagem", "Postar"]].forEach(([k, verbo]) => {
+          if (it[k]) out.push({ data: String(it[k]).slice(0, 10), tipo: "publi", rotulo: "PUBLI · " + String(j.marca || "").toUpperCase(), texto: `${verbo}: ${it.label || "entrega"}${Number(it.quantidade) > 1 ? " (" + it.quantidade + ")" : ""}`, ir: "campanhas" });
+        });
+      }));
+    });
+    (est.planner || []).forEach((it) => { if (it.data && !/entreg|feito|postado/i.test(it.status || "")) out.push({ data: String(it.data).slice(0, 10), tipo: "agenda", rotulo: "AGENDA" + (it.marca ? " · " + String(it.marca).toUpperCase() : ""), texto: it.titulo || "Compromisso", ir: it.roteiroId ? "quadro" : "" }); });
+    return out;
   }
   async function salvar(post) {
     const campos = { ...post }; delete campos.id; delete campos.criado_em;
@@ -378,6 +398,8 @@
         <div class="pc-cal" id="pc-quadro"></div>
         <div class="pc-banco" id="pc-banco"></div>
       </div>
+      <button type="button" class="btn pc-config-btn" id="pc-config-btn" aria-expanded="false"></button>
+      <div id="pc-config" hidden>
       <section class="pc-cartao pc-perfil" id="pc-perfil"></section>
       <div class="pc-baixo">
         <section class="pc-cartao pc-gerar">
@@ -390,7 +412,13 @@
         <section class="pc-cartao" id="pc-pastas"></section>
         <section class="pc-cartao pc-iphone" id="pc-iphone"></section>
       </div>
+      </div>
     </div>`;
+    const cfgBtn = $("#pc-config-btn", sec), cfgBox = $("#pc-config", sec);
+    const mostrarCfg = (abre) => { cfgBox.hidden = !abre; cfgBtn.setAttribute("aria-expanded", String(abre)); cfgBtn.innerHTML = abre ? `${ic.x}Fechar configurações` : `${ic.brilho}Configurar e gerar ideias <small>meu perfil, gerar a grade, pastas do Instagram e iPhone</small>`; try { localStorage.setItem("pc-config", abre ? "1" : "0"); } catch (e) { /* sem armazenamento */ } };
+    let abreCfg = false; try { abreCfg = localStorage.getItem("pc-config") === "1"; } catch (e) { /* sem armazenamento */ }
+    mostrarCfg(abreCfg);
+    cfgBtn.addEventListener("click", () => mostrarCfg(cfgBox.hidden));
     const sel = $("#pc-mes", sec);
     sel.addEventListener("change", async () => { st.mes = sel.value; st.semana = 0; await carregar(); ajustarSemana(); pintar(); });
     const trocarMes = async (k) => { const [a, m] = st.mes.split("-").map(Number); const d = new Date(a, m - 1 + k, 1); st.mes = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; await carregar(); ajustarSemana(); pintar(); };
@@ -447,7 +475,7 @@
     const mesNum = Number(st.mes.split("-")[1]) - 1, br = (d) => `${d.getDate()}/${pad(d.getMonth() + 1)}`;
     $("#pc-nsem", sec).textContent = semanas.length;
     $("#pc-semana-rot", sec).textContent = `${br(semanas[0][0])} a ${br(semanas[semanas.length - 1][6])}`;
-    $("#pc-legenda", sec).innerHTML = (st.perfil.pilares || []).map((x, i) => `<span><i class="pil-${i % CORES_PIL}"></i>${esc(x.nome)}</span>`).join("") + `<span><i class="pil-st"></i>Stories (texto no dia)</span>`;
+    $("#pc-legenda", sec).innerHTML = (st.perfil.pilares || []).map((x, i) => `<span><i class="pil-${i % CORES_PIL}"></i>${esc(x.nome)}</span>`).join("") + `<span><i class="pil-st"></i>Stories (texto no dia)</span><span><i class="pil-publi"></i>Publis e compromissos</span>`;
     $("#pc-quadro", sec).innerHTML = semanas.map((sem, n) => {
       const seg = iso(sem[0]), daSemana = doMes.filter((p) => p.data && p.data >= seg && p.data <= iso(sem[6]));
       const fun = FUNIS.map((f) => `<span class="pc-fun" title="${f}">${funilIc}${f} ${daSemana.filter((p) => p.funil === f).length}</span>`).join("");
@@ -461,10 +489,12 @@
           return `<div class="pc-dia${fora ? " fora" : ""}${eHoje ? " hoje" : ""}" data-dia="${s2}">
             <div class="pc-dia-cab"><span>${DIAS[k]}</span><b>${d.getDate()}</b>${fora ? "" : `<button type="button" class="pc-add" data-novo="${s2}" aria-label="Novo post em ${d.getDate()}/${pad(d.getMonth() + 1)}">${ic.mais}</button>`}</div>
             ${lista.map(cartaoPost).join("")}
+            ${(st.agenda || []).filter((x) => x.data === s2).map((x) => `<button type="button" class="pc-agenda ${x.tipo}" ${x.ir ? `data-ir="${x.ir}"` : ""} title="${x.ir === "campanhas" ? "Abrir em UGC's & Publis" : ""}"><small>${esc(x.rotulo)}</small>${esc(x.texto)}</button>`).join("")}
           </div>`;
         }).join("")}</div>
       </section>`;
     }).join("");
+    $$("[data-ir]", sec).forEach((b) => b.addEventListener("click", () => { location.hash = "#" + b.dataset.ir; }));
     $$("[data-tema]", sec).forEach((b) => b.addEventListener("click", async () => {
       const atual = (st.temas || {})[b.dataset.tema] || "";
       const novo = prompt("Tema desta semana (ex.: Black Friday para marcas). Deixe vazio para tirar.", atual);

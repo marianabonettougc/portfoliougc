@@ -670,7 +670,8 @@
       clearInterval(relogio);
       aviso("ok", "Pronto. Revisa, dá um nome e salva.");
       pintarTudo();
-      abrirEditor(pronto, null, "Pronto. Revisa, dá um nome e salva.");
+      st.analisarDepois = linha.id; // transcrever e analisar numa tela só: ao salvar, já abre a análise
+      abrirEditor(pronto, null, "Pronto. Revisa, dá um nome e salva. Em seguida eu abro a análise do vídeo.");
     } catch (err) {
       clearInterval(relogio);
       st.emAndamento.delete(linha.id);
@@ -761,6 +762,7 @@
         toast("Salvo ");
         aviso(null);
         pintarTudo();
+        if (!novo && st.analisarDepois === r.id) { st.analisarDepois = null; irPara({ ...r, ...linha }, "analise"); }
       } catch (e) { toast(e.message, true); }
       novoBtn.disabled = false;
     });
