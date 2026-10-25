@@ -21,6 +21,7 @@
 <link rel="preconnect" href="https://i.ytimg.com">
 <link rel="preconnect" href="https://www.google.com">
 <link rel="dns-prefetch" href="https://jnn-pa.googleapis.com">
+<link rel="preload" as="image" href="mari-bonetto-capa-hd.webp" fetchpriority="high">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Serif+Display:ital@0;1&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -575,8 +576,11 @@
   /* =========================================================
      ANIMAÇÃO DE ENTRADA
      ========================================================= */
-  .js .revelar{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}
+  /* out/2026: entrada rápida (antes cada parte ficava invisível até chegar bem dentro da tela e parecia atrasada).
+     Agora aparece um pouco ANTES de entrar na tela, em 0,3 s, e o que já está na tela abre sem animação. */
+  .js .revelar{opacity:0;transform:translateY(10px);transition:opacity .3s ease,transform .3s ease}
   .js .revelar.visivel{opacity:1;transform:none}
+  .js .revelar.ja{transition:none}
 
   /* =========================================================
      RESPONSIVO
@@ -2006,8 +2010,13 @@ if (reduzMovimento || !("IntersectionObserver" in window)) {
       ent.target.querySelectorAll("[data-metrica]").forEach(animarContador);
       observador.unobserve(ent.target);
     });
-  }, { threshold: 0.12, rootMargin: "0px 0px -30px 0px" });
-  revelaveis.forEach((el, i) => { el.style.transitionDelay = (i % 4) * 70 + "ms"; observador.observe(el); });
+  }, { threshold: 0, rootMargin: "0px 0px 35% 0px" });
+  // o que já está na tela (ou quase) aparece na hora, sem esperar o observador
+  const limite = innerHeight * 1.35;
+  revelaveis.forEach((el) => {
+    if (el.getBoundingClientRect().top < limite) { el.classList.add("ja", "visivel"); el.querySelectorAll("[data-metrica]").forEach(animarContador); }
+    else observador.observe(el);
+  });
 }
 
 // ---------- Formulários ----------
@@ -2141,6 +2150,8 @@ async function carregarVideosDoPainel() {
     if (error) { console.info("Vídeos do painel indisponíveis, usando a lista do site:", error.message); return; }
     const lista = (data || []).filter((v) => idDoYoutube(v.link));
     if (!lista.length) return;
+    const assinatura = (arr) => arr.map((v) => [v.link, v.titulo, v.marca, v.resultado ?? v.destaque, v.categoria ?? v.nicho].join("|")).join("\n");
+    if (assinatura(lista) === assinatura(destaques)) return; // igual ao que já está na tela: não pisca
     destaques.splice(0, destaques.length, ...lista.map((v) => ({
       link: v.link,
       capa: "",
