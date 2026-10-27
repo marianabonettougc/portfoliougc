@@ -1803,6 +1803,17 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     if (/^cor/.test(k)) return v ? `<span class="ed-ref-bola" style="background:${esc(v)}"></span>${esc(v)}` : "igual à legenda";
     return esc(String(v));
   }
+  // a IA às vezes devolve ajustes que ela não pediu: fica só o que tem a ver com o que ela marcou ou escreveu
+  const GRUPOS_REF = { legenda: ["estilo", "fonteLeg", "corLegenda", "porLegenda", "tamLeg", "maiusculas", "sombra", "altura", "ladoLeg", "legenda"], titulo: ["fonteTitulo", "corTitulo", "alturaTitulo", "titulo", "sonsTitulo"], ritmo: ["ritmo"], sons: ["sons", "efeitos", "sonsTitulo"], zoom: ["dinamismo", "zoomCortes", "zoomEnfase", "tremer", "flash"], transicao: ["transicao", "flash"] };
+  const PALAVRAS_REF = { legenda: /legenda|fonte|letra|\bcor(es)?\b|palavra|caption/i, titulo: /t[ií]tulo|gancho|texto de cima/i, ritmo: /corte|ritmo|r[aá]pid|pausa|respiro/i, sons: /som|sons|efeito|whoosh|woosh|pop|ding|m[uú]sica/i, zoom: /zoom|din[aâ]mic|tremid|flash|movimento/i, transicao: /transi[cç]/i };
+  function filtrarOpcRef(opc, focos, pedido) {
+    const grupos = new Set(focos || []);
+    Object.entries(PALAVRAS_REF).forEach(([g, re]) => { if (re.test(pedido || "")) grupos.add(g); });
+    const ok = grupos.size ? new Set([...grupos].flatMap((g) => GRUPOS_REF[g] || [])) : null;
+    const pedeSem = (re) => new RegExp("(sem|tira|tirar|nada de)\\s+(o |a |os |as )?" + re, "i").test(pedido || "");
+    const fora = { titulo: "t[ií]tulo", legenda: "legenda", efeitos: "(som|sons|efeito)" };
+    return Object.fromEntries(Object.entries(opc).filter(([k, v]) => (!ok || ok.has(k)) && !(v === false && fora[k] && !pedeSem(fora[k])) && st.opc[k] !== v));
+  }
   let refVideo = null;
   function trocarRefArquivo(arq) {
     if (!arq) return;
@@ -1884,8 +1895,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       etapaRef("Comparando com o que você quer copiar");
       const focos = st.refFocos.map((k) => (FOCOS_REF.find((f) => f[0] === k) || [k, k])[1]);
       const r = await chamarExtras({ acao: "referencia", pedido: st.refPedido, focos, medidas, fala: palavras.map((w) => w.w).join(" ").slice(0, 2500), quadros });
-      st.ref = { ...r, medidas, minis, nome: st.refArq.name, em: new Date().toISOString(), aplicado: false };
-      etapaRef(r.visao ? "Pronto! Olhei os quadros, medi o ritmo e ouvi os sons." : "Pronto! Medi o ritmo e ouvi os sons (a parte de olhar a imagem não respondeu agora).", "ok");
+      st.ref = { ...r, opc: filtrarOpcRef(r.opc || {}, st.refFocos, st.refPedido), medidas, minis, nome: st.refArq.name, em: new Date().toISOString(), aplicado: false };
+      etapaRef(r.visao ? "Pronto! Olhei os quadros, medi o ritmo e ouvi os sons." : "Pronto! Medi os cortes, o ritmo da fala e os sons. A imagem (legenda, fonte, cor) eu copio pelo que você escreveu: hoje não tem modelo que enxerga imagem na sua conta do Groq.", "ok");
       salvarDepois();
     } catch (e) {
       etapaRef(e.message || "Deu erro ao analisar.", "erro");
@@ -1932,7 +1943,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     st.refPedido = rascunho;
     const m = r && r.medidas;
     box.innerHTML = `<div class="ed-titulo-linha"><h3 class="ed-titulo">Vídeo de referência</h3><span class="ed-sub">${r ? "analisado" : "copie o jeito de outro vídeo"}</span></div>
-      <p class="ed-obs">Mande um Reels que você gostou e escreva o que quer copiar dele. Eu assisto, conto os cortes, ouço a fala e os sons, olho a legenda e o título e transformo isso em ajustes da sua edição. Copio o jeito, nunca o conteúdo.</p>
+      <p class="ed-obs">Mande um Reels que você gostou e escreva o que quer copiar dele. Eu assisto, conto os cortes, ouço a fala e os sons e transformo isso em ajustes da sua edição. Para legenda, fonte e cor, descreva o que você vê (ex.: \"legenda branca, uma palavra por vez, no meio\"). Copio o jeito, nunca o conteúdo.</p>
       <div class="ed-ref-topo">
         <label class="ed-soltar ed-ref-soltar" id="ed-ref-soltar">${st.refUrl ? `<video src="${st.refUrl}" muted playsinline controls preload="metadata"></video>` : `${ic.filme}<b>Enviar vídeo de referência</b><small>MP4 ou MOV. Baixe o Reels e mande aqui (até 3 min).</small>`}<input type="file" id="ed-ref-arq" accept="video/*,.mov,.mp4,.m4v,.webm" hidden></label>
         <div class="ed-ref-campos">
