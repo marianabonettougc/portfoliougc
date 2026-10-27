@@ -900,6 +900,14 @@ button.menu-grupo:hover{color:var(--texto)}
 .ed-clipe>div{flex:1;min-width:0;display:flex;flex-direction:column}
 .ed-clipe b{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ed-clipe small{font-size:11.5px;color:var(--suave)}
+.ed-clipe[draggable="true"]{cursor:grab}
+.ed-clipe.arrastando{opacity:.45}
+.ed-clipe.antes{box-shadow:inset 0 2px 0 var(--principal)}
+.ed-alca{width:16px;flex:none;color:var(--suave);display:grid;place-items:center}
+.ed-alca svg{width:16px;height:16px}
+.ed-capa-clipe{width:48px;height:48px;object-fit:cover;border-radius:6px;flex:none;background:var(--bege)}
+.ed-clipe .icone-btn[disabled]{opacity:.3}
+.ed-clipes-dica{font-size:11.5px;color:var(--suave);margin:2px 0 6px}
 .ed-num{width:22px;height:22px;border-radius:50%;background:var(--bege);color:var(--principal);display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
 .ed-botao-grande{justify-content:center;padding-top:11px;padding-bottom:11px}
 .ed-etapas{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:13px}

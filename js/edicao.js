@@ -329,6 +329,35 @@ IDEIA PARA DEPOIS
     try { v.muted = true; await v.play(); v.pause(); v.currentTime = 0; } catch (e) { /* segue: desenha quando tocar */ }
     v.muted = false;
   }
+  // quadrinho do clipe para ela reconhecer a cena na lista
+  function miniaturaDoClipe(v) {
+    try {
+      if (!v.videoWidth) return null;
+      const w = 96, h = Math.round(w * v.videoHeight / v.videoWidth), cv = document.createElement("canvas");
+      cv.width = w; cv.height = h; cv.getContext("2d").drawImage(v, 0, 0, w, h);
+      return cv.toDataURL("image/jpeg", 0.7);
+    } catch (e) { return null; }
+  }
+  // trocar a ordem das cenas: a transcrição de cada clipe fica, só a montagem é refeita
+  function reordenarClipes(novaOrdem) {
+    st.clipes = novaOrdem;
+    let off = 0; st.clipes.forEach((c) => { c.offset = off; off += c.dur; });
+    st.segs = []; st.plano = null; st.editLeg = {}; st.t = 0;
+    pintar(); salvarDepois();
+    toast("Ordem das cenas trocada. Toque em Editar para montar de novo (não precisa ouvir os clipes outra vez).");
+  }
+  function moverClipe(id, passo) {
+    const i = st.clipes.findIndex((x) => x.id === id), j = i + passo;
+    if (i < 0 || j < 0 || j >= st.clipes.length) return;
+    const nova = st.clipes.slice(); [nova[i], nova[j]] = [nova[j], nova[i]]; reordenarClipes(nova);
+  }
+  function soltarClipe(id, antesDe) {
+    const c = st.clipes.find((x) => x.id === id); if (!c || id === antesDe) return;
+    const nova = st.clipes.filter((x) => x !== c), k = antesDe ? nova.findIndex((x) => x.id === antesDe) : -1;
+    if (k < 0) nova.push(c); else nova.splice(k, 0, c);
+    if (nova.every((x, n) => x === st.clipes[n])) return;
+    reordenarClipes(nova);
+  }
   async function adicionarClipes(arquivos) {
     const pend = st.pendentes;
     for (const a of arquivos) {
@@ -337,6 +366,7 @@ IDEIA PARA DEPOIS
         const el = await carregarVideo(a), clipe = { id: uid(), nome: a.name, arquivo: a, el, dur: el.duration || 0, w: el.videoWidth, h: el.videoHeight, palavras: null };
         // abrindo um projeto: o arquivo certo recupera a transcrição salva
         if (pend) { const i = pend.findIndex((x) => !x.usado && (x.nome === a.name || Math.abs((x.dur || 0) - clipe.dur) < 0.25)); if (i >= 0) { pend[i].usado = true; clipe.palavras = pend[i].palavras && pend[i].palavras.length ? pend[i].palavras : null; clipe.ordem = i; } }
+        clipe.capa = miniaturaDoClipe(el);
         st.clipes.push(clipe);
       } catch (e) { toast(e.message, true); }
     }
@@ -1305,6 +1335,9 @@ IDEIA PARA DEPOIS
     baixar: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/></svg>',
     mais: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     x: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    cima: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+    baixo: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>',
+    alca: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/></svg>',
     som: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h3l5 4V6L7 10z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>',
   };
 
@@ -1486,11 +1519,48 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     sel.innerHTML = `<option value="">Puxar de um post do Painel de conteúdo…</option>` + st.posts.map((p) => `<option value="${p.id}">${p.data ? p.data.slice(8, 10) + "/" + p.data.slice(5, 7) + " · " : ""}${esc(p.formato || "")} · ${esc(String(p.tema || "Sem tema").slice(0, 60))}</option>`).join("");
   }
 
+  // arrastar cenas: mouse (arrastar e soltar do navegador) e dedo (segura 0,3 s e arrasta)
+  function ligarArrasteClipes(lista) {
+    if (!lista || st.trabalhando || st.exportando) return;
+    const linhas = () => [...lista.querySelectorAll(".ed-clipe")];
+    const alvoEm = (y) => linhas().find((el) => { const r = el.getBoundingClientRect(); return y < r.top + r.height / 2; });
+    let arrastando = null;
+    lista.querySelectorAll(".ed-clipe").forEach((el) => {
+      el.addEventListener("dragstart", (e) => { arrastando = el.dataset.clipe; el.classList.add("arrastando"); try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", arrastando); } catch (er) { /* segue */ } });
+      el.addEventListener("dragend", () => { el.classList.remove("arrastando"); linhas().forEach((x) => x.classList.remove("antes")); arrastando = null; });
+      let timer = null, ativo = false;
+      el.addEventListener("touchstart", (e) => {
+        if (e.target.closest("button")) return;
+        timer = setTimeout(() => { ativo = true; arrastando = el.dataset.clipe; el.classList.add("arrastando"); if (navigator.vibrate) navigator.vibrate(15); }, 300);
+      }, { passive: true });
+      el.addEventListener("touchmove", (e) => {
+        if (!ativo) { clearTimeout(timer); return; }
+        e.preventDefault();
+        const alvo = alvoEm(e.touches[0].clientY); linhas().forEach((x) => x.classList.toggle("antes", x === alvo && x !== el));
+      }, { passive: false });
+      el.addEventListener("touchend", (e) => {
+        clearTimeout(timer); if (!ativo) return; ativo = false; el.classList.remove("arrastando");
+        const alvo = alvoEm(e.changedTouches[0].clientY); linhas().forEach((x) => x.classList.remove("antes"));
+        const id = arrastando; arrastando = null; soltarClipe(id, alvo ? alvo.dataset.clipe : null);
+      });
+    });
+    lista._arrastando = () => arrastando; lista._largar = () => { const id = arrastando; arrastando = null; return id; };
+    if (lista.dataset.ligada) return; lista.dataset.ligada = "1";
+    const linhasL = () => [...lista.querySelectorAll(".ed-clipe")];
+    const alvoL = (y) => linhasL().find((el) => { const r = el.getBoundingClientRect(); return y < r.top + r.height / 2; });
+    lista.addEventListener("dragover", (e) => { if (!lista._arrastando()) return; e.preventDefault(); const alvo = alvoL(e.clientY); linhasL().forEach((x) => x.classList.toggle("antes", x === alvo)); });
+    lista.addEventListener("drop", (e) => { if (!lista._arrastando()) return; e.preventDefault(); e.stopPropagation(); const alvo = alvoL(e.clientY); const id = lista._largar(); soltarClipe(id, alvo ? alvo.dataset.clipe : null); });
+  }
+
   function pintar() {
     const sec = document.getElementById("aba-" + ABA);
     if (!sec || !$("#ed-clipes", sec)) return;
-    $("#ed-clipes", sec).innerHTML = (st.pendentes ? `<div class="faixa ed-pendentes"><b>Projeto "${esc(st.projeto ? st.projeto.nome : "")}"</b>: escolha de novo ${st.pendentes.length > 1 ? "os vídeos" : "o vídeo"} deste projeto para a edição voltar como você deixou: ${st.pendentes.map((x) => `<span class="${x.usado ? "ok" : ""}">${esc(x.nome)}${x.usado ? " ✓" : ""}</span>`).join(", ")}.</div>` : "") + st.clipes.map((c, i) => `<div class="ed-clipe"><span class="ed-num">${i + 1}</span><div><b>${esc(c.nome)}</b><small>${tempo(c.dur)}${c.w ? ` · ${c.w}x${c.h}` : ""}${c.palavras ? ` · ${c.palavras.length} palavras ouvidas` : ""}</small></div>
+    $("#ed-clipes", sec).innerHTML = (st.pendentes ? `<div class="faixa ed-pendentes"><b>Projeto "${esc(st.projeto ? st.projeto.nome : "")}"</b>: escolha de novo ${st.pendentes.length > 1 ? "os vídeos" : "o vídeo"} deste projeto para a edição voltar como você deixou: ${st.pendentes.map((x) => `<span class="${x.usado ? "ok" : ""}">${esc(x.nome)}${x.usado ? " ✓" : ""}</span>`).join(", ")}.</div>` : "") + (st.clipes.length > 1 ? `<p class="ed-clipes-dica">Arraste a cena (ou use as setas) para trocar a ordem. O X tira a cena; para colocar outra, envie mais vídeos.</p>` : "") + st.clipes.map((c, i) => `<div class="ed-clipe" data-clipe="${c.id}" draggable="${st.trabalhando || st.exportando ? "false" : "true"}"><span class="ed-alca" aria-hidden="true">${ic.alca}</span><span class="ed-num">${i + 1}</span>${c.capa ? `<img class="ed-capa-clipe" src="${c.capa}" alt="">` : ""}<div><b>${esc(c.nome)}</b><small>${tempo(c.dur)}${c.w ? ` · ${c.w}x${c.h}` : ""}${c.palavras ? ` · ${c.palavras.length} palavras ouvidas` : ""}</small></div>
+      <button class="icone-btn" type="button" data-mover="${c.id}" data-passo="-1" aria-label="Subir cena" ${i === 0 || st.trabalhando || st.exportando ? "disabled" : ""}>${ic.cima}</button>
+      <button class="icone-btn" type="button" data-mover="${c.id}" data-passo="1" aria-label="Descer cena" ${i === st.clipes.length - 1 || st.trabalhando || st.exportando ? "disabled" : ""}>${ic.baixo}</button>
       <button class="icone-btn" type="button" data-tirar="${c.id}" aria-label="Tirar clipe" ${st.trabalhando || st.exportando ? "disabled" : ""}>${ic.x}</button></div>`).join("");
+    $$("[data-mover]", sec).forEach((b) => b.addEventListener("click", () => moverClipe(b.dataset.mover, +b.dataset.passo)));
+    ligarArrasteClipes($("#ed-clipes", sec));
     $$("[data-tirar]", sec).forEach((b) => b.addEventListener("click", () => {
       const c = st.clipes.find((x) => x.id === b.dataset.tirar); if (!c) return;
       c.el.remove(); URL.revokeObjectURL(c.el.src); st.clipes = st.clipes.filter((x) => x !== c); st.segs = []; st.plano = null; st.editLeg = {}; pintar();
