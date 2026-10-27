@@ -1524,3 +1524,10 @@ a.menu-item{text-decoration:none}
 .rr-wrap:has(.ed-tela.horiz){grid-template-columns:460px minmax(0,1fr)}
 @media (max-width:1200px){.rr-wrap:has(.ed-tela.horiz){grid-template-columns:380px minmax(0,1fr)}}
 @media (max-width:900px){.rr-wrap:has(.ed-tela.horiz){grid-template-columns:minmax(0,1fr)}}
+.ed-ref-rapido{margin:12px 0 2px;display:flex;flex-direction:column;gap:6px}
+.ed-ref-rapido .ed-rotulo small{font-weight:400;color:var(--suave);text-transform:none;letter-spacing:0}
+.ed-ref-rapido-linha{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ed-ref-rapido-nome{display:inline-flex;align-items:center;gap:6px;background:var(--bege);border-radius:12px;padding:6px 10px;font-size:12.5px}
+.ed-ref-rapido-nome small{color:var(--suave);margin-left:4px}
+.ed-ref-rapido-nome svg,.ed-ref-rapido-btn svg{width:15px;height:15px}
+.ed-ref-rapido-btn{cursor:pointer;display:inline-flex;align-items:center;gap:6px;border-style:dashed}

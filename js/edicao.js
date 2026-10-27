@@ -681,6 +681,13 @@ IDEIA PARA DEPOIS
   async function editar() {
     if (!st.clipes.length) { toast("Envie o vídeo bruto primeiro.", true); return; }
     if (st.trabalhando) return;
+    if (st.refArq && !st.ref && !st.refTrab) { toast("Primeiro vou analisar o vídeo de referência…"); try { await analisarReferencia(); } catch (e) { /* segue sem */ } }
+    if (st.ref && !st.ref.aplicado) {
+      const rf = st.ref; Object.assign(st.opc, rf.opc || {});
+      const regra = (rf.regras || []).length ? "Seguir a referência (" + (rf.nome || "vídeo de referência") + "): " + rf.regras.join("; ") : "";
+      if (regra && !st.pedidos.includes(regra)) { st.pedidos = (st.pedidos.trim() ? st.pedidos.trim() + "\n" : "") + regra; const pd = $("#ed-pedidos"); if (pd) pd.value = st.pedidos; }
+      rf.aplicado = true;
+    }
     st.trabalhando = true; st.etapas = []; st.correcoes = []; pintar();
     try { audio(); if (ac.state === "suspended") ac.resume(); } catch (e) { /* segue */ }
     try {
@@ -1484,6 +1491,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
               </details>
               <label class="ed-rotulo" for="ed-pedidos">O que você quer nesta edição</label>
               <textarea class="entrada" id="ed-pedidos" rows="3" placeholder="Ex.: comece direto na fala do produto; legenda maior; muitos efeitos de brilho; zoom quando eu mostrar o frasco; corte o final depois do CTA.">${esc(st.pedidos)}</textarea>
+              <div class="ed-ref-rapido" id="ed-ref-rapido"></div>
               <div class="ed-formato-esc" role="group" aria-label="Formato do vídeo"><span class="ed-rotulo">Formato do vídeo</span><button type="button" class="ed-fmt" data-formato="vertical">▯ Vertical 9:16</button><button type="button" class="ed-fmt" data-formato="horizontal">▭ Horizontal 16:9</button></div>
               <button class="btn btn-principal ed-botao-grande" type="button" id="ed-editar">${ic.brilho}Editar automático</button>
               <ol class="ed-etapas" id="ed-etapas"></ol>
@@ -1985,6 +1993,18 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const id = "meu-" + uid(); st.meusEstilos = [...st.meusEstilos, { id, nome, opc }];
     try { await salvarEstilos(); toast(`Salvei "${nome}" em Meus estilos.`); } catch (e) { st.meusEstilos = antes; toast("Não consegui salvar o estilo: " + e.message, true); }
   }
+  // campo de anexar referência direto na aba Vídeo (ela pediu): o vídeo é analisado e aplicado quando ela clica em Editar
+  function pintarRefRapido() {
+    const box = $("#ed-ref-rapido"); if (!box) return;
+    const nome = st.refArq ? st.refArq.name : st.ref ? (st.ref.nome || "referência analisada") : "";
+    box.innerHTML = `<span class="ed-rotulo">Vídeo de referência <small>(opcional: a edição copia o jeito dele)</small></span>
+      <div class="ed-ref-rapido-linha">${nome ? `<span class="ed-ref-rapido-nome">${ic.filme}<b>${esc(nome)}</b><small>${st.refTrab ? "analisando…" : st.ref ? (st.ref.aplicado ? "aplicada na edição" : "analisada, entra quando você editar") : "vou analisar quando você clicar em Editar"}</small></span>` : ""}
+        <label class="btn ed-ref-rapido-btn">${ic.mais || ""}${nome ? "Trocar referência" : "Anexar vídeo de referência"}<input type="file" accept="video/*,.mov,.mp4,.m4v,.webm" hidden id="ed-ref-rapido-arq"></label>
+        ${nome ? `<button type="button" class="login-link" id="ed-ref-rapido-ver">ver o que vou copiar</button><button type="button" class="login-link" id="ed-ref-rapido-tirar">tirar</button>` : ""}</div>`;
+    $("#ed-ref-rapido-arq", box).addEventListener("change", (e) => { const a = e.target.files && e.target.files[0]; if (a) { trocarRefArquivo(a); pintarRefRapido(); toast("Referência anexada. Quando você clicar em Editar, eu analiso e sigo o jeito dela."); } });
+    const ver = $("#ed-ref-rapido-ver", box); if (ver) ver.addEventListener("click", () => { st.aba = "referencia"; pintar(); });
+    const tirar = $("#ed-ref-rapido-tirar", box); if (tirar) tirar.addEventListener("click", () => { if (st.refUrl) URL.revokeObjectURL(st.refUrl); st.refArq = null; st.refUrl = ""; st.ref = null; st.refEtapas = []; pintarReferencia(true); pintarRefRapido(); salvarDepois(); });
+  }
   function pintarReferencia(forcar) {
     const box = $("#ed-referencia"); if (!box) return;
     if (!forcar && st.aba !== "referencia" && box.dataset.pintado) return;
@@ -2286,6 +2306,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     bt.disabled = st.trabalhando || st.exportando || !st.clipes.length || Boolean(st.pendentes);
     bt.innerHTML = st.trabalhando ? "Editando…" : st.pendentes ? `${ic.filme}Escolha de novo os vídeos deste projeto (no quadro acima) para editar` : !st.clipes.length ? `${ic.filme}Envie o vídeo bruto acima para editar` : `${ic.brilho}${st.plano ? "Editar de novo" : "Editar automático"}`;
     $$("[data-formato]", sec).forEach((b) => b.classList.toggle("on", (st.opc.formato || "vertical") === b.dataset.formato));
+    pintarRefRapido();
     prepararCanvas();
     $("#ed-vazio", sec).hidden = Boolean(st.segs.length);
     pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa(); pintarLinha(); pintarAbas(); pintarModo(); pintarOuvi(); pintarAjustar(); pintarPassos();
