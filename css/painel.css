@@ -1514,3 +1514,7 @@ a.menu-item{text-decoration:none}
 .ed-tela.horiz{aspect-ratio:16/9}
 .rr-player.horiz{max-width:560px}
 @media (max-width:900px){.rr-player.horiz{max-width:100%}}
+.ed-formato-esc{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+.ed-formato-esc .ed-rotulo{margin:0 6px 0 0}
+.ed-fmt{border:1px solid var(--linha-forte, rgba(61,43,32,.25));background:var(--cartao);border-radius:999px;padding:8px 16px;font-size:13px;cursor:pointer;color:var(--texto)}
+.ed-fmt.on{background:var(--principal);border-color:var(--principal);color:#fff;font-weight:600}

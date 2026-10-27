@@ -395,6 +395,10 @@ IDEIA PARA DEPOIS
         st.clipes.push(clipe);
       } catch (e) { toast(e.message, true); }
     }
+    if (st.clipes.length && st.clipes.every((c) => c.w > c.h) && !st.opc.formatoEscolhido && st.opc.formato !== "horizontal") {
+      st.opc.formato = "horizontal"; prepararCanvas();
+      toast("Seus clipes foram gravados deitados, então deixei o vídeo na horizontal (16:9). Dá para trocar em Formato do vídeo.");
+    }
     if (pend) {
       st.clipes.sort((x, y) => (x.ordem ?? 99) - (y.ordem ?? 99));
       if (pend.every((x) => x.usado)) {
@@ -527,13 +531,14 @@ IDEIA PARA DEPOIS
     }
     if (/(mais calmo|menos dinamic|sem dinamismo|mais lento|menos cortes|menos zoom|mais tranquilo)/.test(t)) { o.dinamismo = "calmo"; o.ritmo = "normal"; }
     // formato do vídeo
-    if (/horizontal|deitad|16 ?(:|x|por) ?9|paisagem|na horizontal|formato largo|widescreen/.test(t) && !/(nao|sem)[^.;!?]{0,12}horizontal/.test(t)) o.formato = "horizontal";
+    if (/horizontal|16 ?(:|x|por) ?9|paisagem|formato largo|widescreen|(video|formato|edicao|ele|tudo) (todo )?(deitado|na horizontal)/.test(t) && !/(nao|sem)[^.;!?]{0,12}horizontal/.test(t)) o.formato = "horizontal";
     else if (/\bvertical\b|em pe\b|9 ?(:|x|por) ?16|formato (de )?(reels|stories)/.test(t)) o.formato = "vertical";
     // relaxante: ritmo calmo, poucos sons e só os suaves, sem zoom, flash nem transição, com respiro nos cortes
     if (/relax|calm[oa]|tranquil|zen\b|sereno|clima leve|bem leve|devagar|mais suave|asmr|(efeitos?|sons?|transic\w*|cortes?|zooms?|video|edicao)[^.;!?]{0,20}\b(estao|esta|ta|tao|ficou|ficaram)\s+(muito\s+|bem\s+|tao\s+)?(rapid|acelerad|agitad|frenetic)|(rapid|acelerad|agitad)[a-z]* demais/.test(t) && !/(nao|sem)[^.;!?]{0,10}(relax|calm)/.test(t)) {
       Object.assign(o, { relaxante: true, sonsSuaves: true, dinamismo: "calmo", ritmo: "normal", sons: o.sons === "nenhum" ? "nenhum" : "poucos", zoomCortes: false, zoomEnfase: false, flash: false, tremer: false, transicao: "nenhuma", silencio: false });
     }
     if (o.dinamismo === "dinamico") { o.relaxante = false; o.sonsSuaves = false; }
+    if (o.formato) o.formatoEscolhido = true;
     if (/maiuscul/.test(t) && !/sem maiuscul|nao.{0,12}maiuscul/.test(t)) o.maiusculas = true;
     if (/minuscul/.test(t)) o.maiusculas = false;
     return o;
@@ -567,6 +572,8 @@ IDEIA PARA DEPOIS
   };
   // roteiro colado no campo de pedidos: se o texto tem cenas, texto na tela ou etapas, vale como roteiro
   const pareceRoteiro = (x) => /\b(cena\s*0?\d+|texto na tela|etapa\s*0?\d+|voice.?over|\bv\.?o\.?:)/i.test(x || "");
+  // as linhas de cena do roteiro não viram regra (ex.: "deitada na cama" não pode virar vídeo horizontal)
+  const pedidosSemRoteiro = () => pareceRoteiro(st.pedidos) ? st.pedidos.split(/\n+/).filter((l) => !pareceRoteiro(l) && l.trim().length < 160).join("\n") : st.pedidos;
   const roteiroUsado = () => st.roteiro.trim() || (pareceRoteiro(st.pedidos) ? st.pedidos.trim() : "");
   const palavrasBrutas = () => st.clipes.flatMap((c) => (c.palavras || []).map((w) => ({ w: w.w, s: +(w.s + c.offset).toFixed(2), e: +(w.e + c.offset).toFixed(2) })));
 
@@ -636,7 +643,7 @@ IDEIA PARA DEPOIS
       if (st.zooms.length !== antes.zo) mud.push(`zooms ${antes.zo} → ${st.zooms.length}`);
       if (st.titulo !== antes.tit) mud.push("título");
       if (JSON.stringify(st.plano.destaques || []) !== antes.dest) mud.push("palavras de destaque");
-      const nomesOpc = { estilo: "estilo da legenda", fonteLeg: "fonte", corLegenda: "cor da legenda", porLegenda: "palavras por legenda", tamLeg: "tamanho da legenda", altura: "altura da legenda", sombra: "sombra", estiloTitulo: "estilo do título", ritmo: "ritmo", sfxAuto: "sons automáticos", transicao: "transição", vol: "volume dos efeitos", maiusculas: "maiúsculas", cor: "cor do destaque", sonsTitulo: "som do título", legenda: "legenda", sons: "quantidade de efeitos", dinamismo: "dinamismo", vicios: "vícios de fala", vozForte: "volume da voz", efeitos: "efeitos sonoros", titulo: "título na tela", zoomCortes: "zoom nos cortes", zoomEnfase: "zoom na ênfase", chamativas: "palavras chamativas", flash: "flash", tremer: "tremidinha", silencio: "corte de silêncios", erros: "tomadas erradas", formato: "formato do vídeo", relaxante: "clima relaxante", sonsSuaves: "só sons suaves", ritmo: "ritmo" };
+      const nomesOpc = { estilo: "estilo da legenda", fonteLeg: "fonte", corLegenda: "cor da legenda", porLegenda: "palavras por legenda", tamLeg: "tamanho da legenda", altura: "altura da legenda", sombra: "sombra", estiloTitulo: "estilo do título", ritmo: "ritmo", sfxAuto: "sons automáticos", transicao: "transição", vol: "volume dos efeitos", maiusculas: "maiúsculas", cor: "cor do destaque", sonsTitulo: "som do título", legenda: "legenda", sons: "quantidade de efeitos", dinamismo: "dinamismo", vicios: "vícios de fala", vozForte: "volume da voz", efeitos: "efeitos sonoros", titulo: "título na tela", zoomCortes: "zoom nos cortes", zoomEnfase: "zoom na ênfase", chamativas: "palavras chamativas", flash: "flash", tremer: "tremidinha", silencio: "corte de silêncios", erros: "tomadas erradas", formato: "formato do vídeo", relaxante: "clima relaxante", sonsSuaves: "só sons suaves", formatoEscolhido: "formato do vídeo", ritmo: "ritmo" };
       Object.keys(r.opc || {}).forEach((k) => { if (antes.opc[k] !== st.opc[k] && !mud.includes(nomesOpc[k] || k)) mud.push(nomesOpc[k] || k); });
       const ultima = st.correcoes[st.correcoes.length - 1];
       ultima.mudou = mud;
@@ -717,7 +724,7 @@ IDEIA PARA DEPOIS
       }
       etapa("Montando a linha do tempo");
       // o que ela escreveu em "O que você quer nesta edição" vale com certeza
-      Object.assign(st.opc, (st.plano && st.plano.opc) || {}, (({ preEditado, ...x }) => x)(regrasDoPedido(st.pedidos)));
+      Object.assign(st.opc, (st.plano && st.plano.opc) || {}, (({ preEditado, ...x }) => x)(regrasDoPedido(pedidosSemRoteiro())));
       if (st.plano) delete st.plano.opc;
       ajustarVoz();
       montar();
@@ -725,7 +732,7 @@ IDEIA PARA DEPOIS
       if (ouvidas.length) etapa(`Ouvi o seu vídeo: ${ouvidas.length} palavras (veja abaixo em "O que eu ouvi").`, "ok");
       else if (st.plano && st.plano.sem_fala) etapa(`Montei pelo roteiro: ${(st.plano.textos || []).length} textos na tela em ${st.clipes.length} cena${st.clipes.length > 1 ? "s" : ""}. Se alguma cena ficou fora de ordem, arraste o clipe na lista e clique em Editar.`, "ok");
       else etapa("Não ouvi fala no vídeo.", "erro");
-      const reg = regrasDoPedido(st.pedidos);
+      const reg = regrasDoPedido(pedidosSemRoteiro());
       if (Object.keys(reg).length) etapa("Segui o que você pediu: " + descreverRegras(reg).join("; ") + ".", "ok");
       etapa("Pronto! Dá o play para ver a prévia.", "ok");
       st.aba = "cortes";
@@ -1476,6 +1483,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
               </details>
               <label class="ed-rotulo" for="ed-pedidos">O que você quer nesta edição</label>
               <textarea class="entrada" id="ed-pedidos" rows="3" placeholder="Ex.: comece direto na fala do produto; legenda maior; muitos efeitos de brilho; zoom quando eu mostrar o frasco; corte o final depois do CTA.">${esc(st.pedidos)}</textarea>
+              <div class="ed-formato-esc" role="group" aria-label="Formato do vídeo"><span class="ed-rotulo">Formato do vídeo</span><button type="button" class="ed-fmt" data-formato="vertical">▯ Vertical 9:16</button><button type="button" class="ed-fmt" data-formato="horizontal">▭ Horizontal 16:9</button></div>
               <button class="btn btn-principal ed-botao-grande" type="button" id="ed-editar">${ic.brilho}Editar automático</button>
               <ol class="ed-etapas" id="ed-etapas"></ol>
             </section>
@@ -1502,6 +1510,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     soltar.addEventListener("dragleave", () => soltar.classList.remove("arrastando"));
     soltar.addEventListener("drop", (e) => { e.preventDefault(); soltar.classList.remove("arrastando"); adicionarClipes([...e.dataTransfer.files]); });
     $("#ed-editar", sec).addEventListener("click", editar);
+    $$("[data-formato]", sec).forEach((b) => b.addEventListener("click", () => { st.opc.formato = b.dataset.formato; st.opc.formatoEscolhido = true; prepararCanvas(); if (st.segs.length) redesenhar(); pintar(); salvarDepois(); }));
     $("#ed-tema", sec).addEventListener("input", (e) => { st.tema = e.target.value; salvarDepois(); });
     $("#ed-pedidos", sec).addEventListener("input", (e) => { st.pedidos = e.target.value; salvarDepois(); });
     carregarProjetos();
@@ -2275,7 +2284,9 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     }));
     const bt = $("#ed-editar", sec);
     bt.disabled = st.trabalhando || st.exportando || !st.clipes.length || Boolean(st.pendentes);
-    bt.innerHTML = st.trabalhando ? "Editando…" : `${ic.brilho}${st.plano ? "Editar de novo" : "Editar automático"}`;
+    bt.innerHTML = st.trabalhando ? "Editando…" : st.pendentes ? `${ic.filme}Escolha de novo os vídeos deste projeto (no quadro acima) para editar` : !st.clipes.length ? `${ic.filme}Envie o vídeo bruto acima para editar` : `${ic.brilho}${st.plano ? "Editar de novo" : "Editar automático"}`;
+    $$("[data-formato]", sec).forEach((b) => b.classList.toggle("on", (st.opc.formato || "vertical") === b.dataset.formato));
+    prepararCanvas();
     $("#ed-vazio", sec).hidden = Boolean(st.segs.length);
     pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa(); pintarLinha(); pintarAbas(); pintarModo(); pintarOuvi(); pintarAjustar(); pintarPassos();
     if (st.aba === "estilos") pintarEstilos(); else if (st.aba === "efeitos") pintarEfeitos(); else if (st.aba === "referencia") pintarReferencia(); else if (st.aba === "carrossel") pintarCarrossel();
