@@ -10,6 +10,8 @@
 //   voice-over que tinha idealizado), a edição segue o roteiro: escolhe a tomada que bate
 //   com a fala escrita, usa o gancho do roteiro no título, tira b-roll e efeitos das
 //   direções de cena e devolve "roteiro_check" (bloco gravado, faltou ou mudou).
+// - Sem fala (vídeo mudo) + roteiro: { acao: "plano", palavras: [], roteiro, clipes:[{nome,de,ate,dur}] }
+//   monta a edição pelo roteiro: texto na tela por cena ("textos"), título, efeitos e zooms.
 // - JSON { acao: "corrigir", comentario, plano, opc, titulo, palavras, padrao, roteiro, historico }:
 //   ela comenta o que não gostou; volta o plano corrigido, os ajustes visuais que mudam
 //   (legenda, título, cor, efeitos), o que foi feito e uma regra para guardar no padrão.
@@ -61,13 +63,17 @@ function normalizar(a: any) {
     broll: lista(a.broll).map((x: any) => ({ t: num(x.t), ideia: txt(x.ideia, 200) })).filter((x: any) => x.ideia),
     musica: txt(a.musica, 200),
     dicas: lista(a.dicas).map((x: any) => txt(x, 200)).filter(Boolean).slice(0, 4),
+    textos: lista(a.textos).map((x: any) => ({ de: num(x.de), ate: num(x.ate), texto: txt(x.texto, 120) })).filter((x: any) => x.de != null && x.ate != null && x.ate > x.de && x.texto).slice(0, 40),
     roteiro_check: lista(a.roteiro_check).map((x: any) => ({ bloco: txt(x.bloco, 80), status: ["gravado", "faltou", "mudou"].includes(String(x.status).toLowerCase().trim()) ? String(x.status).toLowerCase().trim() : "gravado", t: num(x.t), obs: txt(x.obs, 220) })).filter((x: any) => x.bloco).slice(0, 20),
   };
 }
 
 async function plano(chave: string, c: any) {
   const palavras = (Array.isArray(c.palavras) ? c.palavras : []).slice(0, 4000);
-  if (!palavras.length) throw new Error("Não tem fala nesse vídeo para eu planejar a edição.");
+  if (!palavras.length) {
+    if (c.roteiro) return planoPeloRoteiro(chave, c);
+    throw new Error("Não tem fala nesse vídeo para eu planejar a edição.");
+  }
   const fala = palavras.map((p: any) => `[${Number(p.s).toFixed(1)}] ${p.w}`).join(" ");
   const pedido = `Você é videomaker e editor de Reels de uma criadora brasileira de UGC. Planeje a edição do vídeo bruto abaixo seguindo o PADRÃO DE EDIÇÃO dela.
 
@@ -109,6 +115,51 @@ Regras:
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(r.status === 429 ? "O limite grátis da IA deste minuto acabou. Espere um pouquinho e tente de novo." : "A IA não respondeu agora. Tente de novo.");
   return normalizar(lerJson(String(j.choices?.[0]?.message?.content || "")));
+}
+
+// vídeo SEM fala (gravado sem som, ou só cenas): a edição sai do roteiro. Cada clipe enviado é
+// uma cena, na ordem; a IA casa as cenas do roteiro com os clipes e devolve o texto na tela
+// (vira legenda no painel), título, cortes de sobra, zooms e efeitos no tempo de cada clipe.
+async function planoPeloRoteiro(chave: string, c: any) {
+  const clipes = (Array.isArray(c.clipes) ? c.clipes : []).slice(0, 40).map((x: any, i: number) => `Clipe ${i + 1} ("${txt(x.nome, 60)}"): de ${num(x.de) ?? 0} s até ${num(x.ate) ?? 0} s (${num(x.dur) ?? 0} s)`).join("\n");
+  const pedido = `Você é videomaker e editor de Reels de uma criadora brasileira de UGC. O vídeo bruto NÃO TEM FALA (foi gravado sem som ou é só cenas). Monte a edição a partir do ROTEIRO dela, seguindo o PADRÃO DE EDIÇÃO.
+
+PADRÃO DE EDIÇÃO:
+${txt(c.padrao, 5000)}
+
+${c.tema ? "TEMA / MARCA: " + txt(c.tema, 300) + "\n" : ""}ROTEIRO (cenas, falas, voice-over, texto na tela e direções):
+${txt(c.roteiro, 3500)}
+
+CLIPES ENVIADOS, NA ORDEM EM QUE ELA COLOCOU (tempo do vídeo bruto, clipes enfileirados; cada clipe normalmente é uma cena do roteiro, na ordem do roteiro):
+${clipes || "1 clipe só"}
+DURAÇÃO DO BRUTO: ${num(c.duracao) ?? "?"} s
+
+Responda SOMENTE um JSON:
+{"titulo":"título do gancho, condensado do gancho do roteiro, 3 a 6 palavras, sem emoji","titulo_destaque":"a palavra do título que vai na fonte de destaque",
+"textos":[{"de":0.0,"ate":0.0,"texto":"texto curto que aparece na tela nesse trecho"}],
+"remover":[{"de":0.0,"ate":0.0,"motivo":"sobra da cena"}],
+"zooms":[{"t":0.0}],
+"efeitos":[{"t":0.0,"tipo":"woosh | suave | pop | click | shutter | typing | riser | hit | ding | cristal | brilho | spray | mensagem | relogio","por_que":"curto"}],
+"broll":[{"t":0.0,"ideia":"do roteiro: o que essa cena mostra"}],
+"musica":"clima de música sugerido, 1 frase",
+"dicas":["até 4 dicas curtas"],
+"roteiro_check":[{"bloco":"nome curto da cena do roteiro","status":"gravado | faltou | mudou","t":0.0,"obs":"qual clipe é essa cena, ou o que faltou gravar"}]}
+
+Regras:
+- Case cada cena do roteiro com um clipe, na ordem. Se tem mais cenas que clipes, junte cenas no mesmo clipe dividindo o tempo dele; se tem mais clipes que cenas, a cena continua no clipe seguinte. Cena sem clipe = "faltou" no roteiro_check.
+- "textos": é o que vai escrito na tela (o vídeo não tem fala). Use o TEXTO NA TELA do roteiro; se a cena não tem, use a fala ou o voice-over dela condensado. Frases curtas (até 8 palavras), cada uma dentro do clipe da cena, de 1,5 a 4 s, sem se sobrepor, cobrindo o vídeo do começo ao fim. A primeira começa depois de 2,8 s (o título ocupa o começo). Primeira pessoa, sem emoji, sem travessão.
+- "remover": só se um clipe for bem mais longo que a cena pede (tire a sobra do fim do clipe, nunca o meio). Na dúvida, não remova nada.
+- "zooms": 1 a cada 3 a 5 s; "efeitos": woosh ou suave em cada troca de clipe, pop quando entra texto na tela, cristal quando aparece o produto, riser/hit no gancho, spray/brilho quando a direção de cena pedir. Ela gosta de vídeo dinâmico.
+- Todos os tempos em segundos do bruto, 1 casa decimal, dentro de 0 e a duração.
+- Português do Brasil. Nunca use travessão.`;
+  const r = await fetch(`${GROQ}/chat/completions`, {
+    method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.3, max_tokens: 4500, reasoning_effort: "low", response_format: { type: "json_object" }, messages: [{ role: "user", content: pedido }] }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(r.status === 429 ? "O limite grátis da IA deste minuto acabou. Espere um pouquinho e tente de novo." : "A IA não respondeu agora. Tente de novo.");
+  const p = normalizar(lerJson(String(j.choices?.[0]?.message?.content || "")));
+  return { ...p, sem_fala: true, destaques: [] };
 }
 
 // correção: ela comenta o que não gostou e a IA devolve o plano corrigido, os ajustes visuais
@@ -159,8 +210,7 @@ async function corrigir(chave: string, c: any) {
 PADRÃO DE EDIÇÃO DELA (tirado das referências que ela mandou):
 ${txt(c.padrao, 4000)}
 
-${c.roteiro ? "ROTEIRO DELA:\n" + txt(c.roteiro, 2000) + "\n\n" : ""}FALA DO VÍDEO BRUTO (segundo em que cada palavra começa):
-${fala}
+${c.roteiro ? "ROTEIRO DELA:\n" + txt(c.roteiro, 2000) + "\n\n" : ""}${fala ? "FALA DO VÍDEO BRUTO (segundo em que cada palavra começa):\n" + fala : "O VÍDEO NÃO TEM FALA: o que aparece escrito na tela está em \"textos\" do plano (de, ate, texto). Para mudar o texto na tela, mexa em \"textos\"."}
 
 PLANO ATUAL DA EDIÇÃO:
 ${JSON.stringify(atual).slice(0, 6000)}
@@ -189,6 +239,7 @@ Se ela pedir para corrigir o TEXTO de uma legenda, explique na resposta que ela 
   const novo = normalizar({ ...(c.plano || {}), titulo: c.titulo, ...a });
   const opc: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(a.opc || {})) { const f = OPC_OK[k]; const ok = f ? f(v) : undefined; if (ok !== undefined) opc[k] = ok; }
+  if ((c.plano || {}).sem_fala) (novo as any).sem_fala = true;
   return { plano: novo, opc, resposta: txt(a.resposta, 400), regra: txt(a.regra, 300) };
 }
 
