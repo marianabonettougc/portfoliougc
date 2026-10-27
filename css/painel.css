@@ -1622,3 +1622,8 @@ a.menu-item{text-decoration:none}
 .ed-cam-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:10px}
 .ed-cam-grade label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--suave)}
 .ed-cam-apagar{color:var(--vermelho,#c5533f)}
+/* Desfazer (botão e Ctrl+Z) no editor */
+.ed-cam-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ed-cam-topo .ed-cam-tit{margin:0}
+.ed-desfazer{margin-left:auto}
+[data-desfazer-tudo]:disabled{opacity:.45;cursor:default}

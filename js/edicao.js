@@ -131,7 +131,7 @@ IDEIA PARA DEPOIS
   const st = {
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
-    camadas: [], camSel: null, soCamadas: false,
+    camadas: [], camSel: null, soCamadas: false, histCam: [], desf: [],
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
     opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1, legenda: true, sons: "muitos", dinamismo: "dinamico", formato: "vertical", relaxante: false, sonsSuaves: false, fonteTitulo: "dmserif", corTitulo: "", ladoLeg: "centro", alturaTitulo: 0.24 },
     pedidos: "", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, aba: "video", projeto: null, projetos: [], pendentes: null, salvando: "",
@@ -448,7 +448,7 @@ IDEIA PARA DEPOIS
     if (st.tocando) parar();
     st.clipes.forEach((c) => { try { c.el.remove(); URL.revokeObjectURL(c.el.src); } catch (e) { /* segue */ } });
     const capaBox = $("#ed-capa"); if (capaBox) capaBox.dataset.pronto = "";
-    Object.assign(st, { camadas: [], camSel: null, soCamadas: false, story: novoStory(), vari: novaVari(), variBase: null, variAtiva: null, ref: null, refPedido: "", carro: null, clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, aba: "video", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "", pedidos: "" });
+    Object.assign(st, { camadas: [], camSel: null, soCamadas: false, histCam: [], desf: [], story: novoStory(), vari: novaVari(), variBase: null, variAtiva: null, ref: null, refPedido: "", carro: null, clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, aba: "video", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "", pedidos: "" });
   }
   async function abrirProjeto(id) {
     const { data, error } = await banco().from("edicao_projetos").select("*").eq("id", id).maybeSingle();
@@ -657,7 +657,7 @@ IDEIA PARA DEPOIS
       const ultima = st.correcoes[st.correcoes.length - 1];
       ultima.mudou = mud;
       if (!mud.length) ultima.resposta += " (Nada mudou no vídeo. Tente dizer de outro jeito, com o momento e o que quer, ou ajuste direto nas abas e na linha do tempo.)";
-      st.desfazerAjuste = mud.length ? foto : null;
+      st.desfazerAjuste = mud.length ? foto : null; if (mud.length) marcarDesfazer("ajuste");
       if (st.lembrar && !o.soIA && r.regra && !st.padrao.includes(r.regra)) {
         const marca = "CORREÇÕES QUE ELA PEDIU (valem sempre):";
         const novo = st.padrao.includes(marca) ? st.padrao.replace(marca, marca + "\n- " + r.regra) : st.padrao.trim() + "\n\n" + marca + "\n- " + r.regra;
@@ -1172,6 +1172,7 @@ IDEIA PARA DEPOIS
     canvas.addEventListener("pointermove", (e) => {
       if (!pega) return; e.preventDefault();
       const [x, y] = ponto(e);
+      if (!pega.guardou) { pega.guardou = true; guardarCam(); }
       let nx = clamp(pega.cx + (x - pega.x0) / canvas.width), ny = clamp(pega.cy + (y - pega.y0) / canvas.height);
       if (Math.abs(nx - 0.5) < IMA) nx = 0.5; if (Math.abs(ny - 0.5) < IMA) ny = 0.5;
       pega.cam.x = nx; pega.cam.y = ny;
@@ -1180,12 +1181,59 @@ IDEIA PARA DEPOIS
     const soltar = () => { if (!pega) return; pega = null; st.arrastandoCam = false; if (!st.tocando) desenhar(st.t); pintarCamadas(); salvarDepois(); };
     canvas.addEventListener("pointerup", soltar); canvas.addEventListener("pointercancel", soltar);
   }
+  // ---------- desfazer (botão e Ctrl+Z / Cmd+Z): a última mudança, seja texto, linha do tempo, estilo ou ajuste ----------
+  function marcarDesfazer(tipo) { st.desf.push(tipo); if (st.desf.length > 120) st.desf.shift(); setTimeout(pintarBotaoDesfazer, 0); }
+  let ultimaFotoCam = { chave: "", em: 0 };
+  function guardarCam(chave) {
+    // digitar ou arrastar um controle vira um passo só (mesma chave em menos de 1,5 s)
+    const agora = Date.now();
+    if (chave && chave === ultimaFotoCam.chave && agora - ultimaFotoCam.em < 1500) { ultimaFotoCam.em = agora; return; }
+    ultimaFotoCam = { chave: chave || "", em: agora };
+    st.histCam.push({ camadas: JSON.parse(JSON.stringify(st.camadas.map(({ _box, ...c }) => c))), camSel: st.camSel });
+    if (st.histCam.length > 60) st.histCam.shift();
+    marcarDesfazer("cam");
+  }
+  function desfazerCam() {
+    const f = st.histCam.pop(); if (!f) return false;
+    st.camadas = f.camadas; st.camSel = st.camadas.some((c) => c.id === f.camSel) ? f.camSel : null; ultimaFotoCam = { chave: "", em: 0 };
+    pintarCamadas(); if (!st.tocando) desenhar(st.t); salvarDepois(); return true;
+  }
+  function podeDesfazerManual() { const m = st.manual || {}; return Boolean((m.ordHist || []).length || (m.divisoes || []).length || (m.cortes || []).length || (m.sons || []).length || (m.zooms || []).length || (m.flashes || []).length || (m.tirados || []).length); }
+  const DESFAZ = {
+    cam: { pode: () => st.histCam.length > 0, faz: () => desfazerCam(), msg: "Desfeito: o texto voltou como estava." },
+    manual: { pode: podeDesfazerManual, faz: () => desfazerManual(), msg: "Desfeito na linha do tempo." },
+    est: { pode: () => st.estHist.length > 0, faz: () => desfazerEstilo(), msg: "Desfeito: o estilo voltou como estava." },
+    ajuste: { pode: () => Boolean(st.desfazerAjuste), faz: () => desfazerAjuste(), msg: "" },
+  };
+  function podeDesfazer() { return st.desf.some((k) => DESFAZ[k] && DESFAZ[k].pode()) || st.histCam.length > 0; }
+  function desfazerTudo() {
+    if (st.exportando) return;
+    while (st.desf.length) {
+      const k = st.desf.pop(), d = DESFAZ[k];
+      if (d && d.pode()) { d.faz(); if (d.msg) toast(d.msg); pintarBotaoDesfazer(); return; }
+    }
+    if (desfazerCam()) { toast(DESFAZ.cam.msg); pintarBotaoDesfazer(); return; }
+    toast("Não tem nada para desfazer.", true); pintarBotaoDesfazer();
+  }
+  function pintarBotaoDesfazer() { const pode = podeDesfazer() && !st.exportando; $$("[data-desfazer-tudo]").forEach((b) => { b.disabled = !pode; }); }
+  function ligarAtalhoDesfazer() {
+    if (window.__edDesfazer) return; window.__edDesfazer = true;
+    document.addEventListener("keydown", (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || String(e.key).toLowerCase() !== "z") return;
+      const aba = document.getElementById("aba-edicao"); if (!aba || aba.hidden) return;
+      if (document.querySelector("dialog[open]")) return;
+      const el = document.activeElement, tag = el && el.tagName;
+      // dentro de um campo de texto, o Ctrl+Z continua desfazendo a digitação (o do próprio navegador)
+      if (el && (el.isContentEditable || tag === "TEXTAREA" || tag === "SELECT" || (tag === "INPUT" && !/^(range|color|checkbox|radio|button)$/i.test(el.type)))) return;
+      e.preventDefault(); desfazerTudo();
+    });
+  }
   function camadaAtual() { return st.camadas.find((c) => c.id === st.camSel); }
   function pintarCamadas() {
     const box = $("#ed-camadas"); if (!box) return;
     const fmt = (n) => (Math.round(n * 10) / 10).toFixed(1).replace(".", ",");
     const ordenadas = st.camadas.slice().sort((a, b) => a.t0 - b.t0);
-    box.innerHTML = `<h3 class="ed-cam-tit">Textos na tela</h3>
+    box.innerHTML = `<div class="ed-cam-topo"><h3 class="ed-cam-tit">Textos na tela</h3><button class="btn btn-leve" type="button" data-desfazer-tudo title="Desfazer (Ctrl+Z)" ${podeDesfazer() ? "" : "disabled"}>${ic.desfazer}Desfazer</button></div>
       <p class="ed-obs">Toque num texto para mudar a frase, o tempo e o tamanho. Para mudar o lugar, arraste o texto direto no vídeo: aparecem as linhas do meio da tela e, perto do centro, o texto gruda nele (a linha fica amarela). Tudo salva sozinho no projeto.</p>
       <div class="ed-cam-acoes"><button class="btn" type="button" id="ed-cam-novo">${ic.mais}Novo texto aqui (${fmt(st.t)} s)</button></div>
       ${ordenadas.length ? "" : `<p class="rr-vazio">Nenhum texto ainda.</p>`}
@@ -1218,30 +1266,31 @@ IDEIA PARA DEPOIS
         </div>`; }).join("")}`;
     const mexeu = (redesenhar = true) => { if (redesenhar && !st.tocando) desenhar(st.t); salvarDepois(); };
     $("#ed-cam-novo", box).addEventListener("click", () => {
-      const c = { id: uid(), t0: +st.t.toFixed(2), t1: +Math.min(st.duracao || st.t + 2.5, st.t + 2.5).toFixed(2), x: 0.5, y: 0.2, escala: 1, linhas: [{ texto: "Texto pequeno", tipo: "cap", tam: 38 }, { texto: "Frase principal", tipo: "ser", tam: 110 }] };
+      guardarCam(); const c = { id: uid(), t0: +st.t.toFixed(2), t1: +Math.min(st.duracao || st.t + 2.5, st.t + 2.5).toFixed(2), x: 0.5, y: 0.2, escala: 1, linhas: [{ texto: "Texto pequeno", tipo: "cap", tam: 38 }, { texto: "Frase principal", tipo: "ser", tam: 110 }] };
       st.camadas.push(c); st.camSel = c.id; pintarCamadas(); mexeu();
     });
+    $("[data-desfazer-tudo]", box).addEventListener("click", desfazerTudo);
     $$("[data-cam-abrir]", box).forEach((b) => b.addEventListener("click", async () => {
       const id = b.dataset.camAbrir; st.camSel = st.camSel === id ? null : id; pintarCamadas();
       const c = camadaAtual(); if (c && !(st.t >= c.t0 && st.t < c.t1)) await irPara(Math.min(c.t1 - 0.05, c.t0 + 0.4)); else if (!st.tocando) desenhar(st.t);
     }));
     const c = camadaAtual(); if (!c) return;
     const corpo = box.querySelector(".ed-cam.aberta");
-    $$("[data-cam-txt]", corpo).forEach((i) => i.addEventListener("input", () => { c.linhas[+i.dataset.camTxt].texto = i.value; mexeu(); }));
-    $$("[data-cam-tipo]", corpo).forEach((i) => i.addEventListener("change", () => { const l = c.linhas[+i.dataset.camTipo]; l.tipo = i.value; l.tam = i.value === "cap" ? 38 : i.value === "emo" ? 50 : 110; mexeu(); }));
-    $$("[data-cam-tiralinha]", corpo).forEach((b) => b.addEventListener("click", () => { c.linhas.splice(+b.dataset.camTiralinha, 1); pintarCamadas(); mexeu(); }));
-    $("[data-cam-maislinha]", corpo).addEventListener("click", () => { c.linhas.push({ texto: "Nova linha", tipo: "cap", tam: 38 }); pintarCamadas(); mexeu(); });
-    $("[data-cam-t0]", corpo).addEventListener("change", (e) => { c.t0 = Math.max(0, +e.target.value || 0); if (c.t1 <= c.t0) c.t1 = c.t0 + 0.5; pintarCamadas(); mexeu(); });
-    $("[data-cam-t1]", corpo).addEventListener("change", (e) => { c.t1 = Math.max(c.t0 + 0.2, +e.target.value || 0); pintarCamadas(); mexeu(); });
-    $("[data-cam-esc]", corpo).addEventListener("input", (e) => { c.escala = +e.target.value; mexeu(); });
-    $("[data-cam-cor]", corpo).addEventListener("input", (e) => { c.cor = e.target.value; mexeu(); });
-    $$("[data-cam-agora]", corpo).forEach((b) => b.addEventListener("click", () => { const k = b.dataset.camAgora; c[k] = +st.t.toFixed(2); if (c.t1 <= c.t0) { if (k === "t0") c.t1 = c.t0 + 1; else c.t0 = Math.max(0, c.t1 - 1); } pintarCamadas(); mexeu(); }));
+    $$("[data-cam-txt]", corpo).forEach((i) => i.addEventListener("input", () => { guardarCam("txt" + c.id + i.dataset.camTxt); c.linhas[+i.dataset.camTxt].texto = i.value; mexeu(); }));
+    $$("[data-cam-tipo]", corpo).forEach((i) => i.addEventListener("change", () => { guardarCam(); const l = c.linhas[+i.dataset.camTipo]; l.tipo = i.value; l.tam = i.value === "cap" ? 38 : i.value === "emo" ? 50 : 110; mexeu(); }));
+    $$("[data-cam-tiralinha]", corpo).forEach((b) => b.addEventListener("click", () => { guardarCam(); c.linhas.splice(+b.dataset.camTiralinha, 1); pintarCamadas(); mexeu(); }));
+    $("[data-cam-maislinha]", corpo).addEventListener("click", () => { guardarCam(); c.linhas.push({ texto: "Nova linha", tipo: "cap", tam: 38 }); pintarCamadas(); mexeu(); });
+    $("[data-cam-t0]", corpo).addEventListener("change", (e) => { guardarCam(); c.t0 = Math.max(0, +e.target.value || 0); if (c.t1 <= c.t0) c.t1 = c.t0 + 0.5; pintarCamadas(); mexeu(); });
+    $("[data-cam-t1]", corpo).addEventListener("change", (e) => { guardarCam(); c.t1 = Math.max(c.t0 + 0.2, +e.target.value || 0); pintarCamadas(); mexeu(); });
+    $("[data-cam-esc]", corpo).addEventListener("input", (e) => { guardarCam("esc" + c.id); c.escala = +e.target.value; mexeu(); });
+    $("[data-cam-cor]", corpo).addEventListener("input", (e) => { guardarCam("cor" + c.id); c.cor = e.target.value; mexeu(); });
+    $$("[data-cam-agora]", corpo).forEach((b) => b.addEventListener("click", () => { guardarCam(); const k = b.dataset.camAgora; c[k] = +st.t.toFixed(2); if (c.t1 <= c.t0) { if (k === "t0") c.t1 = c.t0 + 1; else c.t0 = Math.max(0, c.t1 - 1); } pintarCamadas(); mexeu(); }));
     $("[data-cam-ver]", corpo).addEventListener("click", () => irPara(c.t0));
-    $$("[data-cam-centro]", corpo).forEach((b) => b.addEventListener("click", () => { c[b.dataset.camCentro] = 0.5; mexeu(); toast(b.dataset.camCentro === "x" ? "Texto no meio da largura." : "Texto no meio da altura."); }));
-    $("[data-cam-dup]", corpo).addEventListener("click", () => { const n = JSON.parse(JSON.stringify(c)); delete n._box; n.id = uid(); n.t0 = c.t1; n.t1 = c.t1 + (c.t1 - c.t0); st.camadas.push(n); st.camSel = n.id; pintarCamadas(); mexeu(); });
+    $$("[data-cam-centro]", corpo).forEach((b) => b.addEventListener("click", () => { guardarCam(); c[b.dataset.camCentro] = 0.5; mexeu(); toast(b.dataset.camCentro === "x" ? "Texto no meio da largura." : "Texto no meio da altura."); }));
+    $("[data-cam-dup]", corpo).addEventListener("click", () => { guardarCam(); const n = JSON.parse(JSON.stringify(c)); delete n._box; n.id = uid(); n.t0 = c.t1; n.t1 = c.t1 + (c.t1 - c.t0); st.camadas.push(n); st.camSel = n.id; pintarCamadas(); mexeu(); });
     $("[data-cam-apagar]", corpo).addEventListener("click", (e) => {
       if (e.target.dataset.certeza !== "1") { e.target.dataset.certeza = "1"; e.target.textContent = "Toque de novo para apagar"; return; }
-      st.camadas = st.camadas.filter((x) => x !== c); st.camSel = null; pintarCamadas(); mexeu();
+      guardarCam(); st.camadas = st.camadas.filter((x) => x !== c); st.camSel = null; pintarCamadas(); mexeu();
     });
   }
   async function irPara(t) {
@@ -1631,6 +1680,7 @@ IDEIA PARA DEPOIS
     cima: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
     baixo: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>',
     alca: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/></svg>',
+    desfazer: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7L4.5 11.5 9 16"/><path d="M5 11.5h9.5a5 5 0 0 1 0 10H11"/></svg>',
     som: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h3l5 4V6L7 10z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>',
   };
 
@@ -1787,7 +1837,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const opc = { ...(e.pronto ? BASE_ESTILO : {}), ...e.opc };
     if (e.pronto && opc.fonteLeg === "arimo" && st.minhaFonte && id === "padrao") opc.fonteLeg = "minha";
     if (opc.fonteLeg === "minha" && !st.minhaFonte) opc.fonteLeg = "arimo";
-    st.estHist.push(fotoEstilo()); st.estMsg = `Você escolheu o estilo "${e.nome}"`;
+    st.estHist.push(fotoEstilo()); marcarDesfazer("est"); st.estMsg = `Você escolheu o estilo "${e.nome}"`;
     Object.assign(st.opc, opc);
     st.estiloAtivo = id; try { localStorage.setItem("ed-estilo-ativo", id); } catch (er) { /* sem armazenamento */ }
     if (st.segs.length) { remontar(); sonsDoTitulo(); pintarPlano(); toast(`Estilo "${e.nome}" aplicado. Mude o que quiser na aba Visual.`); }
@@ -1950,7 +2000,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   const fotoEstilo = () => Object.fromEntries(CHAVES_ESTILO.map((k) => [k, st.opc[k]]));
   const REMONTA = ["porLegenda", "estilo", "sons", "dinamismo", "ritmo", "zoomCortes", "zoomEnfase"];
   function mexerEstilo(mudancas, msg) {
-    st.estHist.push(fotoEstilo()); if (st.estHist.length > 40) st.estHist.shift();
+    st.estHist.push(fotoEstilo()); marcarDesfazer("est"); if (st.estHist.length > 40) st.estHist.shift();
     Object.assign(st.opc, mudancas);
     st.estMsg = msg || "";
     if (st.segs.length && Object.keys(mudancas).some((k) => REMONTA.includes(k))) remontar();
@@ -2149,7 +2199,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   }
   async function aplicarReferencia() {
     const r = st.ref; if (!r) return;
-    st.estHist.push(fotoEstilo());
+    st.estHist.push(fotoEstilo()); marcarDesfazer("est");
     Object.assign(st.opc, r.opc || {}); guardarOpc();
     const regra = (r.regras || []).length ? "Seguir a referência (" + r.nome + "): " + r.regras.join("; ") : "";
     if (regra && !st.pedidos.includes(regra)) { st.pedidos = (st.pedidos.trim() ? st.pedidos.trim() + "\n" : "") + regra; const pd = $("#ed-pedidos"); if (pd) pd.value = st.pedidos; }
@@ -2628,7 +2678,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   // ---------- edições à mão (como no CapCut), guardadas no tempo do bruto ----------
   const brutoDe = (t) => { const sg = segNoFinal(t); return sg ? sg.g0 + Math.max(0, t - sg.o0) : null; };
   function mexeuManual(remontarTudo) { if (st.tocando) parar(); if (remontarTudo) montar(); else { montar(); } pintar(); salvarDepois(); }
-  const hist = (k) => { (st.manual.hist = st.manual.hist || []).push(k); };
+  const hist = (k) => { (st.manual.hist = st.manual.hist || []).push(k); marcarDesfazer("manual"); };
   function porSom(tipo, t = st.t) { const g = brutoDe(t); if (g == null) return; hist("sons"); st.manual.sons.push({ id: uid(), g: +g.toFixed(2), tipo }); mexeuManual(); audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(tipo, ac.currentTime + 0.02, st.opc.vol); }
   function tirarSom(e, quieto) {
     if (e.manual) st.manual.sons = st.manual.sons.filter((m) => m.id !== e.id);
@@ -2918,7 +2968,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     bt.innerHTML = st.trabalhando ? "Editando…" : st.pendentes ? `${ic.filme}Escolha de novo os vídeos deste projeto (no quadro acima) para editar` : !st.clipes.length ? `${ic.filme}Envie o vídeo bruto acima para editar` : `${ic.brilho}${st.plano ? "Editar de novo" : "Editar automático"}`;
     $$("[data-formato]", sec).forEach((b) => b.classList.toggle("on", (st.opc.formato || "vertical") === b.dataset.formato));
     pintarRefRapido();
-    prepararCanvas(); ligarArrasteCamadas();
+    prepararCanvas(); ligarArrasteCamadas(); ligarAtalhoDesfazer();
     if (st.aba === "textos") pintarCamadas();
     $("#ed-vazio", sec).hidden = Boolean(st.segs.length);
     pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa(); pintarLinha(); pintarAbas(); pintarModo(); pintarOuvi(); pintarAjustar(); pintarPassos();
@@ -2953,7 +3003,9 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const ok = st.segs.length > 0;
     box.innerHTML = `<button class="btn btn-principal" type="button" id="ed-play" ${!ok || st.exportando ? "disabled" : ""}>${st.tocando && !st.exportando ? ic.pausa + "Pausar" : ic.play + "Play"}</button>
       <input type="range" id="ed-barra" min="0" max="${Math.max(0.1, st.duracao).toFixed(2)}" step="0.05" value="${st.t.toFixed(2)}" ${!ok || st.tocando ? "disabled" : ""} aria-label="Posição">
-      <span class="ed-tempo" id="ed-tempo">${tempo(st.t)} / ${tempo(st.duracao)}</span>`;
+      <span class="ed-tempo" id="ed-tempo">${tempo(st.t)} / ${tempo(st.duracao)}</span>
+      <button class="btn btn-leve ed-desfazer" type="button" data-desfazer-tudo title="Desfazer a última mudança (Ctrl+Z)" ${podeDesfazer() && !st.exportando ? "" : "disabled"}>${ic.desfazer}Desfazer</button>`;
+    $("[data-desfazer-tudo]", box).addEventListener("click", desfazerTudo);
     const play = $("#ed-play", box);
     play.addEventListener("click", () => { if (st.tocando) parar(); else tocar(st.t); });
     const barra = $("#ed-barra", box);
