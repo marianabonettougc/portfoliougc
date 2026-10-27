@@ -548,6 +548,15 @@ IDEIA PARA DEPOIS
     }
     if (o.dinamismo === "dinamico") { o.relaxante = false; o.sonsSuaves = false; }
     if (o.formato) o.formatoEscolhido = true;
+    // cor dos textos na tela e da legenda (ex.: "o amarelo no azul da Ortobom", "legenda branca")
+    if (/\b(cor|cores|legenda|texto|textos|letra|letras|frase|frases|escrita|amarel|azul|branc|rosa|vermelh|verde|laranja|roxo|lilas|dourad|pret)|#[0-9a-f]{6}/.test(t)) {
+      const CORES = [["azul (da |de )?(paleta |cor |cores )*(de cores )?(da |de )?ortobom|azul ortobom", "#0a4ea0"], ["azul marinho", "#1d2f5c"], ["azul (claro|bebe)", "#7cc0ee"], ["azul", "#1f5fbf"], ["brancas?|brancos?", "#ffffff"], ["pret[oa]s?", "#111111"], ["amarel[oa]s?", "#ffd84d"], ["rosa", "#f28cb1"], ["vermelh[oa]s?", "#e0393e"], ["verdes?", "#3fa66b"], ["laranja", "#f28c28"], ["roxo|roxa|lilas", "#8a6cf0"], ["dourad[oa]s?", "#d4af37"], ["creme|bege", "#fff3b0"]];
+      const hex = (t.match(/#[0-9a-f]{6}\b/) || [])[0];
+      let alvo = hex || null;
+      if (!alvo) for (const [rx, h] of CORES) { if (new RegExp(`\\b(para|pra|por|no|na|em|de cor|cor) (o |a |os |as )?(${rx})\\b`).test(t)) { alvo = h; break; } }
+      if (!alvo) { const achadas = CORES.filter(([rx]) => new RegExp(`\\b(${rx})\\b`).test(t)); if (achadas.length === 1 && /\b(cor|deixa|coloca|muda|troca|quero|fica|ajust)/.test(t)) alvo = achadas[0][1]; }
+      if (alvo) { o.corTextos = alvo; o.corAlvo = /\b(tudo|todos|todas|todo o texto|letras? pequenas?|caixa alta|todas as letras|inteir)/.test(t) ? "tudo" : "grande"; }
+    }
     if (/maiuscul/.test(t) && !/sem maiuscul|nao.{0,12}maiuscul/.test(t)) o.maiusculas = true;
     if (/minuscul/.test(t)) o.maiusculas = false;
     return o;
@@ -564,6 +573,7 @@ IDEIA PARA DEPOIS
     if (o.dinamismo === "dinamico") d.push("dinâmico: cortes sem pausa, zoom entrando e saindo, transição e flash na troca de cena");
     if (o.relaxante) d.push("relaxante: poucos sons e só os suaves, sem zoom, flash nem transição, com respiro nos cortes");
     else if (o.dinamismo === "calmo") d.push("mais calmo: sem zoom nem transição");
+    if (o.corTextos) { const nomes = { "#0a4ea0": "azul da Ortobom", "#1d2f5c": "azul-marinho", "#7cc0ee": "azul-claro", "#1f5fbf": "azul", "#ffffff": "branco", "#111111": "preto", "#ffd84d": "amarelo", "#f28cb1": "rosa", "#e0393e": "vermelho", "#3fa66b": "verde", "#f28c28": "laranja", "#8a6cf0": "roxo", "#d4af37": "dourado", "#fff3b0": "creme" }; d.push(`textos na tela e legenda em ${nomes[o.corTextos] || o.corTextos}${o.corAlvo === "tudo" ? " (todas as linhas, inclusive as pequenas)" : " (as frases grandes; para mudar as linhas pequenas também, peça \"tudo\")"}`); }
     if (o.formato) d.push(o.formato === "horizontal" ? "vídeo na horizontal (16:9, 1920x1080)" : "vídeo na vertical (9:16)");
     if (o.zoomEnfase === false) d.push("sem zoom");
     if (o.transicao === "nenhuma") d.push("sem transição");
@@ -637,7 +647,11 @@ IDEIA PARA DEPOIS
         if (r.plano.titulo) { st.titulo = r.plano.titulo; st.tituloDestaque = r.plano.titulo_destaque || st.tituloDestaque; }
         if (r.opc && r.opc.sfxAuto && !locais.sons) locais.sons = { desligado: "nenhum", pouco: "poucos", medio: "medio", muito: "muitos" }[r.opc.sfxAuto];
       }
-      const { preEditado: _pe, ...locaisOpc } = locais;
+      const { preEditado: _pe, corTextos: _ct, corAlvo: _ca, ...locaisOpc } = locais;
+      if (locais.corTextos) {
+        if (st.camadas.length) { guardarCam(); st.camadas.forEach((c) => { c.cor = locais.corTextos; if (locais.corAlvo === "tudo") c.corPequena = locais.corTextos; }); }
+        locaisOpc.corLegenda = locais.corTextos; locaisOpc.cor = locais.corTextos;
+      }
       Object.assign(st.opc, r.opc || {}, locaisOpc); r.opc = { ...(r.opc || {}), ...locaisOpc };
       ajustarVoz(); st.opc.confete = false; if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
       const entendi = descreverRegras(locais);
