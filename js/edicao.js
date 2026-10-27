@@ -135,6 +135,7 @@ IDEIA PARA DEPOIS
     opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1, legenda: true, sons: "muitos", dinamismo: "dinamico", formato: "vertical", relaxante: false, sonsSuaves: false, fonteTitulo: "dmserif", corTitulo: "", ladoLeg: "centro", alturaTitulo: 0.24 },
     pedidos: "", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, aba: "video", projeto: null, projetos: [], pendentes: null, salvando: "",
     estiloAtivo: (() => { try { return localStorage.getItem("ed-estilo-ativo") || ""; } catch (e) { return ""; } })(), meusEstilos: [], estiloEditando: null, estiloApagar: null, fxBusca: "", fxCat: "todos", guiasIG: false, estHist: [], estMsg: "", ref: null, refArq: null, refUrl: "", refTrab: false, refEtapas: [], refPedido: "", refFocos: [], carro: null, carroTrab: false,
+    story: { geral: "", sug: {}, notas: {}, notaGeral: "", trab: false }, vari: { n: 3, mudar: { gancho: true, curta: true, ordem: true, legenda: false, sons: false }, lista: [], base: "", trab: false, gerando: null }, variBase: null, variAtiva: null,
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
@@ -414,7 +415,9 @@ IDEIA PARA DEPOIS
 
   // ---------- projetos (memória da edição) ----------
   const dadosProjeto = () => ({ versao: 3,
-    tema: st.tema, roteiro: st.roteiro, pedidos: st.pedidos, manual: st.manual, opc: st.opc, plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, editLeg: st.editLeg, marcas: st.marcas, capa: st.capa, correcoes: st.correcoes, ref: st.ref, refPedido: st.refPedido, carro: st.carro,
+    tema: st.tema, roteiro: st.roteiro, pedidos: st.pedidos, manual: (st.variBase || st).manual, opc: (st.variBase || st).opc, plano: st.plano, titulo: (st.variBase || st).titulo, tituloDestaque: (st.variBase || st).tituloDestaque,
+    story: { geral: st.story.geral, sug: st.story.sug, notas: st.story.notas, notaGeral: st.story.notaGeral },
+    vari: { n: st.vari.n, mudar: st.vari.mudar, base: st.vari.base, lista: st.vari.lista.map(({ arquivo, ...v }) => v) }, editLeg: st.editLeg, marcas: st.marcas, capa: st.capa, correcoes: st.correcoes, ref: st.ref, refPedido: st.refPedido, carro: st.carro,
     efeitos: st.efeitos.filter((e) => !e.doTitulo && !e.daChamativa).map(({ id, ...e }) => e),
     clipes: (st.clipes.length ? st.clipes : st.pendentes || []).map((c) => ({ nome: c.nome, dur: Math.round((c.dur || 0) * 100) / 100, palavras: c.palavras || null, mudo: c.mudo || undefined })),
   });
@@ -442,7 +445,7 @@ IDEIA PARA DEPOIS
     if (st.tocando) parar();
     st.clipes.forEach((c) => { try { c.el.remove(); URL.revokeObjectURL(c.el.src); } catch (e) { /* segue */ } });
     const capaBox = $("#ed-capa"); if (capaBox) capaBox.dataset.pronto = "";
-    Object.assign(st, { ref: null, refPedido: "", carro: null, clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, aba: "video", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "", pedidos: "" });
+    Object.assign(st, { story: novoStory(), vari: novaVari(), variBase: null, variAtiva: null, ref: null, refPedido: "", carro: null, clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, aba: "video", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "", pedidos: "" });
   }
   async function abrirProjeto(id) {
     const { data, error } = await banco().from("edicao_projetos").select("*").eq("id", id).maybeSingle();
@@ -452,6 +455,7 @@ IDEIA PARA DEPOIS
     st.projeto = { id: data.id, nome: data.nome };
     st.tema = d.tema || ""; st.roteiro = d.roteiro || ""; st.pedidos = d.pedidos || ""; st.manual = { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [], ...(d.manual || {}) }; st.plano = d.plano || null; st.titulo = d.titulo || ""; st.tituloDestaque = d.tituloDestaque || "";
     st.editLeg = d.editLeg || {}; st.marcas = d.marcas || {}; st.capa = d.capa || null; st.correcoes = d.correcoes || []; st.ref = d.ref || null; st.refPedido = d.refPedido || ""; st.carro = d.carro || null;
+    st.story = { ...novoStory(), ...(d.story || {}) }; st.vari = { ...novaVari(), ...(d.vari || {}), trab: false, gerando: null };
     if (d.opc && d.versao >= 3) Object.assign(st.opc, d.opc);
     if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
     st.efeitosSalvos = Array.isArray(d.efeitos) ? d.efeitos.map((e) => ({ ...e, id: uid() })) : null;
@@ -599,7 +603,7 @@ IDEIA PARA DEPOIS
     ajustarVoz(); montar(); pintar(); irPara(0); salvarDepois();
     toast("Voltei a edição para como estava antes do último ajuste.");
   }
-  async function corrigir(texto) {
+  async function corrigir(texto, o = {}) {
     texto = String(texto || "").trim();
     if (!texto) { toast("Escreva o que você quer mudar.", true); return; }
     if (!st.plano || st.corrigindo) return;
@@ -608,8 +612,8 @@ IDEIA PARA DEPOIS
     try {
       if (st.tocando) parar();
       const antes = { dur: st.duracao, ef: st.efeitos.length, zo: st.zooms.length, tit: st.titulo, opc: { ...st.opc }, rem: JSON.stringify((st.plano || {}).remover || []), dest: JSON.stringify((st.plano || {}).destaques || []) };
-      const locais = regrasDoPedido(texto);
-      let sobra = partesSemRegra(texto);
+      const locais = o.soIA ? {} : regrasDoPedido(texto);
+      let sobra = o.soIA ? [texto] : partesSemRegra(texto);
       // vídeo sem fala que ficou sem texto na tela: monta os textos pelas cenas do roteiro
       if (!palavrasBrutas().length && roteiroUsado() && !((st.plano.textos || []).length)) {
         if (Object.keys(locais).length) { const { preEditado: _x, ...lo } = locais; Object.assign(st.opc, lo); }
@@ -649,7 +653,7 @@ IDEIA PARA DEPOIS
       ultima.mudou = mud;
       if (!mud.length) ultima.resposta += " (Nada mudou no vídeo. Tente dizer de outro jeito, com o momento e o que quer, ou ajuste direto nas abas e na linha do tempo.)";
       st.desfazerAjuste = mud.length ? foto : null;
-      if (st.lembrar && r.regra && !st.padrao.includes(r.regra)) {
+      if (st.lembrar && !o.soIA && r.regra && !st.padrao.includes(r.regra)) {
         const marca = "CORREÇÕES QUE ELA PEDIU (valem sempre):";
         const novo = st.padrao.includes(marca) ? st.padrao.replace(marca, marca + "\n- " + r.regra) : st.padrao.trim() + "\n\n" + marca + "\n- " + r.regra;
         try { await salvarPadrao(novo); } catch (e) { /* segue */ }
@@ -826,7 +830,7 @@ IDEIA PARA DEPOIS
     }
     // CapCut (out/2026): cena trocada por outro trecho do bruto e ordem escolhida arrastando
     const mm = st.manual || {};
-    st.segs.forEach((sg) => { sg.chave = Math.round(sg.g0 * 10); });
+    st.segs.forEach((sg) => { sg.chave = Math.round(sg.g0 * 10); sg.og0 = sg.g0; sg.og1 = sg.g1; });
     for (const sg of st.segs) {
       const tr = (mm.trocas || {})[sg.chave], c = tr && st.clipes[tr.ci]; if (!c) continue;
       const a = Math.max(0, Math.min(tr.a, c.dur - 0.3)), b = Math.min(c.dur, Math.max(a + 0.3, tr.b));
@@ -1519,6 +1523,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
           <div class="rr-painel" data-painel="sons" hidden><div class="rr-plano" id="ed-plano"></div></div>
           <div class="rr-painel" data-painel="efeitos" hidden><section class="ed-cartao" id="ed-efeitos"></section></div>
           <div class="rr-painel" data-painel="capa" hidden><section class="ed-cartao ed-capa" id="ed-capa" hidden></section><p class="rr-vazio">A capa aparece aqui depois que eu editar o vídeo.</p></div>
+          <div class="rr-painel" data-painel="storyboard" hidden><section class="ed-cartao" id="ed-storyboard"></section></div>
+          <div class="rr-painel" data-painel="variacoes" hidden><section class="ed-cartao" id="ed-variacoes"></section></div>
           <div class="rr-painel" data-painel="carrossel" hidden><section class="ed-cartao" id="ed-carrossel"></section></div>
         </div>
       </div>
@@ -1551,7 +1557,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   }
 
   // ---------- abas (visual reel review) ----------
-  const ABAS = [["video", "Vídeo"], ["referencia", "Referência"], ["estilos", "Estilos"], ["cortes", "Cortes"], ["legendas", "Legendas"], ["visual", "Visual"], ["sons", "Sons e dicas"], ["efeitos", "Efeitos"], ["capa", "Capa"], ["carrossel", "Carrossel"]];
+  const ABAS = [["video", "Vídeo"], ["referencia", "Referência"], ["estilos", "Estilos"], ["storyboard", "Storyboard"], ["cortes", "Cortes"], ["legendas", "Legendas"], ["visual", "Visual"], ["sons", "Sons e dicas"], ["efeitos", "Efeitos"], ["capa", "Capa"], ["variacoes", "Variações"], ["carrossel", "Carrossel"]];
   const ABAS_SEMPRE = ["video", "referencia", "estilos", "efeitos"]; // abrem antes de editar (escolher o estilo e conhecer os efeitos)
   function pintarAbas() {
     const nav = $("#ed-abas"); if (!nav) return;
@@ -1563,12 +1569,15 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $$(".rr-painel").forEach((pn) => { pn.hidden = pn.dataset.painel !== st.aba; });
   }
   function irAba(k) {
+    if (k !== "variacoes" && st.variBase) voltarOriginal();
     st.aba = k; pintarAbas(); pintarPassos();
     if (k === "capa") desenharCapa();
     if (k === "estilos") pintarEstilos();
     if (k === "efeitos") pintarEfeitos();
     if (k === "referencia") pintarReferencia();
     if (k === "carrossel") pintarCarrossel();
+    if (k === "storyboard") pintarStoryboard(true);
+    if (k === "variacoes") pintarVariacoes(true);
   }
 
   // ---------- passos no topo: 1 vídeo, 2 estilo, 3 revisar, 4 baixar ----------
@@ -2175,6 +2184,285 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     c.slides.forEach((_, i) => redesenharSlide(i));
   }
 
+  // ---------- storyboard e variações para Reels de teste (out/2026, ideias do "Video Studio" da @brand.nat) ----------
+  // Storyboard: o vídeo editado dividido em cenas (planos seguidos juntos até fechar uma frase), cada uma
+  // com a fala, sugestões da IA (editor-extras acao "storyboard"), nota e "Ajustar só esta cena"
+  // (corrigir com escopo: só a IA, só aquele trecho do bruto, nunca vira regra do padrão).
+  // Variações: o vídeo aprovado vira 3 a 5 cortes diferentes de verdade (gancho novo, cena de abertura,
+  // versão curta de 20 a 30 s, ordem, estilo de legenda, sons), conferidos para não ficarem parecidos.
+  // Abrir uma variação guarda a edição original em st.variBase; sair da aba Variações volta sempre.
+  function novoStory() { return { geral: "", sug: {}, notas: {}, notaGeral: "", trab: false }; }
+  function novaVari() { return { n: 3, mudar: { gancho: true, curta: true, ordem: true, legenda: false, sons: false }, lista: [], base: "", trab: false, gerando: null }; }
+  const clonar = (x) => JSON.parse(JSON.stringify(x));
+  function falaEntre(o0, o1) { return st.legendas.filter((g) => g.o0 >= o0 - 0.05 && g.o0 < o1 - 0.05).map(textoLeg).join(" ").replace(/\s+/g, " ").trim(); }
+  function cenasDoVideo() {
+    const cenas = []; let atual = null;
+    const fecha = () => { if (atual) { atual.fala = falaEntre(atual.o0, atual.o1); cenas.push(atual); } atual = null; };
+    st.segs.forEach((sg, i) => {
+      if (!atual) atual = { k: "c" + sg.chave, segs: [], o0: sg.o0, o1: sg.o1 };
+      atual.segs.push(sg); atual.o1 = sg.o1;
+      const dur = atual.o1 - atual.o0, prox = st.segs[i + 1];
+      const frase = /[.!?…]["”]?$/.test(falaEntre(sg.o0, sg.o1));
+      if (!prox || (dur >= 2.5 && frase) || dur >= 6.5 || (prox.ci !== sg.ci && dur >= 1.5)) fecha();
+    });
+    fecha();
+    const ult = cenas[cenas.length - 1];
+    if (cenas.length > 1 && ult.o1 - ult.o0 < 1) { const ant = cenas[cenas.length - 2]; ant.segs.push(...ult.segs); ant.o1 = ult.o1; ant.fala = falaEntre(ant.o0, ant.o1); cenas.pop(); }
+    cenas.forEach((c) => { c.g0 = Math.min(...c.segs.map((s) => s.g0)); c.g1 = Math.max(...c.segs.map((s) => s.g1)); });
+    return cenas;
+  }
+  const assinaturaCenas = () => cenasDoVideo().map((c) => c.k).join(",");
+  function miniCena(c) {
+    const sg = c.segs[0], cl = st.clipes[sg.ci];
+    if (!cl || !cl.tira || !cl.tira.length) return `<span class="ed-sb-sem">${ic.filme}</span>`;
+    const q = cl.tira.reduce((m, x) => Math.abs(x.t - (sg.a + 0.3)) < Math.abs(m.t - (sg.a + 0.3)) ? x : m, cl.tira[0]);
+    return `<img src="${q.src}" alt="" draggable="false">`;
+  }
+  const textoCena = (c, n) => `cena ${n + 1} (no vídeo bruto, de ${c.g0.toFixed(1)} s a ${c.g1.toFixed(1)} s; fala: "${c.fala.slice(0, 220) || "sem fala"}")`;
+
+  // ---------- storyboard ----------
+  async function sugerirCenas() {
+    if (!st.segs.length || st.story.trab) return;
+    const cenas = cenasDoVideo();
+    st.story.trab = true; pintarStoryboard(true);
+    try {
+      const r = await chamarExtras({ acao: "storyboard", cenas: cenas.map((c, i) => ({ i, de: +c.o0.toFixed(1), ate: +c.o1.toFixed(1), fala: c.fala })), titulo: st.titulo, tema: st.tema, roteiro: roteiroUsado() || undefined, padrao: String(st.padrao || "").slice(0, 2500), pedidos: st.pedidos || undefined });
+      const sug = {}; for (const x of r.cenas || []) if (cenas[x.i]) sug[cenas[x.i].k] = x.sugestoes || [];
+      st.story.sug = sug; st.story.geral = r.geral || "";
+      salvarDepois();
+    } catch (e) { toast(e.message, true); }
+    st.story.trab = false; pintarStoryboard(true);
+  }
+  async function ajustarCenas(ks) {
+    if (st.corrigindo) return;
+    const cenas = cenasDoVideo();
+    const partes = [];
+    cenas.forEach((c, n) => { const nota = String(st.story.notas[c.k] || "").trim(); if (ks.includes(c.k) && nota) partes.push(`Na ${textoCena(c, n)}: ${nota}`); });
+    const geral = ks === "todas" || ks.includes("geral") ? String(st.story.notaGeral || "").trim() : "";
+    if (!partes.length && !geral) { toast("Escreva a nota da cena antes de ajustar.", true); return; }
+    const texto = (partes.length ? partes.join(". ") + (geral ? ". " : "") : "") + (geral ? "No vídeo todo: " + geral : "") + (partes.length && !geral ? ". Não mude nada fora desses trechos." : "");
+    const antes = st.correcoes.length;
+    await corrigir(texto, { soIA: true });
+    const ult = st.correcoes[st.correcoes.length - 1];
+    if (st.correcoes.length > antes && ult && ult.mudou && ult.mudou.length) {
+      cenas.forEach((c) => { if (ks.includes(c.k)) delete st.story.notas[c.k]; });
+      if (geral) st.story.notaGeral = "";
+      salvarDepois();
+    }
+    pintarStoryboard(true);
+  }
+  function pintarStoryboard(forcar) {
+    const box = $("#ed-storyboard"); if (!box) return;
+    if (!forcar && st.aba !== "storyboard") return;
+    if (!st.segs.length) { box.innerHTML = `<p class="rr-vazio">O storyboard aparece aqui depois que eu editar o vídeo.</p>`; return; }
+    if (box.contains(document.activeElement) && document.activeElement.matches("textarea")) return; // não apaga o que ela está digitando
+    const sb = st.story, cenas = cenasDoVideo(), ocupado = st.corrigindo || sb.trab;
+    const comNota = cenas.filter((c) => String(sb.notas[c.k] || "").trim()).length + (String(sb.notaGeral || "").trim() ? 1 : 0);
+    box.innerHTML = `<div class="ed-titulo-linha"><h3 class="ed-titulo">Storyboard</h3><span class="ed-sub">${cenas.length} cenas · ${tempo(st.duracao)}</span></div>
+      <p class="ed-obs">Cada cena do vídeo editado com o que você fala nela. Peça sugestões, anote o que quer mudar e ajuste só aquela cena, sem refazer o resto do vídeo. Toque na miniatura para ver a cena no player.</p>
+      <div class="ed-sb-topo"><button type="button" class="btn btn-principal" id="ed-sb-sugerir" ${ocupado ? "disabled" : ""}>${sb.trab ? "Lendo as cenas…" : ic.brilho + (Object.keys(sb.sug).length ? "Sugerir de novo" : "Sugerir melhorias por cena")}</button>
+        ${sb.geral ? `<p class="ed-sb-geral">${esc(sb.geral)}</p>` : ""}</div>
+      <ol class="ed-sb-lista">${cenas.map((c, n) => { const sug = sb.sug[c.k] || []; return `<li class="ed-sb-cena">
+        <button type="button" class="ed-sb-quadro" data-sb-ver="${c.o0}" aria-label="Ver a cena ${n + 1} no player">${miniCena(c)}<span>${n + 1}</span></button>
+        <div class="ed-sb-corpo">
+          <div class="ed-sb-cab"><b>Cena ${n + 1}</b><small>${tempo(c.o0)} a ${tempo(c.o1)} · ${(c.o1 - c.o0).toFixed(1).replace(".", ",")} s</small></div>
+          <p class="ed-sb-fala">${c.fala ? "“" + esc(c.fala) + "”" : "<i>sem fala</i>"}</p>
+          ${sug.length ? `<ul class="ed-sb-sug">${sug.map((s, j) => `<li><span>${esc(s)}</span><button type="button" class="btn ed-sb-por" data-sb-por="${c.k}" data-j="${j}">Pôr na nota</button></li>`).join("")}</ul>` : ""}
+          <textarea class="entrada" data-sb-nota="${c.k}" rows="2" placeholder="Nota desta cena: o que você quer mudar aqui" ${ocupado ? "disabled" : ""}>${esc(sb.notas[c.k] || "")}</textarea>
+          <div class="ed-sb-acoes"><button type="button" class="btn" data-sb-ajustar="${c.k}" ${ocupado ? "disabled" : ""}>${st.corrigindo ? "Ajustando…" : "Ajustar só esta cena"}</button></div>
+        </div></li>`; }).join("")}</ol>
+      <label class="ed-rotulo" for="ed-sb-nota-geral">Nota para o vídeo todo</label>
+      <textarea class="entrada" id="ed-sb-nota-geral" rows="2" placeholder="Ex.: mais b-roll do produto no meio; o final está arrastado" ${ocupado ? "disabled" : ""}>${esc(sb.notaGeral || "")}</textarea>
+      <div class="ed-ref-acoes"><button type="button" class="btn btn-principal" id="ed-sb-todas" ${ocupado || !comNota ? "disabled" : ""}>${st.corrigindo ? "Ajustando…" : `Ajustar com todas as notas${comNota ? ` (${comNota})` : ""}`}</button></div>`;
+    $("#ed-sb-sugerir", box).addEventListener("click", sugerirCenas);
+    $$("[data-sb-ver]", box).forEach((b) => b.addEventListener("click", () => irPara(Number(b.dataset.sbVer) + 0.02)));
+    const contar = () => { const n = cenas.filter((c) => String(sb.notas[c.k] || "").trim()).length + (String(sb.notaGeral || "").trim() ? 1 : 0); const t = $("#ed-sb-todas", box); if (t && !ocupado) { t.disabled = !n; t.textContent = `Ajustar com todas as notas${n ? ` (${n})` : ""}`; } };
+    $$("[data-sb-nota]", box).forEach((el) => el.addEventListener("input", () => { sb.notas[el.dataset.sbNota] = el.value; contar(); salvarDepois(); }));
+    $("#ed-sb-nota-geral", box).addEventListener("input", (e) => { sb.notaGeral = e.target.value; contar(); salvarDepois(); });
+    $$("[data-sb-por]", box).forEach((b) => b.addEventListener("click", () => {
+      const k = b.dataset.sbPor, s = (sb.sug[k] || [])[+b.dataset.j]; if (!s) return;
+      const atual = String(sb.notas[k] || "").trim(); if (atual.includes(s)) return;
+      sb.notas[k] = atual ? atual.replace(/[.;]?$/, ". ") + s : s;
+      const el = box.querySelector(`[data-sb-nota="${k}"]`); if (el) el.value = sb.notas[k];
+      contar(); salvarDepois();
+    }));
+    $$("[data-sb-ajustar]", box).forEach((b) => b.addEventListener("click", () => ajustarCenas([b.dataset.sbAjustar])));
+    $("#ed-sb-todas", box).addEventListener("click", () => ajustarCenas([...cenas.map((c) => c.k), "geral"]));
+  }
+
+  // ---------- variações para Reels de teste ----------
+  const MUDAR_VARI = [["gancho", "Gancho novo e outra cena de abertura"], ["curta", "Uma versão curta, de 20 a 30 s"], ["ordem", "Ordem diferente (resultado primeiro ou história primeiro)"], ["legenda", "Outro estilo de legenda em cada uma"], ["sons", "Outra quantidade de efeitos sonoros"]];
+  const NOME_SONS = { nenhum: "sem efeitos", impacto: "sons só no impacto", poucos: "poucos sons", medio: "sons médios", muitos: "muitos sons" };
+  const limpaTit = (x) => String(x || "").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  function infoVariacao(v, cenas) {
+    const ordem = v.ordemIdx.filter((i) => !v.cortarIdx.includes(i));
+    return { dur: ordem.reduce((s, i) => s + (cenas[i].o1 - cenas[i].o0), 0), primeira: ordem[0], ordem: ordem.join(","), tit: limpaTit(v.titulo), estilo: v.estilo || "", sons: (v.opc || {}).sons || "" };
+  }
+  function diferencas(a, b) {
+    let d = 0;
+    if (a.tit !== b.tit) d++;
+    if (a.primeira !== b.primeira) d++;
+    if (Math.abs(a.dur - b.dur) >= 3) d++;
+    if (a.ordem !== b.ordem && a.primeira === b.primeira) d++;
+    if (a.estilo !== b.estilo) d++;
+    if (a.sons !== b.sons) d++;
+    return d;
+  }
+  // mudanças de verdade em relação ao vídeo original (o que aparece no cartão)
+  function oQueMuda(v, cenas) {
+    const i = infoVariacao(v, cenas), out = [];
+    if (limpaTit(v.titulo) !== limpaTit(st.variBase ? st.variBase.titulo : st.titulo)) out.push("gancho novo");
+    if (i.primeira !== 0) out.push(`abre na cena ${i.primeira + 1}`);
+    if (v.cortarIdx.length) out.push(`${tempo(i.dur).replace(/,\d$/, "")} (sem ${v.cortarIdx.length === 1 ? "a cena " + (v.cortarIdx[0] + 1) : v.cortarIdx.length + " cenas"})`);
+    const resto = i.ordem.split(",").map(Number).slice(1);
+    if (resto.some((x, k) => k && x < resto[k - 1])) out.push("ordem nova");
+    if (v.estilo) out.push("legenda " + nomeDoEstilo(v.estilo));
+    if ((v.opc || {}).sons) out.push(NOME_SONS[v.opc.sons]);
+    return out;
+  }
+  function encurtar(v, cenas) {
+    const dur = () => v.ordemIdx.filter((i) => !v.cortarIdx.includes(i)).reduce((s, i) => s + (cenas[i].o1 - cenas[i].o0), 0);
+    while (dur() > 30) {
+      const vivos = v.ordemIdx.filter((i) => !v.cortarIdx.includes(i));
+      const pode = vivos.slice(1, -1).filter((i) => dur() - (cenas[i].o1 - cenas[i].o0) >= 15);
+      if (!pode.length) break;
+      v.cortarIdx.push(pode.sort((a, b) => (cenas[b].o1 - cenas[b].o0) - (cenas[a].o1 - cenas[a].o0))[0]);
+    }
+  }
+  function conferirVariacoes(lista, cenas) {
+    const m = st.vari.mudar, total = st.duracao;
+    // pede curta: pelo menos uma entre 20 e 30 s (quando o vídeo passa de 30 s)
+    if (m.curta && total > 30 && !lista.some((v) => infoVariacao(v, cenas).dur <= 30.5)) { const v = lista[Math.min(1, lista.length - 1)]; encurtar(v, cenas); v.nome = v.nome || "Versão curta"; }
+    // pede ordem: pelo menos uma com outra ordem (resultado primeiro: a parte mais forte antes do CTA abre o vídeo)
+    const orig = cenas.map((_, k) => k).join(",");
+    if (m.ordem && cenas.length > 2 && !lista.some((v) => v.ordemIdx.join(",") !== orig)) { const v = lista[lista.length - 1], forte = cenas.length - 2; v.ordemIdx = [forte, ...v.ordemIdx.filter((i) => i !== forte)]; }
+    // nenhuma parecida demais com outra nem com o vídeo original: pelo menos 2 diferenças em cada par
+    const original = { ordemIdx: cenas.map((_, k) => k), cortarIdx: [], titulo: st.titulo, estilo: null, opc: null };
+    const outrosSons = ["poucos", "medio", "muitos", "impacto"].filter((x) => x !== st.opc.sons);
+    const parecidas = (v, a) => [original, ...lista].some((o, b) => b - 1 !== a && diferencas(infoVariacao(v, cenas), infoVariacao(o, cenas)) < 2);
+    lista.forEach((v, a) => {
+      for (let passo = 0; passo < 3 && parecidas(v, a); passo++) {
+        const usadas = new Set([original, ...lista].filter((o) => o !== v).map((o) => infoVariacao(o, cenas).primeira));
+        const nova = cenas.map((_, k) => k).find((k) => !usadas.has(k) && !v.cortarIdx.includes(k) && k !== cenas.length - 1);
+        if (passo === 0 && nova != null) v.ordemIdx = [nova, ...v.ordemIdx.filter((i) => i !== nova)];
+        else v.opc = { ...(v.opc || {}), sons: outrosSons[(a + passo) % outrosSons.length] };
+      }
+    });
+    lista.forEach((v, a) => { v.parecida = parecidas(v, a); });
+  }
+  async function criarVariacoes() {
+    if (!st.segs.length || st.vari.trab) return;
+    if (st.variBase) voltarOriginal();
+    const cenas = cenasDoVideo();
+    if (cenas.length < 2) { toast("O vídeo precisa de pelo menos 2 cenas para virar variações.", true); return; }
+    const vr = st.vari; vr.trab = true; pintarVariacoes(true);
+    try {
+      const r = await chamarExtras({ acao: "variacoes", cenas: cenas.map((c, i) => ({ i, de: +c.o0.toFixed(1), ate: +c.o1.toFixed(1), fala: c.fala })), titulo: st.titulo, tema: st.tema, roteiro: roteiroUsado() || undefined, n: vr.n, mudar: vr.mudar, duracao: +st.duracao.toFixed(1) });
+      const outrosEstilos = ESTILOS_PRONTOS.filter((e) => e.id !== st.estiloAtivo);
+      const outrosSons = ["poucos", "medio", "muitos", "impacto"].filter((x) => x !== st.opc.sons);
+      const lista = (r.variacoes || []).slice(0, vr.n).map((x, idx) => {
+        let ordemIdx = Array.isArray(x.ordem) && x.ordem.length === cenas.length ? x.ordem.slice() : cenas.map((_, k) => k);
+        if (vr.mudar.gancho && x.abrir_com != null && x.abrir_com !== cenas.length - 1) ordemIdx = [x.abrir_com, ...ordemIdx.filter((i) => i !== x.abrir_com)];
+        const cortarIdx = (x.cortar || []).filter((i) => i !== ordemIdx[0]);
+        const v = { id: uid(), nome: x.nome, titulo: x.titulo, tituloDestaque: x.titulo_destaque || "", por_que: x.por_que || "", ordemIdx, cortarIdx, estilo: null, opc: null };
+        if (vr.mudar.legenda && outrosEstilos.length) { const e = outrosEstilos[idx % outrosEstilos.length]; v.estilo = e.id; v.opc = { ...BASE_ESTILO, ...e.opc, sons: st.opc.sons, dinamismo: st.opc.dinamismo, ritmo: st.opc.ritmo }; }
+        if (vr.mudar.sons) v.opc = { ...(v.opc || {}), sons: outrosSons[idx % outrosSons.length] };
+        return v;
+      });
+      if (!lista.length) throw new Error("A IA não montou as variações agora. Tente de novo.");
+      conferirVariacoes(lista, cenas);
+      // guarda já em chaves de plano e faixas do bruto (é o que a montagem entende)
+      lista.forEach((v) => {
+        v.ordem = v.ordemIdx.flatMap((i) => cenas[i].segs.map((s) => s.chave));
+        v.cortes = v.cortarIdx.flatMap((i) => cenas[i].segs.map((s) => [+s.og0.toFixed(2), +s.og1.toFixed(2)]));
+        v.muda = oQueMuda(v, cenas); v.dur = infoVariacao(v, cenas).dur;
+      });
+      vr.lista = lista; vr.base = assinaturaCenas();
+      salvarDepois();
+    } catch (e) { toast(e.message, true); }
+    vr.trab = false; pintarVariacoes(true);
+  }
+  function aplicarVariacao(v) {
+    if (st.tocando) parar();
+    if (!st.variBase) st.variBase = { manual: clonar(st.manual), titulo: st.titulo, tituloDestaque: st.tituloDestaque, opc: clonar(st.opc), arquivoFinal: st.arquivoFinal };
+    const b = st.variBase;
+    st.manual = clonar(b.manual); st.manual.ordem = v.ordem.slice(); st.manual.cortes = [...(st.manual.cortes || []), ...v.cortes.map((x) => x.slice())];
+    st.titulo = v.titulo || b.titulo; st.tituloDestaque = v.titulo ? v.tituloDestaque : b.tituloDestaque;
+    st.opc = clonar(b.opc); if (v.titulo) st.opc.titulo = true; if (v.opc) Object.assign(st.opc, v.opc);
+    st.variAtiva = v.id; st.arquivoFinal = null;
+    montar(); st.t = 0; pintar(); desenhar(0);
+  }
+  function voltarOriginal(quieto) {
+    const b = st.variBase; if (!b) return;
+    if (st.tocando) parar();
+    Object.assign(st, { manual: b.manual, titulo: b.titulo, tituloDestaque: b.tituloDestaque, opc: b.opc, arquivoFinal: b.arquivoFinal, variBase: null, variAtiva: null });
+    montar(); st.t = 0;
+    if (!quieto) { pintar(); desenhar(0); }
+  }
+  async function exportarVariacao(v, n) {
+    if (st.exportando) return;
+    aplicarVariacao(v); st.vari.gerando = v.id; pintarVariacoes(true);
+    await exportar();
+    if (st.arquivoFinal) {
+      const base = (st.tema || (st.clipes[0] ? st.clipes[0].nome.replace(/\.[^.]+$/, "") : "video")).replace(/[^\w\-]+/g, "-").slice(0, 40);
+      v.arquivo = { ...st.arquivoFinal, nome: `${base}-teste-${n + 1}.${st.arquivoFinal.ext}` };
+    }
+    const cancelado = !st.arquivoFinal; st.vari.gerando = null;
+    voltarOriginal(true); pintar(); pintarVariacoes(true);
+    return !cancelado;
+  }
+  async function exportarTodas() {
+    for (const [n, v] of st.vari.lista.entries()) {
+      if (v.arquivo) continue;
+      const ok = await exportarVariacao(v, n);
+      if (!ok) return;
+    }
+    toast("Todas as variações estão prontas para baixar.");
+  }
+  function pintarVariacoes(forcar) {
+    const box = $("#ed-variacoes"); if (!box) return;
+    if (!forcar && st.aba !== "variacoes") return;
+    if (!st.segs.length) { box.innerHTML = `<p class="rr-vazio">As variações aparecem aqui depois que eu editar o vídeo.</p>`; return; }
+    const vr = st.vari, ocupado = vr.trab || st.exportando;
+    const velha = vr.lista.length && vr.base !== (st.variBase ? vr.base : assinaturaCenas());
+    const ativa = vr.lista.find((v) => v.id === st.variAtiva);
+    box.innerHTML = `<div class="ed-titulo-linha"><h3 class="ed-titulo">Variações para Reels de teste</h3><span class="ed-sub">mesmo vídeo, cortes diferentes</span></div>
+      <p class="ed-obs">Eu transformo o vídeo aprovado em 3 a 5 cortes diferentes de verdade para você postar como Reels de teste e ver qual gancho prende mais. Cada um ganha um gancho novo e mais alguma mudança real, e eu confiro se nenhum ficou parecido demais com outro (o Instagram ignora vídeo duplicado).</p>
+      <div class="ed-var-n" role="group" aria-label="Quantos cortes">${[3, 4, 5].map((x) => `<button type="button" class="ed-fmt${vr.n === x ? " on" : ""}" data-var-n="${x}" ${ocupado ? "disabled" : ""}>${x} cortes</button>`).join("")}</div>
+      <div class="ed-var-mudar">${MUDAR_VARI.map(([k, t]) => `<label class="ed-chk"><input type="checkbox" data-var-mudar="${k}" ${vr.mudar[k] ? "checked" : ""} ${ocupado ? "disabled" : ""}> ${t}</label>`).join("")}</div>
+      <div class="ed-ref-acoes"><button type="button" class="btn btn-principal" id="ed-var-criar" ${ocupado ? "disabled" : ""}>${vr.trab ? "Criando as variações…" : ic.brilho + (vr.lista.length ? "Criar de novo" : "Criar variações")}</button>
+        ${vr.lista.length ? `<button type="button" class="btn" id="ed-var-todas" ${ocupado || velha ? "disabled" : ""}>${ic.baixar}Gerar todos os vídeos</button>` : ""}</div>
+      ${velha ? `<p class="faixa faixa-aviso">A edição mudou depois que eu criei estas variações. Crie de novo para elas seguirem o vídeo atual.</p>` : ""}
+      ${ativa ? `<div class="ed-var-vendo"><span>No player: <b>${esc(ativa.nome)}</b>. O que você mexer agora não fica salvo.</span><button type="button" class="btn" id="ed-var-voltar">Voltar ao original</button></div>` : ""}
+      ${vr.lista.length ? `<ol class="ed-var-lista">${vr.lista.map((v, n) => `<li class="ed-var${v.id === st.variAtiva ? " on" : ""}">
+        <div class="ed-var-cab"><b>Variação ${n + 1}</b><span>${esc(v.nome)}</span><small>${tempo(v.dur || 0)}</small></div>
+        <input class="entrada ed-var-tit" data-var-tit="${v.id}" value="${esc(v.titulo)}" maxlength="80" aria-label="Gancho da variação ${n + 1}" ${ocupado ? "disabled" : ""}>
+        <div class="ed-var-muda">${(v.muda || []).map((m) => `<span>${esc(m)}</span>`).join("")}</div>
+        ${v.por_que ? `<small class="ed-var-pq">${esc(v.por_que)}</small>` : ""}
+        <small class="ed-var-check${v.parecida ? " alerta" : ""}">${v.parecida ? "Ficou parecida com outra: mude o gancho ou crie de novo" : "✓ Diferente das outras"}</small>
+        <div class="ed-var-acoes">
+          <button type="button" class="btn" data-var-ver="${v.id}" ${ocupado || velha ? "disabled" : ""}>${ic.play}Ver no player</button>
+          ${v.arquivo ? `<a class="btn btn-principal" href="${v.arquivo.url}" download="${esc(v.arquivo.nome)}">${ic.baixar}Baixar</a>` : `<button type="button" class="btn btn-principal" data-var-gerar="${v.id}" ${ocupado || velha ? "disabled" : ""}>${vr.gerando === v.id ? "Gerando… (deixe a aba aberta)" : ic.baixar + "Gerar vídeo"}</button>`}
+        </div></li>`).join("")}</ol>
+        <p class="ed-obs">Poste cada uma como Reels de teste (no Instagram: Reels, Opções avançadas, "Reels de teste"), espere uns dias e repita o gancho que ganhar nos próximos vídeos.</p>` : ""}`;
+    $$("[data-var-n]", box).forEach((b) => b.addEventListener("click", () => { vr.n = +b.dataset.varN; salvarDepois(); pintarVariacoes(true); }));
+    $$("[data-var-mudar]", box).forEach((el) => el.addEventListener("change", () => { vr.mudar[el.dataset.varMudar] = el.checked; salvarDepois(); }));
+    $("#ed-var-criar", box).addEventListener("click", criarVariacoes);
+    const todas = $("#ed-var-todas", box); if (todas) todas.addEventListener("click", exportarTodas);
+    const voltar = $("#ed-var-voltar", box); if (voltar) voltar.addEventListener("click", () => { voltarOriginal(); pintarVariacoes(true); });
+    $$("[data-var-ver]", box).forEach((b) => b.addEventListener("click", () => { const v = vr.lista.find((x) => x.id === b.dataset.varVer); if (v) { aplicarVariacao(v); pintarVariacoes(true); } }));
+    $$("[data-var-gerar]", box).forEach((b) => b.addEventListener("click", () => { const n = vr.lista.findIndex((x) => x.id === b.dataset.varGerar); if (n >= 0) exportarVariacao(vr.lista[n], n); }));
+    $$("[data-var-tit]", box).forEach((el) => el.addEventListener("input", () => {
+      const v = vr.lista.find((x) => x.id === el.dataset.varTit); if (!v) return;
+      v.titulo = el.value; v.arquivo = null;
+      if (st.variAtiva === v.id) { st.titulo = v.titulo; redesenhar(); }
+      if (!velha) { const cenas = cenasDoVideo(), orig = { ordemIdx: cenas.map((_, k) => k), cortarIdx: [], titulo: (st.variBase || st).titulo }; vr.lista.forEach((x, a) => { x.parecida = [orig, ...vr.lista].some((o, b) => b - 1 !== a && diferencas(infoVariacao(x, cenas), infoVariacao(o, cenas)) < 2); }); }
+      const chk = el.parentElement.querySelector(".ed-var-check"); if (chk) { chk.classList.toggle("alerta", v.parecida); chk.textContent = v.parecida ? "Ficou parecida com outra: mude o gancho ou crie de novo" : "✓ Diferente das outras"; }
+      const dl = el.parentElement.querySelector("a[download]"); if (dl) dl.replaceWith(Object.assign(document.createElement("small"), { textContent: "Gancho mudou: gere o vídeo de novo" }));
+      salvarDepois();
+    }));
+  }
+
   // ---------- edições à mão (como no CapCut), guardadas no tempo do bruto ----------
   const brutoDe = (t) => { const sg = segNoFinal(t); return sg ? sg.g0 + Math.max(0, t - sg.o0) : null; };
   function mexeuManual(remontarTudo) { if (st.tocando) parar(); if (remontarTudo) montar(); else { montar(); } pintar(); salvarDepois(); }
@@ -2223,6 +2511,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       v.remove(); c.tira = out.length ? out : [];
     } catch (e) { c.tira = []; }
     fazendoTiras = false;
+    if (st.aba === "storyboard") pintarStoryboard(true);
     pintarLinha(); // desenha e chama de novo para o próximo clipe
   }
   function ligarArrastePlanos(box) {
@@ -2470,7 +2759,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     prepararCanvas();
     $("#ed-vazio", sec).hidden = Boolean(st.segs.length);
     pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa(); pintarLinha(); pintarAbas(); pintarModo(); pintarOuvi(); pintarAjustar(); pintarPassos();
-    if (st.aba === "estilos") pintarEstilos(); else if (st.aba === "efeitos") pintarEfeitos(); else if (st.aba === "referencia") pintarReferencia(); else if (st.aba === "carrossel") pintarCarrossel();
+    if (st.aba === "estilos") pintarEstilos(); else if (st.aba === "efeitos") pintarEfeitos(); else if (st.aba === "referencia") pintarReferencia(); else if (st.aba === "carrossel") pintarCarrossel(); else if (st.aba === "storyboard") pintarStoryboard(true); else if (st.aba === "variacoes") pintarVariacoes(true);
     pintarTrabalhando();
     if (st.segs.length && !st.tocando) desenhar(st.t);
   }
