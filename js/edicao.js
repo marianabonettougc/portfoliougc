@@ -1467,6 +1467,7 @@ IDEIA PARA DEPOIS
           <div id="ed-final"></div>
         </aside>
         <div class="rr-principal">
+          <section class="rr-linha rr-linha-topo" id="ed-linha" hidden aria-label="Linha do tempo"></section>
           <nav class="rr-abas" role="tablist" aria-label="Etapas da edição" id="ed-abas"></nav>
           <div class="rr-painel" data-painel="video">
             <section class="ed-cartao">
@@ -1500,7 +1501,6 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
           <div class="rr-painel" data-painel="carrossel" hidden><section class="ed-cartao" id="ed-carrossel"></section></div>
         </div>
       </div>
-      <section class="rr-linha" id="ed-linha" hidden aria-label="Linha do tempo"></section>
       <div id="ed-videos" class="ed-videos" aria-hidden="true"></div>
     </div>`;
     const entrada = $("#ed-arquivo", sec);
