@@ -1531,3 +1531,25 @@ a.menu-item{text-decoration:none}
 .ed-ref-rapido-nome small{color:var(--suave);margin-left:4px}
 .ed-ref-rapido-nome svg,.ed-ref-rapido-btn svg{width:15px;height:15px}
 .ed-ref-rapido-btn{cursor:pointer;display:inline-flex;align-items:center;gap:6px;border-style:dashed}
+/* planos da linha do tempo com os quadros do vídeo, arrastáveis (out/2026) */
+.rr-t-planos{height:60px!important}
+.rr-plano-bl{overflow:hidden;padding:0!important;touch-action:pan-y;cursor:grab}
+.rr-plano-bl .rr-quadros{position:absolute;inset:0;display:flex;pointer-events:none}
+.rr-plano-bl .rr-quadros img{flex:1 1 0;min-width:0;height:100%;object-fit:cover;display:block;border-right:1px solid rgba(0,0,0,.15)}
+.rr-plano-bl .rr-plano-n{position:absolute;left:4px;top:3px;font-size:9.5px;font-weight:700;color:#fff;background:rgba(29,22,17,.6);border-radius:6px;padding:0 5px;pointer-events:none}
+.rr-plano-bl.sel{outline:3px solid var(--principal);outline-offset:-1px;z-index:2}
+.rr-plano-bl.trocado .rr-plano-n{background:var(--terracota)}
+.rr-plano-bl.arrastando{opacity:.85;z-index:5;cursor:grabbing;box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.rr-alvo{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1.5px;background:var(--principal);border-radius:3px;z-index:6;pointer-events:none}
+.ed-trocar .janela-corpo{max-height:70vh;overflow:auto}
+.ed-trocar-topo{display:flex;gap:14px;align-items:center;margin:8px 0 14px}
+.ed-trocar-prev{height:150px;border-radius:10px;object-fit:cover;max-width:50%}
+.ed-trocar-dur{width:80px;display:inline-block;padding:6px 8px}
+.ed-trocar-clipe{margin-bottom:12px}
+.ed-trocar-clipe.atual > small{color:var(--principal);font-weight:700}
+.ed-trocar-tira{display:flex;gap:4px;overflow-x:auto;padding:4px 0}
+.ed-trocar-tira button{all:unset;cursor:pointer;flex:0 0 auto;position:relative;border-radius:6px;overflow:hidden;border:2px solid transparent}
+.ed-trocar-tira button.on{border-color:var(--principal)}
+.ed-trocar-tira img{height:72px;display:block}
+.ed-trocar-tira span{position:absolute;left:2px;bottom:2px;font-size:9px;color:#fff;background:rgba(0,0,0,.55);border-radius:4px;padding:0 3px}
+.rr-plano-bl{height:60px!important}

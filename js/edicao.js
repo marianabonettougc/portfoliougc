@@ -824,6 +824,19 @@ IDEIA PARA DEPOIS
         out += cb - ca;
       }
     }
+    // CapCut (out/2026): cena trocada por outro trecho do bruto e ordem escolhida arrastando
+    const mm = st.manual || {};
+    st.segs.forEach((sg) => { sg.chave = Math.round(sg.g0 * 10); });
+    for (const sg of st.segs) {
+      const tr = (mm.trocas || {})[sg.chave], c = tr && st.clipes[tr.ci]; if (!c) continue;
+      const a = Math.max(0, Math.min(tr.a, c.dur - 0.3)), b = Math.min(c.dur, Math.max(a + 0.3, tr.b));
+      Object.assign(sg, { ci: tr.ci, a, b, g0: c.offset + a, g1: c.offset + b, trocado: true });
+    }
+    if ((mm.ordem || []).length) {
+      const pos = new Map(mm.ordem.map((k, i) => [k, i]));
+      st.segs = st.segs.map((sg, i) => ({ sg, i })).sort((x, y) => (pos.has(x.sg.chave) ? pos.get(x.sg.chave) : 1e6 + x.i) - (pos.has(y.sg.chave) ? pos.get(y.sg.chave) : 1e6 + y.i)).map((x) => x.sg);
+    }
+    out = 0; st.segs.forEach((sg) => { sg.o0 = out; sg.o1 = out + (sg.g1 - sg.g0); out = sg.o1; });
     st.duracao = out;
     // zoom alternado nos cortes (só quando o corte é dentro do mesmo clipe, o "pulo" da imagem)
     st.segs.forEach((s, i) => { const ant = st.segs[i - 1]; s.zoom = ant && ant.ci === s.ci && st.opc.zoomCortes && st.opc.dinamismo !== "calmo" ? (ant.zoom > 1 ? 1 : st.opc.dinamismo === "dinamico" ? 1.12 : 1.08) : 1; });
@@ -2175,12 +2188,102 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   function porZoom() { const g = brutoDe(st.t); if (g != null) { hist("zooms"); st.manual.zooms.push(+g.toFixed(2)); mexeuManual(); } }
   function porFlash() { const g = brutoDe(st.t); if (g != null) { hist("flashes"); st.manual.flashes.push(+g.toFixed(2)); mexeuManual(); } }
   function dividir() { const g = brutoDe(st.t); if (g == null) return; hist("divisoes"); (st.manual.divisoes = st.manual.divisoes || []).push(+g.toFixed(2)); mexeuManual(); const i = st.segs.findIndex((x) => x.g0 >= g - 0.01); if (i >= 0) { st.sel = { tipo: "plano", i }; pintarLinha(); } }
+  // ----- cenas como no CapCut: mover, trocar e ver os quadros -----
+  function guardarOrdem() { const m = st.manual; (m.ordHist = m.ordHist || []).push(JSON.parse(JSON.stringify({ ordem: m.ordem || [], trocas: m.trocas || {} }))); if (m.ordHist.length > 30) m.ordHist.shift(); hist("ord"); }
+  function moverPlano(de, para) {
+    if (para < 0 || para >= st.segs.length || de === para) return;
+    guardarOrdem();
+    const chaves = st.segs.map((s) => s.chave), [k] = chaves.splice(de, 1); chaves.splice(para, 0, k);
+    st.manual.ordem = chaves; mexeuManual();
+    st.sel = { tipo: "plano", i: para }; irPara(st.segs[para].o0 + 0.02); pintarLinha();
+    toast(`Cena movida para a posição ${para + 1}.`);
+  }
+  function quadrosDoPlano(sg) {
+    const c = st.clipes[sg.ci]; if (!c || !c.tira || !c.tira.length) return "";
+    const lista = c.tira.filter((q) => q.t >= sg.a - 0.3 && q.t <= sg.b); const n = Math.max(1, Math.min(8, Math.ceil((sg.b - sg.a) / 1.1)));
+    const usar = lista.length ? Array.from({ length: Math.min(n, lista.length) }, (_, k) => lista[Math.floor(k * lista.length / Math.min(n, lista.length))]) : [c.tira[0]];
+    return `<span class="rr-quadros">${usar.map((q) => `<img src="${q.src}" alt="" draggable="false">`).join("")}</span>`;
+  }
+  let fazendoTiras = false;
+  async function gerarTiras() {
+    if (fazendoTiras || st.exportando) return; const c = st.clipes.find((x) => !x.tira && x.el && x.el.src); if (!c) return;
+    fazendoTiras = true;
+    try {
+      const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = c.el.src;
+      v.style.cssText = "position:fixed;left:-9999px;width:2px;height:2px"; document.body.appendChild(v);
+      await new Promise((ok) => { v.onloadeddata = ok; v.onerror = ok; setTimeout(ok, 5000); });
+      const vw = v.videoWidth || 9, vh = v.videoHeight || 16, h = 64, w = Math.max(24, Math.round(h * vw / vh));
+      const cv = document.createElement("canvas"); cv.width = w; cv.height = h; const x = cv.getContext("2d");
+      const passo = Math.max(0.5, (c.dur || 1) / 40), out = [];
+      for (let t = 0; t < (c.dur || 0); t += passo) {
+        v.currentTime = Math.min(t + 0.05, Math.max(0, c.dur - 0.05));
+        await new Promise((ok) => { const f = () => { v.removeEventListener("seeked", f); ok(); }; v.addEventListener("seeked", f); setTimeout(ok, 1500); });
+        try { x.drawImage(v, 0, 0, w, h); out.push({ t: +t.toFixed(2), src: cv.toDataURL("image/jpeg", 0.6) }); } catch (e) { break; }
+      }
+      v.remove(); c.tira = out.length ? out : [];
+    } catch (e) { c.tira = []; }
+    fazendoTiras = false;
+    pintarLinha(); // desenha e chama de novo para o próximo clipe
+  }
+  function ligarArrastePlanos(box) {
+    const trilha = box.querySelector(".rr-t-planos"); if (!trilha) return;
+    trilha.querySelectorAll("[data-plano]").forEach((b) => {
+      b.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0 && e.pointerType === "mouse") return;
+        const de = Number(b.dataset.plano), x0 = e.clientX; let arrastando = false, fantasma = null, para = de;
+        const espera = e.pointerType === "mouse" ? 0 : 250, t0 = Date.now();
+        const mover = (ev) => {
+          if (!arrastando) { if (Math.abs(ev.clientX - x0) < 8 || Date.now() - t0 < espera) return; arrastando = true; b.classList.add("arrastando"); fantasma = document.createElement("span"); fantasma.className = "rr-alvo"; trilha.appendChild(fantasma); try { b.setPointerCapture(e.pointerId); } catch (er) { /* segue */ } }
+          ev.preventDefault();
+          const blocos = [...trilha.querySelectorAll("[data-plano]")], r0 = trilha.getBoundingClientRect();
+          const centro = (bl) => { const r = bl.getBoundingClientRect(); return r.left + r.width / 2; };
+          const antes = blocos.filter((bl, k) => k !== de && centro(bl) < ev.clientX); para = antes.length;
+          const ref = antes.length ? antes[antes.length - 1].getBoundingClientRect().right : blocos[0].getBoundingClientRect().left; fantasma.style.left = ref - r0.left + "px";
+          b.style.transform = `translateX(${ev.clientX - x0}px)`;
+        };
+        const soltar = () => {
+          window.removeEventListener("pointermove", mover); window.removeEventListener("pointerup", soltar); window.removeEventListener("pointercancel", soltar);
+          if (!arrastando) return;
+          b.dataset.arrastou = "1"; b.style.transform = ""; b.classList.remove("arrastando"); if (fantasma) fantasma.remove();
+          if (para !== de) moverPlano(de, para);
+        };
+        window.addEventListener("pointermove", mover, { passive: false }); window.addEventListener("pointerup", soltar); window.addEventListener("pointercancel", soltar);
+      });
+    });
+  }
+  function trocarCena(i) {
+    const sg = st.segs[i]; if (!sg) return;
+    const durOrig = +(sg.b - sg.a).toFixed(1);
+    let escolha = { ci: sg.ci, a: sg.a };
+    const dlg = document.createElement("dialog"); dlg.className = "janela janela-larga ed-trocar"; document.body.appendChild(dlg);
+    const pintarDlg = () => {
+      const c = st.clipes[escolha.ci], q = c && c.tira ? c.tira.reduce((m, x) => (Math.abs(x.t - escolha.a) < Math.abs(m.t - escolha.a) ? x : m), c.tira[0]) : null;
+      dlg.innerHTML = `<div class="janela-cabeca"><div><small class="janela-sobretitulo">Plano ${i + 1}</small><h2>Trocar cena</h2></div><button class="icone-btn" type="button" data-x aria-label="Fechar">${ic.x || "×"}</button></div>
+        <div class="janela-corpo"><p class="ed-obs">Escolha de qual vídeo e de qual momento vem esta cena. Toque num quadro para começar dali.</p>
+          <div class="ed-trocar-topo">${q ? `<img class="ed-trocar-prev" src="${q.src}" alt="Quadro escolhido">` : ""}<div><b>${esc(c ? c.nome : "")}</b><br><small>começa em ${tempo(escolha.a)} · dura</small> <input class="entrada ed-trocar-dur" type="number" min="0.3" step="0.1" value="${escolha.dur ?? durOrig}"> <small>s</small></div></div>
+          ${st.clipes.map((cl, ci) => `<div class="ed-trocar-clipe${ci === escolha.ci ? " atual" : ""}"><small>${ci + 1}. ${esc(cl.nome)} · ${tempo(cl.dur)}</small><div class="ed-trocar-tira">${(cl.tira || []).map((x) => `<button type="button" data-ci="${ci}" data-t="${x.t}" class="${ci === escolha.ci && Math.abs(x.t - escolha.a) < 0.3 ? "on" : ""}"><img src="${x.src}" alt="${tempo(x.t)}"><span>${tempo(x.t).replace(/,\d$/, "")}</span></button>`).join("") || "<span class=ed-obs>carregando quadros…</span>"}</div></div>`).join("")}
+        </div>
+        <div class="janela-rodape">${sg.trocado ? `<button class="btn" type="button" data-orig>Voltar à cena original</button>` : ""}<button class="btn" type="button" data-x>Cancelar</button><button class="btn btn-principal" type="button" data-usar>Usar este trecho</button></div>`;
+      dlg.querySelectorAll("[data-x]").forEach((b) => b.addEventListener("click", () => dlg.close()));
+      dlg.querySelectorAll("[data-ci]").forEach((b) => b.addEventListener("click", () => { escolha = { ...escolha, ci: Number(b.dataset.ci), a: Number(b.dataset.t), dur: Number(dlg.querySelector(".ed-trocar-dur").value) || durOrig }; pintarDlg(); }));
+      const orig = dlg.querySelector("[data-orig]"); if (orig) orig.addEventListener("click", () => { guardarOrdem(); delete (st.manual.trocas || {})[sg.chave]; dlg.close(); mexeuManual(); toast("A cena voltou a ser a original."); });
+      dlg.querySelector("[data-usar]").addEventListener("click", () => {
+        const dur = Math.max(0.3, Number(dlg.querySelector(".ed-trocar-dur").value) || durOrig), c2 = st.clipes[escolha.ci];
+        guardarOrdem(); st.manual.trocas = { ...(st.manual.trocas || {}), [sg.chave]: { ci: escolha.ci, a: +escolha.a.toFixed(2), b: +Math.min(c2.dur, escolha.a + dur).toFixed(2) } };
+        dlg.close(); mexeuManual(); st.sel = { tipo: "plano", i }; irPara(st.segs[i] ? st.segs[i].o0 + 0.02 : 0); pintarLinha(); toast("Cena trocada. Para voltar, use Desfazer.");
+      });
+    };
+    dlg.addEventListener("close", () => dlg.remove());
+    pintarDlg(); dlg.showModal();
+    if (st.clipes.some((c) => !c.tira)) { gerarTiras(); const espera = setInterval(() => { if (!dlg.open) return clearInterval(espera); if (st.clipes.every((c) => c.tira)) { clearInterval(espera); pintarDlg(); } }, 800); }
+  }
   function apagarPlano(sg) { if (st.segs.length <= 1) { toast("Esse é o único plano. Use Dividir aqui para separar o trecho que quer apagar.", true); return; } hist("cortes"); st.manual.cortes.push([+sg.g0.toFixed(2), +sg.g1.toFixed(2)]); st.sel = null; mexeuManual(); toast("Plano apagado. Para voltar, use Desfazer na linha do tempo."); }
   function desfazerManual() {
     const m = st.manual; m.divisoes = m.divisoes || [];
     const ult = [["cortes", m.cortes], ["divisoes", m.divisoes], ["sons", m.sons], ["zooms", m.zooms], ["flashes", m.flashes], ["tirados", m.tirados]].find(([, l]) => l.length);
     // desfaz o último tipo mexido (guardamos a ordem num histórico simples)
     const h = (st.manual.hist || []).pop();
+    if (h === "ord" && (m.ordHist || []).length) { const f0 = m.ordHist.pop(); m.ordem = f0.ordem; m.trocas = f0.trocas; mexeuManual(); return; }
     if (h && m[h] && m[h].length) m[h].pop(); else if (ult) ult[1].pop(); else return;
     mexeuManual();
   }
@@ -2194,7 +2297,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const larg = Math.max(100, Math.round(d * 7));
     const marcas = []; for (let t = 0; t <= d; t += d > 60 ? 10 : 5) marcas.push(t);
     const sel = st.sel || {}, o = st.opc, m = st.manual;
-    const temDesfazer = (m.divisoes || []).length || m.cortes.length || m.sons.length || m.zooms.length || m.flashes.length || m.tirados.length;
+    const temDesfazer = (m.ordHist || []).length || (m.divisoes || []).length || m.cortes.length || m.sons.length || m.zooms.length || m.flashes.length || m.tirados.length;
     const efSel = sel.tipo === "som" ? st.efeitos.find((e) => e.id === sel.id) : null;
     box.innerHTML = `<div class="rr-ferramentas">
         <button type="button" class="btn btn-principal" data-f="play">${st.tocando ? ic.pausa + "Pausar" : ic.play + "Play"}</button>
@@ -2208,7 +2311,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
         <button type="button" class="btn" data-f="zoom">+ Zoom aqui</button>
         <button type="button" class="btn" data-f="flash">+ Flash aqui</button>
         <button type="button" class="btn" data-f="dividir">Dividir aqui</button>
-        ${sel.tipo === "plano" ? `<button type="button" class="btn rr-perigo" data-f="apagar-plano">Apagar este plano</button>` : ""}
+        ${sel.tipo === "plano" ? `<button type="button" class="btn" data-f="mover-tras" ${sel.i > 0 ? "" : "disabled"}>◀ Mover para trás</button><button type="button" class="btn" data-f="mover-frente" ${sel.i < st.segs.length - 1 ? "" : "disabled"}>Mover para frente ▶</button><button type="button" class="btn" data-f="trocar-cena">⇄ Trocar cena</button><button type="button" class="btn rr-perigo" data-f="apagar-plano">Apagar este plano</button>` : ""}
         ${efSel ? `<span class="rr-sel">${esc(EFEITOS[efSel.tipo] || efSel.tipo)} em ${tempo(efSel.t)}</span><button type="button" class="btn" data-f="ouvir-som">${ic.som}Ouvir</button><button type="button" class="btn rr-perigo" data-f="tirar-som">Tirar este som</button>` : ""}
         ${sel.tipo === "zoom" ? `<button type="button" class="btn rr-perigo" data-f="tirar-zoom">Tirar este zoom</button>` : ""}
         ${sel.tipo === "flash" ? `<button type="button" class="btn rr-perigo" data-f="tirar-flash">Tirar este flash</button>` : ""}
@@ -2217,12 +2320,12 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <div class="rr-linha-rolar"><div class="rr-linha-dentro" style="width:${larg}%">
       <div class="rr-regua" data-buscar>${marcas.map((t) => `<span style="left:${pct(t)}">${tempo(t).replace(/,\d$/, "")}</span>`).join("")}</div>
       <div class="rr-trilha rr-t-leg${o.legenda === false ? " desligada" : ""}">${st.legendas.map((g) => `<button type="button" class="rr-chip" data-ir="${g.o0}" style="left:${pct(g.o0)};width:calc(${pct(g.o1 - g.o0)} - 3px)" title="${esc(textoLeg(g))}"><b>T</b> ${esc(textoLeg(g))}</button>`).join("")}</div>
-      <div class="rr-trilha rr-t-planos">${st.segs.map((sg, i) => `<button type="button" class="rr-plano-bl${i % 2 ? " par" : ""}${sg.zoom > 1 ? " zoom" : ""}${sel.tipo === "plano" && sel.i === i ? " sel" : ""}" data-plano="${i}" style="left:${pct(sg.o0)};width:calc(${pct(sg.o1 - sg.o0)} - 2px)" title="Plano ${i + 1}: toque para escolher"></button>`).join("")}</div>
+      <div class="rr-trilha rr-t-planos">${st.segs.map((sg, i) => `<button type="button" class="rr-plano-bl${i % 2 ? " par" : ""}${sg.zoom > 1 ? " zoom" : ""}${sg.trocado ? " trocado" : ""}${sel.tipo === "plano" && sel.i === i ? " sel" : ""}" data-plano="${i}" style="left:${pct(sg.o0)};width:calc(${pct(sg.o1 - sg.o0)} - 2px)" title="Plano ${i + 1} (${esc(st.clipes[sg.ci] ? st.clipes[sg.ci].nome : "")}): toque para escolher, arraste para mudar de lugar">${quadrosDoPlano(sg)}<span class="rr-plano-n">${i + 1}</span></button>`).join("")}</div>
       <div class="rr-trilha rr-t-fx">${(st.zoomsManuais || []).map((t, i) => `<button type="button" class="rr-zoom${sel.tipo === "zoom" && sel.i === i ? " sel" : ""}" data-zoom="${i}" style="left:${pct(t)}" title="Zoom em ${tempo(t)}">Z</button>`).join("")}${(st.flashes || []).map((t, i) => `<button type="button" class="rr-flash${sel.tipo === "flash" && sel.i === i ? " sel" : ""}" data-flash="${i}" style="left:${pct(t)}" title="Flash em ${tempo(t)}">F</button>`).join("")}</div>
       <div class="rr-trilha rr-t-sons${o.efeitos ? "" : " desligada"}">${st.efeitos.map((e) => `<button type="button" class="rr-som${e.manual ? " manual" : ""}${sel.tipo === "som" && sel.id === e.id ? " sel" : ""}" data-som="${e.id}" style="left:${pct(e.t)}" title="${esc((EFEITOS[e.tipo] || e.tipo) + (e.por_que ? ": " + e.por_que : ""))}"></button>`).join("")}</div>
       <span class="rr-agulha" id="ed-agulha" style="left:${pct(st.t)}"></span>
     </div></div>
-    <p class="rr-legenda-linha"><span class="rr-chip-mini"></span> legendas · <span class="rr-plano-mini"></span> planos (Dividir aqui separa, toque no plano para apagar) · Z zoom · F flash · <span class="rr-som-mini"></span> sons (toque para ouvir ou tirar) · toque na régua para ir até o ponto</p>`;
+    <p class="rr-legenda-linha"><span class="rr-chip-mini"></span> legendas · <span class="rr-plano-mini"></span> cenas (arraste para mudar de lugar; toque para mover, trocar ou apagar; Dividir aqui separa) · Z zoom · F flash · <span class="rr-som-mini"></span> sons (toque para ouvir ou tirar) · toque na régua para ir até o ponto</p>`;
     const f = (k) => box.querySelector(`[data-f="${k}"]`);
     f("play").addEventListener("click", () => { if (st.tocando) parar(); else tocar(st.t); setTimeout(pintarLinha, 50); });
     $$("[data-o]", box).forEach((c) => c.addEventListener("change", () => { o[c.dataset.o] = c.checked; if (c.dataset.o === "titulo") sonsDoTitulo(); guardarOpc(); pintar(); }));
@@ -2231,13 +2334,18 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     f("flash").addEventListener("click", porFlash);
     f("dividir").addEventListener("click", dividir);
     if (f("apagar-plano")) f("apagar-plano").addEventListener("click", () => apagarPlano(st.segs[sel.i]));
+    if (f("mover-tras")) f("mover-tras").addEventListener("click", () => moverPlano(sel.i, sel.i - 1));
+    if (f("mover-frente")) f("mover-frente").addEventListener("click", () => moverPlano(sel.i, sel.i + 1));
+    if (f("trocar-cena")) f("trocar-cena").addEventListener("click", () => trocarCena(sel.i));
+    ligarArrastePlanos(box);
+    gerarTiras();
     if (f("tirar-som")) f("tirar-som").addEventListener("click", () => tirarSom(efSel));
     if (f("ouvir-som")) f("ouvir-som").addEventListener("click", () => { audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(efSel.tipo, ac.currentTime + 0.02, o.vol); });
     if (f("tirar-zoom")) f("tirar-zoom").addEventListener("click", () => { st.manual.zooms.splice(sel.i, 1); st.sel = null; mexeuManual(); });
     if (f("tirar-flash")) f("tirar-flash").addEventListener("click", () => { st.manual.flashes.splice(sel.i, 1); st.sel = null; mexeuManual(); });
     if (f("desfazer")) f("desfazer").addEventListener("click", desfazerManual);
     $$("[data-ir]", box).forEach((b) => b.addEventListener("click", () => irPara(Number(b.dataset.ir) + 0.02)));
-    $$("[data-plano]", box).forEach((b) => b.addEventListener("click", () => { const i = Number(b.dataset.plano); st.sel = { tipo: "plano", i }; irPara(st.segs[i].o0 + 0.02); pintarLinha(); }));
+    $$("[data-plano]", box).forEach((b) => b.addEventListener("click", () => { if (b.dataset.arrastou) { delete b.dataset.arrastou; return; } const i = Number(b.dataset.plano); st.sel = { tipo: "plano", i }; irPara(st.segs[i].o0 + 0.02); pintarLinha(); }));
     $$("[data-som]", box).forEach((b) => b.addEventListener("click", () => { const e = st.efeitos.find((x) => x.id === b.dataset.som); if (!e) return; st.sel = { tipo: "som", id: e.id }; irPara(Math.max(0, e.t - 0.02)); pintarLinha(); }));
     $$("[data-zoom]", box).forEach((b) => b.addEventListener("click", () => { st.sel = { tipo: "zoom", i: Number(b.dataset.zoom) }; pintarLinha(); }));
     $$("[data-flash]", box).forEach((b) => b.addEventListener("click", () => { st.sel = { tipo: "flash", i: Number(b.dataset.flash) }; pintarLinha(); }));
