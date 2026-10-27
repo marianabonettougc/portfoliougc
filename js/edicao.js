@@ -248,9 +248,10 @@ IDEIA PARA DEPOIS
     try { await carregarMp4box(); } catch (e) { return null; }
     try {
       const M = window.MP4Box, ent = M.createFile(), amostras = [];
-      let faixa = null, parar = false;
+      let faixa = null, parar = false, semFaixa = false;
       ent.onError = () => { parar = true; };
       ent.onReady = (info) => {
+        if (!(info.audioTracks || []).length && (info.videoTracks || []).length) semFaixa = true;
         faixa = (info.audioTracks || [])[0];
         if (!faixa || !/^mp4a/i.test(faixa.codec)) { parar = true; faixa = null; return; }
         ent.setExtractionOptions(faixa.id, null, { nbSamples: 2000 }); ent.start();
@@ -259,6 +260,8 @@ IDEIA PARA DEPOIS
       const passo = 8 * 1024 * 1024;
       for (let pos = 0; pos < arquivo.size && !parar; pos += passo) { const b = await arquivo.slice(pos, pos + passo).arrayBuffer(); b.fileStart = pos; ent.appendBuffer(b); }
       ent.flush();
+      // vídeo sem faixa de áudio nenhuma (gravado mudo): não tem o que ouvir
+      if (semFaixa) { st.motivoAudio = "sem faixa de áudio"; return []; }
       if (!faixa || !amostras.length) { st.motivoAudio = `faixa ${Boolean(faixa)} amostras ${amostras.length}`; return null; }
       const entrada = ent.getTrackById(faixa.id).mdia.minf.stbl.stsd.entries[0];
       const acha = (d, tag) => (!d ? null : d.tag === tag ? d : (d.descs || []).map((x) => acha(x, tag)).find(Boolean));
@@ -299,7 +302,8 @@ IDEIA PARA DEPOIS
     });
     v.pause(); rec.disconnect(); mudo.disconnect(); c.no.disconnect(); c.no.connect(mestre);
     const total = blocos.reduce((n, b) => n + b.length, 0);
-    if (!total || !blocos.some((b) => b.some((x) => Math.abs(x) > 1e-4))) throw new Error("O iPhone não me deixou ouvir o áudio deste vídeo. Tente pelo computador, ou exporte o vídeo como MP4 e envie de novo.");
+    // só silêncio: o clipe é mudo (ou o navegador não deixou ouvir); segue sem fala
+    if (!total || !blocos.some((b) => b.some((x) => Math.abs(x) > 1e-4))) { c.mudo = true; return []; }
     const junto = new Float32Array(total); let pos = 0; for (const b of blocos) { junto.set(b, pos); pos += b.length; }
     const alvo = 16000, off = new OfflineAudioContext(1, Math.ceil((total / taxa) * alvo), alvo);
     const buf = off.createBuffer(1, total, taxa); buf.getChannelData(0).set(junto);
@@ -384,7 +388,7 @@ IDEIA PARA DEPOIS
       try {
         const el = await carregarVideo(a), clipe = { id: uid(), nome: a.name, arquivo: a, el, dur: el.duration || 0, w: el.videoWidth, h: el.videoHeight, palavras: null };
         // abrindo um projeto: o arquivo certo recupera a transcrição salva
-        if (pend) { const i = pend.findIndex((x) => !x.usado && (x.nome === a.name || Math.abs((x.dur || 0) - clipe.dur) < 0.25)); if (i >= 0) { pend[i].usado = true; clipe.palavras = pend[i].palavras && pend[i].palavras.length ? pend[i].palavras : null; clipe.ordem = i; } }
+        if (pend) { const i = pend.findIndex((x) => !x.usado && (x.nome === a.name || Math.abs((x.dur || 0) - clipe.dur) < 0.25)); if (i >= 0) { pend[i].usado = true; clipe.palavras = pend[i].palavras && (pend[i].palavras.length || pend[i].mudo) ? pend[i].palavras : null; clipe.mudo = Boolean(pend[i].mudo); clipe.ordem = i; } }
         clipe.capa = miniaturaDoClipe(el);
         st.clipes.push(clipe);
       } catch (e) { toast(e.message, true); }
@@ -406,7 +410,7 @@ IDEIA PARA DEPOIS
   const dadosProjeto = () => ({ versao: 3,
     tema: st.tema, roteiro: st.roteiro, pedidos: st.pedidos, manual: st.manual, opc: st.opc, plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, editLeg: st.editLeg, marcas: st.marcas, capa: st.capa, correcoes: st.correcoes,
     efeitos: st.efeitos.filter((e) => !e.doTitulo && !e.daChamativa).map(({ id, ...e }) => e),
-    clipes: (st.clipes.length ? st.clipes : st.pendentes || []).map((c) => ({ nome: c.nome, dur: Math.round((c.dur || 0) * 100) / 100, palavras: c.palavras || null })),
+    clipes: (st.clipes.length ? st.clipes : st.pendentes || []).map((c) => ({ nome: c.nome, dur: Math.round((c.dur || 0) * 100) / 100, palavras: c.palavras || null, mudo: c.mudo || undefined })),
   });
   let tempoSalvar = null;
   function salvarDepois() { clearTimeout(tempoSalvar); tempoSalvar = setTimeout(salvarProjeto, 1500); }
@@ -647,13 +651,14 @@ IDEIA PARA DEPOIS
     try {
       let offset = 0;
       for (const [i, c] of st.clipes.entries()) {
-        if (!c.palavras || !c.palavras.length) {
+        if (!c.palavras || (!c.palavras.length && !c.mudo)) {
           etapa(`Ouvindo o clipe ${i + 1} de ${st.clipes.length}`);
           // 1º: tira a faixa de áudio de dentro do MP4/MOV (não depende do navegador abrir o áudio)
           let partes = await audioDoArquivo(c.arquivo);
           if (!partes) partes = IPHONE && c.arquivo.size > 150e6 ? null : await audioDoVideo(c.arquivo);
           // iPhone/Safari não abre o áudio de .MOV (ou o arquivo é grande demais): escuta tocando o vídeo
-          if (!partes) { etapa(`Ouvindo o clipe ${i + 1} tocando (no iPhone leva o tempo do vídeo, deixe a tela ligada)`); partes = await audioTocando(c); }
+          if (!partes) { etapa(`Ouvindo o clipe ${i + 1} tocando${IPHONE ? " (no iPhone leva o tempo do vídeo, deixe a tela ligada)" : " (leva o tempo do vídeo)"}`); partes = await audioTocando(c); }
+          if (!partes.length) c.mudo = true;
           c.palavras = [];
           for (const p of partes) {
             const form = new FormData(); form.append("acao", "transcrever"); form.append("arquivo", p.blob, p.nome || "audio.wav");
@@ -669,8 +674,16 @@ IDEIA PARA DEPOIS
         st.plano = await chamar({ acao: "plano", palavras: todas, duracao: offset, padrao: padraoComPedidos(), tema: st.tema, roteiro: st.roteiro.trim() || undefined });
         st.titulo = st.plano.titulo || "";
         st.tituloDestaque = st.plano.titulo_destaque || "";
+      } else if (st.roteiro.trim()) {
+        // vídeo sem fala: a edição sai do roteiro (cada clipe é uma cena, na ordem)
+        etapa("O vídeo não tem fala, então vou montar a edição pelo seu roteiro (cada clipe é uma cena, na ordem da lista)");
+        st.plano = await chamar({ acao: "plano", palavras: [], duracao: offset, padrao: padraoComPedidos(), tema: st.tema, roteiro: st.roteiro.trim(),
+          clipes: st.clipes.map((c) => ({ nome: c.nome, de: +c.offset.toFixed(2), ate: +(c.offset + c.dur).toFixed(2), dur: +c.dur.toFixed(2) })) });
+        st.plano.sem_fala = true;
+        st.titulo = st.plano.titulo || "";
+        st.tituloDestaque = st.plano.titulo_destaque || "";
       } else {
-        etapa("Não consegui ouvir fala nesse vídeo, então ficou sem legenda e sem cortes. Se ele tem fala, me avise.", "erro");
+        etapa("Esse vídeo não tem fala. Cole o roteiro em \"Seu roteiro\" e clique em Editar de novo: eu monto o texto na tela, o título e os efeitos pelas cenas dele.", "erro");
         st.plano = { titulo: "", remover: [], destaques: [], zooms: [], efeitos: [], broll: [], dicas: ["Não ouvi fala nesse vídeo, então não cortei silêncios nem pus legenda. Dá para pôr título e efeitos à mão."], musica: "" };
       }
       etapa("Montando a linha do tempo");
@@ -680,7 +693,9 @@ IDEIA PARA DEPOIS
       ajustarVoz();
       montar();
       const ouvidas = palavrasBrutas();
-      etapa(ouvidas.length ? `Ouvi o seu vídeo: ${ouvidas.length} palavras (veja abaixo em "O que eu ouvi").` : "Não ouvi fala no vídeo.", ouvidas.length ? "ok" : "erro");
+      if (ouvidas.length) etapa(`Ouvi o seu vídeo: ${ouvidas.length} palavras (veja abaixo em "O que eu ouvi").`, "ok");
+      else if (st.plano && st.plano.sem_fala) etapa(`Montei pelo roteiro: ${(st.plano.textos || []).length} textos na tela em ${st.clipes.length} cena${st.clipes.length > 1 ? "s" : ""}. Se alguma cena ficou fora de ordem, arraste o clipe na lista e clique em Editar.`, "ok");
+      else etapa("Não ouvi fala no vídeo.", "erro");
       const reg = regrasDoPedido(st.pedidos);
       if (Object.keys(reg).length) etapa("Segui o que você pediu: " + descreverRegras(reg).join("; ") + ".", "ok");
       etapa("Pronto! Dá o play para ver a prévia.", "ok");
@@ -783,7 +798,18 @@ IDEIA PARA DEPOIS
       const alvo = perto.find((x) => d.palavra && limpa(x.w) === limpa(d.palavra)) || perto.sort((a, b) => Math.abs(a.g - d.t) - Math.abs(b.g - d.t))[0];
       if (alvo) alvo.destaque = true;
     }
-    st.legendas = aplicarEdicoes(agrupar(palavras));
+    if (!palavras.length && (p.textos || []).length) {
+      // vídeo sem fala montado pelo roteiro: cada texto na tela vira uma legenda inteira
+      const grupos = [];
+      for (const x of p.textos) {
+        const o0 = paraFinalPerto(x.de); if (o0 == null) continue;
+        let o1 = paraFinal(Math.max(x.de + 0.3, x.ate - 0.01)); if (o1 == null || o1 <= o0) o1 = o0 + Math.max(1, x.ate - x.de);
+        const ws = String(x.texto).split(/\s+/).filter(Boolean).map((w) => ({ w, o0, o1, g: x.de, k: chaveLeg(x.de) }));
+        if (ws.length) grupos.push({ palavras: ws, o0, o1, texto: x.texto });
+      }
+      grupos.sort((a, b) => a.o0 - b.o0).forEach((g, i, l) => { if (l[i + 1] && g.o1 > l[i + 1].o0) g.o1 = l[i + 1].o0; });
+      st.legendas = aplicarEdicoes(grupos);
+    } else st.legendas = aplicarEdicoes(agrupar(palavras));
     // efeitos e zooms do plano no tempo final
     const tirados = new Set(st.manual.tirados || []);
     st.efeitos = (p.efeitos || []).map((e) => ({ id: uid(), t: paraFinalPerto(e.t), tipo: e.tipo, por_que: e.por_que || "", chave: `p:${e.tipo}@${Math.round(e.t * 10)}` })).filter((e) => e.t != null && !tirados.has(e.chave));
@@ -1784,7 +1810,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   function pintar() {
     const sec = document.getElementById("aba-" + ABA);
     if (!sec || !$("#ed-clipes", sec)) return;
-    $("#ed-clipes", sec).innerHTML = (st.pendentes ? `<div class="faixa ed-pendentes"><b>Projeto "${esc(st.projeto ? st.projeto.nome : "")}"</b>: escolha de novo ${st.pendentes.length > 1 ? "os vídeos" : "o vídeo"} deste projeto para a edição voltar como você deixou: ${st.pendentes.map((x) => `<span class="${x.usado ? "ok" : ""}">${esc(x.nome)}${x.usado ? " ✓" : ""}</span>`).join(", ")}.</div>` : "") + (st.clipes.length > 1 ? `<p class="ed-clipes-dica">Arraste a cena (ou use as setas) para trocar a ordem. O X tira a cena; para colocar outra, envie mais vídeos.</p>` : "") + st.clipes.map((c, i) => `<div class="ed-clipe" data-clipe="${c.id}" draggable="${st.trabalhando || st.exportando ? "false" : "true"}"><span class="ed-alca" aria-hidden="true">${ic.alca}</span><span class="ed-num">${i + 1}</span>${c.capa ? `<img class="ed-capa-clipe" src="${c.capa}" alt="">` : ""}<div><b>${esc(c.nome)}</b><small>${tempo(c.dur)}${c.w ? ` · ${c.w}x${c.h}` : ""}${c.palavras ? ` · ${c.palavras.length} palavras ouvidas` : ""}</small></div>
+    $("#ed-clipes", sec).innerHTML = (st.pendentes ? `<div class="faixa ed-pendentes"><b>Projeto "${esc(st.projeto ? st.projeto.nome : "")}"</b>: escolha de novo ${st.pendentes.length > 1 ? "os vídeos" : "o vídeo"} deste projeto para a edição voltar como você deixou: ${st.pendentes.map((x) => `<span class="${x.usado ? "ok" : ""}">${esc(x.nome)}${x.usado ? " ✓" : ""}</span>`).join(", ")}.</div>` : "") + (st.clipes.length > 1 ? `<p class="ed-clipes-dica">Arraste a cena (ou use as setas) para trocar a ordem. O X tira a cena; para colocar outra, envie mais vídeos.</p>` : "") + st.clipes.map((c, i) => `<div class="ed-clipe" data-clipe="${c.id}" draggable="${st.trabalhando || st.exportando ? "false" : "true"}"><span class="ed-alca" aria-hidden="true">${ic.alca}</span><span class="ed-num">${i + 1}</span>${c.capa ? `<img class="ed-capa-clipe" src="${c.capa}" alt="">` : ""}<div><b>${esc(c.nome)}</b><small>${tempo(c.dur)}${c.w ? ` · ${c.w}x${c.h}` : ""}${c.mudo ? " · sem som" : c.palavras ? ` · ${c.palavras.length} palavras ouvidas` : ""}</small></div>
       <button class="icone-btn" type="button" data-mover="${c.id}" data-passo="-1" aria-label="Subir cena" ${i === 0 || st.trabalhando || st.exportando ? "disabled" : ""}>${ic.cima}</button>
       <button class="icone-btn" type="button" data-mover="${c.id}" data-passo="1" aria-label="Descer cena" ${i === st.clipes.length - 1 || st.trabalhando || st.exportando ? "disabled" : ""}>${ic.baixo}</button>
       <button class="icone-btn" type="button" data-tirar="${c.id}" aria-label="Tirar clipe" ${st.trabalhando || st.exportando ? "disabled" : ""}>${ic.x}</button></div>`).join("");
