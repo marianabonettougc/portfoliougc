@@ -1627,3 +1627,10 @@ a.menu-item{text-decoration:none}
 .ed-cam-topo .ed-cam-tit{margin:0}
 .ed-desfazer{margin-left:auto}
 [data-desfazer-tudo]:disabled{opacity:.45;cursor:default}
+/* Visual do texto (cores, contorno, opacidade, sombra) */
+.ed-cam-visual{margin-top:14px;padding-top:12px;border-top:1px dashed var(--linha)}
+.ed-cam-sub{margin:0;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--principal)}
+.ed-cam-cor{display:flex;align-items:center;gap:6px}
+.ed-cam-grade input[type=color]{width:44px;height:30px;padding:0;border:1px solid var(--linha);border-radius:8px;background:none;cursor:pointer}
+.ed-cam-padrao{font:inherit;font-size:11px;border:1px solid var(--linha);background:var(--papel,#fffdf9);color:var(--suave);border-radius:999px;padding:3px 8px;cursor:pointer}
+.ed-cam-val{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--principal)}

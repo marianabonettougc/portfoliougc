@@ -1117,6 +1117,15 @@ IDEIA PARA DEPOIS
   // linha: { texto, tipo: "cap" (Poppins caixa-alta espaçada, branca) | "ser" (DM Serif itálica, creme) | "emo", tam (em 1080) }
   const FONTE_CAMADA = { cap: (px) => `600 ${px}px Poppins, sans-serif`, ser: (px) => `italic 400 ${px}px "DM Serif Display", Georgia, serif`, emo: (px) => `${px}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif` };
   const ALTURA_LINHA = { cap: 1.55, ser: 1.08, emo: 1.35 };
+  // visual de cada texto (ela ajusta na aba Textos): cores, contorno, opacidade e sombra atrás
+  const VISUAL_PADRAO = { cor: "#fff3b0", corPequena: "#ffffff", contorno: 0, contornoCor: "#1d1611", opacidade: 1, sombra: 0.72, sombraCor: "#160c08" };
+  function visualCamada(cam) {
+    const v = { ...VISUAL_PADRAO };
+    for (const k of Object.keys(VISUAL_PADRAO)) if (cam[k] !== undefined && cam[k] !== null && cam[k] !== "") v[k] = cam[k];
+    v.contorno = clamp(+v.contorno || 0, 0, 14); v.opacidade = clamp(+v.opacidade, 0.1, 1); v.sombra = clamp(+v.sombra, 0, 1);
+    return v;
+  }
+  function rgbaDe(hex, a) { const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "")); const n = m ? parseInt(m[1], 16) : 0x160c08; return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
   function medirLinha(l, px) {
     c2d.font = FONTE_CAMADA[l.tipo] ? FONTE_CAMADA[l.tipo](px) : FONTE_CAMADA.ser(px);
     if (l.tipo === "cap") { const t = String(l.texto || "").toUpperCase(), esp = px * 0.16; return [...t].reduce((a, ch) => a + c2d.measureText(ch).width + esp, 0) - esp; }
@@ -1136,17 +1145,27 @@ IDEIA PARA DEPOIS
       const bw = Math.max(...med.map((m) => m.w)), bh = med.reduce((a, m) => a + m.h, 0);
       const cx = cam.x * W, cy = cam.y * H + dy;
       let y = cy - bh / 2;
-      c2d.save(); c2d.globalAlpha = alfa; c2d.textBaseline = "middle";
+      const vis = visualCamada(cam);
+      c2d.save(); c2d.globalAlpha = alfa * vis.opacidade; c2d.textBaseline = "middle"; c2d.lineJoin = "round"; c2d.miterLimit = 2;
+      const semSombra = () => { c2d.shadowColor = "transparent"; c2d.shadowBlur = 0; c2d.shadowOffsetY = 0; };
+      const comSombra = () => { if (vis.sombra > 0) { c2d.shadowColor = rgbaDe(vis.sombraCor, vis.sombra); c2d.shadowBlur = (8 + 22 * vis.sombra) * u; c2d.shadowOffsetY = 4 * u; } else semSombra(); };
       for (const m of med) {
         const meio = y + m.h / 2, l = m.l;
         c2d.font = (FONTE_CAMADA[l.tipo] || FONTE_CAMADA.ser)(m.px);
-        if (l.tipo !== "emo") { c2d.shadowColor = "rgba(22,12,8,.72)"; c2d.shadowBlur = 22 * u; c2d.shadowOffsetY = 4 * u; }
-        else { c2d.shadowColor = "transparent"; c2d.shadowBlur = 0; c2d.shadowOffsetY = 0; }
-        c2d.fillStyle = l.tipo === "cap" ? (cam.corPequena || "#ffffff") : (cam.cor || "#fff3b0");
+        c2d.fillStyle = l.tipo === "cap" ? vis.corPequena : vis.cor;
+        const lw = l.tipo === "emo" ? 0 : vis.contorno * u * (cam.escala || 1);
+        if (lw > 0) { c2d.strokeStyle = vis.contornoCor; c2d.lineWidth = lw * 2; }
+        // contorno primeiro (com a sombra), depois o preenchimento por cima (sem sombra dobrada)
+        const pintar = (txt, x, alinh) => {
+          c2d.textAlign = alinh;
+          if (l.tipo === "emo") { semSombra(); c2d.fillText(txt, x, meio); return; }
+          if (lw > 0) { comSombra(); c2d.strokeText(txt, x, meio); semSombra(); c2d.fillText(txt, x, meio); }
+          else { comSombra(); c2d.fillText(txt, x, meio); }
+        };
         if (l.tipo === "cap") {
-          const txt = String(l.texto).toUpperCase(), esp = m.px * 0.16; let x = cx - m.w / 2; c2d.textAlign = "left";
-          for (const ch of txt) { c2d.fillText(ch, x, meio); x += c2d.measureText(ch).width + esp; }
-        } else { c2d.textAlign = "center"; c2d.fillText(String(l.texto), cx, meio); }
+          const txt = String(l.texto).toUpperCase(), esp = m.px * 0.16; let x = cx - m.w / 2;
+          for (const ch of txt) { pintar(ch, x, "left"); x += c2d.measureText(ch).width + esp; }
+        } else pintar(String(l.texto), cx, "center");
         y += m.h;
       }
       c2d.restore();
@@ -1266,8 +1285,20 @@ IDEIA PARA DEPOIS
               <label>Aparece em (s)<input class="entrada" type="number" step="0.1" min="0" data-cam-t0 value="${c.t0.toFixed(1)}"></label>
               <label>Some em (s)<input class="entrada" type="number" step="0.1" min="0" data-cam-t1 value="${c.t1.toFixed(1)}"></label>
               <label>Tamanho <input type="range" min="0.6" max="1.6" step="0.05" data-cam-esc value="${c.escala || 1}"></label>
-              <label>Cor da frase grande <input type="color" data-cam-cor value="${c.cor || "#fff3b0"}"></label>
             </div>
+            ${(() => { const vs = visualCamada(c), pc = (n) => Math.round(n * 100) + "%"; return `<div class="ed-cam-visual">
+              <h4 class="ed-cam-sub">Visual do texto</h4>
+              <div class="ed-cam-grade">
+                <label>Cor da frase grande <span class="ed-cam-cor"><input type="color" data-cam-vis="cor" value="${vs.cor}"><button type="button" class="ed-cam-padrao" data-cam-volta="cor" title="Voltar ao creme">creme</button></span></label>
+                <label>Cor das linhas pequenas <span class="ed-cam-cor"><input type="color" data-cam-vis="corPequena" value="${vs.corPequena}"><button type="button" class="ed-cam-padrao" data-cam-volta="corPequena" title="Voltar ao branco">branco</button></span></label>
+                <label>Contorno <span class="ed-cam-val">${vs.contorno ? vs.contorno.toFixed(0) : "sem"}</span><input type="range" min="0" max="14" step="1" data-cam-vis="contorno" value="${vs.contorno}"></label>
+                <label>Cor do contorno <input type="color" data-cam-vis="contornoCor" value="${vs.contornoCor}"></label>
+                <label>Opacidade <span class="ed-cam-val">${pc(vs.opacidade)}</span><input type="range" min="0.1" max="1" step="0.05" data-cam-vis="opacidade" value="${vs.opacidade}"></label>
+                <label>Sombra atrás <span class="ed-cam-val">${vs.sombra ? pc(vs.sombra) : "sem"}</span><input type="range" min="0" max="1" step="0.05" data-cam-vis="sombra" value="${vs.sombra}"></label>
+                <label>Cor da sombra <input type="color" data-cam-vis="sombraCor" value="${vs.sombraCor}"></label>
+              </div>
+              <div class="ed-cam-acoes"><button class="btn btn-leve" type="button" data-cam-todos>Usar este visual em todos os textos</button></div>
+            </div>`; })()}
             <div class="ed-cam-acoes">
               <button class="btn btn-leve" type="button" data-cam-agora="t0">Começar aqui</button>
               <button class="btn btn-leve" type="button" data-cam-agora="t1">Terminar aqui</button>
@@ -1297,7 +1328,21 @@ IDEIA PARA DEPOIS
     $("[data-cam-t0]", corpo).addEventListener("change", (e) => { guardarCam(); c.t0 = Math.max(0, +e.target.value || 0); if (c.t1 <= c.t0) c.t1 = c.t0 + 0.5; pintarCamadas(); mexeu(); });
     $("[data-cam-t1]", corpo).addEventListener("change", (e) => { guardarCam(); c.t1 = Math.max(c.t0 + 0.2, +e.target.value || 0); pintarCamadas(); mexeu(); });
     $("[data-cam-esc]", corpo).addEventListener("input", (e) => { guardarCam("esc" + c.id); c.escala = +e.target.value; mexeu(); });
-    $("[data-cam-cor]", corpo).addEventListener("input", (e) => { guardarCam("cor" + c.id); c.cor = e.target.value; mexeu(); });
+    const NUM_VIS = ["contorno", "opacidade", "sombra"];
+    $$("[data-cam-vis]", corpo).forEach((i) => {
+      const k = i.dataset.camVis, aplicar = () => {
+        guardarCam("vis" + k + c.id); c[k] = NUM_VIS.includes(k) ? +i.value : i.value; mexeu();
+        const val = i.closest("label") && i.closest("label").querySelector(".ed-cam-val");
+        if (val) val.textContent = k === "contorno" ? (+i.value ? String(+i.value) : "sem") : (k === "sombra" && !+i.value ? "sem" : Math.round(+i.value * 100) + "%");
+      };
+      i.addEventListener("input", aplicar); i.addEventListener("change", aplicar); // o iPhone só avisa no "change"
+    });
+    $$("[data-cam-volta]", corpo).forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); guardarCam(); delete c[b.dataset.camVolta]; pintarCamadas(); mexeu(); }));
+    $("[data-cam-todos]", corpo).addEventListener("click", () => {
+      guardarCam(); const vs = visualCamada(c);
+      st.camadas.forEach((x) => { Object.keys(VISUAL_PADRAO).forEach((k) => { x[k] = vs[k]; }); });
+      mexeu(); toast(`Visual aplicado nos ${st.camadas.length} textos.`);
+    });
     $$("[data-cam-agora]", corpo).forEach((b) => b.addEventListener("click", () => { guardarCam(); const k = b.dataset.camAgora; c[k] = +st.t.toFixed(2); if (c.t1 <= c.t0) { if (k === "t0") c.t1 = c.t0 + 1; else c.t0 = Math.max(0, c.t1 - 1); } pintarCamadas(); mexeu(); }));
     $("[data-cam-ver]", corpo).addEventListener("click", () => irPara(c.t0));
     $$("[data-cam-centro]", corpo).forEach((b) => b.addEventListener("click", () => { guardarCam(); c[b.dataset.camCentro] = 0.5; mexeu(); toast(b.dataset.camCentro === "x" ? "Texto no meio da largura." : "Texto no meio da altura."); }));
@@ -1645,7 +1690,7 @@ IDEIA PARA DEPOIS
   }
   function parar() { st.parar = true; st.clipes.forEach((c) => c.el.pause()); }
 
-  async function exportar() {
+  async function exportarAoVivo() {
     if (!st.segs.length || st.exportando) return;
     if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) { toast("Esse navegador não exporta vídeo. Use o Chrome ou o Safari no computador.", true); return; }
     if (st.tocando) { parar(); await espera(150); }
@@ -1676,6 +1721,167 @@ IDEIA PARA DEPOIS
     pintar();
     toast("Vídeo editado pronto para baixar.");
   }
+
+  // ---------- exportar quadro a quadro (out/2026: o vídeo gravado ao vivo travava depois de salvo) ----------
+  // O jeito antigo gravava a tela em tempo real (MediaRecorder): com vídeo 4K do iPhone o navegador perdia quadros,
+  // as pausas entre cortes deixavam buracos e o MP4 saía "fragmentado" (o app Fotos do Windows e o WhatsApp travam).
+  // Agora cada quadro é desenhado e codificado com o tempo exato (WebCodecs), o áudio é mixado à parte
+  // (OfflineAudioContext, com a voz e os efeitos) e o MP4 é montado com o índice no começo (mp4-muxer, fastStart).
+  const FPS = 30;
+  let muxerPronto = null;
+  function carregarMuxer() {
+    if (window.Mp4Muxer) return Promise.resolve();
+    if (!muxerPronto) muxerPronto = new Promise((ok, falha) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.js"; sc.onload = ok; sc.onerror = () => { muxerPronto = null; falha(new Error("muxer")); }; document.head.appendChild(sc); });
+    return muxerPronto;
+  }
+  async function configVideo(w, h) {
+    const br = st.opc.qualidade === 720 ? 6e6 : 12e6;
+    const opcoes = [["avc", "avc1.640028"], ["avc", "avc1.4d0028"], ["avc", "avc1.42002a"], ["vp9", "vp09.00.40.08"]];
+    for (const [mux, codec] of opcoes) {
+      for (const hw of ["prefer-hardware", "no-preference"]) {
+        const cfg = { codec, width: w, height: h, bitrate: br, framerate: FPS, hardwareAcceleration: hw, latencyMode: "quality", ...(mux === "avc" ? { avc: { format: "avc" } } : {}) };
+        try { const r = await VideoEncoder.isConfigSupported(cfg); if (r && r.supported) return { mux, cfg }; } catch (e) { /* tenta o próximo */ }
+      }
+    }
+    return null;
+  }
+  async function configAudio() {
+    for (const [mux, codec] of [["aac", "mp4a.40.2"], ["opus", "opus"]]) {
+      const cfg = { codec, sampleRate: 48000, numberOfChannels: 2, bitrate: 192000 };
+      try { const r = await AudioEncoder.isConfigSupported(cfg); if (r && r.supported) return { mux, cfg }; } catch (e) { /* tenta o próximo */ }
+    }
+    return null;
+  }
+  // áudio original de cada clipe, decodificado em 48 kHz (fica guardado no clipe)
+  async function audioDoClipe(c) {
+    if (c.mudo) return null;
+    if (c.somBuf !== undefined) return c.somBuf;
+    const dec = new OfflineAudioContext(2, 1, 48000);
+    const tentar = async (blob) => { try { return await dec.decodeAudioData(await blob.arrayBuffer()); } catch (e) { return null; } };
+    let buf = null;
+    if (c.arquivo && c.arquivo.size < 350 * 1048576 && !IPHONE) buf = await tentar(c.arquivo);
+    if (!buf && c.arquivo) { const m = await audioDoArquivo(c.arquivo); if (m && m.length) buf = await tentar(m[0].blob); else if (m && !m.length) { c.somBuf = null; return null; } }
+    if (!buf) throw new Error("sem áudio");
+    c.somBuf = buf; return buf;
+  }
+  async function mixarAudio(dur) {
+    const bufs = [];
+    for (const c of st.clipes) bufs.push(await audioDoClipe(c));
+    const off = new OfflineAudioContext(2, Math.max(1, Math.ceil(dur * 48000)), 48000);
+    const guardado = { ac, mestre, ruidoBuf, voz };
+    try {
+      ac = off; voz = null;
+      mestre = off.createGain(); mestre.connect(off.destination);
+      ruidoBuf = off.createBuffer(1, off.sampleRate * 2, off.sampleRate);
+      const d = ruidoBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const entrada = cadeiaVoz().entrada;
+      for (const s of st.segs) {
+        const buf = bufs[s.ci]; if (!buf) continue;
+        const ini = Math.max(0, s.a), len = Math.max(0, Math.min(s.b, buf.duration) - ini); if (len <= 0.01) continue;
+        const src = off.createBufferSource(); src.buffer = buf; src.connect(entrada); src.start(s.o0, ini, len);
+      }
+      if (st.opc.efeitos) for (const e of st.efeitos) if (e.t < dur) tocarEfeito(e.tipo, e.t, st.opc.vol);
+    } finally { ({ ac, mestre, ruidoBuf, voz } = guardado); }
+    return off.startRendering();
+  }
+  function mostrarProgresso(k, txt) {
+    st.progresso = k;
+    const b = $("#ed-exportar"); if (b) b.textContent = txt || `Gerando o vídeo… ${Math.round(k * 100)}% (deixe esta aba aberta)`;
+  }
+  async function exportar() {
+    if (!st.segs.length || st.exportando) return;
+    const pode = window.VideoEncoder && window.AudioEncoder && window.VideoFrame && window.OfflineAudioContext;
+    if (pode) {
+      try { const r = await exportarQuadros(); if (r !== "sem-suporte") return; }
+      catch (e) { console.warn("exportar quadro a quadro falhou:", e); st.exportando = false; if (st.parar) { pintar(); return; } toast("Vou gerar do jeito antigo (ao vivo) neste navegador.", true); }
+    }
+    return exportarAoVivo();
+  }
+  async function exportarQuadros() {
+    if (st.tocando) { parar(); await espera(150); }
+    prepararCanvas();
+    const [W, H] = [canvas.width, canvas.height];
+    const [vc, acfg] = await Promise.all([configVideo(W, H), configAudio()]);
+    if (!vc || !acfg) return "sem-suporte";
+    await carregarMuxer(); await document.fonts.ready;
+    const dur = st.duracao, N = Math.max(1, Math.round(dur * FPS));
+    st.exportando = true; st.parar = false; st.arquivoFinal = null; pintar(); mostrarProgresso(0, "Preparando o áudio…");
+    try {
+      const som = await mixarAudio(dur);
+      const M = window.Mp4Muxer, alvo = new M.ArrayBufferTarget();
+      const mux = new M.Muxer({ target: alvo, fastStart: "in-memory", firstTimestampBehavior: "offset",
+        video: { codec: vc.mux, width: W, height: H, frameRate: FPS }, audio: { codec: acfg.mux, numberOfChannels: 2, sampleRate: 48000 } });
+      let erro = null;
+      const venc = new VideoEncoder({ output: (ch, meta) => mux.addVideoChunk(ch, meta), error: (e) => { erro = e; } });
+      venc.configure(vc.cfg);
+      const aenc = new AudioEncoder({ output: (ch, meta) => mux.addAudioChunk(ch, meta), error: (e) => { erro = e; } });
+      aenc.configure(acfg.cfg);
+      // áudio: em blocos de 1024 amostras (planar)
+      const L = som.getChannelData(0), R = som.numberOfChannels > 1 ? som.getChannelData(1) : L, BL = 1024 * 8;
+      for (let i = 0; i < som.length; i += BL) {
+        const n = Math.min(BL, som.length - i), dados = new Float32Array(n * 2);
+        dados.set(L.subarray(i, i + n), 0); dados.set(R.subarray(i, i + n), n);
+        const ad = new AudioData({ format: "f32-planar", sampleRate: 48000, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i / 48000 * 1e6), data: dados });
+        aenc.encode(ad); ad.close();
+        if (aenc.encodeQueueSize > 30) await espera(5);
+      }
+      // vídeo: um quadro por vez, cada um no tempo certo
+      let prox = 0;
+      const quadro = async () => {
+        desenhar(prox / FPS);
+        const f = new VideoFrame(canvas, { timestamp: Math.round(prox * 1e6 / FPS), duration: Math.round(1e6 / FPS) });
+        venc.encode(f, { keyFrame: prox % (FPS * 2) === 0 }); f.close();
+        prox++;
+        if (prox % 6 === 0) { mostrarProgresso(prox / N); atualizarTempoExport(prox / FPS); }
+        while (venc.encodeQueueSize > 12 && !erro) await espera(4);
+      };
+      for (let i = 0; i < st.segs.length && prox < N && !st.parar && !erro; i++) {
+        const s = st.segs[i], c = st.clipes[s.ci], v = c.el, fimSeg = Math.min(s.o1, dur);
+        v.muted = true; v.pause();
+        // caminho rápido: toca o bruto em meia velocidade e pega cada quadro que aparece (requestVideoFrameCallback),
+        // com o tempo certo de cada um; se algum quadro faltar, repete o anterior (nunca congela nem pula o tempo)
+        if ("requestVideoFrameCallback" in v && !st.soBusca) {
+          v.currentTime = Math.max(0, s.a + (prox / FPS - s.o0)); await esperarEvento(v, "seeked");
+          v.playbackRate = 0.5;
+          await new Promise((ok) => {
+            let ultimo = Date.now(), feito = false, ocupado = false;
+            const fim = () => { if (feito) return; feito = true; clearInterval(cao); v.pause(); v.playbackRate = 1; ok(); };
+            const cao = setInterval(() => { if (Date.now() - ultimo > 3000 && !ocupado) fim(); }, 500); // travou: termina pela busca
+            const cb = async (agora, meta) => {
+              if (feito) return; ultimo = Date.now(); ocupado = true;
+              const tOut = s.o0 + (meta.mediaTime - s.a);
+              if (venc.encodeQueueSize > 12) v.pause();
+              while (prox < N && prox / FPS < fimSeg - 1e-6 && prox / FPS <= tOut + 0.5 / FPS && !st.parar && !erro) await quadro();
+              ocupado = false; ultimo = Date.now();
+              if (st.parar || erro || prox >= N || prox / FPS >= fimSeg - 1e-6 || v.ended || meta.mediaTime >= s.b - 0.5 / FPS) { fim(); return; }
+              if (v.paused) { try { await v.play(); } catch (e) { fim(); return; } }
+              v.requestVideoFrameCallback(cb);
+            };
+            v.requestVideoFrameCallback(cb);
+            v.play().catch(() => fim());
+          });
+        }
+        // quadro a quadro pela busca (o que sobrou do trecho, ou navegador sem o caminho rápido)
+        while (prox < N && prox / FPS < fimSeg - 1e-6 && !st.parar && !erro) {
+          const alvoT = s.a + (prox / FPS - s.o0);
+          if (Math.abs(v.currentTime - alvoT) > 0.5 / FPS || v.readyState < 2) { v.currentTime = Math.min(alvoT, Math.max(0, (v.duration || alvoT) - 0.01)); await esperarEvento(v, "seeked"); if (v.readyState < 2) await esperarEvento(v, "loadeddata"); }
+          await quadro();
+        }
+      }
+      st.clipes.forEach((c) => { c.el.muted = false; });
+      if (st.parar || erro) { try { venc.close(); aenc.close(); } catch (e) { /* já fechado */ } st.exportando = false; if (erro) throw erro; toast("Exportação cancelada."); pintar(); return "cancelado"; }
+      mostrarProgresso(1, "Finalizando o MP4…");
+      await venc.flush(); await aenc.flush(); venc.close(); aenc.close();
+      mux.finalize();
+      const blob = new Blob([alvo.buffer], { type: "video/mp4" });
+      const base = (st.clipes[0] ? st.clipes[0].nome.replace(/\.[^.]+$/, "") : "video") + "-editado";
+      st.arquivoFinal = { url: URL.createObjectURL(blob), nome: `${base}.mp4`, ext: "mp4", tamanho: blob.size };
+      st.exportando = false; st.t = 0; pintar(); desenhar(0);
+      toast("Vídeo editado pronto para baixar (MP4 que roda liso no celular e no computador).");
+      return "ok";
+    } catch (e) { st.exportando = false; st.clipes.forEach((c) => { c.el.muted = false; }); throw e; }
+  }
+  function atualizarTempoExport(t) { const r = $("#ed-relogio"); if (r) r.textContent = tempo(t); const ag = $("#ed-agulha"); if (ag && st.duracao) ag.style.left = (Math.min(t, st.duracao) / st.duracao * 100).toFixed(3) + "%"; }
   function srt() {
     const f = (s) => { const ms = Math.round(s * 1000), h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, ss = Math.floor(ms / 1000) % 60; return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(ss).padStart(2, "0")},${String(ms % 1000).padStart(3, "0")}`; };
     return st.legendas.map((g, i) => `${i + 1}\n${f(g.o0)} --> ${f(g.o1)}\n${textoLeg(g)}\n`).join("\n");
@@ -3299,7 +3505,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     if (!st.segs.length) { box.innerHTML = ""; return; }
     const f = st.arquivoFinal;
     box.innerHTML = `<div class="ed-exportar">
-        <button class="btn btn-principal ed-botao-grande" type="button" id="ed-exportar" ${st.exportando || st.trabalhando ? "disabled" : ""}>${st.exportando ? "Gerando o vídeo… (deixe esta aba aberta)" : ic.baixar + "Gerar vídeo editado"}</button>
+        <button class="btn btn-principal ed-botao-grande" type="button" id="ed-exportar" ${st.exportando || st.trabalhando ? "disabled" : ""}>${st.exportando ? (st.progresso != null ? `Gerando o vídeo… ${Math.round(st.progresso * 100)}% (deixe esta aba aberta)` : "Gerando o vídeo… (deixe esta aba aberta)") : ic.baixar + "Gerar vídeo editado"}</button>
         ${st.exportando ? `<button class="btn" type="button" id="ed-cancelar">Cancelar</button>` : ""}
         <button class="btn" type="button" id="ed-srt">Legenda .srt (CapCut)</button>
       </div>
