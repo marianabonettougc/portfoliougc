@@ -1510,7 +1510,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const fonte = fonteLeg(Math.round(15 * (o.tamLeg || 1)), o.fonteLeg === "minha" && !st.minhaFonte ? "arimo" : o.fonteLeg);
     const txt = o.maiusculas ? "OLHA SÓ ISSO" : "olha só isso";
     const sombra = o.sombra === "dura" ? "2px 2px 0 rgba(0,0,0,.55)" : "0 1px 6px rgba(0,0,0,.55)";
-    return `<span class="ed-est-amostra" aria-hidden="true"><span class="ed-est-tit">${o.titulo === false ? "" : "meu gancho"}</span><span class="ed-est-leg" style="font:${fonte};color:${o.corLegenda || "#fff"};text-shadow:${sombra}">${txt}</span></span>`;
+    return `<span class="ed-est-amostra" aria-hidden="true"><span class="ed-est-tit">${o.titulo === false ? "" : "meu gancho"}</span><span class="ed-est-leg" style="font:${esc(fonte)};color:${o.corLegenda || "#fff"};text-shadow:${sombra}">${txt}</span></span>`;
   }
   const RESUMO_SONS = Object.fromEntries(QTD_SONS); const RESUMO_DINA = { calmo: "calmo", normal: "ritmo normal", dinamico: "dinâmico" };
   function resumoEstilo(o) { return [(FONTES_LEG[o.fonteLeg] || "").split(" (")[0], (RESUMO_SONS[o.sons] || "").split(" (")[0].toLowerCase() + " sons", RESUMO_DINA[o.dinamismo] || ""].filter((x) => x && x.trim() !== "sons").join(" · "); }
@@ -1593,8 +1593,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     return catalogoEfeitos().filter((f) => (st.fxCat === "todos" || f.cat === st.fxCat) && (!q || (f.nome + " " + f.desc + " " + nomeCat[f.cat]).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").includes(q)));
   }
   function previaEfeito(f) {
-    if (f.prev === "fonte") return `<span class="ed-fx-prev ed-fx-p-fonte" aria-hidden="true"><span style="font:${fonteLeg(17, f.fonte === "minha" && !st.minhaFonte ? "arimo" : f.fonte)};color:${st.opc.corLegenda || "#fff"}">olha só</span></span>`;
-    if (f.prev === "palavras") return `<span class="ed-fx-prev ed-fx-p-fonte" aria-hidden="true"><span style="font:${fonteLeg(14)};color:${st.opc.corLegenda || "#fff"}">${["olha", "olha só", "olha só isso", "olha só isso aqui"][f.n - 1]}</span></span>`;
+    if (f.prev === "fonte") return `<span class="ed-fx-prev ed-fx-p-fonte" aria-hidden="true"><span style="font:${esc(fonteLeg(17, f.fonte === "minha" && !st.minhaFonte ? "arimo" : f.fonte))};color:${st.opc.corLegenda || "#fff"}">olha só</span></span>`;
+    if (f.prev === "palavras") return `<span class="ed-fx-prev ed-fx-p-fonte" aria-hidden="true"><span style="font:${esc(fonteLeg(14))};color:${st.opc.corLegenda || "#fff"}">${["olha", "olha só", "olha só isso", "olha só isso aqui"][f.n - 1]}</span></span>`;
     if (f.prev === "titulo") return `<span class="ed-fx-prev ed-fx-p-titulo" aria-hidden="true"><span>meu gancho</span></span>`;
     if (f.prev === "som") return `<span class="ed-fx-prev ed-fx-p-som" aria-hidden="true">${ic.som}<i></i><i></i><i></i><i></i><i></i></span>`;
     return `<span class="ed-fx-prev ed-fx-p-${f.prev}" aria-hidden="true"><span class="ed-fx-pessoa"></span></span>`;
