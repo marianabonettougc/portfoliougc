@@ -1138,9 +1138,23 @@ IDEIA PARA DEPOIS
       c2d.restore();
       const pad = 14 * u;
       cam._box = [cx - bw / 2 - pad, cy - bh / 2 - pad, cx + bw / 2 + pad, cy + bh / 2 + pad];
+      if (sel) guiasCentro(cam, u, W, H);
       if (sel) { c2d.save(); c2d.strokeStyle = "rgba(255,255,255,.9)"; c2d.lineWidth = 3 * u; c2d.setLineDash([12 * u, 8 * u]); c2d.strokeRect(cam._box[0], cam._box[1], cam._box[2] - cam._box[0], cam._box[3] - cam._box[1]); c2d.restore(); }
     }
   }
+  // régua de centralizar (como no CapCut): linhas do meio da tela; acendem quando o texto encosta no centro
+  function guiasCentro(cam, u, W, H) {
+    if (st.exportando) return;
+    const noX = Math.abs(cam.x - 0.5) < 0.002, noY = Math.abs(cam.y - 0.5) < 0.002, arr = Boolean(st.arrastandoCam);
+    if (!arr && !noX && !noY) return;
+    c2d.save();
+    const linha = (x1, y1, x2, y2, on) => { c2d.lineWidth = (on ? 6 : 4) * u; c2d.strokeStyle = on ? "#f2c14e" : "rgba(255,255,255,.7)"; c2d.setLineDash(on ? [] : [10 * u, 8 * u]); c2d.beginPath(); c2d.moveTo(x1, y1); c2d.lineTo(x2, y2); c2d.stroke(); };
+    if (arr || noX) linha(W / 2, 0, W / 2, H, noX);
+    if (arr || noY) linha(0, H / 2, W, H / 2, noY);
+    if (arr) { c2d.strokeStyle = "rgba(255,255,255,.22)"; c2d.setLineDash([6 * u, 8 * u]); c2d.strokeRect(W * 0.08, H * 0.08, W * 0.84, H * 0.84); }
+    c2d.restore();
+  }
+  const IMA = 0.018; // distância (fração da tela) em que o texto gruda no centro
   // arrastar o texto direto na prévia (mouse ou dedo)
   function ligarArrasteCamadas() {
     if (!canvas || canvas.dataset.camadas) return; canvas.dataset.camadas = "1";
@@ -1153,15 +1167,17 @@ IDEIA PARA DEPOIS
       if (!cam) return;
       e.preventDefault(); canvas.setPointerCapture(e.pointerId);
       if (st.camSel !== cam.id) { st.camSel = cam.id; pintarCamadas(); }
-      pega = { cam, x0: x, y0: y, cx: cam.x, cy: cam.y };
+      pega = { cam, x0: x, y0: y, cx: cam.x, cy: cam.y }; st.arrastandoCam = true;
     });
     canvas.addEventListener("pointermove", (e) => {
       if (!pega) return; e.preventDefault();
       const [x, y] = ponto(e);
-      pega.cam.x = clamp(pega.cx + (x - pega.x0) / canvas.width); pega.cam.y = clamp(pega.cy + (y - pega.y0) / canvas.height);
+      let nx = clamp(pega.cx + (x - pega.x0) / canvas.width), ny = clamp(pega.cy + (y - pega.y0) / canvas.height);
+      if (Math.abs(nx - 0.5) < IMA) nx = 0.5; if (Math.abs(ny - 0.5) < IMA) ny = 0.5;
+      pega.cam.x = nx; pega.cam.y = ny;
       if (!st.tocando) desenhar(st.t);
     });
-    const soltar = () => { if (!pega) return; pega = null; pintarCamadas(); salvarDepois(); };
+    const soltar = () => { if (!pega) return; pega = null; st.arrastandoCam = false; if (!st.tocando) desenhar(st.t); pintarCamadas(); salvarDepois(); };
     canvas.addEventListener("pointerup", soltar); canvas.addEventListener("pointercancel", soltar);
   }
   function camadaAtual() { return st.camadas.find((c) => c.id === st.camSel); }
@@ -1170,7 +1186,7 @@ IDEIA PARA DEPOIS
     const fmt = (n) => (Math.round(n * 10) / 10).toFixed(1).replace(".", ",");
     const ordenadas = st.camadas.slice().sort((a, b) => a.t0 - b.t0);
     box.innerHTML = `<h3 class="ed-cam-tit">Textos na tela</h3>
-      <p class="ed-obs">Toque num texto para mudar a frase, o tempo e o tamanho. Para mudar o lugar, arraste o texto direto no vídeo. Tudo salva sozinho no projeto.</p>
+      <p class="ed-obs">Toque num texto para mudar a frase, o tempo e o tamanho. Para mudar o lugar, arraste o texto direto no vídeo: aparecem as linhas do meio da tela e, perto do centro, o texto gruda nele (a linha fica amarela). Tudo salva sozinho no projeto.</p>
       <div class="ed-cam-acoes"><button class="btn" type="button" id="ed-cam-novo">${ic.mais}Novo texto aqui (${fmt(st.t)} s)</button></div>
       ${ordenadas.length ? "" : `<p class="rr-vazio">Nenhum texto ainda.</p>`}
       ${ordenadas.map((c) => {
@@ -1193,6 +1209,8 @@ IDEIA PARA DEPOIS
             <div class="ed-cam-acoes">
               <button class="btn btn-leve" type="button" data-cam-agora="t0">Começar aqui</button>
               <button class="btn btn-leve" type="button" data-cam-agora="t1">Terminar aqui</button>
+              <button class="btn btn-leve" type="button" data-cam-centro="x">Centralizar na largura</button>
+              <button class="btn btn-leve" type="button" data-cam-centro="y">Centralizar na altura</button>
               <button class="btn btn-leve" type="button" data-cam-ver>Ver no vídeo</button>
               <button class="btn btn-leve" type="button" data-cam-dup>Duplicar</button>
               <button class="btn btn-leve ed-cam-apagar" type="button" data-cam-apagar>Apagar texto</button>
@@ -1219,6 +1237,7 @@ IDEIA PARA DEPOIS
     $("[data-cam-cor]", corpo).addEventListener("input", (e) => { c.cor = e.target.value; mexeu(); });
     $$("[data-cam-agora]", corpo).forEach((b) => b.addEventListener("click", () => { const k = b.dataset.camAgora; c[k] = +st.t.toFixed(2); if (c.t1 <= c.t0) { if (k === "t0") c.t1 = c.t0 + 1; else c.t0 = Math.max(0, c.t1 - 1); } pintarCamadas(); mexeu(); }));
     $("[data-cam-ver]", corpo).addEventListener("click", () => irPara(c.t0));
+    $$("[data-cam-centro]", corpo).forEach((b) => b.addEventListener("click", () => { c[b.dataset.camCentro] = 0.5; mexeu(); toast(b.dataset.camCentro === "x" ? "Texto no meio da largura." : "Texto no meio da altura."); }));
     $("[data-cam-dup]", corpo).addEventListener("click", () => { const n = JSON.parse(JSON.stringify(c)); delete n._box; n.id = uid(); n.t0 = c.t1; n.t1 = c.t1 + (c.t1 - c.t0); st.camadas.push(n); st.camSel = n.id; pintarCamadas(); mexeu(); });
     $("[data-cam-apagar]", corpo).addEventListener("click", (e) => {
       if (e.target.dataset.certeza !== "1") { e.target.dataset.certeza = "1"; e.target.textContent = "Toque de novo para apagar"; return; }
