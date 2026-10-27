@@ -108,12 +108,31 @@ IDEIA PARA DEPOIS
   const CORES_CHAMATIVA = ["#c6f432", "#cdb6ff", "#ffe45c", "#ffb3d9"];
   const DUR_TITULO = 2.8;
 
+  // ---------- estilos prontos (aba "Estilos"): cada estilo é a edição inteira de uma vez ----------
+  // fonte, cor e tamanho da legenda, título, quantidade de sons, dinamismo, transição e ritmo.
+  // Nenhum usa caixinha, confete, palavra gigante colorida nem fundo desfocado (ela não gosta).
+  const BASE_ESTILO = { estilo: "capcut", sombra: "suave", estiloTitulo: "simples", maiusculas: false, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, legenda: true, titulo: true, efeitos: true };
+  const ESTILOS_PRONTOS = [
+    { id: "padrao", nome: "Meu padrão", para: "O seu jeito de sempre: legenda amarelo clarinho, bem dinâmico, muitos sons", opc: { fonteLeg: "arimo", corLegenda: "#fff3b0", porLegenda: 3, tamLeg: 1, sons: "muitos", dinamismo: "dinamico", transicao: "punch", ritmo: "rapido" } },
+    { id: "publi", nome: "Publi dinâmica", para: "Produto em uso, ritmo turbo, flash no corte para o produto", opc: { fonteLeg: "arimo", corLegenda: "#fff3b0", porLegenda: 2, tamLeg: 1.05, sons: "muitos", dinamismo: "dinamico", transicao: "deslize", ritmo: "turbo", flash: true } },
+    { id: "suave", nome: "Suave", para: "Falas calmas, rotina e histórias pessoais, poucos sons", opc: { fonteLeg: "instrument", corLegenda: "#ffffff", porLegenda: 3, tamLeg: 1.1, sons: "poucos", dinamismo: "normal", transicao: "nenhuma", ritmo: "normal" } },
+    { id: "dicas", nome: "Dicas e números", para: "Listas, passo a passo e resultados, legenda firme", opc: { fonteLeg: "montserrat", corLegenda: "#ffffff", porLegenda: 2, tamLeg: 1.05, sons: "medio", dinamismo: "dinamico", transicao: "punch", ritmo: "rapido" } },
+    { id: "elegante", nome: "Elegante", para: "Beleza e perfume, serifada itálica, toque mais sofisticado", opc: { fonteLeg: "dmserif", corLegenda: "#fbf1e1", porLegenda: 3, tamLeg: 1, sons: "poucos", dinamismo: "normal", transicao: "punch", ritmo: "normal" } },
+    { id: "leve", nome: "Lifestyle leve", para: "Dia a dia, maternidade e casa, ritmo gostoso", opc: { fonteLeg: "poppins", corLegenda: "#ffffff", porLegenda: 3, tamLeg: 1, sons: "medio", dinamismo: "normal", transicao: "punch", ritmo: "rapido" } },
+  ];
+  const CHAVES_ESTILO = ["fonteLeg", "corLegenda", "porLegenda", "tamLeg", "sombra", "estilo", "estiloTitulo", "maiusculas", "sons", "dinamismo", "transicao", "ritmo", "flash", "tremer", "chamativas", "sonsChamativas", "confete", "altura", "vol", "cor", "legenda", "titulo", "efeitos"];
+
+  // ---------- quadro de efeitos (aba "Efeitos"): tudo o que o editor sabe fazer, achado por busca ----------
+  const DESC_SONS = { woosh: "Troca de assunto e zoom", suave: "Corte para o rosto, bem baixinho", pop: "Quando entra texto ou informação", click: "Cortes rápidos de close", shutter: "Clique de câmera, gravação de tela", typing: "Quando aparece algo escrito", riser: "Antes de revelar o produto", hit: "Logo depois do riser, na revelação", ding: "Produto aparece inteiro", cristal: "Nome da marca, frasco brilhando", brilho: "Névoa, brilho, produto reluzindo", spray: "Borrifo do produto", mensagem: "Antes do print ou áudio de WhatsApp", relogio: "Fixação, \"no fim do dia\"" };
+  const CATS_FX = [["todos", "Todos"], ["sons", "Sons"], ["camera", "Câmera e zoom"], ["transicao", "Transições"], ["legenda", "Legenda"], ["titulo", "Título"]];
+
   const st = {
     pronto: false, padrao: PADRAO, padraoSalvo: false,
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
     opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1, legenda: true, sons: "muitos", dinamismo: "dinamico" },
     pedidos: "", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, aba: "video", projeto: null, projetos: [], pendentes: null, salvando: "",
+    estiloAtivo: (() => { try { return localStorage.getItem("ed-estilo-ativo") || ""; } catch (e) { return ""; } })(), meusEstilos: [], estiloEditando: null, estiloApagar: null, fxBusca: "", fxCat: "todos",
     tema: "", roteiro: (() => { try { return localStorage.getItem("ed-roteiro") || ""; } catch (e) { return ""; } })(), posts: [], arquivoFinal: null,
   };
 
@@ -1348,6 +1367,7 @@ IDEIA PARA DEPOIS
       <header class="rr-cabeca"><div><h2 class="rr-h1">edição de reels</h2><p class="rr-lede">Mande o bruto e eu edito no seu padrão. Você revisa cada corte, legenda e efeito antes de baixar.</p></div>
         <div class="cr-acoes-topo"><button class="btn" type="button" id="ed-ver-padrao">Meu padrão de edição</button></div></header>
       <div class="ed-projeto" id="ed-projeto"></div>
+      <ol class="ed-passos" id="ed-passos" aria-label="Passos da edição"></ol>
       <div class="rr-wrap">
         <aside class="rr-lado">
           <div class="ed-tela rr-player"><canvas id="ed-canvas" width="1080" height="1920"></canvas><div class="ed-vazio" id="ed-vazio">${ic.filme}<span>A prévia aparece aqui</span></div><span class="rr-relogio" id="ed-relogio">0:00,0</span></div>
@@ -1378,10 +1398,12 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
             </section>
             <section class="ed-cartao" id="ed-ouvi" hidden></section>
           </div>
+          <div class="rr-painel" data-painel="estilos" hidden><section class="ed-cartao" id="ed-estilos"></section></div>
           <div class="rr-painel" data-painel="cortes" hidden><section class="ed-cartao" id="ed-cortes" hidden></section><p class="rr-vazio">Os cortes aparecem aqui depois que eu editar o vídeo.</p></div>
           <div class="rr-painel" data-painel="legendas" hidden><section class="ed-cartao" id="ed-legendas" hidden></section><p class="rr-vazio">As legendas aparecem aqui depois que eu editar o vídeo.</p></div>
           <div class="rr-painel" data-painel="visual" hidden><section class="ed-cartao" id="ed-ajustes" hidden></section><p class="rr-vazio">Título, fonte, cor e ritmo aparecem aqui depois que eu editar o vídeo.</p></div>
           <div class="rr-painel" data-painel="sons" hidden><div class="rr-plano" id="ed-plano"></div></div>
+          <div class="rr-painel" data-painel="efeitos" hidden><section class="ed-cartao" id="ed-efeitos"></section></div>
           <div class="rr-painel" data-painel="capa" hidden><section class="ed-cartao ed-capa" id="ed-capa" hidden></section><p class="rr-vazio">A capa aparece aqui depois que eu editar o vídeo.</p></div>
         </div>
       </div>
@@ -1414,15 +1436,222 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   }
 
   // ---------- abas (visual reel review) ----------
-  const ABAS = [["video", "Vídeo"], ["cortes", "Cortes"], ["legendas", "Legendas"], ["visual", "Visual"], ["sons", "Sons e dicas"], ["capa", "Capa"]];
+  const ABAS = [["video", "Vídeo"], ["estilos", "Estilos"], ["cortes", "Cortes"], ["legendas", "Legendas"], ["visual", "Visual"], ["sons", "Sons e dicas"], ["efeitos", "Efeitos"], ["capa", "Capa"]];
+  const ABAS_SEMPRE = ["video", "estilos", "efeitos"]; // abrem antes de editar (escolher o estilo e conhecer os efeitos)
   function pintarAbas() {
     const nav = $("#ed-abas"); if (!nav) return;
     const pronto = st.segs.length > 0;
-    if (!pronto && st.aba !== "video") st.aba = "video";
+    if (!pronto && !ABAS_SEMPRE.includes(st.aba)) st.aba = "video";
     const conta = { cortes: palavrasRevisao().filter((w) => cortada(w) || tiradaPelaIA(w)).length, legendas: st.legendas.length, sons: st.efeitos.length };
-    nav.innerHTML = ABAS.map(([k, t]) => `<button type="button" role="tab" class="rr-aba" data-aba="${k}" aria-selected="${st.aba === k}" ${k !== "video" && !pronto ? "disabled" : ""}>${t}${pronto && conta[k] ? `<span class="rr-n">${conta[k]}</span>` : ""}</button>`).join("");
-    $$("[data-aba]", nav).forEach((b) => b.addEventListener("click", () => { st.aba = b.dataset.aba; pintarAbas(); if (st.aba === "capa") desenharCapa(); }));
+    nav.innerHTML = ABAS.map(([k, t]) => `<button type="button" role="tab" class="rr-aba" data-aba="${k}" aria-selected="${st.aba === k}" ${!ABAS_SEMPRE.includes(k) && !pronto ? "disabled" : ""}>${t}${pronto && conta[k] ? `<span class="rr-n">${conta[k]}</span>` : ""}</button>`).join("");
+    $$("[data-aba]", nav).forEach((b) => b.addEventListener("click", () => irAba(b.dataset.aba)));
     $$(".rr-painel").forEach((pn) => { pn.hidden = pn.dataset.painel !== st.aba; });
+  }
+  function irAba(k) {
+    st.aba = k; pintarAbas(); pintarPassos();
+    if (k === "capa") desenharCapa();
+    if (k === "estilos") pintarEstilos();
+    if (k === "efeitos") pintarEfeitos();
+  }
+
+  // ---------- passos no topo: 1 vídeo, 2 estilo, 3 revisar, 4 baixar ----------
+  function pintarPassos() {
+    const ol = $("#ed-passos"); if (!ol) return;
+    const pronto = st.segs.length > 0;
+    const passos = [
+      { n: 1, t: "Vídeo", sub: st.clipes.length ? `${st.clipes.length} ${st.clipes.length > 1 ? "clipes" : "clipe"}` : "envie o bruto", feito: st.clipes.length > 0, aba: "video" },
+      { n: 2, t: "Estilo", sub: nomeDoEstilo(st.estiloAtivo) || "escolha um look", feito: Boolean(st.estiloAtivo), aba: "estilos" },
+      { n: 3, t: "Revisar", sub: pronto ? "cortes, legendas e sons" : "depois de editar", feito: pronto, aba: pronto ? "cortes" : null },
+      { n: 4, t: "Baixar", sub: pronto ? "MP4, legenda e capa" : "no fim", feito: false, aba: null, baixar: pronto },
+    ];
+    const atual = !st.clipes.length ? 1 : !pronto ? (st.aba === "estilos" ? 2 : st.estiloAtivo ? 1 : 2) : 3;
+    ol.innerHTML = passos.map((p) => `<li><button type="button" class="ed-passo${p.feito ? " feito" : ""}${p.n === atual ? " agora" : ""}" data-passo-aba="${p.aba || ""}" ${p.baixar ? 'data-passo-baixar="1"' : ""} ${!p.aba && !p.baixar ? "disabled" : ""}><span class="ed-passo-n">${p.feito ? "✓" : p.n}</span><span><b>${p.t}</b><small>${esc(p.sub)}</small></span></button></li>`).join("");
+    $$("[data-passo-aba]", ol).forEach((b) => b.addEventListener("click", () => {
+      if (b.dataset.passoBaixar) { const f = $("#ed-final"); if (f) f.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+      if (b.dataset.passoAba) irAba(b.dataset.passoAba);
+    }));
+  }
+
+  // ---------- estilos: prontos + os meus (tabela configuracoes, chave "estilos_edicao") ----------
+  const todosEstilos = () => [...ESTILOS_PRONTOS.map((e) => ({ ...e, pronto: true })), ...st.meusEstilos];
+  function nomeDoEstilo(id) { const e = todosEstilos().find((x) => x.id === id); return e ? e.nome : ""; }
+  async function carregarEstilos() {
+    let lista = null;
+    try {
+      const { data } = await banco().from("configuracoes").select("valor").eq("chave", "estilos_edicao").maybeSingle();
+      if (data && data.valor) lista = typeof data.valor === "string" ? JSON.parse(data.valor) : data.valor;
+    } catch (e) { /* tenta o navegador */ }
+    if (!Array.isArray(lista)) { try { lista = JSON.parse(localStorage.getItem("ed-meus-estilos") || "[]"); } catch (e) { lista = []; } }
+    st.meusEstilos = (Array.isArray(lista) ? lista : []).filter((e) => e && e.id && e.opc);
+    pintarEstilos(); pintarPassos();
+  }
+  async function salvarEstilos() {
+    const valor = JSON.stringify(st.meusEstilos);
+    try { localStorage.setItem("ed-meus-estilos", valor); } catch (e) { /* sem armazenamento */ }
+    const { error } = await banco().from("configuracoes").upsert({ chave: "estilos_edicao", valor }, { onConflict: "chave" });
+    if (error) throw new Error(error.message);
+    // confere se gravou de verdade (não só na tela)
+    const { data, error: e2 } = await banco().from("configuracoes").select("valor").eq("chave", "estilos_edicao").maybeSingle();
+    if (e2 || !data || String(typeof data.valor === "string" ? data.valor : JSON.stringify(data.valor)) !== valor) throw new Error("o banco não confirmou a gravação");
+  }
+  function aplicarEstilo(id) {
+    const e = todosEstilos().find((x) => x.id === id); if (!e) return;
+    const opc = { ...(e.pronto ? BASE_ESTILO : {}), ...e.opc };
+    if (e.pronto && opc.fonteLeg === "arimo" && st.minhaFonte && id === "padrao") opc.fonteLeg = "minha";
+    if (opc.fonteLeg === "minha" && !st.minhaFonte) opc.fonteLeg = "arimo";
+    Object.assign(st.opc, opc);
+    st.estiloAtivo = id; try { localStorage.setItem("ed-estilo-ativo", id); } catch (er) { /* sem armazenamento */ }
+    if (st.segs.length) { remontar(); sonsDoTitulo(); pintarPlano(); toast(`Estilo "${e.nome}" aplicado. Mude o que quiser na aba Visual.`); }
+    else { guardarOpc(); pintar(); toast(`Estilo "${e.nome}" escolhido. Ele entra quando eu editar o vídeo.`); }
+    pintarEstilos();
+  }
+  function amostraEstilo(e) {
+    const o = { ...(e.pronto ? BASE_ESTILO : {}), ...e.opc };
+    const fonte = fonteLeg(Math.round(15 * (o.tamLeg || 1)), o.fonteLeg === "minha" && !st.minhaFonte ? "arimo" : o.fonteLeg);
+    const txt = o.maiusculas ? "OLHA SÓ ISSO" : "olha só isso";
+    const sombra = o.sombra === "dura" ? "2px 2px 0 rgba(0,0,0,.55)" : "0 1px 6px rgba(0,0,0,.55)";
+    return `<span class="ed-est-amostra" aria-hidden="true"><span class="ed-est-tit">${o.titulo === false ? "" : "meu gancho"}</span><span class="ed-est-leg" style="font:${fonte};color:${o.corLegenda || "#fff"};text-shadow:${sombra}">${txt}</span></span>`;
+  }
+  const RESUMO_SONS = Object.fromEntries(QTD_SONS); const RESUMO_DINA = { calmo: "calmo", normal: "ritmo normal", dinamico: "dinâmico" };
+  function resumoEstilo(o) { return [(FONTES_LEG[o.fonteLeg] || "").split(" (")[0], (RESUMO_SONS[o.sons] || "").split(" (")[0].toLowerCase() + " sons", RESUMO_DINA[o.dinamismo] || ""].filter((x) => x && x.trim() !== "sons").join(" · "); }
+  function pintarEstilos() {
+    const box = $("#ed-estilos"); if (!box) return;
+    if (st.aba !== "estilos" && box.dataset.pintado) return;
+    box.dataset.pintado = "1";
+    const cartao = (e) => {
+      const ativo = st.estiloAtivo === e.id, apagando = st.estiloApagar === e.id;
+      return `<div class="ed-est${ativo ? " ativo" : ""}" data-est="${e.id}">
+        <button type="button" class="ed-est-escolher" data-aplicar="${e.id}" aria-pressed="${ativo}">${amostraEstilo(e)}<span class="ed-est-info"><span class="ed-est-selo">${ativo ? "em uso" : e.pronto ? "pronto" : "meu estilo"}</span><b>${esc(e.nome)}</b><small>${esc(e.para || resumoEstilo(e.opc))}</small></span></button>
+        ${e.pronto ? "" : `<div class="ed-est-acoes"><button type="button" class="btn" data-est-editar="${e.id}">Editar</button><button type="button" class="btn rr-perigo" data-est-apagar="${e.id}">${apagando ? "Confirmar: apagar" : "Apagar"}</button></div>`}
+      </div>`;
+    };
+    const ed = st.estiloEditando ? st.meusEstilos.find((x) => x.id === st.estiloEditando) : null;
+    box.innerHTML = `<div class="ed-titulo-linha"><h3 class="ed-titulo">Escolha um estilo</h3><span class="ed-sub">${st.estiloAtivo ? "em uso: " + esc(nomeDoEstilo(st.estiloAtivo)) : "nenhum escolhido"}</span></div>
+      <p class="ed-obs">Cada estilo é a edição inteira de uma vez: fonte e cor da legenda, título, quantidade de sons, dinamismo, transição e ritmo. Toque para aplicar${st.segs.length ? " (o vídeo é remontado na hora)" : " (ele entra quando eu editar o vídeo)"}. Depois mude o que quiser na aba Visual e salve como seu.</p>
+      <div class="ed-est-grade">${ESTILOS_PRONTOS.map((e) => cartao({ ...e, pronto: true })).join("")}</div>
+      <div class="ed-titulo-linha"><h3 class="ed-titulo">Meus estilos</h3><span class="ed-sub">${st.meusEstilos.length || "nenhum ainda"}</span></div>
+      ${st.meusEstilos.length ? `<div class="ed-est-grade">${st.meusEstilos.map(cartao).join("")}</div>` : `<p class="ed-obs">Ajuste a edição do jeito que você gosta (aba Visual) e salve aqui. Ele vira um estilo seu para os próximos vídeos.</p>`}
+      <div class="ed-est-salvar">
+        <label class="ed-rotulo" for="ed-est-nome">${ed ? `Editando "${esc(ed.nome)}"` : "Salvar os ajustes atuais como estilo"}</label>
+        <div class="ed-est-linha"><input class="entrada" id="ed-est-nome" maxlength="40" placeholder="Nome do estilo (ex.: Publi Boticário)" value="${ed ? esc(ed.nome) : ""}">
+        <button type="button" class="btn btn-principal" id="ed-est-salvar">${ed ? "Salvar alterações" : "Salvar como meu estilo"}</button>${ed ? `<button type="button" class="btn" id="ed-est-cancelar">Cancelar</button>` : ""}</div>
+        ${ed ? `<label class="ed-chk"><input type="checkbox" id="ed-est-atual" checked> Trocar os ajustes deste estilo pelos ajustes atuais do editor</label>` : ""}
+      </div>`;
+    $$("[data-aplicar]", box).forEach((b) => b.addEventListener("click", () => { st.estiloApagar = null; aplicarEstilo(b.dataset.aplicar); }));
+    $$("[data-est-editar]", box).forEach((b) => b.addEventListener("click", () => { st.estiloEditando = b.dataset.estEditar; st.estiloApagar = null; pintarEstilos(); const i = $("#ed-est-nome", box); if (i) i.focus(); }));
+    $$("[data-est-apagar]", box).forEach((b) => b.addEventListener("click", async () => {
+      const id = b.dataset.estApagar;
+      if (st.estiloApagar !== id) { st.estiloApagar = id; pintarEstilos(); return; }
+      const antes = st.meusEstilos; st.meusEstilos = st.meusEstilos.filter((x) => x.id !== id); st.estiloApagar = null;
+      if (st.estiloEditando === id) st.estiloEditando = null;
+      if (st.estiloAtivo === id) { st.estiloAtivo = ""; try { localStorage.removeItem("ed-estilo-ativo"); } catch (er) { /* sem armazenamento */ } }
+      try { await salvarEstilos(); toast("Estilo apagado."); } catch (er) { st.meusEstilos = antes; toast("Não consegui apagar: " + er.message, true); }
+      pintarEstilos(); pintarPassos();
+    }));
+    const cancelar = $("#ed-est-cancelar", box); if (cancelar) cancelar.addEventListener("click", () => { st.estiloEditando = null; pintarEstilos(); });
+    $("#ed-est-salvar", box).addEventListener("click", async () => {
+      const nome = $("#ed-est-nome", box).value.trim();
+      if (!nome) { toast("Dê um nome para o estilo.", true); $("#ed-est-nome", box).focus(); return; }
+      const atuais = Object.fromEntries(CHAVES_ESTILO.map((k) => [k, st.opc[k]]));
+      const antes = st.meusEstilos.map((x) => ({ ...x }));
+      let id;
+      if (ed) { id = ed.id; st.meusEstilos = st.meusEstilos.map((x) => x.id === id ? { ...x, nome, opc: $("#ed-est-atual", box) && $("#ed-est-atual", box).checked ? atuais : x.opc } : x); }
+      else { id = "meu-" + uid(); st.meusEstilos = [...st.meusEstilos, { id, nome, opc: atuais }]; }
+      const bt = $("#ed-est-salvar", box); bt.disabled = true; bt.textContent = "Salvando…";
+      try {
+        await salvarEstilos();
+        st.estiloEditando = null; st.estiloAtivo = id; try { localStorage.setItem("ed-estilo-ativo", id); } catch (er) { /* sem armazenamento */ }
+        toast(ed ? `Estilo "${nome}" atualizado.` : `Estilo "${nome}" salvo. Ele aparece em Meus estilos.`);
+      } catch (er) { st.meusEstilos = antes; toast("Não consegui salvar o estilo: " + er.message, true); }
+      pintarEstilos(); pintarPassos();
+    });
+  }
+
+  // ---------- quadro de efeitos: busca, categorias e "pôr aqui" no ponto da agulha ----------
+  function catalogoEfeitos() {
+    const o = st.opc, lista = [];
+    Object.entries(EFEITOS).forEach(([k, t]) => lista.push({ cat: "sons", id: "som-" + k, nome: t, desc: DESC_SONS[k] || "", prev: "som", som: k, acao: "som" }));
+    lista.push({ cat: "camera", id: "zoom", nome: "Zoom de ênfase", desc: "Entra um pouco mais perto no ponto da agulha e assenta", prev: "zoom", acao: "zoom" });
+    lista.push({ cat: "camera", id: "flash", nome: "Flash branco", desc: "Clarão rápido (0,1 s), bom no corte para o produto", prev: "flash", acao: "flash" });
+    lista.push({ cat: "camera", id: "dividir", nome: "Dividir plano", desc: "Separa o plano no ponto da agulha para apagar ou trocar", prev: "dividir", acao: "dividir" });
+    lista.push({ cat: "camera", id: "zoomCortes", nome: "Zoom alternado nos cortes", desc: "100% e 110% alternando, esconde o pulo do jump cut", prev: "zoom", liga: "zoomCortes", ativo: o.zoomCortes });
+    lista.push({ cat: "camera", id: "zoomEnfase", nome: "Zoom nas frases de ênfase", desc: "A IA acha as frases fortes e aproxima", prev: "zoom", liga: "zoomEnfase", ativo: o.zoomEnfase });
+    lista.push({ cat: "camera", id: "tremer", nome: "Tremidinha no impacto", desc: "Treme de leve nos momentos fortes", prev: "tremer", liga: "tremer", ativo: o.tremer });
+    lista.push({ cat: "camera", id: "flashTroca", nome: "Flash em toda troca de cena", desc: "Liga o flash automático entre os clipes", prev: "flash", liga: "flash", ativo: o.flash });
+    [["nenhuma", "Corte seco", "Sem transição, só o jump cut"], ["punch", "Zoom rápido (punch)", "Aproxima rápido no corte, o seu padrão"], ["deslize", "Punch + deslize", "Zoom rápido e um deslize na troca de cena"]].forEach(([k, t, d]) => lista.push({ cat: "transicao", id: "tr-" + k, nome: t, desc: d, prev: k === "nenhuma" ? "corte" : k === "punch" ? "zoom" : "deslize", opc: ["transicao", k], ativo: o.transicao === k, remonta: false }));
+    [["normal", "Ritmo normal", "Deixa um respiro entre as frases"], ["rapido", "Ritmo rápido", "Corta os respiros"], ["turbo", "Ritmo turbo", "Sem nenhuma pausa"]].forEach(([k, t, d]) => lista.push({ cat: "transicao", id: "ritmo-" + k, nome: t, desc: d, prev: "corte", opc: ["ritmo", k], ativo: (o.ritmo || "rapido") === k, remonta: true }));
+    Object.entries(FONTES_LEG).filter(([k]) => k !== "minha" || st.minhaFonte).forEach(([k, t]) => lista.push({ cat: "legenda", id: "fonte-" + k, nome: k === "minha" ? st.minhaFonte : t.split(" (")[0], desc: k === "minha" ? "A fonte que você enviou" : (t.match(/\((.+)\)/) || [, ""])[1], prev: "fonte", fonte: k, opc: ["fonteLeg", k], ativo: o.fonteLeg === k, remonta: false, soCapcut: true }));
+    [1, 2, 3, 4].forEach((n) => lista.push({ cat: "legenda", id: "por-" + n, nome: `${n} ${n > 1 ? "palavras" : "palavra"} por vez`, desc: n === 1 ? "Uma palavra no meio da tela" : n === 3 ? "O seu padrão" : "", prev: "palavras", n, opc: ["porLegenda", n], ativo: Number(o.porLegenda) === n, remonta: true, soCapcut: true }));
+    Object.entries(ESTILOS).filter(([k]) => k !== "caixa").forEach(([k, t]) => lista.push({ cat: "legenda", id: "estleg-" + k, nome: t.split(" (")[0], desc: (t.match(/\((.+)\)/) || [, "Estilo da legenda"])[1], prev: "fonte", fonte: k === "minimal" ? "poppins" : k === "bold" ? "montserrat" : o.fonteLeg, opc: ["estilo", k], ativo: o.estilo === k, remonta: true }));
+    Object.entries(TITULOS).filter(([k]) => k !== "caixa" && k !== "frase").forEach(([k, t]) => lista.push({ cat: "titulo", id: "tit-" + k, nome: t.split(" (")[0].split(",")[0], desc: (t.match(/\((.+)\)/) || [, t.split(", ")[1] || ""])[1], prev: "titulo", opc: ["estiloTitulo", k], ativo: o.estiloTitulo === k, remonta: false, titulo: true }));
+    lista.push({ cat: "titulo", id: "sonsTitulo", nome: "Som na entrada do título", desc: "Pop (ou clique em cada parte) quando o título aparece", prev: "som", som: "pop", liga: "sonsTitulo", ativo: o.sonsTitulo !== false });
+    return lista;
+  }
+  function filtrarEfeitos() {
+    const q = st.fxBusca.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    const nomeCat = Object.fromEntries(CATS_FX);
+    return catalogoEfeitos().filter((f) => (st.fxCat === "todos" || f.cat === st.fxCat) && (!q || (f.nome + " " + f.desc + " " + nomeCat[f.cat]).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").includes(q)));
+  }
+  function previaEfeito(f) {
+    if (f.prev === "fonte") return `<span class="ed-fx-prev ed-fx-p-fonte" aria-hidden="true"><span style="font:${fonteLeg(17, f.fonte === "minha" && !st.minhaFonte ? "arimo" : f.fonte)};color:${st.opc.corLegenda || "#fff"}">olha só</span></span>`;
+    if (f.prev === "palavras") return `<span class="ed-fx-prev ed-fx-p-fonte" aria-hidden="true"><span style="font:${fonteLeg(14)};color:${st.opc.corLegenda || "#fff"}">${["olha", "olha só", "olha só isso", "olha só isso aqui"][f.n - 1]}</span></span>`;
+    if (f.prev === "titulo") return `<span class="ed-fx-prev ed-fx-p-titulo" aria-hidden="true"><span>meu gancho</span></span>`;
+    if (f.prev === "som") return `<span class="ed-fx-prev ed-fx-p-som" aria-hidden="true">${ic.som}<i></i><i></i><i></i><i></i><i></i></span>`;
+    return `<span class="ed-fx-prev ed-fx-p-${f.prev}" aria-hidden="true"><span class="ed-fx-pessoa"></span></span>`;
+  }
+  function pintarGradeEfeitos() {
+    const grade = $("#ed-fx-grade"); if (!grade) return;
+    const pronto = st.segs.length > 0, lista = filtrarEfeitos();
+    const porCat = CATS_FX.filter(([k]) => k !== "todos").map(([k, t]) => [k, t, lista.filter((f) => f.cat === k)]).filter(([, , l]) => l.length);
+    grade.innerHTML = !lista.length ? `<p class="rr-vazio">Nada com "${esc(st.fxBusca)}". Tente "zoom", "brilho", "legenda"...</p>` : porCat.map(([k, t, l]) => `<h4 class="ed-fx-cat">${t} <span>${l.length}</span></h4><div class="ed-fx-lista">${l.map((f) => {
+      const desligado = f.soCapcut && st.opc.estilo !== "capcut";
+      const botoes = f.acao ? `${f.som ? `<button type="button" class="btn" data-fx-ouvir="${f.som}">${ic.play}Ouvir</button>` : ""}<button type="button" class="btn btn-principal" data-fx-por="${f.id}" ${pronto ? "" : 'disabled title="Edite o vídeo primeiro"'}>${ic.mais}Pôr aqui</button>`
+        : f.liga ? `${f.som ? `<button type="button" class="btn" data-fx-ouvir="${f.som}">${ic.play}Ouvir</button>` : ""}<button type="button" class="btn${f.ativo ? " btn-principal" : ""}" data-fx-liga="${f.liga}" aria-pressed="${Boolean(f.ativo)}">${f.ativo ? "Ligado" : "Ligar"}</button>`
+        : `<button type="button" class="btn${f.ativo ? " btn-principal" : ""}" data-fx-opc="${f.id}" aria-pressed="${Boolean(f.ativo)}" ${desligado ? 'disabled title="Só no estilo de legenda CapCut"' : ""}>${f.ativo ? "Em uso" : "Usar"}</button>`;
+      return `<div class="ed-fx${f.ativo ? " ativo" : ""}" data-fx="${f.id}">${previaEfeito(f)}<div class="ed-fx-txt"><b>${esc(f.nome)}</b>${f.desc ? `<small>${esc(f.desc)}</small>` : ""}</div><div class="ed-fx-botoes">${botoes}</div></div>`;
+    }).join("")}</div>`).join("");
+    const cat = catalogoEfeitos(), achar = (id) => cat.find((x) => x.id === id);
+    $$("[data-fx-ouvir]", grade).forEach((b) => b.addEventListener("click", () => { audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(b.dataset.fxOuvir, ac.currentTime + 0.02, st.opc.vol); }));
+    $$("[data-fx-por]", grade).forEach((b) => b.addEventListener("click", () => {
+      const f = achar(b.dataset.fxPor); if (!f || !st.segs.length) return;
+      if (f.acao === "som") porSom(f.som); else if (f.acao === "zoom") porZoom(); else if (f.acao === "flash") porFlash(); else if (f.acao === "dividir") dividir();
+      toast(`${f.nome} em ${tempo(st.t)}. Toque nele na linha do tempo para ouvir ou tirar.`);
+    }));
+    $$("[data-fx-liga]", grade).forEach((b) => b.addEventListener("click", () => {
+      const k = b.dataset.fxLiga; st.opc[k] = !st.opc[k];
+      if (st.segs.length) { if (["zoomCortes", "zoomEnfase"].includes(k)) remontar(); else { if (k === "sonsTitulo") { sonsDoTitulo(); pintarPlano(); } guardarOpc(); pintar(); } } else guardarOpc();
+      pintarGradeEfeitos();
+    }));
+    $$("[data-fx-opc]", grade).forEach((b) => b.addEventListener("click", () => {
+      const f = achar(b.dataset.fxOpc); if (!f) return;
+      st.opc[f.opc[0]] = f.opc[1];
+      if (st.segs.length) { if (f.remonta) remontar(); else { if (f.titulo) { sonsDoTitulo(); pintarPlano(); if (!st.tocando) st.t = Math.min(st.t, 1.2); } guardarOpc(); pintar(); } } else guardarOpc();
+      pintarGradeEfeitos();
+    }));
+  }
+  function pintarEfeitos() {
+    const box = $("#ed-efeitos"); if (!box) return;
+    if (!box.dataset.pintado) {
+      box.dataset.pintado = "1";
+      box.innerHTML = `<div class="ed-titulo-linha"><h3 class="ed-titulo">Quadro de efeitos</h3><span class="ed-sub" id="ed-fx-conta"></span></div>
+        <p class="ed-obs" id="ed-fx-dica"></p>
+        <label class="ed-fx-busca"><svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg><input class="entrada" id="ed-fx-busca" type="search" placeholder="Buscar: zoom, brilho, spray, legenda, título..." aria-label="Buscar efeito"></label>
+        <div class="ed-fx-cats" role="tablist" aria-label="Categorias de efeitos" id="ed-fx-cats"></div>
+        <div id="ed-fx-grade"></div>`;
+      const busca = $("#ed-fx-busca", box); busca.value = st.fxBusca;
+      busca.addEventListener("input", () => { st.fxBusca = busca.value; pintarGradeEfeitos(); pintarCatsEfeitos(); });
+    }
+    if (st.aba !== "efeitos" && box.dataset.cheio) return;
+    box.dataset.cheio = "1";
+    $("#ed-fx-dica", box).innerHTML = st.segs.length ? `Leve a agulha até o ponto do vídeo (play, barra ou linha do tempo) e toque em <b>Pôr aqui</b>. Agora ela está em <b>${tempo(st.t)}</b>.` : "Ouça os sons e escolha legenda, título e transições agora. Os botões <b>Pôr aqui</b> funcionam depois que eu editar o vídeo.";
+    pintarCatsEfeitos(); pintarGradeEfeitos();
+  }
+  function pintarCatsEfeitos() {
+    const nav = $("#ed-fx-cats"); if (!nav) return;
+    const conta = filtrarEfeitos().length;
+    const tot = catalogoEfeitos(); const c = $("#ed-fx-conta"); if (c) c.textContent = `${conta} de ${tot.length}`;
+    nav.innerHTML = CATS_FX.map(([k, t]) => `<button type="button" role="tab" class="ed-fx-chip" data-fx-cat="${k}" aria-selected="${st.fxCat === k}">${t}<span>${k === "todos" ? tot.length : tot.filter((f) => f.cat === k).length}</span></button>`).join("");
+    $$("[data-fx-cat]", nav).forEach((b) => b.addEventListener("click", () => { st.fxCat = b.dataset.fxCat; pintarCatsEfeitos(); pintarGradeEfeitos(); }));
   }
 
   // ---------- edições à mão (como no CapCut), guardadas no tempo do bruto ----------
@@ -1569,7 +1798,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     bt.disabled = st.trabalhando || st.exportando || !st.clipes.length || Boolean(st.pendentes);
     bt.innerHTML = st.trabalhando ? "Editando…" : `${ic.brilho}${st.plano ? "Editar de novo" : "Editar automático"}`;
     $("#ed-vazio", sec).hidden = Boolean(st.segs.length);
-    pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa(); pintarLinha(); pintarAbas(); pintarModo(); pintarOuvi(); pintarAjustar();
+    pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa(); pintarLinha(); pintarAbas(); pintarModo(); pintarOuvi(); pintarAjustar(); pintarPassos();
+    if (st.aba === "estilos") pintarEstilos(); else if (st.aba === "efeitos") pintarEfeitos();
     if (st.segs.length && !st.tocando) desenhar(st.t);
   }
   // o que o painel ouviu do vídeo (a fala transcrita, com tempo), para ela conferir
@@ -1906,7 +2136,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     if (!st.pronto) {
       if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;500;600;800&family=Montserrat:wght@700;800&family=Nunito:wght@800&family=Arimo:wght@700&family=Instrument+Serif:ital@1&family=Fredoka:wght@700&family=Caveat:wght@700&family=JetBrains+Mono:wght@500&display=swap"; document.head.appendChild(l); }
       montarTela(sec); st.pronto = true;
-      carregarPadrao(); carregarMinhaFonte();
+      carregarPadrao(); carregarMinhaFonte(); carregarEstilos();
       try { await Promise.all(["300 40px Poppins", "500 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"', "800 40px Montserrat", "700 40px Montserrat", "800 40px Nunito", "700 40px Arimo", 'italic 40px "Instrument Serif"', "700 40px Fredoka", "700 40px Caveat"].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
     }
     pintar();
