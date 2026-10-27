@@ -1553,3 +1553,16 @@ a.menu-item{text-decoration:none}
 .ed-trocar-tira img{height:72px;display:block}
 .ed-trocar-tira span{position:absolute;left:2px;bottom:2px;font-size:9px;color:#fff;background:rgba(0,0,0,.55);border-radius:4px;padding:0 3px}
 .rr-plano-bl{height:60px!important}
+/* escolher o trecho da cena (deslizar como no CapCut) */
+.rr-trecho{background:var(--rr-rosa-claro,#f3e8dc);border-radius:14px;padding:10px 12px 12px;margin:4px 0 12px}
+.rr-trecho-cab{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin-bottom:8px;font-size:12.5px}
+.rr-trecho-cab small{color:var(--suave);flex:1 1 260px}
+.rr-trecho-tempo{font-weight:700;font-variant-numeric:tabular-nums;color:var(--principal)}
+.rr-trecho-faixa{position:relative;display:flex;height:64px;border-radius:10px;overflow:hidden;background:#1d1611;user-select:none;touch-action:none}
+.rr-trecho-faixa img{flex:1 1 0;min-width:0;height:100%;object-fit:cover;opacity:.45;pointer-events:none}
+.rr-trecho-carregando{color:#fff;font-size:12px;margin:auto}
+.rr-trecho-janela{position:absolute;top:0;bottom:0;border:3px solid #fff;border-radius:8px;box-shadow:0 0 0 999px rgba(29,22,17,.35),0 0 0 1px rgba(0,0,0,.4) inset;cursor:grab;background:rgba(255,255,255,.08);touch-action:none}
+.rr-trecho-janela:active{cursor:grabbing}
+.rr-borda{position:absolute;top:-3px;bottom:-3px;width:16px;background:#fff;cursor:ew-resize;display:flex;align-items:center;justify-content:center}
+.rr-borda::after{content:"";width:3px;height:22px;border-radius:3px;background:var(--principal)}
+.rr-borda.esq{left:-10px;border-radius:6px 0 0 6px}.rr-borda.dir{right:-10px;border-radius:0 6px 6px 0}

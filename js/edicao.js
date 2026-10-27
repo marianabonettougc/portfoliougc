@@ -2251,6 +2251,56 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       });
     });
   }
+  // "arrastar para o lado e escolher outra parte do vídeo" (como no CapCut): faixa com o clipe inteiro e a janela
+  // do trecho usado; arrastar a janela desliza o trecho, as bordas encurtam ou aumentam, a prévia mostra o quadro
+  function trechoHtml(sg, i) {
+    const c = st.clipes[sg.ci]; if (!c) return "";
+    const dur = c.dur || 1, l = (sg.a / dur * 100).toFixed(2), w = ((sg.b - sg.a) / dur * 100).toFixed(2);
+    return `<div class="rr-trecho" data-trecho="${i}">
+      <div class="rr-trecho-cab"><b>Cena ${i + 1}: escolha o trecho</b><small>${esc(c.nome)} · arraste a janela para o lado para pegar outra parte do vídeo, ou puxe as bordas para encurtar ou aumentar</small><span class="rr-trecho-tempo">${tempo(sg.a)} a ${tempo(sg.b)} · ${(sg.b - sg.a).toFixed(1).replace(".", ",")} s</span></div>
+      <div class="rr-trecho-faixa">${(c.tira || []).map((q) => `<img src="${q.src}" alt="" draggable="false">`).join("") || `<span class="rr-trecho-carregando">carregando os quadros…</span>`}
+        <div class="rr-trecho-janela" style="left:${l}%;width:${w}%"><span class="rr-borda esq" data-borda="esq"></span><span class="rr-borda dir" data-borda="dir"></span></div>
+      </div>
+    </div>`;
+  }
+  let quadroPedido = null;
+  function previaBruto(ci, t) {
+    const c = st.clipes[ci]; if (!c || !c2d) return;
+    quadroPedido = t; c.el.currentTime = Math.max(0, Math.min(t, c.dur - 0.05));
+    c.el.addEventListener("seeked", () => {
+      if (quadroPedido !== t) return;
+      const W = canvas.width, H = canvas.height, v = c.el, vw = v.videoWidth || 9, vh = v.videoHeight || 16, e2 = Math.max(W / vw, H / vh);
+      c2d.fillStyle = "#1d1611"; c2d.fillRect(0, 0, W, H); c2d.drawImage(v, (W - vw * e2) / 2, (H - vh * e2) * 0.42, vw * e2, vh * e2);
+    }, { once: true });
+  }
+  function ligarTrecho(box) {
+    const el = box.querySelector("[data-trecho]"); if (!el) return;
+    const i = Number(el.dataset.trecho), sg = st.segs[i], c = sg && st.clipes[sg.ci]; if (!c) return;
+    const faixa = el.querySelector(".rr-trecho-faixa"), jan = el.querySelector(".rr-trecho-janela"), rot = el.querySelector(".rr-trecho-tempo");
+    jan.addEventListener("pointerdown", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const modo = e.target.dataset.borda || "mover", r = faixa.getBoundingClientRect(), x0 = e.clientX, dur = c.dur, a0 = sg.a, b0 = sg.b;
+      let a = a0, b = b0;
+      try { jan.setPointerCapture(e.pointerId); } catch (er) { /* segue */ }
+      const mover = (ev) => {
+        const dt = (ev.clientX - x0) / r.width * dur;
+        if (modo === "mover") { const len = b0 - a0; a = Math.max(0, Math.min(dur - len, a0 + dt)); b = a + len; }
+        else if (modo === "esq") { a = Math.max(0, Math.min(b0 - 0.3, a0 + dt)); b = b0; }
+        else { b = Math.min(dur, Math.max(a0 + 0.3, b0 + dt)); a = a0; }
+        jan.style.left = (a / dur * 100) + "%"; jan.style.width = ((b - a) / dur * 100) + "%";
+        rot.textContent = `${tempo(a)} a ${tempo(b)} · ${(b - a).toFixed(1).replace(".", ",")} s`;
+        previaBruto(sg.ci, modo === "dir" ? b - 0.05 : a);
+      };
+      const soltar = () => {
+        jan.removeEventListener("pointermove", mover); jan.removeEventListener("pointerup", soltar); jan.removeEventListener("pointercancel", soltar);
+        if (Math.abs(a - a0) < 0.05 && Math.abs(b - b0) < 0.05) return;
+        guardarOrdem();
+        st.manual.trocas = { ...(st.manual.trocas || {}), [sg.chave]: { ci: sg.ci, a: +a.toFixed(2), b: +b.toFixed(2) } };
+        mexeuManual(); st.sel = { tipo: "plano", i }; irPara((st.segs[i] ? st.segs[i].o0 : 0) + 0.02); pintarLinha();
+      };
+      jan.addEventListener("pointermove", mover); jan.addEventListener("pointerup", soltar); jan.addEventListener("pointercancel", soltar);
+    });
+  }
   function trocarCena(i) {
     const sg = st.segs[i]; if (!sg) return;
     const durOrig = +(sg.b - sg.a).toFixed(1);
@@ -2317,6 +2367,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
         ${sel.tipo === "flash" ? `<button type="button" class="btn rr-perigo" data-f="tirar-flash">Tirar este flash</button>` : ""}
         ${temDesfazer ? `<button type="button" class="btn" data-f="desfazer">Desfazer</button>` : ""}
       </div>
+      ${sel.tipo === "plano" && st.segs[sel.i] ? trechoHtml(st.segs[sel.i], sel.i) : ""}
       <div class="rr-linha-rolar"><div class="rr-linha-dentro" style="width:${larg}%">
       <div class="rr-regua" data-buscar>${marcas.map((t) => `<span style="left:${pct(t)}">${tempo(t).replace(/,\d$/, "")}</span>`).join("")}</div>
       <div class="rr-trilha rr-t-leg${o.legenda === false ? " desligada" : ""}">${st.legendas.map((g) => `<button type="button" class="rr-chip" data-ir="${g.o0}" style="left:${pct(g.o0)};width:calc(${pct(g.o1 - g.o0)} - 3px)" title="${esc(textoLeg(g))}"><b>T</b> ${esc(textoLeg(g))}</button>`).join("")}</div>
@@ -2338,6 +2389,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     if (f("mover-frente")) f("mover-frente").addEventListener("click", () => moverPlano(sel.i, sel.i + 1));
     if (f("trocar-cena")) f("trocar-cena").addEventListener("click", () => trocarCena(sel.i));
     ligarArrastePlanos(box);
+    ligarTrecho(box);
     gerarTiras();
     if (f("tirar-som")) f("tirar-som").addEventListener("click", () => tirarSom(efSel));
     if (f("ouvir-som")) f("ouvir-som").addEventListener("click", () => { audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(efSel.tipo, ac.currentTime + 0.02, o.vol); });
