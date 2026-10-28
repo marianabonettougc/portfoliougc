@@ -869,7 +869,7 @@ IDEIA PARA DEPOIS
     for (const c of st.clipes) for (const w of c.palavras || []) {
       const o = paraFinal(c.offset + w.s); if (o == null) continue;
       const fim = paraFinal(Math.min(c.offset + w.e, c.offset + c.dur - 0.01));
-      palavras.push({ w: w.w, o0: o, o1: fim != null && fim > o ? fim : o + 0.25, g: c.offset + w.s, k: chaveLeg(c.offset + w.s) });
+      palavras.push({ w: w.w, o0: o, o1: fim != null && fim > o ? fim : o + 0.25, g: c.offset + w.s, k: chaveLeg(c.offset + w.s), q: Boolean(w.q) });
     }
     // cada destaque vai para a palavra mais perto do tempo que a IA marcou (de preferência a mesma palavra)
     const limpa = (x) => String(x || "").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
@@ -1026,7 +1026,7 @@ IDEIA PARA DEPOIS
     st.efeitos.sort((a, b) => a.t - b.t);
   }
   function agrupar(palavras) {
-    if (st.opc.estilo === "capcut") return agruparN(palavras, Math.max(1, Math.min(5, Number(st.opc.porLegenda) || 3)));
+    if (st.opc.estilo === "capcut") return agruparN(palavras, palavras.some((w) => w.q) ? 8 : Math.max(1, Math.min(5, Number(st.opc.porLegenda) || 3)));
     const grupos = [];
     for (const w of palavras) {
       const g = grupos[grupos.length - 1];
@@ -1043,7 +1043,7 @@ IDEIA PARA DEPOIS
     const grupos = [];
     for (const w of palavras) {
       const g = grupos[grupos.length - 1];
-      if (g && g.palavras.length < n && w.o0 - g.o1 < 0.35 && !g.fimFrase && !g.palavras.some((x) => x.destaque) && !w.destaque) { g.palavras.push(w); g.o1 = w.o1; g.fimFrase = /[.!?,;:]$/.test(w.w); }
+      if (g && g.palavras.length < n && !w.q && w.o0 - g.o1 < 0.35 && !g.fimFrase && !g.palavras.some((x) => x.destaque) && !w.destaque) { g.palavras.push(w); g.o1 = w.o1; g.fimFrase = /[.!?,;:]$/.test(w.w); }
       else grupos.push({ palavras: [w], o0: w.o0, o1: w.o1, fimFrase: /[.!?,;:]$/.test(w.w) });
     }
     grupos.forEach((g, i) => { const prox = grupos[i + 1]; g.o1 = prox ? Math.min(prox.o0, Math.max(g.o1 + 0.12, g.o0 + 0.25)) : g.o1 + 0.3; });
@@ -1118,7 +1118,7 @@ IDEIA PARA DEPOIS
   const FONTE_CAMADA = { cap: (px) => `600 ${px}px Poppins, sans-serif`, ser: (px) => `italic 400 ${px}px "DM Serif Display", Georgia, serif`, emo: (px) => `${px}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif` };
   const ALTURA_LINHA = { cap: 1.55, ser: 1.08, emo: 1.35 };
   // visual de cada texto (ela ajusta na aba Textos): cores, contorno, opacidade e sombra atrás
-  const VISUAL_PADRAO = { cor: "#fff3b0", corPequena: "#ffffff", contorno: 0, contornoCor: "#1d1611", opacidade: 1, sombra: 0.72, sombraCor: "#160c08" };
+  const VISUAL_PADRAO = { cor: "#fff3b0", corPequena: "#ffffff", contorno: 0, contornoCor: "#1d1611", opacidade: 1, sombra: 0.72, sombraCor: "#160c08", alinh: "centro" };
   function visualCamada(cam) {
     const v = { ...VISUAL_PADRAO };
     for (const k of Object.keys(VISUAL_PADRAO)) if (cam[k] !== undefined && cam[k] !== null && cam[k] !== "") v[k] = cam[k];
@@ -1162,10 +1162,13 @@ IDEIA PARA DEPOIS
           if (lw > 0) { comSombra(); c2d.strokeText(txt, x, meio); semSombra(); c2d.fillText(txt, x, meio); }
           else { comSombra(); c2d.fillText(txt, x, meio); }
         };
+        // alinhamento do bloco: centro (padrão), esquerda ou direita
+        const xIni = vis.alinh === "esq" ? cx - bw / 2 : vis.alinh === "dir" ? cx + bw / 2 - m.w : cx - m.w / 2;
         if (l.tipo === "cap") {
-          const txt = String(l.texto).toUpperCase(), esp = m.px * 0.16; let x = cx - m.w / 2;
+          const txt = String(l.texto).toUpperCase(), esp = m.px * 0.16; let x = xIni;
           for (const ch of txt) { pintar(ch, x, "left"); x += c2d.measureText(ch).width + esp; }
-        } else pintar(String(l.texto), cx, "center");
+        } else if (vis.alinh === "esq" || vis.alinh === "dir") pintar(String(l.texto), xIni, "left");
+        else pintar(String(l.texto), cx, "center");
         y += m.h;
       }
       c2d.restore();
@@ -1296,6 +1299,7 @@ IDEIA PARA DEPOIS
                 <label>Opacidade <span class="ed-cam-val">${pc(vs.opacidade)}</span><input type="range" min="0.1" max="1" step="0.05" data-cam-vis="opacidade" value="${vs.opacidade}"></label>
                 <label>Sombra atrás <span class="ed-cam-val">${vs.sombra ? pc(vs.sombra) : "sem"}</span><input type="range" min="0" max="1" step="0.05" data-cam-vis="sombra" value="${vs.sombra}"></label>
                 <label>Cor da sombra <input type="color" data-cam-vis="sombraCor" value="${vs.sombraCor}"></label>
+                <label>Alinhamento <select class="entrada" data-cam-vis="alinh"><option value="centro" ${vs.alinh === "centro" ? "selected" : ""}>Centro</option><option value="esq" ${vs.alinh === "esq" ? "selected" : ""}>Esquerda</option><option value="dir" ${vs.alinh === "dir" ? "selected" : ""}>Direita</option></select></label>
               </div>
               <div class="ed-cam-acoes"><button class="btn btn-leve" type="button" data-cam-todos>Usar este visual em todos os textos</button></div>
             </div>`; })()}
