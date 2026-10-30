@@ -1235,10 +1235,10 @@ IDEIA PARA DEPOIS
   }
   // ---------- textos na tela (camadas editáveis: mudar frase, tempo, tamanho e arrastar) ----------
   // linha: { texto, tipo: "cap" (Poppins caixa-alta espaçada, branca) | "ser" (DM Serif itálica, creme) | "emo", tam (em 1080) }
-  const FONTE_CAMADA = { cap: (px) => `600 ${px}px Poppins, sans-serif`, ser: (px) => `italic 400 ${px}px "DM Serif Display", Georgia, serif`, emo: (px) => `${px}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif` };
-  const ALTURA_LINHA = { cap: 1.55, ser: 1.08, emo: 1.35 };
+  const FONTE_CAMADA = { cap: (px) => `600 ${px}px Poppins, sans-serif`, ser: (px) => `italic 400 ${px}px "DM Serif Display", Georgia, serif`, emo: (px) => `${px}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`, pop: (px) => `700 ${px}px Poppins, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif` };
+  const ALTURA_LINHA = { cap: 1.55, ser: 1.08, emo: 1.35, pop: 1.18 };
   // visual de cada texto (ela ajusta na aba Textos): cores, contorno, opacidade e sombra atrás
-  const VISUAL_PADRAO = { cor: "#fff3b0", corPequena: "#ffffff", contorno: 0, contornoCor: "#1d1611", opacidade: 1, sombra: 0.72, sombraCor: "#160c08", alinh: "centro" };
+  const VISUAL_PADRAO = { cor: "#fff3b0", corPequena: "#ffffff", contorno: 0, contornoCor: "#1d1611", opacidade: 1, sombra: 0.72, sombraCor: "#160c08", alinh: "centro", fundo: "" };
   function visualCamada(cam) {
     const v = { ...VISUAL_PADRAO };
     for (const k of Object.keys(VISUAL_PADRAO)) if (cam[k] !== undefined && cam[k] !== null && cam[k] !== "") v[k] = cam[k];
@@ -1268,11 +1268,13 @@ IDEIA PARA DEPOIS
       const vis = visualCamada(cam);
       c2d.save(); c2d.globalAlpha = alfa * vis.opacidade; c2d.textBaseline = "middle"; c2d.lineJoin = "round"; c2d.miterLimit = 2;
       const semSombra = () => { c2d.shadowColor = "transparent"; c2d.shadowBlur = 0; c2d.shadowOffsetY = 0; };
-      const comSombra = () => { if (vis.sombra > 0) { c2d.shadowColor = rgbaDe(vis.sombraCor, vis.sombra); c2d.shadowBlur = (8 + 22 * vis.sombra) * u; c2d.shadowOffsetY = 4 * u; } else semSombra(); };
+      // faixa atrás do texto (layout de lettering da marca): retângulo reto na cor escolhida
+      if (vis.fundo) { const px0 = Math.max(...med.map((m) => m.px)), padx = px0 * 0.55, pady = px0 * 0.3; c2d.fillStyle = vis.fundo; c2d.fillRect(cx - bw / 2 - padx, cy - bh / 2 - pady, bw + padx * 2, bh + pady * 2); }
+      const comSombra = () => { if (vis.fundo) { c2d.shadowColor = "transparent"; c2d.shadowBlur = 0; c2d.shadowOffsetY = 0; return; } if (vis.sombra > 0) { c2d.shadowColor = rgbaDe(vis.sombraCor, vis.sombra); c2d.shadowBlur = (8 + 22 * vis.sombra) * u; c2d.shadowOffsetY = 4 * u; } else semSombra(); };
       for (const m of med) {
         const meio = y + m.h / 2, l = m.l;
         c2d.font = (FONTE_CAMADA[l.tipo] || FONTE_CAMADA.ser)(m.px);
-        c2d.fillStyle = l.tipo === "cap" ? vis.corPequena : vis.cor;
+        c2d.fillStyle = l.tipo === "cap" || l.tipo === "pop" ? vis.corPequena : vis.cor;
         const lw = l.tipo === "emo" ? 0 : vis.contorno * u * (cam.escala || 1);
         if (lw > 0) { c2d.strokeStyle = vis.contornoCor; c2d.lineWidth = lw * 2; }
         // contorno primeiro (com a sombra), depois o preenchimento por cima (sem sombra dobrada)
@@ -1401,7 +1403,7 @@ IDEIA PARA DEPOIS
           ${ab ? `<div class="ed-cam-corpo">
             ${(c.linhas || []).map((l, i) => `<div class="ed-cam-linha">
               <input class="entrada" data-cam-txt="${i}" value="${esc(l.texto || "")}" aria-label="Texto da linha ${i + 1}">
-              <select class="entrada" data-cam-tipo="${i}" aria-label="Estilo da linha ${i + 1}"><option value="ser" ${l.tipo === "ser" ? "selected" : ""}>Grande (serifada)</option><option value="cap" ${l.tipo === "cap" ? "selected" : ""}>Pequena (caixa-alta)</option><option value="emo" ${l.tipo === "emo" ? "selected" : ""}>Emojis</option></select>
+              <select class="entrada" data-cam-tipo="${i}" aria-label="Estilo da linha ${i + 1}"><option value="ser" ${l.tipo === "ser" ? "selected" : ""}>Grande (serifada)</option><option value="cap" ${l.tipo === "cap" ? "selected" : ""}>Pequena (caixa-alta)</option><option value="emo" ${l.tipo === "emo" ? "selected" : ""}>Emojis</option><option value="pop" ${l.tipo === "pop" ? "selected" : ""}>Negrito (Poppins)</option></select>
               <button class="icone-btn" type="button" data-cam-tiralinha="${i}" aria-label="Tirar linha">${ic.x}</button></div>`).join("")}
             <button class="btn btn-leve" type="button" data-cam-maislinha>${ic.mais}Linha</button>
             <div class="ed-cam-grade">
@@ -1419,6 +1421,7 @@ IDEIA PARA DEPOIS
                 <label>Opacidade <span class="ed-cam-val">${pc(vs.opacidade)}</span><input type="range" min="0.1" max="1" step="0.05" data-cam-vis="opacidade" value="${vs.opacidade}"></label>
                 <label>Sombra atrás <span class="ed-cam-val">${vs.sombra ? pc(vs.sombra) : "sem"}</span><input type="range" min="0" max="1" step="0.05" data-cam-vis="sombra" value="${vs.sombra}"></label>
                 <label>Cor da sombra <input type="color" data-cam-vis="sombraCor" value="${vs.sombraCor}"></label>
+                <label>Faixa atrás <span class="ed-cam-cor"><input type="color" data-cam-vis="fundo" value="${vs.fundo || "#001e56"}"><button type="button" class="ed-cam-padrao" data-cam-volta="fundo" title="Tirar a faixa">${vs.fundo ? "tirar" : "sem faixa"}</button></span></label>
                 <label>Alinhamento <select class="entrada" data-cam-vis="alinh"><option value="centro" ${vs.alinh === "centro" ? "selected" : ""}>Centro</option><option value="esq" ${vs.alinh === "esq" ? "selected" : ""}>Esquerda</option><option value="dir" ${vs.alinh === "dir" ? "selected" : ""}>Direita</option></select></label>
               </div>
               <div class="ed-cam-acoes"><button class="btn btn-leve" type="button" data-cam-todos>Usar este visual em todos os textos</button></div>
@@ -1446,7 +1449,7 @@ IDEIA PARA DEPOIS
     const c = camadaAtual(); if (!c) return;
     const corpo = box.querySelector(".ed-cam.aberta");
     $$("[data-cam-txt]", corpo).forEach((i) => i.addEventListener("input", () => { guardarCam("txt" + c.id + i.dataset.camTxt); c.linhas[+i.dataset.camTxt].texto = i.value; mexeu(); }));
-    $$("[data-cam-tipo]", corpo).forEach((i) => i.addEventListener("change", () => { guardarCam(); const l = c.linhas[+i.dataset.camTipo]; l.tipo = i.value; l.tam = i.value === "cap" ? 38 : i.value === "emo" ? 50 : 110; mexeu(); }));
+    $$("[data-cam-tipo]", corpo).forEach((i) => i.addEventListener("change", () => { guardarCam(); const l = c.linhas[+i.dataset.camTipo]; l.tipo = i.value; l.tam = i.value === "cap" ? 38 : i.value === "emo" ? 50 : i.value === "pop" ? 56 : 110; mexeu(); }));
     $$("[data-cam-tiralinha]", corpo).forEach((b) => b.addEventListener("click", () => { guardarCam(); c.linhas.splice(+b.dataset.camTiralinha, 1); pintarCamadas(); mexeu(); }));
     $("[data-cam-maislinha]", corpo).addEventListener("click", () => { guardarCam(); c.linhas.push({ texto: "Nova linha", tipo: "cap", tam: 38 }); pintarCamadas(); mexeu(); });
     $("[data-cam-t0]", corpo).addEventListener("change", (e) => { guardarCam(); c.t0 = Math.max(0, +e.target.value || 0); if (c.t1 <= c.t0) c.t1 = c.t0 + 0.5; pintarCamadas(); mexeu(); });
