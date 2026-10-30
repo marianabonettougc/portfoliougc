@@ -255,7 +255,7 @@
   const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Meus roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
     prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Meus roteiros", central: "Referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar a partir de referência",
     meusroteiros: "Referências", modelos: "Modelos", biblioteca: "Referências",
-    financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Referências: transcrever e analisar", laboratorio: "Referências: meus salvos", editorial: "Referências: perfis que eu acompanho", edicao: "Edição de vídeos", planejar: "Painel de conteúdo", notificacoes: "Configurações: notificações no celular" };
+    financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Referências: transcrever e analisar", laboratorio: "Referências: meus salvos", editorial: "Referências: perfis que eu acompanho", edicao: "Edição de vídeos", planejar: "Painel de conteúdo", ferarquivos: "Ferramentas: organizador de arquivos", fercapa: "Ferramentas: checagem de capa", ferideias: "Ferramentas: organizador de ideias", notificacoes: "Configurações: notificações no celular" };
   // Abas do painel que são páginas do aplicativo Gestão UGC (aba do painel: página do aplicativo)
   const PAGINAS_APP = { dashboard: "dashboard", calendario: "planner", campanhas: "jobs", prospeccao: "prospeccao", followups: "followups",
     candidaturas: "candidaturas", trafego: "trafego", quadro: "roteiros", financeiro: "financeiro", 
@@ -266,6 +266,7 @@
     { menu: "portfolio", partes: [["portfolio", "Portfólio"], ["checklist", "Checklist do portfólio"]] },
     { menu: "central", partes: [["central", "Vídeos transcritos"], ["transcritos", "Transcrever e analisar"], ["laboratorio", "Meus salvos do Instagram"], ["editorial", "Perfis que eu acompanho"]], junto: { analise: "transcritos" } },
     { menu: "config", partes: [["config", "Configurações gerais"], ["notificacoes", "Notificações no celular"]] },
+    { menu: "ferarquivos", partes: [["ferarquivos", "Organizador de arquivos"], ["fercapa", "Checagem de capa"], ["ferideias", "Organizador de ideias"]] },
   ];
   const areaDe = (nome) => AREAS.find((a) => a.partes.some(([k]) => k === nome) || (a.junto && a.junto[nome]));
   function pintarSubAbas(nome) {
@@ -1166,7 +1167,7 @@
     if (tokscriptConectado) {
       el.innerHTML = `<span class="rot-ts-ok">● TokScript conectado</span> <button class="btn-texto" type="button" id="rot-ts-sair">desconectar</button>`;
       $("#rot-ts-sair").addEventListener("click", async () => {
-        if (!window.confirm("Desconectar o TokScript do painel?")) return;
+        if (!(await painelDialogo.confirmar("Desconectar o TokScript do painel?", { ok: "Desconectar", perigo: true }))) return;
         try { await chamarTranscrever({ acao: "tokscript_sair" }); atualizarStatusTokscript(false); avisar("TokScript desconectado"); } catch (e) { avisar(e.message, true); }
       });
     } else {
@@ -2286,7 +2287,7 @@
           const link = $('[name="link"]', corpo).value.trim();
           if (!arquivo && !/^https?:\/\//i.test(link)) { mostrarStatus("Cole o link do vídeo no campo \"Link do vídeo\" ou envie o arquivo.", true); return; }
           const temTexto = $("#f-transcricao", corpo).value.trim();
-          if (temTexto && !window.confirm("Já tem uma transcrição. Trocar pela nova?")) return;
+          if (temTexto && !(await painelDialogo.confirmar("Já tem uma transcrição. Trocar pela nova?", { ok: "Trocar" }))) return;
           const botoes = $$("#rot-transcrever, label[for=rot-arquivo]", corpo);
           botoes.forEach((b) => b.classList.add("carregando"));
           $("#rot-transcrever", corpo).disabled = true;
@@ -2312,12 +2313,12 @@
         $("#rot-transcrever", corpo).addEventListener("click", () => transcrever(null));
         $("#rot-arquivo", corpo).addEventListener("change", (e) => { const f = e.target.files[0]; if (f) transcrever(f); e.target.value = ""; });
         if (autoTranscrever) setTimeout(() => transcrever(null), 50);
-        $("#rot-montar", corpo).addEventListener("click", () => {
+        $("#rot-montar", corpo).addEventListener("click", async () => {
           const texto = $("#f-transcricao", corpo).value;
           const m = montarEstrutura(texto);
           if (!m) { avisar("Cole o texto do vídeo no campo de transcrição primeiro.", true); return; }
           const temAlgo = ["gancho", "desenvolvimento", "cta"].some((k) => $(`[name="${k}"]`, corpo).value.trim());
-          if (temAlgo && !window.confirm("Trocar o gancho, os passos e o CTA que já estão preenchidos?")) return;
+          if (temAlgo && !(await painelDialogo.confirmar("Trocar o gancho, os passos e o CTA que já estão preenchidos?", { ok: "Trocar" }))) return;
           ["gancho", "gancho_tipo", "desenvolvimento", "cta"].forEach((k) => { $(`[name="${k}"]`, corpo).value = m[k]; });
           if (!$('[name="titulo"]', corpo).value.trim()) $('[name="titulo"]', corpo).value = m.titulo;
           atualizarEstrutura();

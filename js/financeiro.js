@@ -550,7 +550,7 @@
     const { data, error } = await banco.from("financeiro_membros").select("email,nome").order("criado_em");
     if (error) { box.innerHTML = `<p class="fn-vazio">Não consegui carregar: ${esc(error.message)}</p>`; return; }
     box.innerHTML = tingir(`<div class="fn-item"><span class="fn-av">M</span><div class="x"><b>${esc(window.BANCO_EMAIL_DONA)}</b><small>Mari (sempre tem acesso)</small></div></div>` + (data || []).map((m) => `<div class="fn-item"><span class="fn-av" style="background:#8a6650">${esc((m.nome || m.email)[0].toUpperCase())}</span><div class="x"><b>${esc(m.email)}</b><small>${esc(m.nome || "")}</small></div><button class="fn-icone" type="button" data-tirar-membro="${esc(m.email)}" aria-label="Tirar acesso">${ICONE.lixo}</button></div>`).join(""));
-    $$("[data-tirar-membro]", box).forEach((b) => b.addEventListener("click", async () => { if (!confirm(`Tirar o acesso de ${b.dataset.tirarMembro}?`)) return; await banco.from("financeiro_membros").delete().eq("email", b.dataset.tirarMembro); pintarMembros(); }));
+    $$("[data-tirar-membro]", box).forEach((b) => b.addEventListener("click", async () => { if (!(await painelDialogo.confirmar(`Tirar o acesso de ${b.dataset.tirarMembro}?`, { ok: "Tirar acesso", perigo: true }))) return; await banco.from("financeiro_membros").delete().eq("email", b.dataset.tirarMembro); pintarMembros(); }));
   }
 
   // ---------- formulários ----------
@@ -565,7 +565,7 @@
     const linhas = []; for (let i = 0; i < campos.length; i++) { const c = campos[i]; if (c.meia && campos[i + 1] && campos[i + 1].meia) { linhas.push(`<div class="duplo">${campo(c)}${campo(campos[i + 1])}</div>`); i++; } else linhas.push(campo(c)); }
     dlg.innerHTML = `<form method="dialog" novalidate><h2>${esc(titulo)}</h2>${linhas.join("")}<p class="fn-erro" id="f-erro"></p><div class="rodape">${aoApagar ? `<button class="fn-btn perigo" type="button" id="f-apagar">${ICONE.lixo}Apagar</button><span style="flex:1"></span>` : ""}<button class="fn-btn" type="button" id="f-cancelar">Cancelar</button><button class="fn-btn principal" type="submit">Salvar</button></div></form>`;
     $("#f-cancelar", dlg).addEventListener("click", () => dlg.close());
-    if (aoApagar) $("#f-apagar", dlg).addEventListener("click", () => { if (confirm("Apagar mesmo?")) { aoApagar(); dlg.close(); salvar(); pintar(); } });
+    if (aoApagar) $("#f-apagar", dlg).addEventListener("click", async () => { if (await painelDialogo.confirmar("Apagar mesmo?", { ok: "Apagar", perigo: true })) { aoApagar(); dlg.close(); salvar(); pintar(); } });
     $("form", dlg).addEventListener("submit", (e) => {
       e.preventDefault();
       const out = {};
@@ -710,8 +710,8 @@
     $$("[data-ano-aba]", raiz).forEach((b) => b.addEventListener("click", () => { st.anoAba = b.dataset.anoAba; pintar(); }));
     $$("[data-linha]", raiz).forEach((b) => b.addEventListener("click", () => { const [tipo, nomeL] = b.dataset.linha.split("|"); editarLinha(tipo, nomeL); }));
     $$("[data-mov-res]", raiz).forEach((b) => b.addEventListener("click", () => movReserva(b.dataset.movRes)));
-    $$("[data-apagar-mov]", raiz).forEach((b) => b.addEventListener("click", () => {
-      const rs = d.reserva, m = (rs.movs || []).find((x) => x.id === b.dataset.apagarMov); if (!m || !confirm("Apagar esse movimento? O valor volta para a reserva como estava.")) return;
+    $$("[data-apagar-mov]", raiz).forEach((b) => b.addEventListener("click", async () => {
+      const rs = d.reserva, m = (rs.movs || []).find((x) => x.id === b.dataset.apagarMov); if (!m || !(await painelDialogo.confirmar("Apagar esse movimento? O valor volta para a reserva como estava.", { ok: "Apagar", perigo: true }))) return;
       rs.atual = Math.round(((Number(rs.atual) || 0) + (m.tipo === "saque" ? m.valor : -m.valor)) * 100) / 100; rs.movs = rs.movs.filter((x) => x !== m); salvar(); pintar();
     }));
     $$("[data-linha-fixa]", raiz).forEach((b) => b.addEventListener("click", contaFixaNoAno));

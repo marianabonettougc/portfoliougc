@@ -565,3 +565,14 @@ revoke all on function public.perfil_financeiro() from public, anon;
 grant execute on function public.perfil_financeiro() to authenticated;
 alter policy "casal le e grava" on public.financeiro_contas using (id = public.perfil_financeiro()) with check (id = public.perfil_financeiro());
 create policy "cada um no seu perfil" on public.financeiro_contas for all to authenticated using (id = public.perfil_financeiro()) with check (id = public.perfil_financeiro());
+
+-- Ferramentas (out/2026): organizador de ideias, checagem de capa e histórico do organizador de arquivos. Só a dona.
+create table if not exists public.ideias_organizadas (id bigint generated always as identity primary key, texto text, imagem text, titulo text, resumo text, categoria text, finalidade text, funil text, formato text, pilar text, marca text, gancho text, roteiro text, post_id bigint, roteiro_id text, criado_em timestamptz not null default now(), atualizado_em timestamptz not null default now());
+create table if not exists public.capas_checadas (id bigint generated always as identity primary key, nome text, imagem text, plataforma text, nota numeric, analise jsonb, notas text, criado_em timestamptz not null default now());
+create table if not exists public.arquivos_lotes (id bigint generated always as identity primary key, pasta text, itens jsonb not null default '[]'::jsonb, notas text, desfeito boolean not null default false, aplicado_em timestamptz not null default now());
+alter table public.ideias_organizadas enable row level security;
+alter table public.capas_checadas enable row level security;
+alter table public.arquivos_lotes enable row level security;
+create policy "dona faz tudo" on public.ideias_organizadas for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+create policy "dona faz tudo" on public.capas_checadas for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+create policy "dona faz tudo" on public.arquivos_lotes for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());

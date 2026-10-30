@@ -295,7 +295,7 @@
         ritmo: { porSemana, dias, horario: v("horario") || "12h", formatos: marcados("formatos").length ? marcados("formatos") : ["Reels"], funil } };
       try { await salvarPerfil(novo); pintar(); toast("Perfil salvo. A próxima grade já sai com ele."); } catch (er) { toast("Não consegui salvar: " + er.message, true); }
     });
-    $("#pc-perfil-padrao", box).addEventListener("click", async () => { if (!confirm("Voltar o perfil para o padrão?")) return; try { await salvarPerfil(PERFIL_PADRAO); pintar(); toast("Perfil voltou ao padrão."); } catch (er) { toast(er.message, true); } });
+    $("#pc-perfil-padrao", box).addEventListener("click", async () => { if (!(await painelDialogo.confirmar("Voltar o perfil para o padrão?", { ok: "Voltar ao padrão" }))) return; try { await salvarPerfil(PERFIL_PADRAO); pintar(); toast("Perfil voltou ao padrão."); } catch (er) { toast(er.message, true); } });
   }
 
   // ---------- arquivo das pastas (salvos_instagram.json do programa) ----------
@@ -497,7 +497,7 @@
     $$("[data-ir]", sec).forEach((b) => b.addEventListener("click", () => { location.hash = "#" + b.dataset.ir; }));
     $$("[data-tema]", sec).forEach((b) => b.addEventListener("click", async () => {
       const atual = (st.temas || {})[b.dataset.tema] || "";
-      const novo = prompt("Tema desta semana (ex.: Black Friday para marcas). Deixe vazio para tirar.", atual);
+      const novo = await painelDialogo.texto("Tema desta semana (ex.: Black Friday para marcas). Deixe vazio para tirar.", atual);
       if (novo === null) return; await salvarTema(b.dataset.tema, novo.trim()); pintar();
     }));
     const semData = doMes.filter((p) => !p.data);
@@ -590,7 +590,7 @@
         : `<button class="btn btn-principal" type="button" id="pc-ligar">Ligar as notificações no iPhone</button>`}`;
     const l = $("#pc-ligar", box); if (l) l.addEventListener("click", ligarNotificacoes);
     const t = $("#pc-testar", box); if (t) t.addEventListener("click", () => testarNotificacao(t));
-    const n = $("#pc-novo-topico", box); if (n) n.addEventListener("click", () => { if (confirm("Trocar o endereço? Depois você assina o novo no app ntfy.")) ligarNotificacoes(); });
+    const n = $("#pc-novo-topico", box); if (n) n.addEventListener("click", async () => { if (await painelDialogo.confirmar("Trocar o endereço? Depois você assina o novo no app ntfy.", { ok: "Trocar" })) ligarNotificacoes(); });
     copiar("#pc-copiar-topico", st.topico, "Copiado. Cole no app ntfy.");
     copiar("#pc-copiar-link", LINK_SALVAR, "Copiado. Cole na ação Abrir URLs.");
   }
@@ -651,7 +651,7 @@
     });
     const ex = $("[data-excluir]", dlg);
     if (ex) ex.addEventListener("click", async () => {
-      if (!confirm("Excluir esse post do painel?")) return;
+      if (!(await painelDialogo.confirmar("Excluir esse post do painel?", { ok: "Excluir", perigo: true }))) return;
       const { error } = await banco().from("painel_conteudo").delete().eq("id", p.id);
       if (error) { toast(error.message, true); return; }
       st.posts = st.posts.filter((x) => x.id !== p.id); dlg.close(); pintar();

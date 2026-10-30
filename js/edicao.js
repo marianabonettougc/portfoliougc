@@ -487,7 +487,7 @@ IDEIA PARA DEPOIS
     $("#ed-proj-novo", box).addEventListener("click", novoProjeto);
     const ap = $("#ed-proj-apagar", box);
     if (ap) ap.addEventListener("click", async () => {
-      if (!confirm(`Apagar o projeto "${st.projeto.nome}"? O vídeo no seu aparelho não é apagado.`)) return;
+      if (!(await painelDialogo.confirmar(`Apagar o projeto "${st.projeto.nome}"? O vídeo no seu aparelho não é apagado.`, { ok: "Apagar", perigo: true }))) return;
       await banco().from("edicao_projetos").delete().eq("id", st.projeto.id);
       st.projetos = st.projetos.filter((p) => p.id !== st.projeto.id); novoProjeto();
     });
@@ -2115,11 +2115,11 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $("#ed-pedidos", sec).addEventListener("input", (e) => { st.pedidos = e.target.value; salvarDepois(); });
     carregarProjetos();
     $("#ed-roteiro", sec).addEventListener("input", (e) => { st.roteiro = e.target.value; try { localStorage.setItem("ed-roteiro", st.roteiro); } catch (er) { /* sem armazenamento */ } salvarDepois(); });
-    $("#ed-puxar", sec).addEventListener("change", (e) => {
+    $("#ed-puxar", sec).addEventListener("change", async (e) => {
       const p = st.posts.find((x) => String(x.id) === e.target.value); e.target.value = "";
       if (!p) return;
       const texto = [p.hook && "GANCHO: " + p.hook, p.desenvolvimento, p.cta && "CTA: " + p.cta].filter(Boolean).join("\n");
-      if (st.roteiro.trim() && !confirm("Trocar o roteiro que está no campo por este?")) return;
+      if (st.roteiro.trim() && !(await painelDialogo.confirmar("Trocar o roteiro que está no campo por este?", { ok: "Trocar" }))) return;
       st.roteiro = texto; $("#ed-roteiro", sec).value = texto; try { localStorage.setItem("ed-roteiro", texto); } catch (er) { /* sem armazenamento */ }
       if (!st.tema && p.tema) { st.tema = p.tema; $("#ed-tema", sec).value = p.tema; }
       $("#ed-roteiro-box", sec).open = true;
@@ -3048,14 +3048,14 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     st.sel = null; if (!quieto) mexeuManual();
   }
   function porZoom() { const g = brutoDe(st.t); if (g != null) { hist("zooms"); st.manual.zooms.push(+g.toFixed(2)); mexeuManual(); } }
-  function porVisual(tipo) {
+  async function porVisual(tipo) {
     const g = brutoDe(st.t); if (g == null) return;
     let itens;
-    if (tipo === "checklist") { const txt = prompt("Itens do checklist, um por linha (aparecem e são marcados um a um):", "Item 1\nItem 2\nItem 3"); if (txt == null) return; itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); }
-    if (tipo === "orbita") { const txt = prompt("Texto que gira ao seu redor (curto, ex.: BLACK FRIDAY):", st.tema || "BLACK FRIDAY"); if (txt == null || !txt.trim()) return; itens = [txt.trim().slice(0, 40)]; }
+    if (tipo === "checklist") { const txt = await painelDialogo.texto("Itens do checklist, um por linha (aparecem e são marcados um a um):", "Item 1\nItem 2\nItem 3", { linhas: 5 }); if (txt == null) return; itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); }
+    if (tipo === "orbita") { const txt = await painelDialogo.texto("Texto que gira ao seu redor (curto, ex.: BLACK FRIDAY):", st.tema || "BLACK FRIDAY"); if (txt == null || !txt.trim()) return; itens = [txt.trim().slice(0, 40)]; }
     const tipos = new Set((st.manual.visuais || []).map((x) => x.tipo));
-    if (!tipos.has(tipo) && tipos.size >= 2 && !confirm("Dica de ouro: use 1 ou 2 efeitos por vídeo. Efeito demais cansa, e o que prende é o conteúdo. Este vídeo já tem 2 tipos de efeito. Colocar mesmo assim?")) return;
-    if (tipo === "grafico") { const txt = prompt("Barras do gráfico, uma por linha, no formato rótulo: valor", "Antes: 20\nDepois: 85"); if (txt == null) return; itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); }
+    if (!tipos.has(tipo) && tipos.size >= 2 && !(await painelDialogo.confirmar("Dica de ouro: use 1 ou 2 efeitos por vídeo. Efeito demais cansa, e o que prende é o conteúdo. Este vídeo já tem 2 tipos de efeito. Colocar mesmo assim?", { ok: "Colocar mesmo assim" }))) return;
+    if (tipo === "grafico") { const txt = await painelDialogo.texto("Barras do gráfico, uma por linha, no formato rótulo: valor", "Antes: 20\nDepois: 85", { linhas: 5 }); if (txt == null) return; itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); }
     hist("visuais"); (st.manual.visuais = st.manual.visuais || []).push({ id: uid(), g: +g.toFixed(2), tipo, ...(itens ? { itens } : {}) });
     mexeuManual(); toast("Efeito colocado. Dá o play para ver.");
   }
@@ -3291,8 +3291,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $$("[data-vis]", box).forEach((b) => b.addEventListener("click", () => { const i = Number(b.dataset.vis); st.sel = { tipo: "visual", i }; irPara(st.visuais[i].t + 0.05); pintarLinha(); }));
     const visSel = sel.tipo === "visual" ? (st.manual.visuais || []).find((x) => x.id === (st.visuais[sel.i] || {}).id) : null;
     if (f("tirar-visual")) f("tirar-visual").addEventListener("click", () => { st.manual.visuais = st.manual.visuais.filter((x) => x !== visSel); st.sel = null; mexeuManual(); });
-    if (f("editar-visual")) f("editar-visual").addEventListener("click", () => { const txt = prompt(visSel.tipo === "grafico" ? "Uma barra por linha, no formato rótulo: valor (ex.: Antes: 20)" : "Um item por linha", (visSel.itens || []).join("\n")); if (txt == null) return; visSel.itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); mexeuManual(); });
-    if (f("dur-visual")) f("dur-visual").addEventListener("click", () => { const txt = prompt("Quantos segundos o efeito fica na tela?", String(visSel.dur || (visSel.tipo === "checklist" ? (visSel.itens || []).length * 1.1 + 2.2 : visSel.tipo === "grafico" ? 4.5 : 3)).replace(".", ",")); if (txt == null) return; const n = Number(String(txt).replace(",", ".")); if (n > 0) { visSel.dur = Math.min(20, n); mexeuManual(); } });
+    if (f("editar-visual")) f("editar-visual").addEventListener("click", async () => { const txt = await painelDialogo.texto(visSel.tipo === "grafico" ? "Uma barra por linha, no formato rótulo: valor (ex.: Antes: 20)" : "Um item por linha", (visSel.itens || []).join("\n"), { linhas: 5 }); if (txt == null) return; visSel.itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); mexeuManual(); });
+    if (f("dur-visual")) f("dur-visual").addEventListener("click", async () => { const txt = await painelDialogo.texto("Quantos segundos o efeito fica na tela?", String(visSel.dur || (visSel.tipo === "checklist" ? (visSel.itens || []).length * 1.1 + 2.2 : visSel.tipo === "grafico" ? 4.5 : 3)).replace(".", ",")); if (txt == null) return; const n = Number(String(txt).replace(",", ".")); if (n > 0) { visSel.dur = Math.min(20, n); mexeuManual(); } });
     ligarMusica(box);
     if (f("tirar-flash")) f("tirar-flash").addEventListener("click", () => { st.manual.flashes.splice(sel.i, 1); st.sel = null; mexeuManual(); });
     if (f("desfazer")) f("desfazer").addEventListener("click", desfazerManual);

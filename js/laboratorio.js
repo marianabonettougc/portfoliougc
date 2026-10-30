@@ -313,7 +313,7 @@
     $$("[data-etapa]", dlg).forEach((b) => b.addEventListener("click", async () => { try { const n = await atualizar(r.id, { etapa: b.dataset.etapa }); pintar(); abrir(n); } catch (e) { toast(e.message, true); } }));
     $("[data-processar]", dlg).addEventListener("click", async () => { dlg.close(); await processar(r.status === "pronto" ? { ...r, status: "novo" } : r); const n = st.lista.find((x) => x.id === r.id); if (n && n.status === "pronto") abrir(n); else if (n && n.status === "erro") toast(n.erro || "Deu erro.", true); });
     $("[data-excluir]", dlg).addEventListener("click", async () => {
-      if (!confirm("Excluir esse post do laboratório?")) return;
+      if (!(await painelDialogo.confirmar("Excluir esse post do laboratório?", { ok: "Excluir", perigo: true }))) return;
       const { error } = await banco().from("laboratorio").delete().eq("id", r.id);
       if (error) { toast(error.message, true); return; }
       st.lista = st.lista.filter((x) => x.id !== r.id); dlg.close(); pintar();

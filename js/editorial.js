@@ -200,7 +200,7 @@
     $$("[data-p]", sec).forEach((b) => b.addEventListener("click", (e) => { if (e.target.closest("[data-tirar]")) return; st.perfil = b.dataset.p; pintar(); }));
     $$("[data-tirar]", sec).forEach((b) => b.addEventListener("click", async () => {
       const p = st.perfis.find((x) => String(x.id) === b.dataset.tirar);
-      if (!p || !confirm(`Parar de acompanhar @${p.usuario}? Os posts dele saem da biblioteca.`)) return;
+      if (!p || !(await painelDialogo.confirmar(`Parar de acompanhar @${p.usuario}? Os posts dele saem da biblioteca.`, { ok: "Parar", perigo: true }))) return;
       await banco().from("biblioteca").delete().eq("rede", p.rede).eq("perfil", p.usuario);
       const { error } = await banco().from("biblioteca_perfis").delete().eq("id", p.id);
       if (error) { toast(error.message, true); return; }

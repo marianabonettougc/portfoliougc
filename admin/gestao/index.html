@@ -16,7 +16,8 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610131330"></script>
+<script src="../../js/banco.js?v=202610300214"></script>
+<script src="../../js/dialogos.js?v=202610300214"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -2186,8 +2187,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
       return JSON.stringify(antes.datas)!==JSON.stringify(p.datas) || JSON.stringify(antes.feitos)!==JSON.stringify(p.feitos) ? planejarNoPlanner(novo, p) : novo;
     });
   }
-  function tirarPlano(p){
-    if(!window.confirm("Tirar este vídeo do planejamento? As datas de roteirizar, gravar e analisar saem do Planner. O roteiro e a data de postagem continuam no quadro.")) return;
+  async function tirarPlano(p){
+    if(!await painelDialogo.confirmar("Tirar este vídeo do planejamento? As datas de roteirizar, gravar e analisar saem do Planner. O roteiro e a data de postagem continuam no quadro.")) return;
     mudar(s=>({...s, planosInsp:(s.planosInsp||[]).filter(x=>x.id!==p.id), planner:(s.planner||[]).filter(x=>x.planoId!==p.id)}));
     setPlanoAberto(null);
   }
@@ -2390,7 +2391,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                 {apple.erro && <p className="db-erro">{apple.erro}</p>}
                 <div className="db-pop-acoes">
                   {apple.conectado
-                    ? <><button onClick={carregarApple}>Atualizar agora</button><button onClick={()=>{ if(window.confirm("Desconectar o calendário do iPhone do painel?")) conectarIphone(true); }}>Desconectar</button></>
+                    ? <><button onClick={carregarApple}>Atualizar agora</button><button onClick={async ()=>{ if(await painelDialogo.confirmar("Desconectar o calendário do iPhone do painel?", { ok: "Desconectar", perigo: true })) conectarIphone(true); }}>Desconectar</button></>
                     : <button disabled={salvandoIphone || !linkIphone.trim()} onClick={()=>conectarIphone(false)}>{salvandoIphone ? "Conectando..." : "Conectar"}</button>}
                   <button onClick={()=>setPopIphone(false)}>Fechar</button>
                 </div>
@@ -2630,7 +2631,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           {refAberta.por_que && <><small>Por que prende</small><p>{refAberta.por_que}</p></>}
           {refAberta.link && <p style={{marginTop:12}}><a href={refAberta.link} target="_blank" rel="noopener">Ver o vídeo original</a></p>}
           {refAberta.id && <label className="db-pasta-campo">Pasta
-            <select value={refPasta[refAberta.id]||""} onChange={e=>{ let id = e.target.value; if(id==="nova"){ id = criarPasta(window.prompt("Nome da nova pasta:")||""); } moverParaPasta(refAberta.id, id); }}>
+            <select value={refPasta[refAberta.id]||""} onChange={async e=>{ let id = e.target.value; if(id==="nova"){ id = criarPasta((await painelDialogo.texto("Nome da nova pasta:", ""))||""); } moverParaPasta(refAberta.id, id); }}>
               <option value="">Sem pasta</option>
               {pastas.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}
               <option value="nova">+ Nova pasta</option>
@@ -3231,7 +3232,7 @@ function ImportarRoteiroJob({f, setF, state}){
         <div style={{border:"1px solid var(--line)", borderRadius:12, padding:"12px 14px", marginBottom:12, background:"var(--card-bg)"}}>
           <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6}}>
             <Icon name="description" size={16}/><strong style={{flex:1, fontSize:14.5}}>{f.roteiroTitulo || "Roteiro importado"}</strong>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={()=>{ if(confirm("Tirar o roteiro deste job? O roteiro continua salvo onde estava.")) setF(p=>({...p, roteiroConteudo:"", roteiroTitulo:"", roteiroId:"", roteiroDoc:"", roteiroStatus:"Em criação"})); }}>Remover</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={async ()=>{ if(await painelDialogo.confirmar("Tirar o roteiro deste job? O roteiro continua salvo onde estava.", { ok: "Tirar" })) setF(p=>({...p, roteiroConteudo:"", roteiroTitulo:"", roteiroId:"", roteiroDoc:"", roteiroStatus:"Em criação"})); }}>Remover</button>
           </div>
           <div style={{whiteSpace:"pre-wrap", fontSize:13.5, lineHeight:1.55, maxHeight:220, overflow:"auto", color:"var(--graphite)"}}>{f.roteiroConteudo}</div>
         </div>
@@ -3435,7 +3436,7 @@ function SecaoJob({titulo, icone, badge, aberta, onAlternar, onRenomear, onOcult
           <button type="button" className="icon-btn" title="Mais opções" onClick={()=>setMenu(m=>!m)}><Icon name="more_horiz" size={17}/></button>
           {menu && <div className="job-menu" onMouseLeave={()=>setMenu(false)}>
             <button type="button" onClick={()=>{ setMenu(false); setEditando(titulo); }}><Icon name="edit" size={15}/>Renomear</button>
-            <button type="button" onClick={()=>{ setMenu(false); if(confirm(`Ocultar "${titulo}" do formulário? As informações continuam guardadas e dá para mostrar de novo depois.`)) onOcultar(); }}><Icon name="visibility_off" size={15}/>Ocultar</button>
+            <button type="button" onClick={async ()=>{ setMenu(false); if(await painelDialogo.confirmar(`Ocultar "${titulo}" do formulário? As informações continuam guardadas e dá para mostrar de novo depois.`)) onOcultar(); }}><Icon name="visibility_off" size={15}/>Ocultar</button>
           </div>}
         </div>
         <button type="button" className="icon-btn" title={aberta?"Minimizar":"Abrir"} onClick={onAlternar}><Icon name={aberta?"expand_less":"expand_more"} size={20}/></button>
@@ -3467,20 +3468,20 @@ function EntregaveisJob({f, setF, state, updateState}){
     const novo = {...p, entregaveis:{...p.entregaveis, [tipo]: fn(p.entregaveis[tipo]||[])}};
     return tipo==="fotos" ? novo : statusDoJobPelosItens(novo);
   });
-  function definirQtd(tipo, nome, n){
+  async function definirQtd(tipo, nome, n){
     n = Math.max(0, Math.min(50, Number(n)||0));
     const atual = f.entregaveis[tipo] || [];
     if(n < atual.length){
       const saem = atual.slice(n);
       const temDados = saem.some(i=>i.prazoRoteiro || i.prazoConteudo || i.prazoPostagem || i.dataFechamento || i.concluido);
-      if(temDados && !confirm(`Diminuir para ${n}? ${saem.length===1?"O último sai":"Os últimos "+saem.length+" saem"} junto com as datas.`)) return;
+      if(temDados && !await painelDialogo.confirmar(`Diminuir para ${n}? ${saem.length===1?"O último sai":"Os últimos "+saem.length+" saem"} junto com as datas.`)) return;
       mudarLista(tipo, l=>l.slice(0,n));
     } else if(n > atual.length){
       mudarLista(tipo, l=>[...l, ...Array.from({length:n-l.length}, (_,k)=>({...novoEntregavelItem(tipo, l.length+k+1), label:`${nome} ${l.length+k+1}`, dataFechamento: f.dataFechamento || ""}))]);
     }
   }
-  function novoStatus(tipo, id){
-    const nome = (prompt("Nome do novo status:")||"").trim();
+  async function novoStatus(tipo, id){
+    const nome = ((await painelDialogo.texto("Nome do novo status:", ""))||"").trim();
     if(!nome) return;
     if(!extras.includes(nome) && !ROTEIRO_STATUS_OPTIONS.includes(nome)) updateState(s=>({...s, statusExtras:[...(s.statusExtras||[]), nome]}));
     mudarLista(tipo, l=>l.map(i=>i.id===id?{...i, roteiroStatus:nome}:i));
@@ -3506,7 +3507,7 @@ function EntregaveisJob({f, setF, state, updateState}){
                 onMudar={(campos)=>mudarLista(tipo, l=>l.map(i=>i.id===it.id?{...i, ...campos}:i))}
                 onNovoStatus={()=>novoStatus(tipo, it.id)}
                 onPointerDown={(e)=>arr.iniciar(e, k)} estilo={arr.estilo(k)}
-                onExcluir={()=>{ if(confirm(`Excluir "${it.label}"?`)) mudarLista(tipo, l=>l.filter(i=>i.id!==it.id)); }}/>
+                onExcluir={async ()=>{ if(await painelDialogo.confirmar(`Excluir "${it.label}"?`, { ok: "Excluir", perigo: true })) mudarLista(tipo, l=>l.filter(i=>i.id!==it.id)); }}/>
             )}/>
           </div>
         );
@@ -3741,10 +3742,10 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
           </div>
         </Field>
         <Field label="Status">
-          <select value={f.status} onChange={e=>{
+          <select value={f.status} onChange={async e=>{
             const v = e.target.value;
             if(v!=="__novo"){ setF(p=>itensNoStatusDoJob({...p, status:v}, v)); return; }
-            const nome = (prompt("Nome do novo status:")||"").trim();
+            const nome = ((await painelDialogo.texto("Nome do novo status:", ""))||"").trim();
             if(!nome) return;
             if(!statusDoJobLista(state).includes(nome)) updateState(s=>({...s, statusJobExtras:[...(s.statusJobExtras||[]), nome]}));
             set("status", nome);
@@ -3883,7 +3884,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
               <div key={a.caminho||k} className="job-arquivo">
                 <Icon name="attach_file" size={15}/><span>{a.nome}</span>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={()=>abrirAnexo(a.caminho)}><Icon name="open_in_new" size={14}/>Abrir</button>
-                <button type="button" className="icon-btn" title="Tirar o arquivo" onClick={()=>{ if(confirm(`Tirar "${a.nome}" do briefing?`)) setF(p=>({...p, briefingArquivos:(p.briefingArquivos||[]).filter((_,i)=>i!==k)})); }}><Icon name="delete" size={15}/></button>
+                <button type="button" className="icon-btn" title="Tirar o arquivo" onClick={async ()=>{ if(await painelDialogo.confirmar(`Tirar "${a.nome}" do briefing?`, { ok: "Tirar" })) setF(p=>({...p, briefingArquivos:(p.briefingArquivos||[]).filter((_,i)=>i!==k)})); }}><Icon name="delete" size={15}/></button>
               </div>
             ))}
             <AnexoCampo rotulo="" pasta={`jobs/${f.id||"novos"}/briefing`} onEnviado={(a)=>setF(p=>({...p, briefingArquivos:[...(p.briefingArquivos||[]), a]}))}/>
@@ -4642,7 +4643,7 @@ function PainelCPF({state, updateState, financa, onFinanca}){
   const salvarUm = (t) => { salvarTx(l=> l.some(x=>x.id===t.id) ? l.map(x=>x.id===t.id?t:x) : [...l, t]); setModal(null); };
   const alternar = (t) => salvarTx(l=>l.map(x=>x.id===t.id ? {...x, status: x.status==="Confirmado"?"Pendente":"Confirmado", atrasado: undefined} : x));
   const mudarLista = (lista, item) => { onFinanca({...f, [lista]: (f[lista]||[]).some(x=>x.id===item.id) ? f[lista].map(x=>x.id===item.id?item:x) : [...(f[lista]||[]), item]}); setModal(null); };
-  const tirar = (lista, item) => { if(confirm(`Tirar "${item.nome}"?`)) onFinanca({...f, [lista]: f[lista].filter(x=>x.id!==item.id)}); };
+  const tirar = async (lista, item) => { if(await painelDialogo.confirmar(`Tirar "${item.nome}"?`, { ok: "Tirar", perigo: true })) onFinanca({...f, [lista]: f[lista].filter(x=>x.id!==item.id)}); };
 
   // números do mês
   const doMes = fxDoMes(tx, ref.y, ref.m), doAnt = fxDoMes(tx, ant.y, ant.m);
@@ -7041,13 +7042,13 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
     // a primeira lista recebe quem estava sem lista: fixa a etapa de todos antes de trocar a ordem
     mudarColunas(novas, r=>({...r, etapa:etapaNoQuadro(r, colunas)}));
   }
-  function excluirColuna(nome){
+  async function excluirColuna(nome){
     setMenuCol(null);
     if(colunas.length<=1){ alert("O quadro precisa ter pelo menos uma lista."); return; }
     const destino = colunas.find(c=>c!==nome);
     const n = doQuadro(state.roteiros).filter(r=>etapaNoQuadro(r, colunas)===nome).length;
     const aviso = n===1 ? `\n\nO roteiro dela não será apagado: vai para a lista "${destino}".` : n>1 ? `\n\nOs ${n} roteiros dela não serão apagados: vão para a lista "${destino}".` : "";
-    if(!window.confirm(`Excluir a lista "${nome}"?${aviso}`)) return;
+    if(!await painelDialogo.confirmar(`Excluir a lista "${nome}"?${aviso}`, { ok: "Excluir", perigo: true })) return;
     mudarColunas(colunas.filter(c=>c!==nome), r=>etapaNoQuadro(r, colunas)===nome?{...r, etapa:destino}:r);
   }
   function criarLista(){
@@ -7067,13 +7068,13 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
     mudar(s=>({...s, quadrosRoteiro:quadrosDe(s).map(q=>q.id===quadro.id?{...q, nome}:q)}));
     setQuadroModal(null);
   }
-  function excluirQuadro(){
+  async function excluirQuadro(){
     setMenuQuadro(false);
     if(quadros.length<=1){ alert("Esse é o seu único quadro. Crie outro antes de excluir este."); return; }
     const destino = quadros.find(q=>q.id!==quadro.id);
     const n = state.roteiros.filter(r=>quadroDo(r)===quadro.id).length;
     const aviso = n===1 ? `\n\nO roteiro dele não será apagado: vai para o quadro "${destino.nome}".` : n>1 ? `\n\nOs ${n} roteiros dele não serão apagados: vão para o quadro "${destino.nome}".` : "";
-    if(!window.confirm(`Excluir o quadro "${quadro.nome}"?${aviso}`)) return;
+    if(!await painelDialogo.confirmar(`Excluir o quadro "${quadro.nome}"?${aviso}`, { ok: "Excluir", perigo: true })) return;
     mudar(s=>({...s, quadrosRoteiro:quadrosDe(s).filter(q=>q.id!==quadro.id), roteiros:(s.roteiros||[]).map(r=>quadroDo(r)===quadro.id?{...r, quadroId:destino.id}:r)}));
     setQuadroId(destino.id);
   }
@@ -8916,10 +8917,10 @@ function Configuracoes({state, updateState}){
     const file = e.target.files[0];
     if(!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       try{
         const dados = JSON.parse(ev.target.result);
-        if(!window.confirm("Isso vai substituir todos os dados atuais pelos do backup. Continuar?")){ setImportStatus("idle"); return; }
+        if(!await painelDialogo.confirmar("Isso vai substituir todos os dados atuais pelos do backup. Continuar?", { ok: "Substituir" })){ setImportStatus("idle"); return; }
         updateState({...initialState, ...dados});
         setImportStatus("ok");
         setTimeout(()=>setImportStatus("idle"), 3000);
