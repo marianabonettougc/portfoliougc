@@ -120,9 +120,10 @@ IDEIA PARA DEPOIS
     { id: "suave", nome: "Suave", para: "Falas calmas, rotina e histórias pessoais, poucos sons", opc: { fonteLeg: "instrument", corLegenda: "#ffffff", porLegenda: 3, tamLeg: 1.1, sons: "poucos", dinamismo: "normal", transicao: "nenhuma", ritmo: "normal" } },
     { id: "dicas", nome: "Dicas e números", para: "Listas, passo a passo e resultados, legenda firme", opc: { fonteLeg: "montserrat", corLegenda: "#ffffff", porLegenda: 2, tamLeg: 1.05, sons: "medio", dinamismo: "dinamico", transicao: "punch", ritmo: "rapido" } },
     { id: "elegante", nome: "Elegante", para: "Beleza e perfume, serifada itálica, toque mais sofisticado", opc: { fonteLeg: "dmserif", corLegenda: "#fbf1e1", porLegenda: 3, tamLeg: 1, sons: "poucos", dinamismo: "normal", transicao: "punch", ritmo: "normal" } },
+    { id: "reels", nome: "Reels clássico", para: "O pedido completo do carrossel: corta pausas maiores que meio segundo, legenda no meio com 2 a 3 palavras, a palavra falada em destaque e título animado no começo", opc: { fonteLeg: "poppins", corLegenda: "#ffffff", cor: "#f2c14e", porLegenda: 3, tamLeg: 1.05, altura: 0.5, karaoke: true, titulo: true, legenda: true, silencio: true, ritmo: "classico", sons: "medio", dinamismo: "normal", transicao: "punch" } },
     { id: "leve", nome: "Lifestyle leve", para: "Dia a dia, maternidade e casa, ritmo gostoso", opc: { fonteLeg: "poppins", corLegenda: "#ffffff", porLegenda: 3, tamLeg: 1, sons: "medio", dinamismo: "normal", transicao: "punch", ritmo: "rapido" } },
   ];
-  const CHAVES_ESTILO = ["fonteLeg", "corLegenda", "porLegenda", "tamLeg", "sombra", "estilo", "estiloTitulo", "maiusculas", "sons", "dinamismo", "transicao", "ritmo", "flash", "tremer", "chamativas", "sonsChamativas", "confete", "altura", "vol", "cor", "legenda", "titulo", "efeitos", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo"];
+  const CHAVES_ESTILO = ["karaoke", "fonteLeg", "corLegenda", "porLegenda", "tamLeg", "sombra", "estilo", "estiloTitulo", "maiusculas", "sons", "dinamismo", "transicao", "ritmo", "flash", "tremer", "chamativas", "sonsChamativas", "confete", "altura", "vol", "cor", "legenda", "titulo", "efeitos", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo"];
 
   // ---------- quadro de efeitos (aba "Efeitos"): tudo o que o editor sabe fazer, achado por busca ----------
   const DESC_SONS = { woosh: "Troca de assunto e zoom", suave: "Corte para o rosto, bem baixinho", pop: "Quando entra texto ou informação", click: "Cortes rápidos de close", shutter: "Clique de câmera, gravação de tela", typing: "Quando aparece algo escrito", riser: "Antes de revelar o produto", hit: "Logo depois do riser, na revelação", ding: "Produto aparece inteiro", cristal: "Nome da marca, frasco brilhando", brilho: "Névoa, brilho, produto reluzindo", spray: "Borrifo do produto", mensagem: "Antes do print ou áudio de WhatsApp", relogio: "Fixação, \"no fim do dia\"" };
@@ -142,7 +143,7 @@ IDEIA PARA DEPOIS
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
   try { const salvo = JSON.parse(localStorage.getItem("ed-opc3") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
-  const OPC_VISUAIS = ["sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg", "legenda", "sons", "dinamismo", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo"];
+  const OPC_VISUAIS = ["karaoke", "sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg", "legenda", "sons", "dinamismo", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo"];
   function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc3", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
@@ -813,7 +814,7 @@ IDEIA PARA DEPOIS
     return lista.filter(([a, b]) => b - a >= 0.15);
   }
   // ritmo dos cortes: quanto de respiro fica antes e depois da fala e a partir de que pausa corta
-  const RITMOS = { normal: { antes: 0.08, depois: 0.14, junta: 0.3 }, rapido: { antes: 0.05, depois: 0.08, junta: 0.16 }, turbo: { antes: 0.03, depois: 0.05, junta: 0.08 } };
+  const RITMOS = { classico: { antes: 0.08, depois: 0.12, junta: 0.5 }, normal: { antes: 0.08, depois: 0.14, junta: 0.3 }, rapido: { antes: 0.05, depois: 0.08, junta: 0.16 }, turbo: { antes: 0.03, depois: 0.05, junta: 0.08 } };
   // vícios de fala que saem sozinhos ("é" fica, porque também é verbo) e muletas só sugeridas
   const VICIOS = new Set(["éé", "ééé", "eh", "ehh", "ah", "ahn", "ãh", "ãã", "hã", "hãã", "hum", "humm", "hmm", "hm", "uhm", "uh", "um", "mmm", "aham"]);
   const MULETAS = new Set(["tipo", "né", "sabe", "assim", "então", "basicamente", "enfim"]);
@@ -1548,7 +1549,21 @@ IDEIA PARA DEPOIS
     if (st.opc.sombra === "dura") { c2d.shadowColor = "rgba(0,0,0,.8)"; c2d.shadowBlur = 0; c2d.shadowOffsetX = 4 * u; c2d.shadowOffsetY = 5 * u; }
     else { c2d.shadowColor = "rgba(0,0,0,.55)"; c2d.shadowBlur = 16 * u; c2d.shadowOffsetY = 3 * u; }
     c2d.fillStyle = st.opc.corLegenda || "#fff3b0";
-    linhas.forEach((l, i) => c2d.fillText(l, xc, y + (i - (linhas.length - 1) / 2) * tam * 1.12));
+    // palavra falada em destaque (karaokê): só quando o texto é o da fala, palavra por palavra
+    const ws = (g.palavras || []), pal = texto.split(/\s+/).filter(Boolean);
+    if (st.opc.karaoke && ws.length === pal.length && ws.length > 1) {
+      let atual = -1; ws.forEach((w, i) => { if (st.t >= (w.o0 ?? g.o0) - 0.02) atual = i; });
+      let n = 0; c2d.textAlign = "left";
+      linhas.forEach((l, i) => {
+        const ps = l.split(/\s+/).filter(Boolean), esp = c2d.measureText(" ").width, larg = ps.reduce((a, p) => a + c2d.measureText(p).width, 0) + esp * (ps.length - 1);
+        let x = xc - larg / 2; const yy = y + (i - (linhas.length - 1) / 2) * tam * 1.12;
+        for (const p of ps) {
+          const w = c2d.measureText(p).width, ativo = n === atual;
+          c2d.save(); if (ativo) { c2d.translate(x + w / 2, yy); c2d.scale(1.1, 1.1); c2d.translate(-(x + w / 2), -yy); c2d.fillStyle = st.opc.cor || "#f2c14e"; }
+          c2d.fillText(p, x, yy); c2d.restore(); x += w + esp; n++;
+        }
+      });
+    } else linhas.forEach((l, i) => c2d.fillText(l, xc, y + (i - (linhas.length - 1) / 2) * tam * 1.12));
     c2d.restore();
   }
   // lado da legenda (centro, esquerda ou direita do rosto)
@@ -2267,7 +2282,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     lista.push({ cat: "camera", id: "tremer", nome: "Tremidinha no impacto", desc: "Treme de leve nos momentos fortes", prev: "tremer", liga: "tremer", ativo: o.tremer });
     lista.push({ cat: "camera", id: "flashTroca", nome: "Flash em toda troca de cena", desc: "Liga o flash automático entre os clipes", prev: "flash", liga: "flash", ativo: o.flash });
     [["nenhuma", "Corte seco", "Sem transição, só o jump cut"], ["punch", "Zoom rápido (punch)", "Aproxima rápido no corte, o seu padrão"], ["deslize", "Punch + deslize", "Zoom rápido e um deslize na troca de cena"]].forEach(([k, t, d]) => lista.push({ cat: "transicao", id: "tr-" + k, nome: t, desc: d, prev: k === "nenhuma" ? "corte" : k === "punch" ? "zoom" : "deslize", opc: ["transicao", k], ativo: o.transicao === k, remonta: false }));
-    [["normal", "Ritmo normal", "Deixa um respiro entre as frases"], ["rapido", "Ritmo rápido", "Corta os respiros"], ["turbo", "Ritmo turbo", "Sem nenhuma pausa"]].forEach(([k, t, d]) => lista.push({ cat: "transicao", id: "ritmo-" + k, nome: t, desc: d, prev: "corte", opc: ["ritmo", k], ativo: (o.ritmo || "rapido") === k, remonta: true }));
+    [["classico", "Pausas de meio segundo", "Só corta as pausas maiores que meio segundo"], ["normal", "Ritmo normal", "Deixa um respiro entre as frases"], ["rapido", "Ritmo rápido", "Corta os respiros"], ["turbo", "Ritmo turbo", "Sem nenhuma pausa"]].forEach(([k, t, d]) => lista.push({ cat: "transicao", id: "ritmo-" + k, nome: t, desc: d, prev: "corte", opc: ["ritmo", k], ativo: (o.ritmo || "rapido") === k, remonta: true }));
     Object.entries(FONTES_LEG).filter(([k]) => k !== "minha" || st.minhaFonte).forEach(([k, t]) => lista.push({ cat: "legenda", id: "fonte-" + k, nome: k === "minha" ? st.minhaFonte : t.split(" (")[0], desc: k === "minha" ? "A fonte que você enviou" : (t.match(/\((.+)\)/) || [, ""])[1], prev: "fonte", fonte: k, opc: ["fonteLeg", k], ativo: o.fonteLeg === k, remonta: false, soCapcut: true }));
     [1, 2, 3, 4].forEach((n) => lista.push({ cat: "legenda", id: "por-" + n, nome: `${n} ${n > 1 ? "palavras" : "palavra"} por vez`, desc: n === 1 ? "Uma palavra no meio da tela" : n === 3 ? "O seu padrão" : "", prev: "palavras", n, opc: ["porLegenda", n], ativo: Number(o.porLegenda) === n, remonta: true, soCapcut: true }));
     Object.entries(ESTILOS).filter(([k]) => k !== "caixa").forEach(([k, t]) => lista.push({ cat: "legenda", id: "estleg-" + k, nome: t.split(" (")[0], desc: (t.match(/\((.+)\)/) || [, "Estilo da legenda"])[1], prev: "fonte", fonte: k === "minimal" ? "poppins" : k === "bold" ? "montserrat" : o.fonteLeg, opc: ["estilo", k], ativo: o.estilo === k, remonta: true }));
@@ -3426,9 +3441,9 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-sons">Quantidade de efeitos sonoros</label><select class="entrada" id="ed-sons">${QTD_SONS.map(([k, t]) => `<option value="${k}" ${o.sons === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-dina">Dinamismo</label><select class="entrada" id="ed-dina">${DINAMISMO.map(([k, t]) => `<option value="${k}" ${o.dinamismo === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-trans">Transição nos cortes</label><select class="entrada" id="ed-trans">${[["nenhuma", "Nenhuma"], ["punch", "Zoom rápido"], ["deslize", "Zoom rápido + deslize na troca de cena"]].map(([k, t]) => `<option value="${k}" ${o.transicao === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
-      <div class="ed-linha"><label class="ed-rotulo" for="ed-ritmo">Ritmo dos cortes</label><select class="entrada" id="ed-ritmo">${[["normal", "Normal (deixa respiro)"], ["rapido", "Rápido (corta respiros)"], ["turbo", "Turbo (sem nenhuma pausa)"]].map(([k, t]) => `<option value="${k}" ${(o.ritmo || "rapido") === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+      <div class="ed-linha"><label class="ed-rotulo" for="ed-ritmo">Ritmo dos cortes</label><select class="entrada" id="ed-ritmo">${[["classico", "Corta só pausas maiores que meio segundo"], ["normal", "Normal (deixa respiro)"], ["rapido", "Rápido (corta respiros)"], ["turbo", "Turbo (sem nenhuma pausa)"]].map(([k, t]) => `<option value="${k}" ${(o.ritmo || "rapido") === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-chks">${chk("chamativas", "Palavras chamativas (grandes, coloridas)")}${chk("sonsChamativas", "Pop nas palavras chamativas")}${chk("tremer", "Tremidinha no impacto")}${chk("flash", "Flash na troca de cena")}</div>
-      <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("vicios", "Tirar vícios (éé, ahn, hum)")}${chk("vozForte", "Voz no volume do Instagram")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("legenda", "Mostrar legenda")}${chk("titulo", "Mostrar título")}${chk("sonsTitulo", "Som de clique no título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}</div>
+      <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("vicios", "Tirar vícios (éé, ahn, hum)")}${chk("vozForte", "Voz no volume do Instagram")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("legenda", "Mostrar legenda")}${chk("titulo", "Mostrar título")}${chk("sonsTitulo", "Som de clique no título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}${chk("karaoke", "Palavra falada em destaque (karaokê)")}</div>
       <label class="ed-rotulo" for="ed-vol">Volume dos efeitos</label>
       <input type="range" id="ed-vol" min="0" max="1.2" step="0.05" value="${o.vol}">
       <label class="ed-rotulo" for="ed-formato">Formato do vídeo</label>
