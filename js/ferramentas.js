@@ -556,7 +556,7 @@
     const lista = ide.lista.filter((x) => (!f.fim || x.finalidade === f.fim) && (!f.funil || x.funil === f.funil) && (!f.cat || x.categoria === f.cat));
     const chips = (k, l) => `<div class="fe-chips">${["", ...l].map((v) => `<button type="button" class="fe-chip${f[k] === v ? " on" : ""}" data-filtro="${k}" data-v="${esc(v)}">${v || "Todas"}</button>`).join("")}</div>`;
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga fe">
-      <div class="fe-cab"><div><h2 class="fe-titulo">Organizador de <em>ideias</em></h2><p class="fe-sub">Escreva uma ideia ou cole um print (de post, comentário ou briefing). Eu leio, separo por categoria, finalidade e funil, e com um clique viro post no Painel de conteúdo ou roteiro em Meus roteiros.</p></div></div>
+      <div class="fe-cab"><div><h2 class="fe-titulo">Roteiro a partir de uma <em>ideia</em></h2><p class="fe-sub">Escreva uma ideia ou cole um print (de post, comentário ou briefing). Eu leio, separo por categoria, finalidade e funil e mando para a lista Ideias de Meus roteiros, que é o seu banco de ideias. Se já tiver dia, ponho também no calendário.</p></div></div>
       <section class="fe-cartao">
         <textarea class="entrada fe-ideia-txt" data-ideia rows="4" placeholder="Ex.: fazer um vídeo mostrando 3 jeitos de usar o mesmo hidratante, para atrair marcas de skincare. (Pode colar um print aqui com Ctrl+V.)">${esc(ide.texto)}</textarea>
         <div class="fe-acoes">
@@ -566,7 +566,7 @@
         </div>
       </section>
       ${s ? `<section class="fe-cartao fe-sugestao" data-sug style="--cor:${CORES_FIM[s.finalidade] || "#6b4a35"}"><h3 class="fe-h3">Como eu organizei <small>confira e mude o que quiser</small></h3>${camposIdeia(s)}
-        <div class="fe-acoes"><button class="btn" type="button" data-descartar>Descartar</button><button class="btn" type="button" data-salvar-so>Salvar ideia</button><button class="btn" type="button" data-salvar-roteiro>Salvar e criar roteiro</button><button class="btn btn-principal" type="button" data-salvar-post>Salvar e criar post</button></div></section>` : ""}
+        <div class="fe-acoes"><button class="btn" type="button" data-descartar>Descartar</button><button class="btn" type="button" data-salvar-so>Só guardar aqui</button><button class="btn" type="button" data-salvar-post>Pôr no calendário</button><button class="btn btn-principal" type="button" data-salvar-roteiro>Mandar para Meus roteiros</button></div></section>` : ""}
       <section class="fe-cartao"><h3 class="fe-h3">Minhas ideias <small>${ide.lista.length}</small></h3>
         <div class="fe-filtros"><span>Finalidade</span>${chips("fim", FINS)}<span>Funil</span>${chips("funil", FUNIS)}<span>Categoria</span>${chips("cat", [...new Set(ide.lista.map((x) => x.categoria).filter(Boolean))])}</div>
         ${lista.length ? `<div class="fe-ideias">${lista.map((x) => `<article class="fe-ideia" style="--cor:${CORES_FIM[x.finalidade] || "#6b4a35"}">

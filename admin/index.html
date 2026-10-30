@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 // Atualiza sozinho: se existir uma versão mais nova do painel publicada, recarrega a página nova
-window.VERSAO_PAINEL = "202610302022";
+window.VERSAO_PAINEL = "202610302041";
 fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).then((j) => {
   if (j.versao && j.versao !== window.VERSAO_PAINEL) {
     const u = new URL(location.href);
@@ -27,10 +27,10 @@ fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/painel.css?v=202610302022">
+<link rel="stylesheet" href="../css/painel.css?v=202610302041">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/banco.js?v=202610302022"></script>
-<script src="../js/dialogos.js?v=202610302022"></script>
+<script src="../js/banco.js?v=202610302041"></script>
+<script src="../js/dialogos.js?v=202610302041"></script>
 <script>
 // PRIMEIRA COISA: conferir a sessão. Sem sessão, vai para o login.
 // A página só aparece depois dessa conferência (antes ela fica escondida).
@@ -58,58 +58,44 @@ window.sessaoPronta = (async function () {
   <aside class="menu" id="menu" aria-label="Menu do painel">
     <div class="menu-marca">Mari Bonetto<span>painel</span></div>
 
-    <div class="menu-secao" data-secao="meu-site">
-      <button class="menu-grupo" type="button" aria-expanded="true">meu site<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
-      <div class="menu-secao-itens">
-    <button class="menu-item" data-aba="portfolio" type="button">
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2.5"/><path d="M10 9.2v5.6l4.6-2.8z"/><path d="M8 21h8"/></svg>Portfólio</button>
-      </div>
-    </div>
-    <div class="menu-secao" data-secao="minha-rotina">
-      <button class="menu-grupo" type="button" aria-expanded="true">minha rotina<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+    <div class="menu-secao" data-secao="hoje">
+      <button class="menu-grupo" type="button" aria-expanded="true">Hoje<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
       <div class="menu-secao-itens">
     <button class="menu-item" data-aba="dashboard" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5L12 5l8 6.5"/><path d="M6 10v9.5h12V10"/><path d="M10 19.5v-5h4v5"/></svg>Dashboard</button>
       </div>
     </div>
-    <div class="menu-secao" data-secao="organizacao">
-      <button class="menu-grupo" type="button" aria-expanded="true">organização<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
-      <div class="menu-secao-itens">
-    <button class="menu-item" data-aba="campanhas" type="button">
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6.5" width="12.5" height="11" rx="2.5"/><path d="M15.5 10.5l5-3v9l-5-3z"/></svg>UGC's &amp; Publis</button>
-    <button class="menu-item" data-aba="quadro" type="button">
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="16.5" y="4" width="4" height="7" rx="1.5"/></svg>Meus roteiros</button>
-    <button class="menu-item" data-aba="propostas" type="button">
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>Propostas</button>
-    <button class="menu-item tem-sub" data-aba="marcas" type="button" aria-expanded="false">
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7"/><path d="M3 12.5h18"/></svg>Marcas<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
-    <button class="menu-item sub" data-aba="prospeccao" data-pai="marcas" type="button" hidden>
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Prospecção</button>
-    <button class="menu-item sub" data-aba="followups" data-pai="marcas" type="button" hidden>
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 4h3l1.5 4-2 1.5a10 10 0 0 0 5.5 5.5l1.5-2 4 1.5v3a2 2 0 0 1-2 2A15 15 0 0 1 4.5 6a2 2 0 0 1 2-2z"/></svg>Follow-ups</button>
-    <button class="menu-item sub" data-aba="candidaturas" data-pai="marcas" type="button" hidden>
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3L10.5 13.5"/><path d="M21 3l-6.5 18-4-7.5L3 9.5z"/></svg>Candidaturas</button>
-    <button class="menu-item sub" data-aba="trafego" data-pai="marcas" type="button" hidden>
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>Tráfego Pago</button>
-      </div>
-    </div>
-    <div class="menu-secao" data-secao="criatividade">
-      <button class="menu-grupo" type="button" aria-expanded="true">criatividade<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+    <div class="menu-secao" data-secao="conteudo">
+      <button class="menu-grupo" type="button" aria-expanded="true">Conteúdo<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
       <div class="menu-secao-itens">
     <button class="menu-item" data-aba="planejar" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M9 9.5v11M14.5 9.5v11M8 3v3M16 3v3"/></svg>Painel de conteúdo</button>
-    <button class="menu-item" data-aba="central" type="button">
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M10 9.5v5l4-2.5z"/></svg>Referências</button>
+    <button class="menu-item" data-aba="quadro" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="16.5" y="4" width="4" height="7" rx="1.5"/></svg>Meus roteiros</button>
     <button class="menu-item" data-aba="criar" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v3.5M12 16.5V20M4 12h3.5M16.5 12H20M6.7 6.7l2.4 2.4M14.9 14.9l2.4 2.4M6.7 17.3l2.4-2.4M14.9 9.1l2.4-2.4"/></svg>Criar roteiro</button>
-    <button class="menu-item" data-aba="ferarquivos" type="button">
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6.5l3 3M4 20l1-4L15.5 5.5a2.1 2.1 0 0 1 3 3L8 19z"/><path d="M3.5 7.5a2 2 0 0 1 2-2h3"/></svg>Ferramentas</button>
+    <button class="menu-item" data-aba="central" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M10 9.5v5l4-2.5z"/></svg>Referências</button>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="marcas-jobs">
+      <button class="menu-grupo" type="button" aria-expanded="true">Marcas e jobs<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
+    <button class="menu-item" data-aba="campanhas" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6.5" width="12.5" height="11" rx="2.5"/><path d="M15.5 10.5l5-3v9l-5-3z"/></svg>UGC's &amp; Publis</button>
+    <button class="menu-item" data-aba="marcas" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7"/><path d="M3 12.5h18"/></svg>Marcas</button>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="edicao">
+      <button class="menu-grupo" type="button" aria-expanded="true">Edição<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
     <button class="menu-item" data-aba="edicao" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 9h17M3.5 15h17M8 5v4M16 5v4M8 15v4M16 15v4"/></svg>Edição de vídeos</button>
       </div>
     </div>
-    <div class="menu-secao" data-secao="financeiro-cnpj">
-      <button class="menu-grupo" type="button" aria-expanded="true">financeiro<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+    <div class="menu-secao" data-secao="dinheiro">
+      <button class="menu-grupo" type="button" aria-expanded="true">Dinheiro<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
       <div class="menu-secao-itens">
     <button class="menu-item" data-aba="financeiro" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9.5v5M17.5 9.5v5"/></svg>CNPJ geral</button>
@@ -119,8 +105,15 @@ window.sessaoPronta = (async function () {
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20.5c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>App de Finanças<svg class="traco menu-externo" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
       </div>
     </div>
+    <div class="menu-secao" data-secao="meu-site">
+      <button class="menu-grupo" type="button" aria-expanded="true">Meu site<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
+    <button class="menu-item" data-aba="portfolio" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2.5"/><path d="M10 9.2v5.6l4.6-2.8z"/><path d="M8 21h8"/></svg>Portfólio</button>
+      </div>
+    </div>
     <div class="menu-secao" data-secao="geral">
-      <button class="menu-grupo" type="button" aria-expanded="true">geral<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="menu-grupo" type="button" aria-expanded="true">Ajustes<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
       <div class="menu-secao-itens">
     <button class="menu-item" data-aba="config" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>Configurações</button>
@@ -181,16 +174,16 @@ window.sessaoPronta = (async function () {
 </dialog>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="../js/lembretes.js?v=202610302022"></script>
-<script src="../js/biblioteca.js?v=202610302022"></script>
-<script src="../js/admin.js?v=202610302022"></script>
-<script src="../js/roteiros-supadata.js?v=202610302022"></script>
-<script src="../js/laboratorio.js?v=202610302022"></script>
-<script src="../js/editorial.js?v=202610302022"></script>
-<script src="../js/edicao.js?v=202610302022"></script>
-<script src="../js/painel-conteudo.js?v=202610302022"></script>
-<script src="../js/ferramentas.js?v=202610302022"></script>
-<script src="../js/propostas.js?v=202610302022"></script>
-<script src="../js/corretor.js?v=202610302022"></script>
+<script src="../js/lembretes.js?v=202610302041"></script>
+<script src="../js/biblioteca.js?v=202610302041"></script>
+<script src="../js/admin.js?v=202610302041"></script>
+<script src="../js/roteiros-supadata.js?v=202610302041"></script>
+<script src="../js/laboratorio.js?v=202610302041"></script>
+<script src="../js/editorial.js?v=202610302041"></script>
+<script src="../js/edicao.js?v=202610302041"></script>
+<script src="../js/painel-conteudo.js?v=202610302041"></script>
+<script src="../js/ferramentas.js?v=202610302041"></script>
+<script src="../js/propostas.js?v=202610302041"></script>
+<script src="../js/corretor.js?v=202610302041"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@
 // "automatico" (sem trecho nem resumo, por privacidade). Aqui ela vê uma conversa por cartão (thread_id; o
 // e-mail mais novo manda), responde no Gmail, vira job, salva a marca, marca "não é proposta" ou esconde o
 // remetente para sempre (configuracoes "propostas_ocultar", que a tarefa respeita). Bolinha no menu = conversas
-// de proposta não lidas. Sem alert/confirm/prompt do navegador (painelDialogo).
+// de proposta não lidas (no item Marcas, onde Propostas é uma das abas do topo). Sem alert/confirm/prompt do navegador (painelDialogo).
 // =========================================================
 (function () {
   "use strict";
@@ -70,7 +70,7 @@
   }
 
   function pintarBolinha() {
-    const b = $('.menu-item[data-aba="propostas"]'); if (!b) return;
+    const b = $('.menu-item[data-aba="propostas"]') || $('.menu-item[data-aba="marcas"]'); if (!b) return;
     const n = conversas(ehProposta).filter((c) => c.naoLida).length;
     let s = b.querySelector(".pp-bolinha");
     if (!n) { if (s) s.remove(); return; }

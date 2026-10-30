@@ -388,8 +388,10 @@
           </div>
         </div>
         <p class="pc-sub">abro, vejo o que gravar hoje e não perco tempo decidindo</p>
+        <nav class="sub-abas pc-abas" aria-label="Partes do painel de conteúdo"><button type="button" class="sub-aba" data-pcaba="cal">Calendário do mês</button><button type="button" class="sub-aba" data-pcaba="plano">Plano da semana</button><button type="button" class="sub-aba" data-pcaba="cfg">Configurar e gerar ideias</button></nav>
+        <section class="pc-plano" id="pc-plano" data-pcpar="plano"></section>
+        <div data-pcpar="cal">
         <div class="pc-numeros" id="pc-numeros"></div>
-        <section class="pc-plano" id="pc-plano"></section>
         <div class="pc-cal-cab">
           <div><h3 class="pc-cal-tit">Calendário de <span id="pc-nsem"></span> semanas</h3>
             <p class="pc-ajuda">Arraste um post para outro dia para mudar a data. No celular, abra o post e troque a data. O + em cada dia cria uma pauta para ele.</p></div>
@@ -398,9 +400,8 @@
         <div class="pc-legenda" id="pc-legenda"></div>
         <div class="pc-cal" id="pc-quadro"></div>
         <div class="pc-banco" id="pc-banco"></div>
-      </div>
-      <button type="button" class="btn pc-config-btn" id="pc-config-btn" aria-expanded="false"></button>
-      <div id="pc-config" hidden>
+        </div>
+      <div id="pc-config" data-pcpar="cfg" hidden>
       <section class="pc-cartao pc-perfil" id="pc-perfil"></section>
       <div class="pc-baixo">
         <section class="pc-cartao pc-gerar">
@@ -414,12 +415,17 @@
         <section class="pc-cartao pc-iphone" id="pc-iphone"></section>
       </div>
       </div>
+      </div>
     </div>`;
-    const cfgBtn = $("#pc-config-btn", sec), cfgBox = $("#pc-config", sec);
-    const mostrarCfg = (abre) => { cfgBox.hidden = !abre; cfgBtn.setAttribute("aria-expanded", String(abre)); cfgBtn.innerHTML = abre ? `${ic.x}Fechar configurações` : `${ic.brilho}Configurar e gerar ideias <small>meu perfil, gerar a grade, pastas do Instagram e iPhone</small>`; try { localStorage.setItem("pc-config", abre ? "1" : "0"); } catch (e) { /* sem armazenamento */ } };
-    let abreCfg = false; try { abreCfg = localStorage.getItem("pc-config") === "1"; } catch (e) { /* sem armazenamento */ }
-    mostrarCfg(abreCfg);
-    cfgBtn.addEventListener("click", () => mostrarCfg(cfgBox.hidden));
+    // três partes em abas no topo (calendário, plano da semana, configurar); a escolha fica guardada
+    const mostrarParte = (k) => {
+      $$("[data-pcaba]", sec).forEach((b) => { b.classList.toggle("ativa", b.dataset.pcaba === k); b.setAttribute("aria-current", b.dataset.pcaba === k ? "page" : "false"); });
+      $$("[data-pcpar]", sec).forEach((p) => { p.hidden = p.dataset.pcpar !== k; });
+      try { localStorage.setItem("pc-parte", k); } catch (e) { /* sem armazenamento */ }
+    };
+    let parte = "cal"; try { parte = localStorage.getItem("pc-parte") || "cal"; } catch (e) { /* sem armazenamento */ }
+    mostrarParte(["cal", "plano", "cfg"].includes(parte) ? parte : "cal");
+    $$("[data-pcaba]", sec).forEach((b) => b.addEventListener("click", () => mostrarParte(b.dataset.pcaba)));
     const sel = $("#pc-mes", sec);
     sel.addEventListener("change", async () => { st.mes = sel.value; st.semana = 0; await carregar(); ajustarSemana(); pintar(); });
     const trocarMes = async (k) => { const [a, m] = st.mes.split("-").map(Number); const d = new Date(a, m - 1 + k, 1); st.mes = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; await carregar(); ajustarSemana(); pintar(); };

@@ -253,9 +253,9 @@
   // MENU E ABAS
   // ---------------------------------------------------------
   const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Meus roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
-    prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Meus roteiros", propostas: "Propostas", central: "Referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar a partir de referência",
+    prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Meus roteiros", propostas: "Marcas: propostas do e-mail", central: "Referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar roteiro",
     meusroteiros: "Referências", modelos: "Modelos", biblioteca: "Referências",
-    financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Referências: transcrever e analisar", laboratorio: "Referências: meus salvos", editorial: "Referências: perfis que eu acompanho", edicao: "Edição de vídeos", planejar: "Painel de conteúdo", ferarquivos: "Ferramentas: organizador de arquivos", fercapa: "Ferramentas: checagem de capa", ferideias: "Ferramentas: organizador de ideias", notificacoes: "Configurações: notificações no celular" };
+    financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Referências: transcrever e analisar", laboratorio: "Referências: meus salvos", editorial: "Referências: perfis que eu acompanho", edicao: "Edição de vídeos", planejar: "Painel de conteúdo", ferarquivos: "Edição: organizar gravações", fercapa: "Edição: checar capa", ferideias: "Criar roteiro: ideia ou print", notificacoes: "Configurações: notificações no celular" };
   // Abas do painel que são páginas do aplicativo Gestão UGC (aba do painel: página do aplicativo)
   const PAGINAS_APP = { dashboard: "dashboard", calendario: "planner", campanhas: "jobs", prospeccao: "prospeccao", followups: "followups",
     candidaturas: "candidaturas", trafego: "trafego", quadro: "roteiros", financeiro: "financeiro", 
@@ -264,9 +264,11 @@
   // no menu e as partes viram abas no topo da página (#sub-abas). "junto" = abas que acendem outra parte.
   const AREAS = [
     { menu: "portfolio", partes: [["portfolio", "Portfólio"], ["checklist", "Checklist do portfólio"]] },
-    { menu: "central", partes: [["central", "Vídeos transcritos"], ["transcritos", "Transcrever e analisar"], ["laboratorio", "Meus salvos do Instagram"], ["editorial", "Perfis que eu acompanho"]], junto: { analise: "transcritos" } },
+    { menu: "central", partes: [["central", "Biblioteca"], ["transcritos", "Transcrever vídeo"], ["laboratorio", "Salvos do Instagram"], ["editorial", "Perfis que acompanho"]], junto: { analise: "transcritos" } },
     { menu: "config", partes: [["config", "Configurações gerais"], ["notificacoes", "Notificações no celular"]] },
-    { menu: "ferarquivos", partes: [["ferarquivos", "Organizador de arquivos"], ["fercapa", "Checagem de capa"], ["ferideias", "Organizador de ideias"]] },
+    { menu: "edicao", partes: [["edicao", "Editar vídeo"], ["ferarquivos", "Organizar gravações"], ["fercapa", "Checar capa"]] },
+    { menu: "criar", partes: [["criar", "A partir de uma referência"], ["ferideias", "A partir de uma ideia ou print"]] },
+    { menu: "marcas", partes: [["marcas", "Minhas marcas"], ["propostas", "Propostas do e-mail"], ["prospeccao", "Prospecção"], ["followups", "Follow-ups"], ["candidaturas", "Candidaturas"], ["trafego", "Tráfego pago"]] },
   ];
   const areaDe = (nome) => AREAS.find((a) => a.partes.some(([k]) => k === nome) || (a.junto && a.junto[nome]));
   function pintarSubAbas(nome) {
@@ -2160,7 +2162,7 @@
         <div class="rot-abas" role="tablist">
           <button type="button" class="rot-aba ativa" data-aba="info" role="tab">Informações do vídeo</button>
           <button type="button" class="rot-aba" data-aba="video" role="tab">Vídeo transcrito</button>
-          <button type="button" class="rot-aba" data-aba="inspirar" role="tab">✨ Se inspire nesse roteiro</button>
+          <button type="button" class="rot-aba" data-aba="inspirar" role="tab">Se inspire nesse roteiro</button>
           <button type="button" class="rot-aba" data-aba="copiar" role="tab">Copiar roteiro</button>
         </div>
         <input type="hidden" name="de_quem" value="${esc(r.de_quem || "outra")}">
@@ -2196,7 +2198,7 @@
             <div class="campo">
               <div class="rot-rotulo-linha"><label for="f-transcricao">Roteiro transcrito</label>
                 <span class="rot-botoes">
-                  <button class="btn btn-mini btn-principal" type="button" id="rot-transcrever">✨ Transcrever e preencher</button>
+                  <button class="btn btn-mini btn-principal" type="button" id="rot-transcrever"><svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>Transcrever e preencher</button>
                   <label class="btn btn-mini" for="rot-arquivo" title="Use se o link não puder ser baixado">Enviar o arquivo do vídeo</label>
                   <input type="file" id="rot-arquivo" accept="video/*,audio/*" hidden>
                 </span></div>
@@ -2213,18 +2215,18 @@
         </section>
 
         <section class="rot-painel rot-board" data-painel="inspirar" hidden>
-          <h4>✨ Se inspire nesse roteiro</h4>
+          <h4>Se inspire nesse roteiro</h4>
           <p>Conte a sua ideia para o vídeo (escrevendo, em áudio ou com imagens). Eu crio um roteiro novo seu, usando o que funcionou nesse vídeo.</p>
           <label class="rot-campo-board">Minha ideia para o vídeo<textarea id="ins-ideia" rows="4" placeholder="Ex.: quero mostrar minha rotina da manhã com o sérum que comprei, falar que eu tinha manchas e que agora uso todo dia..."></textarea></label>
           <div class="rot-midias">
-            <button type="button" class="btn btn-mini" data-gravar>🎙 Gravar áudio</button>
+            <button type="button" class="btn btn-mini" data-gravar><svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg>Gravar áudio</button>
             <label class="btn btn-mini rot-arquivo-btn">Enviar áudio<input type="file" accept="audio/*,.ogg,.opus,.m4a,.mp3,.wav" data-audio hidden></label>
             <label class="btn btn-mini rot-arquivo-btn">Anexar imagens<input type="file" accept="image/*" multiple data-imagens hidden></label>
           </div>
           <div class="rot-imagens" data-lista-imagens></div>
           <label class="rot-campo-board">Produtos que vou usar (opcional, eu pesquiso na internet)<input id="ins-produtos" placeholder="Um por linha ou separados por ponto e vírgula. Pode colar o link."></label>
           ${opcoesBoard("ins")}
-          <button class="btn btn-principal" type="button" data-gerar>✨ Gerar roteiro</button>
+          <button class="btn btn-principal" type="button" data-gerar><svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>Gerar roteiro</button>
           <p class="rot-status" data-status role="status" hidden></p>
           <div data-resultado></div>
         </section>
@@ -2361,7 +2363,7 @@
                 const fluxo = await navigator.mediaDevices.getUserMedia({ audio: true });
                 const rec = new MediaRecorder(fluxo); const partes = [];
                 rec.ondataavailable = (e) => { if (e.data && e.data.size) partes.push(e.data); };
-                rec.onstop = () => { fluxo.getTracks().forEach((t) => t.stop()); gravador = null; btnGravar.textContent = "🎙 Gravar áudio"; btnGravar.classList.remove("gravando");
+                rec.onstop = () => { fluxo.getTracks().forEach((t) => t.stop()); gravador = null; btnGravar.innerHTML = '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg>Gravar áudio'; btnGravar.classList.remove("gravando");
                   const tipo = rec.mimeType || "audio/webm"; const ext = /mp4|m4a|aac/.test(tipo) ? "m4a" : /ogg/.test(tipo) ? "ogg" : "webm";
                   const blob = new Blob(partes, { type: tipo }); if (blob.size) usarAudio(new File([blob], "ideia." + ext, { type: tipo })); };
                 gravador = rec; rec.start(); btnGravar.textContent = "● Parar e usar o áudio"; btnGravar.classList.add("gravando");
