@@ -19,6 +19,11 @@
 //   Responde na hora e, em segundo plano, lê o post (Apify), guarda no Laboratório com a
 //   pasta, cria a ideia com roteiro no Painel do mês e manda notificação no iPhone (ntfy).
 // - { acao: "notif_teste" }: notificação de teste no iPhone.
+// - { acao: "plano_semana" }: monta o plano da semana (segunda a domingo) e guarda em planos_semana. Todo sábado
+//   às 8h (Brasília) o pg_cron chama com o cabeçalho x-cron = segredos_servidor "cron_painel" (o cron não tem o
+//   login dela); no Painel ela também gera na hora. Junta os posts da semana, completa os dias do ritmo dela com
+//   ideias novas (com roteiro), os prazos das publis (app_state.jobs), o Planner, o tema da semana e as propostas
+//   sem resposta; marca o dia de gravar cada post. No sábado cria um lembrete (aviso no celular).
 // As notificações saem pela função notificacoes (Web Push do painel instalado + app ntfy).
 // Segredos: GROQ_API_KEY e APIFY_TOKEN (só no Supabase). Só a dona do painel pode usar.
 // O tópico do ntfy (endereço das notificações) fica em configuracoes, chave "ntfy_topico".
@@ -31,7 +36,7 @@ const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julh
 const PAINEL = "https://marianabonetto.com.br/admin/#planejar";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const resposta = (corpo: unknown, status = 200) =>
@@ -267,12 +272,112 @@ async function processarSalvo(supa: any, chave: string, linkBruto: string, pasta
   await notificar(supa, `Nova ideia: ${x.tema}`, `${x.formato} · ${x.pilar ? x.pilar + " · " : ""}${x.tipo_roteiro} · ${dia}\nHook: "${x.hook}"\nCTA: ${x.cta}\nReferência: ${quem}\nToque para abrir o roteiro completo no Painel.`);
 }
 
+// ---------- plano da semana (sábado de manhã) ----------
+const DIAS_SEM = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+const isoUTC = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+function segundaDoPlano() {
+  const h = hojeBR(); const d = new Date(Date.UTC(h.a, h.m - 1, h.d));
+  const dow = (d.getUTCDay() + 6) % 7; // 0 = segunda
+  d.setUTCDate(d.getUTCDate() + (dow >= 5 ? 7 - dow : -dow)); // sábado e domingo: a semana que vem
+  return d;
+}
+async function planoSemana(supa: any, chave: string, origem: string) {
+  const seg = segundaDoPlano();
+  const dias = [...Array(7)].map((_, i) => { const d = new Date(seg); d.setUTCDate(d.getUTCDate() + i); return isoUTC(d); });
+  const ini = dias[0], fim = dias[6];
+  const perfil = await lerPerfil(supa);
+  const [{ data: postsSem }, { data: ap }, { data: cfgs }, { data: props }] = await Promise.all([
+    supa.from("painel_conteudo").select("id,data,horario,formato,tema,pilar,funil,status,hook").gte("data", ini).lte("data", fim).order("data"),
+    supa.from("app_state").select("data").limit(1).maybeSingle(),
+    supa.from("configuracoes").select("chave,valor").in("chave", ["temas_semana"]),
+    supa.from("propostas_email").select("thread_id,gmail_id,de_nome,marca,assunto,recebido_em").eq("tipo", "proposta").eq("status", "nova").order("recebido_em", { ascending: false }).limit(30),
+  ]);
+  const posts: any[] = postsSem || [];
+  let temas: any = {}; try { temas = JSON.parse((cfgs || []).find((x: any) => x.chave === "temas_semana")?.valor || "{}"); } catch { temas = {}; }
+  // completa os dias do ritmo dela que ainda não têm post (até o número de posts por semana, no máximo 3 por vez)
+  const diasRitmo: number[] = Array.isArray(perfil.ritmo?.dias) && perfil.ritmo.dias.length ? perfil.ritmo.dias : [0, 2, 4];
+  const ocupados = new Set(posts.map((p) => p.data));
+  const faltam = Math.max(0, Math.min(3, (Number(perfil.ritmo?.porSemana) || diasRitmo.length) - posts.filter((p) => p.formato !== "Stories").length));
+  const h = hojeBR(), hoje = `${h.a}-${pad(h.m)}-${pad(h.d)}`; // nunca cria post em dia que já passou
+  const livres = diasRitmo.map((i) => dias[i]).filter((d) => d && d >= hoje && !ocupados.has(d)).slice(0, faltam);
+  let novos = 0, avisoIA = "";
+  if (livres.length && chave) {
+    const nomes = (perfil.pilares || []).map((p: any) => p.nome).filter(Boolean);
+    const usados = posts.map((p) => p.pilar);
+    const pilares = nomes.slice().sort((x: string, y: string) => usados.filter((u) => u === x).length - usados.filter((u) => u === y).length);
+    const fun = perfil.ritmo?.funil || { Topo: 1, Meio: 2 };
+    const funis: string[] = []; ["Topo", "Meio", "Fundo"].forEach((f) => { for (let k = 0; k < Number(fun[f] || 0); k++) funis.push(f); });
+    const forms: string[] = perfil.ritmo?.formatos?.length ? perfil.ritmo.formatos : ["Reels"];
+    const slots = livres.map((_, i) => ({ pilar: pilares[i % Math.max(1, pilares.length)] || "", funil: funis[i % Math.max(1, funis.length)] || "Topo", formato: forms[i % forms.length] }));
+    const tema = temas[ini];
+    let ideias: any[] = [];
+    for (let t = 0; t < 2 && !ideias.length; t++) {
+      try { ideias = await criarIdeias(supa, chave, { rotulo: `semana de ${ini.slice(8, 10)}/${ini.slice(5, 7)}`, slots, notas: tema ? `Tema da semana: ${tema}` : "", evitar: posts.map((p) => p.tema).filter(Boolean) }); }
+      catch (e) { if (String((e as Error).message) === "LIMITE") await new Promise((ok) => setTimeout(ok, 30000)); else { avisoIA = "A IA não respondeu; os dias livres ficaram sem ideia."; break; } }
+    }
+    for (let i = 0; i < livres.length && i < ideias.length; i++) {
+      const x = ideias[i], data = livres[i];
+      const { data: novo } = await supa.from("painel_conteudo").insert({ mes: data.slice(0, 7), data, horario: perfil.ritmo?.horario || "12h", formato: x.formato, pilar: x.pilar || null, tipo_roteiro: x.tipo_roteiro, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil,
+        proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, legenda: x.legenda, porque: x.porque, status: "Roteirizado", notas: "Criado pelo plano da semana" }).select("id,data,horario,formato,tema,pilar,funil,status,hook").maybeSingle();
+      if (novo) { posts.push(novo); novos++; }
+    }
+    if (!ideias.length && !avisoIA) avisoIA = "A IA não respondeu; os dias livres ficaram sem ideia.";
+  }
+  // itens de cada dia
+  const itens: Record<string, any[]> = Object.fromEntries(dias.map((d) => [d, []]));
+  const add = (d: string, it: any) => { if (itens[d]) itens[d].push({ id: crypto.randomUUID().slice(0, 8), feito: false, ...it }); };
+  posts.sort((a, b) => String(a.data).localeCompare(String(b.data))).forEach((p) => {
+    const titulo = `${p.formato || "Post"}: ${p.tema || "sem tema"}`;
+    add(p.data, { tipo: "postar", texto: `Postar ${titulo}${p.horario ? " às " + p.horario : ""}`, post_id: p.id });
+    if (!/gravad|editad|postad|agendad/i.test(p.status || "") && p.formato !== "Stories") {
+      const i = dias.indexOf(p.data); add(dias[Math.max(0, i - 1)], { tipo: "gravar", texto: `Gravar ${titulo}`, post_id: p.id });
+    }
+  });
+  const est = (ap && ap.data) || {}; const terminou = /conclu|cancel|finaliz/i;
+  (est.jobs || []).forEach((j: any) => {
+    if (terminou.test(j.status || "")) return;
+    Object.values(j.entregaveis || {}).forEach((lista: any) => (Array.isArray(lista) ? lista : []).forEach((it: any) => {
+      if (it.concluido) return;
+      [["prazoRoteiro", "Roteiro"], ["prazoConteudo", "Entregar"], ["prazoPostagem", "Postar"]].forEach(([k, verbo]) => {
+        const d = String(it[k] || "").slice(0, 10); if (d >= ini && d <= fim) add(d, { tipo: "publi", texto: `${verbo} ${it.label || "entrega"} da ${j.marca || "marca"}` });
+      });
+    }));
+  });
+  (est.planner || []).forEach((it: any) => { const d = String(it.data || "").slice(0, 10); if (d >= ini && d <= fim && !/entreg|feito|postado/i.test(it.status || "")) add(d, { tipo: "agenda", texto: txt((it.marca ? it.marca + ": " : "") + (it.titulo || "Compromisso"), 120) }); });
+  const conversas = new Map(); (props || []).forEach((p: any) => { const k = p.thread_id || p.gmail_id; if (!conversas.has(k)) conversas.set(k, p); });
+  const propostas = [...conversas.values()].slice(0, 10).map((p: any) => ({ id: crypto.randomUUID().slice(0, 8), feito: false, texto: `Responder ${p.marca || p.de_nome || "proposta"}: ${txt(p.assunto, 90)}` }));
+  const plano = {
+    ini, fim, tema: temas[ini] || "", novos, aviso: avisoIA,
+    dias: dias.map((d, i) => ({ data: d, nome: DIAS_SEM[i], itens: itens[d] })),
+    propostas,
+    contas: { posts: posts.length, publis: Object.values(itens).flat().filter((x: any) => x.tipo === "publi").length, propostas: propostas.length },
+  };
+  const { data: velho } = await supa.from("planos_semana").select("foco").eq("semana", ini).maybeSingle();
+  const { error } = await supa.from("planos_semana").upsert({ semana: ini, plano, foco: velho?.foco ?? (temas[ini] || null), origem, atualizado_em: new Date().toISOString() }, { onConflict: "semana" });
+  if (error) throw new Error(error.message);
+  const br = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+  if (origem === "sabado") await supa.from("lembretes").insert({ item_tipo: "plano_semana", item_id: ini, titulo: `Seu plano da semana chegou (${br(ini)} a ${br(fim)})`,
+    detalhe: `${plano.contas.posts} posts${novos ? ` (${novos} ideias novas com roteiro)` : ""} · ${plano.contas.publis} prazos de publi · ${propostas.length} propostas para responder`.slice(0, 200),
+    url: PAINEL, quando: new Date().toISOString(), ativo: true });
+  return plano;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return resposta({ error: "Use POST." }, 405);
   try {
     const auth = req.headers.get("Authorization") || "";
     AUTH = auth;
+    // pg_cron do sábado: sem o login dela, com o segredo guardado só no banco (segredos_servidor "cron_painel")
+    const cron = req.headers.get("x-cron") || "";
+    if (cron) {
+      const srv = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const { data: seg } = await srv.from("segredos_servidor").select("valor").eq("chave", "cron_painel").maybeSingle();
+      if (!seg?.valor || seg.valor !== cron) return resposta({ error: "Não autorizado" }, 401);
+      const corpoCron = await req.json().catch(() => ({}));
+      if (corpoCron.acao !== "plano_semana") return resposta({ error: "Ação desconhecida." }, 400);
+      return resposta({ plano: await planoSemana(srv, Deno.env.get("GROQ_API_KEY") || "", corpoCron.teste ? "teste" : "sabado") });
+    }
     const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: auth } } });
     const { data: { user } } = await supa.auth.getUser(auth.replace(/^Bearer\s+/i, ""));
     if (!user || user.email !== EMAIL_DONA) return resposta({ error: "Não autorizado" }, 401);
@@ -288,6 +393,7 @@ Deno.serve(async (req) => {
       EdgeRuntime.waitUntil(processarSalvo(supa, chave, link, txt(corpo.pasta, 80)).catch((e) => console.error(e)));
       return resposta({ ok: true });
     }
+    if (corpo.acao === "plano_semana") return resposta({ plano: await planoSemana(supa, chave, "manual") });
     if (corpo.acao === "notif_teste") {
       const ok = await notificar(supa, "Painel da Mari", "Notificações funcionando! Quando você salvar uma referência pelo atalho, a ideia com roteiro chega aqui.");
       return ok ? resposta({ ok: true }) : resposta({ error: "Nenhum celular ativado ainda (Geral > Notificações no celular)." }, 400);

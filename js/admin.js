@@ -253,7 +253,7 @@
   // MENU E ABAS
   // ---------------------------------------------------------
   const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Meus roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
-    prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Meus roteiros", central: "Referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar a partir de referência",
+    prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Meus roteiros", propostas: "Propostas", central: "Referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar a partir de referência",
     meusroteiros: "Referências", modelos: "Modelos", biblioteca: "Referências",
     financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Referências: transcrever e analisar", laboratorio: "Referências: meus salvos", editorial: "Referências: perfis que eu acompanho", edicao: "Edição de vídeos", planejar: "Painel de conteúdo", ferarquivos: "Ferramentas: organizador de arquivos", fercapa: "Ferramentas: checagem de capa", ferideias: "Ferramentas: organizador de ideias", notificacoes: "Configurações: notificações no celular" };
   // Abas do painel que são páginas do aplicativo Gestão UGC (aba do painel: página do aplicativo)

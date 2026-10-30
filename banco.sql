@@ -576,3 +576,8 @@ alter table public.arquivos_lotes enable row level security;
 create policy "dona faz tudo" on public.ideias_organizadas for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
 create policy "dona faz tudo" on public.capas_checadas for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
 create policy "dona faz tudo" on public.arquivos_lotes for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+-- Plano da semana (out/2026): montado todo sábado pela função painel-conteudo (pg_cron "plano-da-semana"). Só a dona.
+create table if not exists public.planos_semana (id bigint generated always as identity primary key, semana date not null unique, plano jsonb not null default '{}'::jsonb, foco text, origem text not null default 'manual', criado_em timestamptz not null default now(), atualizado_em timestamptz not null default now());
+alter table public.planos_semana enable row level security;
+create policy "dona faz tudo" on public.planos_semana for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());

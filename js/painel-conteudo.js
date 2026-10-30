@@ -389,6 +389,7 @@
         </div>
         <p class="pc-sub">abro, vejo o que gravar hoje e não perco tempo decidindo</p>
         <div class="pc-numeros" id="pc-numeros"></div>
+        <section class="pc-plano" id="pc-plano"></section>
         <div class="pc-cal-cab">
           <div><h3 class="pc-cal-tit">Calendário de <span id="pc-nsem"></span> semanas</h3>
             <p class="pc-ajuda">Arraste um post para outro dia para mudar a data. No celular, abra o post e troque a data. O + em cada dia cria uma pauta para ele.</p></div>
@@ -670,12 +671,91 @@
     if (!dlg.open) dlg.showModal();
   }
 
+  // ---------- plano da semana (chega pronto todo sábado às 8h; função painel-conteudo acao "plano_semana") ----------
+  const pl = { atual: null, lista: [], idx: 0, gerando: false };
+  async function carregarPlano() {
+    const { data, error } = await banco().from("planos_semana").select("*").order("semana", { ascending: false }).limit(8);
+    pl.lista = error ? [] : (data || []);
+    pl.idx = Math.min(pl.idx, Math.max(0, pl.lista.length - 1));
+    pl.atual = pl.lista[pl.idx] || null;
+  }
+  const brCurta = (d) => `${String(d).slice(8, 10)}/${String(d).slice(5, 7)}`;
+  const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+  const ROT_ITEM = { gravar: "Gravar", postar: "Postar", publi: "Publi", agenda: "Agenda" };
+  function pintarPlano() {
+    const box = document.getElementById("pc-plano"); if (!box) return;
+    const r = pl.atual;
+    const topo = `<div class="pc-plano-cab"><div><h3 class="pc-h3">Plano da semana</h3><p class="pc-ajuda">Chega pronto todo sábado às 8h, com a semana seguinte. Marque o que já fez.</p></div>
+      <div class="pc-plano-acoes">${pl.lista.length > 1 ? `<select class="entrada" id="pc-plano-sem" aria-label="Qual semana">${pl.lista.map((x, i) => `<option value="${i}" ${i === pl.idx ? "selected" : ""}>${brCurta(x.semana)} a ${brCurta(x.plano && x.plano.fim || x.semana)}</option>`).join("")}</select>` : ""}
+      <button class="btn" type="button" id="pc-plano-gerar"${pl.gerando ? " disabled" : ""}>${pl.gerando ? "Montando…" : r ? "Montar de novo" : "Montar agora"}</button>
+      ${r ? `<button class="btn" type="button" id="pc-plano-editar">Editar foco</button><button class="btn btn-perigo" type="button" id="pc-plano-excluir">Excluir</button>` : ""}</div></div>`;
+    if (!r) { box.innerHTML = topo + `<p class="pc-ajuda">Ainda não tem plano. O primeiro chega no sábado de manhã, ou clique em Montar agora.</p>`; ligarPlano(box); return; }
+    const p = r.plano || {}, c = p.contas || {};
+    const item = (it, onde) => `<li class="pc-plano-item pi-${esc(it.tipo || "prop")}${it.feito ? " feito" : ""}"><label><input type="checkbox" data-feito="${esc(it.id)}" data-onde="${onde}" ${it.feito ? "checked" : ""}><span><b>${esc(ROT_ITEM[it.tipo] || "Proposta")}</b> ${esc(String(it.texto || "").replace(/^(Gravar|Postar) /, ""))}</span></label>${it.post_id ? `<button type="button" class="pc-plano-abrir" data-post="${it.post_id}">abrir</button>` : ""}<button type="button" class="pc-plano-tirar" data-tirar="${esc(it.id)}" data-onde="${onde}" aria-label="Tirar do plano">×</button></li>`;
+    box.innerHTML = topo + `
+      ${r.foco ? `<p class="pc-plano-foco"><b>Foco:</b> ${esc(r.foco)}</p>` : ""}
+      <p class="pc-plano-resumo">${plural(c.posts || 0, "post", "posts")}${p.novos ? ` (${plural(p.novos, "ideia nova", "ideias novas")} com roteiro)` : ""} · ${plural(c.publis || 0, "prazo de publi", "prazos de publi")} · ${plural(c.propostas || 0, "proposta para responder", "propostas para responder")}${r.origem === "sabado" ? " · chegou no sábado" : ""}</p>
+      ${p.aviso ? `<p class="faixa faixa-erro">${esc(p.aviso)}</p>` : ""}
+      <div class="pc-plano-dias">${(p.dias || []).map((d) => `<div class="pc-plano-dia${d.data === iso(hoje) ? " hoje" : ""}"><div class="pc-plano-dia-cab"><b>${esc(d.nome)}</b><small>${brCurta(d.data)}</small></div>
+        <ul>${(d.itens || []).map((it) => item(it, d.data)).join("") || `<li class="pc-plano-livre">livre</li>`}</ul></div>`).join("")}</div>
+      ${(p.propostas || []).length ? `<div class="pc-plano-props"><b>Propostas para responder</b> <button type="button" class="btn-link" data-ir="propostas">abrir Propostas</button><ul>${p.propostas.map((it) => item(it, "propostas")).join("")}</ul></div>` : ""}`;
+    ligarPlano(box);
+  }
+  async function salvarPlano(campos) {
+    const { error } = await banco().from("planos_semana").update({ ...campos, atualizado_em: new Date().toISOString() }).eq("id", pl.atual.id);
+    if (error) throw error;
+    Object.assign(pl.atual, campos);
+  }
+  function itensDe(onde) { const p = pl.atual.plano; return onde === "propostas" ? p.propostas : ((p.dias || []).find((d) => d.data === onde) || {}).itens || []; }
+  function ligarPlano(box) {
+    const sel = $("#pc-plano-sem", box); if (sel) sel.addEventListener("change", () => { pl.idx = Number(sel.value); pl.atual = pl.lista[pl.idx]; pintarPlano(); });
+    $("#pc-plano-gerar", box).addEventListener("click", async () => {
+      if (pl.atual && !(await painelDialogo.confirmar("Montar o plano de novo? Os dias livres do seu ritmo ganham ideias novas e o que você marcou como feito recomeça.", { ok: "Montar de novo" }))) return;
+      pl.gerando = true; pintarPlano();
+      try {
+        const { data, error } = await banco().functions.invoke("painel-conteudo", { body: { acao: "plano_semana" } });
+        if (error || (data && data.error)) throw new Error((data && data.error) || (error && error.message) || "erro");
+        pl.idx = 0; await carregarPlano(); await carregar(); pintar(); toast("Plano da semana pronto.");
+      } catch (er) { toast("Não consegui montar o plano: " + er.message, true); }
+      pl.gerando = false; pintarPlano();
+    });
+    const ed = $("#pc-plano-editar", box); if (ed) ed.addEventListener("click", async () => {
+      const novo = await painelDialogo.texto("Foco desta semana (uma frase para lembrar o que importa):", pl.atual.foco || "", { linhas: 3 });
+      if (novo == null) return;
+      try { await salvarPlano({ foco: novo.trim() || null }); pintarPlano(); toast("Foco salvo."); } catch (er) { toast(er.message, true); }
+    });
+    const ex = $("#pc-plano-excluir", box); if (ex) ex.addEventListener("click", async () => {
+      if (!(await painelDialogo.confirmar("Excluir este plano da semana? Os posts do calendário continuam.", { ok: "Excluir", perigo: true }))) return;
+      const { error } = await banco().from("planos_semana").delete().eq("id", pl.atual.id);
+      if (error) { toast(error.message, true); return; }
+      pl.idx = 0; await carregarPlano(); pintarPlano(); toast("Plano excluído.");
+    });
+    $$("[data-feito]", box).forEach((c) => c.addEventListener("change", async () => {
+      const it = itensDe(c.dataset.onde).find((x) => x.id === c.dataset.feito); if (!it) return;
+      it.feito = c.checked;
+      try { await salvarPlano({ plano: pl.atual.plano }); pintarPlano(); } catch (er) { it.feito = !c.checked; toast(er.message, true); pintarPlano(); }
+    }));
+    $$("[data-tirar]", box).forEach((b) => b.addEventListener("click", async () => {
+      const lista = itensDe(b.dataset.onde), i = lista.findIndex((x) => x.id === b.dataset.tirar); if (i < 0) return;
+      const [tirado] = lista.splice(i, 1);
+      try { await salvarPlano({ plano: pl.atual.plano }); pintarPlano(); } catch (er) { lista.splice(i, 0, tirado); toast(er.message, true); pintarPlano(); }
+    }));
+    $$("[data-post]", box).forEach((b) => b.addEventListener("click", async () => {
+      let p = st.posts.find((x) => String(x.id) === b.dataset.post);
+      if (!p) { const { data } = await banco().from("painel_conteudo").select("*").eq("id", b.dataset.post).maybeSingle(); p = data; }
+      if (p) abrir(p); else toast("Esse post não existe mais no calendário.", true);
+    }));
+    $$("[data-ir]", box).forEach((b) => b.addEventListener("click", () => { location.hash = "#" + b.dataset.ir; }));
+  }
+
   async function abrirAba() {
     const sec = document.getElementById("aba-" + ABA);
     if (!sec) return;
     if (!st.pronto) { montar(sec); st.pronto = true; await carregar(); ajustarSemana(); }
     else await carregar();
     pintar();
+    try { await carregarPlano(); } catch (er) { pl.lista = []; pl.atual = null; }
+    pintarPlano();
   }
   document.addEventListener("painel:aba", (e) => { if (e.detail === ABA) abrirAba(); });
   if (location.hash === "#" + ABA) setTimeout(abrirAba, 600);

@@ -16,8 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610300214"></script>
-<script src="../../js/dialogos.js?v=202610300214"></script>
+<script src="../../js/banco.js?v=202610302022"></script>
+<script src="../../js/dialogos.js?v=202610302022"></script>
+<script src="../../js/corretor.js?v=202610302022"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -4035,6 +4036,23 @@ function Jobs({state, updateState}){
   const [showFilter,setShowFilter] = useState(false);
   const [filterStatus,setFilterStatus] = useState("Todos");
   const [confirmPagoId,setConfirmPagoId] = useState(null);
+  // "Virar job" da aba Propostas do painel: abre o job novo já com a marca e o briefing do e-mail (vale 10 min)
+  useEffect(()=>{
+    function pegarPendente(){
+      try{
+        const p = JSON.parse(localStorage.getItem("novoJobPendente")||"null");
+        if(!p) return;
+        localStorage.removeItem("novoJobPendente");
+        if(Date.now()-(p.quando||0) > 10*60*1000) return;
+        setModal(false);
+        setEditing({...defaultJobObj(), marca:p.marca||"", briefing:p.briefing||""});
+      }catch(e){ /* sem armazenamento */ }
+    }
+    pegarPendente();
+    const ouvir = (e)=>{ if(e.origin===location.origin && e.data && e.data.novoJobPendente) pegarPendente(); };
+    window.addEventListener("message", ouvir);
+    return ()=>window.removeEventListener("message", ouvir);
+  },[]);
 
   function persistJob(job){ updateState(state=>{
     const exists = state.jobs.some(j=>j.id===job.id);
@@ -6984,8 +7002,8 @@ function RoteiroModal({onClose, onSave, initial, etapas=ROTEIRO_ETAPAS}){
         <Field label="Referência (link)"><input value={f.referencia||""} onChange={e=>set("referencia",e.target.value)} placeholder="https://..."/></Field>
       </div>
       <Field label="Objetivo do vídeo"><textarea rows="2" value={f.objetivo||""} onChange={e=>set("objetivo",e.target.value)}/></Field>
-      <Field label="Gancho"><textarea rows="2" value={f.gancho||""} onChange={e=>set("gancho",e.target.value)}/></Field>
-      <Field label="Conteúdo do roteiro"><textarea rows="10" value={f.conteudo} onChange={e=>set("conteudo",e.target.value)} placeholder="Escreva seu roteiro aqui..."/></Field>
+      <Field label="Gancho"><textarea data-corretor="fala" rows="2" value={f.gancho||""} onChange={e=>set("gancho",e.target.value)}/></Field>
+      <Field label="Conteúdo do roteiro"><textarea data-corretor="fala" rows="10" value={f.conteudo} onChange={e=>set("conteudo",e.target.value)} placeholder="Escreva seu roteiro aqui..."/></Field>
       <Field label="Legenda do post"><textarea rows="4" value={f.legenda||""} onChange={e=>set("legenda",e.target.value)}/></Field>
       <Field label="Observações"><textarea rows="3" value={f.observacoes||""} onChange={e=>set("observacoes",e.target.value)}/></Field>
       {erroForm && <p style={{fontSize:13, color:"#c5533f", background:"#fbefec", padding:"8px 12px", borderRadius:10}}>{erroForm}</p>}
