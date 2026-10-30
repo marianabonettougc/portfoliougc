@@ -1084,8 +1084,8 @@ IDEIA PARA DEPOIS
   }
   const suave = (k) => k * k * (3 - 2 * k);
   // ----- efeitos visuais do carrossel que ela mandou (out/2026): zoom-through, pull-back reveal, celular, checklist e gráfico -----
-  const VISUAIS = [["mergulho", "Zoom-through (mergulha e sai na próxima cena)"], ["revelar", "Pull-back reveal (afasta e revela a cena)"], ["celular", "Phone mockup (vídeo dentro de um celular)"], ["checklist", "Checklist (itens marcados enquanto fala)"], ["grafico", "Gráfico que cresce"]];
-  const LETRA_VIS = { mergulho: "M", revelar: "R", celular: "▯", checklist: "✓", grafico: "▮" };
+  const VISUAIS = [["mergulho", "Zoom-through (mergulha e sai na próxima cena)"], ["revelar", "Pull-back reveal (afasta e revela a cena)"], ["celular", "Phone mockup (vídeo dentro de um celular)"], ["checklist", "Checklist (itens marcados enquanto fala)"], ["grafico", "Gráfico que cresce"], ["rabiscos", "Doodle boil (rabiscos à mão que tremem)"], ["orbita", "Orbit (texto girando ao seu redor)"]];
+  const LETRA_VIS = { mergulho: "M", revelar: "R", celular: "▯", checklist: "✓", grafico: "▮", rabiscos: "✎", orbita: "◎" };
   function zoomVisual(t) {
     let z = 1;
     for (const x of st.visuais || []) {
@@ -1108,9 +1108,38 @@ IDEIA PARA DEPOIS
     c2d.fillStyle = "#111"; arredondado(px + pw * 0.36, py + b * 1.6, pw * 0.28, b * 2.2, b * 1.1); c2d.fill();
     c2d.restore();
   }
+  // rabisco que "ferve": o traço muda um pouquinho 8 vezes por segundo (doodle boil)
+  function rabisco(tipo, cx, cy, r, semente, u) {
+    const rnd = (k) => { const v = Math.sin(semente * 127.1 + k * 311.7) * 43758.5453; return (v - Math.floor(v)) - 0.5; };
+    const j = (k) => rnd(k) * r * 0.12;
+    c2d.beginPath();
+    if (tipo === 0) { for (let i = 0; i <= 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; const px = cx + Math.cos(a) * rr + j(i), py = cy + Math.sin(a) * rr + j(i + 20); if (i) c2d.lineTo(px, py); else c2d.moveTo(px, py); } }
+    else if (tipo === 1) { c2d.moveTo(cx + j(1), cy + r * 0.35); c2d.bezierCurveTo(cx - r * 1.1 + j(2), cy - r * 0.4, cx - r * 0.3, cy - r * 1 + j(3), cx + j(4), cy - r * 0.3); c2d.bezierCurveTo(cx + r * 0.3, cy - r * 1 + j(5), cx + r * 1.1 + j(6), cy - r * 0.4, cx + j(7), cy + r * 0.35); }
+    else if (tipo === 2) { for (let i = 0; i < 40; i++) { const a = i * 0.45, rr = r * i / 40; const px = cx + Math.cos(a) * rr + j(i), py = cy + Math.sin(a) * rr + j(i + 50); if (i) c2d.lineTo(px, py); else c2d.moveTo(px, py); } }
+    else if (tipo === 3) { for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; c2d.moveTo(cx + Math.cos(a) * r * 0.35 + j(i), cy + Math.sin(a) * r * 0.35 + j(i + 9)); c2d.lineTo(cx + Math.cos(a) * r + j(i + 3), cy + Math.sin(a) * r + j(i + 12)); } }
+    else { c2d.moveTo(cx - r + j(1), cy + j(2)); c2d.quadraticCurveTo(cx, cy - r * 0.6 + j(3), cx + r + j(4), cy + j(5)); c2d.moveTo(cx + r * 0.55 + j(6), cy - r * 0.35); c2d.lineTo(cx + r + j(4), cy + j(5)); c2d.lineTo(cx + r * 0.5 + j(7), cy + r * 0.3); }
+    c2d.stroke();
+  }
   function desenharVisuais(t, u, W, H) {
     for (const x of st.visuais || []) {
       const d = t - x.t, itens = (x.itens || []).filter(Boolean);
+      if (x.tipo === "rabiscos") {
+        const dur = x.dur || 3; if (d < 0 || d > dur) continue;
+        const a = suave(Math.min(1, d / 0.2, (dur - d) / 0.25)), quadro = Math.floor(t * 8), cx = W * 0.5, cy = H * (W > H ? 0.42 : 0.4), rx = W * (W > H ? 0.3 : 0.4), ry = H * (W > H ? 0.36 : 0.24);
+        c2d.save(); c2d.globalAlpha = a; c2d.strokeStyle = x.cor || "#ffffff"; c2d.lineWidth = 7 * u; c2d.lineCap = "round"; c2d.lineJoin = "round"; c2d.shadowColor = "rgba(0,0,0,.35)"; c2d.shadowBlur = 8 * u;
+        for (let k = 0; k < 7; k++) { const ang = -Math.PI * 0.95 + k * (Math.PI * 1.9 / 6); rabisco(k % 5, cx + Math.cos(ang) * rx, Math.max(70 * u, cy + Math.sin(ang) * ry), (k % 2 ? 46 : 60) * u, quadro + k * 7, u); }
+        c2d.restore();
+      }
+      if (x.tipo === "orbita") {
+        const dur = x.dur || 4, base = ((itens[0] || "TEXTO") + " • ").toUpperCase(); if (d < 0 || d > dur) continue;
+        const a = suave(Math.min(1, d / 0.3, (dur - d) / 0.3)), cx = W * 0.5, cy = H * (W > H ? 0.5 : 0.44), rx = Math.min(W * 0.4, 560 * u), ry = rx * 0.22, giro = d * 0.9;
+        const volta = 2 * Math.PI * Math.sqrt((rx * rx + ry * ry) / 2), cabe = Math.max(base.length, Math.round(volta / (40 * u)));
+        let txt = base; while (txt.length + base.length <= cabe) txt += base; const n = txt.length;
+        c2d.save(); c2d.font = `800 ${56 * u}px Poppins, sans-serif`; c2d.textAlign = "center"; c2d.textBaseline = "middle"; c2d.fillStyle = x.cor || "#ffffff"; c2d.shadowColor = "rgba(0,0,0,.4)"; c2d.shadowBlur = 10 * u;
+        const letras = [...txt].map((ch, i) => { const ang = -giro - i * (Math.PI * 2 / n); return { ch, ang, z: Math.sin(ang) }; }).sort((p, q) => p.z - q.z);
+        for (const l of letras) { const esc2 = 0.75 + 0.25 * (l.z + 1) / 2; c2d.globalAlpha = a * (l.z < 0 ? 0.35 : 1); c2d.save(); c2d.translate(cx + Math.cos(l.ang) * rx, cy + l.z * ry); c2d.scale(esc2, esc2); c2d.fillText(l.ch, 0, 0); c2d.restore(); }
+        c2d.restore();
+      }
       if (x.tipo === "checklist" && itens.length) {
         const passo = 1.1, dur = x.dur || itens.length * passo + 2.2; if (d < 0 || d > dur) continue;
         const saida = suave(Math.min(1, (dur - d) / 0.3)), tam = 46 * u, lh = tam * 1.75, larg = Math.min(W * 0.84, 860 * u), alt = lh * itens.length + 60 * u;
@@ -3008,6 +3037,9 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const g = brutoDe(st.t); if (g == null) return;
     let itens;
     if (tipo === "checklist") { const txt = prompt("Itens do checklist, um por linha (aparecem e são marcados um a um):", "Item 1\nItem 2\nItem 3"); if (txt == null) return; itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); }
+    if (tipo === "orbita") { const txt = prompt("Texto que gira ao seu redor (curto, ex.: BLACK FRIDAY):", st.tema || "BLACK FRIDAY"); if (txt == null || !txt.trim()) return; itens = [txt.trim().slice(0, 40)]; }
+    const tipos = new Set((st.manual.visuais || []).map((x) => x.tipo));
+    if (!tipos.has(tipo) && tipos.size >= 2 && !confirm("Dica de ouro: use 1 ou 2 efeitos por vídeo. Efeito demais cansa, e o que prende é o conteúdo. Este vídeo já tem 2 tipos de efeito. Colocar mesmo assim?")) return;
     if (tipo === "grafico") { const txt = prompt("Barras do gráfico, uma por linha, no formato rótulo: valor", "Antes: 20\nDepois: 85"); if (txt == null) return; itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); }
     hist("visuais"); (st.manual.visuais = st.manual.visuais || []).push({ id: uid(), g: +g.toFixed(2), tipo, ...(itens ? { itens } : {}) });
     mexeuManual(); toast("Efeito colocado. Dá o play para ver.");
@@ -3206,7 +3238,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
         ${efSel ? `<span class="rr-sel">${esc(EFEITOS[efSel.tipo] || efSel.tipo)} em ${tempo(efSel.t)}</span><button type="button" class="btn" data-f="ouvir-som">${ic.som}Ouvir</button><button type="button" class="btn rr-perigo" data-f="tirar-som">Tirar este som</button>` : ""}
         ${sel.tipo === "zoom" ? `<button type="button" class="btn rr-perigo" data-f="tirar-zoom">Tirar este zoom</button>` : ""}
         ${sel.tipo === "flash" ? `<button type="button" class="btn rr-perigo" data-f="tirar-flash">Tirar este flash</button>` : ""}
-        ${sel.tipo === "visual" ? `<span class="rr-sel">${esc((VISUAIS.find(([k]) => k === (st.visuais[sel.i] || {}).tipo) || ["", "Efeito"])[1])}</span>${["checklist", "grafico"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="editar-visual">Editar itens</button>` : ""}${["celular", "checklist", "grafico"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="dur-visual">Duração</button>` : ""}<button type="button" class="btn rr-perigo" data-f="tirar-visual">Tirar este efeito</button>` : ""}
+        ${sel.tipo === "visual" ? `<span class="rr-sel">${esc((VISUAIS.find(([k]) => k === (st.visuais[sel.i] || {}).tipo) || ["", "Efeito"])[1])}</span>${["checklist", "grafico", "orbita"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="editar-visual">${(st.visuais[sel.i] || {}).tipo === "orbita" ? "Editar texto" : "Editar itens"}</button>` : ""}${["celular", "checklist", "grafico", "rabiscos", "orbita"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="dur-visual">Duração</button>` : ""}<button type="button" class="btn rr-perigo" data-f="tirar-visual">Tirar este efeito</button>` : ""}
         ${temDesfazer ? `<button type="button" class="btn" data-f="desfazer">Desfazer</button>` : ""}
       </div>
       ${sel.tipo === "plano" && st.segs[sel.i] ? trechoHtml(st.segs[sel.i], sel.i) : ""}
