@@ -548,6 +548,7 @@ IDEIA PARA DEPOIS
     }
     if (o.dinamismo === "dinamico") { o.relaxante = false; o.sonsSuaves = false; }
     if (o.formato) o.formatoEscolhido = true;
+    if (/ducking|musica[^.;!?]{0,25}(abaix|baix|diminu)[^.;!?]{0,25}(fal|voz)/.test(t)) o.ducking = !/sem ducking|nao[^.;!?]{0,10}ducking/.test(t);
     // cor dos textos na tela e da legenda (ex.: "o amarelo no azul da Ortobom", "legenda branca")
     if (/\b(cor|cores|legenda|texto|textos|letra|letras|frase|frases|escrita|amarel|azul|branc|rosa|vermelh|verde|laranja|roxo|lilas|dourad|pret)|#[0-9a-f]{6}/.test(t)) {
       const CORES = [["azul (da |de )?(paleta |cor |cores )*(de cores )?(da |de )?ortobom|azul ortobom", "#0a4ea0"], ["azul marinho", "#1d2f5c"], ["azul (claro|bebe)", "#7cc0ee"], ["azul", "#1f5fbf"], ["brancas?|brancos?", "#ffffff"], ["pret[oa]s?", "#111111"], ["amarel[oa]s?", "#ffd84d"], ["rosa", "#f28cb1"], ["vermelh[oa]s?", "#e0393e"], ["verdes?", "#3fa66b"], ["laranja", "#f28c28"], ["roxo|roxa|lilas", "#8a6cf0"], ["dourad[oa]s?", "#d4af37"], ["creme|bege", "#fff3b0"]];
@@ -899,6 +900,7 @@ IDEIA PARA DEPOIS
     st.zooms = (p.zooms || []).map((z) => paraFinalPerto(z.t)).filter((t) => t != null);
     st.zoomsManuais = (st.manual.zooms || []).map(paraFinal).filter((t) => t != null);
     st.flashes = (st.manual.flashes || []).map(paraFinal).filter((t) => t != null);
+    st.visuais = (st.manual.visuais || []).map((v) => ({ ...v, t: paraFinalPerto(v.g) })).filter((v) => v.t != null);
     sonsAutomaticos();
     // momentos fortes (hit, ding, riser) ganham tremidinha
     filtrarSonsPelaQuantidade();
@@ -1081,6 +1083,92 @@ IDEIA PARA DEPOIS
     return z;
   }
   const suave = (k) => k * k * (3 - 2 * k);
+  // ----- efeitos visuais do carrossel que ela mandou (out/2026): zoom-through, pull-back reveal, celular, checklist e gráfico -----
+  const VISUAIS = [["mergulho", "Zoom-through (mergulha e sai na próxima cena)"], ["revelar", "Pull-back reveal (afasta e revela a cena)"], ["celular", "Phone mockup (vídeo dentro de um celular)"], ["checklist", "Checklist (itens marcados enquanto fala)"], ["grafico", "Gráfico que cresce"]];
+  const LETRA_VIS = { mergulho: "M", revelar: "R", celular: "▯", checklist: "✓", grafico: "▮" };
+  function zoomVisual(t) {
+    let z = 1;
+    for (const x of st.visuais || []) {
+      const d = t - x.t;
+      if (x.tipo === "revelar" && d >= 0 && d < 1.4) z *= 1 + 0.6 * (1 - suave(d / 1.4));
+      if (x.tipo === "mergulho" && Math.abs(d) < 0.38) { const k = 1 - Math.abs(d) / 0.38; z *= 1 + 1.1 * k * k; }
+    }
+    return z;
+  }
+  function desenharCelular(v, vw, vh, t, cel, W, H) {
+    const d = t - cel.t, dur = cel.dur || 3, k = suave(Math.min(1, d / 0.35, (dur - d) / 0.3));
+    const fundo = Math.max(W / vw, H / vh) * 1.15;
+    c2d.save(); c2d.filter = "blur(26px)"; c2d.drawImage(v, (W - vw * fundo) / 2, (H - vh * fundo) / 2, vw * fundo, vh * fundo); c2d.restore();
+    c2d.fillStyle = "rgba(29,22,17,.35)"; c2d.fillRect(0, 0, W, H);
+    const ph = (W > H ? H * 0.86 : H * 0.74) * (0.85 + 0.15 * k), pw = ph * 9 / 19.5, px = (W - pw) / 2, py = (H - ph) / 2, rr = pw * 0.12, b = pw * 0.035;
+    c2d.save(); c2d.globalAlpha = Math.max(0.15, k);
+    c2d.shadowColor = "rgba(0,0,0,.45)"; c2d.shadowBlur = 40; c2d.fillStyle = "#111"; arredondado(px, py, pw, ph, rr); c2d.fill(); c2d.shadowBlur = 0;
+    c2d.save(); arredondado(px + b, py + b, pw - 2 * b, ph - 2 * b, rr - b); c2d.clip();
+    const e2 = Math.max((pw - 2 * b) / vw, (ph - 2 * b) / vh); c2d.drawImage(v, px + pw / 2 - vw * e2 / 2, py + ph / 2 - vh * e2 / 2, vw * e2, vh * e2); c2d.restore();
+    c2d.fillStyle = "#111"; arredondado(px + pw * 0.36, py + b * 1.6, pw * 0.28, b * 2.2, b * 1.1); c2d.fill();
+    c2d.restore();
+  }
+  function desenharVisuais(t, u, W, H) {
+    for (const x of st.visuais || []) {
+      const d = t - x.t, itens = (x.itens || []).filter(Boolean);
+      if (x.tipo === "checklist" && itens.length) {
+        const passo = 1.1, dur = x.dur || itens.length * passo + 2.2; if (d < 0 || d > dur) continue;
+        const saida = suave(Math.min(1, (dur - d) / 0.3)), tam = 46 * u, lh = tam * 1.75, larg = Math.min(W * 0.84, 860 * u), alt = lh * itens.length + 60 * u;
+        const x0 = (W - larg) / 2, y0 = H * 0.5 - alt / 2;
+        c2d.save(); c2d.globalAlpha = saida; c2d.fillStyle = "rgba(255,253,249,.94)"; c2d.shadowColor = "rgba(0,0,0,.25)"; c2d.shadowBlur = 30 * u; arredondado(x0, y0, larg, alt, 28 * u); c2d.fill(); c2d.shadowBlur = 0;
+        c2d.font = `600 ${tam}px Poppins, sans-serif`; c2d.textBaseline = "middle"; c2d.textAlign = "left";
+        itens.forEach((it, i) => {
+          const di = d - i * passo; if (di < 0) return;
+          const a = suave(Math.min(1, di / 0.25)), yy = y0 + 30 * u + lh * i + lh / 2, cx = x0 + 52 * u, rr = tam * 0.48;
+          c2d.globalAlpha = saida * a;
+          const marcado = di > 0.6;
+          c2d.lineWidth = 4 * u; c2d.strokeStyle = "#3d2b20"; c2d.fillStyle = marcado ? "#4f7a54" : "transparent";
+          c2d.beginPath(); c2d.arc(cx, yy, rr, 0, Math.PI * 2); if (marcado) { c2d.fill(); c2d.strokeStyle = "#4f7a54"; } c2d.stroke();
+          if (marcado) { const kk = Math.min(1, (di - 0.6) / 0.2); c2d.strokeStyle = "#fff"; c2d.lineWidth = 5 * u; c2d.lineCap = "round"; c2d.beginPath(); c2d.moveTo(cx - rr * 0.45, yy); c2d.lineTo(cx - rr * 0.45 + rr * 0.3 * Math.min(1, kk * 2), yy + rr * 0.35 * Math.min(1, kk * 2)); if (kk > 0.5) c2d.lineTo(cx - rr * 0.15 + rr * 0.6 * (kk - 0.5) * 2, yy + rr * 0.35 - rr * 0.75 * (kk - 0.5) * 2); c2d.stroke(); }
+          c2d.fillStyle = "#3d2b20"; c2d.fillText(it, cx + rr + 22 * u, yy + 2 * u, larg - (cx - x0) - rr - 50 * u);
+        });
+        c2d.restore();
+      }
+      if (x.tipo === "grafico" && itens.length) {
+        const dur = x.dur || 4.5; if (d < 0 || d > dur) continue;
+        const dados = itens.map((it) => { const m = String(it).match(/^(.*?)[:=\-]\s*([\d.,]+)\s*(%?)\s*$/); return m ? { rot: m[1].trim(), val: Number(m[2].replace(/\./g, "").replace(",", ".")) || 0, pct: m[3] } : { rot: String(it), val: 0, pct: "" }; });
+        const max = Math.max(1, ...dados.map((q) => q.val)), saida = suave(Math.min(1, (dur - d) / 0.3)), cresce = suave(Math.min(1, d / 1.2));
+        const larg = Math.min(W * 0.84, 880 * u), alt = Math.min(H * 0.42, 620 * u), x0 = (W - larg) / 2, y0 = H * 0.5 - alt / 2;
+        c2d.save(); c2d.globalAlpha = saida; c2d.fillStyle = "rgba(255,253,249,.94)"; c2d.shadowColor = "rgba(0,0,0,.25)"; c2d.shadowBlur = 30 * u; arredondado(x0, y0, larg, alt, 28 * u); c2d.fill(); c2d.shadowBlur = 0;
+        const cores = ["#a87058", "#6b4a35", "#c9973b", "#4f7a54", "#b8746a", "#8a6650"], n = dados.length, gap = 26 * u, bw = (larg - 80 * u - gap * (n - 1)) / n, base = y0 + alt - 70 * u, topo = y0 + 70 * u;
+        dados.forEach((q, i) => {
+          const h = (base - topo) * (q.val / max) * cresce, bx = x0 + 40 * u + i * (bw + gap);
+          c2d.fillStyle = cores[i % cores.length]; arredondado(bx, base - h, bw, Math.max(2, h), 12 * u); c2d.fill();
+          c2d.fillStyle = "#3d2b20"; c2d.textAlign = "center"; c2d.textBaseline = "alphabetic";
+          c2d.font = `700 ${34 * u}px Poppins, sans-serif`; c2d.fillText(`${Math.round(q.val * cresce).toLocaleString("pt-BR")}${q.pct}`, bx + bw / 2, base - h - 14 * u);
+          c2d.font = `500 ${26 * u}px Poppins, sans-serif`; c2d.fillText(q.rot.slice(0, 18), bx + bw / 2, base + 40 * u, bw + gap);
+        });
+        c2d.restore();
+      }
+    }
+  }
+  // ----- música de fundo com ducking (abaixa quando ela fala) -----
+  function trechosDeFala() {
+    const l = [];
+    for (const c of st.clipes) for (const w of c.palavras || []) { const a = paraFinal(c.offset + w.s), b = paraFinal(Math.min(c.offset + w.e, c.offset + c.dur - 0.01)); if (a != null) l.push([a, b != null && b > a ? b : a + 0.3]); }
+    l.sort((x, y) => x[0] - y[0]); const out = [];
+    for (const [a, b] of l) { const ult = out[out.length - 1]; if (ult && a - ult[1] < 0.45) ult[1] = Math.max(ult[1], b); else out.push([a, b]); }
+    return out;
+  }
+  function tocarMusica(ctx, destino, desde, dur, quando) {
+    if (!st.musica || !st.musica.buf) return null;
+    const vol = Number(st.opc.musicaVol ?? 0.35), baixo = vol * 0.22, src = ctx.createBufferSource(), g = ctx.createGain();
+    src.buffer = st.musica.buf; src.loop = true; src.connect(g); g.connect(destino);
+    const t0 = quando ?? ctx.currentTime;
+    g.gain.setValueAtTime(vol, t0);
+    if (st.opc.ducking !== false) for (const [a, b] of trechosDeFala()) {
+      if (b < desde) continue; const ia = t0 + Math.max(0, a - desde), ib = t0 + Math.max(0, b - desde);
+      g.gain.setTargetAtTime(baixo, Math.max(t0, ia - 0.12), 0.06); g.gain.setTargetAtTime(vol, ib + 0.1, 0.15);
+    }
+    if (dur) { g.gain.setTargetAtTime(0.0001, t0 + Math.max(0, dur - desde - 1.2), 0.35); }
+    src.start(t0, desde % st.musica.buf.duration);
+    return src;
+  }
   const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
   function desenhar(t) {
     if (!c2d || (canvas && canvas.width !== tamanho()[0])) prepararCanvas();
@@ -1092,10 +1180,11 @@ IDEIA PARA DEPOIS
     if (clipe && clipe.el.readyState >= 2) {
       const v = clipe.el, vw = v.videoWidth || 9, vh = v.videoHeight || 16;
       const tr = tremida(t), tc = transicaoEm(t);
-      const z = (s ? s.zoom : 1) * zoomEm(t) * (1 + tr.z) * (1 + tc.z);
+      const z = (s ? s.zoom : 1) * zoomEm(t) * (1 + tr.z) * (1 + tc.z) * zoomVisual(t);
       const esc0 = Math.max(W / vw, H / vh) * z;
       const dw = vw * esc0, dh = vh * esc0, x0 = (W - dw) / 2 + (tr.x + tc.x) * W, y0 = (H - dh) * 0.42 + tr.y * H;
-      c2d.drawImage(v, x0, y0, dw, dh);
+      const cel = (st.visuais || []).find((x) => x.tipo === "celular" && t >= x.t && t < x.t + (x.dur || 3));
+      if (cel) desenharCelular(v, vw, vh, t, cel, W, H); else c2d.drawImage(v, x0, y0, dw, dh);
       // rastro do deslize (dá a sensação de movimento rápido)
       if (tc.x > 0.01) { c2d.save(); c2d.globalAlpha = 0.35; c2d.drawImage(v, x0 - tc.x * W * 0.6, y0, dw, dh); c2d.restore(); }
     }
@@ -1104,6 +1193,7 @@ IDEIA PARA DEPOIS
     if ((st.opc.flash || st.opc.dinamismo === "dinamico") && s) { const i = st.segs.indexOf(s), ant = st.segs[i - 1]; const d = t - s.o0; if (ant && ant.ci !== s.ci && d < 0.12) { c2d.fillStyle = `rgba(255,255,255,${0.85 * (1 - d / 0.12)})`; c2d.fillRect(0, 0, W, H); } }
     // flash que ela pôs à mão na linha do tempo
     for (const f of st.flashes || []) { const d = t - f; if (d >= 0 && d < 0.14) { c2d.fillStyle = `rgba(255,255,255,${0.85 * (1 - d / 0.14)})`; c2d.fillRect(0, 0, W, H); } }
+    desenharVisuais(t, u, W, H);
     // legenda (ou palavra chamativa)
     const g = st.legendas.find((x) => t >= x.o0 && t < x.o1);
     if (g && st.opc.legenda !== false && !(st.opc.titulo && st.titulo && t < DUR_TITULO - 0.2)) { if (g.chamativa && st.opc.chamativas) desenharChamativa(g, t, u, W, H); else desenharLegenda(g, u, W, H); }
@@ -1666,6 +1756,8 @@ IDEIA PARA DEPOIS
     audio(); if (ac.state === "suspended") await ac.resume();
     st.clipes.forEach(ligarClipe);
     st.parar = false; st.tocando = true; pintarControles();
+    try { if (st.musSrc) st.musSrc.stop(); } catch (e) { /* já parou */ }
+    st.musSrc = tocarMusica(ac, mestre, desde, st.duracao);
     let i = st.segs.findIndex((s) => desde >= s.o0 && desde < s.o1); if (i < 0) i = 0;
     let dentro = Math.max(0, desde - st.segs[i].o0);
     for (; i < st.segs.length && !st.parar; i++) {
@@ -1690,9 +1782,10 @@ IDEIA PARA DEPOIS
       dentro = 0;
     }
     if (!st.parar && st.t >= st.duracao - 0.1) st.t = 0;
+    try { if (st.musSrc) st.musSrc.stop(); } catch (e) { /* já parou */ } st.musSrc = null;
     st.tocando = false; pintarControles();
   }
-  function parar() { st.parar = true; st.clipes.forEach((c) => c.el.pause()); }
+  function parar() { st.parar = true; st.clipes.forEach((c) => c.el.pause()); try { if (st.musSrc) st.musSrc.stop(); } catch (e) { /* já parou */ } st.musSrc = null; }
 
   async function exportarAoVivo() {
     if (!st.segs.length || st.exportando) return;
@@ -1785,6 +1878,7 @@ IDEIA PARA DEPOIS
         const src = off.createBufferSource(); src.buffer = buf; src.connect(entrada); src.start(s.o0, ini, len);
       }
       if (st.opc.efeitos) for (const e of st.efeitos) if (e.t < dur) tocarEfeito(e.tipo, e.t, st.opc.vol);
+      tocarMusica(off, mestre, 0, dur, 0);
     } finally { ({ ac, mestre, ruidoBuf, voz } = guardado); }
     return off.startRendering();
   }
@@ -2910,6 +3004,25 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     st.sel = null; if (!quieto) mexeuManual();
   }
   function porZoom() { const g = brutoDe(st.t); if (g != null) { hist("zooms"); st.manual.zooms.push(+g.toFixed(2)); mexeuManual(); } }
+  function porVisual(tipo) {
+    const g = brutoDe(st.t); if (g == null) return;
+    let itens;
+    if (tipo === "checklist") { const txt = prompt("Itens do checklist, um por linha (aparecem e são marcados um a um):", "Item 1\nItem 2\nItem 3"); if (txt == null) return; itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); }
+    if (tipo === "grafico") { const txt = prompt("Barras do gráfico, uma por linha, no formato rótulo: valor", "Antes: 20\nDepois: 85"); if (txt == null) return; itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); }
+    hist("visuais"); (st.manual.visuais = st.manual.visuais || []).push({ id: uid(), g: +g.toFixed(2), tipo, ...(itens ? { itens } : {}) });
+    mexeuManual(); toast("Efeito colocado. Dá o play para ver.");
+  }
+  function ligarMusica(box) {
+    const arq = box.querySelector("[data-musica]");
+    if (arq) arq.addEventListener("change", async () => {
+      const a = arq.files && arq.files[0]; if (!a) return;
+      try { audio(); const buf = await ac.decodeAudioData(await a.arrayBuffer()); st.musica = { nome: a.name, buf }; st.opc.musicaNome = a.name; if (st.opc.ducking === undefined) st.opc.ducking = true; guardarOpc(); pintarLinha(); salvarDepois(); toast("Música colocada. Ela abaixa sozinha quando você fala."); }
+      catch (e) { toast("Não consegui ler essa música. Tente MP3 ou M4A.", true); }
+    });
+    const vol = box.querySelector("[data-mus-vol]"); if (vol) vol.addEventListener("change", () => { st.opc.musicaVol = Number(vol.value); guardarOpc(); salvarDepois(); });
+    const dk = box.querySelector("[data-ducking]"); if (dk) dk.addEventListener("change", () => { st.opc.ducking = dk.checked; guardarOpc(); salvarDepois(); });
+    const tir = box.querySelector("[data-mus-tirar]"); if (tir) tir.addEventListener("click", () => { st.musica = null; delete st.opc.musicaNome; guardarOpc(); pintarLinha(); salvarDepois(); });
+  }
   function porFlash() { const g = brutoDe(st.t); if (g != null) { hist("flashes"); st.manual.flashes.push(+g.toFixed(2)); mexeuManual(); } }
   function dividir() { const g = brutoDe(st.t); if (g == null) return; hist("divisoes"); (st.manual.divisoes = st.manual.divisoes || []).push(+g.toFixed(2)); mexeuManual(); const i = st.segs.findIndex((x) => x.g0 >= g - 0.01); if (i >= 0) { st.sel = { tipo: "plano", i }; pintarLinha(); } }
   // ----- cenas como no CapCut: mover, trocar e ver os quadros -----
@@ -3055,7 +3168,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   function apagarPlano(sg) { if (st.segs.length <= 1) { toast("Esse é o único plano. Use Dividir aqui para separar o trecho que quer apagar.", true); return; } hist("cortes"); st.manual.cortes.push([+sg.g0.toFixed(2), +sg.g1.toFixed(2)]); st.sel = null; mexeuManual(); toast("Plano apagado. Para voltar, use Desfazer na linha do tempo."); }
   function desfazerManual() {
     const m = st.manual; m.divisoes = m.divisoes || [];
-    const ult = [["cortes", m.cortes], ["divisoes", m.divisoes], ["sons", m.sons], ["zooms", m.zooms], ["flashes", m.flashes], ["tirados", m.tirados]].find(([, l]) => l.length);
+    m.visuais = m.visuais || [];
+    const ult = [["visuais", m.visuais], ["cortes", m.cortes], ["divisoes", m.divisoes], ["sons", m.sons], ["zooms", m.zooms], ["flashes", m.flashes], ["tirados", m.tirados]].find(([, l]) => l.length);
     // desfaz o último tipo mexido (guardamos a ordem num histórico simples)
     const h = (st.manual.hist || []).pop();
     if (h === "ord" && (m.ordHist || []).length) { const f0 = m.ordHist.pop(); m.ordem = f0.ordem; m.trocas = f0.trocas; mexeuManual(); return; }
@@ -3085,11 +3199,14 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
         <button type="button" class="btn" data-f="som">${ic.som}+ Som aqui</button>
         <button type="button" class="btn" data-f="zoom">+ Zoom aqui</button>
         <button type="button" class="btn" data-f="flash">+ Flash aqui</button>
+        <select class="entrada" id="rr-vis-tipo" aria-label="Efeito visual">${VISUAIS.map(([k, t]) => `<option value="${k}">${t}</option>`).join("")}</select>
+        <button type="button" class="btn" data-f="visual">✦ + Efeito aqui</button>
         <button type="button" class="btn" data-f="dividir">Dividir aqui</button>
         ${sel.tipo === "plano" ? `<button type="button" class="btn" data-f="mover-tras" ${sel.i > 0 ? "" : "disabled"}>◀ Mover para trás</button><button type="button" class="btn" data-f="mover-frente" ${sel.i < st.segs.length - 1 ? "" : "disabled"}>Mover para frente ▶</button><button type="button" class="btn" data-f="trocar-cena">⇄ Trocar cena</button><button type="button" class="btn rr-perigo" data-f="apagar-plano">Apagar este plano</button>` : ""}
         ${efSel ? `<span class="rr-sel">${esc(EFEITOS[efSel.tipo] || efSel.tipo)} em ${tempo(efSel.t)}</span><button type="button" class="btn" data-f="ouvir-som">${ic.som}Ouvir</button><button type="button" class="btn rr-perigo" data-f="tirar-som">Tirar este som</button>` : ""}
         ${sel.tipo === "zoom" ? `<button type="button" class="btn rr-perigo" data-f="tirar-zoom">Tirar este zoom</button>` : ""}
         ${sel.tipo === "flash" ? `<button type="button" class="btn rr-perigo" data-f="tirar-flash">Tirar este flash</button>` : ""}
+        ${sel.tipo === "visual" ? `<span class="rr-sel">${esc((VISUAIS.find(([k]) => k === (st.visuais[sel.i] || {}).tipo) || ["", "Efeito"])[1])}</span>${["checklist", "grafico"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="editar-visual">Editar itens</button>` : ""}${["celular", "checklist", "grafico"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="dur-visual">Duração</button>` : ""}<button type="button" class="btn rr-perigo" data-f="tirar-visual">Tirar este efeito</button>` : ""}
         ${temDesfazer ? `<button type="button" class="btn" data-f="desfazer">Desfazer</button>` : ""}
       </div>
       ${sel.tipo === "plano" && st.segs[sel.i] ? trechoHtml(st.segs[sel.i], sel.i) : ""}
@@ -3097,10 +3214,14 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <div class="rr-regua" data-buscar>${marcas.map((t) => `<span style="left:${pct(t)}">${tempo(t).replace(/,\d$/, "")}</span>`).join("")}</div>
       <div class="rr-trilha rr-t-leg${o.legenda === false ? " desligada" : ""}">${st.legendas.map((g) => `<button type="button" class="rr-chip" data-ir="${g.o0}" style="left:${pct(g.o0)};width:calc(${pct(g.o1 - g.o0)} - 3px)" title="${esc(textoLeg(g))}"><b>T</b> ${esc(textoLeg(g))}</button>`).join("")}</div>
       <div class="rr-trilha rr-t-planos">${st.segs.map((sg, i) => `<button type="button" class="rr-plano-bl${i % 2 ? " par" : ""}${sg.zoom > 1 ? " zoom" : ""}${sg.trocado ? " trocado" : ""}${sel.tipo === "plano" && sel.i === i ? " sel" : ""}" data-plano="${i}" style="left:${pct(sg.o0)};width:calc(${pct(sg.o1 - sg.o0)} - 2px)" title="Plano ${i + 1} (${esc(st.clipes[sg.ci] ? st.clipes[sg.ci].nome : "")}): toque para escolher, arraste para mudar de lugar">${quadrosDoPlano(sg)}<span class="rr-plano-n">${i + 1}</span></button>`).join("")}</div>
-      <div class="rr-trilha rr-t-fx">${(st.zoomsManuais || []).map((t, i) => `<button type="button" class="rr-zoom${sel.tipo === "zoom" && sel.i === i ? " sel" : ""}" data-zoom="${i}" style="left:${pct(t)}" title="Zoom em ${tempo(t)}">Z</button>`).join("")}${(st.flashes || []).map((t, i) => `<button type="button" class="rr-flash${sel.tipo === "flash" && sel.i === i ? " sel" : ""}" data-flash="${i}" style="left:${pct(t)}" title="Flash em ${tempo(t)}">F</button>`).join("")}</div>
+      <div class="rr-trilha rr-t-fx">${(st.zoomsManuais || []).map((t, i) => `<button type="button" class="rr-zoom${sel.tipo === "zoom" && sel.i === i ? " sel" : ""}" data-zoom="${i}" style="left:${pct(t)}" title="Zoom em ${tempo(t)}">Z</button>`).join("")}${(st.flashes || []).map((t, i) => `<button type="button" class="rr-flash${sel.tipo === "flash" && sel.i === i ? " sel" : ""}" data-flash="${i}" style="left:${pct(t)}" title="Flash em ${tempo(t)}">F</button>`).join("")}${(st.visuais || []).map((x, i) => `<button type="button" class="rr-vis${sel.tipo === "visual" && sel.i === i ? " sel" : ""}" data-vis="${i}" style="left:${pct(x.t)}" title="${esc((VISUAIS.find(([k]) => k === x.tipo) || ["", x.tipo])[1])} em ${tempo(x.t)}">${LETRA_VIS[x.tipo] || "✦"}</button>`).join("")}</div>
       <div class="rr-trilha rr-t-sons${o.efeitos ? "" : " desligada"}">${st.efeitos.map((e) => `<button type="button" class="rr-som${e.manual ? " manual" : ""}${sel.tipo === "som" && sel.id === e.id ? " sel" : ""}" data-som="${e.id}" style="left:${pct(e.t)}" title="${esc((EFEITOS[e.tipo] || e.tipo) + (e.por_que ? ": " + e.por_que : ""))}"></button>`).join("")}</div>
       <span class="rr-agulha" id="ed-agulha" style="left:${pct(st.t)}"></span>
     </div></div>
+    <div class="rr-musica">♪ <b>Música de fundo</b>
+      ${st.musica && st.musica.buf ? `<span class="rr-mus-nome">${esc(st.musica.nome)}</span>` : st.opc.musicaNome ? `<span class="rr-mus-nome falta">${esc(st.opc.musicaNome)} (escolha o arquivo de novo)</span>` : ""}
+      <label class="btn rr-mus-btn">${st.musica && st.musica.buf ? "Trocar" : "Escolher música"}<input type="file" accept="audio/*,.mp3,.m4a,.wav,.aac" hidden data-musica></label>
+      ${st.musica && st.musica.buf ? `<label class="rr-mus-vol">volume <input type="range" min="0" max="1" step="0.05" value="${st.opc.musicaVol ?? 0.35}" data-mus-vol></label><label class="rr-liga"><input type="checkbox" data-ducking ${st.opc.ducking !== false ? "checked" : ""}> Ducking (abaixa quando eu falo)</label><button type="button" class="login-link" data-mus-tirar>tirar</button>` : `<small>a música abaixa sozinha quando você fala (ducking)</small>`}</div>
     <p class="rr-legenda-linha"><span class="rr-chip-mini"></span> legendas · <span class="rr-plano-mini"></span> cenas (arraste para mudar de lugar; toque para mover, trocar ou apagar; Dividir aqui separa) · Z zoom · F flash · <span class="rr-som-mini"></span> sons (toque para ouvir ou tirar) · toque na régua para ir até o ponto</p>`;
     const f = (k) => box.querySelector(`[data-f="${k}"]`);
     f("play").addEventListener("click", () => { if (st.tocando) parar(); else tocar(st.t); setTimeout(pintarLinha, 50); });
@@ -3119,6 +3240,13 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     if (f("tirar-som")) f("tirar-som").addEventListener("click", () => tirarSom(efSel));
     if (f("ouvir-som")) f("ouvir-som").addEventListener("click", () => { audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(efSel.tipo, ac.currentTime + 0.02, o.vol); });
     if (f("tirar-zoom")) f("tirar-zoom").addEventListener("click", () => { st.manual.zooms.splice(sel.i, 1); st.sel = null; mexeuManual(); });
+    f("visual").addEventListener("click", () => porVisual($("#rr-vis-tipo", box).value));
+    $$("[data-vis]", box).forEach((b) => b.addEventListener("click", () => { const i = Number(b.dataset.vis); st.sel = { tipo: "visual", i }; irPara(st.visuais[i].t + 0.05); pintarLinha(); }));
+    const visSel = sel.tipo === "visual" ? (st.manual.visuais || []).find((x) => x.id === (st.visuais[sel.i] || {}).id) : null;
+    if (f("tirar-visual")) f("tirar-visual").addEventListener("click", () => { st.manual.visuais = st.manual.visuais.filter((x) => x !== visSel); st.sel = null; mexeuManual(); });
+    if (f("editar-visual")) f("editar-visual").addEventListener("click", () => { const txt = prompt(visSel.tipo === "grafico" ? "Uma barra por linha, no formato rótulo: valor (ex.: Antes: 20)" : "Um item por linha", (visSel.itens || []).join("\n")); if (txt == null) return; visSel.itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); mexeuManual(); });
+    if (f("dur-visual")) f("dur-visual").addEventListener("click", () => { const txt = prompt("Quantos segundos o efeito fica na tela?", String(visSel.dur || (visSel.tipo === "checklist" ? (visSel.itens || []).length * 1.1 + 2.2 : visSel.tipo === "grafico" ? 4.5 : 3)).replace(".", ",")); if (txt == null) return; const n = Number(String(txt).replace(",", ".")); if (n > 0) { visSel.dur = Math.min(20, n); mexeuManual(); } });
+    ligarMusica(box);
     if (f("tirar-flash")) f("tirar-flash").addEventListener("click", () => { st.manual.flashes.splice(sel.i, 1); st.sel = null; mexeuManual(); });
     if (f("desfazer")) f("desfazer").addEventListener("click", desfazerManual);
     $$("[data-ir]", box).forEach((b) => b.addEventListener("click", () => irPara(Number(b.dataset.ir) + 0.02)));
@@ -3546,5 +3674,5 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   }
   document.addEventListener("painel:aba", (e) => { if (e.detail === ABA) abrirAba(); else if (st.tocando && !st.exportando) parar(); });
   if (location.hash === "#" + ABA) setTimeout(abrirAba, 600);
-  window.painelEdicao = { estado: st, audioDoArquivo }; // usado nos testes
+  window.painelEdicao = { estado: st, audioDoArquivo, desenhar, irPara }; // usado nos testes
 })();

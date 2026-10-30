@@ -1634,3 +1634,13 @@ a.menu-item{text-decoration:none}
 .ed-cam-grade input[type=color]{width:44px;height:30px;padding:0;border:1px solid var(--linha);border-radius:8px;background:none;cursor:pointer}
 .ed-cam-padrao{font:inherit;font-size:11px;border:1px solid var(--linha);background:var(--papel,#fffdf9);color:var(--suave);border-radius:999px;padding:3px 8px;cursor:pointer}
 .ed-cam-val{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--principal)}
+/* efeitos visuais e música de fundo na linha do tempo (out/2026) */
+.rr-vis{position:absolute;top:0;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;border:0;background:#8a6650;color:#fff;font-size:11px;font-weight:700;cursor:pointer;display:grid;place-items:center;padding:0}
+.rr-vis.sel{outline:3px solid var(--principal);outline-offset:1px}
+.rr-musica{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:8px 0 2px;padding:8px 10px;border-radius:12px;background:var(--rr-rosa-claro,#f3e8dc);font-size:12.5px}
+.rr-musica small{color:var(--suave)}
+.rr-mus-nome{font-weight:600;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rr-mus-nome.falta{color:var(--terracota)}
+.rr-mus-btn{cursor:pointer;padding:5px 12px;font-size:12px}
+.rr-mus-vol{display:inline-flex;align-items:center;gap:6px;color:var(--suave)}
+.rr-mus-vol input{width:110px}
