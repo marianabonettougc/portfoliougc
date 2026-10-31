@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610312015"></script>
-<script src="../../js/dialogos.js?v=202610312015"></script>
-<script src="../../js/corretor.js?v=202610312015"></script>
+<script src="../../js/banco.js?v=202610312140"></script>
+<script src="../../js/dialogos.js?v=202610312140"></script>
+<script src="../../js/corretor.js?v=202610312140"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -307,6 +307,56 @@
   .cr-pesquisa pre{ white-space:pre-wrap; font:inherit; background:var(--db-creme); border-radius:10px; padding:10px 12px; margin:6px 0 0; }
   .cr-ok{ font-size:14px; color:var(--db-verde); font-weight:500; }
   .cr-ajuste{ display:flex; gap:8px; flex-wrap:wrap; } .cr-ajuste input{ flex:1; min-width:200px; }
+  /* Skill UGC (criar, ajustar, revisar) */
+  .sk-nota{ font-size:12.5px; color:var(--db-suave); margin:6px 0 0; }
+  .sk-mais{ align-self:flex-start; font-size:13.5px; }
+  .sk-campos{ display:grid; gap:10px; }
+  .sk-alerta, .sk-falta{ border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13.5px; }
+  .sk-alerta{ background:#fbefe3; border:1px solid rgba(197,83,63,.25); }
+  .sk-falta{ background:#fbf4dc; border:1px solid rgba(166,128,46,.25); }
+  .sk-alerta ul, .sk-falta ul{ margin:4px 0 0; padding-left:18px; line-height:1.5; }
+  .sk-dur{ display:block; font-style:normal; font-size:12px; color:var(--db-suave); margin-top:2px; }
+  .sk-fora{ color:var(--db-vermelho); }
+  .sk-ganchos{ display:grid; gap:6px; margin-top:4px; }
+  .sk-gancho{ text-align:left; border:1px solid var(--db-linha2); background:var(--db-papel); border-radius:10px; padding:8px 10px; font:inherit; font-size:13.5px; color:var(--db-texto); cursor:pointer; line-height:1.45; }
+  .sk-gancho .db-tag{ margin-right:6px; }
+  .sk-gancho.ativo{ border-color:var(--db-cafe); background:var(--db-creme); }
+  .sk-cta{ font-size:13.5px; margin:12px 0 0; }
+  .sk-check{ list-style:none; padding:0; margin:4px 0 0; font-size:13.5px; line-height:1.55; }
+  .sk-check li.ok{ color:var(--db-verde); } .sk-check li.nao{ color:var(--db-vermelho); }
+  .sk-versao{ font-size:11.5px; color:var(--db-suave); margin:10px 0 0; }
+  .sk-versao-ant{ margin-top:6px; }
+  .sk-box{ border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:-4px 0 16px; background:#fbf7f1; }
+  .sk-box-topo{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; flex-wrap:wrap; font-size:13.5px; }
+  .sk-box .sk-versao{ margin:0; }
+  .sk-origem{ font-size:13px; color:var(--graphite-soft); margin:6px 0 0; }
+  .sk-acoes{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; align-items:center; }
+  .sk-acoes input{ flex:1; min-width:180px; height:38px; border-radius:10px; border:1px solid var(--line); padding:0 10px; font:inherit; font-size:13.5px; }
+  .sk-acoes .btn{ display:inline-flex; align-items:center; gap:6px; }
+  .sk-erro{ font-size:13px; color:#c5533f; margin:8px 0 0; }
+  .sk-resultado{ margin-top:10px; font-size:13.5px; } .sk-resultado small{ display:block; margin-top:6px; color:var(--graphite-soft); }
+  .sk-lista{ margin:4px 0 0; padding-left:18px; font-size:13.5px; line-height:1.5; }
+  .sk-hist{ margin-top:10px; font-size:13px; } .sk-hist summary{ cursor:pointer; color:var(--graphite-soft); }
+  .sk-hist ul{ list-style:none; padding:0; margin:6px 0 0; display:grid; gap:6px; }
+  .sk-hist li{ display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .sk-link{ border:0; background:none; padding:0; font:inherit; color:#6b4a35; text-decoration:underline; cursor:pointer; }
+  .sk-escolher{ display:grid; gap:12px; }
+  .sk-filtros{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .sk-filtros input[type=text], .sk-filtros input:not([type]), .sk-filtros select{ height:40px; border-radius:10px; border:1px solid var(--line); padding:0 10px; font:inherit; font-size:13.5px; background:var(--card-bg); }
+  .sk-filtros input:not([type]){ flex:1; min-width:180px; }
+  .sk-check-label{ display:inline-flex; gap:6px; align-items:center; font-size:13.5px; }
+  .sk-refs{ list-style:none; padding:0; margin:0; display:grid; gap:6px; max-height:60vh; overflow:auto; }
+  .sk-refs button{ width:100%; display:grid; grid-template-columns:52px minmax(0,1fr); gap:10px; align-items:center; text-align:left; border:1px solid var(--line); background:var(--card-bg); border-radius:10px; padding:6px; cursor:pointer; font:inherit; color:inherit; }
+  .sk-refs button:hover{ border-color:#8a634b; }
+  .sk-refs img, .sk-sem-capa{ width:52px; height:66px; object-fit:cover; border-radius:8px; background:#efe5d8; display:block; }
+  .sk-ref-txt{ min-width:0; display:grid; gap:2px; } .sk-ref-txt b{ font-weight:500; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sk-ref-txt small{ font-size:12px; color:var(--graphite-soft); }
+  .novo-rot-caixa{ position:relative; }
+  .novo-rot-menu{ position:absolute; right:0; top:calc(100% + 6px); z-index:30; background:var(--card-bg); border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 24px rgba(61,43,32,.12); padding:6px; display:grid; min-width:260px; }
+  .novo-rot-menu button{ display:flex; gap:10px; align-items:flex-start; text-align:left; border:0; background:none; padding:9px 10px; border-radius:8px; font:inherit; font-size:13.5px; color:var(--graphite); cursor:pointer; }
+  .novo-rot-menu button:hover{ background:#f6efe6; }
+  .novo-rot-menu small{ display:block; font-size:12px; color:var(--graphite-soft); }
+  @media (max-width:640px){ .novo-rot-menu{ right:auto; left:0; min-width:min(280px, calc(100vw - 40px)); } }
   @media (max-width:640px){ .cr-grade, .cr-topo, .cr-extras{ grid-template-columns:minmax(0,1fr); } }
   .db-insp-topo{ align-items:flex-start; }
   .db-insp-direita{ display:flex; align-items:center; gap:8px; }
@@ -1789,21 +1839,63 @@ function reduzirImagem(arquivo){
   });
 }
 
-function CriarRoteiroUGC({referencia, ideiaInicial, nichos, onClose, onSalvar, onVerQuadro}){
-  const [f,setF] = useState({ideia: ideiaInicial || "", produto:"", nicho:"", tipo:"", funil:"", plataforma:"Reels", quantidade:2});
+// ----- Skill UGC (Edge Function skill-ugc): o motor único que cria, revisa, ajusta e analisa roteiros -----
+async function chamarSkill(corpo){
+  const { data, error } = await supabaseClient.functions.invoke("skill-ugc", {body: corpo});
+  let msg = data && data.error;
+  if(error){ try{ msg = (await error.context.json()).error; }catch(x){} msg = msg || "A Skill não respondeu agora. Tente de novo em instantes."; }
+  if(msg) throw new Error(msg);
+  return data;
+}
+// o roteiro da Skill vira o texto do quadro (um bloco por parte, com a cena entre colchetes)
+function textoDaSkill(r){
+  const partes = [];
+  if(r.tipo || r.estrutura) partes.push(`TIPO: ${r.tipo || "-"}${r.estrutura ? "\nESTRUTURA: " + r.estrutura : ""}`);
+  (r.blocos||[]).forEach(b=>partes.push(`${b.bloco || "BLOCO"}:\n${b.fala || ""}${b.cena ? "\n[" + b.cena + "]" : ""}`));
+  if((r.ganchos||[]).length>1) partes.push("OUTRAS OPÇÕES DE GANCHO (gravar todas se for anúncio):\n" + r.ganchos.slice(1).map(g=>`- (${g.tipo || "gancho"}) ${g.fala}`).join("\n"));
+  return partes.join("\n\n");
+}
+// os dados da Skill que ficam guardados no roteiro (checklist, alertas, duração, decisão)
+function dadosDaSkill(res){
+  const r = res.roteiro || {};
+  return {versao:(res.skill||{}).versao || "", tipo:r.tipo||"", estrutura:r.estrutura||"", ganchos:r.ganchos||[], blocos:r.blocos||[], cta:r.cta||"", decisao:r.decisao||"",
+    checklist:res.checklist||[], alertas:res.alertas||[], faltando:res.faltando||[], duracao:res.duracao||null};
+}
+// origem de um roteiro: de onde ele veio (ideia, referência, conteúdo) para não perder o caminho
+function origemDoRoteiro(referencia, conteudoId){
+  if(referencia) return {tipo:"referencia", fonte:referencia.fonte || (referencia.de_quem ? "roteiros" : ""), id:referencia.id != null ? String(referencia.id) : "", link:referencia.link || "", titulo:String(referencia.titulo || referencia.gancho || ("@" + (referencia.perfil||""))).slice(0,120)};
+  if(conteudoId) return {tipo:"conteudo", id:String(conteudoId)};
+  return {tipo:"ia"};
+}
+function duracaoTexto(d){
+  if(!d) return "";
+  return `${d.palavras} palavras · ${d.segundos}s no ritmo ${String(d.ritmo).replace(".",",")}${d.alvo ? " · alvo " + d.alvo + "s" : ""}`;
+}
+// o que a Skill entende de uma referência (qualquer uma das bibliotecas)
+function referenciaParaSkill(r){
+  if(!r) return null;
+  const a = r.analise_skill || r.analise;
+  return {titulo:r.titulo || r.gancho || "", perfil:r.perfil || "", legenda:String(r.legenda||"").slice(0,600), transcricao:String(r.transcricao||"").slice(0,2500),
+    analise: a || (r.gancho ? {gancho:r.gancho, gancho_tipo:r.gancho_tipo, desenvolvimento:r.desenvolvimento, cta:r.cta, por_que:r.por_que} : null)};
+}
+
+const FORMATOS_SKILL = ["Reels","TikTok","Stories","Carrossel","Anúncio (ads)","YouTube Shorts"];
+function CriarRoteiroUGC({referencia, ideiaInicial, conteudoId, inicial, nichos, onClose, onSalvar, onVerQuadro}){
+  const ini = inicial || {};
+  const [f,setF] = useState({ideia: ideiaInicial || ini.ideia || "", produto: ini.produto || "", marca: ini.marca || "", objetivo: ini.objetivo || "", publico: ini.publico || "",
+    formato: ini.formato || "Reels", duracao: ini.duracao || "", obrigatorias: ini.obrigatorias || "", restricoes: ini.restricoes || "", observacoes: ini.observacoes || "", briefing: ini.briefing || ""});
   const set = (k,v) => setF(p=>({...p,[k]:v}));
+  const [maisCampos,setMaisCampos] = useState(!!(ini.briefing || ini.obrigatorias || ini.restricoes || ini.marca));
   const [imagens,setImagens] = useState([]);
   const [gravando,setGravando] = useState(false);
   const [ouvindo,setOuvindo] = useState(false);
-  const [criando,setCriando] = useState(false);
+  const [criando,setCriando] = useState("");
   const [erro,setErro] = useState("");
-  const [roteiros,setRoteiros] = useState([]);
-  const [salvos,setSalvos] = useState({});
+  const [res,setRes] = useState(null);
+  const [versoes,setVersoes] = useState([]);
+  const [salvo,setSalvo] = useState(null);
   const [ajuste,setAjuste] = useState("");
-  const [anteriores,setAnteriores] = useState([]);
-  const [pesquisa,setPesquisa] = useState("");
   const gravador = useRef(null);
-  const listaNichos = [...new Set([...(nichos||[]), ...NICHOS_INSP, ...NICHOS_DEFAULT.filter(n=>n!=="Outro")])];
 
   async function adicionarImagens(arquivos){
     const lista = [...arquivos].filter(a=>/^image\//.test(a.type)).slice(0, 4-imagens.length);
@@ -1814,10 +1906,7 @@ function CriarRoteiroUGC({referencia, ideiaInicial, nichos, onClose, onSalvar, o
     setOuvindo(true); setErro("");
     try{
       const corpo = new FormData(); corpo.append("audio", arquivo, arquivo.name || "ideia.webm");
-      const { data, error } = await supabaseClient.functions.invoke("gerar-roteiro", {body: corpo});
-      let msg = data && data.error;
-      if(error){ try{ msg = (await error.context.json()).error; }catch(x){} msg = msg || "Não consegui ouvir o áudio. Tente de novo."; }
-      if(msg) throw new Error(msg);
+      const data = await chamarSkill(corpo);
       if(data.texto) setF(p=>({...p, ideia: (p.ideia ? p.ideia.trim()+"\n\n" : "") + data.texto}));
     }catch(e){ setErro(String(e.message||e)); }
     setOuvindo(false);
@@ -1835,82 +1924,206 @@ function CriarRoteiroUGC({referencia, ideiaInicial, nichos, onClose, onSalvar, o
       gravador.current = rec; rec.start(); setGravando(true);
     }catch(e){ setErro("Não consegui usar o microfone. Libere o microfone no navegador ou envie um arquivo de áudio."); }
   }
-  async function criar(comAjuste){
-    if(!f.ideia.trim() && !imagens.length && !referencia && !f.produto.trim()){ setErro("Conte sua ideia (escrevendo ou em áudio), mande uma imagem ou diga o produto."); return; }
-    setCriando(true); setErro("");
+  async function criar(modo){
+    const temAlgo = [f.ideia, f.produto, f.briefing].some(v=>String(v).trim()) || imagens.length || referencia;
+    if(!temAlgo){ setErro("Conte a ideia (escrevendo ou em áudio), diga o produto, cole o briefing ou mande uma imagem."); return; }
+    setCriando(modo); setErro(""); setSalvo(null);
     try{
-      const ref = referencia ? {gancho:referencia.gancho, gancho_tipo:referencia.gancho_tipo, desenvolvimento:referencia.desenvolvimento, cta:referencia.cta, por_que:referencia.por_que, transcricao:String(referencia.transcricao||"").slice(0,2500)} : null;
-      const { data, error } = await supabaseClient.functions.invoke("gerar-roteiro", {body:{modo:"ugc", ...f, produtos: f.produto, imagens, referencia:ref, ajuste: comAjuste ? ajuste : "", anteriores}});
-      let msg = data && data.error;
-      if(error){ try{ msg = (await error.context.json()).error; }catch(x){} msg = msg || "Não consegui criar os roteiros agora. Tente de novo."; }
-      if(msg) throw new Error(msg);
-      if(!data.roteiros || !data.roteiros.length) throw new Error("A IA não devolveu roteiros. Tente de novo.");
-      setRoteiros(data.roteiros); setSalvos({}); setAjuste(""); setPesquisa(data.pesquisa || "");
-      setAnteriores(a=>[...a, ...data.roteiros.map(r=>r.hook && r.hook.fala).filter(Boolean)].slice(-9));
+      const corpo = {...f, duracao: Number(f.duracao)||0, imagens, referencia: referenciaParaSkill(referencia)};
+      let data;
+      if(modo==="ajustar" && res){ data = await chamarSkill({acao:"ajustar", roteiro:res.roteiro, pedido:ajuste, duracao:Number(f.duracao)||0, obrigatorias:f.obrigatorias, restricoes:f.restricoes, briefing:f.briefing, produto:f.produto, formato:f.formato}); data = {...res, ...data}; }
+      else data = await chamarSkill({acao:"criar", ...corpo, ...(modo==="outra" && res ? {anterior: res.roteiro.ganchos.map(g=>g.fala).join(" | ")} : {})});
+      if(!data.roteiro || !(data.roteiro.blocos||[]).length) throw new Error("A Skill não devolveu o roteiro. Tente de novo.");
+      if(res) setVersoes(v=>[res, ...v].slice(0,4));
+      setRes(data); setAjuste("");
     }catch(e){ setErro(String(e.message||e)); }
-    setCriando(false);
+    setCriando("");
   }
-  function salvar(r, i){ onSalvar(roteiroParaQuadro(r, f.plataforma)); setSalvos(s=>({...s, [i]:true})); }
-
+  // trocar o gancho: a opção escolhida vai para o bloco GANCHO
+  function usarGancho(i){
+    setRes(r=>{ const g = r.roteiro.ganchos; const novo = [g[i], ...g.filter((_,k)=>k!==i)];
+      const blocos = r.roteiro.blocos.map((b,k)=>k===0 && /GANCHO/i.test(b.bloco) ? {...b, fala:g[i].fala} : b);
+      return {...r, roteiro:{...r.roteiro, ganchos:novo, blocos}}; });
+  }
+  function salvar(){
+    const r = res.roteiro, agora = new Date().toISOString(), skill = dadosDaSkill(res);
+    const novo = {id:uid(), titulo:r.titulo, cliente:f.marca||"", plataforma: /tiktok/i.test(f.formato) ? "TikTok" : /youtube/i.test(f.formato) ? "YouTube" : "Instagram", status:"Em aberto",
+      finalidade: f.marca || f.briefing ? "Publi" : "Conteúdos", etapa:"Roteirização", dataPublicacao:"", conteudo:textoDaSkill(r), gancho:(r.ganchos[0]||{}).fala || "",
+      formato:f.formato + (f.duracao ? `, ${f.duracao}s` : ""), objetivo:f.objetivo||"", legenda:[r.legenda, r.hashtags].filter(Boolean).join("\n\n"),
+      tipoUgc:r.tipo||"", ganchoTipo:(r.ganchos[0]||{}).tipo || "", referencia: referencia ? (referencia.link||"") : "", observacoes: r.decisao ? "Decisão de ângulo: " + r.decisao : "",
+      criadoComIA:true, skill, skillVersao:skill.versao, origem: origemDoRoteiro(referencia, conteudoId),
+      historico:[{em:agora, acao: referencia ? "Criado com a Skill a partir de referência" : "Criado com a Skill", versao:skill.versao}]};
+    onSalvar(novo); setSalvo(novo.id);
+  }
+  const r = res && res.roteiro;
+  const d = res && res.duracao;
   return (
-    <Modal title="Criar roteiro UGC" onClose={onClose} largo>
+    <Modal title="Criar roteiro com a Skill UGC" onClose={onClose} largo>
       <div className="db cr">
         {referencia && <div className="cr-ref">
-          <small>Inspirado no vídeo</small>
-          <p className="db-gancho">“{referencia.gancho || referencia.titulo}”</p>
-          {referencia.gancho_tipo && <span className="db-tag">gancho de {referencia.gancho_tipo}</span>}
+          <small>A partir da referência</small>
+          <p className="db-gancho">“{referencia.gancho || referencia.titulo || ("@" + (referencia.perfil||""))}”</p>
+          {referencia.perfil && <span className="db-tag">@{String(referencia.perfil).replace(/^@/,"")}</span>}
+          <p className="sk-nota">A Skill usa o mecanismo do vídeo (tipo de gancho, estrutura, ritmo e prova) e escreve tudo do zero, sem copiar as falas.</p>
         </div>}
 
-        <label className="cr-campo">Sua ideia
-          <textarea rows={4} value={f.ideia} onChange={e=>set("ideia", e.target.value)} placeholder="Escreva do seu jeito: o produto, o que você quer mostrar, uma cena que imaginou..."/>
+        <label className="cr-campo">Ideia ou briefing
+          <textarea rows={4} value={f.ideia} onChange={e=>set("ideia", e.target.value)} placeholder="Escreva do seu jeito: o produto, o que você quer mostrar, uma cena que imaginou... ou fale num áudio"/>
         </label>
         <div className="cr-midias">
           <button type="button" className={"db-btn-claro"+(gravando?" cr-gravando":"")} onClick={alternarGravacao} disabled={ouvindo}>{gravando ? "● Parar e usar o áudio" : ouvindo ? "Ouvindo o áudio..." : "🎙 Gravar áudio"}</button>
           <label className="db-btn-claro cr-arquivo">Enviar áudio<input type="file" accept="audio/*,.ogg,.opus,.m4a,.mp3,.wav" onChange={e=>{ const a = e.target.files[0]; e.target.value=""; if(a) enviarAudio(a); }}/></label>
-          <label className="db-btn-claro cr-arquivo">Enviar imagens{imagens.length ? ` (${imagens.length}/4)` : ""}<input type="file" accept="image/*" multiple onChange={e=>{ const a = e.target.files; adicionarImagens(a); e.target.value=""; }}/></label>
+          <label className="db-btn-claro cr-arquivo">Anexar imagens{imagens.length ? ` (${imagens.length}/4)` : ""}<input type="file" accept="image/*" multiple onChange={e=>{ const a = e.target.files; adicionarImagens(a); e.target.value=""; }}/></label>
         </div>
         {imagens.length>0 && <div className="cr-imagens">{imagens.map((src,i)=><span key={i}><img src={src} alt={"Imagem "+(i+1)}/><button type="button" onClick={()=>setImagens(l=>l.filter((_,k)=>k!==i))} aria-label="Tirar imagem">×</button></span>)}</div>}
 
         <div className="cr-grade">
-          <label className="cr-campo">Seus produtos (eu pesquiso na internet)<input value={f.produto} onChange={e=>set("produto", e.target.value)} placeholder="Ex.: Shampoo Lumina Natura; pode colar o link"/></label>
-          <label className="cr-campo">Nicho<select value={f.nicho} onChange={e=>set("nicho", e.target.value)}><option value="">A IA escolhe</option>{listaNichos.map(n=><option key={n}>{n}</option>)}</select></label>
-          <label className="cr-campo">Tipo de conteúdo UGC<select value={f.tipo} onChange={e=>set("tipo", e.target.value)}><option value="">A IA escolhe</option>{TIPOS_UGC.map(n=><option key={n}>{n}</option>)}</select></label>
-          <label className="cr-campo">Tipo de funil<select value={f.funil} onChange={e=>set("funil", e.target.value)}><option value="">A IA escolhe</option>{TIPOS_FUNIL.map(n=><option key={n}>{n}</option>)}</select></label>
-          <label className="cr-campo">Onde vai postar<select value={f.plataforma} onChange={e=>set("plataforma", e.target.value)}>{["Reels","TikTok","Stories","Carrossel"].map(n=><option key={n}>{n}</option>)}</select></label>
-          <label className="cr-campo">Quantos roteiros<select value={f.quantidade} onChange={e=>set("quantidade", Number(e.target.value))}>{[1,2,3].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
+          <label className="cr-campo">Produto<input value={f.produto} onChange={e=>set("produto", e.target.value)} placeholder="Ex.: Sérum de vitamina C"/></label>
+          <label className="cr-campo">Objetivo<input value={f.objetivo} onChange={e=>set("objetivo", e.target.value)} placeholder="Ex.: vender, atrair marcas, engajar"/></label>
+          <label className="cr-campo">Público<input value={f.publico} onChange={e=>set("publico", e.target.value)} placeholder="Ex.: mães de 25 a 40"/></label>
+          <label className="cr-campo">Formato<select value={f.formato} onChange={e=>set("formato", e.target.value)}>{FORMATOS_SKILL.map(n=><option key={n}>{n}</option>)}</select></label>
+          <label className="cr-campo">Duração (segundos)<input type="number" min="5" max="600" inputMode="numeric" value={f.duracao} onChange={e=>set("duracao", e.target.value)} placeholder="Ex.: 30"/></label>
+          <label className="cr-campo">Marca (se for publi)<input value={f.marca} onChange={e=>set("marca", e.target.value)} placeholder="Deixe vazio se for seu conteúdo"/></label>
         </div>
-        {erro && <p className="db-dica db-dica-erro">{erro}</p>}
-        <button className="db-btn-escuro cr-criar" onClick={()=>criar(false)} disabled={criando || gravando || ouvindo}>{criando ? (f.produto.trim() ? "Pesquisando e criando (até 1 minuto)..." : "Criando seus roteiros...") : roteiros.length ? "Criar outros roteiros" : "Criar roteiros"}<DbIcone tipo="brilho" tam={16}/></button>
-
-        {pesquisa && roteiros.length>0 && <details className="cr-pesquisa"><summary>O que eu encontrei sobre o produto</summary><pre>{pesquisa}</pre></details>}
-        {roteiros.map((r,i)=>(
-          <article key={i} className="cr-roteiro">
-            <div className="cr-topo">
-              <span><small>Tipo de conteúdo UGC</small><b>{r.tipo_ugc || "-"}</b></span>
-              <span><small>Tipo de funil</small><b>{r.funil || "-"}</b></span>
-              <span><small>Nicho</small><b>{r.nicho || "-"}</b></span>
-            </div>
-            <h4>{r.titulo}</h4>
-            {r.formato && <p className="cr-formato">{r.formato}{r.funil_por_que ? " · " + r.funil_por_que : ""}</p>}
-            <div className="cr-bloco"><small>Hook{r.gancho_tipo ? " · " + r.gancho_tipo : ""}</small><p className="db-gancho">“{r.hook.fala}”</p>{r.hook.visual && <em>{r.hook.visual}</em>}</div>
-            {r.desenrolar.length>0 && <div className="cr-bloco"><small>Desenrolar</small><ol>{r.desenrolar.map((p,k)=><li key={k}>{p.fala}{p.visual && <em>{p.visual}</em>}</li>)}</ol></div>}
-            <div className="cr-bloco"><small>CTA</small><p>{r.cta.fala}</p>{r.cta.visual && <em>{r.cta.visual}</em>}</div>
-            {(r.legenda || r.hashtags) && <div className="cr-bloco"><small>Legenda</small><p>{r.legenda}{r.hashtags && <><br/><span className="cr-hash">{r.hashtags}</span></>}</p></div>}
-            {r.por_que_funciona && <p className="cr-porque">{r.por_que_funciona}</p>}
-            {(r.outros_ganchos.length>0 || r.outros_tipos_ugc.length>0) && <div className="cr-extras">
-              {r.outros_ganchos.length>0 && <div><small>Outras ideias de gancho</small><ul>{r.outros_ganchos.map((g,k)=><li key={k}><span className="db-tag">{g.tipo}</span> {g.texto}</li>)}</ul></div>}
-              {r.outros_tipos_ugc.length>0 && <div><small>Outros tipos de UGC para essa ideia</small><ul>{r.outros_tipos_ugc.map((g,k)=><li key={k}><b>{g.tipo}:</b> {g.ideia}</li>)}</ul></div>}
-            </div>}
-            <div className="db-versao-acoes">
-              {salvos[i] ? <><span className="cr-ok">✓ Salvo no quadro de roteiros</span>{onVerQuadro && <button className="db-btn-claro" onClick={onVerQuadro}>Ver no quadro</button>}</>
-                : <button className="db-btn-escuro" onClick={()=>salvar(r,i)}>Salvar no quadro<DbIcone tipo="seta" tam={16}/></button>}
-            </div>
-          </article>
-        ))}
-        {roteiros.length>0 && <div className="cr-ajuste">
-          <input value={ajuste} onChange={e=>setAjuste(e.target.value)} placeholder="Quer mudar algo? Ex.: mais curto, mais engraçado, gancho de objeção..." onKeyDown={e=>{ if(e.key==="Enter" && ajuste.trim()) criar(true); }}/>
-          <button className="db-btn-claro" onClick={()=>criar(true)} disabled={criando || !ajuste.trim()}>{criando ? "Refazendo..." : "Refazer com esse ajuste"}</button>
+        <button type="button" className="db-link db-sublinhado sk-mais" onClick={()=>setMaisCampos(v=>!v)}>{maisCampos ? "Esconder briefing e regras da marca" : "+ Briefing da marca, falas obrigatórias, restrições e observações"}</button>
+        {maisCampos && <div className="sk-campos">
+          <label className="cr-campo">Briefing da marca (cole o texto)<textarea rows={5} value={f.briefing} onChange={e=>set("briefing", e.target.value)} placeholder="Cole aqui o briefing inteiro: a Skill monta a checklist de obrigatoriedades e proibições"/></label>
+          <label className="cr-campo">Falas obrigatórias (uma por linha, entram literais)<textarea rows={2} value={f.obrigatorias} onChange={e=>set("obrigatorias", e.target.value)}/></label>
+          <label className="cr-campo">Restrições e palavras proibidas<textarea rows={2} value={f.restricoes} onChange={e=>set("restricoes", e.target.value)}/></label>
+          <label className="cr-campo">Observações<textarea rows={2} value={f.observacoes} onChange={e=>set("observacoes", e.target.value)}/></label>
         </div>}
+        {erro && <p className="db-dica db-dica-erro">{erro}</p>}
+        <button className="db-btn-escuro cr-criar" onClick={()=>criar("criar")} disabled={!!criando || gravando || ouvindo}>{criando==="criar" ? "A Skill está escrevendo (até 1 minuto)..." : r ? "Criar de novo do zero" : "Criar roteiro com a Skill"}<DbIcone tipo="brilho" tam={16}/></button>
+
+        {r && <article className="cr-roteiro">
+          {(res.alertas||[]).length>0 && <div className="sk-alerta"><small>Antes de gravar, atenção</small><ul>{res.alertas.map((a,k)=><li key={k}>{a}</li>)}</ul></div>}
+          {(res.faltando||[]).length>0 && <div className="sk-falta"><small>Faltam informações (ficaram entre parênteses no roteiro)</small><ul>{res.faltando.map((a,k)=><li key={k}>{a}</li>)}</ul></div>}
+          <div className="cr-topo">
+            <span><small>Tipo</small><b>{r.tipo || "-"}</b></span>
+            <span><small>Estrutura</small><b>{r.estrutura || "-"}</b></span>
+            <span><small>Duração</small><b className={d && d.alvo && Math.abs(d.diferenca)>2 ? "sk-fora" : ""}>{d ? d.segundos + "s" : "-"}</b>{d && <em className="sk-dur">{duracaoTexto(d)}{d.dica && d.alvo ? " · " + d.dica : ""}</em>}</span>
+          </div>
+          <h4>{r.titulo}</h4>
+          {r.ganchos.length>1 && <div className="cr-bloco"><small>Opções de gancho (toque para usar)</small>
+            <div className="sk-ganchos">{r.ganchos.map((g,i)=><button type="button" key={i} className={"sk-gancho"+(i===0?" ativo":"")} onClick={()=>usarGancho(i)}><span className="db-tag">{g.tipo || "gancho"}</span>“{g.fala}”</button>)}</div></div>}
+          {r.blocos.map((b,k)=><div className="cr-bloco" key={k}><small>{b.bloco}</small><p>{b.fala}</p>{b.cena && <em>{b.cena}</em>}</div>)}
+          {r.cta && <p className="sk-cta"><b>Ação do fechamento:</b> {r.cta}</p>}
+          {(r.legenda || r.hashtags) && <div className="cr-bloco"><small>Legenda</small><p>{r.legenda}{r.hashtags && <><br/><span className="cr-hash">{r.hashtags}</span></>}</p></div>}
+          {(res.checklist||[]).length>0 && <div className="cr-bloco"><small>Checklist do briefing</small><ul className="sk-check">{res.checklist.map((c,k)=><li key={k} className={c.ok?"ok":"nao"}>{c.ok ? "✓" : "✗"} {c.item}</li>)}</ul></div>}
+          {(res.avisos||[]).length>0 && <div className="sk-falta"><small>A conferência da Skill ainda achou</small><ul>{res.avisos.map((a,k)=><li key={k}>{a}</li>)}</ul></div>}
+          {r.decisao && <p className="cr-porque"><b>Decisão de ângulo:</b> {r.decisao}</p>}
+          <p className="sk-versao">Skill {(res.skill||{}).versao || ""}</p>
+          <div className="db-versao-acoes">
+            {salvo ? <><span className="cr-ok">✓ Salvo em Meus roteiros</span>{onVerQuadro && <button className="db-btn-claro" onClick={onVerQuadro}>Ver no quadro</button>}</>
+              : <button className="db-btn-escuro" onClick={salvar}>Salvar em Meus roteiros<DbIcone tipo="seta" tam={16}/></button>}
+            <button className="db-btn-claro" onClick={()=>criar("outra")} disabled={!!criando}>{criando==="outra" ? "Criando..." : "Outra versão"}</button>
+          </div>
+        </article>}
+        {r && <div className="cr-ajuste">
+          <input value={ajuste} onChange={e=>setAjuste(e.target.value)} placeholder="Ajustar: mais curto, gancho de objeção, tirar a parte do preço..." onKeyDown={e=>{ if(e.key==="Enter" && ajuste.trim()) criar("ajustar"); }}/>
+          <button className="db-btn-claro" onClick={()=>criar("ajustar")} disabled={!!criando || !ajuste.trim()}>{criando==="ajustar" ? "Ajustando..." : "Ajustar com a Skill"}</button>
+        </div>}
+        {versoes.length>0 && <details className="cr-pesquisa"><summary>Versões anteriores ({versoes.length})</summary>
+          {versoes.map((v,i)=><div key={i} className="sk-versao-ant"><b>{v.roteiro.titulo}</b> · “{(v.roteiro.ganchos[0]||{}).fala}” <button type="button" className="db-link db-sublinhado" onClick={()=>{ setVersoes(l=>[res, ...l.filter((_,k)=>k!==i)].slice(0,4)); setRes(v); setSalvo(null); }}>voltar para esta</button></div>)}
+        </details>}
+      </div>
+    </Modal>
+  );
+}
+
+// ----- Skill dentro de um roteiro salvo: revisar, ajustar e o histórico de versões -----
+function duracaoDoRoteiro(f){
+  const sk = f.skill || {};
+  if(sk.duracao && sk.duracao.alvo) return sk.duracao.alvo;
+  const m = String(f.formato||"").match(/(\d{1,3})\s*s\b/);
+  return m ? Number(m[1]) : 0;
+}
+function SkillNoRoteiro({f, setF}){
+  const [pedido,setPedido] = useState("");
+  const [rodando,setRodando] = useState("");
+  const [erro,setErro] = useState("");
+  const [ultimo,setUltimo] = useState(null);
+  const sk = f.skill || {};
+  async function rodar(acao){
+    if(String(f.conteudo||"").trim().length<20){ setErro("Escreva ou cole o roteiro primeiro."); return; }
+    if(acao==="ajustar" && !pedido.trim()){ setErro("Diga o que você quer mudar."); return; }
+    setRodando(acao); setErro("");
+    try{
+      const data = await chamarSkill({acao, roteiro:[f.gancho ? "GANCHO: " + f.gancho : "", f.conteudo].filter(Boolean).join("\n\n"), pedido, duracao:duracaoDoRoteiro(f), produto:f.cliente||"", formato:f.formato||""});
+      const versao = (data.skill||{}).versao || "";
+      setF(p=>({...p, conteudo:textoDaSkill(data.roteiro), gancho:(data.roteiro.ganchos[0]||{}).fala || p.gancho,
+        skill:{...(p.skill||{}), ...dadosDaSkill(data), checklist:(p.skill||{}).checklist||[], alertas:(p.skill||{}).alertas||[]}, skillVersao:versao || p.skillVersao,
+        historico:[{em:new Date().toISOString(), acao: acao==="revisar" ? "Revisado com a Skill" : "Ajustado com a Skill: " + pedido.trim().slice(0,80), versao, anterior:String(p.conteudo||"").slice(0,8000), ganchoAnterior:p.gancho||""}, ...(p.historico||[])].slice(0,15)}));
+      setUltimo(data); setPedido("");
+    }catch(e){ setErro(String(e.message||e)); }
+    setRodando("");
+  }
+  function restaurar(h){
+    setF(p=>({...p, conteudo:h.anterior, gancho:h.ganchoAnterior||p.gancho,
+      historico:[{em:new Date().toISOString(), acao:"Voltou para a versão de " + new Date(h.em).toLocaleString("pt-BR",{dateStyle:"short", timeStyle:"short"}), anterior:String(p.conteudo||"").slice(0,8000), ganchoAnterior:p.gancho||""}, ...(p.historico||[])].slice(0,15)}));
+  }
+  const o = f.origem;
+  return (
+    <div className="sk-box">
+      <div className="sk-box-topo"><b>Skill UGC</b>{f.skillVersao && <span className="sk-versao">{f.skillVersao}</span>}</div>
+      {o && o.tipo==="referencia" && <p className="sk-origem">Veio da referência {o.link ? <a href={o.link} target="_blank" rel="noopener">{o.titulo || "ver vídeo"}</a> : <b>{o.titulo}</b>}</p>}
+      {o && o.tipo==="conteudo" && <p className="sk-origem">Ligado a um conteúdo do planejamento (Conteúdos)</p>}
+      {sk.duracao && <p className="sk-origem">Duração: {duracaoTexto(sk.duracao)}{sk.duracao.dica && sk.duracao.alvo ? " · " + sk.duracao.dica : ""}</p>}
+      {(sk.alertas||[]).length>0 && <ul className="sk-lista">{sk.alertas.map((a,k)=><li key={k}>⚠ {a}</li>)}</ul>}
+      <div className="sk-acoes">
+        <button type="button" className="btn btn-ghost" onClick={()=>rodar("revisar")} disabled={!!rodando}><Icon name="fact_check" size={16}/>{rodando==="revisar" ? "Revisando..." : "Revisar com a Skill"}</button>
+        <input value={pedido} onChange={e=>setPedido(e.target.value)} placeholder="Ajustar: mais curto, gancho de objeção..." onKeyDown={e=>{ if(e.key==="Enter"){ e.preventDefault(); rodar("ajustar"); } }}/>
+        <button type="button" className="btn btn-ghost" onClick={()=>rodar("ajustar")} disabled={!!rodando || !pedido.trim()}><Icon name="auto_awesome" size={16}/>{rodando==="ajustar" ? "Ajustando..." : "Ajustar"}</button>
+      </div>
+      {erro && <p className="sk-erro">{erro}</p>}
+      {ultimo && <div className="sk-resultado">
+        {(ultimo.problemas||[]).length>0 && <><small>O que a Skill achou</small><ul className="sk-lista">{ultimo.problemas.map((x,k)=><li key={k}>{x}</li>)}</ul></>}
+        {(ultimo.mudancas||[]).length>0 && <><small>O que mudou</small><ul className="sk-lista">{ultimo.mudancas.map((x,k)=><li key={k}>{x}</li>)}</ul></>}
+        {(ultimo.avisos||[]).length>0 && <><small>Ainda vale olhar</small><ul className="sk-lista">{ultimo.avisos.map((x,k)=><li key={k}>{x}</li>)}</ul></>}
+        <p className="sk-origem">O roteiro acima já foi trocado pela versão nova. Clique em Salvar para guardar, ou volte pelo histórico.</p>
+      </div>}
+      {(f.historico||[]).length>0 && <details className="sk-hist"><summary>Histórico ({f.historico.length})</summary>
+        <ul>{f.historico.map((h,k)=><li key={k}><span>{new Date(h.em).toLocaleString("pt-BR",{dateStyle:"short", timeStyle:"short"})} · {h.acao}</span>{h.anterior && <button type="button" className="sk-link" onClick={()=>restaurar(h)}>voltar para antes disso</button>}</li>)}</ul>
+      </details>}
+    </div>
+  );
+}
+
+// ----- escolher uma referência das bibliotecas (transcritos, salvos do Instagram, inspirações e perfis) -----
+const FONTES_REF = {roteiros:"Transcritos", laboratorio:"Salvos do Instagram", inspiracoes:"Inspirações", biblioteca:"Perfis que acompanho"};
+async function carregarReferencias(){
+  const lerr = (p) => p.then(({data})=>data||[]).catch(()=>[]);
+  const [a,b,c,d] = await Promise.all([
+    lerr(supabaseClient.from("roteiros").select("id,titulo,perfil,link,gancho,gancho_tipo,desenvolvimento,cta,por_que,transcricao,legenda,analise,analise_skill,capa,criado_em").eq("de_quem","outra").order("criado_em",{ascending:false}).limit(300)),
+    lerr(supabaseClient.from("laboratorio").select("id,link,perfil,legenda,transcricao,analise,ideia,capa,colecao,salvo_em,criado_em").order("salvo_em",{ascending:false, nullsFirst:false}).limit(400)),
+    lerr(supabaseClient.from("inspiracoes").select("id,link,perfil,legenda,transcricao,analise,capa,publicado_em,criado_em").eq("oculto",false).order("publicado_em",{ascending:false, nullsFirst:false}).limit(300)),
+    lerr(supabaseClient.from("biblioteca").select("id,link,perfil,legenda,transcricao,analise,capa,publicado_em,criado_em").not("transcricao","is",null).order("publicado_em",{ascending:false, nullsFirst:false}).limit(300)),
+  ]);
+  const titulo = (x) => x.titulo || (x.ideia && x.ideia.titulo) || String(x.legenda||"").split("\n")[0].slice(0,90) || ("Vídeo de @" + (x.perfil||""));
+  return [...a.map(x=>({...x, fonte:"roteiros"})), ...b.map(x=>({...x, fonte:"laboratorio", pasta:x.colecao})), ...c.map(x=>({...x, fonte:"inspiracoes"})), ...d.map(x=>({...x, fonte:"biblioteca"}))]
+    .map(x=>({...x, titulo:titulo(x)}));
+}
+function EscolherReferencia({onClose, onEscolher}){
+  const [lista,setLista] = useState(null);
+  const [busca,setBusca] = useState("");
+  const [fonte,setFonte] = useState("");
+  const [soTranscritas,setSoTranscritas] = useState(false);
+  useEffect(()=>{ carregarReferencias().then(setLista); },[]);
+  const q = busca.trim().toLowerCase();
+  const vistos = (lista||[]).filter(x=>(!fonte || x.fonte===fonte) && (!soTranscritas || x.transcricao) && (!q || [x.titulo, x.perfil, x.legenda, x.gancho].join(" ").toLowerCase().includes(q))).slice(0,80);
+  return (
+    <Modal title="Criar a partir de uma referência" onClose={onClose} largo>
+      <div className="sk-escolher">
+        <div className="sk-filtros">
+          <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar por perfil, legenda ou assunto"/>
+          <select value={fonte} onChange={e=>setFonte(e.target.value)} aria-label="Biblioteca"><option value="">Todas as bibliotecas</option>{Object.entries(FONTES_REF).map(([k,t])=><option key={k} value={k}>{t}</option>)}</select>
+          <label className="sk-check-label"><input type="checkbox" checked={soTranscritas} onChange={e=>setSoTranscritas(e.target.checked)}/> Só com transcrição</label>
+        </div>
+        {lista===null ? <p className="sk-origem">Carregando as suas referências...</p> : !vistos.length ? <p className="sk-origem">Nenhuma referência encontrada.</p> :
+          <ul className="sk-refs">{vistos.map(x=><li key={x.fonte+x.id}><button type="button" onClick={()=>onEscolher(x)}>
+            {x.capa ? <img src={x.capa} alt="" loading="lazy" referrerPolicy="no-referrer" onError={e=>{ e.currentTarget.style.visibility="hidden"; }}/> : <span className="sk-sem-capa"/>}
+            <span className="sk-ref-txt"><b>{x.titulo}</b><small>{FONTES_REF[x.fonte]}{x.perfil ? " · @" + String(x.perfil).replace(/^@/,"") : ""}{x.transcricao ? " · transcrita" : " · sem transcrição"}{(x.analise_skill || (x.fonte!=="roteiros" && x.analise)) ? " · analisada" : ""}</small></span>
+          </button></li>)}</ul>}
       </div>
     </Modal>
   );
@@ -7007,6 +7220,7 @@ function RoteiroModal({onClose, onSave, initial, etapas=ROTEIRO_ETAPAS}){
       <Field label="Objetivo do vídeo"><textarea rows="2" value={f.objetivo||""} onChange={e=>set("objetivo",e.target.value)}/></Field>
       <Field label="Gancho"><textarea data-corretor="fala" rows="2" value={f.gancho||""} onChange={e=>set("gancho",e.target.value)}/></Field>
       <Field label="Conteúdo do roteiro"><textarea data-corretor="fala" rows="10" value={f.conteudo} onChange={e=>set("conteudo",e.target.value)} placeholder="Escreva seu roteiro aqui..."/></Field>
+      <SkillNoRoteiro f={f} setF={setF}/>
       <Field label="Legenda do post"><textarea rows="4" value={f.legenda||""} onChange={e=>set("legenda",e.target.value)}/></Field>
       <Field label="Observações"><textarea rows="3" value={f.observacoes||""} onChange={e=>set("observacoes",e.target.value)}/></Field>
       {erroForm && <p style={{fontSize:13, color:"#c5533f", background:"#fbefec", padding:"8px 12px", borderRadius:10}}>{erroForm}</p>}
@@ -7021,7 +7235,10 @@ function RoteiroModal({onClose, onSave, initial, etapas=ROTEIRO_ETAPAS}){
 
 function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
   const [modal,setModal] = useState(false);
-  const [aiModal,setAiModal] = useState(false);
+  const [skillAberto,setSkillAberto] = useState(null); // {referencia, conteudoId, ideia, inicial}: tela Criar com a Skill
+  const [escolherRef,setEscolherRef] = useState(false);
+  const [menuNovo,setMenuNovo] = useState(false);
+  const roteirosRef = useRef(state.roteiros); roteirosRef.current = state.roteiros;
   const [importModal,setImportModal] = useState(false);
   const [editing,setEditing] = useState(null);
   const [query,setQuery] = useState("");
@@ -7101,9 +7318,37 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
   }
 
   useEffect(()=>{
-    if(pendingAI){ setAiModal(true); clearPendingAI(); }
+    if(pendingAI){ setSkillAberto({}); clearPendingAI(); }
   },[pendingAI]);
 
+  useEffect(()=>{
+    function pegar(){
+      let p = null; try{ p = JSON.parse(localStorage.getItem("skillPendente")||"null"); }catch(e){}
+      if(!p) return;
+      try{ localStorage.removeItem("skillPendente"); }catch(e){}
+      if(Date.now() - (p.quando||0) > 10*60000) return;
+      if(p.tipo==="abrir"){
+        const r = (roteirosRef.current||[]).find(x=>String(x.id)===String(p.id));
+        if(r){ setQuadroId(quadroDo(r)); setEditing(r); } else alert("Não achei esse roteiro em Meus roteiros. Ele pode ter sido apagado.");
+        return;
+      }
+      setSkillAberto({referencia:p.referencia||null, conteudoId:p.conteudoId||null, ideia:p.ideia||"", inicial:p.inicial||null});
+    }
+    pegar();
+    const ouvir = (e)=>{ if(e.origin===location.origin && e.data && e.data.skillPendente) pegar(); };
+    window.addEventListener("message", ouvir);
+    return ()=>window.removeEventListener("message", ouvir);
+  },[]);
+  // roteiro criado com a Skill: entra no quadro e, se veio de um conteúdo do planejamento, fica ligado a ele
+  function salvarDaSkill(r){
+    mudar(s=>({...s, roteiros:[{...r, quadroId:r.quadroId||quadro.id}, ...(s.roteiros||[])]}));
+    const o = r.origem || {};
+    if(o.tipo==="conteudo" && o.id){
+      const id = Number(o.id);
+      supabaseClient.from("painel_conteudo").update({roteiro_id:String(r.id), atualizado_em:new Date().toISOString()}).eq("id", id)
+        .then(()=>supabaseClient.from("painel_conteudo").update({status:"Roteirizado"}).eq("id", id).eq("status","Ideia")).catch(()=>{});
+    }
+  }
   function save(item){
     const exists = state.roteiros.some(i=>i.id===item.id);
     if(!exists && !item.quadroId) item = {...item, quadroId:quadro.id};
@@ -7120,7 +7365,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
     const roteiros = [...state.roteiros, roteiro];
     const planner = syncPlannerFromRoteiro({...state, roteiros}, roteiro);
     updateState({...state, roteiros, planner});
-    setAiModal(false);
+    setSkillAberto(null);
   }
   function onImport(bankItem){
     const conteudo = `GANCHO:\n${bankItem.gancho}\n\nDESENVOLVIMENTO:\n${bankItem.desenvolvimento}\n\nCTA:\n${bankItem.cta}`;
@@ -7170,17 +7415,21 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
           </div>}
         </div>
         <span style={{flex:1}}/>
-        <button className="btn btn-ghost" onClick={()=>setDocsModal(true)}><Icon name="description" size={17}/>Importar do Google Docs</button>
-        <button className="btn btn-primary" onClick={()=>setAiModal(true)}><Icon name="auto_awesome" size={17}/>Criar com IA</button>
+        <div className="novo-rot-caixa">
+          <button className="btn btn-primary" onClick={()=>setMenuNovo(m=>!m)} aria-expanded={menuNovo}><Icon name="add" size={17}/>Novo roteiro</button>
+          {menuNovo && <div className="novo-rot-menu" onMouseLeave={()=>setMenuNovo(false)}>
+            <button onClick={()=>{ setMenuNovo(false); setSkillAberto({}); }}><Icon name="auto_awesome" size={18}/><span>Criar com IA (Skill UGC)<small>Ideia, briefing, áudio ou imagens</small></span></button>
+            <button onClick={()=>{ setMenuNovo(false); setEscolherRef(true); }}><Icon name="video_library" size={18}/><span>A partir de uma referência<small>Um vídeo das suas Referências</small></span></button>
+            <button onClick={()=>{ setMenuNovo(false); setDocsModal(true); }}><Icon name="description" size={18}/><span>Importar do Google Docs<small>Traz o roteiro de um documento</small></span></button>
+            <button onClick={()=>{ setMenuNovo(false); setModal(true); }}><Icon name="edit_note" size={18}/><span>Escrever do zero<small>Sem IA</small></span></button>
+            <button onClick={()=>{ setMenuNovo(false); setImportModal(true); }}><Icon name="download" size={18}/><span>Importar do banco de roteiros<small>Modelos que você já salvou</small></span></button>
+          </div>}
+        </div>
       </div>
       <div className="page-head">
         <div>
           <h1 className="page-title">Roteiros</h1>
           <p className="page-sub">Crie e organize seus roteiros de UGC</p>
-        </div>
-        <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
-          <button className="btn btn-ghost" onClick={()=>setImportModal(true)}><Icon name="download" size={17}/>Importar Roteiro</button>
-          <button className="btn btn-ghost" onClick={()=>setModal(true)}><Icon name="add" size={17}/>Manual</button>
         </div>
       </div>
       <div className="search" style={{marginBottom:16}}>
@@ -7253,7 +7502,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
           </div>
         </div>
       ) : shown.length===0 ? (
-        <EmptyState icon="description" title="Nenhum roteiro encontrado" sub="Crie seu primeiro roteiro." cta="Criar com IA" onClick={()=>setAiModal(true)}/>
+        <EmptyState icon="description" title="Nenhum roteiro encontrado" sub="Crie seu primeiro roteiro." cta="Criar com IA" onClick={()=>setSkillAberto({})}/>
       ) : (
         <div>{shown.map(item=>(
           <div className="row-item" key={item.id} style={{alignItems:"flex-start"}}>
@@ -7279,7 +7528,9 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
       )}
       {modal && <RoteiroModal etapas={colunas} onClose={()=>setModal(false)} onSave={save}/>}
       {editing && <RoteiroModal etapas={colunas} initial={editing} onClose={()=>setEditing(null)} onSave={save}/>}
-      {aiModal && <CriarRoteiroUGC nichos={(state.jobs||[]).map(j=>j.nicho).filter(Boolean)} onClose={()=>setAiModal(false)} onSalvar={(r)=>mudar(s=>({...s, roteiros:[{...r, quadroId:r.quadroId||quadro.id}, ...(s.roteiros||[])]}))} onVerQuadro={()=>setAiModal(false)}/>}
+      {skillAberto && <CriarRoteiroUGC referencia={skillAberto.referencia} ideiaInicial={skillAberto.ideia} conteudoId={skillAberto.conteudoId} inicial={skillAberto.inicial}
+        nichos={(state.jobs||[]).map(j=>j.nicho).filter(Boolean)} onClose={()=>setSkillAberto(null)} onSalvar={salvarDaSkill} onVerQuadro={()=>setSkillAberto(null)}/>}
+      {escolherRef && <EscolherReferencia onClose={()=>setEscolherRef(false)} onEscolher={(x)=>{ setEscolherRef(false); setSkillAberto({referencia:x}); }}/>}
       {importModal && <ImportRoteiroModal onClose={()=>setImportModal(false)} onImport={onImport}/>}
       {pedirData && <Modal title="Data de postagem" onClose={()=>setPedirData(null)}>
         <p style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:-4}}>Quando esse roteiro vai ao ar? A data aparece como alerta no Dashboard e entra no Planner.</p>

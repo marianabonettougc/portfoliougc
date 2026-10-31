@@ -588,3 +588,10 @@ alter table public.painel_conteudo add column if not exists tipo_conteudo text, 
 -- Conteúdos v3 (nov/2026): data de gravação separada e banco de ideias com situação.
 alter table public.painel_conteudo add column if not exists data_gravacao date;
 alter table public.ideias_organizadas add column if not exists situacao text not null default 'minha', add column if not exists link text, add column if not exists notas text;
+
+-- Estúdio de criação (nov/2026): Skill UGC como motor único. Só colunas novas, nada apagado (reversível com drop column).
+alter table public.laboratorio add column if not exists analise jsonb;
+alter table public.inspiracoes add column if not exists transcricao text;
+alter table public.inspiracoes add column if not exists analise jsonb;
+alter table public.roteiros add column if not exists analise_skill jsonb;
+alter table public.painel_conteudo add column if not exists roteiro_id text;

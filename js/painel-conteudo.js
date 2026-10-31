@@ -652,6 +652,7 @@
           <label class="campo"><span>Funil</span><select name="funil">${opt(FUNIS, p.funil)}</select></label>
         </div>
         ${p.porque ? `<div class="pc-porque"><small>Por que atrai marca</small>${esc(p.porque)}</div>` : ""}
+        ${p.roteiro_id ? `<p class="pc-ajuda pc-ligado">Este conteúdo está ligado a um roteiro em Meus roteiros. Edite o roteiro por lá (botão Abrir roteiro).</p>` : ""}
         <label class="campo pc-largo"><span>Objetivo</span><input name="proposito" value="${esc(p.proposito)}" placeholder="Para que serve esse conteúdo no seu perfil"></label>
         <label class="campo pc-largo"><span>Hook</span><textarea name="hook" rows="2">${esc(p.hook)}</textarea></label>
         ${ganchos.length ? `<div class="pc-ganchos"><small>Outras opções de gancho (toque para usar)</small>${ganchos.map((g) => `<button type="button" class="cr-chip" data-gancho>${esc(g)}</button>`).join("")}</div>` : ""}
@@ -662,7 +663,8 @@
         ${insp.duracao_seg || (!insp.link && insp.perfil) ? `<p class="pc-ajuda">${!insp.link && insp.perfil ? `Inspirado em ${esc(insp.perfil)}. ` : ""}${insp.duracao_seg ? `Duração estimada: ${insp.duracao_seg}s.` : ""}</p>` : ""}
       </div>
       <div class="janela-rodape">${p.id ? `<button class="btn btn-perigo" type="button" data-excluir>Excluir</button>` : ""}<span style="flex:1"></span>
-        ${p.id ? `<button class="btn" type="button" data-quadro>Mandar para Meus roteiros</button>` : ""}
+        ${p.id && p.roteiro_id ? `<button class="btn" type="button" data-abrir-roteiro>Abrir roteiro</button>` : ""}
+        ${p.id && !p.roteiro_id ? `<button class="btn" type="button" data-quadro title="Copia o que está aqui para Meus roteiros e liga os dois">Mandar para Meus roteiros</button><button class="btn" type="button" data-skill>Criar roteiro com a Skill</button>` : ""}
         <button class="btn btn-principal" type="button" data-salvar>Salvar</button></div>`;
     const ler = () => { const o = { ...p }; $$("[name]", dlg).forEach((el) => { o[el.name] = el.value.trim() || null; }); o.status = o.status || "Ideia"; return o; };
     $("[data-fechar]", dlg).addEventListener("click", () => dlg.close());
@@ -689,8 +691,20 @@
       if (!window.painelRoteiros || !window.painelRoteiros.salvarNoQuadro) { toast("Abra Meus roteiros uma vez e tente de novo.", true); return; }
       const o = ler();
       const conteudo = [o.proposito && "PROPÓSITO:\n" + o.proposito, o.hook && "HOOK:\n" + o.hook, o.desenvolvimento && "DESENVOLVIMENTO:\n" + o.desenvolvimento, o.cta && "CTA:\n" + o.cta, o.legenda && "LEGENDA:\n" + o.legenda, p.porque && "POR QUE ATRAI MARCA:\n" + p.porque, insp.link && "REFERÊNCIA:\n" + insp.link].filter(Boolean).join("\n\n");
-      const ok = await window.painelRoteiros.salvarNoQuadro({ id: "pc" + p.id + "-" + Date.now().toString(36), titulo: o.tema || "Post do painel", plataforma: "Instagram", status: "Em aberto", finalidade: "Conteúdos", etapa: o.status === "Ideia" ? "Ideias" : "Roteirização", conteudo, gancho: o.hook || "", formato: o.formato || "", tipoUgc: o.tipo_ugc || "", funil: o.funil || "", referencia: insp.link || "", dataPublicacao: o.data || "" });
-      if (ok) { await salvar({ ...o, id: p.id }); dlg.close(); pintar(); toast("Mandado para Meus roteiros."); }
+      const rid = "pc" + p.id + "-" + Date.now().toString(36);
+      const ok = await window.painelRoteiros.salvarNoQuadro({ id: rid, titulo: o.tema || "Post do painel", plataforma: "Instagram", status: "Em aberto", finalidade: "Conteúdos", etapa: o.status === "Ideia" ? "Ideias" : "Roteirização", conteudo, gancho: o.hook || "", formato: o.formato || "", tipoUgc: o.tipo_ugc || "", funil: o.funil || "", referencia: insp.link || "", dataPublicacao: o.data || "",
+        origem: { tipo: "conteudo", id: String(p.id) }, historico: [{ em: new Date().toISOString(), acao: "Veio de Conteúdos" }] });
+      // os dois ficam ligados: o conteúdo guarda o id do roteiro (sem cópia solta)
+      if (ok) { await salvar({ ...o, id: p.id, roteiro_id: rid }); dlg.close(); pintar(); toast("Mandado para Meus roteiros e ligado a este conteúdo."); }
+    });
+    const ar = $("[data-abrir-roteiro]", dlg);
+    if (ar) ar.addEventListener("click", () => { dlg.close(); if (window.painelSkill) window.painelSkill.abrirRoteiro(p.roteiro_id); });
+    const sk = $("[data-skill]", dlg);
+    if (sk) sk.addEventListener("click", async () => {
+      const o = ler();
+      try { await salvar({ ...o, id: p.id }); } catch (e) { /* segue com o que tem */ }
+      dlg.close();
+      if (window.painelSkill) window.painelSkill.criarRoteiro({ conteudoId: p.id, ideia: ideiaDoConteudo(o, insp), inicial: { formato: /tiktok/i.test(o.formato || "") ? "TikTok" : /stor/i.test(o.formato || "") ? "Stories" : /carross/i.test(o.formato || "") ? "Carrossel" : "Reels", objetivo: o.proposito || "", marca: o.marca || "" } });
     });
     // sininho "Importante, notificar" (js/lembretes.js) com o post certo
     if (p.id) { dlg.dataset.lembreteTipo = "post"; dlg.dataset.lembreteId = String(p.id); dlg.dataset.lembreteTitulo = (p.formato ? p.formato + ": " : "") + (p.tema || "Post do painel"); }
@@ -848,7 +862,7 @@
     return `<article class="pc3-card" draggable="true" data-id="${p.id}" tabindex="0">
       <div class="pc3-card-top">${nicho ? `<span class="pc3-chip c-${corNicho(p.nicho)}">${esc(nicho)}</span>` : `<span class="pc3-chip c-x">sem nicho</span>`}<button type="button" class="pc3-menu" data-menu="${p.id}" aria-label="Opções">•••</button></div>
       <b>${esc(p.tema || "Sem título")}</b>
-      <small>${esc([p.formato, tipoTxt(p)].filter(Boolean).join(" · "))}</small>
+      <small>${esc([p.formato, tipoTxt(p), p.roteiro_id ? "com roteiro" : ""].filter(Boolean).join(" · "))}</small>
       <div class="pc3-card-rodape">${p.data ? `<span title="Publicação">${icCal}${dataCurta(p.data)}</span>` : `<span class="vazio">sem data</span>`}${p.data_gravacao && p.status !== "Publicado" ? `<span title="Gravação">${icCam}${dataCurta(p.data_gravacao)}</span>` : ""}<em class="st-${slugSt(p.status)}">${esc(p.status)}</em></div>
     </article>`;
   }
@@ -931,6 +945,10 @@
     const { data, error } = await banco().from("ideias_organizadas").insert(dados).select().maybeSingle(); if (error) throw new Error(error.message);
     const novo = data || { ...dados, id: Date.now(), criado_em: new Date().toISOString() }; st.ideias.unshift(novo); return novo;
   }
+  // o que um conteúdo leva para a Skill UGC (Meus roteiros)
+  function ideiaDoConteudo(o, insp) {
+    return [o.tema && "Tema: " + o.tema, o.proposito && "Objetivo: " + o.proposito, o.hook && "Gancho que eu pensei: " + o.hook, o.desenvolvimento && "Rascunho:\n" + o.desenvolvimento, o.cta && "CTA: " + o.cta, o.notas && "Notas: " + o.notas, insp && insp.link && "Inspiração: " + insp.link].filter(Boolean).join("\n");
+  }
   async function desenvolverComIA(p) {
     const notas = `DESENVOLVER ESTA IDEIA DELA EM ROTEIRO: "${p.tema || ""}". ${p.notas ? "Observações dela: " + p.notas + "." : ""} ${p.inspiracao && p.inspiracao.link ? "Inspiração: " + p.inspiracao.link + "." : ""} Mantenha o tema dela.`;
     const ideias = await chamarIdeias({ acao: "ideias", rotulo: rotuloMes(mesDe(p) || st.mes), notas, quantidade: 1, evitar: st.todos.filter((x) => x.id !== p.id).map((x) => x.tema),
@@ -957,7 +975,7 @@
     if (ja) { toast("Essa ideia já virou conteúdo. Abrindo."); abrir(ja); return; }
     if (transformando.has(it.id)) return;
     const v = await janelaIdeia("Transformar em conteúdo", `<p class="pc-ajuda">"${esc(it.titulo || it.texto || "")}" entra no Quadro de produção. A ideia continua guardada e ligada a ele.</p>
-      <label class="campo"><span>Começa em</span><select name="status"><option value="Ideia">Ideias (sem roteiro)</option><option value="Roteirizado">Roteirizado (a IA escreve o roteiro)</option><option value="Para gravar">Para gravar</option></select></label>
+      <label class="campo"><span>Começa em</span><select name="status"><option value="Ideia">Ideias (sem roteiro)</option><option value="Roteirizado">Roteirizado (a Skill UGC escreve o roteiro em Meus roteiros)</option><option value="Para gravar">Para gravar</option></select></label>
       <div class="pc-grade2"><label class="campo"><span>Gravação (opcional)</span><input type="date" name="data_gravacao"></label><label class="campo"><span>Publicação (opcional)</span><input type="date" name="data"></label></div>
       <div class="pc-grade2"><label class="campo"><span>Formato</span><select name="formato">${FORMATOS.map((f) => `<option ${f === (it.formato || "Reels") ? "selected" : ""}>${f}</option>`).join("")}</select></label><label class="campo"><span>Funil</span><select name="funil">${FUNIS.map((f) => `<option ${f === (it.funil || "Topo") ? "selected" : ""}>${f}</option>`).join("")}</select></label></div>`, "Transformar");
     if (!v) return;
@@ -970,8 +988,9 @@
         inspiracao: it.link ? { link: it.link } : null });
       await salvarIdeia({ post_id: novo.id }, it.id);
       if (v.status === "Roteirizado") {
-        toast("Conteúdo criado. A IA está escrevendo o roteiro…");
-        try { await desenvolverComIA(novo); await salvar({ id: novo.id, status: "Roteirizado" }); toast("Roteiro pronto. Está em Roteirizado no quadro."); } catch (er) { toast(er.message, true); }
+        // a Skill UGC é o motor único de roteiro: abre Meus roteiros com a ideia; ao salvar lá, o conteúdo fica ligado e vira Roteirizado
+        toast("Conteúdo criado. Abrindo a Skill UGC em Meus roteiros…");
+        if (window.painelSkill) window.painelSkill.criarRoteiro({ conteudoId: novo.id, ideia: ideiaDoConteudo(novo, novo.inspiracao), inicial: { formato: /tiktok/i.test(novo.formato || "") ? "TikTok" : /stor/i.test(novo.formato || "") ? "Stories" : /carross/i.test(novo.formato || "") ? "Carrossel" : "Reels" } });
       } else toast(`Conteúdo criado em ${v.status === "Ideia" ? "Ideias" : v.status} no quadro.`);
     } catch (er) { toast("Não consegui transformar: " + er.message, true); }
     transformando.delete(it.id); pintar();
@@ -993,7 +1012,7 @@
     const nichos = [...new Set([...NICHOS, ...st.ideias.map((it) => it.categoria).filter(Boolean)])];
     const foco = document.activeElement && document.activeElement.id === "pc-ideia-busca";
     box.innerHTML = `<div class="pc3-painel">
-      <form class="pc3-rapida" id="pc-ideia-rapida"><input class="entrada" name="titulo" required placeholder="Escreva uma ideia e aperte Enter"><select class="entrada" name="categoria" aria-label="Nicho"><option value="">Nicho</option>${NICHOS.map((n) => `<option>${esc(n)}</option>`).join("")}</select><select class="entrada" name="pilar" aria-label="Pilar"><option value="">Pilar</option>${(st.perfil.pilares || []).map((x) => `<option>${esc(x.nome)}</option>`).join("")}</select><button class="btn btn-principal" type="submit">${ic.mais}Guardar</button></form>
+      <form class="pc3-rapida" id="pc-ideia-rapida"><input class="entrada" name="titulo" required placeholder="Escreva uma ideia e aperte Enter"><select class="entrada" name="categoria" aria-label="Nicho"><option value="">Nicho</option>${NICHOS.map((n) => `<option>${esc(n)}</option>`).join("")}</select><select class="entrada" name="pilar" aria-label="Pilar"><option value="">Pilar</option>${(st.perfil.pilares || []).map((x) => `<option>${esc(x.nome)}</option>`).join("")}</select><button class="btn btn-principal" type="submit">${ic.mais}Guardar</button><button class="btn" type="button" data-organizar title="Escreva solto ou cole um print: a IA separa as ideias">Organizar ideia ou print</button></form>
       <div class="pc3-ideias-cab"><nav class="pc2-seg" aria-label="Situação">${SITUACOES.map(([k, t]) => `<button type="button" data-sit="${k}" class="${k === sit ? "ativa" : ""}">${t} <small>${st.ideias.filter((it) => (it.situacao || "minha") === k).length}</small></button>`).join("")}</nav>
         <div class="pc2-filtros"><input class="entrada" type="search" id="pc-ideia-busca" placeholder="Pesquisar ideias" value="${esc(st.ideiaBusca || "")}"><select class="entrada" id="pc-ideia-nicho" aria-label="Nicho"><option value="">Todos os nichos</option>${nichos.map((n) => `<option ${nf === n ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div></div>
       ${lista.length ? `<div class="pc3-ideias">${lista.map((it) => { const virou = it.post_id && st.todos.some((p) => p.id === it.post_id); return `<article class="pc3-ideia">
@@ -1007,6 +1026,7 @@
         : `<p class="pc-ajuda pc3-vazio">${daSit.length ? "Nenhuma ideia com esse filtro." : sit === "minha" ? "Nenhuma ideia guardada ainda. Escreva acima." : "Nada aqui."}</p>`}
     </div>`;
     const acha = (id) => st.ideias.find((x) => String(x.id) === String(id));
+    const org = $("[data-organizar]", box); if (org) org.addEventListener("click", () => { location.hash = "#ferideias"; });
     $("#pc-ideia-rapida", box).addEventListener("submit", async (e) => {
       e.preventDefault(); const fd = new FormData(e.target), v = (k) => String(fd.get(k) || "").trim();
       try { await salvarIdeia({ titulo: v("titulo"), texto: v("titulo"), categoria: v("categoria") || null, pilar: v("pilar") || null, situacao: sit === "descartada" ? "minha" : sit }); pintarIdeias(sec); toast("Ideia guardada."); $("#pc-ideia-rapida input", box) && $("#pc-ideia-rapida [name=titulo]", $("#pc-ideias")).focus(); }

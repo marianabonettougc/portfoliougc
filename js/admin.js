@@ -255,7 +255,7 @@
   const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Meus roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
     prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Meus roteiros", propostas: "Marcas: propostas do e-mail", central: "Referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar roteiro",
     meusroteiros: "Referências", modelos: "Modelos", biblioteca: "Referências",
-    financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Referências: transcrever e analisar", laboratorio: "Referências: meus salvos", editorial: "Referências: perfis que eu acompanho", edicao: "Edição de vídeos", planejar: "Conteúdos", ferarquivos: "Edição: organizar gravações", fercapa: "Edição: checar capa", ferideias: "Criar roteiro: ideia ou print", notificacoes: "Configurações: notificações no celular" };
+    financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Referências: transcrever e analisar", laboratorio: "Referências: meus salvos", editorial: "Referências: perfis que eu acompanho", edicao: "Edição de vídeos", planejar: "Conteúdos", ferarquivos: "Edição: organizar gravações", fercapa: "Edição: checar capa", ferideias: "Conteúdos: organizar ideia ou print", notificacoes: "Configurações: notificações no celular" };
   // Abas do painel que são páginas do aplicativo Gestão UGC (aba do painel: página do aplicativo)
   const PAGINAS_APP = { dashboard: "dashboard", calendario: "planner", campanhas: "jobs", prospeccao: "prospeccao", followups: "followups",
     candidaturas: "candidaturas", trafego: "trafego", quadro: "roteiros", financeiro: "financeiro", 
@@ -267,7 +267,6 @@
     { menu: "central", partes: [["central", "Biblioteca"], ["transcritos", "Transcrever vídeo"], ["laboratorio", "Salvos do Instagram"], ["editorial", "Perfis que acompanho"]], junto: { analise: "transcritos" } },
     { menu: "config", partes: [["config", "Configurações gerais"], ["notificacoes", "Notificações no celular"]] },
     { menu: "edicao", partes: [["edicao", "Editar vídeo"], ["ferarquivos", "Organizar gravações"], ["fercapa", "Checar capa"]] },
-    { menu: "criar", partes: [["criar", "A partir de uma referência"], ["ferideias", "A partir de uma ideia ou print"]] },
     { menu: "marcas", partes: [["marcas", "Minhas marcas"], ["propostas", "Propostas do e-mail"], ["prospeccao", "Prospecção"], ["followups", "Follow-ups"], ["candidaturas", "Candidaturas"], ["trafego", "Tráfego pago"]] },
   ];
   const areaDe = (nome) => AREAS.find((a) => a.partes.some(([k]) => k === nome) || (a.junto && a.junto[nome]));
@@ -286,6 +285,11 @@
     if (nome === "transcricao") nome = "transcritos"; // a Transcrição antiga foi trocada pela nova (js/roteiros-supadata.js)
     if (nome === "roteiros") nome = "quadro"; // o grupo Roteiros abre Meus roteiros (o Quadro de roteiros)
     if (nome === "calendario") nome = "planejar"; // o Planner foi unido ao Painel de conteúdo (datas das publis aparecem lá)
+    // nov/2026 (Estúdio de criação): "Criar roteiro" deixou de ser seção; criar é em Meus roteiros, com a Skill UGC
+    if (nome === "criar") {
+      try { if (central.ref && window.painelReferencias) { const r = central.ref; r.fonte = "roteiros"; setTimeout(() => window.painelReferencias.criar(r), 0); } } catch (e) { /* painel ainda carregando */ }
+      nome = "quadro";
+    }
     if (nome === "financeirocpf") { window.open("/financeiro/", "_blank", "noopener"); nome = abaAtual && abaAtual !== "financeirocpf" ? abaAtual : "dashboard"; } // Financeiro CPF agora é o app de Finanças
     if (!TITULOS[nome]) nome = "portfolio";
     abaAtual = nome;
@@ -293,7 +297,7 @@
     const paginaApp = PAGINAS_APP[nome] || "";
     const secao = paginaApp ? "gestao" : VISTAS_ROTEIRO[nome] ? "roteiros" : nome;
     $$(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + secao; });
-    const noMenu = (areaDe(nome) || {}).menu || nome;
+    const noMenu = (areaDe(nome) || {}).menu || (nome === "ferideias" ? "planejar" : nome); // o organizador de ideias abre pelo Banco de ideias (Conteúdos)
     $$(".menu-item[data-aba]").forEach((b) => { b.classList.toggle("ativo", b.dataset.aba === noMenu); b.setAttribute("aria-current", b.dataset.aba === noMenu ? "page" : "false"); });
     pintarSubAbas(nome);
     const botao = $(`.menu-item[data-aba="${noMenu}"]`);
@@ -1346,6 +1350,8 @@
     if (error) avisar(traduzErro(error, "roteiros"), true);
   }
   function abrirNaCentral(r, vista) {
+    // Criar roteiro agora é sempre pela Skill UGC, em Meus roteiros (js/referencias.js)
+    if (vista === "criar" && r && window.painelReferencias) { r.fonte = "roteiros"; window.painelReferencias.criar(r); return; }
     usarReferencia(r);
     central.videoLocal = "";
     mostrarAba(vista || "analise");
@@ -1436,7 +1442,7 @@
   }
 
   // ---------- Central de referências: os vídeos salvos para estudar ----------
-  const estadoCentral = { filtro: "todos", ordem: "recentes", busca: "" };
+  const estadoCentral = { filtro: "todos", ordem: "recentes", busca: "", fonte: "" };
   function paginaCentral(sec) {
     if (!$("#cr-grade", sec)) {
       sec.innerHTML = `<div class="cr-pagina">
@@ -1444,11 +1450,16 @@
         <label class="cr-busca">${ic("busca", 17)}<input type="search" id="cr-busca" placeholder="Buscar por título, perfil, tema ou etiqueta..." aria-label="Buscar referências"></label>
         <div class="cr-filtros">
           <div class="cr-chips" role="group" aria-label="Filtrar">${[["todos", "Todos"], ["instagram", "Instagram"], ["tiktok", "TikTok"], ["youtube", "YouTube"], ["outro", "Outras"], ["meus", "Meus vídeos"]].map(([v, t]) => `<button type="button" class="cr-chip${estadoCentral.filtro === v ? " ativo" : ""}" data-filtro="${v}">${t}</button>`).join("")}</div>
+          <label class="cr-ordem">Biblioteca<select id="cr-fonte"><option value="">Todas</option><option value="roteiros">Transcritos</option><option value="laboratorio">Salvos do Instagram</option><option value="inspiracoes">Inspirações</option><option value="biblioteca">Perfis que acompanho</option></select></label>
           <label class="cr-ordem">Ordenar<select id="cr-ordem"><option value="recentes">Mais recentes</option><option value="antigas">Mais antigas</option><option value="titulo">Título (A a Z)</option></select></label>
         </div>
         <div class="cr-grade" id="cr-grade"></div></div>`;
       $("#cr-busca", sec).addEventListener("input", (e) => { estadoCentral.busca = e.target.value.trim().toLowerCase(); desenharGrade(sec); });
       $("#cr-ordem", sec).addEventListener("change", (e) => { estadoCentral.ordem = e.target.value; desenharGrade(sec); });
+      $("#cr-fonte", sec).addEventListener("change", (e) => { estadoCentral.fonte = e.target.value; desenharGrade(sec); });
+      // Salvos do Instagram, Inspirações e Perfis entram na mesma lista (js/referencias.js)
+      if (window.painelReferencias) window.painelReferencias.carregar().then(() => { if (!sec.hidden && $("#cr-grade", sec)) desenharGrade(sec); });
+      document.addEventListener("referencias:mudou", () => { if ($("#cr-grade", sec)) desenharGrade(sec); });
       $$("[data-filtro]", sec).forEach((b) => b.addEventListener("click", () => { estadoCentral.filtro = b.dataset.filtro; $$("[data-filtro]", sec).forEach((x) => x.classList.toggle("ativo", x === b)); desenharGrade(sec); }));
       $("[data-adicionar]", sec).addEventListener("click", () => mostrarAba("transcricao"));
     }
@@ -1456,27 +1467,49 @@
   }
   function desenharGrade(sec) {
     const f = estadoCentral;
-    let lista = dados.roteiros.filter((r) => f.filtro === "meus" ? r.de_quem === "meu" : (f.filtro === "todos" ? r.de_quem !== "meu" || r.transcricao : r.origem === f.filtro));
-    if (f.busca) lista = lista.filter((r) => [r.titulo, r.perfil, r.etiquetas, r.transcricao, r.gancho].some((c) => String(c || "").toLowerCase().includes(f.busca)));
+    const PR = window.painelReferencias;
+    const extras = PR && f.filtro !== "meus" ? PR.extras() : [];
+    dados.roteiros.forEach((r) => { r.fonte = "roteiros"; });
+    let lista = [...dados.roteiros, ...extras].filter((r) => f.filtro === "meus" ? r.de_quem === "meu" : (f.filtro === "todos" ? r.de_quem !== "meu" || r.transcricao : r.origem === f.filtro));
+    if (f.fonte) lista = lista.filter((r) => r.fonte === f.fonte && r.de_quem !== "meu");
+    if (f.busca) lista = lista.filter((r) => [r.titulo, r.perfil, r.etiquetas, r.transcricao, r.gancho, r.legenda].some((c) => String(c || "").toLowerCase().includes(f.busca)));
     lista = [...lista].sort((a, b) => f.ordem === "titulo" ? String(a.titulo).localeCompare(String(b.titulo)) : (f.ordem === "antigas" ? 1 : -1) * (new Date(a.criado_em) - new Date(b.criado_em)));
     const grade = $("#cr-grade", sec);
     if (faltando.roteiros) { grade.innerHTML = `<p class="vazio">${esc(faltando.roteiros)}</p>`; return; }
-    grade.innerHTML = lista.map((r) => `<article class="cr-ref" data-id="${r.id}" tabindex="0">
+    const NOMES_FONTE = (PR && PR.FONTES) || {};
+    const analisada = (r) => r.analise_skill || (PR && PR.analiseSkill(r)) || (r.fonte === "roteiros" && r.analise);
+    const capaExtra = (r) => `<div class="cr-capa">${r.capa ? `<img src="${esc(r.capa)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : `<span class="cr-capa-play">${ic("play", 18)}</span>`}</div>`;
+    grade.innerHTML = lista.slice(0, 600).map((r) => r.fonte !== "roteiros" ? `<article class="cr-ref" data-ext="${r.fonte}:${r.id}" tabindex="0">
+        ${capaExtra(r)}
+        <div class="cr-ref-corpo">
+          <b>${esc(r.titulo || "Sem título")}</b>
+          <span class="cr-ref-meta">${iconeRede(r.origem)}${esc(NOMES_FONTE[r.fonte] || "")}${analisada(r) ? `<i class="cr-selo">analisada</i>` : r.transcricao ? `<i class="cr-selo cr-selo-neutro">transcrita</i>` : ""}</span>
+        </div>
+      </article>` : `<article class="cr-ref" data-id="${r.id}" tabindex="0">
         ${capaRef(r)}
         <div class="cr-ref-corpo">
           <b>${esc(r.titulo || "Sem título")}</b>
-          <span class="cr-ref-meta">${iconeRede(r.origem)}${esc(listaVirgula(r.etiquetas)[0] || nomeOrigem(r.origem))}${r.analise ? `<i class="cr-selo">analisada</i>` : ""}</span>
+          <span class="cr-ref-meta">${iconeRede(r.origem)}${esc(listaVirgula(r.etiquetas)[0] || nomeOrigem(r.origem))}${analisada(r) ? `<i class="cr-selo">analisada</i>` : ""}</span>
         </div>
         <div class="cr-ref-menu"><button type="button" class="cr-mais" data-menu aria-label="Opções">${ic("pontos", 16)}</button>
-          <div class="cr-menu" hidden><button type="button" data-ir="analise">Ver análise</button><button type="button" data-ir="criar">Criar roteiro</button><button type="button" data-editar>Editar</button><button type="button" data-apagar>Excluir</button></div></div>
+          <div class="cr-menu" hidden><button type="button" data-ir="analise">Ver análise completa</button><button type="button" data-skill>Criar roteiro com a Skill</button><button type="button" data-editar>Editar</button><button type="button" data-apagar>Excluir</button></div></div>
       </article>`).join("") + `<button type="button" class="cr-ref cr-ref-nova" data-adicionar>${ic("mais", 22)}<span>Adicionar referência</span></button>`;
+    $$(".cr-ref[data-ext]", grade).forEach((card) => {
+      const [fonte, id] = card.dataset.ext.split(":");
+      const r = extras.find((x) => x.fonte === fonte && String(x.id) === id);
+      const abrir = () => PR.abrir(r);
+      card.addEventListener("click", abrir);
+      card.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target === card) abrir(); });
+    });
     $$(".cr-ref[data-id]", grade).forEach((card) => {
       const r = dados.roteiros.find((x) => String(x.id) === card.dataset.id);
-      card.addEventListener("click", (e) => { if (e.target.closest(".cr-ref-menu")) return; abrirNaCentral(r, "analise"); });
-      card.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target === card) abrirNaCentral(r, "analise"); });
+      const abrirRef = () => PR ? PR.abrir(r) : abrirNaCentral(r, "analise");
+      card.addEventListener("click", (e) => { if (e.target.closest(".cr-ref-menu")) return; abrirRef(); });
+      card.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target === card) abrirRef(); });
       const menu = $(".cr-menu", card);
       $("[data-menu]", card).addEventListener("click", () => { $$(".cr-menu", grade).forEach((m) => { if (m !== menu) m.hidden = true; }); menu.hidden = !menu.hidden; });
       $$("[data-ir]", card).forEach((b) => b.addEventListener("click", () => abrirNaCentral(r, b.dataset.ir)));
+      $("[data-skill]", card).addEventListener("click", () => { menu.hidden = true; if (PR) PR.criar(r); });
       $("[data-editar]", card).addEventListener("click", () => { menu.hidden = true; formRoteiro(r); });
       $("[data-apagar]", card).addEventListener("click", async () => {
         menu.hidden = true;
@@ -2162,8 +2195,7 @@
         <div class="rot-abas" role="tablist">
           <button type="button" class="rot-aba ativa" data-aba="info" role="tab">Informações do vídeo</button>
           <button type="button" class="rot-aba" data-aba="video" role="tab">Vídeo transcrito</button>
-          <button type="button" class="rot-aba" data-aba="inspirar" role="tab">Se inspire nesse roteiro</button>
-          <button type="button" class="rot-aba" data-aba="copiar" role="tab">Copiar roteiro</button>
+          <button type="button" class="rot-aba" data-aba="skill" role="tab">Criar roteiro com a Skill</button>
         </div>
         <input type="hidden" name="de_quem" value="${esc(r.de_quem || "outra")}">
         <input type="hidden" name="perfil" value="${esc(String(r.perfil || "").replace(/^@/, ""))}">
@@ -2214,6 +2246,12 @@
           </div>
         </section>
 
+        <section class="rot-painel rot-board" data-painel="skill" hidden>
+          <h4>Criar roteiro com a Skill UGC</h4>
+          <p>A Skill usa o que funcionou neste vídeo (tipo de gancho, estrutura, ritmo e prova) e escreve um roteiro seu do zero, sem copiar as falas. Abre em Meus roteiros, onde você conta a ideia, o produto ou cola o briefing. O roteiro fica ligado a esta referência.</p>
+          <button class="btn btn-principal" type="button" data-skill-ref><svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>Abrir a Skill com esta referência</button>
+        </section>
+        <!-- "Se inspire" e "Copiar roteiro" antigos (gerar-roteiro) ficaram escondidos: a Skill UGC é o motor único -->
         <section class="rot-painel rot-board" data-painel="inspirar" hidden>
           <h4>Se inspire nesse roteiro</h4>
           <p>Conte a sua ideia para o vídeo (escrevendo, em áudio ou com imagens). Eu crio um roteiro novo seu, usando o que funcionou nesse vídeo.</p>
@@ -2333,6 +2371,12 @@
           $$(".rot-painel", corpo).forEach((p) => { p.hidden = p.dataset.painel !== aba.dataset.aba; });
         }));
         if (tocar) $('.rot-aba[data-aba="video"]', corpo).click();
+        const skRef = $("[data-skill-ref]", corpo);
+        if (skRef) skRef.addEventListener("click", () => {
+          if (novo || !r.id) { avisar("Salve a referência primeiro, depois crie o roteiro com a Skill.", true); return; }
+          janela.close(); r.fonte = "roteiros";
+          if (window.painelReferencias) window.painelReferencias.criar(r);
+        });
 
         // quadros "Se inspire nesse roteiro" e "Copiar roteiro" (Edge Function gerar-roteiro)
         function ligarBoard(painel, modo) {
