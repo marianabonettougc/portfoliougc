@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610312140"></script>
-<script src="../../js/dialogos.js?v=202610312140"></script>
-<script src="../../js/corretor.js?v=202610312140"></script>
+<script src="../../js/banco.js?v=202610312206"></script>
+<script src="../../js/dialogos.js?v=202610312206"></script>
+<script src="../../js/corretor.js?v=202610312206"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -128,6 +128,99 @@
   .db-sub{ margin:2px 0 0; color:var(--db-suave); font-size:14px; }
 
   /* cabeçalho */
+  /* ===== Dashboard novo (nov/2026): .dn ===== */
+  .dn{ display:flex; flex-direction:column; gap:16px; }
+  .dn-topo{ display:flex; gap:10px; align-items:center; }
+  .dn-topo .db-busca{ flex:1; max-width:520px; }
+  .dn-esp{ flex:1; }
+  .dn-btn{ display:inline-flex; align-items:center; gap:8px; border:0; border-radius:999px; background:var(--db-cafe); color:#fff; padding:10px 18px; font:inherit; font-size:13.5px; font-weight:500; cursor:pointer; }
+  .dn-ola{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-top:4px; }
+  .dn-ola h1{ font-family:var(--db-serif); font-weight:400; font-size:38px; line-height:1.1; margin:0; color:var(--db-texto); }
+  .dn-ola p{ margin:6px 0 0; color:var(--db-suave); font-size:14px; } .dn-ola p b{ color:var(--db-texto); font-weight:500; }
+  .dn-data{ color:var(--db-suave); font-size:13.5px; }
+  .dn-cards{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+  .dn-card{ display:flex; align-items:center; gap:14px; text-align:left; background:var(--db-papel); border:1px solid var(--db-linha); border-radius:16px; padding:16px 18px; font:inherit; color:var(--db-texto); cursor:pointer; min-width:0; }
+  .dn-card:hover{ border-color:var(--db-linha2); }
+  .dn-ico{ width:46px; height:46px; border-radius:50%; background:var(--db-bege2); color:var(--db-cafe); display:grid; place-items:center; flex:none; }
+  .dn-ico-p{ width:36px; height:36px; }
+  .dn-card-txt{ display:flex; flex-direction:column; min-width:0; }
+  .dn-card-txt small{ color:var(--db-suave); font-size:12px; } .dn-card-txt b{ font-size:21px; font-weight:500; margin:2px 0; white-space:nowrap; }
+  .dn-card-txt em{ font-style:normal; font-size:11.5px; color:var(--db-suave); } .dn-card-txt em.bom{ color:var(--db-verde); }
+  .dn-seta{ margin-left:auto; color:var(--db-suave); }
+  .dn-g1{ display:grid; grid-template-columns:minmax(0,1.85fr) minmax(0,1fr); gap:14px; align-items:start; }
+  .dn-g2{ display:grid; grid-template-columns:minmax(0,1.75fr) minmax(0,1fr) minmax(0,.9fr); gap:14px; align-items:start; }
+  .dn-bt{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  .dn-bt h2{ font-family:var(--db-serif); font-weight:400; font-size:21px; margin:0; min-width:0; }
+  .dn-bt .db-link{ white-space:nowrap; }
+  .dn-bt-dir{ display:flex; align-items:center; gap:8px; }
+  .dn-tag{ background:var(--db-bege2); color:var(--db-suave); border-radius:999px; padding:3px 10px; font-size:11.5px; white-space:nowrap; }
+  .dn-mais{ width:32px; height:32px; border-radius:50%; border:0; background:var(--db-cafe); color:#fff; display:grid; place-items:center; cursor:pointer; }
+  .dn-sel{ border:1px solid var(--db-linha); border-radius:999px; padding:5px 12px; font-size:12px; color:var(--db-suave); white-space:nowrap; }
+  .dn-linha{ display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,.9fr); gap:10px; align-items:center; padding:10px 0; border-top:1px solid var(--db-linha); }
+  .dn-cab{ border-top:0; padding:0 0 6px; font-size:11.5px; color:var(--db-suave); }
+  .dn-marca{ display:flex; align-items:center; gap:11px; border:0; background:none; padding:0; font:inherit; color:inherit; text-align:left; cursor:pointer; min-width:0; }
+  .dn-marca span{ display:flex; flex-direction:column; min-width:0; } .dn-marca b{ font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dn-marca small, .dn-prog small, .dn-prazo small{ color:var(--db-suave); font-size:11.5px; }
+  .dn-prog{ display:flex; flex-direction:column; gap:5px; }
+  .dn-prog i{ display:block; height:5px; border-radius:9px; background:var(--db-bege); overflow:hidden; max-width:130px; } .dn-prog i b{ display:block; height:100%; border-radius:9px; background:#c08a5b; }
+  .dn-chip{ border:0; border-radius:999px; padding:4px 11px; font:inherit; font-size:11.5px; cursor:pointer; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+  .c-plan{ background:var(--db-bege2); color:var(--db-suave); } .c-rot{ background:#fbf3d9; color:#8a6a1e; } .c-grav{ background:#f3e3d2; color:#8a5a35; }
+  .c-edi{ background:#f1ddd3; color:#94573f; } .c-apr{ background:#ece2d6; color:var(--db-cafe); } .c-ok{ background:#e6efe3; color:var(--db-verde); }
+  .dn-prazo{ display:flex; flex-direction:column; } .dn-prazo b{ font-weight:500; }
+  .dn-prazo small.atr{ color:var(--db-vermelho); } .dn-prazo small.hj{ color:#a87058; }
+  .dn-voltar{ margin:-6px 0 8px; font-size:12.5px; }
+  .dn-iphone-linha{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:4px; }
+  .dn-lista{ list-style:none; margin:0; padding:0; }
+  .dn-lista li{ display:grid; grid-template-columns:22px 42px 22px minmax(0,1fr) auto; gap:10px; align-items:center; padding:10px 0; border-top:1px solid var(--db-linha); }
+  .dn-lista li:first-child{ border-top:0; } .dn-lista li.dn-vazio-li{ display:block; }
+  .dn-circ{ position:relative; width:19px; height:19px; cursor:pointer; } .dn-circ input{ position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; }
+  .dn-circ span{ display:block; width:19px; height:19px; border-radius:50%; border:1.3px solid #c9b6a4; }
+  .dn-lista li.feito .dn-circ span{ background:var(--db-verde); border-color:var(--db-verde); position:relative; }
+  .dn-lista li.feito .dn-circ span:after{ content:""; position:absolute; left:6px; top:2.5px; width:4px; height:8px; border:solid #fff; border-width:0 1.5px 1.5px 0; transform:rotate(45deg); }
+  .dn-circ input:focus-visible + span{ outline:2px solid var(--db-cafe2); outline-offset:2px; }
+  .dn-hora{ color:var(--db-suave); font-size:12px; } .dn-ic-item{ color:var(--db-cafe); display:grid; }
+  .dn-txt{ display:flex; flex-direction:column; min-width:0; } .dn-txt b{ font-weight:500; font-size:13.5px; } .dn-txt small{ color:var(--db-suave); font-size:11.5px; }
+  .dn-lista li.feito .dn-txt b{ text-decoration:line-through; color:var(--db-suave); }
+  .dn-lista li.atrasado .dn-txt small{ color:var(--db-vermelho); }
+  .dn-sem{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
+  .dn-dia{ display:flex; flex-direction:column; align-items:stretch; gap:2px; border:0; border-radius:12px; padding:8px 5px; min-height:150px; background:var(--db-bege2); font:inherit; color:inherit; cursor:pointer; text-align:left; }
+  .dn-dia > small{ text-align:center; font-size:10px; letter-spacing:.1em; color:var(--db-suave); } .dn-dia > b{ text-align:center; font-weight:500; font-size:15px; margin-bottom:4px; }
+  .dn-dia.hoje{ background:#fbf3d9; box-shadow:inset 0 0 0 1px #ecd9a1; } .dn-dia.sel{ box-shadow:inset 0 0 0 1.5px var(--db-cafe2); }
+  .dn-evs{ display:flex; flex-direction:column; gap:5px; }
+  .dn-ev{ display:block; border-radius:8px; padding:4px 5px; font-size:10.5px; line-height:1.3; background:var(--db-papel); border-left:2px solid #c08a5b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dn-ev small{ display:block; font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:var(--db-suave); }
+  .dn-ev.grav{ border-left-style:dashed; } .dn-ev.post{ border-left-color:var(--db-cafe); } .dn-ev.ent{ border-left-color:#a87058; } .dn-ev.apple, .dn-ev.outro{ border-left-color:var(--db-linha2); }
+  .dn-ev-mais{ font-size:10.5px; color:var(--db-suave); text-align:center; }
+  .dn-leg{ display:flex; gap:14px; margin-top:10px; font-size:11px; color:var(--db-suave); }
+  .dn-leg span:before{ content:""; display:inline-block; width:10px; height:3px; margin-right:6px; vertical-align:middle; background:#c08a5b; }
+  .dn-leg .post:before{ background:var(--db-cafe); } .dn-leg .ent:before{ background:#a87058; }
+  .dn-apr{ list-style:none; margin:0; padding:0; } .dn-apr li{ border-top:1px solid var(--db-linha); } .dn-apr li:first-child{ border-top:0; }
+  .dn-apr button{ width:100%; display:flex; gap:12px; align-items:center; padding:10px 0; border:0; background:none; font:inherit; color:inherit; text-align:left; cursor:pointer; }
+  .dn-ha{ margin-left:auto; font-size:11.5px; color:#a87058; white-space:nowrap; }
+  .dn-fin-2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .dn-fin-2 button{ border:0; border-radius:12px; padding:12px; background:var(--db-bege2); text-align:left; font:inherit; color:inherit; cursor:pointer; min-width:0; }
+  .dn-fin-2 button.at{ background:#f6e4dc; } .dn-fin-2 b{ display:block; font-size:17px; font-weight:500; white-space:nowrap; } .dn-fin-2 small{ font-size:11.5px; color:var(--db-suave); }
+  .dn-graf{ display:flex; align-items:flex-end; gap:10px; height:130px; margin-top:16px; }
+  .dn-graf div{ flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:6px; }
+  .dn-graf i{ display:block; width:100%; max-width:22px; border-radius:6px 6px 2px 2px; background:var(--db-bege); } .dn-graf i.at{ background:#c08a5b; }
+  .dn-graf small{ font-size:10.5px; color:var(--db-suave); }
+  .dn .dn-btn, .dn .dn-mais{ color:#fff !important; }
+  @media (max-width:1000px){ .dn-cards{ grid-template-columns:repeat(2,minmax(0,1fr)); } .dn-g2{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); } .dn-semana-bloco{ grid-column:1/-1; } }
+  @media (max-width:900px){ .dn-g1{ grid-template-columns:minmax(0,1fr); } .dn-rotina{ order:-1; } }
+  @media (max-width:640px){
+    .dn-topo .db-busca{ display:none; } .dn-btn span{ display:none; } .dn-btn{ padding:10px 12px; }
+    .dn-ola h1{ font-size:30px; }
+    .dn-cards{ gap:10px; } .dn-card{ flex-direction:column; align-items:flex-start; gap:8px; padding:14px; } .dn-seta{ display:none; } .dn-card-txt b{ font-size:18px; } .dn-ico{ width:38px; height:38px; }
+    .dn-g2{ grid-template-columns:minmax(0,1fr); }
+    .dn-cab{ display:none; } .dn-linha{ grid-template-columns:minmax(0,1fr) auto; gap:6px 10px; }
+    .dn-linha .dn-prog, .dn-linha .dn-prazo{ grid-column:1/-1; } .dn-linha > span:nth-child(3){ grid-column:2; grid-row:1; }
+    .dn-lista li{ grid-template-columns:22px 38px 20px minmax(0,1fr) auto; gap:8px; }
+    .dn-sem{ grid-template-columns:minmax(0,1fr); }
+    .dn-dia{ min-height:0; display:grid; grid-template-columns:44px minmax(0,1fr); gap:2px 10px; align-items:center; padding:8px 10px; }
+    .dn-dia > small{ grid-row:1; text-align:left; } .dn-dia > b{ grid-row:2; text-align:left; margin:0; }
+    .dn-evs{ grid-column:2; grid-row:1/3; flex-direction:row; flex-wrap:wrap; }
+    .dn-ev{ font-size:11px; max-width:100%; }
+  }
   .db-cabeca{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
   .db-ola h1{ font-family:var(--db-serif); font-weight:400; font-size:36px; line-height:1.15; margin:0; display:flex; align-items:center; gap:10px; }
   .db-ver-mais{ display:block; width:100%; margin:8px 0 4px; padding:9px; border:1px solid var(--db-linha); border-radius:10px; background:transparent; color:var(--db-cafe); font:inherit; font-size:14px; font-weight:500; cursor:pointer; }
@@ -1567,6 +1660,11 @@ function DbIcone({tipo, tam}){
     tiktok: <path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5M14 4c.4 2.4 2 4 4.5 4.3"/>,
     youtube: <><rect x="3" y="6" width="18" height="12" rx="3.5"/><path d="M10.5 9.5v5l4-2.5z"/></>,
     pessoa: <><circle cx="12" cy="8" r="3.5"/><path d="M5 20.5c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></>,
+    moeda: <><circle cx="12" cy="12" r="8.5"/><path d="M14.5 9.3c-.5-.9-1.4-1.3-2.5-1.3-1.5 0-2.5.8-2.5 1.9 0 2.7 5 1.4 5 4.2 0 1.1-1 1.9-2.5 1.9-1.2 0-2.1-.5-2.6-1.4M12 6.5V8M12 16v1.5"/></>,
+    grafico: <><path d="M4 20h16"/><path d="M7 16v-4M12 16V8M17 16v-6"/></>,
+    aviao: <><path d="m20.5 3.5-7 17-3-7.5-7-3z"/><path d="m10.5 13 10-9.5"/></>,
+    filme: <><rect x="3.5" y="6" width="12" height="12" rx="2"/><path d="m15.5 10 5-3v10l-5-3"/></>,
+    relogio: <><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></>,
   }[tipo];
   const s = tam || 18;
   return <svg className="db-ic" viewBox="0 0 24 24" width={s} height={s} aria-hidden="true">{d}</svg>;
@@ -2206,6 +2304,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     planner.filter(p=>p.data===iso).forEach(p=>lista.push({id:"p-"+p.id, hora:"", texto:(p.roteiroId && (state.roteiros||[]).some(r=>r.id===p.roteiroId && prontoParaPostar(r)) ? "Postar: " : "")+(p.titulo||"Conteúdo"), sub:[p.formato, p.marca].filter(Boolean).join(" · "), pagina:"planner"}));
     // roteiro pronto para postar que ainda não está no Planner
     (state.roteiros||[]).filter(r=>prontoParaPostar(r) && r.dataPublicacao===iso && !planner.some(p=>p.roteiroId===r.id)).forEach(r=>lista.push({id:"rp-"+r.id, hora:"", texto:`Postar: ${r.titulo}`, sub:[r.cliente, r.plataforma].filter(Boolean).join(" · "), pagina:"roteiros"}));
+    // posts prontos com a data já passada: sobem para hoje como atrasados
+    if(iso===hoje) (state.roteiros||[]).filter(r=>prontoParaPostar(r) && r.dataPublicacao && r.dataPublicacao<iso).forEach(r=>lista.push({id:"ra-"+r.id, hora:"", atrasado:true, texto:`Postar: ${r.titulo}`, sub:`Atrasado desde ${dataBR(r.dataPublicacao).slice(0,5)}${r.cliente ? " · "+r.cliente : ""}`, pagina:"roteiros"}));
     ativos.filter(j=>j.prazoEntrega===iso).forEach(j=>lista.push({id:"e-"+j.id, hora:"", texto:`Entregar ${j.marca}`, sub:descricaoJob(j), pagina:"jobs"}));
     // datas de cada conteúdo do job (roteiro, conteúdo e postagem da Publi)
     ativos.forEach(j=>{
@@ -2500,133 +2600,155 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const iconeRede = (o) => o==="tiktok" ? "tiktok" : o==="youtube" ? "youtube" : "instagram";
   const etiquetas = (r) => String(r.etiquetas||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,2);
 
+  // ----- Dashboard novo (nov/2026, modelo aprovado pela Mari): resumo, 4 números, campanhas, rotina, semana, aprovação e financeiro -----
+  const mesIso = hoje.slice(0,7);
+  const mesAntIso = isoLocal(new Date(hojeD.getFullYear(), hojeD.getMonth()-1, 1)).slice(0,7);
+  const dnMoeda = (v) => "R$ " + (window.OCULTAR_VALORES ? VALOR_OCULTO : Math.round(Number(v)||0).toLocaleString("pt-BR"));
+  const receitas = (state.transacoes||[]).filter(t=>t.tipo==="receita" && (t.moeda||"BRL")==="BRL" && t.status!=="Cancelado");
+  const somaDe = (l) => l.reduce((a,t)=>a+Number(t.valor||0),0);
+  const faturamentoMes = somaDe(receitas.filter(t=>String(t.data||"").startsWith(mesIso)));
+  const faturamentoAnt = somaDe(receitas.filter(t=>String(t.data||"").startsWith(mesAntIso)));
+  const variacao = faturamentoAnt>0 ? Math.round((faturamentoMes/faturamentoAnt-1)*100) : null;
+  const recebidoMes = somaDe(receitas.filter(t=>t.status==="Confirmado" && String(t.data||"").startsWith(mesIso)));
+  const atrasadoLista = receitas.filter(t=>t.status!=="Confirmado" && t.data && t.data<hoje);
+  const atrasadoValor = somaDe(atrasadoLista);
+  const meses6 = Array.from({length:6}, (_,i)=>{ const d = new Date(hojeD.getFullYear(), hojeD.getMonth()-5+i, 1); const k = isoLocal(d).slice(0,7);
+    return {k, rotulo:MESES_EXT[d.getMonth()].slice(0,3).replace(/^./, c=>c.toUpperCase()), valor:somaDe(receitas.filter(t=>t.status==="Confirmado" && String(t.data||"").startsWith(k)))}; });
+  const maxMes = Math.max(1, ...meses6.map(m=>m.valor));
+  // conteúdos do mês (Conteúdos do painel) e propostas do e-mail sem resposta
+  const [dnExtras,setDnExtras] = useState({conteudos:null, propostas:null});
+  useEffect(()=>{
+    let vivo = true;
+    Promise.all([
+      supabaseClient.from("painel_conteudo").select("status,data,mes").eq("mes", mesIso).then(r=>r.data||[]).catch(()=>null),
+      supabaseClient.from("propostas_email").select("status,recebido_em").eq("status","nova").then(r=>r.data||[]).catch(()=>null),
+    ]).then(([c,p])=>{ if(!vivo) return;
+      const sete = Date.now()-7*86400000;
+      setDnExtras({
+        conteudos: c ? {total:c.length, publicados:c.filter(x=>x.status==="Publicado"||x.status==="Postado").length} : null,
+        propostas: p ? {total:p.length, velhas:p.filter(x=>x.recebido_em && new Date(x.recebido_em).getTime()<sete).length} : null });
+    });
+    return ()=>{ vivo = false; };
+  },[mesIso]);
+  // campanhas: jobs ativos, os atrasados primeiro e depois pelo prazo
+  const itensDoJob = (j) => { const e = j.entregaveis || {}; return [...(e.videos||[]).map(i=>[i,"videos"]), ...(e.fotos||[]).map(i=>[i,"fotos"]), ...(e.stories||[]).map(i=>[i,"stories"])]; };
+  const progressoJob = (j) => { const its = itensDoJob(j); const total = its.reduce((a,[i])=>a+qtdItem(i),0);
+    const feitos = its.filter(([i,t])=>i.concluido || ["Finalizado","Conteúdo entregue","Entregue"].includes(statusDoItem(i,t))).reduce((a,[i])=>a+qtdItem(i),0);
+    return {total, feitos, pct: total ? Math.round(feitos/total*100) : 0}; };
+  const campanhas = [...ativos].sort((a,b)=>(a.prazoEntrega||"9999").localeCompare(b.prazoEntrega||"9999"));
+  const classeEtapa = (i) => i>=8 ? "ok" : i===7 ? "edi" : i===6 || i===3 ? "apr" : i>=4 ? "grav" : i===2 ? "rot" : "plan";
+  const nomeEtapa = (i) => ({0:"Briefing",1:"Produto",2:"Roteiro",3:"Aprovação do roteiro",4:"Produção",5:"Entregue",6:"Aprovação",7:"Refação",8:"Finalizado"})[i] || ETAPAS_JOB[i];
+  async function avancarJob(j){
+    const at = etapaDoJob(j, state.roteiros);
+    if(at>=ETAPAS_JOB.length-1) return;
+    if(!await painelDialogo.confirmar(`Passar ${j.marca} de "${ETAPAS_JOB[at]}" para "${ETAPAS_JOB[at+1]}"?`, { ok: "Avançar" })) return;
+    mudar(s=>({...s, jobs:(s.jobs||[]).map(x=>x.id===j.id ? jobNaEtapa(x, at+1) : x)}));
+  }
+  // esperando a marca aprovar: roteiro ou conteúdo enviado
+  const aprovacoes = [];
+  ativos.forEach(j=>itensDoJob(j).forEach(([it,t])=>{
+    const st = statusDoItem(it,t);
+    if(st==="Aprovação de roteiro") aprovacoes.push({id:"ar"+it.id, tipo:"roteiro", titulo:`Roteiro ${it.label||""}, ${j.marca}`, desde:it.prazoRoteiro||"", pagina:"jobs"});
+    else if(st==="Aprovação do conteúdo") aprovacoes.push({id:"ac"+it.id, tipo:"video", titulo:`${it.label||"Conteúdo"}, ${j.marca}`, desde:it.prazoConteudo||"", pagina:"jobs"});
+  }));
+  ativos.filter(j=>["Aguardando Aprovação","Aprovação do Conteúdo","Aprovação de Roteiro"].includes(j.status) && !aprovacoes.some(a=>a.titulo.endsWith(", "+j.marca)))
+    .forEach(j=>aprovacoes.push({id:"aj"+j.id, tipo:/roteiro/i.test(j.status)?"roteiro":"video", titulo:`${resumoEntregas(j)||"Conteúdo"}, ${j.marca}`, desde:"", pagina:"jobs"}));
+  (state.roteiros||[]).filter(r=>r.etapa==="Em Aprovação").forEach(r=>aprovacoes.push({id:"rq"+r.id, tipo:"roteiro", titulo:`Roteiro ${r.titulo}${r.cliente ? ", "+r.cliente : ""}`, desde:"", pagina:"roteiros"}));
+  aprovacoes.sort((a,b)=>(a.desde||"9999").localeCompare(b.desde||"9999"));
+  // semana com setas (a rotina mostra o dia escolhido)
+  const [semanaDesloc,setSemanaDesloc] = useState(0);
+  const diasVistos = diasDaSemana.map(d=>{ const x = new Date(d); x.setDate(d.getDate()+semanaDesloc*7); return x; });
+  const tipoItem = (it) => /grav/i.test(it.texto) ? "grav" : /^postar|post/i.test(it.texto) ? "post" : /entreg|enviar|aprova/i.test(it.texto) ? "ent" : it.apple ? "apple" : "outro";
+  const ROTULO_TIPO = {grav:"Gravar", post:"Postar", ent:"Entrega", apple:"iPhone", outro:"Tarefa"};
+  const iconeItem = (it) => ({grav:"filme", post:"aviao", ent:"documento", apple:"calendario", outro:"relogio"})[tipoItem(it)];
+  // nome curto no calendário da semana: a marca para coisas de job, senão o texto sem o verbo
+  const nomeEv = (it) => it.pagina==="jobs" && it.sub ? String(it.sub).split(" · ")[0] : (String(it.texto).replace(/^(Gravar|Postar|Entregar( conteúdo| roteiro)?|Enviar para aprovação)\s*:?\s*/i, "") || it.sub);
+  const doHoje = itensDoDia(hoje);
+  const nHoje = (t) => doHoje.filter(it=>tipoItem(it)===t).length;
+  const jobsAtrasados = ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)<0).length;
+  const plural = (n, um, varios) => `${n} ${n===1?um:varios}`;
+  const partesResumo = [nHoje("grav") && plural(nHoje("grav"),"gravação","gravações"), nHoje("ent") && plural(nHoje("ent"),"entrega","entregas"), nHoje("post") && plural(nHoje("post"),"post","posts")].filter(Boolean);
+  const feitosDia = agenda.filter(estaFeito).length;
+  const dataExtenso = hojeD.toLocaleDateString("pt-BR",{weekday:"long", day:"numeric", month:"long", year:"numeric"}).replace(/^./, c=>c.toUpperCase());
+  const rotinaRef = useRef(null);
+  function novaTarefaHoje(){ setDiaSel(hoje); setSemanaDesloc(0); setNovaTarefa({hora:"", titulo:"", sub:""}); setTimeout(()=>{ if(rotinaRef.current) rotinaRef.current.scrollIntoView({behavior:"smooth", block:"start"}); }, 50); }
+
   return (
-    <div className="db">
-      {/* cabeçalho */}
-      <div className="db-cabeca">
-        <div className="db-ola">
-          <h1>{saudacao}, {nome}! <span className="db-ola-sol"><DbIcone tipo={iconeHora} tam={26}/></span></h1>
-          <p>Tudo pronto para um dia produtivo? <DbIcone tipo="brilho" tam={15}/></p>
+    <div className="db dn">
+      {/* topo: busca, olho, alertas e nova tarefa */}
+      <div className="dn-topo">
+        <div className="db-busca">
+          <DbIcone tipo="busca" tam={18}/>
+          <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar marca, job ou conteúdo" aria-label="Buscar"/>
+          {termo && <div className="db-pop db-pop-busca">
+            {resultados.length ? resultados.map(r=><button key={r.id} onClick={()=>{setBusca(""); r.ir();}}><b>{r.texto}</b><small>{r.sub}</small></button>)
+              : <p className="db-vazio">Nada encontrado.</p>}
+          </div>}
         </div>
-        <div className="db-acoes">
-          <div className="db-busca">
-            <DbIcone tipo="busca" tam={18}/>
-            <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar por marca, job ou conteúdo..." aria-label="Buscar"/>
-            {termo && <div className="db-pop db-pop-busca">
-              {resultados.length ? resultados.map(r=><button key={r.id} onClick={()=>{setBusca(""); r.ir();}}><b>{r.texto}</b><small>{r.sub}</small></button>)
-                : <p className="db-vazio">Nada encontrado.</p>}
-            </div>}
-          </div>
-          {alternarOcultar && <button className="db-redondo" onClick={alternarOcultar} aria-pressed={ocultar} title={ocultar?"Mostrar valores":"Ocultar valores"} aria-label={ocultar?"Mostrar valores":"Ocultar valores"}><DbIcone tipo={ocultar?"olhoFechado":"olho"} tam={19}/></button>}
-          <div className="db-sino-caixa">
-            <button className="db-redondo" onClick={()=>setSinoAberto(a=>!a)} aria-label="Alertas"><DbIcone tipo="sino" tam={19}/>{alertas.length>0 && <span className="db-ponto"/>}</button>
-            {sinoAberto && <div className="db-pop db-pop-sino">
-              <b className="db-pop-titulo">Alertas</b>
-              {alertas.length ? alertas.map((a,i)=><button key={i} onClick={()=>{setSinoAberto(false); go(a.pagina);}}><b>{a.titulo}</b><small>{a.texto}</small></button>)
-                : <p className="db-vazio">Tudo em ordem por aqui!</p>}
-            </div>}
-          </div>
+        <span className="dn-esp"/>
+        {alternarOcultar && <button className="db-redondo" onClick={alternarOcultar} aria-pressed={ocultar} title={ocultar?"Mostrar valores":"Ocultar valores"} aria-label={ocultar?"Mostrar valores":"Ocultar valores"}><DbIcone tipo={ocultar?"olhoFechado":"olho"} tam={19}/></button>}
+        <div className="db-sino-caixa">
+          <button className="db-redondo" onClick={()=>setSinoAberto(a=>!a)} aria-label="Alertas"><DbIcone tipo="sino" tam={19}/>{alertas.length>0 && <span className="db-ponto"/>}</button>
+          {sinoAberto && <div className="db-pop db-pop-sino">
+            <b className="db-pop-titulo">Alertas</b>
+            {alertas.length ? alertas.map((a,i)=><button key={i} onClick={()=>{setSinoAberto(false); go(a.pagina);}}><b>{a.titulo}</b><small>{a.texto}</small></button>)
+              : <p className="db-vazio">Tudo em ordem por aqui!</p>}
+          </div>}
         </div>
+        <button className="dn-btn" onClick={novaTarefaHoje}><DbIcone tipo="mais" tam={17}/><span>Nova tarefa</span></button>
       </div>
 
-      {/* postagens: roteiros prontos para postar */}
-      {paraPostar.length>0 && <section className="db-postagens">
-        <div className="db-postagens-topo"><DbIcone tipo="calendario" tam={17}/><h2>Pronto para postar</h2><span className="db-postagens-n">{paraPostar.length}</span>
-          <span style={{flex:1}}/><button className="db-seta" onClick={()=>go("roteiros")} aria-label="Ver roteiros"><DbIcone tipo="seta" tam={16}/></button></div>
-        <div className="db-postagens-lista">
-          {paraPostar.map(({r,i})=><button key={r.id} className={"db-postagem "+i.classe} onClick={()=>go("roteiros")}>
-            <b>{r.titulo}</b><small>{i.texto}{r.cliente ? " · "+r.cliente : ""}</small>
-          </button>)}
+      {/* saudação com o resumo do dia */}
+      <div className="dn-ola">
+        <div>
+          <h1>{saudacao}, {nome}</h1>
+          <p>{partesResumo.length ? <>Hoje: {partesResumo.map((p,i)=><React.Fragment key={i}>{i>0 && (i===partesResumo.length-1 ? " e " : ", ")}<b>{p}</b></React.Fragment>)}.</> : "Hoje não tem gravação, entrega nem post marcado."}
+            {jobsAtrasados>0 && ` ${jobsAtrasados===1 ? "Um job está atrasado." : jobsAtrasados+" jobs estão atrasados."}`}</p>
         </div>
-      </section>}
-
-      {/* números */}
-      <div className="db-cartoes">
-        <button className="db-cartao" onClick={()=>go("jobs")}>
-          <span className="db-icone"><DbIcone tipo="maleta" tam={22}/></span>
-          <span className="db-cartao-txt"><b>{andamento.length}</b><span>Jobs em andamento</span><small>{precisaAtencao ? `${precisaAtencao} precisa${precisaAtencao>1?"m":""} de atenção` : "Tudo em dia"}</small></span>
-          <span className="db-seta-canto"><DbIcone tipo="seta" tam={17}/></span>
-        </button>
-        <button className="db-cartao" onClick={()=>go("planner")}>
-          <span className="db-icone"><DbIcone tipo="check" tam={22}/></span>
-          <span className="db-cartao-txt"><b>{entregasSemana.length}</b><span>Entregas esta semana</span><small>{entregasSemana.length ? "Ver entregas" : "Sem entregas"}</small></span>
-          <span className="db-seta-canto"><DbIcone tipo="seta" tam={17}/></span>
-        </button>
-        <button className="db-cartao" onClick={()=>go("financeiro")}>
-          <span className="db-icone"><DbIcone tipo="carteira" tam={22}/></span>
-          <span className="db-cartao-txt"><b>{fmtMoney(aReceber)}</b><span>A receber</span><small>{aReceberLista.length} pagamento{aReceberLista.length===1?"":"s"}</small></span>
-          <span className="db-seta-canto"><DbIcone tipo="seta" tam={17}/></span>
-        </button>
+        <span className="dn-data">{dataExtenso}</span>
       </div>
 
-      {/* prioridade + semana | hoje */}
-      <div className="db-meio">
-        <div className="db-coluna">
-          <section className="db-bloco db-prioridade">
-            <div className="db-bloco-topo"><h2>Minha prioridade</h2><button className="db-seta" onClick={()=>go("jobs")} aria-label="Ver jobs"><DbIcone tipo="seta" tam={18}/></button></div>
-            {prioridade ? (
-              <div className="db-prio-corpo">
-                <div className="db-prio-info">
-                  <div className="db-prio-nome"><DbLogo marca={prioridade.marca} logos={logos}/><b>{prioridade.marca}</b><span className="db-selo">{prioridade.status}</span></div>
-                  <p className="db-prio-sub">{descricaoJob(prioridade)}</p>
-                  <div className="db-etapas db-etapas-grande">
-                    {ETAPAS_JOB.map((e,i)=>{ const at = etapaDoJob(prioridade, state.roteiros);
-                      const ir = () => { const alvo = i===at ? at+1 : i; if(alvo>=ETAPAS_JOB.length) return; mudar(s=>({...s, jobs:(s.jobs||[]).map(j=>j.id===prioridade.id ? jobNaEtapa(j, alvo) : j)})); };
-                      return <span key={e} role="button" tabIndex={0} title={i===at ? (i<ETAPAS_JOB.length-1 ? `Concluir "${e}" e ir para "${ETAPAS_JOB[i+1]}"` : "Etapa final") : `Ir para "${e}"`}
-                        onClick={ir} onKeyDown={ev=>{ if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); ir(); } }}
-                        className={"db-etapa db-etapa-clicavel"+(i<=at?" feita":"")+(i===at?" atual":"")}><i/><small>{etapaCurta(e)}</small></span>; })}
-                  </div>
-                  {(()=>{ const at = etapaDoJob(prioridade, state.roteiros); return <span className="db-etapa-pos">Etapa {at+1} de {ETAPAS_JOB.length}{at<ETAPAS_JOB.length-1 ? ` · próxima: ${ETAPAS_JOB[at+1]}` : ""}</span>; })()}
-                </div>
-                <div className="db-prio-prazo">
-                  <div className="db-prio-data"><DbIcone tipo="calendario" tam={19}/><span><small>Prazo de entrega</small>
-                    {prioridade.prazoEntrega ? <><b>{dataBR(prioridade.prazoEntrega)}</b><em>{diasAte(prioridade.prazoEntrega)===0 ? "é hoje" : diasAte(prioridade.prazoEntrega)<0 ? `${-diasAte(prioridade.prazoEntrega)} dias atrasado` : `${diasAte(prioridade.prazoEntrega)} dias`}</em></> : <em>Sem prazo definido</em>}
-                  </span></div>
-                  <button className="db-btn-escuro" onClick={()=>go("jobs")}>Continuar<DbIcone tipo="seta" tam={16}/></button>
-                </div>
-              </div>
-            ) : <p className="db-vazio">Nenhum job ativo agora.</p>}
-          </section>
+      {/* quatro números */}
+      <div className="dn-cards">
+        <button className="dn-card" onClick={()=>go("financeiro")}><span className="dn-ico"><DbIcone tipo="moeda" tam={21}/></span>
+          <span className="dn-card-txt"><small>A receber</small><b>{dnMoeda(aReceber)}</b><em>{plural(aReceberLista.length,"pagamento","pagamentos")}</em></span><span className="dn-seta"><DbIcone tipo="seta" tam={17}/></span></button>
+        <button className="dn-card" onClick={()=>go("financeiro")}><span className="dn-ico"><DbIcone tipo="grafico" tam={21}/></span>
+          <span className="dn-card-txt"><small>Faturamento do mês</small><b>{dnMoeda(faturamentoMes)}</b><em className={variacao>0?"bom":""}>{variacao===null ? "receitas de "+MESES_EXT[hojeD.getMonth()] : `${variacao>0?"+":""}${variacao}% sobre ${MESES_EXT[(hojeD.getMonth()+11)%12]}`}</em></span><span className="dn-seta"><DbIcone tipo="seta" tam={17}/></span></button>
+        <button className="dn-card" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}><span className="dn-ico"><DbIcone tipo="calendario" tam={21}/></span>
+          <span className="dn-card-txt"><small>Conteúdos do mês</small><b>{dnExtras.conteudos ? `${dnExtras.conteudos.publicados} de ${dnExtras.conteudos.total}` : "..."}</b><em>publicados</em></span><span className="dn-seta"><DbIcone tipo="seta" tam={17}/></span></button>
+        <button className="dn-card" onClick={()=>abrirAba ? abrirAba("propostas") : go("jobs")}><span className="dn-ico"><DbIcone tipo="aviao" tam={21}/></span>
+          <span className="dn-card-txt"><small>Propostas sem resposta</small><b>{dnExtras.propostas ? dnExtras.propostas.total : "..."}</b><em>{dnExtras.propostas && dnExtras.propostas.velhas ? `${dnExtras.propostas.velhas} há mais de 7 dias` : "no e-mail"}</em></span><span className="dn-seta"><DbIcone tipo="seta" tam={17}/></span></button>
+      </div>
 
-          <section className="db-bloco db-semana-bloco">
-            <div className="db-bloco-topo">
-              <h2>Minha semana <small>{String(diasDaSemana[0].getDate()).padStart(2,"0")} a {String(diasDaSemana[6].getDate()).padStart(2,"0")} de {MESES_EXT[diasDaSemana[6].getMonth()]}</small></h2>
-              <button className="db-link" onClick={()=>go("planner")}>Ver calendário<DbIcone tipo="seta" tam={15}/></button>
-            </div>
-            <div className="db-semana">
-              {diasDaSemana.map((d,i)=>{
-                const iso = isoLocal(d);
-                const n = itensDoDia(iso).length;
-                return <button key={iso} className={(iso===diaSel?"sel ":"")+(iso===hoje?"hoje":"")} onClick={()=>setDiaSel(iso)}>
-                  <small>{DIAS_SEMANA[i]}</small>
-                  <b>{n>0 && <i/>}{String(d.getDate()).padStart(2,"0")}</b>
-                  <em>{n ? `${n} tarefa${n>1?"s":""}` : "-"}</em>
-                </button>;
-              })}
-            </div>
-          </section>
-        </div>
+      <div className="dn-g1">
+        {/* campanhas em andamento */}
+        <section className="db-bloco dn-campanhas">
+          <div className="dn-bt"><h2>Campanhas em andamento</h2><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button></div>
+          {campanhas.length ? <div className="dn-tabela">
+            <div className="dn-linha dn-cab"><span>Marca</span><span>Entregas</span><span>Etapa</span><span>Prazo</span></div>
+            {campanhas.slice(0,6).map(j=>{ const p = progressoJob(j), at = etapaDoJob(j, state.roteiros), d = j.prazoEntrega ? diasAte(j.prazoEntrega) : null;
+              return <div className="dn-linha" key={j.id}>
+                <button className="dn-marca" onClick={()=>go("jobs")}><DbLogo marca={j.marca} logos={logos}/><span><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></button>
+                <span className="dn-prog">{p.total ? <><small>{p.feitos} de {p.total}</small><i><b style={{width:Math.max(3,p.pct)+"%"}}/></i></> : <small>sem entregáveis</small>}</span>
+                <span><button className={"dn-chip c-"+classeEtapa(at)} onClick={()=>avancarJob(j)} title={at<ETAPAS_JOB.length-1 ? `${ETAPAS_JOB[at]}. Toque para passar para ${ETAPAS_JOB[at+1]}` : ETAPAS_JOB[at]}>{nomeEtapa(at)}</button></span>
+                <span className="dn-prazo">{j.prazoEntrega ? <><b>{dataBR(j.prazoEntrega).slice(0,5)}</b><small className={d<0?"atr":d===0?"hj":""}>{d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : `em ${d} dia${d===1?"":"s"}`}</small></> : <small>sem prazo</small>}</span>
+              </div>; })}
+          </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
+        </section>
 
-        <section className="db-bloco db-hoje">
-          <div className="db-bloco-topo">
-            <h2>{diaSel===hoje ? "Hoje" : DIAS_NOME[diaSelD.getDay()]} <small>· {String(diaSelD.getDate()).padStart(2,"0")} de {MESES_EXT[diaSelD.getMonth()]}</small></h2>
-            <button className="db-link" onClick={()=>go("planner")}>Ver agenda<DbIcone tipo="seta" tam={15}/></button>
-          </div>
-          <div style={{display:"flex", alignItems:"flex-start", gap:8, flexWrap:"wrap", marginBottom:diaDeGravacao?0:8}}>
-            {diaDeGravacao && <span className="db-chip-dia"><DbIcone tipo="camera" tam={16}/>Dia de gravação</span>}
+        {/* rotina do dia escolhido (hoje, ou o dia tocado na semana) */}
+        <section className="db-bloco dn-rotina" ref={rotinaRef}>
+          <div className="dn-bt"><h2>{diaSel===hoje ? "Minha rotina de hoje" : `Rotina de ${DIAS_NOME[diaSelD.getDay()].toLowerCase()}, ${dataBR(diaSel).slice(0,5)}`}</h2>
+            <span className="dn-bt-dir">{agenda.length>0 && <span className="dn-tag">{feitosDia} de {agenda.length}</span>}<button className="dn-mais" onClick={()=>setNovaTarefa({hora:"", titulo:"", sub:""})} aria-label="Adicionar tarefa"><DbIcone tipo="mais" tam={16}/></button></span></div>
+          {diaSel!==hoje && <button className="db-link dn-voltar" onClick={()=>{ setDiaSel(hoje); setSemanaDesloc(0); }}>Voltar para hoje</button>}
+          <div className="dn-iphone-linha">
+            {diaDeGravacao && <span className="db-chip-dia"><DbIcone tipo="camera" tam={15}/>Dia de gravação</span>}
             <div className="db-iphone-caixa">
-              <button className={"db-iphone"+(apple.erro?" erro":apple.conectado?" ok":"")} onClick={()=>setPopIphone(p=>!p)}>
-                <i/>{apple.conectado ? "Calendário do iPhone" : apple.conectado===false ? "Conectar iPhone" : "iPhone..."}
-              </button>
+              <button className={"db-iphone"+(apple.erro?" erro":apple.conectado?" ok":"")} onClick={()=>setPopIphone(p=>!p)}><i/>{apple.conectado ? "Calendário do iPhone" : apple.conectado===false ? "Conectar iPhone" : "iPhone..."}</button>
               {popIphone && <div className="db-pop db-pop-iphone">
-                {apple.conectado ? <>
-                  <b>Calendário do iPhone conectado{apple.nome ? ` (${apple.nome})` : ""}</b>
-                  <p>Tudo o que você marcar no calendário do iPhone aparece aqui. O painel confere sozinho a cada 10 minutos e quando você volta para a página. O iCloud pode levar alguns minutos para publicar um evento novo.{horaAtualizada ? ` Última conferência: ${horaAtualizada}.` : ""}</p>
-                </> : <>
-                  <b>Conectar o calendário do iPhone</b>
-                  <p>No iPhone: Calendário, toque em Calendários, no (i) do calendário, ligue "Calendário Público" e compartilhe o link. Cole aqui:</p>
-                  <input value={linkIphone} onChange={e=>setLinkIphone(e.target.value)} placeholder="webcal://p..-caldav.icloud.com/published/..." aria-label="Link do calendário do iPhone"/>
-                </>}
+                {apple.conectado ? <><b>Calendário do iPhone conectado{apple.nome ? ` (${apple.nome})` : ""}</b><p>O que você marcar no calendário do iPhone aparece aqui. O painel confere sozinho a cada 10 minutos.{horaAtualizada ? ` Última conferência: ${horaAtualizada}.` : ""}</p></>
+                  : <><b>Conectar o calendário do iPhone</b><p>No iPhone: Calendário, toque em Calendários, no (i) do calendário, ligue "Calendário Público" e compartilhe o link. Cole aqui:</p>
+                    <input value={linkIphone} onChange={e=>setLinkIphone(e.target.value)} placeholder="webcal://p..-caldav.icloud.com/published/..." aria-label="Link do calendário do iPhone"/></>}
                 {apple.erro && <p className="db-erro">{apple.erro}</p>}
                 <div className="db-pop-acoes">
                   {apple.conectado
@@ -2637,37 +2759,67 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
               </div>}
             </div>
           </div>
-          <div className="db-linha-tempo">
-            {agenda.length ? agendaVisivel.map(it=>{
-              const ok = estaFeito(it);
-              return (
-                <div key={it.id} className={"db-tarefa"+(ok?" ok":"")+(it.apple?" apple":"")}>
-                  <span className="db-hora">{it.hora}</span>
-                  <label className="db-check"><input type="checkbox" checked={ok} onChange={()=>marcar(it)}/><span className="db-caixinha"><Icon name="check" size={13}/></span>
-                    <span className="db-tarefa-txt"><b>{it.texto}</b>{it.sub && <small>{it.sub}</small>}</span></label>
-                  <div className="db-menu-caixa">
-                    <button className="db-seta" onClick={()=>setMenuItem(menuItem===it.id?null:it.id)} aria-label="Opções"><DbIcone tipo="pontos" tam={18}/></button>
-                    {menuItem===it.id && <div className="db-pop db-pop-menu">
-                      {it.tarefa
-                        ? <button onClick={()=>{ setMenuItem(null); mudar(s=>({...s, tarefasDia:(s.tarefasDia||[]).filter(t=>t.id!==it.tarefa.id)})); }}><b>Excluir tarefa</b></button>
-                        : it.apple
-                          ? <button onClick={()=>{ setMenuItem(null); carregarApple(); }}><b>Atualizar do iPhone</b><small>Para mudar, edite no calendário do iPhone</small></button>
-                          : <button onClick={()=>{ setMenuItem(null); go(it.pagina); }}><b>Abrir</b></button>}
-                    </div>}
-                  </div>
+          <ul className="dn-lista">
+            {agenda.length ? (agendaToda ? agenda : agenda.slice(0,6)).map(it=>{ const ok = estaFeito(it);
+              return <li key={it.id} className={(ok?"feito":"")+(it.atrasado?" atrasado":"")}>
+                <label className="dn-circ"><input type="checkbox" checked={ok} onChange={()=>marcar(it)} aria-label={ok?"Desmarcar":"Marcar como feito"}/><span/></label>
+                <span className="dn-hora">{it.hora || ""}</span>
+                <span className="dn-ic-item"><DbIcone tipo={iconeItem(it)} tam={18}/></span>
+                <span className="dn-txt"><b>{it.texto}</b>{it.sub && <small>{it.sub}</small>}</span>
+                <div className="db-menu-caixa">
+                  <button className="db-seta" onClick={()=>setMenuItem(menuItem===it.id?null:it.id)} aria-label="Opções"><DbIcone tipo="pontos" tam={18}/></button>
+                  {menuItem===it.id && <div className="db-pop db-pop-menu">
+                    {it.tarefa ? <button onClick={()=>{ setMenuItem(null); mudar(s=>({...s, tarefasDia:(s.tarefasDia||[]).filter(t=>t.id!==it.tarefa.id)})); }}><b>Excluir tarefa</b></button>
+                      : it.apple ? <button onClick={()=>{ setMenuItem(null); carregarApple(); }}><b>Atualizar do iPhone</b><small>Para mudar, edite no calendário do iPhone</small></button>
+                      : <button onClick={()=>{ setMenuItem(null); go(it.pagina); }}><b>Abrir</b></button>}
+                  </div>}
                 </div>
-              );
-            }) : <p className="db-vazio">Nada marcado para este dia.</p>}
+              </li>; }) : <li className="dn-vazio-li"><p className="db-vazio">Nada marcado para este dia.</p></li>}
+          </ul>
+          {agenda.length>6 && <button className="db-link db-ver-mais" onClick={()=>setAgendaToda(a=>!a)}>{agendaToda ? "Ver menos" : `Ver mais ${agenda.length-6}`}</button>}
+          {novaTarefa && <form className="db-nova-tarefa" onSubmit={salvarTarefa}>
+            <input type="time" value={novaTarefa.hora} onChange={e=>setNovaTarefa({...novaTarefa, hora:e.target.value})} aria-label="Horário"/>
+            <input value={novaTarefa.titulo} onChange={e=>setNovaTarefa({...novaTarefa, titulo:e.target.value})} placeholder="O que fazer" aria-label="Tarefa" autoFocus/>
+            <input value={novaTarefa.sub} onChange={e=>setNovaTarefa({...novaTarefa, sub:e.target.value})} placeholder="Detalhe (opcional)" aria-label="Detalhe"/>
+            <div><button type="button" className="db-link" onClick={()=>setNovaTarefa(null)}>Cancelar</button><button className="db-btn-escuro" type="submit">Salvar</button></div>
+          </form>}
+        </section>
+      </div>
+
+      <div className="dn-g2">
+        {/* semana */}
+        <section className="db-bloco dn-semana-bloco">
+          <div className="dn-bt"><h2>Minha semana</h2>
+            <span className="dn-bt-dir"><button className="db-redondo db-redondo-p" onClick={()=>setSemanaDesloc(s=>s-1)} aria-label="Semana anterior"><DbIcone tipo="esq" tam={15}/></button>
+              <span className="dn-sel">{diasVistos[0].getDate()} {MESES_EXT[diasVistos[0].getMonth()].slice(0,3)} a {diasVistos[6].getDate()} {MESES_EXT[diasVistos[6].getMonth()].slice(0,3)}</span>
+              <button className="db-redondo db-redondo-p" onClick={()=>setSemanaDesloc(s=>s+1)} aria-label="Próxima semana"><DbIcone tipo="dir" tam={15}/></button></span></div>
+          <div className="dn-sem">
+            {diasVistos.map((d,i)=>{ const iso = isoLocal(d); const its = itensDoDia(iso);
+              return <button key={iso} className={"dn-dia"+(iso===hoje?" hoje":"")+(iso===diaSel?" sel":"")} onClick={()=>setDiaSel(iso)}>
+                <small>{DIAS_SEMANA[i]}</small><b>{String(d.getDate()).padStart(2,"0")}</b>
+                <span className="dn-evs">{its.slice(0,3).map(it=><span key={it.id} className={"dn-ev "+tipoItem(it)}><small>{ROTULO_TIPO[tipoItem(it)]}</small>{nomeEv(it)}</span>)}
+                  {its.length>3 && <span className="dn-ev-mais">+{its.length-3}</span>}</span>
+              </button>; })}
           </div>
-          {agenda.length>4 && <button className="db-link db-ver-mais" onClick={()=>setAgendaToda(a=>!a)}>{agendaToda ? "Ver menos" : `Ver mais ${agenda.length-4}`}</button>}
-          {novaTarefa ? (
-            <form className="db-nova-tarefa" onSubmit={salvarTarefa}>
-              <input type="time" value={novaTarefa.hora} onChange={e=>setNovaTarefa({...novaTarefa, hora:e.target.value})} aria-label="Horário"/>
-              <input value={novaTarefa.titulo} onChange={e=>setNovaTarefa({...novaTarefa, titulo:e.target.value})} placeholder="O que fazer" aria-label="Tarefa" autoFocus/>
-              <input value={novaTarefa.sub} onChange={e=>setNovaTarefa({...novaTarefa, sub:e.target.value})} placeholder="Detalhe (opcional)" aria-label="Detalhe"/>
-              <div><button type="button" className="db-link" onClick={()=>setNovaTarefa(null)}>Cancelar</button><button className="db-btn-escuro" type="submit">Salvar</button></div>
-            </form>
-          ) : <button className="db-add-tarefa" onClick={()=>setNovaTarefa({hora:"", titulo:"", sub:""})}><DbIcone tipo="mais" tam={17}/>Adicionar tarefa</button>}
+          <div className="dn-leg"><span className="grav">Gravar</span><span className="post">Postar</span><span className="ent">Entregar</span></div>
+        </section>
+
+        {/* aguardando aprovação */}
+        <section className="db-bloco dn-aprov">
+          <div className="dn-bt"><h2>Aguardando aprovação</h2><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button></div>
+          {aprovacoes.length ? <ul className="dn-apr">{aprovacoes.slice(0,5).map(a=>{ const d = a.desde ? -diasAte(a.desde) : null;
+            return <li key={a.id}><button onClick={()=>go(a.pagina)}><span className="dn-ico dn-ico-p"><DbIcone tipo={a.tipo==="roteiro"?"documento":"filme"} tam={17}/></span>
+              <span className="dn-txt"><b>{a.titulo}</b><small>{a.desde ? (d>=0 ? "Enviado em " : "Envio previsto para ")+dataBR(a.desde).slice(0,5) : "Esperando a marca"}</small></span>
+              {d>0 && <span className="dn-ha">há {d} dia{d===1?"":"s"}</span>}</button></li>; })}</ul>
+            : <p className="db-vazio">Nada esperando aprovação.</p>}
+        </section>
+
+        {/* financeiro */}
+        <section className="db-bloco dn-fin">
+          <div className="dn-bt"><h2>Financeiro</h2><span className="dn-sel">{MESES_EXT[hojeD.getMonth()].replace(/^./, c=>c.toUpperCase())}</span></div>
+          <div className="dn-fin-2"><button onClick={()=>go("financeiro")}><b>{dnMoeda(recebidoMes)}</b><small>Recebido no mês</small></button>
+            <button className={atrasadoValor>0?"at":""} onClick={()=>go("financeiro")}><b>{dnMoeda(atrasadoValor)}</b><small>{atrasadoValor>0 ? `Atrasado (${atrasadoLista.length})` : "Nada atrasado"}</small></button></div>
+          <div className="dn-graf" aria-label="Recebido nos últimos 6 meses">{meses6.map((m,i)=><div key={m.k} title={m.rotulo+": "+dnMoeda(m.valor)}><i className={i===5?"at":""} style={{height:Math.max(4, m.valor/maxMes*100)+"%"}}/><small>{m.rotulo}</small></div>)}</div>
         </section>
       </div>
 
