@@ -467,7 +467,7 @@
     const mesesComValor = new Set(ano.map((l) => l.data.slice(5, 7))).size || 1;
     const porCat = {}; lm.forEach((l) => { porCat[l.categoria || "Outros"] = (porCat[l.categoria || "Outros"] || 0) + (Number(l.valor) || 0); });
     const cats = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
-    const atalhos = ent ? ["Salário", "Vale", "Renda extra"] : ["Conta fixa", "Mercado", "Dívida pessoal"];
+    const atalhos = ent ? ["Salário", "PUBLI", "MARKETPLACE"] : ["Conta fixa", "Mercado", "Dívida pessoal"];
     return `<div class="fn-kpis">
         ${kpi(ent ? "Entrou no mês" : "Saiu no mês", R$(total), ent ? "entra" : "sai", `${lm.length} lançamento${lm.length === 1 ? "" : "s"}`, "destaque", delta(total, soma(la), !ent))}
         ${kpi(ent ? "Já recebido" : "Já pago", R$(feito), "check", "")}
@@ -478,7 +478,7 @@
         <div class="fn-caixa"><div class="fn-cab"><div><h3>${ent ? "Entradas" : "Saídas"} de ${MESES[st.ref.m].toLowerCase()}</h3><p class="sub">Toque na situação para marcar como ${ent ? "recebido" : "pago"}</p></div>
           <div class="fn-acoes">${atalhos.map((a) => `<button class="fn-btn pequeno" type="button" data-novo-cat="${a}" data-tipo="${tipo}">${ICONE.mais}${a}</button>`).join("")}${ent ? "" : `<button class="fn-btn pequeno" type="button" data-nova-compra>${ICONE.cartoes}Compra no cartão</button>`}<button class="fn-btn pequeno principal" type="button" data-novo="${tipo}">${ICONE.mais}Outra</button></div></div>
           ${lm.length ? `<div class="fn-rolar"><table class="fn-tabela"><thead><tr><th>Dia</th><th>Descrição</th><th class="esconde">Tipo</th><th>Situação</th><th class="num">Valor</th><th></th></tr></thead><tbody>
-          ${[...lm].sort((a, b) => a.data.localeCompare(b.data)).map((l) => `<tr><td>${dataBR(l.data).slice(0, 5)}</td><td>${esc(l.descricao)}${l.auto ? ' <small class="fn-auto">soma das compras</small>' : ""}</td><td class="esconde"><span class="fn-tag">${esc(l.categoria || "")}</span></td><td><button class="fn-chip ${l.pago ? "" : vencido(l) ? "mal" : "amb"}" type="button" data-pagar="${esc(l.id)}" style="border:0;cursor:pointer">${l.pago ? (ent ? "Recebido" : "Pago") : vencido(l) ? "Vencido" : ent ? "A receber" : "A pagar"}</button></td><td class="num"><span class="fn-valor ${ent ? "entra" : "sai"}">${R$(l.valor)}</span></td><td class="num"><button class="fn-icone" type="button" data-editar-l="${esc(l.id)}" aria-label="Editar">${ICONE.lapis}</button></td></tr>`).join("")}
+          ${[...lm].sort((a, b) => a.data.localeCompare(b.data)).map((l) => `<tr><td>${dataBR(l.data).slice(0, 5)}</td><td>${esc(l.descricao)}${l.auto ? ' <small class="fn-auto">soma das compras</small>' : ""}${l.marketplace || l.influencer ? `<small class="fn-loja">${esc([l.marketplace && "Loja: " + l.marketplace, l.influencer].filter(Boolean).join(" · "))}</small>` : ""}${l.origem === "pj" ? '<small class="fn-loja">CNPJ</small>' : ""}</td><td class="esconde"><span class="fn-tag">${esc(l.categoria || "")}</span></td><td><button class="fn-chip ${l.pago ? "" : vencido(l) ? "mal" : "amb"}" type="button" data-pagar="${esc(l.id)}" style="border:0;cursor:pointer">${l.pago ? (ent ? "Recebido" : "Pago") : vencido(l) ? "Vencido" : ent ? "A receber" : "A pagar"}</button></td><td class="num"><span class="fn-valor ${ent ? "entra" : "sai"}">${R$(l.valor)}</span></td><td class="num"><button class="fn-icone" type="button" data-editar-l="${esc(l.id)}" aria-label="Editar">${ICONE.lapis}</button></td></tr>`).join("")}
           </tbody></table></div>` : `<p class="fn-vazio">Nada lançado neste mês ainda.</p>`}</div>
         <div class="fn-caixa"><h3>Por tipo</h3><p class="sub">${ent ? "De onde veio o dinheiro" : "Para onde foi o dinheiro"}</p>
           <div class="fn-lista">${cats.map(([k, v], i) => `<div class="fn-item" style="flex-wrap:wrap"><div class="x"><b>${esc(k)}</b></div><span class="fn-valor">${R$(v)}</span><div class="fn-barra" style="flex-basis:100%"><i style="width:${(v / Math.max(total, 1) * 100).toFixed(1)}%;background:${CORES[i % CORES.length]}"></i></div></div>`).join("") || `<p class="fn-vazio">Sem valores neste mês.</p>`}</div></div>
@@ -589,7 +589,7 @@
         <div class="fn-campo"><label for="e-etq">Etiqueta</label><select class="fn-entrada" id="e-etq">${ops(l.categoria)}</select></div></div>
       <div class="fn-campo" id="e-infl-campo" ${COM_INFLUENCER.includes(l.categoria) ? "" : "hidden"}><label for="e-infl">Nome da influencer</label><input class="fn-entrada" id="e-infl" value="${esc(l.influencer || "")}" placeholder="Quem fez a publi"></div>
       <div id="e-mkt-campos" ${l.categoria === "MARKETPLACE" ? "" : "hidden"}>
-        <div class="fn-campo"><label for="e-mkt">Marketplace</label><input class="fn-entrada" id="e-mkt" value="${esc(l.marketplace || "")}" placeholder="Ex.: Shopee, TikTok Shop, Mercado Livre"></div>
+        <div class="fn-campo"><label for="e-mkt">Loja (marketplace)</label><input class="fn-entrada" id="e-mkt" value="${esc(l.marketplace || "")}" placeholder="Ex.: Shopee, TikTok Shop, Mercado Livre"></div>
         <div class="fn-campo"><label>TAC</label><div data-lugar="tac">${anexoHtml("tac", tac)}</div></div>
       </div>
       <div class="duplo"><div class="fn-campo"><label for="e-prev">Data prevista de pagamento</label><input class="fn-entrada" type="date" id="e-prev" value="${esc(dt.prevista || "")}" ${daPJ ? "disabled" : ""}></div>
@@ -618,10 +618,21 @@
       });
     };
     ligarAnexo("nf"); ligarAnexo("comp"); ligarAnexo("tac");
+    // MARKETPLACE: a descrição se monta sozinha ("Comissão Shopee · Mariana · Out/26") enquanto ela não escrever outra
+    let descAuto = "";
+    const sugerir = () => {
+      const ed = $("#e-descricao", dlg); if (!ed || ed.disabled || $("#e-etq", dlg).value !== "MARKETPLACE") return;
+      const quando = $("#e-pag", dlg).value || $("#e-prev", dlg).value, mes = quando ? `${MES3[Number(quando.slice(5, 7)) - 1]}/${quando.slice(2, 4)}` : "";
+      const s = ["Comissão " + ($("#e-mkt", dlg).value.trim() || "(loja)"), $("#e-infl", dlg).value.trim(), mes].filter(Boolean).join(" · ");
+      if (!ed.value.trim() || ed.value === descAuto) { ed.value = s; descAuto = s; }
+      ed.placeholder = s;
+    };
+    ["#e-mkt", "#e-infl", "#e-pag", "#e-prev"].forEach((sel) => { const el = $(sel, dlg); if (el) el.addEventListener("input", sugerir); });
     $("#e-etq", dlg).addEventListener("change", async (e) => {
       if (e.target.value === "__nova") { const n = await novaEtiqueta(); e.target.innerHTML = ops(n || l.categoria); }
       $("#e-infl-campo", dlg).hidden = !COM_INFLUENCER.includes(e.target.value);
       $("#e-mkt-campos", dlg).hidden = e.target.value !== "MARKETPLACE";
+      sugerir();
     });
     $$("[data-nf]", dlg).forEach((b) => b.addEventListener("click", () => { temNF = b.dataset.nf === "sim"; $$("[data-nf]", dlg).forEach((x) => { x.classList.toggle("on", x === b); x.setAttribute("aria-checked", String(x === b)); }); $("#e-nf-campo", dlg).hidden = !temNF; }));
     const fechar = () => { tirarArquivos(enviados); dlg.close(); };
@@ -945,7 +956,7 @@
     $$("[data-nova-compra]", raiz).forEach((b) => b.addEventListener("click", () => editarCompra(null, b.dataset.novaCompra || null)));
     $$("[data-editar-compra]", raiz).forEach((b) => b.addEventListener("click", () => editarCompra(acha(d.compras, b.dataset.editarCompra))));
     $$("[data-conferir]", raiz).forEach((el) => el.addEventListener("change", () => { const c = acha(d.cartoes, el.dataset.conferir); if (!c) return; c.conferidas = c.conferidas || {}; c.conferidas[ymDe(st.ref.y, st.ref.m)] = el.value.trim() === "" ? null : num(el.value); salvar(); pintar(); }));
-    $$("[data-novo-cat]", raiz).forEach((b) => b.addEventListener("click", () => editarLancamento(null, b.dataset.tipo, { categoria: b.dataset.novoCat, descricao: b.dataset.novoCat === "Conta fixa" ? "" : b.dataset.novoCat })));
+    $$("[data-novo-cat]", raiz).forEach((b) => b.addEventListener("click", () => editarLancamento(null, b.dataset.tipo, { categoria: b.dataset.novoCat, descricao: ["Conta fixa", "PUBLI", "MARKETPLACE"].includes(b.dataset.novoCat) ? "" : b.dataset.novoCat })));
     $$("[data-grupo]", raiz).forEach((b) => b.addEventListener("click", () => { st.anoAbertos[b.dataset.grupo] = b.getAttribute("aria-expanded") !== "true"; pintar(); }));
     $$("[data-ano-aba]", raiz).forEach((b) => b.addEventListener("click", () => { st.anoAba = b.dataset.anoAba; pintar(); }));
     $$("[data-linha]", raiz).forEach((b) => b.addEventListener("click", () => { const [tipo, nomeL] = b.dataset.linha.split("|"); editarLinha(tipo, nomeL); }));

@@ -487,3 +487,4 @@ a{color:var(--principal)}
   .fn-va-acoes{order:10;margin-left:auto}
   .fn-va-tabela td:nth-child(3),.fn-va-tabela td:nth-child(4){font-size:12px;color:var(--suave)}
 }
+.fn-loja{display:block;font-size:11px;color:var(--suave);margin-top:1px}
