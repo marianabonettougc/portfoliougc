@@ -34,7 +34,7 @@
   const STATUS_ANTIGO = { Gravado: "Em edição", Editado: "Pronto", Postado: "Publicado", "Para postar": "Pronto", Agendado: "Pronto" };
   const normStatus = (s) => STATUS_ANTIGO[s] || (STATUS.includes(s) ? s : "Ideia");
   const NICHOS = ["Maternidade", "Autocuidado", "Beleza e cabelo", "Moda", "Bem-estar", "Achadinhos de casa e tech"];
-  const TIPOS_CONTEUDO = ["UGC", "Orgânico"];
+  const TIPOS_CONTEUDO = ["Orgânico", "UGC", "Publi"];
   const PRODUZIR = ["Ideia", "Roteirizado", "Para gravar"];
   const FORMATOS = ["Reels", "Carrossel", "Stories"];
   const FUNIS = ["Topo", "Meio", "Fundo"];
@@ -478,12 +478,18 @@
   const CORES_PIL = 6;
   const indicePilar = (nome) => { const i = (st.perfil.pilares || []).findIndex((x) => x.nome === nome); return i < 0 ? -1 : i % CORES_PIL; };
   const funilIc = '<svg class="traco pc-funil" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M7 10h10M10 15h4M11.5 19.5h1"/></svg>';
-  // cartão pequeno do calendário: título, formato e tipo (marca quando é publi), status discreto; cor só no pontinho do pilar/nicho
-  function cartaoPost(p) {
-    const i = indicePilar(p.pilar);
-    const meta = [(p.formato || "Reels"), p.tipo_conteudo, p.marca].filter(Boolean).join(" · ");
-    return `<button type="button" class="pc2-mini${p.status === "Publicado" ? " feito" : ""}" data-id="${p.id}" title="${esc([p.nicho, p.pilar, p.funil].filter(Boolean).join(" · "))}">
-      <b><i class="pc2-ponto pil-${i < 0 ? "x" : i}" aria-hidden="true"></i>${esc(p.tema || "Sem título")}</b><small>${esc(meta)}${p.horario ? " · " + esc(p.horario) : ""}</small><em>${esc(p.status)}</em></button>`;
+  // calendário = só agenda: pílulas de publicação (orgânico ou publi), gravação e compromissos dos jobs
+  const ehPubli = (p) => Boolean(p.marca) || p.tipo_conteudo === "Publi";
+  const tipoTxt = (p) => (ehPubli(p) ? "Publi" + (p.marca ? " · " + p.marca : "") : p.tipo_conteudo || "");
+  function pilulas(s2) {
+    const pubs = st.todos.filter((p) => p.data === s2).map((p) => `<button type="button" class="pc3-pill ${ehPubli(p) ? "k-publi" : "k-org"}${p.status === "Publicado" ? " feito" : ""}" data-id="${p.id}" data-arrasta="pub:${p.id}" title="${esc([p.tema, p.formato, tipoTxt(p), p.horario, p.status].filter(Boolean).join(" · "))}">${esc(p.tema || "Sem título")}</button>`);
+    const gravs = st.todos.filter((p) => p.data_gravacao === s2 && p.status !== "Publicado").map((p) => `<button type="button" class="pc3-pill k-grav" data-id="${p.id}" data-arrasta="grav:${p.id}" title="Gravação de ${esc(p.tema || "")}">Gravar: ${esc(p.tema || "Sem título")}</button>`);
+    const comp = (st.agenda || []).filter((x) => x.data === s2).map((x) => `<button type="button" class="pc3-pill k-comp" ${x.ir ? `data-ir="${x.ir}"` : ""} title="${esc(x.rotulo + ": " + x.texto)}">${esc(x.texto)} · ${esc(x.rotulo.replace(/^PUBLI · /, "").replace(/^AGENDA · ?/, "").toLowerCase())}</button>`);
+    return gravs.join("") + pubs.join("") + comp.join("");
+  }
+  function celulaDia(d, fora) {
+    const s2 = iso(d);
+    return `<div class="pc3-dia${fora ? " fora" : ""}${s2 === iso(hoje) ? " hoje" : ""}" data-dia="${s2}"><div class="pc3-dia-cab"><b>${d.getDate()}</b><button type="button" class="pc3-add" data-novo="${s2}" aria-label="Novo conteúdo em ${d.getDate()}/${pad(d.getMonth() + 1)}">${ic.mais}</button></div>${pilulas(s2)}</div>`;
   }
   async function salvarTema(seg, texto) {
     st.temas = { ...(st.temas || {}) }; if (texto) st.temas[seg] = texto; else delete st.temas[seg];
@@ -497,38 +503,16 @@
     $("#pc-mes", sec).innerHTML = opcoesMes().map((m) => `<option value="${m}" ${m === st.mes ? "selected" : ""}>${rotuloMes(m)}</option>`).join("");
     $("#pc-sobre-mes", sec).textContent = rotuloMes(st.mes);
     if (st.faltaTabela) { $("#pc-quadro", sec).innerHTML = `<p class="faixa faixa-erro">A tabela do Painel de conteúdo ainda não existe no banco.</p>`; return; }
-    const doMes = st.posts;
-    const formatos = new Set(doMes.map((p) => p.formato).filter(Boolean)).size;
-    const rot = doMes.filter((p) => p.status !== "Ideia").length;
-    const nomesPil = (st.perfil.pilares || []).map((x) => x.nome);
-    const contaPil = nomesPil.map((n) => `${esc(n)} <b>${doMes.filter((p) => p.pilar === n).length}</b>`).join(" · ");
-    const contaFun = FUNIS.map((f) => `${f} <b>${doMes.filter((p) => p.funil === f).length}</b>`).join(" · ");
-    $("#pc-numeros", sec).innerHTML = `<div><b>${doMes.length}</b><span>posts no mês</span></div><div><b>${formatos}</b><span>formatos em teste</span></div><div><b>${rot} de ${doMes.length}</b><span>roteirizados</span></div>
-      <p class="pc-mix">Pilares: ${contaPil || "defina no seu perfil"}<br>Funil: ${contaFun}</p>`;
     const semanas = semanasDoMes(); st.semana = Math.min(st.semana, semanas.length - 1);
     const mesNum = Number(st.mes.split("-")[1]) - 1, br = (d) => `${d.getDate()}/${pad(d.getMonth() + 1)}`;
-    $("#pc-nsem", sec).textContent = semanas.length;
-    $("#pc-semana-rot", sec).textContent = `${br(semanas[0][0])} a ${br(semanas[semanas.length - 1][6])}`;
-    $("#pc-legenda", sec).innerHTML = (st.perfil.pilares || []).map((x, i) => `<span><i class="pil-${i % CORES_PIL}"></i>${esc(x.nome)}</span>`).join("") + `<span><i class="pil-publi"></i>Publis e compromissos</span>`;
-    $("#pc-quadro", sec).innerHTML = semanas.map((sem, n) => {
-      const seg = iso(sem[0]), daSemana = doMes.filter((p) => p.data && p.data >= seg && p.data <= iso(sem[6]));
-      const fun = FUNIS.map((f) => `<span class="pc-fun" title="${f}">${funilIc}${f} ${daSemana.filter((p) => p.funil === f).length}</span>`).join("");
-      const tema = (st.temas || {})[seg];
-      return `<section class="pc-sem${sem.some((d) => iso(d) === iso(hoje)) ? " atual" : ""}" id="pc-sem-${n}">
-        <div class="pc-sem-cab"><b>Semana ${n + 1}</b><small>${br(sem[0])} a ${br(sem[6])}</small><span class="pc-chip">${daSemana.length} POST${daSemana.length === 1 ? "" : "S"}</span>${fun}
-          <button type="button" class="pc-tema${tema ? " tem" : ""}" data-tema="${seg}" title="Tema da semana (toque para mudar)">${tema ? esc(tema) : "+ tema da semana"}</button></div>
-        <div class="pc-quadro">${sem.map((d, k) => {
-          const s2 = iso(d), fora = d.getMonth() !== mesNum, eHoje = s2 === iso(hoje);
-          const lista = doMes.filter((p) => p.data === s2);
-          return `<div class="pc-dia${fora ? " fora" : ""}${eHoje ? " hoje" : ""}" data-dia="${s2}">
-            <div class="pc-dia-cab"><span>${DIAS[k]}</span><b>${d.getDate()}</b>${fora ? "" : `<button type="button" class="pc-add" data-novo="${s2}" aria-label="Novo post em ${d.getDate()}/${pad(d.getMonth() + 1)}">${ic.mais}</button>`}</div>
-            ${lista.map(cartaoPost).join("")}
-            ${(st.agenda || []).filter((x) => x.data === s2).map((x) => `<button type="button" class="pc-agenda ${x.tipo}" ${x.ir ? `data-ir="${x.ir}"` : ""} title="${x.ir === "campanhas" ? "Abrir em UGC's & Publis" : ""}"><small>${esc(x.rotulo)}</small>${esc(x.texto)}</button>`).join("")}
-          </div>`;
-        }).join("")}</div>
-      </section>`;
+    $("#pc-semana-rot", sec).textContent = rotuloMes(st.mes);
+    $("#pc-legenda", sec).innerHTML = `<span><i class="k-org"></i>Orgânico</span><span><i class="k-publi"></i>Publi</span><span><i class="k-grav"></i>Gravação</span><span><i class="k-comp"></i>Entregas e compromissos de jobs</span>`;
+    $("#pc-quadro", sec).innerHTML = `<div class="pc3-cal-dias">${DIAS.map((d) => `<span>${d}</span>`).join("")}</div>` + semanas.map((sem, n) => {
+      const seg = iso(sem[0]), tema = (st.temas || {})[seg];
+      return `<div class="pc3-sem${sem.some((d) => iso(d) === iso(hoje)) ? " atual" : ""}" id="pc-sem-${n}">
+        <button type="button" class="pc3-tema${tema ? " tem" : ""}" data-tema="${seg}" title="Tema da semana">${tema ? esc(tema) : "+ tema da semana"}</button>
+        <div class="pc3-grade">${sem.map((d) => celulaDia(d, d.getMonth() !== mesNum)).join("")}</div></div>`;
     }).join("");
-    $$("[data-ir]", sec).forEach((b) => b.addEventListener("click", () => { location.hash = "#" + b.dataset.ir; }));
     $$("[data-tema]", sec).forEach((b) => b.addEventListener("click", async () => {
       const atual = (st.temas || {})[b.dataset.tema] || "";
       const novo = await painelDialogo.texto("Tema desta semana (ex.: Black Friday para marcas). Deixe vazio para tirar.", atual);
@@ -536,18 +520,22 @@
     }));
     pintarSemanal(sec);
     pintarGeral(sec); pintarKanban(sec); pintarIdeias(sec);
-    ligarCliques($("[data-pcpar=cal]", sec));
-    $$("[data-novo]", sec).forEach((b) => b.addEventListener("click", () => abrir(novoConteudo({ data: b.dataset.novo, status: "Roteirizado" }))));
-    // arrastar um post para outro dia
-    $$(".pc2-mini", $("[data-pcpar=cal]", sec)).forEach((b) => { b.draggable = true; b.addEventListener("dragstart", (e) => e.dataTransfer.setData("text/plain", b.dataset.id)); });
-    $$(".pc-dia", sec).forEach((col) => {
-      col.addEventListener("dragover", (e) => { e.preventDefault(); col.classList.add("alvo"); });
+    const cal = $("[data-pcpar=cal]", sec);
+    ligarCliques(cal);
+    $$("[data-ir]", cal).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); location.hash = "#" + b.dataset.ir; }));
+    $$("[data-novo]", cal).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); abrir(novoConteudo({ data: b.dataset.novo, status: "Roteirizado" })); }));
+    // arrastar: a publicação muda a data de publicação; a gravação muda a data de gravação (sempre o mesmo cadastro)
+    $$("[data-arrasta]", cal).forEach((b) => { b.draggable = true; b.addEventListener("dragstart", (e) => e.dataTransfer.setData("text/cal", b.dataset.arrasta)); });
+    $$(".pc3-dia", cal).forEach((col) => {
+      col.addEventListener("dragover", (e) => { if ([...e.dataTransfer.types].includes("text/cal")) { e.preventDefault(); col.classList.add("alvo"); } });
       col.addEventListener("dragleave", () => col.classList.remove("alvo"));
       col.addEventListener("drop", async (e) => {
         e.preventDefault(); col.classList.remove("alvo");
-        const p = st.todos.find((x) => String(x.id) === e.dataTransfer.getData("text/plain"));
-        if (!p || p.data === col.dataset.dia) return;
-        try { await salvar({ id: p.id, data: col.dataset.dia }); pintar(); } catch (er) { toast(er.message, true); }
+        const [tipo, id] = String(e.dataTransfer.getData("text/cal")).split(":");
+        const p = st.todos.find((x) => String(x.id) === id); if (!p) return;
+        const campo = tipo === "grav" ? "data_gravacao" : "data";
+        if (p[campo] === col.dataset.dia) return;
+        try { await salvar({ id: p.id, [campo]: col.dataset.dia }); pintar(); toast(tipo === "grav" ? "Gravação remarcada." : "Data de publicação mudada."); } catch (er) { toast(er.message, true); }
       });
     });
     const bt = $("#pc-gerar", sec);
@@ -642,8 +630,9 @@
       <div class="janela-corpo pc-form">
         ${insp.link ? `<div class="pc-ref"><small>Referência</small><a href="${esc(insp.link)}" target="_blank" rel="noopener">${esc(insp.perfil || "Abrir o post")} · abrir no Instagram</a>${insp.legenda ? `<span>${esc(insp.legenda)}</span>` : ""}${insp.colecao ? `<em>pasta ${esc(insp.colecao)}</em>` : ""}</div>` : ""}
         <label class="campo pc-largo"><span>Título</span><input name="tema" value="${esc(p.tema)}"></label>
-        <div class="pc-grade4">
-          <label class="campo"><span>Dia</span><input type="date" name="data" value="${esc(p.data || "")}"></label>
+        <div class="pc-grade4 pc-grade5">
+          <label class="campo"><span>Publicação</span><input type="date" name="data" value="${esc(p.data || "")}"></label>
+          <label class="campo"><span>Gravação</span><input type="date" name="data_gravacao" value="${esc(p.data_gravacao || "")}"></label>
           <label class="campo"><span>Horário</span><input name="horario" value="${esc(p.horario || "")}" placeholder="12h"></label>
           <label class="campo"><span>Formato</span><select name="formato">${opt(FORMATOS, p.formato)}</select></label>
           <label class="campo"><span>Status</span><select name="status">${opt(STATUS, p.status)}</select></label>
@@ -723,7 +712,7 @@
   function pintarPlano() {
     const box = document.getElementById("pc-plano"); if (!box) return;
     const r = pl.atual;
-    const topo = `<div class="pc-plano-cab"><div><h3 class="pc-h3">Plano da semana</h3><p class="pc-ajuda">Chega pronto todo sábado às 8h, com a semana seguinte. Marque o que já fez.</p></div>
+    const topo = `<div class="pc-plano-cab"><div><h3 class="pc2-h">Plano da <em>semana</em></h3><p class="pc-ajuda">Gravar e postar. Chega pronto todo sábado às 8h.</p></div>
       <div class="pc-plano-acoes">${pl.lista.length > 1 ? `<select class="entrada" id="pc-plano-sem" aria-label="Qual semana">${pl.lista.map((x, i) => `<option value="${i}" ${i === pl.idx ? "selected" : ""}>${brCurta(x.semana)} a ${brCurta(x.plano && x.plano.fim || x.semana)}</option>`).join("")}</select>` : ""}
       <button class="btn" type="button" id="pc-plano-gerar"${pl.gerando ? " disabled" : ""}>${pl.gerando ? "Montando…" : r ? "Montar de novo" : "Montar agora"}</button>
       ${r ? `<button class="btn" type="button" id="pc-plano-editar">Editar foco</button><button class="btn btn-perigo" type="button" id="pc-plano-excluir">Excluir</button>` : ""}</div></div>`;
@@ -732,11 +721,11 @@
     const item = (it, onde) => `<li class="pc-plano-item pi-${esc(it.tipo || "prop")}${it.feito ? " feito" : ""}"><label><input type="checkbox" data-feito="${esc(it.id)}" data-onde="${onde}" ${it.feito ? "checked" : ""}><span><b>${esc(ROT_ITEM[it.tipo] || "Proposta")}</b> ${esc(String(it.texto || "").replace(/^(Gravar|Postar) /, ""))}</span></label>${it.post_id ? `<button type="button" class="pc-plano-abrir" data-post="${it.post_id}">abrir</button>` : ""}<button type="button" class="pc-plano-tirar" data-tirar="${esc(it.id)}" data-onde="${onde}" aria-label="Tirar do plano">×</button></li>`;
     box.innerHTML = topo + `
       ${r.foco ? `<p class="pc-plano-foco"><b>Foco:</b> ${esc(r.foco)}</p>` : ""}
-      <p class="pc-plano-resumo">${plural(c.posts || 0, "post", "posts")}${p.novos ? ` (${plural(p.novos, "ideia nova", "ideias novas")} com roteiro)` : ""} · ${plural(c.publis || 0, "prazo de publi", "prazos de publi")} · ${plural(c.propostas || 0, "proposta para responder", "propostas para responder")}${r.origem === "sabado" ? " · chegou no sábado" : ""}</p>
+      <p class="pc-plano-resumo">${plural(c.posts || 0, "post", "posts")}${p.novos ? ` (${plural(p.novos, "ideia nova", "ideias novas")} com roteiro)` : ""}${r.origem === "sabado" ? " · chegou no sábado" : ""}</p>
       ${p.aviso ? `<p class="faixa faixa-erro">${esc(p.aviso)}</p>` : ""}
       <div class="pc-plano-dias">${(p.dias || []).map((d) => `<div class="pc-plano-dia${d.data === iso(hoje) ? " hoje" : ""}"><div class="pc-plano-dia-cab"><b>${esc(d.nome)}</b><small>${brCurta(d.data)}</small></div>
-        <ul>${(d.itens || []).map((it) => item(it, d.data)).join("") || `<li class="pc-plano-livre">livre</li>`}</ul></div>`).join("")}</div>
-      ${(p.propostas || []).length ? `<div class="pc-plano-props"><b>Propostas para responder</b> <button type="button" class="btn-link" data-ir="propostas">abrir Propostas</button><ul>${p.propostas.map((it) => item(it, "propostas")).join("")}</ul></div>` : ""}`;
+        <ul>${(d.itens || []).filter((it) => it.tipo === "gravar" || it.tipo === "postar").map((it) => item(it, d.data)).join("") || `<li class="pc-plano-livre">livre</li>`}</ul></div>`).join("")}</div>
+      ${false ? `<div class="pc-plano-props"><b>Propostas para responder</b> <button type="button" class="btn-link" data-ir="propostas">abrir Propostas</button><ul>${p.propostas.map((it) => item(it, "propostas")).join("")}</ul></div>` : ""}`;
     ligarPlano(box);
   }
   async function salvarPlano(campos) {
@@ -786,7 +775,7 @@
     $$("[data-ir]", box).forEach((b) => b.addEventListener("click", () => { location.hash = "#" + b.dataset.ir; }));
   }
 
-  // ---------- calendário semanal (mesmos cartões e o mesmo arrastar do mensal) ----------
+  // ---------- calendário semanal (as mesmas pílulas e o mesmo arrastar do mensal) ----------
   function pintarSemanal(sec) {
     const semana = st.cal === "semana";
     $$("[data-calvista]", sec).forEach((b) => b.classList.toggle("ativa", b.dataset.calvista === st.cal));
@@ -796,64 +785,72 @@
     const dias = [...Array(7)].map((_, k) => { const d = deIso(ini); d.setDate(d.getDate() + k); return d; });
     const br = (d) => `${d.getDate()}/${pad(d.getMonth() + 1)}`;
     $("#pc-semana-rot", sec).textContent = `${br(dias[0])} a ${br(dias[6])}`;
-    $("#pc-semanal", sec).innerHTML = `<div class="pc-quadro pc2-semana">${dias.map((d, k) => {
-      const s2 = iso(d), lista = st.todos.filter((p) => p.data === s2);
-      return `<div class="pc-dia${s2 === iso(hoje) ? " hoje" : ""}" data-dia="${s2}">
-        <div class="pc-dia-cab"><span>${DIAS[k]}</span><b>${d.getDate()}</b><button type="button" class="pc-add" data-novo="${s2}" aria-label="Novo conteúdo em ${br(d)}">${ic.mais}</button></div>
-        ${lista.map(cartaoPost).join("")}
-        ${(st.agenda || []).filter((x) => x.data === s2).map((x) => `<button type="button" class="pc-agenda ${x.tipo}" ${x.ir ? `data-ir="${x.ir}"` : ""}><small>${esc(x.rotulo)}</small>${esc(x.texto)}</button>`).join("")}
-      </div>`;
-    }).join("")}</div>`;
+    $("#pc-semanal", sec).innerHTML = `<div class="pc3-cal-dias">${DIAS.map((d) => `<span>${d}</span>`).join("")}</div><div class="pc3-grade pc3-grade-semana">${dias.map((d) => celulaDia(d, false)).join("")}</div>`;
   }
 
-  // ---------- visão geral ----------
+  // ---------- regras dos números (cada conteúdo conta uma vez em cada indicador) ----------
+  // planejado = publicação no mês; sem roteiro = Ideia; em andamento = Roteirizado + Para gravar + Em edição;
+  // agendado = Pronto com publicação de hoje em diante; publicado = Publicado; pendente = publicação já passou e não publicou
+  const ANDAMENTO = ["Roteirizado", "Para gravar", "Em edição"];
   const contar = (lista, sts) => lista.filter((p) => sts.includes(p.status)).length;
-  const dataCurta = (d) => { if (!d) return "sem data"; const x = deIso(d); return `${pad(x.getDate())}/${pad(x.getMonth() + 1)}`; };
-  const etiquetas = (p) => [p.funil, p.nicho || p.pilar].filter(Boolean).map((t) => `<span class="pc2-tag">${esc(String(t).toUpperCase())}</span>`).join("");
+  const dataCurta = (d) => { if (!d) return ""; const x = deIso(d); return `${pad(x.getDate())}/${pad(x.getMonth() + 1)}`; };
+  const pendente = (p) => p.data && p.data < iso(hoje) && p.status !== "Publicado";
+  const slugSt = (x) => semAcento(x).replace(/[^a-z]+/g, "-");
   function pintarGeral(sec) {
     const box = $("#pc-geral", sec); if (!box) return;
     const T = st.todos, hj = iso(hoje);
-    const prox = T.filter((p) => p.status !== "Publicado" && p.data).sort((a, b) => String(a.data).localeCompare(String(b.data)))
-      .filter((p) => p.data >= iso(new Date(hoje.getTime() - 7 * 864e5))).slice(0, 7);
-    const mesAtual = `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`, doMes = T.filter((p) => mesDe(p) === mesAtual);
-    const pub = contar(doMes, ["Publicado"]), pend = contar(doMes, ["Ideia"]), andam = doMes.length - pub - pend;
-    const pct = doMes.length ? Math.round((pub / doMes.length) * 100) : 0;
-    box.innerHTML = `
-      <div class="pc2-ind">
-        <button type="button" data-ir-parte="quadro"><b>${contar(T, PRODUZIR)}</b><span>para produzir</span><small>ideias, roteirizados e para gravar</small></button>
-        <button type="button" data-ir-parte="quadro"><b>${contar(T, ["Em edição"])}</b><span>em andamento</span><small>em edição</small></button>
-        <button type="button" data-ir-parte="cal"><b>${contar(T, ["Pronto"])}</b><span>agendados</span><small>prontos esperando o dia</small></button>
-      </div>
-      <div class="pc2-duas">
-        <section class="pc2-bloco">
-          <div class="pc2-bloco-cab"><h3 class="pc2-h">Próximos <em>conteúdos</em></h3><button type="button" class="pc2-link" data-ir-parte="cal">ver calendário ${ic.seta}</button></div>
-          ${prox.length ? `<ul class="pc2-prox">${prox.map((p) => `<li><button type="button" data-id="${p.id}">
-              <span class="pc2-data${p.data < hj ? " atrasado" : p.data === hj ? " hoje" : ""}">${p.data === hj ? "hoje" : dataCurta(p.data)}</span>
-              <span class="pc2-prox-txt"><b>${esc(p.tema || "Sem título")}</b><small>${esc([p.formato, p.tipo_conteudo, p.marca].filter(Boolean).join(" · "))}</small></span>
-              <span class="pc2-prox-tags">${etiquetas(p)}</span><span class="pc2-st st-${slugSt(p.status)}">${esc(p.status)}</span></button></li>`).join("")}</ul>`
-            : `<p class="pc-ajuda">Nada com data ainda. Crie um conteúdo ou gere a grade em Ajustes e IA.</p>`}
+    const mesAtual = `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`, doMes = T.filter((p) => p.data && p.data.startsWith(mesAtual));
+    const pub = contar(doMes, ["Publicado"]), pct = doMes.length ? Math.round((pub / doMes.length) * 100) : 0;
+    const agend = doMes.filter((p) => p.status === "Pronto" && p.data >= hj).length, pend = T.filter(pendente).length;
+    const prox = T.filter((p) => p.status !== "Publicado" && ((p.data && p.data >= hj) || (p.data_gravacao && p.data_gravacao >= hj)))
+      .map((p) => ({ p, quando: [p.data_gravacao, p.data].filter((d) => d && d >= hj).sort()[0] })).sort((a, b) => a.quando.localeCompare(b.quando)).slice(0, 5);
+    const anel = `<svg class="pc3-anel" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="50"/><circle cx="60" cy="60" r="50" style="stroke-dasharray:${(pct / 100) * 314.16} 314.16"/></svg>`;
+    box.innerHTML = `<div class="pc3-geral">
+      <div class="pc3-col-esq">
+        <section class="pc3-bloco">
+          <div class="pc3-bloco-cab"><h3 class="pc2-h">Próximos <em>conteúdos</em></h3><button type="button" class="pc2-link" data-ir-parte="cal">calendário ${ic.seta}</button></div>
+          ${prox.length ? `<ul class="pc3-prox">${prox.map(({ p, quando }) => `<li><button type="button" data-id="${p.id}">
+              <span class="pc2-data${quando === hj ? " hoje" : ""}">${quando === hj ? "hoje" : dataCurta(quando)}</span>
+              <span class="pc2-prox-txt"><b>${esc(p.tema || "Sem título")}</b><small>${esc([quando === p.data_gravacao && quando !== p.data ? "gravar" : "publicar", p.formato, p.nicho || p.pilar, tipoTxt(p)].filter(Boolean).join(" · "))}</small></span>
+              <span class="pc2-st st-${slugSt(p.status)}">${esc(p.status)}</span></button></li>`).join("")}</ul>`
+            : `<p class="pc-ajuda">Nada marcado de hoje em diante. Dê uma data aos conteúdos no quadro ou no calendário.</p>`}
         </section>
-        <section class="pc2-bloco">
-          <div class="pc2-bloco-cab"><h3 class="pc2-h">Planejamento de <em>${esc(MESES[hoje.getMonth()])}</em></h3></div>
-          <div class="pc2-prog"><div class="pc2-prog-barra"><i style="width:${pct}%"></i></div><b>${pct}%</b></div>
-          <dl class="pc2-mes"><div><dt>Planejados</dt><dd>${doMes.length}</dd></div><div><dt>Publicados</dt><dd>${pub}</dd></div><div><dt>Em andamento</dt><dd>${andam}</dd></div><div><dt>Pendentes</dt><dd>${pend}</dd></div></dl>
-        </section>
+        <section class="pc3-bloco" id="pc-plano-bloco"><div class="pc-plano" id="pc-plano"></div></section>
       </div>
-      <section class="pc2-bloco">
-        <div class="pc2-bloco-cab"><h3 class="pc2-h">Fluxo de <em>produção</em></h3><button type="button" class="pc2-link" data-ir-parte="quadro">abrir o quadro ${ic.seta}</button></div>
-        <ol class="pc2-fluxo">${STATUS.map((x) => `<li><button type="button" data-ir-parte="quadro"><b>${contar(T, [x])}</b><span>${esc(x)}</span></button></li>`).join("")}</ol>
-      </section>
-      <details class="pc2-bloco pc2-dobra" id="pc-plano-dobra"><summary><h3 class="pc2-h">Plano da <em>semana</em></h3><span class="pc-ajuda">chega pronto todo sábado às 8h</span></summary><section class="pc-plano" id="pc-plano"></section></details>`;
+      <aside class="pc3-col-dir">
+        <section class="pc3-bloco pc3-mes">
+          <h3 class="pc2-h">${esc(MESES[hoje.getMonth()][0].toUpperCase() + MESES[hoje.getMonth()].slice(1))}</h3>
+          <div class="pc3-anel-box">${anel}<b>${pct}%</b><small>publicado</small></div>
+          <dl class="pc3-stats"><div><dt>Planejados</dt><dd>${doMes.length}</dd></div><div><dt>Em andamento</dt><dd>${contar(doMes, ANDAMENTO)}</dd></div><div><dt>Agendados</dt><dd>${agend}</dd></div><div><dt>Publicados</dt><dd>${pub}</dd></div></dl>
+          ${pend ? `<button type="button" class="pc3-pend" data-ir-parte="quadro">${pend} ${pend === 1 ? "conteúdo passou" : "conteúdos passaram"} da data sem publicar</button>` : ""}
+        </section>
+        <section class="pc3-bloco">
+          <div class="pc3-bloco-cab"><h3 class="pc2-h">Produção</h3><button type="button" class="pc2-link" data-ir-parte="quadro">quadro ${ic.seta}</button></div>
+          <ul class="pc3-fluxo">${STATUS.map((x) => `<li><button type="button" data-ir-parte="quadro"><span>${esc(x === "Ideia" ? "Sem roteiro" : x)}</span><b>${contar(T, [x])}</b></button></li>`).join("")}</ul>
+        </section>
+      </aside></div>`;
     $$("[data-ir-parte]", box).forEach((b) => b.addEventListener("click", () => st.mostrarParte(b.dataset.irParte)));
     ligarCliques(box);
     pintarPlano();
   }
-  const slugSt = (x) => semAcento(x).replace(/[^a-z]+/g, "-");
 
   // ---------- quadro de produção (colunas = status; arrastar muda o status do mesmo registro) ----------
   function filtrados() {
     const f = st.filtro, q = semAcento(f.q);
-    return st.todos.filter((p) => (!q || semAcento(p.tema).includes(q)) && (!f.nicho || (p.nicho || p.pilar) === f.nicho) && (!f.formato || p.formato === f.formato) && (!f.funil || p.funil === f.funil) && (!f.tipo || p.tipo_conteudo === f.tipo));
+    return st.todos.filter((p) => (!q || semAcento(p.tema).includes(q)) && (!f.nicho || (p.nicho || p.pilar) === f.nicho) && (!f.formato || p.formato === f.formato) && (!f.funil || p.funil === f.funil)
+      && (!f.tipo || (f.tipo === "Publi" ? ehPubli(p) : !ehPubli(p) && p.tipo_conteudo === f.tipo)));
+  }
+  const corNicho = (n) => { const k = NICHOS.indexOf(n); return k < 0 ? "x" : String(k); };
+  const icCal = '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M4 10h16M9 3.5v4M15 3.5v4"/></svg>';
+  const icCam = '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="12.5" height="10" rx="2.5"/><path d="M15.5 10.5l5-3v9l-5-3z"/></svg>';
+  function cartaoKanban(p) {
+    const nicho = p.nicho || p.pilar;
+    return `<article class="pc3-card" draggable="true" data-id="${p.id}" tabindex="0">
+      <div class="pc3-card-top">${nicho ? `<span class="pc3-chip c-${corNicho(p.nicho)}">${esc(nicho)}</span>` : `<span class="pc3-chip c-x">sem nicho</span>`}<button type="button" class="pc3-menu" data-menu="${p.id}" aria-label="Opções">•••</button></div>
+      <b>${esc(p.tema || "Sem título")}</b>
+      <small>${esc([p.formato, tipoTxt(p)].filter(Boolean).join(" · "))}</small>
+      <div class="pc3-card-rodape">${p.data ? `<span title="Publicação">${icCal}${dataCurta(p.data)}</span>` : `<span class="vazio">sem data</span>`}${p.data_gravacao && p.status !== "Publicado" ? `<span title="Gravação">${icCam}${dataCurta(p.data_gravacao)}</span>` : ""}<em class="st-${slugSt(p.status)}">${esc(p.status)}</em></div>
+    </article>`;
   }
   function pintarKanban(sec) {
     const box = $("#pc-kanban", sec); if (!box) return;
@@ -861,21 +858,18 @@
     const nichos = [...new Set([...NICHOS, ...st.todos.map((p) => p.nicho || p.pilar).filter(Boolean)])];
     const sel = (k, rot, ops) => `<select class="entrada" data-filtro="${k}" aria-label="${rot}"><option value="">${rot}</option>${ops.map((o) => `<option ${f[k] === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
     const foco = document.activeElement && document.activeElement.id === "pc-busca";
-    box.innerHTML = `<div class="pc2-filtros"><input class="entrada" type="search" id="pc-busca" placeholder="Buscar pelo título" value="${esc(f.q)}">
-        ${sel("nicho", "Nicho", nichos)}${sel("formato", "Formato", FORMATOS)}${sel("funil", "Funil", FUNIS)}${sel("tipo", "Tipo", TIPOS_CONTEUDO)}
-        ${f.q || f.nicho || f.formato || f.funil || f.tipo ? `<button type="button" class="pc2-link" id="pc-limpar">limpar filtros</button>` : ""}</div>
-      <div class="pc2-kanban">${STATUS.map((col, ci) => {
+    box.innerHTML = `<div class="pc3-painel">
+      <div class="pc3-painel-cab"><div class="pc2-filtros"><input class="entrada" type="search" id="pc-busca" placeholder="Buscar pelo título" value="${esc(f.q)}">
+        ${sel("nicho", "Nicho", nichos)}${sel("formato", "Formato", FORMATOS)}${sel("funil", "Funil", FUNIS)}${sel("tipo", "Tipo", ["Orgânico", "UGC", "Publi"])}
+        ${f.q || f.nicho || f.formato || f.funil || f.tipo ? `<button type="button" class="pc2-link" id="pc-limpar">limpar</button>` : ""}</div></div>
+      <div class="pc2-kanban pc3-kanban">${STATUS.map((col) => {
         let cards = lista.filter((p) => p.status === col);
+        const total = cards.length;
         if (col === "Publicado") cards = cards.sort((a, b) => String(b.data || "").localeCompare(String(a.data || ""))).slice(0, 30);
         else cards = cards.sort((a, b) => String(a.data || "9").localeCompare(String(b.data || "9")));
-        return `<section class="pc2-col" data-col="${esc(col)}"><div class="pc2-col-cab"><b>${esc(col)}</b><span>${lista.filter((p) => p.status === col).length}</span><button type="button" class="pc2-mais" data-criar="${esc(col)}" aria-label="Criar em ${esc(col)}">${ic.mais}</button></div>
-          <div class="pc2-col-lista">${cards.map((p) => `<article class="pc2-card" draggable="true" data-id="${p.id}" tabindex="0">
-            <b>${esc(p.tema || "Sem título")}</b>
-            <small>${esc([(p.formato || "").toUpperCase(), (p.tipo_conteudo || "").toUpperCase()].filter(Boolean).join(" · "))}${p.data ? ` · ${dataCurta(p.data)}` : ""}</small>
-            ${etiquetas(p) ? `<div class="pc2-tags">${etiquetas(p)}</div>` : ""}
-            ${ci < STATUS.length - 1 ? `<button type="button" class="pc2-avancar" data-avancar="${p.id}" title="Passar para ${esc(STATUS[ci + 1])}" aria-label="Passar para ${esc(STATUS[ci + 1])}">${ic.seta}</button>` : ""}
-          </article>`).join("") || `<p class="pc2-vazio">vazio</p>`}</div></section>`;
-      }).join("")}</div>`;
+        return `<section class="pc2-col pc3-col" data-col="${esc(col)}"><div class="pc2-col-cab"><b>${esc(col === "Ideia" ? "Ideias" : col)}</b><span>${total}</span><button type="button" class="pc2-mais" data-criar="${esc(col)}" aria-label="Adicionar em ${esc(col)}">${ic.mais}</button></div>
+          <div class="pc2-col-lista">${cards.map(cartaoKanban).join("") || `<p class="pc2-vazio">arraste para cá</p>`}</div></section>`;
+      }).join("")}</div></div>`;
     ligarCliques(box);
     const busca = $("#pc-busca", box);
     busca.addEventListener("input", () => { st.filtro.q = busca.value; pintarKanban(sec); });
@@ -883,96 +877,160 @@
     $$("[data-filtro]", box).forEach((x) => x.addEventListener("change", () => { st.filtro[x.dataset.filtro] = x.value; pintarKanban(sec); }));
     const lp = $("#pc-limpar", box); if (lp) lp.addEventListener("click", () => { st.filtro = { q: "", nicho: "", formato: "", funil: "", tipo: "" }; pintarKanban(sec); });
     $$("[data-criar]", box).forEach((b) => b.addEventListener("click", () => abrir(novoConteudo({ status: b.dataset.criar }))));
-    const mover = async (id, status) => {
-      const p = st.todos.find((x) => String(x.id) === String(id)); if (!p || p.status === status) return;
-      try { await salvar({ id: p.id, status }); pintar(); toast(`${p.tema || "Conteúdo"}: ${status}.`); } catch (er) { toast(er.message, true); }
-    };
-    $$("[data-avancar]", box).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); const p = st.todos.find((x) => String(x.id) === b.dataset.avancar); if (p) mover(p.id, STATUS[STATUS.indexOf(p.status) + 1]); }));
-    $$(".pc2-card", box).forEach((c) => { c.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/kanban", c.dataset.id); c.classList.add("arrastando"); }); c.addEventListener("dragend", () => c.classList.remove("arrastando")); c.addEventListener("keydown", (e) => { if (e.key === "Enter") c.click(); }); });
+    $$("[data-menu]", box).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); menuCartao(b, st.todos.find((x) => String(x.id) === b.dataset.menu)); }));
+    $$(".pc3-card", box).forEach((c) => { c.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/kanban", c.dataset.id); c.classList.add("arrastando"); }); c.addEventListener("dragend", () => c.classList.remove("arrastando")); c.addEventListener("keydown", (e) => { if (e.key === "Enter") c.click(); }); });
     $$(".pc2-col", box).forEach((col) => {
       col.addEventListener("dragover", (e) => { if ([...e.dataTransfer.types].includes("text/kanban")) { e.preventDefault(); col.classList.add("alvo"); } });
       col.addEventListener("dragleave", () => col.classList.remove("alvo"));
-      col.addEventListener("drop", (e) => { e.preventDefault(); col.classList.remove("alvo"); mover(e.dataTransfer.getData("text/kanban"), col.dataset.col); });
+      col.addEventListener("drop", (e) => { e.preventDefault(); col.classList.remove("alvo"); moverStatus(e.dataTransfer.getData("text/kanban"), col.dataset.col); });
+    });
+  }
+  async function moverStatus(id, status) {
+    const p = st.todos.find((x) => String(x.id) === String(id)); if (!p || !status || p.status === status) return;
+    try { await salvar({ id: p.id, status }); pintar(); toast(`${p.tema || "Conteúdo"}: ${status}.`); } catch (er) { toast(er.message, true); }
+  }
+  async function excluirConteudo(p) {
+    if (!(await painelDialogo.confirmar(`Excluir "${p.tema || "este conteúdo"}"? Ele sai do quadro, do calendário e da visão geral.`, { ok: "Excluir", perigo: true }))) return false;
+    const { error } = await banco().from("painel_conteudo").delete().eq("id", p.id);
+    if (error) { toast(error.message, true); return false; }
+    st.todos = st.todos.filter((x) => x.id !== p.id);
+    if (st.ideias) st.ideias.forEach((it) => { if (it.post_id === p.id) it.post_id = null; });
+    pintar(); toast("Conteúdo excluído."); return true;
+  }
+  // menu ••• do cartão: editar, mover (útil no celular, onde não dá para arrastar) e excluir
+  function menuCartao(bt, p) {
+    if (!p) return;
+    document.querySelectorAll(".pc3-pop").forEach((x) => x.remove());
+    const pop = document.createElement("div"); pop.className = "pc3-pop";
+    pop.innerHTML = `<button type="button" data-a="abrir">Abrir e editar</button>${STATUS.filter((x) => x !== p.status).map((x) => `<button type="button" data-a="mover" data-v="${esc(x)}">Mover para ${esc(x === "Ideia" ? "Ideias" : x)}</button>`).join("")}<button type="button" data-a="excluir" class="perigo">Excluir</button>`;
+    document.body.appendChild(pop);
+    const r = bt.getBoundingClientRect();
+    pop.style.top = Math.min(window.innerHeight - pop.offsetHeight - 8, r.bottom + 4) + "px";
+    pop.style.left = Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, r.right - pop.offsetWidth)) + "px";
+    const fechar = () => { pop.remove(); document.removeEventListener("click", fora, true); };
+    const fora = (e) => { if (!pop.contains(e.target)) fechar(); };
+    setTimeout(() => document.addEventListener("click", fora, true), 0);
+    pop.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-a]"); if (!b) return; fechar();
+      if (b.dataset.a === "abrir") abrir(p); else if (b.dataset.a === "mover") moverStatus(p.id, b.dataset.v); else excluirConteudo(p);
     });
   }
 
-  // ---------- banco de ideias (ideias = conteúdos com status Ideia; referências = pastas do Instagram) ----------
-  async function desenvolverComIA(p, bt) {
-    if (bt) { bt.disabled = true; bt.textContent = "Escrevendo…"; }
-    try {
-      const notas = `DESENVOLVER ESTA IDEIA DELA EM ROTEIRO: "${p.tema || ""}". ${p.notas ? "Observações dela: " + p.notas + "." : ""} ${p.inspiracao && p.inspiracao.link ? "Referência: " + p.inspiracao.link + (p.inspiracao.legenda ? " (" + p.inspiracao.legenda + ")" : "") + "." : ""} Mantenha o tema dela.`;
-      const ideias = await chamarIdeias({ acao: "ideias", rotulo: rotuloMes(mesDe(p) || st.mes), notas, quantidade: 1, evitar: st.todos.filter((x) => x.id !== p.id).map((x) => x.tema),
-        slots: p.pilar || p.funil || p.formato ? [{ pilar: p.pilar || "", funil: p.funil || "Topo", formato: p.formato || "Reels" }] : [] });
-      const x = ideias[0]; if (!x) throw new Error("A IA não devolveu o roteiro. Tente de novo.");
-      const novo = await salvar({ id: p.id, tema: p.tema || x.tema, tipo_conteudo: p.tipo_conteudo || x.tipo_conteudo || null, nicho: p.nicho || x.nicho || null, pilar: p.pilar || x.pilar || null, formato: p.formato || x.formato, funil: p.funil || x.funil,
-        tipo_ugc: x.tipo_ugc, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, tipo_roteiro: x.tipo_roteiro, legenda: x.legenda, porque: x.porque, status: "Roteirizado" });
-      pintar(); toast("Roteiro pronto. A ideia foi para Roteirizados no quadro."); return novo;
-    } catch (er) { toast(er.message, true); if (bt) { bt.disabled = false; bt.textContent = "Desenvolver com IA"; } }
+  // ---------- banco de ideias (tabela ideias_organizadas; ideia só vira conteúdo pelo botão Transformar em conteúdo) ----------
+  const SITUACOES = [["minha", "Minhas ideias"], ["desenvolver", "Para desenvolver"], ["descartada", "Descartadas"]];
+  async function carregarIdeias() {
+    const { data, error } = await banco().from("ideias_organizadas").select("*").order("criado_em", { ascending: false }).limit(1000);
+    st.ideias = error ? [] : (data || []);
   }
-  async function roteiroDaReferencia(r, bt) {
-    bt.disabled = true; bt.textContent = "Escrevendo…";
+  async function salvarIdeia(campos, id) {
+    const dados = { ...campos, atualizado_em: new Date().toISOString() };
+    if (id) {
+      const { error } = await banco().from("ideias_organizadas").update(dados).eq("id", id); if (error) throw new Error(error.message);
+      const it = st.ideias.find((x) => x.id === id); if (it) Object.assign(it, dados); return it;
+    }
+    const { data, error } = await banco().from("ideias_organizadas").insert(dados).select().maybeSingle(); if (error) throw new Error(error.message);
+    const novo = data || { ...dados, id: Date.now(), criado_em: new Date().toISOString() }; st.ideias.unshift(novo); return novo;
+  }
+  async function desenvolverComIA(p) {
+    const notas = `DESENVOLVER ESTA IDEIA DELA EM ROTEIRO: "${p.tema || ""}". ${p.notas ? "Observações dela: " + p.notas + "." : ""} ${p.inspiracao && p.inspiracao.link ? "Inspiração: " + p.inspiracao.link + "." : ""} Mantenha o tema dela.`;
+    const ideias = await chamarIdeias({ acao: "ideias", rotulo: rotuloMes(mesDe(p) || st.mes), notas, quantidade: 1, evitar: st.todos.filter((x) => x.id !== p.id).map((x) => x.tema),
+      slots: [{ pilar: p.pilar || "", funil: p.funil || "Topo", formato: p.formato || "Reels" }] });
+    const x = ideias[0]; if (!x) throw new Error("A IA não devolveu o roteiro. O conteúdo ficou criado; tente de novo pela janela dele.");
+    return salvar({ id: p.id, tipo_conteudo: p.tipo_conteudo || x.tipo_conteudo || null, nicho: p.nicho || x.nicho || null,
+      tipo_ugc: x.tipo_ugc, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, tipo_roteiro: x.tipo_roteiro, legenda: x.legenda, porque: x.porque });
+  }
+  const transformando = new Set();
+  function janelaIdeia(titulo, corpo, okTxt) {
+    return new Promise((res) => {
+      const d = document.createElement("dialog"); d.className = "janela pc3-janela";
+      d.innerHTML = `<form method="dialog"><div class="janela-cabeca"><h2>${titulo}</h2></div><div class="janela-corpo pc3-form">${corpo}</div>
+        <div class="janela-rodape"><button class="btn" type="button" data-x>Cancelar</button><button class="btn btn-principal" type="submit">${okTxt}</button></div></form>`;
+      document.body.appendChild(d); let val = null;
+      d.querySelector("[data-x]").onclick = () => d.close();
+      d.querySelector("form").addEventListener("submit", (e) => { e.preventDefault(); val = Object.fromEntries(new FormData(e.target)); d.close(); });
+      d.addEventListener("close", () => { d.remove(); res(val); });
+      d.showModal();
+    });
+  }
+  async function transformarIdeia(it) {
+    const ja = it.post_id && st.todos.find((p) => p.id === it.post_id);
+    if (ja) { toast("Essa ideia já virou conteúdo. Abrindo."); abrir(ja); return; }
+    if (transformando.has(it.id)) return;
+    const v = await janelaIdeia("Transformar em conteúdo", `<p class="pc-ajuda">"${esc(it.titulo || it.texto || "")}" entra no Quadro de produção. A ideia continua guardada e ligada a ele.</p>
+      <label class="campo"><span>Começa em</span><select name="status"><option value="Ideia">Ideias (sem roteiro)</option><option value="Roteirizado">Roteirizado (a IA escreve o roteiro)</option><option value="Para gravar">Para gravar</option></select></label>
+      <div class="pc-grade2"><label class="campo"><span>Gravação (opcional)</span><input type="date" name="data_gravacao"></label><label class="campo"><span>Publicação (opcional)</span><input type="date" name="data"></label></div>
+      <div class="pc-grade2"><label class="campo"><span>Formato</span><select name="formato">${FORMATOS.map((f) => `<option ${f === (it.formato || "Reels") ? "selected" : ""}>${f}</option>`).join("")}</select></label><label class="campo"><span>Funil</span><select name="funil">${FUNIS.map((f) => `<option ${f === (it.funil || "Topo") ? "selected" : ""}>${f}</option>`).join("")}</select></label></div>`, "Transformar");
+    if (!v) return;
+    transformando.add(it.id); pintar();
     try {
-      const ideias = await chamarIdeias({ acao: "ideias", rotulo: rotuloMes(st.mes), quantidade: 1, umaPorReferencia: true, evitar: st.todos.map((p) => p.tema),
-        inspiracoes: [{ perfil: r.perfil, tipo: r.tipo, colecao: r.colecao, legenda: r.legenda, transcricao: r.transcricao }] });
-      const x = ideias[0]; if (!x) throw new Error("A IA não devolveu o roteiro. Tente de novo.");
-      await salvar({ tema: x.tema, tipo_conteudo: x.tipo_conteudo || null, nicho: x.nicho || null, pilar: x.pilar || null, formato: x.formato, funil: x.funil, tipo_ugc: x.tipo_ugc, proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, tipo_roteiro: x.tipo_roteiro, legenda: x.legenda, porque: x.porque, status: "Roteirizado", mes: st.mes,
-        inspiracao: { link: r.link, perfil: r.perfil ? "@" + r.perfil : x.inspirado_em, colecao: r.colecao, legenda: String(r.legenda || "").split("\n")[0].slice(0, 160), duracao_seg: x.duracao_seg } });
-      pintar(); toast("Roteiro criado em Roteirizados, sem data. Arraste para um dia no calendário.");
-    } catch (er) { toast(er.message, true); bt.disabled = false; bt.textContent = "Roteiro com IA"; }
+      const nicho = NICHOS.includes(it.categoria) ? it.categoria : null;
+      const novo = await salvar({ tema: it.titulo || String(it.texto || "").slice(0, 120), nicho, pilar: it.pilar || (!nicho ? it.categoria : null) || null, formato: v.formato, funil: v.funil, status: v.status === "Roteirizado" ? "Ideia" : v.status,
+        data: v.data || null, data_gravacao: v.data_gravacao || null, mes: (v.data || "").slice(0, 7) || st.mes, notas: [it.notas, it.resumo].filter(Boolean).join("\n") || null, hook: it.gancho || null, desenvolvimento: it.roteiro || null,
+        marca: it.finalidade === "Publi" ? it.marca || null : null, tipo_conteudo: it.finalidade === "Publi" ? "Publi" : it.finalidade === "Conteúdos" ? "Orgânico" : it.finalidade === "UGC" ? "UGC" : null,
+        inspiracao: it.link ? { link: it.link } : null });
+      await salvarIdeia({ post_id: novo.id }, it.id);
+      if (v.status === "Roteirizado") {
+        toast("Conteúdo criado. A IA está escrevendo o roteiro…");
+        try { await desenvolverComIA(novo); await salvar({ id: novo.id, status: "Roteirizado" }); toast("Roteiro pronto. Está em Roteirizado no quadro."); } catch (er) { toast(er.message, true); }
+      } else toast(`Conteúdo criado em ${v.status === "Ideia" ? "Ideias" : v.status} no quadro.`);
+    } catch (er) { toast("Não consegui transformar: " + er.message, true); }
+    transformando.delete(it.id); pintar();
+  }
+  function camposIdeia(it) {
+    return `<label class="campo"><span>Ideia</span><input name="titulo" required value="${esc(it.titulo || "")}"></label>
+      <div class="pc-grade2"><label class="campo"><span>Nicho</span><select name="categoria"><option value=""></option>${[...new Set([...NICHOS, ...(it.categoria ? [it.categoria] : [])])].map((n) => `<option ${n === it.categoria ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>
+      <label class="campo"><span>Pilar</span><select name="pilar"><option value=""></option>${[...new Set([...(st.perfil.pilares || []).map((x) => x.nome), ...(it.pilar ? [it.pilar] : [])])].map((n) => `<option ${n === it.pilar ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label></div>
+      <label class="campo"><span>Link de inspiração</span><input name="link" type="url" placeholder="https://" value="${esc(it.link || "")}"></label>
+      <label class="campo"><span>Observações</span><textarea name="notas" rows="3">${esc(it.notas || it.resumo || "")}</textarea></label>
+      <label class="campo"><span>Situação</span><select name="situacao">${SITUACOES.map(([k, t]) => `<option value="${k}" ${k === (it.situacao || "minha") ? "selected" : ""}>${t}</option>`).join("")}</select></label>`;
   }
   function pintarIdeias(sec) {
     const box = $("#pc-ideias", sec); if (!box) return;
-    const nf = st.ideiaFiltro;
-    const ideias = st.todos.filter((p) => p.status === "Ideia" && (!nf || (p.nicho || p.pilar) === nf)).sort((a, b) => String(b.criado_em || "").localeCompare(String(a.criado_em || "")));
-    const nichos = [...new Set([...NICHOS, ...st.todos.filter((p) => p.status === "Ideia").map((p) => p.nicho || p.pilar).filter(Boolean)])];
-    const pastas = {}; st.lab.forEach((r) => { (pastas[r.colecao] = pastas[r.colecao] || []).push(r); });
-    const usados = new Set(st.todos.map((p) => p.inspiracao && p.inspiracao.link).filter(Boolean));
-    const aberto = box.querySelector("details.pc2-nova") ? box.querySelector("details.pc2-nova").open : false;
-    box.innerHTML = `
-      <details class="pc2-bloco pc2-nova" ${aberto ? "open" : ""}><summary><h3 class="pc2-h">Guardar uma <em>ideia</em></h3><span class="pc-ajuda">ou uma referência com link</span></summary>
-        <form class="pc2-form" id="pc-ideia-form">
-          <label class="campo pc-largo"><span>Ideia</span><input name="tema" required placeholder="Ex.: 3 jeitos de usar o mesmo hidratante"></label>
-          <label class="campo"><span>Nicho</span><select name="nicho"><option value=""></option>${NICHOS.map((n) => `<option>${esc(n)}</option>`).join("")}</select></label>
-          <label class="campo"><span>Pilar</span><select name="pilar"><option value=""></option>${(st.perfil.pilares || []).map((x) => `<option>${esc(x.nome)}</option>`).join("")}</select></label>
-          <label class="campo"><span>Link de referência</span><input name="link" type="url" placeholder="https://"></label>
-          <label class="campo pc-largo"><span>Observações</span><textarea name="notas" rows="2"></textarea></label>
-          <div class="pc-linha"><button class="btn btn-principal" type="submit">Guardar ideia</button></div>
-        </form></details>
-      <section class="pc2-bloco">
-        <div class="pc2-bloco-cab"><h3 class="pc2-h">Minhas <em>ideias</em> <small>${ideias.length}</small></h3>
-          <select class="entrada" id="pc-ideia-nicho" aria-label="Filtrar por nicho ou pilar"><option value="">Todos os nichos</option>${nichos.map((n) => `<option ${nf === n ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>
-        ${ideias.length ? `<div class="pc2-ideias">${ideias.map((p) => `<article class="pc2-ideia" data-id="${p.id}">
-            <b>${esc(p.tema || "Sem título")}</b>
-            ${p.notas ? `<p>${esc(String(p.notas).slice(0, 140))}</p>` : ""}
-            <div class="pc2-tags">${etiquetas(p)}${p.inspiracao && p.inspiracao.link ? `<a class="pc2-tag" href="${esc(p.inspiracao.link)}" target="_blank" rel="noopener" data-parar>REFERÊNCIA</a>` : ""}</div>
-            <div class="pc2-ideia-acoes"><button type="button" class="btn btn-mini btn-principal" data-desenvolver="${p.id}">Desenvolver com IA</button><button type="button" class="btn btn-mini" data-virar="${p.id}">Virar conteúdo</button><button type="button" class="btn btn-mini btn-perigo" data-apagar="${p.id}" aria-label="Excluir ideia">${ic.lixo}</button></div>
-          </article>`).join("")}</div>` : `<p class="pc-ajuda">Nenhuma ideia guardada${nf ? " nesse nicho" : ""}. Guarde acima, mande do Organizador de ideias ou crie no quadro.</p>`}
-      </section>
-      <section class="pc2-bloco">
-        <div class="pc2-bloco-cab"><h3 class="pc2-h">Referências <em>salvas</em></h3><span class="pc-ajuda">pastas do Instagram (o envio das pastas fica em Ajustes e IA)</span></div>
-        ${Object.keys(pastas).length ? Object.entries(pastas).map(([nome, lista]) => `<details class="pc2-pasta"><summary><b>${esc(nome)}</b><small>${lista.length}</small></summary><ul>${lista.slice(0, 40).map((r) => `<li><a href="${esc(r.link)}" target="_blank" rel="noopener">@${esc(r.perfil || "post")}</a><span>${esc(String(r.legenda || "").split("\n")[0].slice(0, 90))}</span>${usados.has(r.link) ? `<em>já virou roteiro</em>` : `<button type="button" class="btn btn-mini" data-ref="${r.id}">Roteiro com IA</button>`}</li>`).join("")}</ul></details>`).join("")
-          : `<p class="pc-ajuda">Nenhuma referência das pastas ainda.</p>`}
-      </section>`;
-    ligarCliques(box);
-    $("#pc-ideia-nicho", box).addEventListener("change", (e) => { st.ideiaFiltro = e.target.value; pintarIdeias(sec); });
-    $("#pc-ideia-form", box).addEventListener("submit", async (e) => {
+    if (!st.ideias) { box.innerHTML = `<p class="pc-ajuda">Carregando ideias…</p>`; return; }
+    const sit = st.ideiaSit || "minha", nf = st.ideiaFiltro, q = semAcento(st.ideiaBusca || "");
+    const daSit = st.ideias.filter((it) => (it.situacao || "minha") === sit);
+    const lista = daSit.filter((it) => (!nf || it.categoria === nf) && (!q || semAcento([it.titulo, it.texto, it.notas, it.resumo].join(" ")).includes(q)));
+    const nichos = [...new Set([...NICHOS, ...st.ideias.map((it) => it.categoria).filter(Boolean)])];
+    const foco = document.activeElement && document.activeElement.id === "pc-ideia-busca";
+    box.innerHTML = `<div class="pc3-painel">
+      <form class="pc3-rapida" id="pc-ideia-rapida"><input class="entrada" name="titulo" required placeholder="Escreva uma ideia e aperte Enter"><select class="entrada" name="categoria" aria-label="Nicho"><option value="">Nicho</option>${NICHOS.map((n) => `<option>${esc(n)}</option>`).join("")}</select><select class="entrada" name="pilar" aria-label="Pilar"><option value="">Pilar</option>${(st.perfil.pilares || []).map((x) => `<option>${esc(x.nome)}</option>`).join("")}</select><button class="btn btn-principal" type="submit">${ic.mais}Guardar</button></form>
+      <div class="pc3-ideias-cab"><nav class="pc2-seg" aria-label="Situação">${SITUACOES.map(([k, t]) => `<button type="button" data-sit="${k}" class="${k === sit ? "ativa" : ""}">${t} <small>${st.ideias.filter((it) => (it.situacao || "minha") === k).length}</small></button>`).join("")}</nav>
+        <div class="pc2-filtros"><input class="entrada" type="search" id="pc-ideia-busca" placeholder="Pesquisar ideias" value="${esc(st.ideiaBusca || "")}"><select class="entrada" id="pc-ideia-nicho" aria-label="Nicho"><option value="">Todos os nichos</option>${nichos.map((n) => `<option ${nf === n ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div></div>
+      ${lista.length ? `<div class="pc3-ideias">${lista.map((it) => { const virou = it.post_id && st.todos.some((p) => p.id === it.post_id); return `<article class="pc3-ideia">
+          <div class="pc3-card-top">${it.categoria ? `<span class="pc3-chip c-${corNicho(it.categoria)}">${esc(it.categoria)}</span>` : "<span></span>"}<small>${it.criado_em ? dataCurta(String(it.criado_em).slice(0, 10)) : ""}</small></div>
+          <b>${esc(it.titulo || String(it.texto || "").slice(0, 120) || "Sem título")}</b>
+          ${it.notas || it.resumo ? `<p>${esc(String(it.notas || it.resumo).slice(0, 160))}</p>` : ""}
+          ${it.link ? `<a class="pc3-link" href="${esc(it.link)}" target="_blank" rel="noopener">inspiração</a>` : ""}
+          <div class="pc3-ideia-acoes">${virou ? `<button type="button" class="btn btn-mini" data-ver="${it.id}">Ver conteúdo</button>` : `<button type="button" class="btn btn-mini btn-principal" data-transformar="${it.id}" ${transformando.has(it.id) ? "disabled" : ""}>${transformando.has(it.id) ? "Criando…" : "Transformar em conteúdo"}</button>`}
+            <button type="button" class="btn btn-mini" data-editar-ideia="${it.id}">Editar</button><button type="button" class="btn btn-mini btn-perigo" data-apagar-ideia="${it.id}" aria-label="Excluir ideia">${ic.lixo}</button></div>
+        </article>`; }).join("")}</div>`
+        : `<p class="pc-ajuda pc3-vazio">${daSit.length ? "Nenhuma ideia com esse filtro." : sit === "minha" ? "Nenhuma ideia guardada ainda. Escreva acima." : "Nada aqui."}</p>`}
+    </div>`;
+    const acha = (id) => st.ideias.find((x) => String(x.id) === String(id));
+    $("#pc-ideia-rapida", box).addEventListener("submit", async (e) => {
       e.preventDefault(); const fd = new FormData(e.target), v = (k) => String(fd.get(k) || "").trim();
-      try {
-        await salvar({ tema: v("tema"), nicho: v("nicho") || null, pilar: v("pilar") || null, notas: v("notas") || null, status: "Ideia", formato: "Reels", mes: st.mes, inspiracao: v("link") ? { link: v("link") } : null });
-        e.target.reset(); pintar(); toast("Ideia guardada.");
-      } catch (er) { toast("Não consegui guardar: " + er.message, true); }
+      try { await salvarIdeia({ titulo: v("titulo"), texto: v("titulo"), categoria: v("categoria") || null, pilar: v("pilar") || null, situacao: sit === "descartada" ? "minha" : sit }); pintarIdeias(sec); toast("Ideia guardada."); $("#pc-ideia-rapida input", box) && $("#pc-ideia-rapida [name=titulo]", $("#pc-ideias")).focus(); }
+      catch (er) { toast("Não consegui guardar: " + er.message, true); }
     });
-    $$("[data-parar]", box).forEach((a) => a.addEventListener("click", (e) => e.stopPropagation()));
-    $$("[data-desenvolver]", box).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); const p = st.todos.find((x) => String(x.id) === b.dataset.desenvolver); if (p) desenvolverComIA(p, b); }));
-    $$("[data-virar]", box).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); const p = st.todos.find((x) => String(x.id) === b.dataset.virar); if (p) abrir({ ...p, status: "Roteirizado" }); }));
-    $$("[data-apagar]", box).forEach((b) => b.addEventListener("click", async (e) => {
-      e.stopPropagation(); const p = st.todos.find((x) => String(x.id) === b.dataset.apagar); if (!p) return;
-      if (!(await painelDialogo.confirmar(`Excluir a ideia "${p.tema || ""}"?`, { ok: "Excluir", perigo: true }))) return;
-      const { error } = await banco().from("painel_conteudo").delete().eq("id", p.id);
-      if (error) { toast(error.message, true); return; }
-      st.todos = st.todos.filter((x) => x.id !== p.id); pintar(); toast("Ideia excluída.");
+    $$("[data-sit]", box).forEach((b) => b.addEventListener("click", () => { st.ideiaSit = b.dataset.sit; pintarIdeias(sec); }));
+    const bu = $("#pc-ideia-busca", box); bu.addEventListener("input", () => { st.ideiaBusca = bu.value; pintarIdeias(sec); });
+    if (foco) { const b = $("#pc-ideia-busca", box); b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
+    $("#pc-ideia-nicho", box).addEventListener("change", (e) => { st.ideiaFiltro = e.target.value; pintarIdeias(sec); });
+    $$("[data-transformar]", box).forEach((b) => b.addEventListener("click", () => { const it = acha(b.dataset.transformar); if (it) transformarIdeia(it); }));
+    $$("[data-ver]", box).forEach((b) => b.addEventListener("click", () => { const it = acha(b.dataset.ver); const p = it && st.todos.find((x) => x.id === it.post_id); if (p) abrir(p); }));
+    $$("[data-editar-ideia]", box).forEach((b) => b.addEventListener("click", async () => {
+      const it = acha(b.dataset.editarIdeia); if (!it) return;
+      const v = await janelaIdeia("Editar ideia", camposIdeia(it), "Salvar"); if (!v) return;
+      try { await salvarIdeia({ titulo: v.titulo.trim(), categoria: v.categoria || null, pilar: v.pilar || null, link: v.link.trim() || null, notas: v.notas.trim() || null, situacao: v.situacao }, it.id); pintarIdeias(sec); toast("Ideia salva."); }
+      catch (er) { toast("Não salvou: " + er.message, true); }
     }));
-    $$("[data-ref]", box).forEach((b) => b.addEventListener("click", () => { const r = st.lab.find((x) => String(x.id) === b.dataset.ref); if (r) roteiroDaReferencia(r, b); }));
+    $$("[data-apagar-ideia]", box).forEach((b) => b.addEventListener("click", async () => {
+      const it = acha(b.dataset.apagarIdeia); if (!it) return;
+      if (!(await painelDialogo.confirmar(`Excluir a ideia "${it.titulo || ""}"?${it.post_id ? " O conteúdo que veio dela continua no quadro." : ""}`, { ok: "Excluir", perigo: true }))) return;
+      const { error } = await banco().from("ideias_organizadas").delete().eq("id", it.id);
+      if (error) { toast(error.message, true); return; }
+      st.ideias = st.ideias.filter((x) => x.id !== it.id); pintarIdeias(sec); toast("Ideia excluída.");
+    }));
   }
   // os cartões de cada área abrem o mesmo formulário do conteúdo
   function ligarCliques(raiz) { $$("[data-id]", raiz).forEach((b) => b.addEventListener("click", () => abrir(st.todos.find((p) => String(p.id) === b.dataset.id)))); }
@@ -980,8 +1038,8 @@
   async function abrirAba() {
     const sec = document.getElementById("aba-" + ABA);
     if (!sec) return;
-    if (!st.pronto) { montar(sec); st.pronto = true; await carregar(); ajustarSemana(); }
-    else await carregar();
+    if (!st.pronto) { montar(sec); st.pronto = true; await Promise.all([carregar(), carregarIdeias()]); ajustarSemana(); }
+    else await Promise.all([carregar(), carregarIdeias()]);
     pintar();
     try { await carregarPlano(); } catch (er) { pl.lista = []; pl.atual = null; }
     pintarPlano();

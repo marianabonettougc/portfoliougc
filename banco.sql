@@ -584,3 +584,7 @@ create policy "dona faz tudo" on public.planos_semana for all to authenticated u
 
 -- Conteúdos (out/2026): classificação automática pela IA, editável.
 alter table public.painel_conteudo add column if not exists tipo_conteudo text, add column if not exists nicho text, add column if not exists marca text, add column if not exists atualizado_em timestamptz default now();
+
+-- Conteúdos v3 (nov/2026): data de gravação separada e banco de ideias com situação.
+alter table public.painel_conteudo add column if not exists data_gravacao date;
+alter table public.ideias_organizadas add column if not exists situacao text not null default 'minha', add column if not exists link text, add column if not exists notas text;

@@ -22,8 +22,8 @@
 // - { acao: "plano_semana" }: monta o plano da semana (segunda a domingo) e guarda em planos_semana. Todo sábado
 //   às 8h (Brasília) o pg_cron chama com o cabeçalho x-cron = segredos_servidor "cron_painel" (o cron não tem o
 //   login dela); no Painel ela também gera na hora. Junta os posts da semana, completa os dias do ritmo dela com
-//   ideias novas (com roteiro), os prazos das publis (app_state.jobs), o Planner, o tema da semana e as propostas
-//   sem resposta; marca o dia de gravar cada post. No sábado cria um lembrete (aviso no celular).
+//   ideias novas (com roteiro) e o tema da semana; só tarefas de conteúdo (postar na data de publicação, gravar na
+//   data de gravação ou na véspera). Propostas e prazos de jobs ficam em Marcas e jobs. No sábado cria um lembrete.
 // As notificações saem pela função notificacoes (Web Push do painel instalado + app ntfy).
 // Segredos: GROQ_API_KEY e APIFY_TOKEN (só no Supabase). Só a dona do painel pode usar.
 // O tópico do ntfy (endereço das notificações) fica em configuracoes, chave "ntfy_topico".
@@ -291,13 +291,12 @@ async function planoSemana(supa: any, chave: string, origem: string) {
   const dias = [...Array(7)].map((_, i) => { const d = new Date(seg); d.setUTCDate(d.getUTCDate() + i); return isoUTC(d); });
   const ini = dias[0], fim = dias[6];
   const perfil = await lerPerfil(supa);
-  const [{ data: postsSem }, { data: ap }, { data: cfgs }, { data: props }] = await Promise.all([
-    supa.from("painel_conteudo").select("id,data,horario,formato,tema,pilar,funil,status,hook").gte("data", ini).lte("data", fim).order("data"),
-    supa.from("app_state").select("data").limit(1).maybeSingle(),
+  const [{ data: postsSem }, { data: cfgs }] = await Promise.all([
+    supa.from("painel_conteudo").select("id,data,data_gravacao,horario,formato,tema,pilar,funil,status,hook").or(`and(data.gte.${ini},data.lte.${fim}),and(data_gravacao.gte.${ini},data_gravacao.lte.${fim})`).order("data"),
     supa.from("configuracoes").select("chave,valor").in("chave", ["temas_semana"]),
-    supa.from("propostas_email").select("thread_id,gmail_id,de_nome,marca,assunto,recebido_em").eq("tipo", "proposta").eq("status", "nova").order("recebido_em", { ascending: false }).limit(30),
   ]);
-  const posts: any[] = postsSem || [];
+  const todosSem: any[] = postsSem || [];
+  const posts: any[] = todosSem.filter((p) => p.data && p.data >= ini && p.data <= fim); // publicações da semana
   let temas: any = {}; try { temas = JSON.parse((cfgs || []).find((x: any) => x.chave === "temas_semana")?.valor || "{}"); } catch { temas = {}; }
   // completa os dias do ritmo dela que ainda não têm post (até o número de posts por semana, no máximo 3 por vez)
   const diasRitmo: number[] = Array.isArray(perfil.ritmo?.dias) && perfil.ritmo.dias.length ? perfil.ritmo.dias : [0, 2, 4];
@@ -323,47 +322,37 @@ async function planoSemana(supa: any, chave: string, origem: string) {
     for (let i = 0; i < livres.length && i < ideias.length; i++) {
       const x = ideias[i], data = livres[i];
       const { data: novo } = await supa.from("painel_conteudo").insert({ mes: data.slice(0, 7), data, horario: perfil.ritmo?.horario || "12h", formato: x.formato, pilar: x.pilar || null, tipo_roteiro: x.tipo_roteiro, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil, tipo_conteudo: x.tipo_conteudo, nicho: x.nicho,
-        proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, legenda: x.legenda, porque: x.porque, status: "Roteirizado", notas: "Criado pelo plano da semana" }).select("id,data,horario,formato,tema,pilar,funil,status,hook").maybeSingle();
-      if (novo) { posts.push(novo); novos++; }
+        proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, legenda: x.legenda, porque: x.porque, status: "Roteirizado", notas: "Criado pelo plano da semana" }).select("id,data,data_gravacao,horario,formato,tema,pilar,funil,status,hook").maybeSingle();
+      if (novo) { posts.push(novo); todosSem.push(novo); novos++; }
     }
     if (!ideias.length && !avisoIA) avisoIA = "A IA não respondeu; os dias livres ficaram sem ideia.";
   }
   // itens de cada dia
   const itens: Record<string, any[]> = Object.fromEntries(dias.map((d) => [d, []]));
   const add = (d: string, it: any) => { if (itens[d]) itens[d].push({ id: crypto.randomUUID().slice(0, 8), feito: false, ...it }); };
-  posts.sort((a, b) => String(a.data).localeCompare(String(b.data))).forEach((p) => {
+  // só produção de conteúdo: postar no dia da publicação e gravar no dia de gravação (sem data de gravação, a véspera)
+  todosSem.sort((a, b) => String(a.data).localeCompare(String(b.data))).forEach((p) => {
     const titulo = `${p.formato || "Post"}: ${p.tema || "sem tema"}`;
     if (/postad|publicad/i.test(p.status || "")) return;
-    add(p.data, { tipo: "postar", texto: `Postar ${titulo}${p.horario ? " às " + p.horario : ""}`, post_id: p.id });
+    if (p.data && p.data >= ini && p.data <= fim) add(p.data, { tipo: "postar", texto: `Postar ${titulo}${p.horario ? " às " + p.horario : ""}`, post_id: p.id });
     if (!/gravad|editad|postad|agendad|em edi|pronto|publicad/i.test(p.status || "") && p.formato !== "Stories") {
-      const i = dias.indexOf(p.data); add(dias[Math.max(0, i - 1)], { tipo: "gravar", texto: `Gravar ${titulo}`, post_id: p.id });
+      const dg = p.data_gravacao || (p.data ? dias[Math.max(0, dias.indexOf(p.data) - 1)] : null);
+      if (dg) add(dg, { tipo: "gravar", texto: `Gravar ${titulo}`, post_id: p.id });
     }
   });
-  const est = (ap && ap.data) || {}; const terminou = /conclu|cancel|finaliz/i;
-  (est.jobs || []).forEach((j: any) => {
-    if (terminou.test(j.status || "")) return;
-    Object.values(j.entregaveis || {}).forEach((lista: any) => (Array.isArray(lista) ? lista : []).forEach((it: any) => {
-      if (it.concluido) return;
-      [["prazoRoteiro", "Roteiro"], ["prazoConteudo", "Entregar"], ["prazoPostagem", "Postar"]].forEach(([k, verbo]) => {
-        const d = String(it[k] || "").slice(0, 10); if (d >= ini && d <= fim) add(d, { tipo: "publi", texto: `${verbo} ${it.label || "entrega"} da ${j.marca || "marca"}` });
-      });
-    }));
-  });
-  (est.planner || []).forEach((it: any) => { const d = String(it.data || "").slice(0, 10); if (d >= ini && d <= fim && !/entreg|feito|postado/i.test(it.status || "")) add(d, { tipo: "agenda", texto: txt((it.marca ? it.marca + ": " : "") + (it.titulo || "Compromisso"), 120) }); });
-  const conversas = new Map(); (props || []).forEach((p: any) => { const k = p.thread_id || p.gmail_id; if (!conversas.has(k)) conversas.set(k, p); });
-  const propostas = [...conversas.values()].slice(0, 10).map((p: any) => ({ id: crypto.randomUUID().slice(0, 8), feito: false, texto: `Responder ${p.marca || p.de_nome || "proposta"}: ${txt(p.assunto, 90)}` }));
+  const propostas: any[] = []; // propostas e prazos de jobs ficam em Marcas e jobs, fora do plano de conteúdo
   const plano = {
     ini, fim, tema: temas[ini] || "", novos, aviso: avisoIA,
     dias: dias.map((d, i) => ({ data: d, nome: DIAS_SEM[i], itens: itens[d] })),
     propostas,
-    contas: { posts: posts.length, publis: Object.values(itens).flat().filter((x: any) => x.tipo === "publi").length, propostas: propostas.length },
+    contas: { posts: posts.length, gravar: Object.values(itens).flat().filter((x: any) => x.tipo === "gravar").length },
   };
   const { data: velho } = await supa.from("planos_semana").select("foco").eq("semana", ini).maybeSingle();
   const { error } = await supa.from("planos_semana").upsert({ semana: ini, plano, foco: velho?.foco ?? (temas[ini] || null), origem, atualizado_em: new Date().toISOString() }, { onConflict: "semana" });
   if (error) throw new Error(error.message);
   const br = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
   if (origem === "sabado") await supa.from("lembretes").insert({ item_tipo: "plano_semana", item_id: ini, titulo: `Seu plano da semana chegou (${br(ini)} a ${br(fim)})`,
-    detalhe: `${plano.contas.posts} posts${novos ? ` (${novos} ideias novas com roteiro)` : ""} · ${plano.contas.publis} prazos de publi · ${propostas.length} propostas para responder`.slice(0, 200),
+    detalhe: `${plano.contas.posts} posts para publicar${novos ? ` (${novos} ideias novas com roteiro)` : ""} · ${plano.contas.gravar} gravações`.slice(0, 200),
     url: PAINEL, quando: new Date().toISOString(), ativo: true });
   return plano;
 }
