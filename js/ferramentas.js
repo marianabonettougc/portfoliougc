@@ -534,7 +534,8 @@
     if (!r) return;
     const mes = (r.data || iso).slice(0, 7);
     const blocos = String(it.roteiro || "");
-    const { data, error } = await banco().from("painel_conteudo").insert({ mes, data: r.data, horario: r.horario, formato: it.formato || "Reels", tema: it.titulo, funil: it.funil || "Topo", pilar: it.categoria || null, proposito: it.resumo || null, hook: it.gancho || null, desenvolvimento: blocos || null, status: "Ideia", notas: `Do Organizador de ideias (${it.finalidade || ""}${it.marca ? ", " + it.marca : ""})` }).select().maybeSingle();
+    const { data, error } = await banco().from("painel_conteudo").insert({ mes, data: r.data, horario: r.horario, formato: it.formato || "Reels", tema: it.titulo, funil: it.funil || "Topo", pilar: it.categoria || null, proposito: it.resumo || null, hook: it.gancho || null, desenvolvimento: blocos || null, status: blocos ? "Roteirizado" : "Ideia",
+      tipo_conteudo: it.finalidade === "Conteúdos" ? "Orgânico" : it.finalidade ? "UGC" : null, nicho: ["Maternidade", "Autocuidado", "Beleza e cabelo", "Moda", "Bem-estar", "Achadinhos de casa e tech"].includes(it.categoria) ? it.categoria : null, marca: it.finalidade === "Publi" ? it.marca || null : null, notas: `Do Organizador de ideias (${it.finalidade || ""}${it.marca ? ", " + it.marca : ""})` }).select().maybeSingle();
     if (error) { toast("Não criei o post: " + error.message, true); return; }
     await banco().from("ideias_organizadas").update({ post_id: data.id, atualizado_em: new Date().toISOString() }).eq("id", it.id); it.post_id = data.id;
     toast(r.data ? "Post criado no Painel de conteúdo." : "Post criado no Banco de ideias do Painel de conteúdo."); pintarIdeias();

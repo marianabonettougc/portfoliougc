@@ -581,3 +581,6 @@ create policy "dona faz tudo" on public.arquivos_lotes for all to authenticated 
 create table if not exists public.planos_semana (id bigint generated always as identity primary key, semana date not null unique, plano jsonb not null default '{}'::jsonb, foco text, origem text not null default 'manual', criado_em timestamptz not null default now(), atualizado_em timestamptz not null default now());
 alter table public.planos_semana enable row level security;
 create policy "dona faz tudo" on public.planos_semana for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+-- Conteúdos (out/2026): classificação automática pela IA, editável.
+alter table public.painel_conteudo add column if not exists tipo_conteudo text, add column if not exists nicho text, add column if not exists marca text, add column if not exists atualizado_em timestamptz default now();

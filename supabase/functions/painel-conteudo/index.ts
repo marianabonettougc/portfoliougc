@@ -46,6 +46,7 @@ const lerJson = (t: string) => { try { return JSON.parse(t); } catch { const m =
 const semAcento = (s: string) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 // mesmas travas da gerar-roteiro (construções banidas pela skill e ganchos batidos)
 const FRASE_PROIBIDA = /\bn[aã]o [eé] (s[oó] |sobre |isso|apenas )[^.!?]{0,60}, [eé] |o problema n[aã]o [eé]|a[ií] eu (descobri|conheci)|hoje eu descobri|foi a[ií] que|foi quando|[eé] o tipo de|voc[eê] j[aá] reparou|voc[eê] sabia que|e sinceramente\?|isso muda (tudo|o jogo)|ol[aá],? pessoal|hoje vou falar sobre|queria compartilhar com voc[eê]s|hoje vim indicar|tem produtos que|se voc[eê] ainda t[aá] no ciclo|at[eé] (eu )?(descobrir|conhecer|encontrar)|at[eé] que (eu )?(descobri|conheci|encontrei)|mas n[aã]o [eé] (bem )?assim/i;
+const NICHOS = ["Maternidade", "Autocuidado", "Beleza e cabelo", "Moda", "Bem-estar", "Achadinhos de casa e tech"];
 const GANCHO_BATIDO = /^\s*(voc[eê] j[aá] (cansou|acordou|se sentiu|sofreu)|cansad[ao] de|sabia que|descobri o segredo|chega de|quer saber como|\d+ passos simples|j[aá] acordou|adeus)/i;
 
 // perfil padrão (o que a Mari contou em out/2026); ela edita no Painel
@@ -104,7 +105,10 @@ function limpar(a: any) {
   return lista.map((x: any) => ({
     tema: txt(x.tema, 120), formato: ["Reels", "Carrossel", "Stories"].includes(x.formato) ? x.formato : "Reels",
     tipo_roteiro: ["Spec ad", "Vitrine para marca", "Stories de bastidor"].includes(x.tipo_roteiro) ? x.tipo_roteiro : (x.formato === "Stories" ? "Stories de bastidor" : "Spec ad"),
-    pilar: txt(x.pilar, 60), tipo_ugc: txt(x.tipo_ugc, 60), funil: ["Topo", "Meio", "Fundo"].includes(x.funil) ? x.funil : "Topo",
+    pilar: txt(x.pilar, 60), tipo_ugc: txt(x.tipo_ugc, 60),
+    // classificação automática: só vale se for uma das opções; na dúvida fica em branco para ela preencher
+    tipo_conteudo: ["UGC", "Orgânico"].includes(x.tipo_conteudo) ? x.tipo_conteudo : null,
+    nicho: NICHOS.includes(x.nicho) ? x.nicho : null, funil: ["Topo", "Meio", "Fundo"].includes(x.funil) ? x.funil : "Topo",
     proposito: txt(x.proposito, 260), hook: txt(x.hook, 260),
     ganchos: (Array.isArray(x.ganchos) ? x.ganchos : []).map((g: unknown) => txt(g, 200)).filter(Boolean).slice(0, 3),
     desenvolvimento: txt(x.desenvolvimento, 3200), cta: txt(x.cta, 260), legenda: txt(x.legenda, 900), porque: txt(x.porque, 320),
@@ -163,9 +167,10 @@ ${c.notas ? "PEDIDO DELA: " + txt(c.notas, 600) + "\n\n" : ""}${Array.isArray(c.
 - CTA com uma ação só, coerente com o tipo de roteiro (de preferência comentar uma palavra única).
 - Legenda pronta para postar (2 a 4 linhas, repetindo a palavra do CTA) e 5 a 8 hashtags de nicho no fim.
 - Nunca use travessão.
+- Classifique cada ideia: "tipo_conteudo" é "UGC" quando o vídeo mostra um produto como anúncio (spec ad, publi, demonstração de produto) ou "Orgânico" quando é conteúdo do perfil dela sem produto como foco (vitrine para marca, bastidor, rotina). "nicho" é um destes: ${NICHOS.join(", ")}. Se não tiver certeza de algum dos dois, deixe o campo vazio. Não invente.
 
 Responda SOMENTE um JSON:
-{"ideias":[{"tema":"tema em poucas palavras","pilar":"nome do pilar","formato":"Reels | Carrossel | Stories","tipo_roteiro":"Spec ad | Vitrine para marca | Stories de bastidor","tipo_ugc":"um dos tipos acima","funil":"Topo | Meio | Fundo","proposito":"o que esse conteúdo faz pelo perfil dela (atrair qual marca, gerar qual reação)","hook":"a primeira fala, para o dedo em 3 segundos","ganchos":["outra opção de gancho","mais uma"],"desenvolvimento":"GANCHO: ... [cena]\\nIDENTIFICAÇÃO: ... [cena]\\n...","cta":"o CTA","legenda":"legenda pronta + hashtags","porque":"1 ou 2 frases: por que esse roteiro passa no teste do spec ad e atrai marca","inspirado_em":"@perfil que inspirou (ou vazio)","referencia":1,"duracao_seg":35}]}`;
+{"ideias":[{"tema":"tema em poucas palavras","pilar":"nome do pilar","formato":"Reels | Carrossel | Stories","tipo_roteiro":"Spec ad | Vitrine para marca | Stories de bastidor","tipo_ugc":"um dos tipos acima","tipo_conteudo":"UGC | Orgânico | vazio","nicho":"um dos nichos ou vazio","funil":"Topo | Meio | Fundo","proposito":"o que esse conteúdo faz pelo perfil dela (atrair qual marca, gerar qual reação)","hook":"a primeira fala, para o dedo em 3 segundos","ganchos":["outra opção de gancho","mais uma"],"desenvolvimento":"GANCHO: ... [cena]\\nIDENTIFICAÇÃO: ... [cena]\\n...","cta":"o CTA","legenda":"legenda pronta + hashtags","porque":"1 ou 2 frases: por que esse roteiro passa no teste do spec ad e atrai marca","inspirado_em":"@perfil que inspirou (ou vazio)","referencia":1,"duracao_seg":35}]}`;
   const saida = limpar(await groq(chave, pedido));
   // uma reescrita automática se aparecer construção banida ou gancho batido
   const ruins = saida.map((x: any, i: number) => ({ i, p: problemas(x) })).filter((r: any) => r.p.length);
@@ -265,7 +270,7 @@ async function processarSalvo(supa: any, chave: string, linkBruto: string, pasta
   const quem = post.perfil ? "@" + String(post.perfil).replace(/^@/, "") : "a criadora";
   if (!x) { await notificar(supa, "Referência salva", `Guardei o post de ${quem}${pasta ? ` na pasta ${pasta}` : ""}, mas a IA não respondeu agora. Abra o Painel de conteúdo e clique em Montar a grade.`); return; }
   const data = slot.dia;
-  await supa.from("painel_conteudo").insert({ mes, data, horario: slot.horario, formato: x.formato, pilar: x.pilar || slot.pilar || null, tipo_roteiro: x.tipo_roteiro, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil,
+  await supa.from("painel_conteudo").insert({ mes, data, horario: slot.horario, formato: x.formato, pilar: x.pilar || slot.pilar || null, tipo_roteiro: x.tipo_roteiro, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil, tipo_conteudo: x.tipo_conteudo, nicho: x.nicho,
     proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, legenda: x.legenda, porque: x.porque, status: "Roteirizado",
     inspiracao: { link: post.link || link, perfil: post.perfil ? "@" + String(post.perfil).replace(/^@/, "") : x.inspirado_em, colecao: post.colecao || pasta || null, legenda: String(post.legenda || "").split("\n")[0].slice(0, 160), duracao_seg: x.duracao_seg } });
   const dia = data ? `${data.slice(8, 10)}/${data.slice(5, 7)}` : "sem dia definido";
@@ -317,7 +322,7 @@ async function planoSemana(supa: any, chave: string, origem: string) {
     }
     for (let i = 0; i < livres.length && i < ideias.length; i++) {
       const x = ideias[i], data = livres[i];
-      const { data: novo } = await supa.from("painel_conteudo").insert({ mes: data.slice(0, 7), data, horario: perfil.ritmo?.horario || "12h", formato: x.formato, pilar: x.pilar || null, tipo_roteiro: x.tipo_roteiro, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil,
+      const { data: novo } = await supa.from("painel_conteudo").insert({ mes: data.slice(0, 7), data, horario: perfil.ritmo?.horario || "12h", formato: x.formato, pilar: x.pilar || null, tipo_roteiro: x.tipo_roteiro, tema: x.tema, tipo_ugc: x.tipo_ugc, funil: x.funil, tipo_conteudo: x.tipo_conteudo, nicho: x.nicho,
         proposito: x.proposito, hook: x.hook, ganchos: x.ganchos, desenvolvimento: x.desenvolvimento, cta: x.cta, legenda: x.legenda, porque: x.porque, status: "Roteirizado", notas: "Criado pelo plano da semana" }).select("id,data,horario,formato,tema,pilar,funil,status,hook").maybeSingle();
       if (novo) { posts.push(novo); novos++; }
     }
@@ -328,8 +333,9 @@ async function planoSemana(supa: any, chave: string, origem: string) {
   const add = (d: string, it: any) => { if (itens[d]) itens[d].push({ id: crypto.randomUUID().slice(0, 8), feito: false, ...it }); };
   posts.sort((a, b) => String(a.data).localeCompare(String(b.data))).forEach((p) => {
     const titulo = `${p.formato || "Post"}: ${p.tema || "sem tema"}`;
+    if (/postad|publicad/i.test(p.status || "")) return;
     add(p.data, { tipo: "postar", texto: `Postar ${titulo}${p.horario ? " às " + p.horario : ""}`, post_id: p.id });
-    if (!/gravad|editad|postad|agendad/i.test(p.status || "") && p.formato !== "Stories") {
+    if (!/gravad|editad|postad|agendad|em edi|pronto|publicad/i.test(p.status || "") && p.formato !== "Stories") {
       const i = dias.indexOf(p.data); add(dias[Math.max(0, i - 1)], { tipo: "gravar", texto: `Gravar ${titulo}`, post_id: p.id });
     }
   });

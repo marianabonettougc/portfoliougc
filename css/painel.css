@@ -1317,11 +1317,11 @@ button.menu-grupo:hover{color:var(--texto)}
 .pc-sem .pc-post b{color:#fff;font-size:13px;line-height:1.28;-webkit-line-clamp:4}
 .pc-sem .pc-post span{color:rgba(255,255,255,.7);font-size:9.5px}
 .pc-sem .pc-post:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(61,43,32,.2)}
-.pil-0{background:#3d2b20!important}
-.pil-1{background:#9c4f36!important}
-.pil-2{background:#dcae52!important}
-.pil-3{background:#5d7a58!important}
-.pil-4{background:#b8746a!important}
+.pil-0{background:#6b4a35!important}
+.pil-1{background:#b07a4a!important}
+.pil-2{background:#e2c77f!important}
+.pil-3{background:#cdb79a!important}
+.pil-4{background:#c9976b!important}
 .pil-5{background:#a68a6d!important}
 .pil-x{background:#7a6355!important}
 .pil-st{background:transparent!important;border:1.5px solid var(--suave)}
@@ -1854,3 +1854,161 @@ html,body{max-width:100%;overflow-x:hidden}
 @media (max-width:860px){
   input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px}
 }
+
+/* =========================================================
+   CONTEÚDOS (js/painel-conteudo.js, out/2026): visão geral, quadro de produção, calendário editorial e banco de ideias.
+   Paleta dela: marfim/creme no fundo, cartões branco quente, bege claro, café, amarelo manteiga, areia e caramelo;
+   verde suave só para publicado.
+   ========================================================= */
+.pc2{--manteiga:#f2e3b3;--manteiga-forte:#e2c77f;--areia:#e9dcc8;--caramelo:#b07a4a}
+.pc2-cab{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:0 0 14px}
+.pc2-sobre{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--suave)}
+.pc2-titulo{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:34px;line-height:1.05;margin:2px 0 0;color:var(--texto)}
+.pc2-titulo em,.pc2-h em{color:var(--caramelo)}
+.pc2-cab-acoes{display:flex;gap:8px;flex-wrap:wrap}
+.pc2 .pc-abas{margin-bottom:18px}
+.pc2-h{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:21px;margin:0;color:var(--texto)}
+.pc2-h small{font-family:"Poppins",system-ui,sans-serif;font-size:13px;color:var(--suave);margin-left:4px}
+.pc2-bloco{background:var(--cartao);border-radius:18px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 0 rgba(61,43,32,.04)}
+.pc2-bloco-cab{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.pc2-link{border:0;background:none;padding:0;font:inherit;font-size:13px;color:var(--suave);cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.pc2-link svg{width:14px;height:14px}
+.pc2-link:hover{color:var(--texto)}
+/* indicadores */
+.pc2-ind{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.pc2-ind button{all:unset;cursor:pointer;background:var(--cartao);border-radius:18px;padding:16px 18px;display:grid;gap:2px}
+.pc2-ind button:first-child{background:var(--manteiga)}
+.pc2-ind b{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:36px;line-height:1;color:var(--texto)}
+.pc2-ind span{font-weight:600;font-size:14px;color:var(--texto)}
+.pc2-ind small{font-size:12px;color:var(--suave)}
+.pc2-ind button:hover{box-shadow:0 6px 18px rgba(61,43,32,.08)}
+.pc2-duas{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:14px}
+.pc2-duas .pc2-bloco{margin-bottom:14px}
+/* próximos */
+.pc2-prox{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pc2-prox li+li{border-top:1px solid var(--linha)}
+.pc2-prox button{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;grid-template-columns:64px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:10px 4px}
+.pc2-prox button:hover{background:var(--fundo)}
+.pc2-data{font-size:12px;font-weight:600;color:var(--suave)}
+.pc2-data.hoje{color:var(--texto);background:var(--manteiga);border-radius:999px;padding:2px 8px;justify-self:start}
+.pc2-data.atrasado{color:var(--caramelo)}
+.pc2-prox-txt{min-width:0;display:grid}
+.pc2-prox-txt b{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc2-prox-txt small{font-size:12px;color:var(--suave)}
+.pc2-prox-tags{display:flex;gap:4px}
+.pc2-tag{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 7px;border-radius:999px;background:var(--fundo);color:var(--suave);text-decoration:none;white-space:nowrap}
+a.pc2-tag:hover{color:var(--texto)}
+.pc2-st{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--areia);color:var(--principal);white-space:nowrap}
+.pc2-st.st-ideia{background:var(--fundo);color:var(--suave)}
+.pc2-st.st-para-gravar{background:var(--manteiga)}
+.pc2-st.st-publicado{background:var(--verde-suave);color:var(--verde)}
+/* planejamento do mês */
+.pc2-prog{display:flex;align-items:center;gap:10px;margin:2px 0 14px}
+.pc2-prog-barra{flex:1;height:8px;border-radius:999px;background:var(--fundo);overflow:hidden}
+.pc2-prog-barra i{display:block;height:100%;background:var(--principal);border-radius:999px}
+.pc2-prog b{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:22px}
+.pc2-mes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0}
+.pc2-mes div{background:var(--fundo);border-radius:12px;padding:10px 12px}
+.pc2-mes dt{font-size:12px;color:var(--suave)}
+.pc2-mes dd{margin:0;font-size:20px;font-weight:600;color:var(--texto)}
+/* fluxo resumido */
+.pc2-fluxo{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.pc2-fluxo button{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:var(--fundo)}
+.pc2-fluxo b{font-size:20px;font-weight:600;color:var(--texto)}
+.pc2-fluxo span{font-size:12px;color:var(--suave)}
+.pc2-fluxo button:hover{background:var(--areia)}
+.pc2-dobra summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pc2-dobra summary::-webkit-details-marker{display:none}
+.pc2-dobra[open] summary{margin-bottom:10px}
+.pc2-dobra .pc-plano{border:0;background:transparent;padding:0;margin:0}
+/* quadro de produção */
+.pc2-filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.pc2-filtros .entrada{width:auto;height:36px;border-radius:999px;padding:0 14px;background:var(--cartao)}
+.pc2-filtros input.entrada{flex:1 1 220px;max-width:340px}
+.pc2-kanban{display:grid;grid-template-columns:repeat(6,minmax(200px,1fr));gap:12px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.pc2-col{background:var(--bege);border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:180px;scroll-snap-align:start;transition:box-shadow .15s}
+.pc2-col.alvo{box-shadow:inset 0 0 0 2px var(--manteiga-forte)}
+.pc2-col-cab{display:flex;align-items:center;gap:8px;padding:2px 4px}
+.pc2-col-cab b{font-size:13.5px;font-weight:600;color:var(--texto)}
+.pc2-col-cab span{font-size:12px;color:var(--suave);background:var(--cartao);border-radius:999px;padding:0 8px}
+.pc2-mais{all:unset;cursor:pointer;margin-left:auto;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;color:var(--suave)}
+.pc2-mais svg{width:15px;height:15px}
+.pc2-mais:hover{background:var(--cartao);color:var(--texto)}
+.pc2-col-lista{display:flex;flex-direction:column;gap:8px}
+.pc2-card{position:relative;background:var(--cartao);border-radius:12px;padding:11px 12px 10px;display:grid;gap:4px;cursor:pointer;box-shadow:0 1px 2px rgba(61,43,32,.06)}
+.pc2-card:hover{box-shadow:0 6px 16px rgba(61,43,32,.1)}
+.pc2-card.arrastando{opacity:.5}
+.pc2-card b{font-size:13.5px;font-weight:600;line-height:1.3;color:var(--texto);padding-right:20px}
+.pc2-card small{font-size:10.5px;font-weight:600;letter-spacing:.08em;color:var(--suave)}
+.pc2-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}
+.pc2-avancar{all:unset;cursor:pointer;position:absolute;top:8px;right:8px;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;color:var(--suave);opacity:.55}
+.pc2-avancar svg{width:14px;height:14px}
+.pc2-avancar:hover{opacity:1;background:var(--manteiga)}
+.pc2-vazio{margin:4px;font-size:12px;color:var(--suave)}
+/* calendário editorial */
+.pc2-cal .pc-cal-cab{align-items:center}
+.pc2-cal-tit{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pc2-cal-tit .entrada{width:auto;height:36px;border-radius:999px;padding:0 14px}
+.pc2-seg{display:inline-flex;background:var(--bege);border-radius:999px;padding:3px}
+.pc2-seg button{all:unset;cursor:pointer;padding:6px 14px;border-radius:999px;font-size:13px;color:var(--suave)}
+.pc2-seg button.ativa{background:var(--cartao);color:var(--texto);font-weight:600}
+.pc2-dica{margin:0 0 8px}
+.pc2 .pc-sem{background:transparent}
+.pc2 .pc-sem .pc-dia,.pc2-semana .pc-dia{background:var(--cartao);border:0;border-radius:12px;min-height:120px}
+.pc2-semana .pc-dia{min-height:300px}
+.pc2 .pc-sem .pc-dia.hoje,.pc2-semana .pc-dia.hoje{box-shadow:inset 0 0 0 2px var(--manteiga-forte)}
+.pc2-semana .pc-dia-cab{display:flex;align-items:baseline;gap:6px}
+.pc2-semana .pc-dia-cab .pc-add{margin:0 0 0 auto}
+.pc2-mini{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:1px;width:100%;padding:7px 8px;border-radius:9px;background:var(--fundo)}
+.pc2-mini:hover{background:var(--areia)}
+.pc2-mini b{font-size:12.5px;font-weight:600;line-height:1.3;color:var(--texto);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pc2-ponto{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.pc2-mini small{font-size:11px;color:var(--suave)}
+.pc2-mini em{font-style:normal;font-size:10.5px;color:var(--caramelo)}
+.pc2-mini.feito em{color:var(--verde)}
+.pc2-mini.feito b{color:var(--suave)}
+/* banco de ideias */
+.pc2-nova summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pc2-nova summary::-webkit-details-marker{display:none}
+.pc2-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.pc2-form .pc-largo,.pc2-form .pc-linha{grid-column:1/-1}
+.pc2-ideias{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.pc2-ideia{background:var(--fundo);border-radius:14px;padding:12px 14px;display:grid;gap:6px;cursor:pointer;align-content:start}
+.pc2-ideia:hover{background:var(--areia)}
+.pc2-ideia b{font-size:14px;font-weight:600;line-height:1.35}
+.pc2-ideia p{margin:0;font-size:12.5px;color:var(--suave)}
+.pc2-ideia-acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.pc2-ideia-acoes .btn-perigo svg{width:14px;height:14px}
+.pc2-bloco-cab .entrada{width:auto;height:34px;border-radius:999px;padding:0 12px}
+.pc2-pasta{border-top:1px solid var(--linha);padding:8px 0}
+.pc2-pasta summary{cursor:pointer;display:flex;gap:8px;align-items:baseline}
+.pc2-pasta summary small{color:var(--suave)}
+.pc2-pasta ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.pc2-pasta li{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px}
+.pc2-pasta li span{flex:1;min-width:0;color:var(--suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc2-pasta li em{font-style:normal;font-size:12px;color:var(--verde)}
+.pc2-cfg-cab{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+@media (max-width:1000px){
+  .pc2-duas{grid-template-columns:minmax(0,1fr)}
+  .pc2-fluxo{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .pc2-kanban{display:flex;scroll-snap-type:x mandatory}
+  .pc2-col{flex:0 0 78%;max-width:320px}
+  .pc2-semana{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px}
+  .pc2-semana .pc-dia{flex:0 0 70%;scroll-snap-align:start;min-height:220px}
+}
+@media (max-width:620px){
+  .pc2-titulo{font-size:28px}
+  .pc2-ind{grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .pc2-ind button{padding:12px}
+  .pc2-ind b{font-size:26px}
+  .pc2-ind small{display:none}
+  .pc2-prox button{grid-template-columns:52px minmax(0,1fr) auto}
+  .pc2-prox-tags{display:none}
+  .pc2-form{grid-template-columns:1fr}
+  .pc2-bloco{padding:14px}
+  .pc2-filtros .entrada{flex:1 1 40%}
+}
+.pc2 [hidden]{display:none!important}
+.pc2 #pc-numeros{display:none!important}
+.pc2-tag{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+@media (min-width:1001px){.pc2-kanban{grid-template-columns:repeat(6,minmax(160px,1fr))}}
