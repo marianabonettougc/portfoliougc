@@ -77,11 +77,12 @@
 
   // ---------- banco ----------
   async function carregar() {
-    const { data, error } = await banco.from("financeiro_contas").select("id,nome,dados").eq("id", st.atual);
+    const { data, error } = await banco.from("financeiro_contas").select("id,nome,dados,atualizado_em").eq("id", st.atual);
     if (error) throw new Error("Não consegui abrir as finanças: " + error.message);
     const p = PERFIS.find((x) => x.id === st.atual), linha = (data || [])[0];
     st.perfis[p.id] = { ...vazio(), ...((linha && linha.dados) || {}) };
-    if (!linha) await banco.from("financeiro_contas").upsert({ id: p.id, nome: p.nome, dados: st.perfis[p.id], atualizado_por: st.email });
+    lembrarBase(p.id, linha && linha.atualizado_em);
+    if (!linha) await salvarAgora(p.id);
     sincronizarFaturas();
     // primeira vez: o perfil da Mari puxa o Financeiro CPF do painel dela
     const m = st.perfis.mari;
@@ -105,11 +106,37 @@
       toast("Trouxe o seu Financeiro CPF do painel para cá.");
     } catch (e) { /* segue vazio */ }
   }
-  function salvar() { sincronizarFaturas(); clearTimeout(st.salvando); const id = st.atual; st.salvando = setTimeout(() => salvarAgora(id), 900); }
+  function salvar() { sincronizarFaturas(); clearTimeout(st.salvando); st.pendente = true; const id = st.atual; st.salvando = setTimeout(() => salvarAgora(id), 900); }
+  // Salvar sem apagar o que outro aparelho mudou (nov/2026): o app guarda como os dados estavam quando abriu ("base").
+  // Se o banco mudou desde então (celular e computador abertos ao mesmo tempo), junta: o que mudou aqui vai por cima,
+  // o resto fica como está no banco. Lançamentos são juntados um por um (pelo id); apagar aqui apaga lá.
+  st.base = {}; st.baseEm = {};
+  function lembrarBase(id, em) { st.base[id] = JSON.parse(JSON.stringify(st.perfis[id] || {})); st.baseEm[id] = em || null; }
+  function mesclar(base, local, remoto) {
+    const out = { ...remoto }, igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    for (const k of Object.keys(local)) if (k !== "lancamentos" && !igual(local[k], base[k])) out[k] = local[k];
+    const antes = new Map((base.lancamentos || []).map((l) => [l.id, JSON.stringify(l)]));
+    const aqui = new Map((local.lancamentos || []).map((l) => [l.id, l]));
+    let lista = (remoto.lancamentos || []).filter((l) => !(antes.has(l.id) && !aqui.has(l.id)));
+    const noBanco = new Set(lista.map((l) => l.id));
+    for (const [id, l] of aqui) if (antes.get(id) !== JSON.stringify(l)) { if (noBanco.has(id)) lista = lista.map((x) => (x.id === id ? l : x)); else lista.push(l); }
+    out.lancamentos = lista;
+    return out;
+  }
   async function salvarAgora(id) {
     const p = PERFIS.find((x) => x.id === id);
-    const { error } = await banco.from("financeiro_contas").upsert({ id, nome: p.nome, dados: st.perfis[id], atualizado_em: new Date().toISOString(), atualizado_por: st.email });
-    if (error) toast("Não salvou: " + error.message, true);
+    let dados = st.perfis[id], juntou = false;
+    try {
+      const { data: rem } = await banco.from("financeiro_contas").select("dados,atualizado_em").eq("id", id).maybeSingle();
+      if (rem && rem.dados && st.base[id] && (!st.baseEm[id] || new Date(rem.atualizado_em).getTime() !== new Date(st.baseEm[id]).getTime())) {
+        dados = mesclar(st.base[id], dados, rem.dados); juntou = true;
+      }
+    } catch (e) { /* sem conferir: salva o que tem */ }
+    const em = new Date().toISOString();
+    const { error } = await banco.from("financeiro_contas").upsert({ id, nome: p.nome, dados, atualizado_em: em, atualizado_por: st.email });
+    if (error) { toast("Não salvou: " + error.message, true); return; }
+    st.perfis[id] = dados; lembrarBase(id, em); st.pendente = false;
+    if (juntou && id === st.atual && !document.querySelector("dialog[open]")) pintar();
   }
 
   // ---------- contas ----------
@@ -594,7 +621,7 @@
       </div>
       <div class="duplo"><div class="fn-campo"><label for="e-prev">Data prevista de pagamento</label><input class="fn-entrada" type="date" id="e-prev" value="${esc(dt.prevista || "")}" ${daPJ ? "disabled" : ""}></div>
         <div class="fn-campo"><label for="e-pag">Data de pagamento</label><input class="fn-entrada" type="date" id="e-pag" value="${esc(dt.pagamento || "")}" ${daPJ ? "disabled" : ""}></div></div>
-      ${daPJ ? "" : `<p class="fn-dica">Com a data de pagamento preenchida, a entrada fica como recebida.</p>`}
+      ${daPJ ? "" : `<p class="fn-dica">A entrada fica no mês em que o dinheiro caiu (data de pagamento) e já conta como recebida. Sem data de pagamento, ela fica no mês previsto, como a receber.</p>`}
       <div class="fn-campo"><label>Tem NF?</label><div class="fn-seg" role="radiogroup" aria-label="Tem NF?"><button type="button" data-nf="sim" class="${l.temNF ? "on" : ""}" aria-checked="${!!l.temNF}" role="radio">Sim</button><button type="button" data-nf="nao" class="${l.temNF ? "" : "on"}" aria-checked="${!l.temNF}" role="radio">Não</button></div></div>
       <div class="fn-campo" id="e-nf-campo" ${l.temNF ? "" : "hidden"}><label>Nota fiscal</label><div data-lugar="nf">${anexoHtml("nf", nf)}</div></div>
       <div class="fn-campo"><label>Comprovante de pagamento</label><div data-lugar="comp">${anexoHtml("comp", comp)}</div></div>
@@ -1010,7 +1037,7 @@
       if (MINHA_V && v && v !== MINHA_V && !ocupado) location.reload();
     } catch (e) { /* sem internet: tenta depois */ }
   }
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) { conferirVersao(); if (st.sessao && st.atual === "mari" && !document.querySelector("dialog[open]")) sincronizarPJ().then((m) => { if (m) pintar(); }).catch(() => {}); } });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { conferirVersao(); if (st.sessao && !st.pendente && !document.querySelector("dialog[open]")) carregar().then(() => pintar()).catch(() => {}); } });
   setInterval(conferirVersao, 5 * 60 * 1000);
   iniciar();
   window.financeiroApp = { estado: st, conselhosGerais, plano }; // usado nos testes
