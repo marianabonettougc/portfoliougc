@@ -34,7 +34,7 @@
   const NO_CELULAR = ["dash", "entradas", "saidas", "cartoes"]; // menu de baixo no celular; o resto fica em "Mais"
   const CURTO = { dash: "Início", reserva: "Reserva", anual: "Ano" };
   const TITULO = { dash: "Visão geral", entradas: "Entradas", saidas: "Saídas", cartoes: "Cartões", emprestimos: "Empréstimos", reserva: "Reserva & Investimentos", anual: "Visão anual", acesso: "Acesso" };
-  const CAT_ENTRADA = ["Salário", "UGC", "PUBLI", "PUBLI COMERCIAL", "Outros"]; // nov/2026: etiquetas pedidas pela Mari (+ as que ela criar, em dados.etiquetas)
+  const CAT_ENTRADA = ["Salário", "UGC", "PUBLI", "PUBLI COMERCIAL", "MARKETPLACE", "Outros"]; // nov/2026: etiquetas pedidas pela Mari (+ as que ela criar, em dados.etiquetas)
   const CAT_SAIDA = ["Conta fixa", "Cartão", "Empréstimo", "Financiamento", "Dívida pessoal", "Mercado", "Casa", "Filhos", "Saúde", "Transporte", "Lazer", "Assinaturas", "Outros"];
   // o painel do Eduardo usa a paleta azul-acinzentada da referência Payno: troca as cores da Mari pelas dele no HTML
   const CORES_EDU = { "#3d2b20": "#1e2633", "#7a6355": "#8a94a6", "#6b4a35": "#3d5a85", "#a87058": "#9fb2cd", "#cdb39b": "#7f95b8", "#e7c9b6": "#c9d4e4", "#efe5d8": "#e8edf4", "#8a6650": "#5d77a0", "#4f7a54": "#2f8f5b", "#b8473a": "#d0545b", "#c9973b": "#c9a24a", "#4a6a8a": "#6fa3c9", "#d3a98f": "#b7c4d8" };
@@ -547,7 +547,8 @@
   // na tabela do ano: sem centavos para caber e ficar limpo (o valor exato aparece ao passar o dedo/mouse e no total)
   const K0 = (v) => (ocultar ? "•••" : Math.round(Number(v) || 0).toLocaleString("pt-BR"));
   // ---------- etiquetas, anexos e a janela de entrada (nov/2026) ----------
-  const ETQ_PADRAO = ["Salário", "UGC", "PUBLI", "PUBLI COMERCIAL", "Outros"];
+  const ETQ_PADRAO = ["Salário", "UGC", "PUBLI", "PUBLI COMERCIAL", "MARKETPLACE", "Outros"];
+  const COM_INFLUENCER = ["PUBLI COMERCIAL", "MARKETPLACE"]; // etiquetas que pedem o nome da influencer
   const etiquetasEntrada = (atual) => [...new Set([...ETQ_PADRAO, ...(D().etiquetas || []), ...(atual ? [atual] : [])])];
   const nomeArquivo = (n) => String(n || "arquivo").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.-]+/g, "_").slice(-80);
   async function enviarAnexo(arquivo, lid, tipo) {
@@ -576,7 +577,7 @@
     const novo = !l;
     l = l || { id: uid(), tipo: "entrada", data: hojeIso(), dataPrevista: hojeIso(), dataPagamento: "", pago: false, categoria: "Salário", ...(pre || {}) };
     const daPJ = l.origem === "pj", dt = datasDe(l);
-    let nf = l.nf || null, comp = l.comprovante || null;
+    let nf = l.nf || null, comp = l.comprovante || null, tac = l.tac || null;
     const enviados = [], trocados = [];
     let dlg = $("#fn-janela"); if (!dlg) { dlg = document.createElement("dialog"); dlg.id = "fn-janela"; dlg.className = "fn-janela"; document.body.appendChild(dlg); }
     const ops = (atual) => etiquetasEntrada(atual).map((o) => `<option ${o === atual ? "selected" : ""}>${esc(o)}</option>`).join("") + `<option value="__nova">+ Criar etiqueta</option>`;
@@ -586,7 +587,11 @@
       <div class="fn-campo"><label for="e-descricao">Descrição</label><input class="fn-entrada" id="e-descricao" value="${esc(l.descricao || "")}" ${daPJ ? "disabled" : ""} placeholder="Ex.: Salário, Job da marca X"></div>
       <div class="duplo"><div class="fn-campo"><label for="e-valor">Valor (R$)</label><input class="fn-entrada" id="e-valor" inputmode="decimal" value="${l.valor != null && l.valor !== "" ? String(l.valor).replace(".", ",") : ""}" ${daPJ ? "disabled" : ""}></div>
         <div class="fn-campo"><label for="e-etq">Etiqueta</label><select class="fn-entrada" id="e-etq">${ops(l.categoria)}</select></div></div>
-      <div class="fn-campo" id="e-infl-campo" ${l.categoria === "PUBLI COMERCIAL" ? "" : "hidden"}><label for="e-infl">Nome da influencer</label><input class="fn-entrada" id="e-infl" value="${esc(l.influencer || "")}" placeholder="Quem fez a publi"></div>
+      <div class="fn-campo" id="e-infl-campo" ${COM_INFLUENCER.includes(l.categoria) ? "" : "hidden"}><label for="e-infl">Nome da influencer</label><input class="fn-entrada" id="e-infl" value="${esc(l.influencer || "")}" placeholder="Quem fez a publi"></div>
+      <div id="e-mkt-campos" ${l.categoria === "MARKETPLACE" ? "" : "hidden"}>
+        <div class="fn-campo"><label for="e-mkt">Marketplace</label><input class="fn-entrada" id="e-mkt" value="${esc(l.marketplace || "")}" placeholder="Ex.: Shopee, TikTok Shop, Mercado Livre"></div>
+        <div class="fn-campo"><label>TAC</label><div data-lugar="tac">${anexoHtml("tac", tac)}</div></div>
+      </div>
       <div class="duplo"><div class="fn-campo"><label for="e-prev">Data prevista de pagamento</label><input class="fn-entrada" type="date" id="e-prev" value="${esc(dt.prevista || "")}" ${daPJ ? "disabled" : ""}></div>
         <div class="fn-campo"><label for="e-pag">Data de pagamento</label><input class="fn-entrada" type="date" id="e-pag" value="${esc(dt.pagamento || "")}" ${daPJ ? "disabled" : ""}></div></div>
       ${daPJ ? "" : `<p class="fn-dica">Com a data de pagamento preenchida, a entrada fica como recebida.</p>`}
@@ -599,33 +604,35 @@
     let temNF = !!l.temNF;
     const erro = (t) => { $("#e-erro", dlg).textContent = t; };
     const ligarAnexo = (qual) => {
-      const lugar = $(`[data-lugar="${qual}"]`, dlg), a = qual === "nf" ? nf : comp;
+      const pega = () => (qual === "nf" ? nf : qual === "tac" ? tac : comp), poe = (v) => { if (qual === "nf") nf = v; else if (qual === "tac") tac = v; else comp = v; };
+      const lugar = $(`[data-lugar="${qual}"]`, dlg), a = pega();
       lugar.innerHTML = anexoHtml(qual, a);
-      const ver = $("[data-ver]", lugar); if (ver) ver.addEventListener("click", () => abrirAnexo(qual === "nf" ? nf : comp));
-      const tirar = $("[data-tirar]", lugar); if (tirar) tirar.addEventListener("click", () => { const at = qual === "nf" ? nf : comp; if (at) trocados.push(at.path); if (qual === "nf") nf = null; else comp = null; ligarAnexo(qual); });
+      const ver = $("[data-ver]", lugar); if (ver) ver.addEventListener("click", () => abrirAnexo(pega()));
+      const tirar = $("[data-tirar]", lugar); if (tirar) tirar.addEventListener("click", () => { const at = pega(); if (at) trocados.push(at.path); poe(null); ligarAnexo(qual); });
       $("input[type=file]", lugar).addEventListener("change", async (e) => {
         const arq = e.target.files[0]; if (!arq) return;
         erro(""); lugar.querySelector(".fn-anexo").classList.add("enviando");
-        try { const novoA = await enviarAnexo(arq, l.id, qual); enviados.push(novoA.path); const at = qual === "nf" ? nf : comp; if (at) trocados.push(at.path); if (qual === "nf") nf = novoA; else comp = novoA; }
+        try { const novoA = await enviarAnexo(arq, l.id, qual); enviados.push(novoA.path); const at = pega(); if (at) trocados.push(at.path); poe(novoA); }
         catch (er) { erro(er.message); }
         ligarAnexo(qual);
       });
     };
-    ligarAnexo("nf"); ligarAnexo("comp");
+    ligarAnexo("nf"); ligarAnexo("comp"); ligarAnexo("tac");
     $("#e-etq", dlg).addEventListener("change", async (e) => {
       if (e.target.value === "__nova") { const n = await novaEtiqueta(); e.target.innerHTML = ops(n || l.categoria); }
-      $("#e-infl-campo", dlg).hidden = e.target.value !== "PUBLI COMERCIAL";
+      $("#e-infl-campo", dlg).hidden = !COM_INFLUENCER.includes(e.target.value);
+      $("#e-mkt-campos", dlg).hidden = e.target.value !== "MARKETPLACE";
     });
     $$("[data-nf]", dlg).forEach((b) => b.addEventListener("click", () => { temNF = b.dataset.nf === "sim"; $$("[data-nf]", dlg).forEach((x) => { x.classList.toggle("on", x === b); x.setAttribute("aria-checked", String(x === b)); }); $("#e-nf-campo", dlg).hidden = !temNF; }));
     const fechar = () => { tirarArquivos(enviados); dlg.close(); };
     $("#e-cancelar", dlg).addEventListener("click", fechar);
     dlg.oncancel = () => tirarArquivos(enviados);
     const ap = $("#e-apagar", dlg);
-    if (ap) ap.addEventListener("click", async () => { if (!(await painelDialogo.confirmar("Apagar esta entrada? Os anexos dela também saem.", { ok: "Apagar", perigo: true }))) return; tirarArquivos([...enviados, ...trocados, nf && nf.path, comp && comp.path]); D().lancamentos = D().lancamentos.filter((y) => y.id !== l.id); dlg.close(); salvar(); pintar(); });
+    if (ap) ap.addEventListener("click", async () => { if (!(await painelDialogo.confirmar("Apagar esta entrada? Os anexos dela também saem.", { ok: "Apagar", perigo: true }))) return; tirarArquivos([...enviados, ...trocados, nf && nf.path, comp && comp.path, tac && tac.path]); D().lancamentos = D().lancamentos.filter((y) => y.id !== l.id); dlg.close(); salvar(); pintar(); });
     $("form", dlg).addEventListener("submit", (e) => {
       e.preventDefault();
       const etq = $("#e-etq", dlg).value === "__nova" ? l.categoria : $("#e-etq", dlg).value;
-      const x = { ...l, categoria: etq, influencer: etq === "PUBLI COMERCIAL" ? $("#e-infl", dlg).value.trim() : (l.influencer || ""), temNF, nf: temNF ? nf : null, comprovante: comp, obs: $("#e-obs", dlg).value.trim() };
+      const x = { ...l, categoria: etq, influencer: COM_INFLUENCER.includes(etq) ? $("#e-infl", dlg).value.trim() : (l.influencer || ""), marketplace: etq === "MARKETPLACE" ? $("#e-mkt", dlg).value.trim() : (l.marketplace || ""), tac, temNF, nf: temNF ? nf : null, comprovante: comp, obs: $("#e-obs", dlg).value.trim() };
       if (!temNF && nf) trocados.push(nf.path);
       if (daPJ) x.etiquetaManual = true;
       else {
@@ -636,7 +643,7 @@
         Object.assign(x, { descricao: desc, valor, dataPrevista: prev, dataPagamento: pag, data: pag || prev, pago: !!pag, atrasado: false });
       }
       const lista = D().lancamentos, i = lista.findIndex((y) => y.id === x.id); if (i >= 0) lista[i] = x; else lista.push(x);
-      tirarArquivos(trocados.filter((p) => p !== (x.nf && x.nf.path) && p !== (x.comprovante && x.comprovante.path)));
+      tirarArquivos(trocados.filter((p) => p !== (x.nf && x.nf.path) && p !== (x.comprovante && x.comprovante.path) && p !== (x.tac && x.tac.path)));
       dlg.close(); salvar(); pintar(); toast(novo ? "Entrada lançada." : "Salvo.");
     });
     dlg.showModal();
@@ -679,7 +686,7 @@
     }
     // receita apagada no painel: some daqui, a não ser que tenha anexo (aí fica marcada)
     const n0 = d.lancamentos.length;
-    d.lancamentos = d.lancamentos.filter((l) => !(l.origem === "pj" && !vistos.has(l.pjId) && !l.nf && !l.comprovante));
+    d.lancamentos = d.lancamentos.filter((l) => !(l.origem === "pj" && !vistos.has(l.pjId) && !l.nf && !l.comprovante && !l.tac));
     d.lancamentos.filter((l) => l.origem === "pj" && !vistos.has(l.pjId) && !l.pjRemovido).forEach((l) => { l.pjRemovido = true; mudou = true; });
     if (d.lancamentos.length !== n0) mudou = true;
     if (mudou) await salvarAgora("mari");
@@ -715,14 +722,14 @@
     const doMesT = (mm) => doMes(y, mm).filter((l) => l.tipo === tipo);
     const todos = doMesT(m), q = (st.anoBusca || "").trim().toLowerCase();
     const sit = (l) => l.pago ? "pago" : vencidoL(l) ? "atraso" : "pendente";
-    const lista = todos.filter((l) => (!q || [l.descricao, l.categoria, l.obs, l.influencer].join(" ").toLowerCase().includes(q)) && (!st.anoStatus || sit(l) === st.anoStatus))
+    const lista = todos.filter((l) => (!q || [l.descricao, l.categoria, l.obs, l.influencer, l.marketplace].join(" ").toLowerCase().includes(q)) && (!st.anoStatus || sit(l) === st.anoStatus))
       .sort((a, b) => String(a.data).localeCompare(String(b.data)) || String(a.descricao).localeCompare(String(b.descricao)));
     const total = soma(todos), pago = soma(todos.filter((l) => l.pago)), atraso = soma(todos.filter((l) => !l.pago && vencidoL(l))), pend = total - pago - atraso;
     const s = situacaoMes(todos), rotSit = { ok: "Concluído", amb: "Em aberto", mal: "Com atraso", vazio: "Sem lançamentos" }[s];
     const dataCol = (l) => { const dt = datasDe(l); return ent ? `<td>${dt.prevista ? dataBR(dt.prevista) : "–"}</td><td>${dt.pagamento ? dataBR(dt.pagamento) : "–"}</td>` : `<td>${dataBR(l.data)}</td>`; };
-    const anexos = (l) => (l.nf || l.comprovante) ? `<span class="fn-clipes">${l.nf ? `<button type="button" class="fn-clipe" data-anexo-ver="${esc(l.id)}|nf" title="Nota fiscal: ${esc(l.nf.nome)}">NF</button>` : ""}${l.comprovante ? `<button type="button" class="fn-clipe" data-anexo-ver="${esc(l.id)}|comprovante" title="Comprovante: ${esc(l.comprovante.nome)}">${ICONE.clipe}</button>` : ""}</span>` : (ent && l.temNF ? `<span class="fn-clipe falta" title="Marcada com NF, falta anexar">NF</span>` : "");
+    const anexos = (l) => (l.nf || l.comprovante || l.tac) ? `<span class="fn-clipes">${l.nf ? `<button type="button" class="fn-clipe" data-anexo-ver="${esc(l.id)}|nf" title="Nota fiscal: ${esc(l.nf.nome)}">NF</button>` : ""}${l.comprovante ? `<button type="button" class="fn-clipe" data-anexo-ver="${esc(l.id)}|comprovante" title="Comprovante: ${esc(l.comprovante.nome)}">${ICONE.clipe}</button>` : ""}${l.tac ? `<button type="button" class="fn-clipe" data-anexo-ver="${esc(l.id)}|tac" title="TAC: ${esc(l.tac.nome)}">TAC</button>` : ""}</span>` : (ent && l.temNF ? `<span class="fn-clipe falta" title="Marcada com NF, falta anexar">NF</span>` : "");
     const linhas = lista.map((l) => `<tr>
-        <td><div class="fn-va-nome"><span class="fn-va-ic ${ent ? "entra" : "sai"}">${ent ? ICONE.entra : ICONE.doc}</span><div><b>${esc(l.descricao || "Sem nome")}</b>${l.origem === "pj" ? `<small class="fn-pj">${ICONE.elo}CNPJ${l.pjRemovido ? " (apagado lá)" : ""}</small>` : l.auto ? `<small>soma das compras</small>` : ""}${l.influencer ? `<small>${esc(l.influencer)}</small>` : ""}</div></div></td>
+        <td><div class="fn-va-nome"><span class="fn-va-ic ${ent ? "entra" : "sai"}">${ent ? ICONE.entra : ICONE.doc}</span><div><b>${esc(l.descricao || "Sem nome")}</b>${l.origem === "pj" ? `<small class="fn-pj">${ICONE.elo}CNPJ${l.pjRemovido ? " (apagado lá)" : ""}</small>` : l.auto ? `<small>soma das compras</small>` : ""}${l.influencer || l.marketplace ? `<small>${esc([l.influencer, l.marketplace].filter(Boolean).join(" · "))}</small>` : ""}</div></div></td>
         <td class="num"><b>${R$(l.valor)}</b></td>
         ${dataCol(l)}
         <td><span class="fn-tag">${esc(l.categoria || "Outros")}</span></td>
@@ -912,10 +919,10 @@
     $$("[data-duplicar]", raiz).forEach((b) => b.addEventListener("click", () => { const l = acha(d.lancamentos, b.dataset.duplicar); if (!l) return;
       const mover = (iso) => { if (!iso) return iso; const x = new Date(iso + "T00:00:00"); const n = new Date(x.getFullYear(), x.getMonth() + 1, Math.min(28, x.getDate())); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`; };
       const base = l.tipo === "entrada" ? (datasDe(l).prevista || l.data) : l.data;
-      const c = { ...l, id: uid(), data: mover(base), pago: false, atrasado: false, nf: null, comprovante: null, origem: undefined, pjId: undefined, etiquetaManual: undefined, ...(l.tipo === "entrada" ? { dataPrevista: mover(base), dataPagamento: "" } : {}) };
+      const c = { ...l, id: uid(), data: mover(base), pago: false, atrasado: false, nf: null, comprovante: null, tac: null, origem: undefined, pjId: undefined, etiquetaManual: undefined, ...(l.tipo === "entrada" ? { dataPrevista: mover(base), dataPagamento: "" } : {}) };
       d.lancamentos.push(c); salvar(); pintar(); toast(`Copiei para ${MESES[Number(c.data.slice(5, 7)) - 1].toLowerCase()}.`); }));
     $$("[data-apagar-l]", raiz).forEach((b) => b.addEventListener("click", async () => { const l = acha(d.lancamentos, b.dataset.apagarL); if (!l || !(await painelDialogo.confirmar(`Apagar "${l.descricao || "lançamento"}"?`, { ok: "Apagar", perigo: true }))) return;
-      tirarArquivos([l.nf && l.nf.path, l.comprovante && l.comprovante.path]); d.lancamentos = d.lancamentos.filter((x) => x.id !== l.id); salvar(); pintar(); }));
+      tirarArquivos([l.nf && l.nf.path, l.comprovante && l.comprovante.path, l.tac && l.tac.path]); d.lancamentos = d.lancamentos.filter((x) => x.id !== l.id); salvar(); pintar(); }));
     $$("[data-anexo-ver]", raiz).forEach((b) => b.addEventListener("click", () => { const [id, qual] = b.dataset.anexoVer.split("|"); const l = acha(d.lancamentos, id); if (l && l[qual]) abrirAnexo(l[qual]); }));
     $$("[data-planilha]", raiz).forEach((b) => b.addEventListener("click", () => { st.anoModo = "planilha"; pintar(); }));
     $$("[data-planilha-sair]", raiz).forEach((b) => b.addEventListener("click", () => { st.anoModo = "mes"; pintar(); }));
