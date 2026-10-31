@@ -595,3 +595,9 @@ alter table public.inspiracoes add column if not exists transcricao text;
 alter table public.inspiracoes add column if not exists analise jsonb;
 alter table public.roteiros add column if not exists analise_skill jsonb;
 alter table public.painel_conteudo add column if not exists roteiro_id text;
+
+-- Finanças CPF (nov/2026): anexos de NF e comprovante, privados por perfil.
+insert into storage.buckets (id, name, public, file_size_limit) values ('financeiro', 'financeiro', false, 15728640) on conflict (id) do nothing;
+create policy "financeiro: cada perfil na sua pasta" on storage.objects for all to authenticated
+  using (bucket_id = 'financeiro' and (storage.foldername(name))[1] = public.perfil_financeiro())
+  with check (bucket_id = 'financeiro' and (storage.foldername(name))[1] = public.perfil_financeiro());
