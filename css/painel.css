@@ -399,7 +399,7 @@ details.rot-editar[open] summary{margin-bottom:10px}
 
 /* Aba Gestão UGC (aplicativo dentro do painel) */
 .gestao-barra{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;font-size:14px;color:var(--suave)}
-.gestao-app{display:block;width:100%;height:calc(100vh - 150px);min-height:520px;border:1px solid var(--linha);border-radius:var(--raio);background:var(--cartao)}
+.gestao-app{display:block;width:1px;min-width:100%;max-width:100%;height:calc(100vh - 150px);min-height:520px;border:1px solid var(--linha);border-radius:var(--raio);background:var(--cartao)}
 @media (max-width:860px){.gestao-app{height:calc(100vh - 130px)}}
 .gestao-acoes{display:flex;gap:8px;flex-wrap:wrap}
 .copia-intro{color:var(--suave);margin-top:0}
@@ -1848,3 +1848,9 @@ a.menu-item{text-decoration:none}
 .pc-plano-props ul{margin-top:6px}
 @media (max-width:900px){.pc-plano-dias{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:520px){.pc-plano-dias{grid-template-columns:1fr}.pc-plano-acoes{width:100%}}
+
+/* Celular como app (out/2026): a página nunca rola de lado e o iPhone não dá zoom ao tocar num campo (precisa de 16px) */
+html,body{max-width:100%;overflow-x:hidden}
+@media (max-width:860px){
+  input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px}
+}
