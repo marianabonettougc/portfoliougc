@@ -609,3 +609,9 @@ a{color:var(--principal)}
 .fn-cd-etq{font-size:11px;font-weight:500;padding:3px 9px;border-radius:999px;color:var(--c);background:color-mix(in srgb,var(--c) 14%,#fff);white-space:nowrap}
 @media(max-width:900px){.fn-cd{grid-template-columns:1fr}.fn-cd-graf{grid-template-columns:1fr}}
 @media(max-width:560px){.fn-cd-item{grid-template-columns:40px minmax(0,1fr) auto 30px}.fn-cd-etq{grid-column:2;grid-row:2;justify-self:start}.fn-cd-item .fn-valor{grid-column:3;grid-row:1}.fn-cd-item .fn-icone{grid-column:4;grid-row:1}.fn-cd-rosca svg{width:112px;height:112px}}
+/* nov/2026: só a Visão anual lança e edita; as outras abas só mostram (cadastros de cartão, empréstimo e reserva continuam editáveis) */
+.fn-bloq [data-novo],.fn-bloq [data-novo-cat],.fn-bloq [data-nova-compra],.fn-bloq [data-editar-l],.fn-bloq [data-editar-compra],.fn-bloq [data-fatura],.fn-bloq [data-parcela],.fn-bloq [data-mov-res],.fn-bloq [data-apagar-mov],.fn-bloq .fn-fab,.fn-bloq .fn-conferir{display:none!important}
+.fn-bloq [data-pagar]{pointer-events:none;cursor:default}
+.fn-aviso-bloq{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:color-mix(in srgb,var(--principal) 8%,var(--cartao));border:1px solid color-mix(in srgb,var(--principal) 22%,transparent);border-radius:14px;padding:10px 14px;margin:0 0 14px;font-size:13px}
+.fn-aviso-bloq svg{width:18px;height:18px;fill:none;stroke:var(--principal);stroke-width:1.7;flex-shrink:0}
+.fn-aviso-bloq span{flex:1 1 220px}

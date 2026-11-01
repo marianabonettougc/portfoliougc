@@ -31,7 +31,7 @@
 
   const PERFIS = [{ id: "mari", nome: "Mari Bonetto", curto: "Mari" }, { id: "eduardo", nome: "Eduardo Bonetto", curto: "Eduardo" }];
   const ABAS = [["dash", "Dashboard"], ["entradas", "Entradas"], ["saidas", "Saídas"], ["cartoes", "Cartões"], ["emprestimos", "Empréstimos"], ["reserva", "Reserva & Investimentos"], ["anual", "Visão anual"]];
-  const NO_CELULAR = ["dash", "entradas", "saidas", "cartoes"]; // menu de baixo no celular; o resto fica em "Mais"
+  const NO_CELULAR = ["dash", "anual", "saidas", "cartoes"]; // nov/2026: a Visão anual (onde se lança) fica no menu de baixo; Entradas vai para "Mais" // menu de baixo no celular; o resto fica em "Mais"
   const CURTO = { dash: "Início", reserva: "Reserva", anual: "Ano" };
   const TITULO = { dash: "Visão geral", entradas: "Entradas", saidas: "Saídas", cartoes: "Cartões", emprestimos: "Empréstimos", reserva: "Reserva & Investimentos", anual: "Visão anual", acesso: "Acesso" };
   const CAT_ENTRADA = ["Salário", "UGC", "PUBLI", "PUBLI COMERCIAL", "MARKETPLACE", "Outros"]; // nov/2026: etiquetas pedidas pela Mari (+ as que ela criar, em dados.etiquetas)
@@ -385,7 +385,8 @@
   function pintar() {
     const p = PERFIS.find((x) => x.id === st.atual);
     const abas = [...ABAS, ...(st.dona ? [["acesso", "Acesso"]] : [])];
-    $("#raiz").innerHTML = tingir(`<div class="fn-app">
+    const bloq = !["anual", "acesso"].includes(st.aba); // nov/2026 (pedido da Mari): só a Visão anual lança e edita; o resto só mostra
+    $("#raiz").innerHTML = tingir(`<div class="fn-app${bloq ? " fn-bloq" : ""}">
       <aside class="fn-lado">
         ${st.dona ? `<a class="fn-voltar" href="../admin/#dashboard">${ICONE.voltar}Voltar ao painel</a>` : ""}
         <div class="fn-marca"><span class="fn-marca-ic"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></span><div><b>Finanças</b><small>Bonetto</small></div></div>
@@ -398,6 +399,7 @@
         <div class="fn-topo"><div><h1>${st.aba === "dash" ? (st.atual === "mari" ? "Oi, Mari! 💜" : "Oi, Eduardo! 💙") : `${TITULO[st.aba]} <em>${esc(p.curto)}</em>`}</h1><p>${st.aba === "dash" ? `Bom momento para cuidar das suas finanças · ${MESES[st.ref.m]} de ${st.ref.y}` : st.aba === "acesso" ? "Quem pode entrar nas finanças" : st.aba === "anual" ? `Navegue pelos meses e acompanhe cada ${st.anoAba === "entrada" ? "entrada" : "saída"}` : `${MESES[st.ref.m]} de ${st.ref.y}`}</p></div>
           <div class="fn-topo-acoes">${st.aba !== "acesso" && st.aba !== "anual" ? `<div class="fn-mes"><button type="button" data-mes="-1" aria-label="Mês anterior">‹</button><span>${MESES[st.ref.m]} ${st.ref.y}</span><button type="button" data-mes="1" aria-label="Próximo mês">›</button></div>
             <button class="fn-btn" type="button" data-novo="saida">${ICONE.sai}Saída</button><button class="fn-btn principal" type="button" data-novo="entrada">${ICONE.entra}Entrada</button>` : ""}<button class="fn-icone" type="button" data-olho title="Esconder valores" aria-label="Esconder valores">${ICONE.olho}</button></div></div>
+        ${bloq ? `<div class="fn-aviso-bloq">${ICONE.anual}<span>Aqui é só para ver. Para lançar ou mudar valores, use a <b>Visão anual</b>.</span><button class="fn-btn pequeno principal" type="button" data-aba="anual">Abrir a Visão anual</button></div>` : ""}
         <div id="fn-conteudo">${{ dash: telaDash, entradas: () => telaMovimento("entrada"), saidas: () => telaMovimento("saida"), cartoes: telaCartoes, emprestimos: telaEmprestimos, reserva: telaReserva, anual: telaAnual, acesso: telaAcesso }[st.aba]()}</div>
       </main>
       <nav class="fn-baixo">${NO_CELULAR.map((k) => `<button type="button" data-aba="${k}" class="${st.aba === k ? "on" : ""}">${ICONE[k] || ""}${CURTO[k] || TITULO[k]}</button>`).join("")}<button type="button" data-mais class="${NO_CELULAR.includes(st.aba) ? "" : "on"}">${ICONE.mais3}Mais</button></nav>
@@ -573,6 +575,23 @@
         </div>
       </div>
     </div>`;
+  }
+  // nov/2026: na Visão anual, o botão do cartão na linha da fatura abre as compras dela (lançar, editar, conferir com o banco)
+  function janelaCompras(c, ym) {
+    let dlg = $("#fn-janela"); if (!dlg) { dlg = document.createElement("dialog"); dlg.id = "fn-janela"; dlg.className = "fn-janela"; document.body.appendChild(dlg); }
+    const [y, m] = ym.split("-").map(Number), ks = comprasDaFatura(c, y, m - 1).sort((a, b) => String(b.data).localeCompare(String(a.data)));
+    const somado = Math.round(ks.reduce((a, k) => a + k.parte.valor, 0) * 100) / 100, fat = D().lancamentos.find((l) => eDoCartao(l, c) && l.data.slice(0, 7) === ym);
+    const valor = fat ? Number(fat.valor) || 0 : somado, semDet = Math.max(0, Math.round((valor - somado) * 100) / 100), conf = (c.conferidas || {})[ym];
+    dlg.innerHTML = `<form method="dialog" novalidate><h2>${esc(c.nome)} · fatura de ${MESES[m - 1].toLowerCase()}</h2>
+      <p class="fn-dica" style="margin:0 0 10px">Fatura: <b>${R$(valor)}</b>${somado > 0 ? ` · ${R$(somado)} em compras${semDet > 0.004 ? ` · ${R$(semDet)} sem detalhe` : ""}` : ""}. As compras ficam dentro da fatura: nunca somam duas vezes.</p>
+      <div class="fn-cd-lista">${ks.map((k) => { const e = k.categoria || catAuto(k.descricao) || "Outros"; return `<div class="fn-cd-item"><span class="fn-cd-dia">${dataBR(k.data).slice(0, 5)}</span><span class="fn-cd-desc"><b>${esc(k.descricao)}</b>${k.parte.de > 1 ? `<small>parcela ${k.parte.n} de ${k.parte.de}</small>` : ""}</span><span class="fn-cd-etq" style="--c:${corEtq(e)}">${esc(e)}</span><span class="fn-valor">${R$(k.parte.valor)}</span><button class="fn-icone" type="button" data-jc-editar="${esc(k.id)}" aria-label="Editar compra">${ICONE.lapis}</button></div>`; }).join("") || `<p class="fn-vazio">Nenhuma compra lançada nesta fatura.</p>`}</div>
+      <div class="fn-conferir"><span>Somado: <b>${R$(somado)}</b></span><label>Veio no banco <input class="fn-entrada" inputmode="decimal" id="jc-conf" value="${conf != null ? esc(Number(conf).toLocaleString("pt-BR", { minimumFractionDigits: 2 })) : ""}" placeholder="0,00"></label></div>
+      <div class="rodape"><button class="fn-btn" type="button" id="jc-fechar">Fechar</button><button class="fn-btn principal" type="button" id="jc-nova">${ICONE.mais}Compra</button></div></form>`;
+    $("#jc-fechar", dlg).addEventListener("click", () => dlg.close());
+    $("#jc-nova", dlg).addEventListener("click", () => editarCompra(null, c.id));
+    $$("[data-jc-editar]", dlg).forEach((b) => b.addEventListener("click", () => editarCompra((D().compras || []).find((k) => k.id === b.dataset.jcEditar))));
+    $("#jc-conf", dlg).addEventListener("change", (e) => { c.conferidas = c.conferidas || {}; c.conferidas[ym] = e.target.value.trim() === "" ? null : numOuNada(e.target.value); salvar(); pintar(); janelaCompras(c, ym); });
+    if (!dlg.open) dlg.showModal();
   }
   function blocoCompras(c) {
     const ks = comprasDaFatura(c, st.ref.y, st.ref.m).sort((a, b) => String(b.data).localeCompare(String(a.data))), somado = ks.reduce((a, k) => a + k.parte.valor, 0);
@@ -880,10 +899,10 @@
         ${dataCol(l)}
         <td><span class="fn-tag">${esc(l.categoria || "Outros")}</span></td>
         ${ent ? `<td>${anexos(l)}</td>` : ""}
-        <td><select class="fn-va-status ${sit(l)}" data-status-l="${esc(l.id)}" aria-label="Situação" ${l.origem === "pj" || l.auto ? "disabled" : ""}>
+        <td><select class="fn-va-status ${sit(l)}" data-status-l="${esc(l.id)}" aria-label="Situação" ${l.origem === "pj" ? "disabled" : ""}>
           <option value="pago" ${sit(l) === "pago" ? "selected" : ""}>${ent ? "Recebido" : "Pago"}</option><option value="pendente" ${sit(l) === "pendente" ? "selected" : ""}>Pendente</option><option value="atraso" ${sit(l) === "atraso" ? "selected" : ""}>Em atraso</option></select></td>
         <td class="fn-va-obs">${esc(l.obs || "")}</td>
-        <td class="num fn-va-acoes"><button class="fn-icone" type="button" data-editar-l="${esc(l.id)}" aria-label="Editar">${ICONE.lapis}</button>${l.origem === "pj" || l.auto ? "" : `<button class="fn-icone" type="button" data-duplicar="${esc(l.id)}" aria-label="Copiar para o mês seguinte" title="Copiar para o mês seguinte">${ICONE.copiar}</button><button class="fn-icone" type="button" data-apagar-l="${esc(l.id)}" aria-label="Apagar">${ICONE.lixo}</button>`}</td>
+        <td class="num fn-va-acoes">${(() => { const c = !ent && D().cartoes.find((k) => eDoCartao(l, k)); return c ? `<button class="fn-icone" type="button" data-compras-fat="${esc(c.id)}|${esc(l.data.slice(0, 7))}" aria-label="Compras desta fatura" title="Compras desta fatura">${ICONE.cartoes}</button>` : ""; })()}<button class="fn-icone" type="button" data-editar-l="${esc(l.id)}" aria-label="Editar">${ICONE.lapis}</button>${l.origem === "pj" || l.auto ? "" : `<button class="fn-icone" type="button" data-duplicar="${esc(l.id)}" aria-label="Copiar para o mês seguinte" title="Copiar para o mês seguinte">${ICONE.copiar}</button><button class="fn-icone" type="button" data-apagar-l="${esc(l.id)}" aria-label="Apagar">${ICONE.lixo}</button>`}</td>
       </tr>`).join("");
     return `<div class="fn-va-topo">
         <div class="fn-seg" role="tablist"><button type="button" data-ano-aba="saida" class="${ent ? "" : "on"}">Saídas</button><button type="button" data-ano-aba="entrada" class="${ent ? "on" : ""}">Entradas</button></div>
@@ -1003,7 +1022,7 @@
   function editarLancamento(l, tipo, pre) {
     if (((l && l.tipo) || tipo) === "entrada" && !(l && l.auto)) { editarEntrada(l, pre); return; }
     const novo = !l; l = l || { id: uid(), tipo, data: hojeIso(), pago: true, categoria: tipo === "entrada" ? "Salário" : "Outros", ...(pre || {}) };
-    if (l.auto) { toast("Essa fatura é a soma das compras. Lance ou edite as compras na aba Cartões."); st.aba = "cartoes"; pintar(); return; }
+    if (l.auto) { const c = D().cartoes.find((k) => eDoCartao(l, k)); if (c) { janelaCompras(c, l.data.slice(0, 7)); return; } }
     const conta = String(l.id).startsWith("cpff-") || String(l.id).startsWith("fat-") || l.categoria === "Cartão"; // fatura/conta do cartão não vira compra
     const d0 = D(), cartoesAbertos = d0.cartoes.filter((c) => c.status !== "Quitado");
     // Como paguei (nov/2026): pix, débito, dinheiro, boleto e cada cartão pelo nome; cartão vira compra na fatura dele (fatura não oferece cartão)
@@ -1219,7 +1238,8 @@
     $$("[data-ir-mes]", raiz).forEach((b) => b.addEventListener("click", () => { st.ref = { y: st.ref.y, m: Number(b.dataset.irMes) }; pintar(); }));
     $$("[data-novo]", raiz).forEach((b) => b.addEventListener("click", () => editarLancamento(null, b.dataset.novo)));
     $$("[data-editar-l]", raiz).forEach((b) => b.addEventListener("click", () => editarLancamento(acha(d.lancamentos, b.dataset.editarL))));
-    $$("[data-pagar]", raiz).forEach((b) => b.addEventListener("click", () => { const l = acha(d.lancamentos, b.dataset.pagar); if (!l) return; if (l.origem === "pj") { toast("Essa entrada vem do painel CNPJ: marque o pagamento lá."); return; } mudarSituacao(l, l.pago ? "pendente" : "pago"); salvar(); pintar(); toast(l.pago ? (l.tipo === "entrada" ? "Marcado como recebido." : "Marcado como pago.") : "Voltou para pendente."); }));
+    $$("[data-compras-fat]", raiz).forEach((b) => b.addEventListener("click", () => { const [cid, ym] = b.dataset.comprasFat.split("|"); const c = acha(d.cartoes, cid); if (c) janelaCompras(c, ym); }));
+    if (!raiz.querySelector(".fn-bloq")) $$("[data-pagar]", raiz).forEach((b) => b.addEventListener("click", () => { const l = acha(d.lancamentos, b.dataset.pagar); if (!l) return; if (l.origem === "pj") { toast("Essa entrada vem do painel CNPJ: marque o pagamento lá."); return; } mudarSituacao(l, l.pago ? "pendente" : "pago"); salvar(); pintar(); toast(l.pago ? (l.tipo === "entrada" ? "Marcado como recebido." : "Marcado como pago.") : "Voltou para pendente."); }));
     // visão anual
     $$("[data-ano-mes]", raiz).forEach((b) => b.addEventListener("click", () => { st.anoMes = Number(b.dataset.anoMes); pintar(); }));
     const vb = $("#fn-va-busca"); if (vb) vb.addEventListener("input", () => { st.anoBusca = vb.value; const pos = vb.selectionStart; pintar(); const nv = $("#fn-va-busca"); if (nv) { nv.focus(); try { nv.setSelectionRange(pos, pos); } catch (e) { /* busca */ } } });
