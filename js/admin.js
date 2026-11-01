@@ -1385,7 +1385,12 @@
       const u = await window.painelVideos.url(r.video_path);
       if (u) { abrirJanela({ titulo: r.titulo || "Vídeo de referência", sobretitulo: "Guardado no painel", corpo: `<div class="cr-player cr-player-janela"><video src="${esc(u)}" controls playsinline autoplay></video></div>`, botoes: [{ texto: "Baixar o vídeo", acao: () => { window.painelVideos.baixar(r.video_path); return false; } }, { texto: "Fechar" }] }); return; }
     }
-    if (!emb) { if (r.link) window.open(r.link, "_blank", "noopener"); else avisar("Esse vídeo foi enviado como arquivo: ele toca na Análise logo depois de enviar.", true); return; }
+    if (!emb) {
+      if (r.link) window.open(r.link, "_blank", "noopener");
+      else if (window.painelVideos) window.painelVideos.oferecerAnexar(r, (t, erro) => avisar(t, erro), (x) => assistir(x));
+      else avisar("Esse vídeo foi enviado como arquivo e não ficou guardado.", true);
+      return;
+    }
     abrirJanela({ titulo: r.titulo || "Vídeo de referência", sobretitulo: nomeOrigem(r.origem), corpo: `<div class="cr-player cr-player-janela"><iframe src="${emb}" title="Vídeo" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen></iframe></div>`, botoes: [{ texto: "Fechar" }] });
   }
   function ligarAssistir(caixa) {
@@ -1614,14 +1619,27 @@
       if (ocupado) return; ocupado = true;
       controles().forEach((b) => { b.disabled = true; });
       status(extra.mensagem || "Transcrevendo... pode levar até 1 minuto.");
+      let g = null;
       try {
+        // vídeo enviado fica guardado no painel (ela apaga do celular depois); vídeo grande é reduzido e a versão reduzida é a que vai para a transcrição
+        if (extra.arquivo && window.painelVideos && window.painelVideos.ehVideo(extra.arquivo)) {
+          const pv = window.painelVideos, arq = extra.arquivo;
+          if (arq.size > 20 * 1024 * 1024) status("Preparando o vídeo para guardar no painel... deixe esta tela aberta.");
+          const prep = await pv.preparar(arq, (p) => status("Preparando o vídeo para guardar no painel... " + p + "% (deixe esta tela aberta)"));
+          status("Guardando o vídeo e transcrevendo... pode levar até 1 minuto.");
+          const guardando = pv.subir(prep, arq.name, "transcricoes").catch((e) => ({ erro: e.message || "erro" }));
+          if (prep !== arq) { corpo = new FormData(); corpo.append("arquivo", new File([prep], (arq.name || "video").replace(/\.[^.]+$/, "") + (/webm/.test(prep.type) ? ".webm" : ".mp4"), { type: prep.type })); corpo.append("link", ""); }
+          if (prep.size > 25 * 1024 * 1024) { g = await guardando; throw new Error("O vídeo é longo demais para transcrever de uma vez (passa de 25 MB mesmo reduzido)."); }
+          extra.guardando = guardando;
+        }
         const r = await chamarTranscrever(corpo);
+        if (extra.guardando) { g = await extra.guardando; if (g && g.erro) { avisar("Transcrevi, mas o vídeo NÃO ficou guardado (" + g.erro + "). Não apague do celular ainda.", true); g = null; } }
         const c = r.campos || {};
         const linha = { titulo: (c.titulo || extra.titulo || "Referência sem título").slice(0, 120), de_quem: "outra", perfil: nulo(String(r.perfil || extra.perfil || "").replace(/^@/, "")),
           data_post: nulo(r.data_post), origem: r.origem || extra.origem || "outro", link: nulo(extra.link), etiquetas: nulo(c.etiquetas), gancho: nulo(c.gancho),
           gancho_tipo: nulo(c.gancho_tipo), desenvolvimento: nulo(c.desenvolvimento), cta: nulo(c.cta), expressoes: nulo(c.expressoes), por_que: nulo(c.por_que),
           transcricao: r.transcricao, segmentos: Array.isArray(r.segmentos) && r.segmentos.length ? r.segmentos : null, duracao: r.duracao || null,
-          capa: extra.capa || null };
+          capa: extra.capa || null, video_path: g ? g.path : null, video_tamanho: g ? g.tamanho : null };
         const { data, error } = await banco.from("roteiros").insert(linha).select().single();
         if (error) throw new Error(traduzErro(error, "roteiros"));
         dados.roteiros.unshift(data);
@@ -1629,18 +1647,28 @@
         usarReferencia(data);
         central.videoLocal = extra.videoLocal || "";
         recarregar("roteiros");
-        avisar("Transcrição pronta e salva em Referências");
+        avisar(g ? "Transcrição pronta e salva em Referências. O vídeo ficou guardado no painel." : "Transcrição pronta e salva em Referências");
         mostrarAba("analise");
-      } catch (e) { status(e.message, true); }
+      } catch (e) {
+        // a transcrição falhou, mas o vídeo não pode se perder
+        try { if (!g && extra.guardando) g = await extra.guardando; } catch (e2) { /* segue */ }
+        if (g && g.path) {
+          const { data } = await banco.from("roteiros").insert({ titulo: (extra.titulo || "Vídeo enviado").slice(0, 120), de_quem: "outra", origem: "outro", link: null, capa: extra.capa || null,
+            status: "erro", erro: String(e.message || "Falha na transcrição").slice(0, 300), video_path: g.path, video_tamanho: g.tamanho }).select().single();
+          if (data) { dados.roteiros.unshift(data); recarregar("roteiros"); }
+          status(e.message + " O vídeo ficou guardado no painel mesmo assim.", true);
+        } else status(e.message + (extra.arquivo && window.painelVideos && window.painelVideos.ehVideo(extra.arquivo) ? " O vídeo não foi guardado: não apague do celular." : ""), true);
+      }
       controles().forEach((b) => { b.disabled = false; });
       ocupado = false;
     }
     const usarArquivo = async (arq) => {
       if (!arq) return;
-      if (arq.size > 25 * 1024 * 1024) { status("Esse arquivo passa de 25 MB, o limite da transcrição. Envie um arquivo menor ou o link.", true); return; }
+      const ehVid = !!(window.painelVideos && window.painelVideos.ehVideo(arq));
+      if (!ehVid && arq.size > 25 * 1024 * 1024) { status("Esse arquivo passa de 25 MB, o limite da transcrição. Envie um arquivo menor ou o link.", true); return; }
       const corpo = new FormData(); corpo.append("arquivo", arq, arq.name || "video.mp4"); corpo.append("link", "");
       const capa = await capaDoArquivo(arq);
-      importar(corpo, { titulo: arq.name.replace(/\.[^.]+$/, ""), origem: "outro", capa, videoLocal: /^video\//.test(arq.type) ? URL.createObjectURL(arq) : "" });
+      importar(corpo, { titulo: arq.name.replace(/\.[^.]+$/, ""), origem: "outro", capa, arquivo: arq, videoLocal: /^video\//.test(arq.type) ? URL.createObjectURL(arq) : "" });
     };
     $("#cr-form-link", caixa).addEventListener("submit", (e) => {
       e.preventDefault();
@@ -1726,7 +1754,8 @@
     const player = central.videoLocal ? `<video src="${central.videoLocal}" controls playsinline></video>`
       : !emb && r.video_path ? `<video data-video-path="${esc(r.video_path)}" controls playsinline></video>`
       : emb ? `<iframe src="${emb}" title="Vídeo de referência" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen loading="lazy"></iframe>`
-      : `<div class="cr-sem-video">${ic("play", 34)}<small>${r.link ? "Esse link não toca aqui dentro." : "Vídeo enviado como arquivo"}</small></div>`;
+      : `<div class="cr-sem-video">${ic("play", 34)}<small>${r.link ? "Esse link não toca aqui dentro." : "O arquivo desse vídeo não ficou guardado"}</small>${r.link ? "" : `<button type="button" class="btn btn-mini" data-anexar-video>Escolher o vídeo para guardar</button>`}</div>`;
+    if (!central.videoLocal && !emb && !r.link && !r.video_path) setTimeout(() => { const b = $("[data-anexar-video]", sec); if (b && window.painelVideos) b.addEventListener("click", () => window.painelVideos.oferecerAnexar(r, (t, erro) => avisar(t, erro), () => paginaAnalise(sec))); }, 0);
     if (!central.videoLocal && !emb && r.video_path) setTimeout(() => window.painelVideos && window.painelVideos.tocarEm(sec), 0);
     const { lista, aproximado } = temposDaTranscricao(r);
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga">
@@ -2194,6 +2223,7 @@
 
   function formRoteiro(r, inicial, tocar, autoTranscrever) {
     const novo = !r;
+    let videoNovo = null;
     r = r || Object.assign({ de_quem: "outra", origem: "instagram" }, inicial || {});
     const embed = embedDoLink(r.link);
     abrirJanela({
@@ -2300,7 +2330,9 @@
             origem: f.origem, link: nulo(f.link), etiquetas: nulo(f.etiquetas), gancho: nulo(f.gancho), gancho_tipo: nulo(f.gancho_tipo), desenvolvimento: nulo(f.desenvolvimento),
             cta: nulo(f.cta), expressoes: nulo(f.expressoes), por_que: nulo(f.por_que), transcricao: nulo(f.transcricao), notas: nulo(f.notas) };
           if ("exemplo" in f) linha.exemplo = f.exemplo;
+          if (videoNovo && videoNovo.path) { linha.video_path = videoNovo.path; linha.video_tamanho = videoNovo.tamanho; }
           if (!(await gravar("roteiros", linha, novo ? null : r.id))) return false;
+          if (videoNovo && r && r.video_path && r.video_path !== videoNovo.path && window.painelVideos) window.painelVideos.apagar(r.video_path);
           avisar(novo ? "Roteiro salvo" : "Roteiro atualizado");
           await recarregar("roteiros");
         } }
@@ -2333,6 +2365,16 @@
           atualizarEstrutura();
         };
         async function transcrever(arquivo) {
+          if (arquivo && window.painelVideos && window.painelVideos.ehVideo(arquivo)) {
+            // guarda o vídeo no painel; entra na linha quando ela salvar (videoNovo)
+            const pv = window.painelVideos;
+            mostrarStatus("Guardando o vídeo no painel...");
+            try {
+              const prep = await pv.preparar(arquivo, (p) => mostrarStatus("Preparando o vídeo para guardar... " + p + "% (deixe a tela aberta)"));
+              videoNovo = await pv.subir(prep, arquivo.name, "transcricoes");
+              if (prep !== arquivo) arquivo = new File([prep], (arquivo.name || "video").replace(/\.[^.]+$/, "") + (/webm/.test(prep.type) ? ".webm" : ".mp4"), { type: prep.type });
+            } catch (e) { mostrarStatus("O vídeo não ficou guardado (" + e.message + "). Vou só transcrever: não apague do celular.", true); }
+          }
           const link = $('[name="link"]', corpo).value.trim();
           if (!arquivo && !/^https?:\/\//i.test(link)) { mostrarStatus("Cole o link do vídeo no campo \"Link do vídeo\" ou envie o arquivo.", true); return; }
           const temTexto = $("#f-transcricao", corpo).value.trim();
@@ -2344,7 +2386,7 @@
           try {
             let corpoPedido;
             if (arquivo) {
-              if (arquivo.size > 25 * 1024 * 1024) throw new Error("O arquivo é grande demais (máximo 25 MB). Use um vídeo mais curto.");
+              if (arquivo.size > 25 * 1024 * 1024) throw new Error("O arquivo é grande demais para transcrever (máximo 25 MB). Use um vídeo mais curto." + (videoNovo ? " O vídeo ficou guardado: clique em Salvar." : ""));
               corpoPedido = new FormData(); corpoPedido.append("arquivo", arquivo); corpoPedido.append("link", link);
             } else corpoPedido = { link };
             const data = await chamarTranscrever(corpoPedido);

@@ -120,5 +120,36 @@
     for (const el of els) { if (!el.src) el.src = await url(el.dataset.videoPath); }
   }
 
-  window.painelVideos = { ehVideo, preparar, subir, guardar, url, baixar, apagar, tocarEm, reduzir };
+  // vídeo enviado antes de o painel guardar vídeos (ou que falhou): ela escolhe o arquivo de novo e ele fica guardado na linha de roteiros
+  function escolherVideo() {
+    return new Promise((ok) => {
+      const i = document.createElement("input"); i.type = "file"; i.accept = "video/*,.mov,.mp4,.m4v,.webm";
+      i.style.cssText = "position:fixed;left:-9999px;opacity:0";
+      i.addEventListener("change", () => { ok(i.files[0] || null); i.remove(); });
+      document.body.appendChild(i); i.click();
+    });
+  }
+  async function anexarAoRoteiro(r, aviso) {
+    const arq = await escolherVideo();
+    if (!arq) return null;
+    if (!ehVideo(arq)) throw new Error("Escolha um arquivo de vídeo.");
+    const msg = aviso || (() => {});
+    msg("Guardando o vídeo no painel...");
+    const g = await guardar(arq, { pasta: "transcricoes", aoProgresso: (p) => msg("Preparando o vídeo para guardar... " + p + "% (deixe a tela aberta)") });
+    if (!g) throw new Error("Não consegui guardar o vídeo.");
+    const { error } = await banco().from("roteiros").update({ video_path: g.path, video_tamanho: g.tamanho }).eq("id", r.id);
+    if (error) { apagar(g.path); throw new Error("Não consegui ligar o vídeo à referência: " + error.message); }
+    r.video_path = g.path; r.video_tamanho = g.tamanho;
+    return g.path;
+  }
+  // janela do "vídeo não ficou guardado": pergunta e já guarda (usada pelas capas sem vídeo)
+  async function oferecerAnexar(r, aviso, depois) {
+    const pergunta = "Esse vídeo foi enviado antes de o painel guardar vídeos, então o arquivo não ficou salvo aqui. Quer escolher o vídeo de novo para ele ficar guardado nesta referência?";
+    const sim = window.painelDialogo ? await window.painelDialogo.confirmar(pergunta, { ok: "Escolher o vídeo" }) : true;
+    if (!sim) return;
+    try { const p = await anexarAoRoteiro(r, aviso); if (p) { aviso && aviso("Vídeo guardado no painel."); if (depois) depois(r); } }
+    catch (e) { aviso && aviso(e.message || "Não consegui guardar o vídeo.", true); }
+  }
+
+  window.painelVideos = { ehVideo, preparar, subir, guardar, url, baixar, apagar, tocarEm, reduzir, anexarAoRoteiro, oferecerAnexar };
 })();

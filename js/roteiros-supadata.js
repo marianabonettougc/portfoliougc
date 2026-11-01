@@ -482,7 +482,12 @@
   async function assistir(r) {
     const emb = embedDoLink(r.link);
     const guardado = !emb && r.video_path && window.painelVideos ? await window.painelVideos.url(r.video_path) : "";
-    if (!emb && !guardado) { if (r.link) window.open(r.link, "_blank", "noopener"); else toast("Esse vídeo foi enviado como arquivo, então não tem link pra tocar aqui.", true); return; }
+    if (!emb && !guardado) {
+      if (r.link) window.open(r.link, "_blank", "noopener");
+      else if (window.painelVideos) window.painelVideos.oferecerAnexar(r, (t, erro) => toast(t, erro), (x) => { pintarTudo(); assistir(x); });
+      else toast("Esse vídeo foi enviado como arquivo, então não tem link pra tocar aqui.", true);
+      return;
+    }
     if (!dlgVideo) {
       dlgVideo = document.createElement("dialog");
       dlgVideo.className = "janela rs-janela-video";
