@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611010015"></script>
-<script src="../../js/dialogos.js?v=202611010015"></script>
-<script src="../../js/corretor.js?v=202611010015"></script>
+<script src="../../js/banco.js?v=202611010250"></script>
+<script src="../../js/dialogos.js?v=202611010250"></script>
+<script src="../../js/corretor.js?v=202611010250"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -141,6 +141,7 @@
   .dn-cards{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
   .dn-card{ display:flex; align-items:center; gap:14px; text-align:left; background:var(--db-papel); border:1px solid var(--db-linha); border-radius:16px; padding:16px 18px; font:inherit; color:var(--db-texto); cursor:pointer; min-width:0; }
   .dn-card:hover{ border-color:var(--db-linha2); }
+  .dn-clica{ cursor:pointer; }
   .dn-ico{ width:46px; height:46px; border-radius:50%; background:var(--db-bege2); color:var(--db-cafe); display:grid; place-items:center; flex:none; }
   .dn-ico-p{ width:36px; height:36px; }
   .dn-card-txt{ display:flex; flex-direction:column; min-width:0; }
@@ -751,7 +752,7 @@
   .job-linha-acoes{ display:flex; gap:6px; justify-content:flex-end; }
   .icon-btn-vazio{ width:36px; height:36px; flex-shrink:0; }
   @media(max-width:1100px){ .row-item.job-linha{ grid-template-columns:minmax(0,1fr) 190px 120px; } .job-linha-status{ grid-column:2; } .job-linha-acoes{ grid-column:3; } }
-  @media(max-width:640px){ .row-item.job-linha{ grid-template-columns:minmax(0,1fr) auto; } .job-linha .job-datas{ grid-column:1; } .job-linha-valor{ grid-column:2; grid-row:1; } .job-linha-status{ grid-column:1; } .job-linha-acoes{ grid-column:2; } }
+  @media(max-width:640px){ .row-item.job-linha{ grid-template-columns:minmax(0,1fr) auto; gap:10px 12px; } .job-linha-nome{ grid-column:1/-1; } .job-linha .job-datas{ grid-column:1; } .job-linha-valor{ grid-column:2; grid-row:2; } .job-linha-status{ grid-column:1; } .job-linha-acoes{ grid-column:2; } }
   .job-datas span{ display:flex; flex-direction:column; line-height:1.25; }
   .job-datas-dia{ display:block; }
   .job-datas small{ font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--graphite-soft); }
@@ -922,7 +923,7 @@
   .stat-label{ font-size:13px; }
   .icon-btn{ width:32px; height:32px; border-radius:9px; }
   .icon-btn-vazio{ width:32px; height:32px; }
-  .row-item.job-linha{ grid-template-columns:minmax(0,1fr) 200px 120px 190px 152px; }
+  @media(min-width:1101px){ .row-item.job-linha{ grid-template-columns:minmax(0,1fr) 200px 120px 190px 152px; } }
   .job-datas{ font-size:14px; }
   .search input{ font-size:13.5px; }
   /* Financeiro CPF em painel (PainelCPF): cartões arredondados na paleta da Mari (bege, marrom, terracota e verde do painel) */
@@ -2828,8 +2829,9 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           {campanhas.length ? <div className="dn-tabela">
             <div className="dn-linha dn-cab"><span>Marca</span><span>Entregas</span><span>Etapa</span><span>Prazo</span></div>
             {campanhas.slice(0,6).map(j=>{ const p = progressoJob(j), at = etapaDoJob(j, state.roteiros), d = j.prazoEntrega ? diasAte(j.prazoEntrega) : null;
-              return <div className="dn-linha" key={j.id}>
-                <button className="dn-marca" onClick={()=>go("jobs")}><DbLogo marca={j.marca} logos={logos}/><span><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></button>
+              const abrir = ()=>{ window.__abrirJob = j.id; go("jobs"); };
+              return <div className="dn-linha dn-clica" key={j.id} onClick={(e)=>{ if(!e.target.closest("button")) abrir(); }}>
+                <button className="dn-marca" onClick={abrir}><DbLogo marca={j.marca} logos={logos}/><span><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></button>
                 <span className="dn-prog">{p.total ? <><small>{p.feitos} de {p.total}</small><i><b style={{width:Math.max(3,p.pct)+"%"}}/></i></> : <small>sem entregáveis</small>}</span>
                 <span><button className={"dn-chip c-"+classeEtapa(at)} onClick={()=>avancarJob(j)} title={at<ETAPAS_JOB.length-1 ? `${ETAPAS_JOB[at]}. Toque para passar para ${ETAPAS_JOB[at+1]}` : ETAPAS_JOB[at]}>{nomeEtapa(at)}</button></span>
                 <span className="dn-prazo">{j.prazoEntrega ? <><b>{dataBR(j.prazoEntrega).slice(0,5)}</b><small className={d<0?"atr":d===0?"hj":""}>{d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : `em ${d} dia${d===1?"":"s"}`}</small></> : <small>sem prazo</small>}</span>
@@ -2866,7 +2868,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                 <label className="dn-circ"><input type="checkbox" checked={ok} onChange={()=>marcar(it)} aria-label={ok?"Desmarcar":"Marcar como feito"}/><span/></label>
                 <span className="dn-hora">{it.hora || ""}</span>
                 <span className="dn-ic-item"><DbIcone tipo={iconeItem(it)} tam={18}/></span>
-                <span className="dn-txt"><b>{it.texto}</b>{it.sub && <small>{it.sub}</small>}</span>
+                <span className={"dn-txt"+(it.pagina && !it.tarefa && !it.apple ? " dn-clica" : "")} onClick={()=>{ if(it.pagina && !it.tarefa && !it.apple) go(it.pagina); }}><b>{it.texto}</b>{it.sub && <small>{it.sub}</small>}</span>
                 <div className="db-menu-caixa">
                   <button className="db-seta" onClick={()=>setMenuItem(menuItem===it.id?null:it.id)} aria-label="Opções"><DbIcone tipo="pontos" tam={18}/></button>
                   {menuItem===it.id && <div className="db-pop db-pop-menu">
@@ -2920,7 +2922,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           <div className="dn-bt"><h2>Financeiro</h2><span className="dn-sel">{MESES_EXT[hojeD.getMonth()].replace(/^./, c=>c.toUpperCase())}</span></div>
           <div className="dn-fin-2"><button onClick={()=>go("financeiro")}><b>{dnMoeda(recebidoMes)}</b><small>Recebido no mês</small></button>
             <button className={atrasadoValor>0?"at":""} onClick={()=>go("financeiro")}><b>{dnMoeda(atrasadoValor)}</b><small>{atrasadoValor>0 ? `Atrasado (${atrasadoLista.length})` : "Nada atrasado"}</small></button></div>
-          <div className="dn-graf" aria-label="Recebido nos últimos 6 meses">{meses6.map((m,i)=><div key={m.k} title={m.rotulo+": "+dnMoeda(m.valor)}><i className={i===5?"at":""} style={{height:Math.max(4, m.valor/maxMes*100)+"%"}}/><small>{m.rotulo}</small></div>)}</div>
+          <div className="dn-graf dn-clica" onClick={()=>go("financeiro")} aria-label="Recebido nos últimos 6 meses">{meses6.map((m,i)=><div key={m.k} title={m.rotulo+": "+dnMoeda(m.valor)}><i className={i===5?"at":""} style={{height:Math.max(4, m.valor/maxMes*100)+"%"}}/><small>{m.rotulo}</small></div>)}</div>
         </section>
       </div>
 
@@ -4638,7 +4640,8 @@ function JobCard({j, onEdit, onDelete, onMarkPaid, onDuplicate, draggable, onDra
 function Jobs({state, updateState}){
   // "Nova campanha" no Dashboard abre o formulário de novo job direto
   const [modal,setModal] = useState(()=>{ if(window.__abrirNovoJob){ window.__abrirNovoJob = false; return true; } return false; });
-  const [editing,setEditing] = useState(null);
+  // job tocado no Dashboard abre direto na janela de edição
+  const [editing,setEditing] = useState(()=>{ const id = window.__abrirJob; window.__abrirJob = null; return id ? (state.jobs||[]).find(j=>j.id===id) || null : null; });
   const [query,setQuery] = useState("");
   const [view,setView] = useState("Lista");
   const [tab,setTab] = useState("Ativos");

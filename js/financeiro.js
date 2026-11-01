@@ -35,7 +35,31 @@
   const CURTO = { dash: "Início", reserva: "Reserva", anual: "Ano" };
   const TITULO = { dash: "Visão geral", entradas: "Entradas", saidas: "Saídas", cartoes: "Cartões", emprestimos: "Empréstimos", reserva: "Reserva & Investimentos", anual: "Visão anual", acesso: "Acesso" };
   const CAT_ENTRADA = ["Salário", "UGC", "PUBLI", "PUBLI COMERCIAL", "MARKETPLACE", "Outros"]; // nov/2026: etiquetas pedidas pela Mari (+ as que ela criar, em dados.etiquetas)
-  const CAT_SAIDA = ["Conta fixa", "Cartão", "Empréstimo", "Financiamento", "Dívida pessoal", "Mercado", "Casa", "Filhos", "Saúde", "Transporte", "Lazer", "Assinaturas", "Outros"];
+  const CAT_SAIDA = ["Conta fixa", "Cartão", "Empréstimo", "Financiamento", "Dívida pessoal", "Mercado", "Farmácia", "Delivery", "Restaurante", "Assinaturas", "Transporte", "Combustível", "Compras online", "Roupas", "Beleza", "Casa", "Filhos", "Pet", "Saúde", "Educação", "Lazer", "Outros"];
+  // nov/2026: a saída ganha o tipo sozinha pelo que ela escreve (ela pode trocar)
+  const REGRAS_CAT = [
+    ["Cartão", /^fatura\b/], ["Empréstimo", /\b(parcela|emprest|consignad)/],
+    ["Delivery", /\b(ifood|i food|rappi|delivery|aiqfome|ze delivery|keeta|99 ?food)/],
+    ["Farmácia", /\b(farmac|drogari|droga raia|drogasil|pague menos|panvel|pacheco|remedio)/],
+    ["Compras online", /\b(shopee|mercado livre|amazon|shein|magalu|magazine luiza|aliexpress|temu|americanas)/],
+    ["Mercado", /\b(mercado|supermerc|atacad|assai|hortifruti|sacolao|feira|acougue|carrefour|extra|pao de acucar|dia%?)\b/],
+    ["Assinaturas", /\b(netflix|spotify|disney|hbo|max\b|prime video|youtube|deezer|globoplay|icloud|apple|canva|capcut|chatgpt|openai|adobe|assinatura|mensalidade)/],
+    ["Restaurante", /\b(restaurante|lanchonete|padaria|cafe|cafeteria|pizza|hamburg|burger|mcdonald|bk\b|sushi|acai|sorvete|bar\b)/],
+    ["Combustível", /\b(posto|gasolina|combustiv|etanol|alcool|diesel|shell|ipiranga)/],
+    ["Transporte", /\b(uber|99\b|99 pop|taxi|onibus|metro|van\b|pedagio|estacionamento|passagem|bilhete)/],
+    ["Conta fixa", /\b(agua|energia|luz|internet|claro|vivo|tim\b|aluguel|condominio|gas\b|mei\b|das\b|iptu|ipva)/],
+    ["Saúde", /\b(medic|consulta|exame|dentista|hospital|clinica|plano de saude|unimed|psicolog|terapia|academia|laborator)/],
+    ["Beleza", /\b(salao|cabelo|manicure|unha|sobrancelha|estetica|maquiagem|boticario|natura|sephora|perfum|depila)/],
+    ["Roupas", /\b(roupa|sapato|calcado|tenis|zara|hering|renner|riachuelo|c&a|cea\b|marisa)/],
+    ["Pet", /\b(pet|racao|veterinar|petz|cobasi)/],
+    ["Filhos", /\b(fralda|bebe|creche|brinquedo|escola infantil)/],
+    ["Educação", /\b(curso|escola|faculdade|livro|apostila|material escolar)/],
+    ["Casa", /\b(moveis|leroy|limpeza|utensil|decoracao|eletrodomest|casa)/],
+    ["Lazer", /\b(cinema|show|ingresso|viagem|hotel|airbnb|passeio|parque|festa)/],
+  ];
+  const semAcento = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const catAuto = (desc) => { const t = semAcento(desc); const r = REGRAS_CAT.find(([, re]) => re.test(t)); return r ? r[0] : ""; };
+  const FORMAS = [["pix", "Pix"], ["debito", "Cartão de débito"], ["credito", "Cartão de crédito"], ["dinheiro", "Dinheiro"], ["boleto", "Boleto"]];
   // o painel do Eduardo usa a paleta azul-acinzentada da referência Payno: troca as cores da Mari pelas dele no HTML
   const CORES_EDU = { "#3d2b20": "#1e2633", "#7a6355": "#8a94a6", "#6b4a35": "#3d5a85", "#a87058": "#9fb2cd", "#cdb39b": "#7f95b8", "#e7c9b6": "#c9d4e4", "#efe5d8": "#e8edf4", "#8a6650": "#5d77a0", "#4f7a54": "#2f8f5b", "#b8473a": "#d0545b", "#c9973b": "#c9a24a", "#4a6a8a": "#6fa3c9", "#d3a98f": "#b7c4d8" };
   // o painel da Mari (out/2026, pedido dela: "cansei do marrom") usa a paleta lilás das referências FinSet/Fincheck
@@ -63,6 +87,7 @@
   };
   ICONE.mais3 = '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>';
   ICONE.entradas = ICONE.entra; ICONE.saidas = ICONE.sai;
+  ICONE.voltar = '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>';
   ICONE.clipe = '<svg viewBox="0 0 24 24"><path d="M20 11.5 12.4 19a5 5 0 0 1-7.1-7.1l8-8a3.4 3.4 0 0 1 4.8 4.8l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/></svg>';
   ICONE.elo = '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>';
   ICONE.doc = '<svg viewBox="0 0 24 24"><path d="M6.5 3.5h8l3.5 3.5v13.5h-11.5z"/><path d="M14.5 3.5V7H18M9 11.5h6M9 15h6"/></svg>';
@@ -332,13 +357,14 @@
     const abas = [...ABAS, ...(st.dona ? [["acesso", "Acesso"]] : [])];
     $("#raiz").innerHTML = tingir(`<div class="fn-app">
       <aside class="fn-lado">
+        ${st.dona ? `<a class="fn-voltar" href="../admin/#dashboard">${ICONE.voltar}Voltar ao painel</a>` : ""}
         <div class="fn-marca"><span class="fn-marca-ic"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></span><div><b>Finanças</b><small>Bonetto</small></div></div>
         <div class="fn-dono">${esc(p.nome)}</div>
         <nav class="fn-nav">${abas.map(([k, t]) => `<button type="button" data-aba="${k}" class="${st.aba === k ? "on" : ""}">${ICONE[k] || ""}${t}</button>`).join("")}</nav>
         <div class="fn-usuario"><span class="fn-av">${esc((st.email[0] || "?").toUpperCase())}</span><div><b>${esc(st.email)}</b><small>${st.dona ? "Mari" : "acesso liberado"}</small></div><button class="fn-icone" type="button" data-sair title="Sair" aria-label="Sair">${ICONE.sair}</button></div>
       </aside>
       <main class="fn-principal">
-        <div class="fn-celular-topo"><b class="fn-dono">${esc(p.nome)}</b><button class="fn-icone" type="button" data-olho aria-label="Esconder valores">${ICONE.olho}</button><button class="fn-icone" type="button" data-sair aria-label="Sair">${ICONE.sair}</button></div>
+        <div class="fn-celular-topo">${st.dona ? `<a class="fn-icone fn-voltar-cel" href="../admin/#dashboard" aria-label="Voltar ao painel" title="Voltar ao painel">${ICONE.voltar}</a>` : ""}<b class="fn-dono">${esc(p.nome)}</b><button class="fn-icone" type="button" data-olho aria-label="Esconder valores">${ICONE.olho}</button><button class="fn-icone" type="button" data-sair aria-label="Sair">${ICONE.sair}</button></div>
         <div class="fn-topo"><div><h1>${st.aba === "dash" ? (st.atual === "mari" ? "Oi, Mari! 💜" : "Oi, Eduardo! 💙") : `${TITULO[st.aba]} <em>${esc(p.curto)}</em>`}</h1><p>${st.aba === "dash" ? `Bom momento para cuidar das suas finanças · ${MESES[st.ref.m]} de ${st.ref.y}` : st.aba === "acesso" ? "Quem pode entrar nas finanças" : st.aba === "anual" ? `Navegue pelos meses e acompanhe cada ${st.anoAba === "entrada" ? "entrada" : "saída"}` : `${MESES[st.ref.m]} de ${st.ref.y}`}</p></div>
           <div class="fn-topo-acoes">${st.aba !== "acesso" && st.aba !== "anual" ? `<div class="fn-mes"><button type="button" data-mes="-1" aria-label="Mês anterior">‹</button><span>${MESES[st.ref.m]} ${st.ref.y}</span><button type="button" data-mes="1" aria-label="Próximo mês">›</button></div>
             <button class="fn-btn" type="button" data-novo="saida">${ICONE.sai}Saída</button><button class="fn-btn principal" type="button" data-novo="entrada">${ICONE.entra}Entrada</button>` : ""}<button class="fn-icone" type="button" data-olho title="Esconder valores" aria-label="Esconder valores">${ICONE.olho}</button></div></div>
@@ -492,9 +518,18 @@
     const ent = tipo === "entrada", lm = doMes(st.ref.y, st.ref.m).filter((l) => l.tipo === tipo), ant = new Date(st.ref.y, st.ref.m - 1, 1), la = doMes(ant.getFullYear(), ant.getMonth()).filter((l) => l.tipo === tipo);
     const total = soma(lm), feito = soma(lm.filter((l) => l.pago)), ano = D().lancamentos.filter((l) => l.tipo === tipo && String(l.data).startsWith(st.ref.y + "-"));
     const mesesComValor = new Set(ano.map((l) => l.data.slice(5, 7))).size || 1;
-    const porCat = {}; lm.forEach((l) => { porCat[l.categoria || "Outros"] = (porCat[l.categoria || "Outros"] || 0) + (Number(l.valor) || 0); });
+    const porCat = {}, add = (k, v) => { porCat[k] = (porCat[k] || 0) + v; };
+    lm.forEach((l) => {
+      const c = !ent && D().cartoes.find((y) => eDoCartao(l, y));
+      if (c) { // fatura: abre nas compras de cada tipo; o que não foi lançado como compra fica em Cartão
+        let resto = Number(l.valor) || 0;
+        comprasDaFatura(c, st.ref.y, st.ref.m).forEach((k) => { const v = Math.min(resto, k.parte.valor); if (v > 0) { add(k.categoria || catAuto(k.descricao) || "Outros", v); resto -= v; } });
+        if (resto > 0.004) add("Cartão", resto); return;
+      }
+      add(l.categoria || "Outros", Number(l.valor) || 0);
+    });
     const cats = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
-    const atalhos = ent ? ["Salário", "PUBLI", "MARKETPLACE"] : ["Conta fixa", "Mercado", "Dívida pessoal"];
+    const atalhos = ent ? ["Salário", "PUBLI", "MARKETPLACE"] : ["Conta fixa", "Mercado", "Delivery"];
     return `<div class="fn-kpis">
         ${kpi(ent ? "Entrou no mês" : "Saiu no mês", R$(total), ent ? "entra" : "sai", `${lm.length} lançamento${lm.length === 1 ? "" : "s"}`, "destaque", delta(total, soma(la), !ent))}
         ${kpi(ent ? "Já recebido" : "Já pago", R$(feito), "check", "")}
@@ -505,7 +540,7 @@
         <div class="fn-caixa"><div class="fn-cab"><div><h3>${ent ? "Entradas" : "Saídas"} de ${MESES[st.ref.m].toLowerCase()}</h3><p class="sub">Toque na situação para marcar como ${ent ? "recebido" : "pago"}</p></div>
           <div class="fn-acoes">${atalhos.map((a) => `<button class="fn-btn pequeno" type="button" data-novo-cat="${a}" data-tipo="${tipo}">${ICONE.mais}${a}</button>`).join("")}${ent ? "" : `<button class="fn-btn pequeno" type="button" data-nova-compra>${ICONE.cartoes}Compra no cartão</button>`}<button class="fn-btn pequeno principal" type="button" data-novo="${tipo}">${ICONE.mais}Outra</button></div></div>
           ${lm.length ? `<div class="fn-rolar"><table class="fn-tabela"><thead><tr><th>Dia</th><th>Descrição</th><th class="esconde">Tipo</th><th>Situação</th><th class="num">Valor</th><th></th></tr></thead><tbody>
-          ${[...lm].sort((a, b) => a.data.localeCompare(b.data)).map((l) => `<tr><td>${dataBR(l.data).slice(0, 5)}</td><td>${esc(l.descricao)}${l.auto ? ' <small class="fn-auto">soma das compras</small>' : ""}${l.marketplace || l.influencer ? `<small class="fn-loja">${esc([l.marketplace && "Loja: " + l.marketplace, l.influencer].filter(Boolean).join(" · "))}</small>` : ""}${l.origem === "pj" ? '<small class="fn-loja">CNPJ</small>' : ""}</td><td class="esconde"><span class="fn-tag">${esc(l.categoria || "")}</span></td><td><button class="fn-chip ${l.pago ? "" : vencido(l) ? "mal" : "amb"}" type="button" data-pagar="${esc(l.id)}" style="border:0;cursor:pointer">${l.pago ? (ent ? "Recebido" : "Pago") : vencido(l) ? "Vencido" : ent ? "A receber" : "A pagar"}</button></td><td class="num"><span class="fn-valor ${ent ? "entra" : "sai"}">${R$(l.valor)}</span></td><td class="num"><button class="fn-icone" type="button" data-editar-l="${esc(l.id)}" aria-label="Editar">${ICONE.lapis}</button></td></tr>`).join("")}
+          ${[...lm].sort((a, b) => a.data.localeCompare(b.data)).map((l) => `<tr><td>${dataBR(l.data).slice(0, 5)}</td><td>${esc(l.descricao)}${l.auto ? ' <small class="fn-auto">soma das compras</small>' : ""}${l.marketplace || l.influencer ? `<small class="fn-loja">${esc([l.marketplace && "Loja: " + l.marketplace, l.influencer].filter(Boolean).join(" · "))}</small>` : ""}${l.origem === "pj" ? '<small class="fn-loja">CNPJ</small>' : ""}${!ent && l.forma ? `<small class="fn-loja">${esc((FORMAS.find(([k]) => k === l.forma) || [, ""])[1])}</small>` : ""}</td><td class="esconde"><span class="fn-tag">${esc(l.categoria || "")}</span></td><td><button class="fn-chip ${l.pago ? "" : vencido(l) ? "mal" : "amb"}" type="button" data-pagar="${esc(l.id)}" style="border:0;cursor:pointer">${l.pago ? (ent ? "Recebido" : "Pago") : vencido(l) ? "Vencido" : ent ? "A receber" : "A pagar"}</button></td><td class="num"><span class="fn-valor ${ent ? "entra" : "sai"}">${R$(l.valor)}</span></td><td class="num"><button class="fn-icone" type="button" data-editar-l="${esc(l.id)}" aria-label="Editar">${ICONE.lapis}</button></td></tr>`).join("")}
           </tbody></table></div>` : `<p class="fn-vazio">Nada lançado neste mês ainda.</p>`}</div>
         <div class="fn-caixa"><h3>Por tipo</h3><p class="sub">${ent ? "De onde veio o dinheiro" : "Para onde foi o dinheiro"}</p>
           <div class="fn-lista">${cats.map(([k, v], i) => `<div class="fn-item" style="flex-wrap:wrap"><div class="x"><b>${esc(k)}</b></div><span class="fn-valor">${R$(v)}</span><div class="fn-barra" style="flex-basis:100%"><i style="width:${(v / Math.max(total, 1) * 100).toFixed(1)}%;background:${CORES[i % CORES.length]}"></i></div></div>`).join("") || `<p class="fn-vazio">Sem valores neste mês.</p>`}</div></div>
@@ -817,21 +852,30 @@
     let dlg = $("#fn-janela"); if (!dlg) { dlg = document.createElement("dialog"); dlg.id = "fn-janela"; dlg.className = "fn-janela"; document.body.appendChild(dlg); }
     const campo = (c) => {
       const v = valores[c.k] ?? (c.padrao ?? "");
-      if (c.tipo === "select") { const ops = c.opcoes.map((o) => (Array.isArray(o) ? o : [o, o])); if (v !== "" && !ops.some((o) => String(o[0]) === String(v))) ops.unshift([v, v]); return `<div class="fn-campo"><label for="f-${c.k}">${c.rotulo}</label><select class="fn-entrada" id="f-${c.k}">${ops.map(([o, t]) => `<option value="${esc(o)}" ${String(o) === String(v) ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></div>`; }
-      if (c.tipo === "chk") return `<label class="fn-chk"><input type="checkbox" id="f-${c.k}" ${v ? "checked" : ""}> ${c.rotulo}</label>`;
-      return `<div class="fn-campo"><label for="f-${c.k}">${c.rotulo}</label><input class="fn-entrada" id="f-${c.k}" ${c.tipo === "data" ? 'type="date"' : c.tipo === "num" ? 'inputmode="decimal"' : 'type="text"'} value="${esc(c.tipo === "num" && v !== "" && v != null ? String(v).replace(".", ",") : v)}" ${c.obrigatorio ? "required" : ""}></div>`;
+      if (c.tipo === "select") { const ops = c.opcoes.map((o) => (Array.isArray(o) ? o : [o, o])); if (v !== "" && !ops.some((o) => String(o[0]) === String(v))) ops.unshift([v, v]); return `<div class="fn-campo" data-k="${c.k}"><label for="f-${c.k}">${c.rotulo}</label><select class="fn-entrada" id="f-${c.k}">${ops.map(([o, t]) => `<option value="${esc(o)}" ${String(o) === String(v) ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></div>`; }
+      if (c.tipo === "chk") return `<label class="fn-chk" data-k="${c.k}"><input type="checkbox" id="f-${c.k}" ${v ? "checked" : ""}> ${c.rotulo}</label>`;
+      return `<div class="fn-campo" data-k="${c.k}"><label for="f-${c.k}">${c.rotulo}</label><input class="fn-entrada" id="f-${c.k}" ${c.tipo === "data" ? 'type="date"' : c.tipo === "num" ? 'inputmode="decimal"' : 'type="text"'} value="${esc(c.tipo === "num" && v !== "" && v != null ? String(v).replace(".", ",") : v)}" ${c.obrigatorio ? "required" : ""}></div>`;
     };
     const linhas = []; for (let i = 0; i < campos.length; i++) { const c = campos[i]; if (c.meia && campos[i + 1] && campos[i + 1].meia) { linhas.push(`<div class="duplo">${campo(c)}${campo(campos[i + 1])}</div>`); i++; } else linhas.push(campo(c)); }
     dlg.innerHTML = `<form method="dialog" novalidate><h2>${esc(titulo)}</h2>${linhas.join("")}<p class="fn-erro" id="f-erro"></p><div class="rodape">${aoApagar ? `<button class="fn-btn perigo" type="button" id="f-apagar">${ICONE.lixo}Apagar</button><span style="flex:1"></span>` : ""}<button class="fn-btn" type="button" id="f-cancelar">Cancelar</button><button class="fn-btn principal" type="submit">Salvar</button></div></form>`;
     $("#f-cancelar", dlg).addEventListener("click", () => dlg.close());
+    // campos que só aparecem em certos casos (ex.: cartão e parcelas só no crédito) e tipo automático pela descrição
+    const ler = () => { const o = {}; campos.forEach((c) => { const el = $("#f-" + c.k, dlg); if (el) o[c.k] = c.tipo === "chk" ? el.checked : el.value; }); return o; };
+    const visivel = (c, o) => !c.mostrar || c.mostrar(o);
+    const atualizar = () => { const o = ler(); campos.forEach((c) => { const w = $(`[data-k="${c.k}"]`, dlg); if (w) w.style.display = visivel(c, o) ? "" : "none"; }); };
+    const cAuto = campos.find((c) => c.auto), dEl = $("#f-descricao", dlg);
+    if (cAuto && dEl) { const sel = $("#f-" + cAuto.k, dlg); let mexeu = !!valores[cAuto.k] && valores[cAuto.k] !== "Outros";
+      sel.addEventListener("change", () => { mexeu = true; });
+      dEl.addEventListener("input", () => { if (mexeu) return; const k = catAuto(dEl.value); if (k && [...sel.options].some((o) => o.value === k)) sel.value = k; }); }
+    $("form", dlg).addEventListener("change", atualizar); atualizar();
     if (aoApagar) $("#f-apagar", dlg).addEventListener("click", async () => { if (await painelDialogo.confirmar("Apagar mesmo?", { ok: "Apagar", perigo: true })) { aoApagar(); dlg.close(); salvar(); pintar(); } });
     $("form", dlg).addEventListener("submit", (e) => {
       e.preventDefault();
       const out = {};
       for (const c of campos) { const el = $("#f-" + c.k, dlg); out[c.k] = c.tipo === "chk" ? el.checked : c.tipo === "num" ? numOuNada(el.value) : el.value.trim(); }
-      const falta = campos.find((c) => c.obrigatorio && (out[c.k] === "" || out[c.k] == null));
+      const falta = campos.find((c) => c.obrigatorio && visivel(c, out) && (out[c.k] === "" || out[c.k] == null));
       if (falta) { $("#f-erro", dlg).textContent = `Preencha: ${falta.rotulo}.`; return; }
-      aoSalvar(out); dlg.close(); salvar(); pintar();
+      const erro = aoSalvar(out); if (typeof erro === "string") { $("#f-erro", dlg).textContent = erro; return; } dlg.close(); salvar(); pintar();
     });
     dlg.showModal();
   }
@@ -840,7 +884,24 @@
     if (((l && l.tipo) || tipo) === "entrada" && !(l && l.auto)) { editarEntrada(l, pre); return; }
     const novo = !l; l = l || { id: uid(), tipo, data: hojeIso(), pago: true, categoria: tipo === "entrada" ? "Salário" : "Outros", ...(pre || {}) };
     if (l.auto) { toast("Essa fatura é a soma das compras. Lance ou edite as compras na aba Cartões."); st.aba = "cartoes"; pintar(); return; }
-    formulario(novo ? (l.tipo === "entrada" ? "Nova entrada" : "Nova saída") : "Editar lançamento", camposL(l.tipo), l, (v) => {
+    const conta = String(l.id).startsWith("cpff-") || String(l.id).startsWith("fat-") || l.categoria === "Cartão"; // fatura/conta do cartão não vira compra
+    const d0 = D(), cartoesAbertos = d0.cartoes.filter((c) => c.status !== "Quitado");
+    const campos = l.tipo === "saida" ? [{ k: "descricao", rotulo: "Descrição (ex.: iFood, Drogasil, Netflix)", obrigatorio: true }, { k: "valor", rotulo: "Valor (R$)", tipo: "num", obrigatorio: true, meia: true }, { k: "data", rotulo: "Data", tipo: "data", obrigatorio: true, meia: true },
+      { k: "forma", rotulo: "Como paguei", tipo: "select", opcoes: conta ? FORMAS.filter(([k]) => k !== "credito") : FORMAS, meia: true }, { k: "categoria", rotulo: "Tipo (sai sozinho)", tipo: "select", opcoes: CAT_SAIDA, auto: true, meia: true },
+      { k: "cartao", rotulo: "Qual cartão", tipo: "select", opcoes: (cartoesAbertos.length ? cartoesAbertos : d0.cartoes).map((c) => [c.id, c.nome]), mostrar: (o) => o.forma === "credito", meia: true }, { k: "parcelas", rotulo: "Parcelas", tipo: "num", padrao: 1, mostrar: (o) => o.forma === "credito", meia: true },
+      { k: "pago", rotulo: "Já paguei", tipo: "chk", mostrar: (o) => o.forma !== "credito" }] : camposL(l.tipo);
+    if (l.tipo === "saida" && !l.forma && novo) l.forma = "pix";
+    formulario(novo ? (l.tipo === "entrada" ? "Nova entrada" : "Nova saída") : "Editar lançamento", campos, l, (v) => {
+      if (l.tipo === "saida" && (!v.categoria || v.categoria === "Outros")) { const k = catAuto(v.descricao); if (k) v.categoria = k; }
+      if (l.tipo === "saida" && v.forma === "credito") {
+        // no crédito vira compra do cartão: soma na fatura certa e sai da lista de saídas soltas
+        const c = d0.cartoes.find((y) => y.id === v.cartao); if (!c) return "Cadastre um cartão na aba Cartões primeiro.";
+        if (!d0.compras) d0.compras = [];
+        const k = { id: uid(), cartao: c.id, descricao: v.descricao, valor: Number(v.valor) || 0, parcelas: Math.max(1, Math.round(Number(v.parcelas) || 1)), data: v.data, categoria: v.categoria };
+        d0.compras.push(k); D().lancamentos = D().lancamentos.filter((y) => y.id !== l.id);
+        const f = mesDaFatura(c, k.data); toast(`Somado na fatura de ${MESES[f.m].toLowerCase()} do ${c.nome}.`); return;
+      }
+      delete v.cartao; delete v.parcelas;
       const x = { ...l, ...v, valor: Number(v.valor) || 0, atrasado: false };
       const lista = D().lancamentos; const i = lista.findIndex((y) => y.id === x.id); if (i >= 0) lista[i] = x; else lista.push(x);
       toast(novo ? "Lançado." : "Salvo.");
@@ -851,7 +912,8 @@
     const d = D(), abertos = d.cartoes.filter((c) => c.status !== "Quitado"), lista = abertos.length ? abertos : d.cartoes;
     if (!lista.length) { toast("Cadastre um cartão primeiro."); editarCartao(null); return; }
     const novo = !k; k = k || { id: uid(), cartao: cartaoId || lista[0].id, data: hojeIso(), parcelas: 1 };
-    formulario(novo ? "Compra no cartão" : "Editar compra", [{ k: "cartao", rotulo: "Cartão", tipo: "select", opcoes: d.cartoes.map((c) => [c.id, c.nome]) }, { k: "descricao", rotulo: "Onde / o quê (ex.: Mercado Extra)", obrigatorio: true }, { k: "valor", rotulo: "Valor total (R$)", tipo: "num", obrigatorio: true, meia: true }, { k: "parcelas", rotulo: "Parcelas", tipo: "num", meia: true }, { k: "data", rotulo: "Data da compra", tipo: "data", obrigatorio: true }], k, (v) => {
+    formulario(novo ? "Compra no cartão" : "Editar compra", [{ k: "cartao", rotulo: "Cartão", tipo: "select", opcoes: d.cartoes.map((c) => [c.id, c.nome]) }, { k: "descricao", rotulo: "Onde / o quê (ex.: Mercado Extra)", obrigatorio: true }, { k: "valor", rotulo: "Valor total (R$)", tipo: "num", obrigatorio: true, meia: true }, { k: "parcelas", rotulo: "Parcelas", tipo: "num", meia: true }, { k: "data", rotulo: "Data da compra", tipo: "data", obrigatorio: true, meia: true }, { k: "categoria", rotulo: "Tipo (sai sozinho)", tipo: "select", opcoes: CAT_SAIDA.filter((c) => !["Cartão", "Empréstimo", "Financiamento"].includes(c)), auto: true, meia: true }], k, (v) => {
+      if (!v.categoria || v.categoria === "Outros") v.categoria = catAuto(v.descricao) || "Outros";
       const x = { ...k, ...v, valor: Number(v.valor) || 0, parcelas: Math.max(1, Math.round(Number(v.parcelas) || 1)) };
       const i = d.compras.findIndex((y) => y.id === x.id); if (i >= 0) d.compras[i] = x; else d.compras.push(x);
       const c = d.cartoes.find((y) => y.id === x.cartao), f = c ? mesDaFatura(c, x.data) : null;
