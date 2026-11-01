@@ -32,6 +32,8 @@
   // etapas do quadro de produção (out/2026); os nomes antigos continuam valendo (STATUS_ANTIGO)
   const STATUS = ["Ideia", "Roteirizado", "Para gravar", "Em edição", "Pronto", "Publicado"];
   const STATUS_ANTIGO = { Gravado: "Em edição", Editado: "Pronto", Postado: "Publicado", "Para postar": "Pronto", Agendado: "Pronto" };
+  // cor de cada coluna do Quadro de produção (mesma paleta das colunas de UGC's & Publis, nov/2026)
+  const COR_STATUS = { Ideia: "#d9a46a", Roteirizado: "#b98a5e", "Para gravar": "#c98f7a", "Em edição": "#6b4a35", Pronto: "#c9a24a", Publicado: "#4f7a54" };
   const normStatus = (s) => STATUS_ANTIGO[s] || (STATUS.includes(s) ? s : "Ideia");
   const NICHOS = ["Maternidade", "Autocuidado", "Beleza e cabelo", "Moda", "Bem-estar", "Achadinhos de casa e tech"];
   const TIPOS_CONTEUDO = ["Orgânico", "UGC", "Publi"];
@@ -916,8 +918,9 @@
         const total = cards.length;
         if (col === "Publicado") cards = cards.sort((a, b) => String(b.data || "").localeCompare(String(a.data || ""))).slice(0, 30);
         else cards = cards.sort((a, b) => String(a.data || "9").localeCompare(String(b.data || "9")));
-        return `<section class="pc2-col pc3-col" data-col="${esc(col)}"><div class="pc2-col-cab"><b>${esc(col === "Ideia" ? "Ideias" : col)}</b><span>${total}</span><button type="button" class="pc2-mais" data-criar="${esc(col)}" aria-label="Adicionar em ${esc(col)}">${ic.mais}</button></div>
-          <div class="pc2-col-lista">${cards.map(cartaoKanban).join("") || `<p class="pc2-vazio">arraste para cá</p>`}</div></section>`;
+        const cor = COR_STATUS[col] || "#a87058";
+        return `<section class="pc2-col pc3-col" data-col="${esc(col)}" style="border-top-color:${cor}"><div class="pc2-col-cab"><i class="pc3-ponto" style="background:${cor}"></i><b>${esc(col === "Ideia" ? "Ideias" : col)}</b><span>${total}</span><button type="button" class="pc2-mais" data-criar="${esc(col)}" aria-label="Adicionar em ${esc(col)}">${ic.mais}</button></div>
+          <div class="pc2-col-lista">${cards.map(cartaoKanban).join("") || `<p class="pc2-vazio pc3-vazio">Arraste para cá</p>`}</div></section>`;
       }).join("")}</div></div>`;
     ligarCliques(box);
     const busca = $("#pc-busca", box);
