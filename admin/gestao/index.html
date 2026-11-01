@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611012030"></script>
-<script src="../../js/dialogos.js?v=202611012030"></script>
-<script src="../../js/corretor.js?v=202611012030"></script>
+<script src="../../js/banco.js?v=202611012130"></script>
+<script src="../../js/dialogos.js?v=202611012130"></script>
+<script src="../../js/corretor.js?v=202611012130"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -418,6 +418,13 @@
   /* Skill UGC (criar, ajustar, revisar) */
   .sk-nota{ font-size:12.5px; color:var(--db-suave); margin:6px 0 0; }
   .sk-mais{ align-self:flex-start; font-size:13.5px; }
+  .sk-brief{ border:1px solid var(--db-linha, #e6dccf); background:var(--db-papel, #fffdf9); border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; gap:4px; font-size:13.5px; }
+  .sk-brief > div{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .sk-brief p{ margin:0; }
+  .sk-brief-aviso{ color:var(--terracota, #b5654a); }
+  .sk-brief-linha{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; margin:6px 0; }
+  .sk-brief-erro{ flex-basis:100%; }
+  .cr-lendo{ opacity:.75; pointer-events:none; }
   .sk-campos{ display:grid; gap:10px; }
   .sk-alerta, .sk-falta{ border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13.5px; }
   .sk-alerta{ background:#fbefe3; border:1px solid rgba(197,83,63,.25); }
@@ -2061,6 +2068,115 @@ async function chamarSkill(corpo){
   if(msg) throw new Error(msg);
   return data;
 }
+// ----- Briefing do cliente anexado (PDF, imagem ou texto): a função ler-briefing tira o texto e separa os campos da Skill -----
+const PDFJS_APP = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+function imagemReduzida(fonte, max){
+  return new Promise((ok, falhou)=>{ const img = new Image(); img.onload = () => {
+    const esc = Math.min(1, max/Math.max(img.width, img.height)); const c = document.createElement("canvas");
+    c.width = Math.round(img.width*esc); c.height = Math.round(img.height*esc);
+    const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(img, 0, 0, c.width, c.height);
+    ok(c.toDataURL("image/jpeg", 0.85)); }; img.onerror = () => falhou(new Error("Não consegui abrir essa imagem.")); img.src = fonte; });
+}
+const lerComoDataUrl = (arq) => new Promise((ok, falhou)=>{ const l = new FileReader(); l.onload = () => ok(l.result); l.onerror = falhou; l.readAsDataURL(arq); });
+async function briefingDoPdf(arq){
+  await carregarScriptApp(PDFJS_APP);
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_APP.replace("pdf.min.js", "pdf.worker.min.js");
+  const doc = await window.pdfjsLib.getDocument({ data: await arq.arrayBuffer() }).promise;
+  const total = Math.min(doc.numPages, 25); const textos = [];
+  for(let i=1; i<=total; i++){
+    const pg = await doc.getPage(i); const linhas = []; let ultimoY = null, linha = "";
+    (await pg.getTextContent()).items.forEach(it=>{ const y = Math.round(it.transform[5]); if(ultimoY!==null && Math.abs(y-ultimoY)>3){ linhas.push(linha); linha = ""; } linha += (linha && !linha.endsWith(" ") ? " " : "") + it.str; ultimoY = y; });
+    linhas.push(linha); textos.push(linhas.map(l=>l.trim()).filter(Boolean).join("\n"));
+  }
+  const texto = textos.join("\n\n").trim();
+  // PDF escaneado (quase sem texto): as páginas vão como imagem para a IA ler
+  if(texto.replace(/\s/g,"").length >= 60 * Math.min(total, 3)) return { texto, imagens: [], paginas: doc.numPages };
+  const imagens = [];
+  for(let i=1; i<=Math.min(doc.numPages, 6); i++){
+    const pg = await doc.getPage(i); const base = pg.getViewport({scale:1}); const vp = pg.getViewport({scale: Math.min(2.2, 1500/Math.max(base.width, base.height))});
+    const c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0,0,c.width,c.height);
+    await pg.render({canvasContext:x, viewport:vp}).promise; imagens.push(c.toDataURL("image/jpeg", 0.82));
+  }
+  return { texto, imagens, paginas: doc.numPages, escaneado: true };
+}
+async function lerBriefingAnexado(arquivos){
+  let textos = [], imagens = [], nomes = [], avisos = [];
+  for(const arq of arquivos){
+    const nome = arq.name || "briefing";
+    if(/pdf/i.test(arq.type) || /\.pdf$/i.test(nome)){
+      const r = await briefingDoPdf(arq);
+      if(r.texto) textos.push(`[${nome}]\n${r.texto}`);
+      imagens.push(...r.imagens);
+      if(r.escaneado && r.paginas > 6) avisos.push(`${nome}: é um PDF escaneado, li as 6 primeiras páginas.`);
+      nomes.push(nome);
+    } else if(/^image\//.test(arq.type) || /\.(png|jpe?g|webp|heic)$/i.test(nome)){
+      imagens.push(await imagemReduzida(await lerComoDataUrl(arq), 1600)); nomes.push(nome);
+    } else if(/^text\//.test(arq.type) || /\.(txt|md|csv|rtf)$/i.test(nome)){
+      textos.push(`[${nome}]\n${await arq.text()}`); nomes.push(nome);
+    } else if(/\.(docx?|pages|odt)$/i.test(nome)){
+      throw new Error(`"${nome}" é um arquivo do Word. Salve como PDF (Arquivo > Salvar como > PDF) ou copie e cole o texto.`);
+    } else throw new Error(`Não sei ler "${nome}". Envie PDF, imagem (print) ou texto.`);
+  }
+  if(imagens.length > 6){ avisos.push("Mandei as 6 primeiras imagens/páginas (limite da IA)."); imagens = imagens.slice(0,6); }
+  const { data, error } = await supabaseClient.functions.invoke("ler-briefing", {body:{texto: textos.join("\n\n"), imagens}});
+  let msg = data && data.error;
+  if(error){ try{ msg = (await error.context.json()).error; }catch(x){} msg = msg || "Não consegui ler o briefing agora. Tente de novo em instantes."; }
+  if(msg) throw new Error(msg);
+  if(data.cortado) avisos.push("O briefing é longo: a IA separou os campos pelos primeiros 15 mil caracteres. O texto inteiro ficou no campo Briefing.");
+  return { ...data, nomes, avisos };
+}
+// junta o que veio do briefing nos campos, sem apagar o que ela já escreveu
+function aplicarBriefingLido(p, d){
+  const c = d.campos || {}, preenchidos = [];
+  const novo = {...p};
+  [["produto","Produto"],["marca","Marca"],["objetivo","Objetivo"],["publico","Público"]].forEach(([k,rot])=>{ if(c[k] && !String(p[k]||"").trim()){ novo[k] = c[k]; preenchidos.push(rot); } });
+  if(c.formato && "formato" in p && (!p.formato || p.formato==="Reels") && c.formato!==p.formato){ novo.formato = c.formato; preenchidos.push("Formato"); }
+  if(c.duracao && "duracao" in p && !String(p.duracao||"").trim()){ novo.duracao = String(c.duracao); preenchidos.push("Duração"); }
+  const juntar = (atual, itens) => { const linhas = String(atual||"").split(/\n+/).map(t=>t.trim()).filter(Boolean); const base = linhas.map(t=>t.toLowerCase()); itens.forEach(i=>{ if(!base.includes(i.toLowerCase())){ linhas.push(i); base.push(i.toLowerCase()); } }); return linhas.join("\n"); };
+  if((c.obrigatorias||[]).length){ novo.obrigatorias = juntar(p.obrigatorias, c.obrigatorias); preenchidos.push(c.obrigatorias.length + (c.obrigatorias.length>1 ? " falas obrigatórias" : " fala obrigatória")); }
+  if((c.proibicoes||[]).length){ novo.restricoes = juntar(p.restricoes, c.proibicoes); preenchidos.push(c.proibicoes.length + (c.proibicoes.length>1 ? " proibições" : " proibição")); }
+  const extras = [c.entregaveis && "Entregáveis: " + c.entregaveis, c.prazos && "Prazos: " + c.prazos].filter(Boolean);
+  if(extras.length && "observacoes" in p) novo.observacoes = juntar(p.observacoes, extras);
+  const topo = [
+    (c.mensagens_chave||[]).length && "MENSAGENS-CHAVE:\n- " + c.mensagens_chave.join("\n- "),
+    (c.mencoes||[]).length && "MENÇÕES (@, #, links, cupom): " + c.mencoes.join(" · "),
+    (c.cenas||[]).length && "CENAS PEDIDAS:\n- " + c.cenas.join("\n- "),
+    c.tom && "TOM: " + c.tom,
+    c.resumo && "RESUMO DO BRIEFING:\n" + c.resumo,
+  ].filter(Boolean).join("\n\n");
+  const bloco = `${topo}\n\nBRIEFING COMPLETO (${(d.nomes||[]).join(", ")}):\n${d.texto||""}`.trim();
+  novo.briefing = (String(p.briefing||"").trim() ? p.briefing.trim() + "\n\n" : "") + bloco;
+  preenchidos.unshift("Briefing");
+  return { novo, preenchidos };
+}
+function AnexarBriefing({onLido, rotulo, classe}){
+  const [lendo,setLendo] = useState("");
+  const [erro,setErro] = useState("");
+  async function ler(lista){
+    const arquivos = [...(lista||[])]; if(!arquivos.length) return;
+    setErro(""); setLendo(arquivos.length>1 ? `Lendo ${arquivos.length} arquivos do briefing...` : `Lendo ${arquivos[0].name}...`);
+    try{ const d = await lerBriefingAnexado(arquivos); onLido(d); }
+    catch(e){ setErro(String(e.message||e)); }
+    setLendo("");
+  }
+  return (<>
+    <label className={(classe || "db-btn-claro cr-arquivo") + (lendo ? " cr-lendo" : "")} title="PDF, print/imagem ou arquivo de texto">
+      {lendo ? lendo : (rotulo || "Anexar briefing do cliente")}
+      <input type="file" multiple accept=".pdf,application/pdf,image/*,.txt,.md,.csv,text/plain,.doc,.docx" disabled={!!lendo} onChange={e=>{ const a = e.target.files; ler(a); e.target.value=""; }}/>
+    </label>
+    {erro && <p className="db-dica db-dica-erro sk-brief-erro">{erro}</p>}
+  </>);
+}
+function BriefingLido({info, onTirar}){
+  if(!info) return null;
+  return (<div className="sk-brief">
+    <div><b>Briefing lido</b>{(info.nomes||[]).map((n,k)=><span key={k} className="db-tag">{n}</span>)}</div>
+    {(info.preenchidos||[]).length>0 && <p>Preenchi: {info.preenchidos.join(", ")}. Confira os campos antes de criar.</p>}
+    {(info.avisos||[]).map((a,k)=><p key={k} className="sk-brief-aviso">{a}</p>)}
+    {onTirar && <button type="button" className="sk-link" onClick={onTirar}>tirar o briefing</button>}
+  </div>);
+}
 // o roteiro da Skill vira o texto do quadro (um bloco por parte, com a cena entre colchetes)
 function textoDaSkill(r){
   const partes = [];
@@ -2101,6 +2217,8 @@ function CriarRoteiroUGC({referencia, ideiaInicial, conteudoId, inicial, nichos,
   const set = (k,v) => setF(p=>({...p,[k]:v}));
   const [maisCampos,setMaisCampos] = useState(!!(ini.briefing || ini.obrigatorias || ini.restricoes || ini.marca));
   const [imagens,setImagens] = useState([]);
+  const [briefLido,setBriefLido] = useState(null);
+  const [briefAntes,setBriefAntes] = useState(null);
   const [gravando,setGravando] = useState(false);
   const [ouvindo,setOuvindo] = useState(false);
   const [criando,setCriando] = useState("");
@@ -2153,6 +2271,13 @@ function CriarRoteiroUGC({referencia, ideiaInicial, conteudoId, inicial, nichos,
     }catch(e){ setErro(String(e.message||e)); }
     setCriando("");
   }
+  function usarBriefing(d){
+    setBriefAntes(f);
+    const { novo, preenchidos } = aplicarBriefingLido(f, d);
+    setF(novo); setMaisCampos(true); setErro("");
+    setBriefLido({nomes:d.nomes, preenchidos, avisos:d.avisos||[]});
+  }
+  function tirarBriefing(){ if(briefAntes) setF(briefAntes); setBriefAntes(null); setBriefLido(null); }
   // trocar o gancho: a opção escolhida vai para o bloco GANCHO
   function usarGancho(i){
     setRes(r=>{ const g = r.roteiro.ganchos; const novo = [g[i], ...g.filter((_,k)=>k!==i)];
@@ -2166,6 +2291,7 @@ function CriarRoteiroUGC({referencia, ideiaInicial, conteudoId, inicial, nichos,
       formato:f.formato + (f.duracao ? `, ${f.duracao}s` : ""), objetivo:f.objetivo||"", legenda:[r.legenda, r.hashtags].filter(Boolean).join("\n\n"),
       tipoUgc:r.tipo||"", ganchoTipo:(r.ganchos[0]||{}).tipo || "", referencia: referencia ? (referencia.link||"") : "", observacoes: r.decisao ? "Decisão de ângulo: " + r.decisao : "",
       criadoComIA:true, skill, skillVersao:skill.versao, origem: origemDoRoteiro(referencia, conteudoId),
+      briefingSkill: String(f.briefing||"").trim() ? {texto:String(f.briefing).slice(0,12000), obrigatorias:f.obrigatorias||"", restricoes:f.restricoes||"", arquivos:(briefLido&&briefLido.nomes)||[]} : undefined,
       historico:[{em:agora, acao: referencia ? "Criado com a Skill a partir de referência" : "Criado com a Skill", versao:skill.versao}]};
     onSalvar(novo); setSalvo(novo.id);
   }
@@ -2188,7 +2314,9 @@ function CriarRoteiroUGC({referencia, ideiaInicial, conteudoId, inicial, nichos,
           <button type="button" className={"db-btn-claro"+(gravando?" cr-gravando":"")} onClick={alternarGravacao} disabled={ouvindo}>{gravando ? "● Parar e usar o áudio" : ouvindo ? "Ouvindo o áudio..." : "🎙 Gravar áudio"}</button>
           <label className="db-btn-claro cr-arquivo">Enviar áudio<input type="file" accept="audio/*,.ogg,.opus,.m4a,.mp3,.wav" onChange={e=>{ const a = e.target.files[0]; e.target.value=""; if(a) enviarAudio(a); }}/></label>
           <label className="db-btn-claro cr-arquivo">Anexar imagens{imagens.length ? ` (${imagens.length}/4)` : ""}<input type="file" accept="image/*" multiple onChange={e=>{ const a = e.target.files; adicionarImagens(a); e.target.value=""; }}/></label>
+          <AnexarBriefing onLido={usarBriefing} rotulo={briefLido ? "Anexar mais briefing" : "Anexar briefing do cliente (PDF, imagem ou texto)"}/>
         </div>
+        <BriefingLido info={briefLido} onTirar={tirarBriefing}/>
         {imagens.length>0 && <div className="cr-imagens">{imagens.map((src,i)=><span key={i}><img src={src} alt={"Imagem "+(i+1)}/><button type="button" onClick={()=>setImagens(l=>l.filter((_,k)=>k!==i))} aria-label="Tirar imagem">×</button></span>)}</div>}
 
         <div className="cr-grade">
@@ -2201,7 +2329,7 @@ function CriarRoteiroUGC({referencia, ideiaInicial, conteudoId, inicial, nichos,
         </div>
         <button type="button" className="db-link db-sublinhado sk-mais" onClick={()=>setMaisCampos(v=>!v)}>{maisCampos ? "Esconder briefing e regras da marca" : "+ Briefing da marca, falas obrigatórias, restrições e observações"}</button>
         {maisCampos && <div className="sk-campos">
-          <label className="cr-campo">Briefing da marca (cole o texto)<textarea rows={5} value={f.briefing} onChange={e=>set("briefing", e.target.value)} placeholder="Cole aqui o briefing inteiro: a Skill monta a checklist de obrigatoriedades e proibições"/></label>
+          <label className="cr-campo">Briefing da marca (cole o texto ou anexe o arquivo acima)<textarea rows={briefLido ? 9 : 5} value={f.briefing} onChange={e=>set("briefing", e.target.value)} placeholder="Cole aqui o briefing inteiro: a Skill monta a checklist de obrigatoriedades e proibições"/></label>
           <label className="cr-campo">Falas obrigatórias (uma por linha, entram literais)<textarea rows={2} value={f.obrigatorias} onChange={e=>set("obrigatorias", e.target.value)}/></label>
           <label className="cr-campo">Restrições e palavras proibidas<textarea rows={2} value={f.restricoes} onChange={e=>set("restricoes", e.target.value)}/></label>
           <label className="cr-campo">Observações<textarea rows={2} value={f.observacoes} onChange={e=>set("observacoes", e.target.value)}/></label>
@@ -2263,7 +2391,8 @@ function SkillNoRoteiro({f, setF}){
     if(acao==="ajustar" && !pedido.trim()){ setErro("Diga o que você quer mudar."); return; }
     setRodando(acao); setErro("");
     try{
-      const data = await chamarSkill({acao, roteiro:[f.gancho ? "GANCHO: " + f.gancho : "", f.conteudo].filter(Boolean).join("\n\n"), pedido, duracao:duracaoDoRoteiro(f), produto:f.cliente||"", formato:f.formato||""});
+      const bs = f.briefingSkill || {};
+      const data = await chamarSkill({acao, roteiro:[f.gancho ? "GANCHO: " + f.gancho : "", f.conteudo].filter(Boolean).join("\n\n"), pedido, duracao:duracaoDoRoteiro(f), produto:f.cliente||"", formato:f.formato||"", briefing:bs.texto||"", obrigatorias:bs.obrigatorias||"", restricoes:bs.restricoes||""});
       const versao = (data.skill||{}).versao || "";
       setF(p=>({...p, conteudo:textoDaSkill(data.roteiro), gancho:(data.roteiro.ganchos[0]||{}).fala || p.gancho,
         skill:{...(p.skill||{}), ...dadosDaSkill(data), checklist:(p.skill||{}).checklist||[], alertas:(p.skill||{}).alertas||[]}, skillVersao:versao || p.skillVersao,
@@ -2282,6 +2411,10 @@ function SkillNoRoteiro({f, setF}){
       <div className="sk-box-topo"><b>Skill UGC</b>{f.skillVersao && <span className="sk-versao">{f.skillVersao}</span>}</div>
       {o && o.tipo==="referencia" && <p className="sk-origem">Veio da referência {o.link ? <a href={o.link} target="_blank" rel="noopener">{o.titulo || "ver vídeo"}</a> : <b>{o.titulo}</b>}</p>}
       {o && o.tipo==="conteudo" && <p className="sk-origem">Ligado a um conteúdo do planejamento (Conteúdos)</p>}
+      <div className="sk-brief-linha">
+        {(f.briefingSkill && f.briefingSkill.texto) ? <span className="sk-origem">Briefing do cliente: {((f.briefingSkill.arquivos||[]).join(", ")) || "texto colado"} (a Skill usa ao revisar e ajustar) · <button type="button" className="sk-link" onClick={()=>setF(p=>({...p, briefingSkill:undefined}))}>tirar</button></span> : <span className="sk-origem">Sem briefing do cliente neste roteiro.</span>}
+        <AnexarBriefing classe="btn btn-ghost cr-arquivo" rotulo={(f.briefingSkill && f.briefingSkill.texto) ? "Trocar briefing" : "Anexar briefing (PDF, imagem ou texto)"} onLido={(d)=>{ const base = {produto:"", briefing:"", obrigatorias:"", restricoes:""}; const { novo } = aplicarBriefingLido(base, d); setF(p=>({...p, briefingSkill:{texto:novo.briefing.slice(0,12000), obrigatorias:novo.obrigatorias, restricoes:novo.restricoes, arquivos:d.nomes||[]}})); setErro(""); }}/>
+      </div>
       {sk.duracao && <p className="sk-origem">Duração: {duracaoTexto(sk.duracao)}{sk.duracao.dica && sk.duracao.alvo ? " · " + sk.duracao.dica : ""}</p>}
       {(sk.alertas||[]).length>0 && <ul className="sk-lista">{sk.alertas.map((a,k)=><li key={k}>⚠ {a}</li>)}</ul>}
       <div className="sk-acoes">
