@@ -527,3 +527,49 @@ a{color:var(--principal)}
 .tema-mari .fn-det-res > div{background:#f4f2fe}
 .tema-edu .fn-det-res > div{background:#eef2f8}
 @media (max-width:900px){.fn-detalhe{max-height:88vh;max-width:100%;width:100%;border-radius:24px 24px 0 0}}
+
+/* gráfico Entradas x Despesas (nov/2026, modelo que a Mari mandou: faixa cinza e caixinha ao passar o mouse) */
+.fn-gr-tit{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--suave);margin:0 0 4px}
+.fn-gr{display:flex;gap:8px;height:240px;margin-top:16px}
+.fn-gr-y{display:flex;flex-direction:column;justify-content:space-between;font-size:11px;color:var(--suave);text-align:right;min-width:26px;transform:translateY(-6px);height:calc(100% + 12px)}
+.fn-gr-area{position:relative;flex:1;min-width:0}
+.fn-gr-linha{position:absolute;left:0;right:0;border-top:1px dashed rgba(120,120,140,.18)}
+.fn-gr-cols{position:absolute;inset:0;display:flex}
+.fn-gr-col{flex:1;min-width:0;display:flex;align-items:flex-end;justify-content:center;cursor:pointer;outline:0;border-radius:4px 4px 0 0;transition:background .12s}
+.fn-gr-col.hover,.fn-gr-col:focus-visible{background:rgba(120,120,130,.22)}
+.fn-gr-col .par{display:flex;gap:4px;align-items:flex-end;height:100%;width:76%;max-width:84px}
+.fn-gr-col .par i{flex:1;display:block;border-radius:4px 4px 0 0;min-height:0}
+.fn-gr-dica{position:absolute;top:22px;z-index:3;background:#fff;border:1px solid #e6e6ec;border-radius:10px;box-shadow:0 8px 24px rgba(30,30,50,.12);padding:12px 14px;display:flex;flex-direction:column;gap:10px;font-size:14px;white-space:nowrap;pointer-events:none;color:#333}
+.fn-gr-dica[hidden]{display:none}
+.fn-gr-dica b{font-weight:500;color:#333}
+.fn-gr-x{display:flex;margin:8px 0 0 34px}
+.fn-gr-x span{flex:1;text-align:center;font-size:11.5px;color:var(--suave)}
+.fn-gr-x span.atual{color:var(--texto);font-weight:700}
+.fn-gr-leg{display:flex;justify-content:center;gap:14px;margin-top:12px;font-size:13px}
+.fn-gr-leg span{display:flex;align-items:center;gap:5px}
+.fn-gr-leg i{width:22px;height:13px;border-radius:2px;display:inline-block}
+@media (max-width:600px){.fn-gr{height:200px}.fn-gr-col .par{gap:2px;width:82%}.fn-gr-x span{font-size:10px}.fn-gr-dica{font-size:12.5px;padding:10px 12px;gap:7px}}
+
+/* Para onde foi o dinheiro: todos os tipos */
+.fn-tipos{max-height:300px;overflow:auto;padding-right:4px}
+.fn-tipos li em{font-style:normal;color:var(--suave);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fn-tipos li b{min-width:34px;text-align:right}
+
+/* Próximos vencimentos (modelo que a Mari mandou) */
+.fn-venc-tit{display:flex;align-items:center;gap:7px;margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#d9483b}
+.fn-venc-tit svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.fn-venc-lista{display:flex;flex-direction:column}
+.fn-venc-item{display:flex;align-items:center;gap:10px;padding:9px 2px;cursor:pointer;border-radius:10px}
+.fn-venc-item:hover{background:rgba(120,120,140,.06)}
+.fn-venc-ic{width:20px;display:flex;justify-content:center;color:var(--texto);flex-shrink:0}
+.fn-venc-ic svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.fn-venc-item .x{flex:1;min-width:0}
+.fn-venc-item .x b{display:block;font-weight:500;font-size:14px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fn-venc-item .x small{font-size:11.5px;color:var(--suave)}
+.fn-venc-v{text-align:right;white-space:nowrap}
+.fn-venc-v b{display:block;font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.fn-venc-v small{font-size:10.5px;font-weight:700;color:#d9483b}
+.fn-venc-todos{width:100%;margin-top:8px;padding:10px;border:1px solid var(--linha);background:var(--cartao);border-radius:999px;font:inherit;font-size:12.5px;font-weight:600;color:var(--suave);cursor:pointer}
+.fn-venc-todos:hover{color:var(--texto)}
+.fn-venc-ok{display:flex;align-items:center;gap:7px;margin:12px 0 0;font-size:12.5px;color:#2f9e5b}
+.fn-venc-ok svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
