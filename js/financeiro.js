@@ -93,6 +93,7 @@
   ICONE.doc = '<svg viewBox="0 0 24 24"><path d="M6.5 3.5h8l3.5 3.5v13.5h-11.5z"/><path d="M14.5 3.5V7H18M9 11.5h6M9 15h6"/></svg>';
   ICONE.copiar = '<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/></svg>';
   ICONE.calendario = '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
+  ICONE.banco = '<svg viewBox="0 0 24 24"><path d="M3.5 9.5 12 4l8.5 5.5M5 20.5h14M6.5 10.5v7M10 10.5v7M14 10.5v7M17.5 10.5v7M4 9.5h16"/></svg>';
 
   const st = { sessao: null, email: "", dona: false, perfis: {}, atual: "mari", aba: "dash", ref: (() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })(), anoAba: "saida", anoAbertos: {}, metodo: "avalanche", salvando: null };
   const vazio = () => ({ cartoes: [], emprestimos: [], lancamentos: [], reserva: { atual: 0, metaMeses: 6, aporte: 0 }, investimentos: [], contas: [], compras: [], extra: 150 });
@@ -315,12 +316,37 @@
   const kpi = (t, v, ic, sub, tom, chip, abre) => `<div class="fn-kpi ${tom || ""}${abre ? " clica" : ""}"${abre ? ` data-kpi="${abre}" role="button" tabindex="0" aria-label="Ver detalhes: ${esc(t)}"` : ""}><div class="fn-kpi-t"><span class="fn-kpi-ic">${ICONE[ic] || ""}</span>${esc(t)}</div><div class="fn-kpi-v">${String(v).replace(/,(\d{2})$/, '<small>,$1</small>')}</div><div class="fn-kpi-s">${chip ? `<span class="fn-chip ${chip[1] || ""}">${chip[0]}</span>` : ""}${sub ? `<span>${sub}</span>` : ""}</div></div>`;
   const delta = (a, b, inverter) => { const p = pct(a, b); if (p === null) return null; const bom = inverter ? p <= 0 : p >= 0; return [(p > 0 ? "▲ " : p < 0 ? "▼ " : "") + Math.abs(p) + "%", bom ? "" : "mal"]; };
   const CORES = ["#6b4a35", "#a87058", "#cdb39b", "#4f7a54", "#c9973b", "#4a6a8a", "#8a6650", "#d3a98f"];
-  function rosca(itens, total, centro) {
+  // cores dos tipos de saída (bem diferentes entre si; o tingir não mexe nelas)
+  const CORES_CAT = ["#7c6df5", "#3fc8cf", "#f383b3", "#6ea6f4", "#f2a541", "#34b27b", "#ef7a5a", "#b78af0", "#e2c044", "#2fa3a0", "#d95f8c", "#8fa3c7", "#9ccc65", "#c98a5e", "#5c6bc0", "#a3a1b5"];
+  const COR_ENT = "#13a097", COR_SAI = "#ea5f4b";
+  // gráfico Entradas x Despesas do ano (passar o mouse ou tocar mostra o mês; clicar abre o mês)
+  function graficoAno(anos) {
+    const maior = Math.max(1, ...anos.map((x) => Math.max(x.e, x.s)));
+    const bruto = maior / 4, pot = Math.pow(10, Math.floor(Math.log10(bruto))), passo = [1, 1.5, 2, 2.5, 3, 5, 10].map((f) => f * pot).find((f) => f >= bruto), topo = passo * 4;
+    const marca = (v) => (v >= 1000 ? (v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "k" : String(Math.round(v)));
+    return `<div class="fn-caixa fn-gr-caixa"><p class="fn-gr-tit">Entradas x Despesas · ${st.ref.y}</p><p class="sub">Passe o mouse ou toque num mês para ver os valores. Clique para abrir o mês.</p>
+      <div class="fn-gr"><div class="fn-gr-y">${[4, 3, 2, 1, 0].map((k) => `<span>${ocultar ? "•" : marca(passo * k)}</span>`).join("")}</div>
+        <div class="fn-gr-area">${[4, 3, 2, 1, 0].map((k) => `<i class="fn-gr-linha" style="bottom:${k * 25}%"></i>`).join("")}
+          <div class="fn-gr-cols">${anos.map((x) => `<div class="fn-gr-col${x.i === st.ref.m ? " atual" : ""}" data-gr-mes="${x.i}" data-e="${x.e}" data-s="${x.s}" data-n="${x.n.toUpperCase()}" tabindex="0" role="button" aria-label="${MESES[x.i]}: entradas ${R$(x.e)}, despesas ${R$(x.s)}"><div class="par"><i style="height:${(x.e / topo * 100).toFixed(2)}%;background:${COR_ENT}"></i><i style="height:${(x.s / topo * 100).toFixed(2)}%;background:${COR_SAI}"></i></div></div>`).join("")}</div>
+          <div class="fn-gr-dica" hidden></div></div></div>
+      <div class="fn-gr-x">${anos.map((x) => `<span class="${x.i === st.ref.m ? "atual" : ""}">${x.n.toUpperCase()}</span>`).join("")}</div>
+      <div class="fn-gr-leg"><span style="color:${COR_SAI}"><i style="background:${COR_SAI}"></i>Despesas</span><span style="color:${COR_ENT}"><i style="background:${COR_ENT}"></i>Entradas</span></div></div>`;
+  }
+  // Próximos vencimentos (3 primeiros; "Ver todos" abre a lista inteira)
+  const iconeConta = (l) => /empr|financ|d[ií]vida/i.test(l.categoria || "") ? ICONE.banco : /cart/i.test(l.categoria || "") || D().cartoes.some((c) => eDoCartao(l, c)) ? ICONE.cartoes : ICONE.doc;
+  const linhaVenc = (l, comBotao) => `<div class="fn-venc-item" data-venc="${esc(l.id)}" role="button" tabindex="0"><span class="fn-venc-ic">${iconeConta(l)}</span><div class="x"><b>${esc(l.descricao || "Sem nome")}</b><small>${esc(l.categoria || "Conta")} · ${dataBR(l.data).slice(0, 5)}</small></div><div class="fn-venc-v"><b>${R$(l.valor)}</b><small>${vencido(l) && l.data < hojeIso() ? "Vencido" : "A pagar"}</small></div>${comBotao ? `<button class="fn-icone" type="button" data-pagar-venc="${esc(l.id)}" title="Marcar como pago" aria-label="Marcar como pago">${ICONE.check}</button>` : ""}</div>`;
+  function blocoVencimentos(lista, pagas) {
+    return `<div class="fn-caixa fn-venc"><p class="fn-venc-tit">${ICONE.calendario}Próximos vencimentos</p>
+      ${lista.length ? `<div class="fn-venc-lista">${lista.slice(0, 3).map((l) => linhaVenc(l)).join("")}</div>${lista.length > 3 ? `<button class="fn-venc-todos" type="button" data-venc-todos>Ver todos os vencimentos (${lista.length}) →</button>` : ""}` : `<p class="fn-vazio">Nada para pagar agora.</p>`}
+      ${pagas ? `<p class="fn-venc-ok">${ICONE.check}${pagas} conta${pagas === 1 ? "" : "s"} já paga${pagas === 1 ? "" : "s"} este mês. Parabéns!</p>` : ""}</div>`;
+  }
+  function rosca(itens, total, centro, cores) {
+    cores = cores || CORES;
     let ang = -Math.PI / 2; const r = 52, cx = 75, cy = 75;
     const arcos = itens.map((it, i) => {
       const a = (it.v / Math.max(total, 1)) * Math.PI * 2, x1 = cx + r * Math.cos(ang), y1 = cy + r * Math.sin(ang); ang += a;
       const x2 = cx + r * Math.cos(ang - 0.0001), y2 = cy + r * Math.sin(ang - 0.0001);
-      return `<path d="M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${a > Math.PI ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}" stroke="${CORES[i % CORES.length]}" stroke-width="20" fill="none"/>`;
+      return `<path d="M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${a > Math.PI ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}" stroke="${cores[i % cores.length]}" stroke-width="20" fill="none"/>`;
     }).join("");
     return `<svg viewBox="0 0 150 150" aria-hidden="true"><circle cx="75" cy="75" r="52" stroke="#efe5d8" stroke-width="20" fill="none"/>${arcos}<text x="75" y="72" text-anchor="middle" font-size="15" font-weight="700" fill="#3d2b20">${esc(centro)}</text><text x="75" y="90" text-anchor="middle" font-size="10" fill="#7a6355">no mês</text></svg>`;
   }
@@ -382,9 +408,9 @@
     const dividas = listaDividas(), divTotal = dividas.reduce((a, x) => a + x.saldo, 0), p = plano(dividas, d.extra, st.metodo);
     const res = Number(d.reserva.atual) || 0, meta = custoMensal() * (Number(d.reserva.metaMeses) || 6);
     const anos = MES3.map((n, i) => { const l = doMes(st.ref.y, i); return { n, i, e: soma(entradas(l)), s: soma(saidas(l)) }; }), max = Math.max(1, ...anos.map((x) => Math.max(x.e, x.s)));
-    const cats = {}; saidas(lm).forEach((l) => { cats[l.categoria || "Outros"] = (cats[l.categoria || "Outros"] || 0) + Number(l.valor || 0); });
-    const listaCats = Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ k, v })), top = listaCats.slice(0, 5); if (listaCats.length > 5) top.push({ k: "Outros", v: listaCats.slice(5).reduce((a, x) => a + x.v, 0) });
-    const proximos = d.lancamentos.filter((l) => l.tipo === "saida" && !l.pago).filter((l) => { const dias = (new Date(l.data + "T00:00:00") - new Date(hojeIso() + "T00:00:00")) / 864e5; return dias <= 30; }).sort((a, b) => a.data.localeCompare(b.data)).slice(0, 7);
+    const top = porTipo(saidas(lm), false).map(([k, v]) => ({ k, v }));
+    const pagasMes = saidas(lm).filter((l) => l.pago).length;
+    const proximos = d.lancamentos.filter((l) => l.tipo === "saida" && !l.pago).filter((l) => { const dias = (new Date(l.data + "T00:00:00") - new Date(hojeIso() + "T00:00:00")) / 864e5; return dias <= 30; }).sort((a, b) => a.data.localeCompare(b.data)).slice(0, 40);
     const dE = delta(ent, entA), dS = delta(sai, saiA, true);
     return `<div class="fn-kpis">
         ${kpi("Entrou no mês", R$(ent), "entra", `${R$(soma(entradas(lm).filter((l) => !l.pago)))} a receber`, "", dE, "entrou")}
@@ -394,15 +420,13 @@
         ${kpi("Livre das dívidas", !dividas.length ? "Sem dívidas 🎉" : p.meses === null ? "+10 anos" : mesDaqui(p.meses), "bandeira", p.meses ? `${p.meses} meses no plano` : "", "bom", null, "livre")}
       </div>
       <div class="fn-grade">
-        <div class="fn-caixa"><div class="fn-cab"><div><h3>Entrou x saiu em ${st.ref.y}</h3><p class="sub">Toque num mês para ver os detalhes</p></div></div>
-          <div class="fn-barras">${anos.map((x) => `<div class="col${x.i === st.ref.m ? " atual" : ""}" data-ir-mes="${x.i}" title="Entrou ${R$(x.e)} · Saiu ${R$(x.s)}"><b style="color:${x.e - x.s >= 0 ? "#4f7a54" : "#b8473a"}">${x.e || x.s ? K(x.e - x.s) : ""}</b><div class="par"><i style="height:${(x.e / max * 100).toFixed(1)}%;background:${x.i === st.ref.m ? "#6b4a35" : "#cdb39b"}"></i><i style="height:${(x.s / max * 100).toFixed(1)}%;background:${x.i === st.ref.m ? "#a87058" : "#e7c9b6"}"></i></div><span>${x.n}</span></div>`).join("")}</div>
-          <div class="fn-legenda"><span><i style="background:#6b4a35"></i>entrou</span><span><i style="background:#a87058"></i>saiu</span><span>número em cima = sobrou ou faltou</span></div></div>
+        ${graficoAno(anos)}
         <div class="fn-caixa"><h3>Reserva de segurança</h3><p class="sub">Meta: ${d.reserva.metaMeses || 6} meses de gastos</p>
           <div class="fn-anel">${anel(meta ? res / meta : 0, meta ? Math.min(100, Math.round(res / meta * 100)) + "%" : "–")}<div><div class="fn-kpi-v" style="margin:0">${R$(res)}</div><small style="color:var(--suave)">de ${R$(meta)}</small><div style="margin-top:10px"><button class="fn-btn pequeno" type="button" data-aba="reserva">Ver reserva e investimentos</button></div></div></div></div>
       </div>
       <div class="fn-grade tres">
-        <div class="fn-caixa"><h3>Para onde foi o dinheiro</h3><p class="sub">Saídas de ${MESES[st.ref.m].toLowerCase()} por tipo</p>${top.length ? `<div class="fn-rosca">${rosca(top, sai, K(sai))}<ul>${top.map((c, i) => `<li><i style="background:${CORES[i % CORES.length]}"></i><span>${esc(c.k)}</span><b>${Math.round(c.v / Math.max(sai, 1) * 100)}%</b></li>`).join("")}</ul></div>` : `<p class="fn-vazio">Nenhuma saída neste mês.</p>`}</div>
-        <div class="fn-caixa"><h3>Próximos vencimentos</h3><p class="sub">O que falta pagar (vencidos e próximos 30 dias)</p><div class="fn-lista">${proximos.map((l) => `<div class="fn-item"><div class="x"><b>${esc(l.descricao)}</b><small>${dataBR(l.data)}${vencido(l) ? " · vencido" : ""}</small></div><span class="fn-valor sai">${R$(l.valor)}</span><button class="fn-icone" type="button" data-pagar="${esc(l.id)}" title="Marcar como pago" aria-label="Marcar como pago">${ICONE.check}</button></div>`).join("") || `<p class="fn-vazio">Nada para pagar agora.</p>`}</div></div>
+        <div class="fn-caixa"><h3>Para onde foi o dinheiro</h3><p class="sub">Saídas de ${MESES[st.ref.m].toLowerCase()} por tipo${top.length ? ` · ${top.length} tipo${top.length === 1 ? "" : "s"}` : ""}</p>${top.length ? `<div class="fn-rosca">${rosca(top, sai, K(sai), CORES_CAT)}<ul class="fn-tipos">${top.map((c, i) => `<li><i style="background:${CORES_CAT[i % CORES_CAT.length]}"></i><span>${esc(c.k)}</span><em>${R$(c.v)}</em><b>${Math.round(c.v / Math.max(sai, 1) * 100)}%</b></li>`).join("")}</ul></div>` : `<p class="fn-vazio">Nenhuma saída neste mês.</p>`}</div>
+        ${blocoVencimentos(proximos, pagasMes)}
         <div class="fn-caixa"><h3>Ações rápidas</h3><p class="sub">Lance na hora, do celular</p><div class="fn-par" style="grid-template-columns:1fr 1fr;gap:10px">
           <button class="fn-btn" type="button" data-novo="entrada">${ICONE.entra}Entrada</button><button class="fn-btn" type="button" data-novo="saida">${ICONE.sai}Saída</button>
           <button class="fn-btn" type="button" data-nova-compra>${ICONE.cartoes}Compra no cartão</button><button class="fn-btn" type="button" data-novo-emp>${ICONE.emprestimos}Empréstimo</button></div></div>
@@ -514,21 +538,26 @@
       <div class="fn-conferir"><span>Somado: <b>${R$(somado)}</b></span><label>Veio no banco <input class="fn-entrada" inputmode="decimal" data-conferir="${esc(c.id)}" value="${conf != null ? esc(Number(conf).toLocaleString("pt-BR", { minimumFractionDigits: 2 })) : ""}" placeholder="0,00"></label></div>
       ${dif === null ? "" : Math.abs(dif) < 0.01 ? `<p class="fn-bateu ok">✓ Bateu certinho com o banco.</p>` : `<p class="fn-bateu mal">${dif > 0 ? `O banco cobrou ${R$(dif)} a mais do que você lançou. Falta lançar alguma compra ou tem cobrança indevida.` : `O banco cobrou ${R$(-dif)} a menos. Confira se alguma compra caiu na próxima fatura.`} A fatura usa o valor do banco.</p>`}</div>`;
   }
+  // soma por tipo; nas saídas a fatura do cartão abre nas compras dela (Mercado, Farmácia, Delivery...)
+  function porTipo(lm, ent) {
+    const porCat = {}, add = (k, v) => { porCat[k] = (porCat[k] || 0) + v; };
+    lm.forEach((l) => {
+      const c = !ent && D().cartoes.find((y) => eDoCartao(l, y));
+      if (c) { // o que não foi lançado como compra fica em Cartão
+        let resto = Number(l.valor) || 0; const dt = new Date(l.data + "T00:00:00");
+        comprasDaFatura(c, dt.getFullYear(), dt.getMonth()).forEach((k) => { const v = Math.min(resto, k.parte.valor); if (v > 0) { add(k.categoria || catAuto(k.descricao) || "Outros", v); resto -= v; } });
+        if (resto > 0.004) add("Cartão", resto); return;
+      }
+      const cat = l.categoria && l.categoria !== "Outros" ? l.categoria : (!ent && catAuto(l.descricao)) || l.categoria || "Outros";
+      add(cat, Number(l.valor) || 0);
+    });
+    return Object.entries(porCat).filter(([, v]) => v > 0.004).sort((a, b) => b[1] - a[1]);
+  }
   function telaMovimento(tipo) {
     const ent = tipo === "entrada", lm = doMes(st.ref.y, st.ref.m).filter((l) => l.tipo === tipo), ant = new Date(st.ref.y, st.ref.m - 1, 1), la = doMes(ant.getFullYear(), ant.getMonth()).filter((l) => l.tipo === tipo);
     const total = soma(lm), feito = soma(lm.filter((l) => l.pago)), ano = D().lancamentos.filter((l) => l.tipo === tipo && String(l.data).startsWith(st.ref.y + "-"));
     const mesesComValor = new Set(ano.map((l) => l.data.slice(5, 7))).size || 1;
-    const porCat = {}, add = (k, v) => { porCat[k] = (porCat[k] || 0) + v; };
-    lm.forEach((l) => {
-      const c = !ent && D().cartoes.find((y) => eDoCartao(l, y));
-      if (c) { // fatura: abre nas compras de cada tipo; o que não foi lançado como compra fica em Cartão
-        let resto = Number(l.valor) || 0;
-        comprasDaFatura(c, st.ref.y, st.ref.m).forEach((k) => { const v = Math.min(resto, k.parte.valor); if (v > 0) { add(k.categoria || catAuto(k.descricao) || "Outros", v); resto -= v; } });
-        if (resto > 0.004) add("Cartão", resto); return;
-      }
-      add(l.categoria || "Outros", Number(l.valor) || 0);
-    });
-    const cats = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
+    const cats = porTipo(lm, ent);
     const atalhos = ent ? ["Salário", "PUBLI", "MARKETPLACE"] : ["Conta fixa", "Mercado", "Delivery"];
     return `<div class="fn-kpis">
         ${kpi(ent ? "Entrou no mês" : "Saiu no mês", R$(total), ent ? "entra" : "sai", `${lm.length} lançamento${lm.length === 1 ? "" : "s"}`, "destaque", delta(total, soma(la), !ent))}
@@ -1079,11 +1108,49 @@
     f.showModal();
   }
 
+  // lista inteira de vencimentos (botão "Ver todos os vencimentos")
+  function todosVencimentos() {
+    const d = D(), lista = d.lancamentos.filter((l) => l.tipo === "saida" && !l.pago).filter((l) => (new Date(l.data + "T00:00:00") - new Date(hojeIso() + "T00:00:00")) / 864e5 <= 30).sort((a, b) => a.data.localeCompare(b.data));
+    let f = $("#fn-detalhe"); if (!f) { f = document.createElement("dialog"); f.id = "fn-detalhe"; f.className = "fn-folha fn-detalhe"; document.body.appendChild(f); }
+    f.innerHTML = tingir(`<div class="fn-det-cab"><h2>Próximos vencimentos</h2><button class="fn-icone" type="button" data-fechar aria-label="Fechar">✕</button></div>
+      <p class="fn-det-nota" style="margin:0 0 8px">Vencidos e os próximos 30 dias · total ${R$(soma(lista))}. Toque no ✓ para marcar como pago.</p>
+      ${lista.length ? `<div class="fn-venc-lista">${lista.map((l) => linhaVenc(l, true)).join("")}</div>` : `<p class="fn-vazio">Nada para pagar agora.</p>`}`);
+    $$("[data-pagar-venc]", f).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); const l = d.lancamentos.find((x) => String(x.id) === b.dataset.pagarVenc); if (!l) return; mudarSituacao(l, "pago"); salvar(); pintar(); toast("Marcado como pago."); todosVencimentos(); }));
+    $$("[data-venc]", f).forEach((b) => b.addEventListener("click", () => { const l = d.lancamentos.find((x) => String(x.id) === b.dataset.venc); f.close(); if (l) editarLancamento(l); }));
+    $("[data-fechar]", f).addEventListener("click", () => f.close());
+    f.onclick = (e) => { if (e.target === f) f.close(); };
+    if (!f.open) f.showModal();
+  }
+
   // ---------- eventos ----------
   function ligar() {
     requestAnimationFrame(() => $$(".fn-rolar").forEach((r) => { r.scrollLeft = 0; }));
     const raiz = $("#raiz"), d = D(), acha = (lista, id) => (lista || []).find((x) => String(x.id) === String(id));
     $$("[data-aba]", raiz).forEach((b) => b.addEventListener("click", () => { st.aba = b.dataset.aba; pintar(); window.scrollTo(0, 0); }));
+    $$("[data-venc]", raiz).forEach((b) => { const abre = () => { const l = acha(d.lancamentos, b.dataset.venc); if (l) editarLancamento(l); }; b.addEventListener("click", abre); b.addEventListener("keydown", (e) => { if (e.key === "Enter") abre(); }); });
+    $$("[data-venc-todos]", raiz).forEach((b) => b.addEventListener("click", todosVencimentos));
+    $$(".fn-gr", raiz).forEach((g) => {
+      const dica = $(".fn-gr-dica", g), area = $(".fn-gr-area", g); let toque = false, ultimo = null;
+      const mostra = (c) => {
+        $$(".fn-gr-col", g).forEach((x) => x.classList.toggle("hover", x === c));
+        dica.innerHTML = `<b>${esc(c.dataset.n)}</b><span style="color:${COR_SAI}">Despesas : ${R$(c.dataset.s)}</span><span style="color:${COR_ENT}">Entradas : ${R$(c.dataset.e)}</span>`;
+        dica.hidden = false;
+        const a = area.getBoundingClientRect(), r = c.getBoundingClientRect(), w = dica.offsetWidth;
+        let x = r.right - a.left + 8; if (x + w > a.width) x = r.left - a.left - w - 8; if (x < 0) x = Math.max(0, (a.width - w) / 2);
+        dica.style.left = x + "px";
+      };
+      const esconde = () => { dica.hidden = true; $$(".fn-gr-col", g).forEach((x) => x.classList.remove("hover")); ultimo = null; };
+      $$(".fn-gr-col", g).forEach((c) => {
+        c.addEventListener("pointerdown", (e) => { toque = e.pointerType !== "mouse"; });
+        c.addEventListener("mouseenter", () => { if (!toque) mostra(c); });
+        c.addEventListener("focus", () => mostra(c));
+        c.addEventListener("click", () => { // no celular: 1º toque mostra os valores, 2º abre o mês
+          if (toque && ultimo !== c) { ultimo = c; mostra(c); return; }
+          st.ref = { y: st.ref.y, m: Number(c.dataset.grMes) }; pintar();
+        });
+      });
+      g.addEventListener("mouseleave", () => { if (!toque) esconde(); });
+    });
     $$("[data-kpi]", raiz).forEach((b) => { b.addEventListener("click", () => detalheKpi(b.dataset.kpi)); b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); detalheKpi(b.dataset.kpi); } }); });
     $$("[data-min]", raiz).forEach((b) => b.addEventListener("click", () => { MIN[b.dataset.min] = !minimo(b.dataset.min, b.dataset.padrao === "1"); guardarMin(); pintar(); }));
     $$("[data-min-todos]", raiz).forEach((b) => b.addEventListener("click", () => {
