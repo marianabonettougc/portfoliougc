@@ -538,7 +538,7 @@
       </div>
       <div class="fn-grade">
         <div class="fn-caixa"><div class="fn-cab"><div><h3>${ent ? "Entradas" : "Saídas"} de ${MESES[st.ref.m].toLowerCase()}</h3><p class="sub">Toque na situação para marcar como ${ent ? "recebido" : "pago"}</p></div>
-          <div class="fn-acoes">${atalhos.map((a) => `<button class="fn-btn pequeno" type="button" data-novo-cat="${a}" data-tipo="${tipo}">${ICONE.mais}${a}</button>`).join("")}${ent ? "" : `<button class="fn-btn pequeno" type="button" data-nova-compra>${ICONE.cartoes}Compra no cartão</button>`}<button class="fn-btn pequeno principal" type="button" data-novo="${tipo}">${ICONE.mais}Outra</button></div></div>
+          <div class="fn-acoes">${ent ? `${atalhos.map((a) => `<button class="fn-btn pequeno" type="button" data-novo-cat="${a}" data-tipo="${tipo}">${ICONE.mais}${a}</button>`).join("")}<button class="fn-btn pequeno principal" type="button" data-novo="${tipo}">${ICONE.mais}Outra</button>` : `<button class="fn-btn pequeno principal" type="button" data-novo="saida">${ICONE.mais}Nova saída</button>`}</div></div>
           ${lm.length ? `<div class="fn-rolar"><table class="fn-tabela"><thead><tr><th>Dia</th><th>Descrição</th><th class="esconde">Tipo</th><th>Situação</th><th class="num">Valor</th><th></th></tr></thead><tbody>
           ${[...lm].sort((a, b) => a.data.localeCompare(b.data)).map((l) => `<tr><td>${dataBR(l.data).slice(0, 5)}</td><td>${esc(l.descricao)}${l.auto ? ' <small class="fn-auto">soma das compras</small>' : ""}${l.marketplace || l.influencer ? `<small class="fn-loja">${esc([l.marketplace && "Loja: " + l.marketplace, l.influencer].filter(Boolean).join(" · "))}</small>` : ""}${l.origem === "pj" ? '<small class="fn-loja">CNPJ</small>' : ""}${!ent && l.forma ? `<small class="fn-loja">${esc((FORMAS.find(([k]) => k === l.forma) || [, ""])[1])}</small>` : ""}</td><td class="esconde"><span class="fn-tag">${esc(l.categoria || "")}</span></td><td><button class="fn-chip ${l.pago ? "" : vencido(l) ? "mal" : "amb"}" type="button" data-pagar="${esc(l.id)}" style="border:0;cursor:pointer">${l.pago ? (ent ? "Recebido" : "Pago") : vencido(l) ? "Vencido" : ent ? "A receber" : "A pagar"}</button></td><td class="num"><span class="fn-valor ${ent ? "entra" : "sai"}">${R$(l.valor)}</span></td><td class="num"><button class="fn-icone" type="button" data-editar-l="${esc(l.id)}" aria-label="Editar">${ICONE.lapis}</button></td></tr>`).join("")}
           </tbody></table></div>` : `<p class="fn-vazio">Nada lançado neste mês ainda.</p>`}</div>
@@ -853,6 +853,9 @@
     const campo = (c) => {
       const v = valores[c.k] ?? (c.padrao ?? "");
       if (c.tipo === "select") { const ops = c.opcoes.map((o) => (Array.isArray(o) ? o : [o, o])); if (v !== "" && !ops.some((o) => String(o[0]) === String(v))) ops.unshift([v, v]); return `<div class="fn-campo" data-k="${c.k}"><label for="f-${c.k}">${c.rotulo}</label><select class="fn-entrada" id="f-${c.k}">${ops.map(([o, t]) => `<option value="${esc(o)}" ${String(o) === String(v) ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></div>`; }
+      if (c.tipo === "pilulas") { const ops = c.opcoes.includes(v) || !v ? c.opcoes : [v, ...c.opcoes];
+        return `<div class="fn-campo" data-k="${c.k}"><label>${c.rotulo} <small class="fn-auto-aviso" id="f-${c.k}-aviso" hidden>escolhida sozinha</small></label><input type="hidden" id="f-${c.k}" value="${esc(v)}"><div class="fn-pilulas" role="group" aria-label="${esc(c.rotulo)}">${ops.map((o) => `<button type="button" class="fn-pilula${o === v ? " on" : ""}" data-pilula="${c.k}" data-v="${esc(o)}" aria-pressed="${o === v}">${esc(o)}</button>`).join("")}</div></div>`; }
+      if (c.tipo === "comprovante") return `<div class="fn-campo fn-print" data-k="${c.k}"><label class="fn-print-caixa">${ICONE.clipe}<span><b>Subir comprovante ou print</b><small id="f-${c.k}-msg">Foto ou print: eu leio e preencho para você. PDF fica só anexado.</small></span><input type="file" id="f-${c.k}" accept="image/*,application/pdf" hidden></label></div>`;
       if (c.tipo === "chk") return `<label class="fn-chk" data-k="${c.k}"><input type="checkbox" id="f-${c.k}" ${v ? "checked" : ""}> ${c.rotulo}</label>`;
       return `<div class="fn-campo" data-k="${c.k}"><label for="f-${c.k}">${c.rotulo}</label><input class="fn-entrada" id="f-${c.k}" ${c.tipo === "data" ? 'type="date"' : c.tipo === "num" ? 'inputmode="decimal"' : 'type="text"'} value="${esc(c.tipo === "num" && v !== "" && v != null ? String(v).replace(".", ",") : v)}" ${c.obrigatorio ? "required" : ""}></div>`;
     };
@@ -863,21 +866,65 @@
     const ler = () => { const o = {}; campos.forEach((c) => { const el = $("#f-" + c.k, dlg); if (el) o[c.k] = c.tipo === "chk" ? el.checked : el.value; }); return o; };
     const visivel = (c, o) => !c.mostrar || c.mostrar(o);
     const atualizar = () => { const o = ler(); campos.forEach((c) => { const w = $(`[data-k="${c.k}"]`, dlg); if (w) w.style.display = visivel(c, o) ? "" : "none"; }); };
+    // etiquetas em pílula: clicar marca; a marcada fica na cor principal
+    const marcarPilula = (k, v, aviso) => { const h = $("#f-" + k, dlg); if (!h) return false; const b = $$(`[data-pilula="${k}"]`, dlg).find((x) => x.dataset.v === v); if (!b) return false;
+      h.value = v; $$(`[data-pilula="${k}"]`, dlg).forEach((x) => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-pressed", on); });
+      const av = $(`#f-${k}-aviso`, dlg); if (av) { av.hidden = !aviso; if (aviso) av.textContent = aviso; } return true; };
     const cAuto = campos.find((c) => c.auto), dEl = $("#f-descricao", dlg);
-    if (cAuto && dEl) { const sel = $("#f-" + cAuto.k, dlg); let mexeu = !!valores[cAuto.k] && valores[cAuto.k] !== "Outros";
-      sel.addEventListener("change", () => { mexeu = true; });
-      dEl.addEventListener("input", () => { if (mexeu) return; const k = catAuto(dEl.value); if (k && [...sel.options].some((o) => o.value === k)) sel.value = k; }); }
+    let mexeu = !!(cAuto && valores[cAuto.k] && valores[cAuto.k] !== "Outros");
+    $$("[data-pilula]", dlg).forEach((b) => b.addEventListener("click", () => { marcarPilula(b.dataset.pilula, b.dataset.v, ""); if (cAuto && b.dataset.pilula === cAuto.k) mexeu = true; atualizar(); }));
+    const porTipo = (k, v, aviso) => { const c = campos.find((x) => x.k === k); if (!c) return; if (c.tipo === "pilulas") return marcarPilula(k, v, aviso); const el = $("#f-" + k, dlg); if (!el) return;
+      if (el.tagName === "SELECT") { if ([...el.options].some((o) => o.value === v)) el.value = v; } else el.value = c.tipo === "num" ? (typeof v === "number" ? v.toFixed(2) : String(v)).replace(".", ",") : v; };
+    if (cAuto && dEl) dEl.addEventListener("input", () => { if (mexeu) return; const k = catAuto(dEl.value); if (k) { if (cAuto.tipo === "pilulas") marcarPilula(cAuto.k, k, "escolhida sozinha"); else { const sel = $("#f-" + cAuto.k, dlg); if ([...sel.options].some((o) => o.value === k)) sel.value = k; } } });
+    // comprovante ou print: guarda o arquivo e, se for imagem, a IA lê e preenche
+    const cArq = campos.find((c) => c.tipo === "comprovante"); let arquivo = null;
+    if (cArq) $("#f-" + cArq.k, dlg).addEventListener("change", async (e) => {
+      const f = e.target.files && e.target.files[0]; if (!f) return; arquivo = f; const msg = $(`#f-${cArq.k}-msg`, dlg);
+      if (!/^image\//.test(f.type)) { msg.textContent = `${f.name} anexado. PDF não é lido sozinho: preencha os campos.`; return; }
+      msg.textContent = "Lendo o comprovante..."; dlg.classList.add("lendo");
+      try {
+        const r = await lerComprovante(f, campos.find((c) => c.k === "categoria"));
+        if (r.descricao) { porTipo("descricao", r.descricao); }
+        if (r.valor) porTipo("valor", r.valor); if (r.data) porTipo("data", r.data);
+        if (r.categoria) { marcarPilula("categoria", r.categoria, "escolhida sozinha"); mexeu = false; } else if (r.descricao && dEl) dEl.dispatchEvent(new Event("input"));
+        if (r.forma) porTipo("forma", r.forma);
+        atualizar(); msg.textContent = `${f.name}: li e preenchi. Confira antes de salvar.`;
+      } catch (err) { msg.textContent = `${f.name} anexado. Não consegui ler (${err.message || err}). Preencha os campos.`; }
+      dlg.classList.remove("lendo");
+    });
     $("form", dlg).addEventListener("change", atualizar); atualizar();
     if (aoApagar) $("#f-apagar", dlg).addEventListener("click", async () => { if (await painelDialogo.confirmar("Apagar mesmo?", { ok: "Apagar", perigo: true })) { aoApagar(); dlg.close(); salvar(); pintar(); } });
     $("form", dlg).addEventListener("submit", (e) => {
       e.preventDefault();
       const out = {};
-      for (const c of campos) { const el = $("#f-" + c.k, dlg); out[c.k] = c.tipo === "chk" ? el.checked : c.tipo === "num" ? numOuNada(el.value) : el.value.trim(); }
+      for (const c of campos) { const el = $("#f-" + c.k, dlg); out[c.k] = c.tipo === "comprovante" ? arquivo : c.tipo === "chk" ? el.checked : c.tipo === "num" ? numOuNada(el.value) : el.value.trim(); }
       const falta = campos.find((c) => c.obrigatorio && visivel(c, out) && (out[c.k] === "" || out[c.k] == null));
       if (falta) { $("#f-erro", dlg).textContent = `Preencha: ${falta.rotulo}.`; return; }
       const erro = aoSalvar(out); if (typeof erro === "string") { $("#f-erro", dlg).textContent = erro; return; } dlg.close(); salvar(); pintar();
     });
     dlg.showModal();
+  }
+  // reduz a imagem para no máximo 1600 px (JPEG) antes de mandar para a IA
+  async function reduzirImagem(f, max = 1600) {
+    const url = URL.createObjectURL(f);
+    try {
+      const img = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => erro(new Error("imagem não abriu")); i.src = url; });
+      const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)), w = Math.round(img.naturalWidth * k), h = Math.round(img.naturalHeight * k);
+      const cv = document.createElement("canvas"); cv.width = w; cv.height = h; const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, w, h); cx.drawImage(img, 0, 0, w, h);
+      return cv.toDataURL("image/jpeg", 0.85);
+    } finally { URL.revokeObjectURL(url); }
+  }
+  async function lerComprovante(f, cCat) {
+    const imagem = await reduzirImagem(f);
+    const { data, error } = await banco.functions.invoke("ferramentas", { body: { acao: "gasto", imagem, categorias: (cCat && cCat.opcoes) || CAT_SAIDA, hoje: hojeIso() } });
+    if (error) { let m = error.message; try { const j = await error.context.json(); m = j.error || m; } catch (e) { /* sem detalhe */ } throw new Error(m); }
+    if (data && data.error) throw new Error(data.error);
+    return data || {};
+  }
+  // depois de salvar: sobe o comprovante e guarda no lançamento (ou na compra do cartão)
+  function anexarDepois(arq, alvo, id) {
+    if (!arq) return;
+    enviarAnexo(arq, id, "comprovante").then((a) => { alvo.comprovante = a; salvar(); toast("Comprovante anexado."); }).catch((e) => toast(e.message || "Não consegui anexar o comprovante.", true));
   }
   const camposL = (tipo) => [{ k: "descricao", rotulo: "Descrição", obrigatorio: true }, { k: "valor", rotulo: "Valor (R$)", tipo: "num", obrigatorio: true, meia: true }, { k: "data", rotulo: "Data", tipo: "data", obrigatorio: true, meia: true }, { k: "categoria", rotulo: "Tipo", tipo: "select", opcoes: tipo === "entrada" ? CAT_ENTRADA : CAT_SAIDA }, { k: "pago", rotulo: tipo === "entrada" ? "Já recebi" : "Já paguei", tipo: "chk" }];
   function editarLancamento(l, tipo, pre) {
@@ -886,24 +933,30 @@
     if (l.auto) { toast("Essa fatura é a soma das compras. Lance ou edite as compras na aba Cartões."); st.aba = "cartoes"; pintar(); return; }
     const conta = String(l.id).startsWith("cpff-") || String(l.id).startsWith("fat-") || l.categoria === "Cartão"; // fatura/conta do cartão não vira compra
     const d0 = D(), cartoesAbertos = d0.cartoes.filter((c) => c.status !== "Quitado");
-    const campos = l.tipo === "saida" ? [{ k: "descricao", rotulo: "Descrição (ex.: iFood, Drogasil, Netflix)", obrigatorio: true }, { k: "valor", rotulo: "Valor (R$)", tipo: "num", obrigatorio: true, meia: true }, { k: "data", rotulo: "Data", tipo: "data", obrigatorio: true, meia: true },
-      { k: "forma", rotulo: "Como paguei", tipo: "select", opcoes: conta ? FORMAS.filter(([k]) => k !== "credito") : FORMAS, meia: true }, { k: "categoria", rotulo: "Tipo (sai sozinho)", tipo: "select", opcoes: CAT_SAIDA, auto: true, meia: true },
-      { k: "cartao", rotulo: "Qual cartão", tipo: "select", opcoes: (cartoesAbertos.length ? cartoesAbertos : d0.cartoes).map((c) => [c.id, c.nome]), mostrar: (o) => o.forma === "credito", meia: true }, { k: "parcelas", rotulo: "Parcelas", tipo: "num", padrao: 1, mostrar: (o) => o.forma === "credito", meia: true },
-      { k: "pago", rotulo: "Já paguei", tipo: "chk", mostrar: (o) => o.forma !== "credito" }] : camposL(l.tipo);
+    // Como paguei (nov/2026): pix, débito, dinheiro, boleto e cada cartão pelo nome; cartão vira compra na fatura dele (fatura não oferece cartão)
+    const noCartao = (o) => String(o.forma || "").startsWith("cartao:");
+    const opForma = [...(!novo && !l.forma ? [["", "Não informado"]] : []), ...FORMAS.filter(([k]) => k !== "credito"), ...(conta ? [] : (cartoesAbertos.length ? cartoesAbertos : d0.cartoes).map((c) => ["cartao:" + c.id, c.nome + (c.final ? " •••• " + c.final : "")]))];
+    const campos = l.tipo === "saida" ? [...(novo ? [{ k: "comprovante", tipo: "comprovante" }] : []), { k: "descricao", rotulo: "Descrição (ex.: iFood, Drogasil, Netflix)", obrigatorio: true }, { k: "valor", rotulo: "Valor (R$)", tipo: "num", obrigatorio: true, meia: true }, { k: "data", rotulo: "Data", tipo: "data", obrigatorio: true, meia: true },
+      { k: "categoria", rotulo: "Etiqueta", tipo: "pilulas", opcoes: CAT_SAIDA, auto: true },
+      { k: "forma", rotulo: "Como paguei", tipo: "select", opcoes: opForma, meia: true }, { k: "parcelas", rotulo: "Parcelas", tipo: "num", padrao: 1, mostrar: noCartao, meia: true },
+      { k: "pago", rotulo: "Já paguei", tipo: "chk", mostrar: (o) => !noCartao(o) }] : camposL(l.tipo);
     if (l.tipo === "saida" && !l.forma && novo) l.forma = "pix";
     formulario(novo ? (l.tipo === "entrada" ? "Nova entrada" : "Nova saída") : "Editar lançamento", campos, l, (v) => {
       if (l.tipo === "saida" && (!v.categoria || v.categoria === "Outros")) { const k = catAuto(v.descricao); if (k) v.categoria = k; }
-      if (l.tipo === "saida" && v.forma === "credito") {
-        // no crédito vira compra do cartão: soma na fatura certa e sai da lista de saídas soltas
-        const c = d0.cartoes.find((y) => y.id === v.cartao); if (!c) return "Cadastre um cartão na aba Cartões primeiro.";
+      const arq = v.comprovante || null; delete v.comprovante;
+      if (l.tipo === "saida" && noCartao(v)) {
+        // pago no cartão: vira compra do cartão, soma na fatura certa e sai da lista de saídas soltas
+        const c = d0.cartoes.find((y) => "cartao:" + y.id === v.forma); if (!c) return "Cadastre um cartão na aba Cartões primeiro.";
         if (!d0.compras) d0.compras = [];
         const k = { id: uid(), cartao: c.id, descricao: v.descricao, valor: Number(v.valor) || 0, parcelas: Math.max(1, Math.round(Number(v.parcelas) || 1)), data: v.data, categoria: v.categoria };
         d0.compras.push(k); D().lancamentos = D().lancamentos.filter((y) => y.id !== l.id);
+        anexarDepois(arq, k, k.id);
         const f = mesDaFatura(c, k.data); toast(`Somado na fatura de ${MESES[f.m].toLowerCase()} do ${c.nome}.`); return;
       }
       delete v.cartao; delete v.parcelas;
       const x = { ...l, ...v, valor: Number(v.valor) || 0, atrasado: false };
       const lista = D().lancamentos; const i = lista.findIndex((y) => y.id === x.id); if (i >= 0) lista[i] = x; else lista.push(x);
+      anexarDepois(arq, x, x.id);
       toast(novo ? "Lançado." : "Salvo.");
     }, novo ? null : () => { D().lancamentos = D().lancamentos.filter((y) => y.id !== l.id); });
   }
@@ -912,7 +965,7 @@
     const d = D(), abertos = d.cartoes.filter((c) => c.status !== "Quitado"), lista = abertos.length ? abertos : d.cartoes;
     if (!lista.length) { toast("Cadastre um cartão primeiro."); editarCartao(null); return; }
     const novo = !k; k = k || { id: uid(), cartao: cartaoId || lista[0].id, data: hojeIso(), parcelas: 1 };
-    formulario(novo ? "Compra no cartão" : "Editar compra", [{ k: "cartao", rotulo: "Cartão", tipo: "select", opcoes: d.cartoes.map((c) => [c.id, c.nome]) }, { k: "descricao", rotulo: "Onde / o quê (ex.: Mercado Extra)", obrigatorio: true }, { k: "valor", rotulo: "Valor total (R$)", tipo: "num", obrigatorio: true, meia: true }, { k: "parcelas", rotulo: "Parcelas", tipo: "num", meia: true }, { k: "data", rotulo: "Data da compra", tipo: "data", obrigatorio: true, meia: true }, { k: "categoria", rotulo: "Tipo (sai sozinho)", tipo: "select", opcoes: CAT_SAIDA.filter((c) => !["Cartão", "Empréstimo", "Financiamento"].includes(c)), auto: true, meia: true }], k, (v) => {
+    formulario(novo ? "Compra no cartão" : "Editar compra", [{ k: "cartao", rotulo: "Cartão", tipo: "select", opcoes: d.cartoes.map((c) => [c.id, c.nome]) }, { k: "descricao", rotulo: "Onde / o quê (ex.: Mercado Extra)", obrigatorio: true }, { k: "valor", rotulo: "Valor total (R$)", tipo: "num", obrigatorio: true, meia: true }, { k: "parcelas", rotulo: "Parcelas", tipo: "num", meia: true }, { k: "data", rotulo: "Data da compra", tipo: "data", obrigatorio: true, meia: true }, { k: "categoria", rotulo: "Etiqueta", tipo: "pilulas", opcoes: CAT_SAIDA.filter((c) => !["Cartão", "Empréstimo", "Financiamento"].includes(c)), auto: true }], k, (v) => {
       if (!v.categoria || v.categoria === "Outros") v.categoria = catAuto(v.descricao) || "Outros";
       const x = { ...k, ...v, valor: Number(v.valor) || 0, parcelas: Math.max(1, Math.round(Number(v.parcelas) || 1)) };
       const i = d.compras.findIndex((y) => y.id === x.id); if (i >= 0) d.compras[i] = x; else d.compras.push(x);

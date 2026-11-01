@@ -7,7 +7,9 @@
 //   as áreas da interface do Instagram/TikTok e com o corte do grid.
 // - JSON { acao: "ideia", texto, imagem, pilares }: organizador de ideias. Lê a ideia (ou o print) e devolve
 //   título, resumo, categoria (pilar), finalidade (Publi, UGC, Conteúdos), funil, formato, marca, gancho e roteiro curto.
-// Segredo: GROQ_API_KEY (só no Supabase). Só a dona do painel pode usar.
+// - JSON { acao: "gasto", imagem, categorias, hoje } (nov/2026, Finanças /financeiro): lê o print ou a foto do
+//   comprovante e devolve { descricao, valor, data AAAA-MM-DD, categoria (uma das enviadas), forma (pix|debito|dinheiro|boleto|"") }.
+// Segredo: GROQ_API_KEY (só no Supabase). Só a dona do painel pode usar; a ação "gasto" também quem tem perfil no financeiro (perfil_financeiro()).
 // =========================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -122,6 +124,28 @@ Português do Brasil, sem travessão, sem gírias.`;
   };
 }
 
+// comprovante/print de gasto: o que foi, quanto, quando, tipo e forma de pagamento
+async function gasto(chave: string, c: any) {
+  const img = imagemOk(c.imagem); if (!img) throw new Error("Mande uma foto ou print (JPEG, PNG ou WEBP).");
+  const cats = (Array.isArray(c.categorias) ? c.categorias : []).map((x: unknown) => txt(x, 40)).filter(Boolean).slice(0, 40);
+  const hoje = /^\d{4}-\d{2}-\d{2}$/.test(String(c.hoje || "")) ? String(c.hoje) : new Date().toISOString().slice(0, 10);
+  const pergunta = `A imagem é um comprovante, recibo, nota, print de compra ou de pagamento (Pix, cartão, boleto, app de banco, iFood etc.) de uma pessoa no Brasil. Hoje é ${hoje}.
+Extraia o gasto. Responda SOMENTE um JSON:
+{"descricao":"onde ou o quê, curto (ex.: iFood, Drogasil, Conta de luz Enel, Pix para João)",
+"valor":número em reais com ponto decimal (o total pago, não o saldo nem o limite),
+"data":"AAAA-MM-DD da compra ou do pagamento; se não aparecer, ${hoje}; se aparecer só dia e mês, use o ano de hoje",
+"categoria":"exatamente uma destas: ${cats.join(" | ") || "Outros"}",
+"forma":"pix" | "debito" | "dinheiro" | "boleto" | "" (crédito ou não dá para saber: "")}
+Sem travessão.`;
+  const r = await comVisao(chave, pergunta, [img], 500);
+  const a = lerJson(r.texto);
+  const v = typeof a.valor === "number" ? a.valor : Number(String(a.valor ?? "").replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", "."));
+  const data = /^\d{4}-\d{2}-\d{2}$/.test(String(a.data || "")) ? String(a.data) : hoje;
+  const categoria = cats.find((x: string) => x.toLowerCase() === String(a.categoria || "").toLowerCase()) || "";
+  const forma = ["pix", "debito", "dinheiro", "boleto"].includes(String(a.forma || "").toLowerCase()) ? String(a.forma).toLowerCase() : "";
+  return { descricao: txt(a.descricao, 80), valor: Number.isFinite(v) && v > 0 ? Math.round(v * 100) / 100 : null, data, categoria, forma, visao: r.visao };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return resposta({ error: "Use POST." }, 405);
@@ -129,10 +153,15 @@ Deno.serve(async (req) => {
     const auth = req.headers.get("Authorization") || "";
     const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: auth } } });
     const { data: { user } } = await supa.auth.getUser(auth.replace(/^Bearer\s+/i, ""));
-    if (!user || user.email !== EMAIL_DONA) return resposta({ error: "Não autorizado" }, 401);
+    if (!user) return resposta({ error: "Não autorizado" }, 401);
+    const corpo = await req.json().catch(() => ({}));
+    // "gasto" (Finanças): a dona ou quem tem perfil no financeiro; o resto só a dona
+    let pode = user.email === EMAIL_DONA;
+    if (!pode && corpo.acao === "gasto") { const { data: perfil } = await supa.rpc("perfil_financeiro"); pode = !!perfil; }
+    if (!pode) return resposta({ error: "Não autorizado" }, 401);
     const chave = Deno.env.get("GROQ_API_KEY") || "";
     if (!chave) return resposta({ error: "Falta a chave do Groq no Supabase (GROQ_API_KEY)." }, 500);
-    const corpo = await req.json().catch(() => ({}));
+    if (corpo.acao === "gasto") return resposta(await gasto(chave, corpo));
     if (corpo.acao === "take") return resposta(await take(chave, corpo));
     if (corpo.acao === "capa") return resposta(await capa(chave, corpo));
     if (corpo.acao === "ideia") return resposta(await ideia(chave, corpo));

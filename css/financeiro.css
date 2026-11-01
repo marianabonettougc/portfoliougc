@@ -493,3 +493,14 @@ a{color:var(--principal)}
 .fn-voltar:hover{color:inherit}
 .fn-voltar svg,.fn-voltar-cel svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .fn-voltar-cel{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit}
+/* nov/2026: etiquetas em pílula, comprovante/print no topo da Nova saída */
+.fn-pilulas{display:flex;flex-wrap:wrap;gap:6px}
+.fn-pilula{border:1px solid var(--linha-forte);background:var(--cartao);color:var(--texto);border-radius:999px;padding:6px 12px;font:500 12.5px "Poppins",system-ui,sans-serif;cursor:pointer;line-height:1.2}
+.fn-pilula:hover{border-color:var(--principal)}
+.fn-pilula.on{background:var(--principal);border-color:var(--principal);color:#fff}
+.fn-auto-aviso{font-weight:500;font-size:11px;color:var(--principal);background:color-mix(in srgb,var(--principal) 12%,transparent);border-radius:999px;padding:2px 8px;margin-left:4px}
+.fn-print-caixa{display:flex;align-items:center;gap:12px;border:1.5px dashed var(--linha-forte);border-radius:14px;padding:12px 14px;cursor:pointer;background:var(--cartao)}
+.fn-print-caixa:hover{border-color:var(--principal)}
+.fn-print-caixa svg{width:22px;height:22px;flex-shrink:0;fill:none;stroke:var(--principal);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.fn-print-caixa b{display:block;font-size:13.5px}.fn-print-caixa small{display:block;color:var(--suave);font-size:12px;margin-top:2px}
+.fn-janela.lendo .fn-print-caixa{opacity:.7;cursor:progress}
