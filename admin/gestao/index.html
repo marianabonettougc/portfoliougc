@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202610312345"></script>
-<script src="../../js/dialogos.js?v=202610312345"></script>
-<script src="../../js/corretor.js?v=202610312345"></script>
+<script src="../../js/banco.js?v=202611010015"></script>
+<script src="../../js/dialogos.js?v=202611010015"></script>
+<script src="../../js/corretor.js?v=202611010015"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -703,34 +703,41 @@
   .brief-texto{ min-height:220px; }
   .brief-texto.grande{ min-height:62vh; }
   .obs-texto{ min-height:120px; }
-  /* Organize minimalista (nov/2026) */
+  /* Organize (nov/2026, referência UGControl nas cores dela) */
+  .jobs-abas{ display:flex; gap:8px; flex-wrap:wrap; }
+  .jobs-aba{ display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:var(--card-bg); color:var(--graphite-soft); border-radius:12px; padding:8px 14px; font:inherit; font-size:15px; font-weight:600; cursor:pointer; }
+  .jobs-aba:hover{ background:var(--sand); }
+  .jobs-aba.ativa{ background:var(--butter); border-color:var(--butter); color:#fff; box-shadow:0 2px 6px rgba(168,112,88,.25); }
   .org-quadro{ display:flex; gap:14px; overflow-x:auto; padding:2px 2px 12px; align-items:flex-start; }
-  .org-col{ flex:0 0 250px; width:250px; border-radius:14px; padding:0 0 4px; transition:background .15s; }
-  .org-col.alvo{ background:rgba(107,74,53,.06); }
-  .org-col-topo{ display:flex; align-items:center; gap:8px; border-top:3px solid var(--wine); background:var(--card-bg); border-radius:12px; padding:10px 12px; margin-bottom:10px; box-shadow:0 1px 2px rgba(61,43,32,.05); }
-  .org-col-nome{ flex:1; min-width:0; font-size:13px; font-weight:600; color:var(--graphite); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .org-col-n{ font-size:12px; color:var(--graphite-soft); background:var(--sand); border-radius:999px; padding:1px 8px; }
-  .org-vazio{ border:1px dashed var(--line); border-radius:12px; padding:14px 8px; text-align:center; font-size:12.5px; color:var(--graphite-soft); }
-  .org-card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:8px; cursor:pointer; transition:box-shadow .15s, border-color .15s; }
-  .org-card:hover{ border-color:rgba(107,74,53,.35); box-shadow:0 4px 12px rgba(61,43,32,.08); }
-  .org-card-topo{ display:flex; align-items:center; gap:6px; margin-bottom:4px; min-height:22px; }
-  .org-tag{ font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; border-radius:6px; padding:2px 7px; }
-  .org-tag.publi{ background:#f1e6da; color:var(--wine); }
-  .org-tag.ugc{ background:#f6e9e3; color:#a87058; }
-  .org-mais{ border:0; background:none; width:24px; height:22px; border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--graphite-soft); cursor:pointer; opacity:.55; }
+  .org-col{ flex:0 0 270px; width:270px; background:var(--card-bg); border:1px solid var(--line); border-top:3px solid var(--wine); border-radius:14px; padding:10px 10px 4px; box-shadow:0 1px 3px rgba(61,43,32,.05); transition:background .15s; }
+  .org-col.alvo{ background:#f7efe5; }
+  .org-col-topo{ display:flex; align-items:center; gap:8px; padding:2px 4px 10px; }
+  .org-col-ponto{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .org-col-nome{ flex:1; min-width:0; font-size:13.5px; font-weight:600; color:var(--graphite); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .org-col-n{ font-size:13px; color:var(--graphite-soft); }
+  .org-vazio{ border:1px dashed var(--line); border-radius:10px; padding:14px 8px; text-align:center; font-size:12.5px; color:var(--graphite-soft); margin-bottom:6px; }
+  .org-card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:11px 12px; margin-bottom:8px; cursor:pointer; transition:box-shadow .15s, border-color .15s; }
+  .org-card:hover{ border-color:rgba(168,112,88,.45); box-shadow:0 4px 12px rgba(61,43,32,.08); }
+  .org-card-topo{ display:flex; align-items:center; gap:6px; min-height:22px; }
+  .org-marca{ font-size:14.5px; font-weight:600; color:var(--graphite); line-height:1.3; min-width:0; }
+  .org-mais{ border:0; background:none; width:24px; height:22px; border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--graphite-soft); cursor:pointer; opacity:.5; }
   .org-card:hover .org-mais, .org-mais:focus{ opacity:1; }
   .org-mais:hover{ background:var(--sand); }
-  .org-marca{ font-size:14px; font-weight:600; color:var(--graphite); line-height:1.3; }
-  .org-sub{ font-size:12.5px; color:var(--graphite-soft); margin-top:2px; }
-  .org-prog{ display:flex; align-items:center; gap:8px; margin-top:8px; }
-  .org-prog small{ font-size:11.5px; color:var(--graphite-soft); }
-  .org-barra{ flex:1; height:4px; border-radius:4px; background:var(--sand); overflow:hidden; }
-  .org-barra span{ display:block; height:100%; background:var(--moss); border-radius:4px; }
-  .org-rodape{ display:flex; align-items:center; gap:8px; margin-top:8px; font-size:12.5px; color:var(--graphite-soft); }
-  .org-valor{ font-weight:600; color:var(--graphite); margin-right:auto; }
-  .org-data{ display:inline-flex; align-items:center; gap:3px; }
+  .org-sub{ font-size:12.5px; color:var(--graphite-soft); margin-top:3px; }
+  .org-icones{ display:flex; gap:10px; margin-top:7px; font-size:12.5px; color:var(--graphite-soft); }
+  .org-icones span{ display:inline-flex; align-items:center; gap:3px; }
+  .org-prog{ margin-top:9px; }
+  .org-prog-linha{ display:flex; justify-content:space-between; font-size:12px; color:var(--graphite-soft); margin-bottom:5px; }
+  .org-prog-linha span{ display:inline-flex; align-items:center; gap:4px; }
+  .org-barra{ height:5px; border-radius:5px; background:var(--sand); overflow:hidden; }
+  .org-barra span{ display:block; height:100%; background:var(--butter); border-radius:5px; }
+  .org-rodape{ display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:9px; border-top:1px solid var(--line); font-size:13px; }
+  .org-valor{ display:inline-flex; align-items:center; gap:4px; font-weight:600; color:var(--moss); margin-right:auto; }
+  .org-valor.permuta{ color:var(--graphite-soft); }
+  .org-selo{ display:inline-flex; align-items:center; gap:3px; font-size:11.5px; font-weight:600; border-radius:999px; padding:3px 9px; background:#f6e9e3; color:var(--butter); }
+  .org-selo.pago{ background:#e6efe4; color:var(--moss); }
+  .org-data{ display:flex; align-items:center; gap:4px; font-size:12px; color:var(--graphite-soft); margin-top:7px; }
   .org-data.atraso{ color:#c5533f; }
-  .org-pago{ font-size:11px; font-weight:600; color:var(--moss); }
   .escopo-caixa{ margin:-6px 0 14px; }
   .escopo-texto{ width:100%; min-height:110px; resize:vertical; border:1px solid var(--line); border-radius:12px; background:#fff; padding:12px 14px; font:inherit; font-size:14.5px; line-height:1.5; box-sizing:border-box; }
   .job-datas{ display:flex; gap:14px; min-width:150px; font-size:14px; color:var(--graphite); }
@@ -1273,10 +1280,10 @@ const jobStatusTone = (s) => ({
   "Aguardando Briefing":"yellow","Roteirização":"yellow","Aprovação de Roteiro":"wine","Aprovação do Conteúdo":"wine","Refação":"yellow"
 }[s] || "gray");
 const KANBAN_COLORS = {
-  "Lead":"#3d2b20","Em Negociação":"#6b4a35","Fechado":"#a87058","Aguardando Aprovação":"#8a634b","Aguardando Produto":"#6B4E3D",
-  "Aprovado":"#a87058","Planejado":"#3d2b20","Em Produção":"#6b4a35","Gravado":"#8a634b","Conteúdo Entregue":"#a87058",
-  "Finalizado":"#6B4E3D","Cancelado":"#8a634b",[FIN_AGUARDANDO]:"#c9a24a",[FIN_PAGO]:"#4f7a54",
-  "Aguardando Briefing":"#3d2b20","Roteirização":"#6b4a35","Aprovação de Roteiro":"#8a634b","Aprovação do Conteúdo":"#8a634b","Refação":"#a87058"
+  "Lead":"#8a634b","Em Negociação":"#c9a24a","Fechado":"#a87058","Aguardando Aprovação":"#c98f7a","Aguardando Produto":"#a87058",
+  "Aprovado":"#4f7a54","Planejado":"#c9a24a","Em Produção":"#6b4a35","Gravado":"#8a634b","Conteúdo Entregue":"#7a9a6e",
+  "Finalizado":"#4f7a54","Cancelado":"#b9a99a",[FIN_AGUARDANDO]:"#c9a24a",[FIN_PAGO]:"#4f7a54",
+  "Aguardando Briefing":"#d9a46a","Roteirização":"#b98a5e","Aprovação de Roteiro":"#c98f7a","Aprovação do Conteúdo":"#c98f7a","Refação":"#c5533f"
 };
 const PAYMENT_METHODS = ["PIX","Transferência","Boleto","Cartão","PayPal","Outro"];
 const MOEDAS = [{code:"BRL",symbol:"R$"},{code:"USD",symbol:"US$"},{code:"EUR",symbol:"€"}];
@@ -4540,20 +4547,23 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
   );
 }
 
-// cartão do Organize (nov/2026, pedido da Mari: minimalista, como a referência do UGControl, nas cores dela)
+// cartão do Organize (nov/2026, pedido da Mari: igual à referência do UGControl, nas cores dela)
 function OrgCard({j, onEdit, onDelete, onMarkPaid, onDuplicate, onDragStart}){
   const [menu,setMenu] = useState(false);
   const e = j.entregaveis || {};
   const its = [...(e.videos||[]), ...(e.fotos||[]), ...(e.stories||[])];
   const total = qtdItens(its), feitos = qtdItens(its.filter(i=>i.concluido));
+  const nv = qtdItens(e.videos), nf = qtdItens(e.fotos), ns = qtdItens(e.stories);
+  const pct = total ? Math.round(feitos/total*100) : 0;
   const pago = jobPago(j), permuta = j.tipoJob==="Permuta";
   const prazo = j.categoria==="Publi" ? postagemDoJob(j) : (entregasDoJob(j).slice(-1)[0] || j.prazoEntrega || "");
   const atrasado = prazo && diasAte(prazo)<0 && !ehFinalizado(j.status);
+  const unidade = nv && !nf && !ns ? (total>1?"vídeos":"vídeo") : (total>1?"entregas":"entrega");
   return (
     <div className="org-card" draggable onDragStart={(ev)=>onDragStart(ev, j.id)} onClick={()=>onEdit(j)}>
       <div className="org-card-topo">
-        {j.categoria && <span className={"org-tag "+(j.categoria==="Publi"?"publi":"ugc")}>{j.categoria}</span>}
-        {j.recorrente && <Icon name="repeat" size={13} style={{color:"var(--graphite-soft)"}}/>}
+        <Icon name={j.categoria==="Publi"?"campaign":"videocam"} size={16} style={{color:"var(--butter)"}}/>
+        <span className="org-marca">{j.marca}</span>
         <div style={{marginLeft:"auto", position:"relative"}} onClick={ev=>ev.stopPropagation()}>
           <button type="button" className="org-mais" title="Mais opções" onClick={()=>setMenu(m=>!m)}><Icon name="more_horiz" size={16}/></button>
           {menu && <div className="job-menu" onMouseLeave={()=>setMenu(false)}>
@@ -4564,14 +4574,22 @@ function OrgCard({j, onEdit, onDelete, onMarkPaid, onDuplicate, onDragStart}){
           </div>}
         </div>
       </div>
-      <div className="org-marca">{j.marca}</div>
-      {resumoEntregas(j) && <div className="org-sub">{resumoEntregas(j)}</div>}
-      {total>0 && <div className="org-prog"><div className="org-barra"><span style={{width:Math.round(feitos/total*100)+"%"}}></span></div><small>{feitos}/{total}</small></div>}
+      <div className="org-sub">{[j.categoria, resumoEntregas(j)].filter(Boolean).join(" · ")}</div>
+      {total>0 && <div className="org-icones">
+        {nv>0 && <span title="Vídeos"><Icon name="videocam" size={14}/>{nv}</span>}
+        {nf>0 && <span title="Fotos"><Icon name="photo_camera" size={14}/>{nf}</span>}
+        {ns>0 && <span title="Stories"><Icon name="auto_stories" size={14}/>{ns}</span>}
+        {j.recorrente && <span title="Job recorrente"><Icon name="repeat" size={14}/></span>}
+      </div>}
+      {total>0 && <div className="org-prog">
+        <div className="org-prog-linha"><span><Icon name="movie" size={13}/>{feitos}/{total} {unidade}</span><span>{pct}%</span></div>
+        <div className="org-barra"><span style={{width:pct+"%"}}></span></div>
+      </div>}
       <div className="org-rodape">
-        <span className="org-valor">{permuta ? "Permuta" : fmtMoneyCur(j.valor, j.moeda)}</span>
-        {prazo ? <span className={"org-data"+(atrasado?" atraso":"")}><Icon name="event" size={13}/>{dataBR(prazo).slice(0,5)}</span> : null}
-        {!permuta && pago && <span className="org-pago">pago</span>}
+        <span className={"org-valor"+(permuta?" permuta":"")}><Icon name={permuta?"redeem":"payments"} size={14}/>{permuta ? "Permuta" : fmtMoneyCur(j.valor, j.moeda)}</span>
+        {!permuta && <span className={"org-selo"+(pago?" pago":"")}><Icon name={pago?"check_circle":"schedule"} size={12}/>{pago?"Pago":"A receber"}</span>}
       </div>
+      {prazo ? <div className={"org-data"+(atrasado?" atraso":"")}><Icon name="event" size={13}/>{j.categoria==="Publi"?"Postagem":"Entrega"} {dataBR(prazo)}</div> : null}
     </div>
   );
 }
@@ -4728,10 +4746,10 @@ function Jobs({state, updateState}){
       </div>
 
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, flexWrap:"wrap", gap:10}}>
-        <div className="tabs">
-          <div className={"tab "+(tab==="Ativos"?"active":"")} onClick={()=>setTab("Ativos")}>Ativos ({ativosCount})</div>
-          <div className={"tab "+(tab==="Organize"?"active":"")} onClick={()=>setTab("Organize")}>Organize</div>
-          <div className={"tab "+(tab==="Histórico"?"active":"")} onClick={()=>setTab("Histórico")}>Histórico ({historicoCount})</div>
+        <div className="jobs-abas">
+          <button type="button" className={"jobs-aba"+(tab==="Ativos"?" ativa":"")} onClick={()=>setTab("Ativos")}><Icon name="inbox" size={17}/>Ativos ({ativosCount})</button>
+          <button type="button" className={"jobs-aba"+(tab==="Organize"?" ativa":"")} onClick={()=>setTab("Organize")}><Icon name="view_kanban" size={17}/>Organize</button>
+          <button type="button" className={"jobs-aba"+(tab==="Histórico"?" ativa":"")} onClick={()=>setTab("Histórico")}><Icon name="archive" size={17}/>Histórico ({historicoCount})</button>
         </div>
         {tab==="Ativos" && (
           <div className="tabs">
@@ -4761,9 +4779,9 @@ function Jobs({state, updateState}){
             const colJobs = state.jobs.filter(j=>j.status===col && !isHistorico(j) && (!query || (j.marca+(j.tipo||"")+(j.nicho||"")).toLowerCase().includes(query.toLowerCase())));
             const cor = KANBAN_COLORS[col] || "var(--wine)";
             return (
-              <div key={col} className={"org-col"+(dragOverCol===col?" alvo":"")} onDragOver={(e)=>{e.preventDefault(); setDragOverCol(col);}} onDragLeave={()=>setDragOverCol(c=>c===col?null:c)} onDrop={(e)=>onDrop(e,col)}>
-                <div className="org-col-topo" style={{borderTopColor:cor}}>
-                  <span className="org-col-nome">{col}</span><span className="org-col-n">{colJobs.length}</span>
+              <div key={col} style={{borderTopColor:cor}} className={"org-col"+(dragOverCol===col?" alvo":"")} onDragOver={(e)=>{e.preventDefault(); setDragOverCol(col);}} onDragLeave={()=>setDragOverCol(c=>c===col?null:c)} onDrop={(e)=>onDrop(e,col)}>
+                <div className="org-col-topo">
+                  <span className="org-col-ponto" style={{background:cor}}></span><span className="org-col-nome">{col}</span><span className="org-col-n">{colJobs.length}</span>
                 </div>
                 {colJobs.length===0 && <div className="org-vazio">Arraste para cá</div>}
                 {colJobs.map(j=><OrgCard key={j.id} j={j} onEdit={setEditing} onDelete={remove} onMarkPaid={markPaid} onDuplicate={duplicate} onDragStart={onDragStart}/>)}
