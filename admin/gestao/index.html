@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611010302"></script>
-<script src="../../js/dialogos.js?v=202611010302"></script>
-<script src="../../js/corretor.js?v=202611010302"></script>
+<script src="../../js/banco.js?v=202611010308"></script>
+<script src="../../js/dialogos.js?v=202611010308"></script>
+<script src="../../js/corretor.js?v=202611010308"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -142,6 +142,14 @@
   .dn-card{ display:flex; align-items:center; gap:14px; text-align:left; background:var(--db-papel); border:1px solid var(--db-linha); border-radius:16px; padding:16px 18px; font:inherit; color:var(--db-texto); cursor:pointer; min-width:0; }
   .dn-card:hover{ border-color:var(--db-linha2); }
   .dn-clica{ cursor:pointer; }
+  .dn-min{ display:inline-grid; place-items:center; width:30px; height:30px; border:1px solid var(--db-linha); border-radius:999px; background:var(--db-papel); color:var(--db-texto); cursor:pointer; padding:0; flex-shrink:0; }
+  .db-bloco.fechado > *:not(.dn-bt):not(.db-bloco-topo){ display:none !important; }
+  .db-bloco.fechado .dn-bt, .db-bloco.fechado .db-bloco-topo{ margin-bottom:0; }
+  .db-bloco.fechado .db-insp-direita > :not(.dn-min){ display:none; }
+  .db-bloco.fechado .dn-bt-dir > :not(.dn-min){ display:none; }
+  .dn-semana-bloco .dn-bt{ flex-wrap:wrap; row-gap:8px; } .dn-semana-bloco .dn-bt h2{ flex:1 1 auto; } .dn-semana-bloco .dn-bt-dir{ margin-left:auto; }
+  .esc-titulo{ cursor:pointer; } .esc-min{ margin-left:auto; display:inline-grid; place-items:center; border:0; background:none; color:var(--graphite-soft); cursor:pointer; padding:2px; }
+  .esc-caixa.fechado{ padding-bottom:2px; }
   .dn-apr li{ display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; }
   .dn-apr li > button:first-child{ flex:1 1 220px; min-width:0; }
   .dn-apr-acoes{ display:flex; gap:6px; margin-left:auto; padding-bottom:8px; }
@@ -2780,6 +2788,11 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const comAMarca = (at) => at===3 || at===5 || at===6;
   // semana com setas (a rotina mostra o dia escolhido)
   const [semanaDesloc,setSemanaDesloc] = useState(0);
+  // nov/2026: cada bloco do Dashboard minimiza e maximiza (fica lembrado neste aparelho)
+  const [blocosFechados,setBlocosFechados] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("dnFechados")||"[]"); }catch(e){ return []; } });
+  const fechadoB = (k) => blocosFechados.includes(k);
+  const alternarB = (k) => setBlocosFechados(l=>{ const n = l.includes(k) ? l.filter(x=>x!==k) : [...l, k]; try{ localStorage.setItem("dnFechados", JSON.stringify(n)); }catch(e){} return n; });
+  const minB = (k) => <button key={"min"+k} type="button" className="dn-min" onClick={(e)=>{ e.stopPropagation(); alternarB(k); }} title={fechadoB(k) ? "Maximizar" : "Minimizar"} aria-label={fechadoB(k) ? "Maximizar" : "Minimizar"} aria-expanded={!fechadoB(k)}><Icon name={fechadoB(k) ? "expand_more" : "expand_less"} size={19}/></button>;
   const diasVistos = diasDaSemana.map(d=>{ const x = new Date(d); x.setDate(d.getDate()+semanaDesloc*7); return x; });
   const tipoItem = (it) => /grav/i.test(it.texto) ? "grav" : /^postar|post/i.test(it.texto) ? "post" : /entreg|enviar|aprova/i.test(it.texto) ? "ent" : it.apple ? "apple" : "outro";
   const ROTULO_TIPO = {grav:"Gravar", post:"Postar", ent:"Entrega", apple:"iPhone", outro:"Tarefa"};
@@ -2845,8 +2858,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
 
       <div className="dn-g1">
         {/* campanhas em andamento */}
-        <section className="db-bloco dn-campanhas">
-          <div className="dn-bt"><h2>Campanhas em andamento</h2><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button></div>
+        <section className={"db-bloco dn-campanhas"+(fechadoB("campanhas")?" fechado":"")}>
+          <div className="dn-bt"><h2>Campanhas em andamento</h2><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("campanhas")}</span></div>
           {campanhas.length ? <div className="dn-tabela">
             <div className="dn-linha dn-cab"><span>Marca</span><span>Entregas</span><span>Etapa</span><span>Prazo</span></div>
             {campanhas.slice(0,6).map(j=>{ const p = progressoJob(j), at = etapaDoJob(j, state.roteiros), d = j.prazoEntrega ? diasAte(j.prazoEntrega) : null;
@@ -2861,9 +2874,9 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         </section>
 
         {/* rotina do dia escolhido (hoje, ou o dia tocado na semana) */}
-        <section className="db-bloco dn-rotina" ref={rotinaRef}>
+        <section className={"db-bloco dn-rotina"+(fechadoB("rotina")?" fechado":"")} ref={rotinaRef}>
           <div className="dn-bt"><h2>{diaSel===hoje ? "Minha rotina de hoje" : `Rotina de ${DIAS_NOME[diaSelD.getDay()].toLowerCase()}, ${dataBR(diaSel).slice(0,5)}`}</h2>
-            <span className="dn-bt-dir">{agenda.length>0 && <span className="dn-tag">{feitosDia} de {agenda.length}</span>}<button className="dn-mais" onClick={()=>setNovaTarefa({hora:"", titulo:"", sub:""})} aria-label="Adicionar tarefa"><DbIcone tipo="mais" tam={16}/></button></span></div>
+            <span className="dn-bt-dir">{agenda.length>0 && <span className="dn-tag">{feitosDia} de {agenda.length}</span>}<button className="dn-mais" onClick={()=>setNovaTarefa({hora:"", titulo:"", sub:""})} aria-label="Adicionar tarefa"><DbIcone tipo="mais" tam={16}/></button>{minB("rotina")}</span></div>
           {diaSel!==hoje && <button className="db-link dn-voltar" onClick={()=>{ setDiaSel(hoje); setSemanaDesloc(0); }}>Voltar para hoje</button>}
           <div className="dn-iphone-linha">
             {diaDeGravacao && <span className="db-chip-dia"><DbIcone tipo="camera" tam={15}/>Dia de gravação</span>}
@@ -2912,11 +2925,11 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
 
       <div className="dn-g2">
         {/* semana */}
-        <section className="db-bloco dn-semana-bloco">
+        <section className={"db-bloco dn-semana-bloco"+(fechadoB("semana")?" fechado":"")}>
           <div className="dn-bt"><h2 className="dn-clica" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")} title="Abrir o calendário">Minha semana</h2>
             <span className="dn-bt-dir"><button className="db-redondo db-redondo-p" onClick={()=>setSemanaDesloc(s=>s-1)} aria-label="Semana anterior"><DbIcone tipo="esq" tam={15}/></button>
               <span className="dn-sel">{diasVistos[0].getDate()} {MESES_EXT[diasVistos[0].getMonth()].slice(0,3)} a {diasVistos[6].getDate()} {MESES_EXT[diasVistos[6].getMonth()].slice(0,3)}</span>
-              <button className="db-redondo db-redondo-p" onClick={()=>setSemanaDesloc(s=>s+1)} aria-label="Próxima semana"><DbIcone tipo="dir" tam={15}/></button></span></div>
+              <button className="db-redondo db-redondo-p" onClick={()=>setSemanaDesloc(s=>s+1)} aria-label="Próxima semana"><DbIcone tipo="dir" tam={15}/></button>{minB("semana")}</span></div>
           <div className="dn-sem">
             {diasVistos.map((d,i)=>{ const iso = isoLocal(d); const its = itensDoDia(iso);
               return <button key={iso} className={"dn-dia"+(iso===hoje?" hoje":"")+(iso===diaSel?" sel":"")} onClick={()=>{ setDiaSel(iso); if(window.innerWidth<1000) setTimeout(()=>{ if(rotinaRef.current) rotinaRef.current.scrollIntoView({behavior:"smooth", block:"start"}); }, 60); }}>
@@ -2929,8 +2942,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         </section>
 
         {/* aguardando aprovação */}
-        <section className="db-bloco dn-aprov">
-          <div className="dn-bt"><h2>Aguardando aprovação</h2><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button></div>
+        <section className={"db-bloco dn-aprov"+(fechadoB("aprov")?" fechado":"")}>
+          <div className="dn-bt"><h2>Aguardando aprovação</h2><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("aprov")}</span></div>
           {aprovacoes.length ? <ul className="dn-apr">{aprovacoes.slice(0,5).map(a=>{ const d = a.desde ? -diasAte(a.desde) : null;
             const rot = a.tipo==="roteiro";
             return <li key={a.id}><button onClick={()=>a.jobId ? abrirJob(a.jobId) : go(a.pagina)}><span className="dn-ico dn-ico-p"><DbIcone tipo={rot?"documento":"filme"} tam={17}/></span>
@@ -2943,8 +2956,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         </section>
 
         {/* financeiro */}
-        <section className="db-bloco dn-fin">
-          <div className="dn-bt"><h2>Financeiro</h2><span className="dn-sel">{MESES_EXT[hojeD.getMonth()].replace(/^./, c=>c.toUpperCase())}</span></div>
+        <section className={"db-bloco dn-fin"+(fechadoB("fin")?" fechado":"")}>
+          <div className="dn-bt"><h2>Financeiro</h2><span className="dn-bt-dir"><span className="dn-sel">{MESES_EXT[hojeD.getMonth()].replace(/^./, c=>c.toUpperCase())}</span>{minB("fin")}</span></div>
           <div className="dn-fin-2"><button onClick={()=>go("financeiro")}><b>{dnMoeda(recebidoMes)}</b><small>Recebido no mês</small></button>
             <button className={atrasadoValor>0?"at":""} onClick={()=>go("financeiro")}><b>{dnMoeda(atrasadoValor)}</b><small>{atrasadoValor>0 ? `Atrasado (${atrasadoLista.length})` : "Nada atrasado"}</small></button></div>
           <div className="dn-graf dn-clica" onClick={()=>go("financeiro")} aria-label="Recebido nos últimos 6 meses">{meses6.map((m,i)=><div key={m.k} title={m.rotulo+": "+dnMoeda(m.valor)}><i className={i===5?"at":""} style={{height:Math.max(4, m.valor/maxMes*100)+"%"}}/><small>{m.rotulo}</small></div>)}</div>
@@ -2953,7 +2966,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
 
       {/* inspirações | ferramentas */}
       <div className="db-baixo">
-        <section className="db-bloco db-insp">
+        <section className={"db-bloco db-insp"+(fechadoB("insp")?" fechado":"")}>
           <div className="db-bloco-topo db-insp-topo">
             <div>
               <h2>Inspirações de conteúdo</h2>
@@ -2962,6 +2975,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             <div className="db-insp-direita">
               {minAtras!==null && <span className="db-atualizado"><i/>{buscaInfo && buscaInfo.rodando ? "Buscando vídeos novos..." : "Atualizado "+tempoAtras}</span>}
               {abaInsp==="inspiracoes" && <><button className="db-redondo db-redondo-p" onClick={()=>rolar(-1)} aria-label="Anteriores"><DbIcone tipo="esq" tam={16}/></button><button className="db-redondo db-redondo-p" onClick={()=>rolar(1)} aria-label="Próximas"><DbIcone tipo="dir" tam={16}/></button></>}
+              {minB("insp")}
             </div>
           </div>
           <div className="db-abas db-abas-largas">
@@ -3993,6 +4007,9 @@ function EscopoJob({f, setF}){
   const c = contarEscopo(f);
   const publi = f.categoria==="Publi";
   const [textoAberto,setTextoAberto] = useState(!!(f.escopo && f.escopo.trim()) || !itensDoJobTodos(f).length);
+  // minimizar o Escopo (nov/2026): job novo abre aberto; job com entregas abre como ela deixou da última vez (padrão: minimizado)
+  const [escFechado,setEscFechado] = useState(()=>{ if(!itensDoJobTodos(f).length) return false; try{ return localStorage.getItem("escopoFechado")!=="0"; }catch(e){ return true; } });
+  const alternarEsc = () => setEscFechado(v=>{ try{ localStorage.setItem("escopoFechado", v ? "0" : "1"); }catch(e){} return !v; });
   async function mudarQtd(k, n){
     const fm = FORMATOS_ESCOPO.find(x=>x.k===k);
     const atual = c[k];
@@ -4018,8 +4035,10 @@ function EscopoJob({f, setF}){
       {misto && <small>cada entrega tem uma data; escolher aqui põe a mesma em todas</small>}
     </label>); };
   return (
-    <div className="esc-caixa">
-      <div className="esc-titulo"><Icon name="assignment" size={16}/>Escopo{temItens && <span className="esc-resumo">{resumoEntregas(f)}</span>}</div>
+    <div className={"esc-caixa"+(escFechado?" fechado":"")}>
+      <div className="esc-titulo" onClick={alternarEsc} role="button" aria-expanded={!escFechado}><Icon name="assignment" size={16}/>Escopo{temItens && <span className="esc-resumo">{resumoEntregas(f)}</span>}
+        <button type="button" className="esc-min" title={escFechado?"Maximizar":"Minimizar"} aria-label={escFechado?"Maximizar":"Minimizar"}><Icon name={escFechado?"expand_more":"expand_less"} size={20}/></button></div>
+      {!escFechado && <>
       <div className="esc-grade">
         {FORMATOS_ESCOPO.map(fm=>(
           <div key={fm.k} className={"esc-item"+(c[fm.k]?" on":"")}>
@@ -4046,6 +4065,7 @@ function EscopoJob({f, setF}){
         <Icon name={textoAberto?"expand_less":"expand_more"} size={18}/>
       </button>
       {textoAberto && <textarea className="escopo-texto" rows="5" value={f.escopo||""} onChange={e=>setF(p=>({...p, escopo:e.target.value}))} placeholder="Cole aqui o escopo que a marca mandou..."/>}
+      </>}
     </div>
   );
 }
