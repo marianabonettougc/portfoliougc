@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611010250"></script>
-<script src="../../js/dialogos.js?v=202611010250"></script>
-<script src="../../js/corretor.js?v=202611010250"></script>
+<script src="../../js/banco.js?v=202611010300"></script>
+<script src="../../js/dialogos.js?v=202611010300"></script>
+<script src="../../js/corretor.js?v=202611010300"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -4699,10 +4699,15 @@ function Jobs({state, updateState}){
     const job = state.jobs.find(j=>j.id===id);
     if(!job) return;
     const jaPago = job.pagamento && job.pagamento.status==="Pago";
-    const updated = statusPeloPagamento({...job, pagamento:{...(job.pagamento||{}), status: jaPago ? "Em aberto" : "Pago", dataPagamento: jaPago ? "" : (job.pagamento && job.pagamento.dataPagamento ? job.pagamento.dataPagamento : todayISO())}});
+    const pg = {...(job.pagamento||{}), status: jaPago ? "Em aberto" : "Pago", dataPagamento: jaPago ? "" : (job.pagamento && job.pagamento.dataPagamento ? job.pagamento.dataPagamento : todayISO())};
+    // nov/2026 (pedido da Mari): "Marcar pago" em qualquer status = Finalizado · Pago, vai para o Histórico (arquiva) e o lançamento fica Confirmado no CNPJ e no CPF
+    const updated = jaPago
+      ? statusPeloPagamento({...job, pagamento:pg})
+      : itensNoStatusDoJob({...job, status:FIN_PAGO, pagamento:pg}, FIN_PAGO);
     const jobs = state.jobs.map(j=>j.id===id?updated:j);
+    const followups = syncFollowups(state.followups, updated);
     const transacoes = syncTransacaoFromJob(state.transacoes, updated);
-    updateState({...state, jobs, transacoes});
+    updateState({...state, jobs, followups, transacoes});
   }
   function duplicate(job){
     const clone = { ...job, id:uid(), marca: job.marca+" (cópia)", status:"Aguardando Briefing", criadoEm:todayISO(), dataEntregaReal:"",
@@ -4845,7 +4850,7 @@ function Jobs({state, updateState}){
         return (
           <Modal title={jaPago ? "Desmarcar pagamento" : "Confirmar pagamento"} onClose={()=>setConfirmPagoId(null)}>
             <p style={{fontSize:14.5, marginTop:-4}}>
-              {jaPago ? `Desmarcar "${job.marca}" como pago? Ele voltará para "Em aberto".` : `Confirmar que "${job ? job.marca : ""}" foi pago?`}
+              {jaPago ? `Desmarcar "${job.marca}" como pago? Ele voltará para "Em aberto".` : `Confirmar que "${job ? job.marca : ""}" foi pago? O job vira "Finalizado · Pago", vai para o Histórico e o recebimento entra no Financeiro CNPJ e no CPF.`}
             </p>
             <div style={{display:"flex", gap:10, justifyContent:"flex-end", marginTop:10}}>
               <button className="btn btn-ghost" onClick={()=>setConfirmPagoId(null)}>Cancelar</button>
