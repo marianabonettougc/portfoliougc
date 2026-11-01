@@ -573,3 +573,39 @@ a{color:var(--principal)}
 .fn-venc-todos:hover{color:var(--texto)}
 .fn-venc-ok{display:flex;align-items:center;gap:7px;margin:12px 0 0;font-size:12.5px;color:#2f9e5b}
 .fn-venc-ok svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* nov/2026: cartão aberto em painel (referência da Mari): cartão desenhado, fatura, gastos por etiqueta e por dia, compras */
+.fn-cd{grid-column:1/-1;display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr);gap:18px;align-items:start}
+.fn-cd-lado{display:flex;flex-direction:column;gap:12px;min-width:0}
+.fn-cd .frente{min-height:170px;position:relative;overflow:hidden}
+.fn-cd .frente::after{content:"";position:absolute;right:-40px;bottom:-60px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.12)}
+.fn-cd-chip{width:34px;height:26px;border-radius:6px;background:linear-gradient(135deg,rgba(255,255,255,.75),rgba(255,255,255,.35));display:block}
+.fn-cd-disp{display:flex;flex-direction:column;gap:4px}
+.fn-cd-disp b{font-size:24px;font-weight:700;letter-spacing:-.01em}
+.fn-cd-disp small{color:var(--suave);font-size:11.5px}
+.fn-cd-meio{display:flex;flex-direction:column;gap:14px;min-width:0}
+.fn-cd-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.fn-cd-topo small{color:var(--suave);font-size:12px;display:block}
+.fn-cd-topo b{font-size:26px;font-weight:700;letter-spacing:-.01em;display:block}
+.fn-cd-expl{color:var(--suave);font-size:12px}
+.fn-cd-graf{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px}
+.fn-cd-bloco{border:1px solid var(--linha);border-radius:16px;padding:14px;background:var(--cartao);min-width:0}
+.fn-cd-bloco h4{margin:0 0 10px;font-size:13.5px;font-weight:600}
+.fn-cd-rosca{display:flex;align-items:center;gap:14px}
+.fn-cd-rosca svg{width:132px;height:132px;flex-shrink:0}
+.fn-cd-rosca ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;font-size:12px}
+.fn-cd-rosca li{display:grid;grid-template-columns:10px minmax(0,1fr) auto auto;gap:8px;align-items:center}
+.fn-cd-rosca li i{width:9px;height:9px;border-radius:50%}
+.fn-cd-rosca li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fn-cd-rosca li em{font-style:normal;color:var(--suave)}
+.fn-cd-barras{display:flex;align-items:flex-end;gap:6px;height:140px;overflow-x:auto;padding-bottom:2px}
+.fn-cd-barras div{flex:1 0 22px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}
+.fn-cd-barras i{width:100%;max-width:26px;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,var(--principal),color-mix(in srgb,var(--principal) 45%,#fff))}
+.fn-cd-barras small{font-size:10px;color:var(--suave)}
+.fn-cd-lista{display:flex;flex-direction:column}
+.fn-cd-item{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto 32px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--linha);font-size:13px}
+.fn-cd-item:first-child{border-top:0}
+.fn-cd-dia{color:var(--suave);font-size:12px}
+.fn-cd-desc{min-width:0}.fn-cd-desc b{font-weight:500;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fn-cd-desc small{color:var(--suave);font-size:11px}
+.fn-cd-etq{font-size:11px;font-weight:500;padding:3px 9px;border-radius:999px;color:var(--c);background:color-mix(in srgb,var(--c) 14%,#fff);white-space:nowrap}
+@media(max-width:900px){.fn-cd{grid-template-columns:1fr}.fn-cd-graf{grid-template-columns:1fr}}
+@media(max-width:560px){.fn-cd-item{grid-template-columns:40px minmax(0,1fr) auto 30px}.fn-cd-etq{grid-column:2;grid-row:2;justify-self:start}.fn-cd-item .fn-valor{grid-column:3;grid-row:1}.fn-cd-item .fn-icone{grid-column:4;grid-row:1}.fn-cd-rosca svg{width:112px;height:112px}}

@@ -198,8 +198,12 @@
       d.lancamentos = d.lancamentos.filter((l) => !(String(l.id).startsWith("fat-" + c.id + "-") && !l.pago && !meses.has(l.data.slice(0, 7))));
       const dia = String(Math.min(28, Math.max(1, parseInt(c.vencimento, 10) || 10))).padStart(2, "0");
       for (const ym of meses) {
-        const valor = Math.round(((conf[ym] != null ? conf[ym] : somas[ym]) || 0) * 100) / 100;
         const l = d.lancamentos.find((x) => x.id === `fat-${c.id}-${ym}`) || d.lancamentos.find((x) => String(x.id).startsWith("cpff-" + c.id + "-") && x.data.slice(0, 7) === ym);
+        // nov/2026: fatura que já tinha valor (planilha, digitado) guarda esse valor em valorBase; a fatura vale o maior
+        // entre ele e a soma das compras (compras só explicam a fatura, nunca somam por cima). "Veio no banco" manda em tudo.
+        if (l && !l.auto && l.valorBase == null) l.valorBase = Number(l.valor) || 0;
+        const base = l && !l.auto ? Number(l.valorBase) || 0 : 0;
+        const valor = Math.round(((conf[ym] != null ? conf[ym] : Math.max(base, somas[ym] || 0)) || 0) * 100) / 100;
         if (l) l.valor = valor;
         else d.lancamentos.push({ id: `fat-${c.id}-${ym}`, tipo: "saida", descricao: "Fatura " + c.nome, valor, data: `${ym}-${dia}`, pago: false, categoria: "Cartão", auto: true });
       }
@@ -460,16 +464,17 @@
         ${kpi("Quitados", `${cs.filter((c) => c.status === "Quitado").length} de ${cs.length}`, "check", "", "bom")}
       </div>
       ${blocoConsultora(conselhosCartoes(), "Consultora: cartões")}
-      <div class="fn-cab" style="margin-bottom:12px"><p class="fn-dica">Lance cada compra no cartão: ela soma sozinha na fatura. No fim do mês, digite o valor que veio no banco para conferir.</p><div class="fn-acoes"><button class="fn-btn" type="button" data-min-todos="c">Minimizar / abrir todos</button><button class="fn-btn" type="button" data-novo-cartao>${ICONE.mais}Novo cartão</button><button class="fn-btn principal" type="button" data-nova-compra>${ICONE.mais}Compra no cartão</button></div></div>
+      <div class="fn-cab" style="margin-bottom:12px"><p class="fn-dica">Abra um cartão para ver a fatura por etiqueta. As compras do dia a dia ficam dentro da fatura e nunca somam duas vezes: a fatura vale o maior entre o valor dela e as compras lançadas. No fim do mês, digite o que veio no banco.</p><div class="fn-acoes"><button class="fn-btn" type="button" data-min-todos="c">Minimizar / abrir todos</button><button class="fn-btn" type="button" data-novo-cartao>${ICONE.mais}Novo cartão</button><button class="fn-btn principal" type="button" data-nova-compra>${ICONE.mais}Compra no cartão</button></div></div>
       <div class="fn-cartoes">${[...cs].sort((a, b) => dividaCartao(b) - dividaCartao(a)).map((c) => {
         const uso = Number(c.limite) > 0 ? Math.max(0, Math.min(1, 1 - dispCartao(c) / Number(c.limite))) : null;
         const fat = lm.find((l) => eDoCartao(l, c));
-        return `<div class="fn-plast${minimo("c" + c.id, c.status === "Quitado") ? " min" : ""}${c.status === "Quitado" ? " quitado" : /atras/i.test(c.status || "") ? " atraso" : ""}"><div class="frente"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${esc(c.nome)}</b><span class="fn-chip neutro" style="background:rgba(255,255,255,.22);color:#fff">${esc(c.status || "Ativo")}</span></div><span class="num">•••• •••• •••• ${esc(c.final || "")}</span><div style="display:flex;justify-content:space-between"><small>${c.vencimento ? "vence dia " + esc(c.vencimento) : "sem vencimento"}${c.juros ? " · " + String(c.juros).replace(".", ",") + "% a.m." : ""}</small><small>disponível ${R$(dispCartao(c))}</small></div></div>
+        if (!minimo("c" + c.id, true)) return cartaoAberto(c, fat, uso);
+        return `<div class="fn-plast${minimo("c" + c.id, true) ? " min" : ""}${c.status === "Quitado" ? " quitado" : /atras/i.test(c.status || "") ? " atraso" : ""}"><div class="frente"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${esc(c.nome)}</b><span class="fn-chip neutro" style="background:rgba(255,255,255,.22);color:#fff">${esc(c.status || "Ativo")}</span></div><span class="num">•••• •••• •••• ${esc(c.final || "")}</span><div style="display:flex;justify-content:space-between"><small>${c.vencimento ? "vence dia " + esc(c.vencimento) : "sem vencimento"}${c.juros ? " · " + String(c.juros).replace(".", ",") + "% a.m." : ""}</small><small>disponível ${R$(dispCartao(c))}</small></div></div>
           ${uso !== null ? `<div><div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--suave);margin-bottom:4px"><span>Limite usado</span><span>${Math.round(uso * 100)}% de ${R$(c.limite)}</span></div><div class="fn-barra"><i style="width:${(uso * 100).toFixed(1)}%;background:${uso > 0.8 ? "#b8473a" : uso > 0.3 ? "#a87058" : "#4f7a54"}"></i></div></div>` : ""}
           <div class="fn-par"><span>Fatura de ${MES3[st.ref.m].toLowerCase()}<b>${fat ? R$(fat.valor) : "–"}</b></span><span>Situação<b>${fat ? (fat.pago ? "Paga" : vencido(fat) ? "Vencida" : "A pagar") : "–"}</b></span><span>Próxima fatura<b>${R$(c.proximaFatura)}</b></span><span>Falta pagar<b>${R$(dividaCartao(c))}</b></span></div>
           ${c.status !== "Quitado" || comprasDaFatura(c, st.ref.y, st.ref.m).length ? blocoCompras(c) : ""}
           <div class="fn-resumo"><span>Fatura de ${MES3[st.ref.m].toLowerCase()}<b>${fat ? R$(fat.valor) : "–"}</b></span><span>Falta pagar<b>${R$(dividaCartao(c))}</b></span></div>
-          <div class="fn-acoes">${botaoMin("c" + c.id, c.status === "Quitado")}${fat ? `<button class="fn-btn pequeno" type="button" data-pagar="${esc(fat.id)}">${ICONE.check}${fat.pago ? "Desmarcar" : "Paguei a fatura"}</button>` : `<button class="fn-btn pequeno" type="button" data-fatura="${esc(c.id)}">${ICONE.mais}Lançar fatura</button>`}<button class="fn-icone" type="button" data-editar-c="${esc(c.id)}" aria-label="Editar">${ICONE.lapis}</button></div></div>`;
+          <div class="fn-acoes">${botaoMin("c" + c.id, true)}${fat ? `<button class="fn-btn pequeno" type="button" data-pagar="${esc(fat.id)}">${ICONE.check}${fat.pago ? "Desmarcar" : "Paguei a fatura"}</button>` : `<button class="fn-btn pequeno" type="button" data-fatura="${esc(c.id)}">${ICONE.mais}Lançar fatura</button>`}<button class="fn-icone" type="button" data-editar-c="${esc(c.id)}" aria-label="Editar">${ICONE.lapis}</button></div></div>`;
       }).join("") || `<p class="fn-vazio">Nenhum cartão ainda.</p>`}</div>`;
   }
   function telaEmprestimos() {
@@ -530,6 +535,45 @@
   const minimo = (id, padrao) => (id in MIN ? MIN[id] : padrao);
   const botaoMin = (id, padrao) => { const m = minimo(id, padrao); return `<button class="fn-icone fn-min-btn" type="button" data-min="${esc(id)}" data-padrao="${padrao ? 1 : 0}" aria-expanded="${!m}" title="${m ? "Ver tudo" : "Minimizar"}" aria-label="${m ? "Ver tudo" : "Minimizar"}"><svg viewBox="0 0 24 24"><path d="${m ? "M6 9l6 6 6-6" : "M6 15l6-6 6 6"}"/></svg></button>`; };
   const guardarMin = () => { try { localStorage.setItem("fn-min", JSON.stringify(MIN)); } catch (e) { /* sem armazenamento */ } };
+  // nov/2026 (referência da Mari): cartão aberto em painel, com o cartão desenhado, a fatura, gastos por etiqueta, gastos por dia e as compras
+  const corEtq = (k) => k === "Sem detalhe" ? "#c9c4d6" : CORES_CAT[Math.max(0, CAT_SAIDA.indexOf(k)) % CORES_CAT.length];
+  function cartaoAberto(c, fat, uso) {
+    const ks = comprasDaFatura(c, st.ref.y, st.ref.m).sort((a, b) => String(b.data).localeCompare(String(a.data)));
+    const somado = Math.round(ks.reduce((a, k) => a + k.parte.valor, 0) * 100) / 100, valorFat = fat ? Number(fat.valor) || 0 : somado;
+    const semDet = Math.max(0, Math.round((valorFat - somado) * 100) / 100);
+    const porEtq = {}; ks.forEach((k) => { const e = k.categoria || catAuto(k.descricao) || "Outros"; porEtq[e] = (porEtq[e] || 0) + k.parte.valor; });
+    const itens = Object.entries(porEtq).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ k, v }));
+    if (semDet > 0.004) itens.push({ k: "Sem detalhe", v: semDet });
+    const total = itens.reduce((a, x) => a + x.v, 0);
+    const curto = (v) => v >= 1000 ? "R$ " + (v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "k" : "R$ " + Math.round(v);
+    // gastos por dia das compras desta fatura
+    const dias = {}; ks.forEach((k) => { dias[k.data] = (dias[k.data] || 0) + k.parte.valor; });
+    const ld = Object.entries(dias).sort((a, b) => a[0].localeCompare(b[0])), maxD = Math.max(1, ...ld.map(([, v]) => v));
+    const ym = ymDe(st.ref.y, st.ref.m), conf = (c.conferidas || {})[ym], dif = conf != null ? Math.round((conf - somado) * 100) / 100 : null;
+    const cls = c.status === "Quitado" ? " quitado" : /atras/i.test(c.status || "") ? " atraso" : "";
+    return `<div class="fn-plast fn-cd${cls}">
+      <div class="fn-cd-lado">
+        <div class="frente"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${esc(c.nome)}</b><span class="fn-chip neutro" style="background:rgba(255,255,255,.22);color:#fff">${esc(c.status || "Ativo")}</span></div><span class="fn-cd-chip" aria-hidden="true"></span><span class="num">•••• •••• •••• ${esc(c.final || "")}</span><small>${c.vencimento ? "vence dia " + esc(c.vencimento) : "sem vencimento"}${c.fechamento ? " · fecha dia " + esc(c.fechamento) : ""}${c.juros ? " · " + String(c.juros).replace(".", ",") + "% a.m." : ""}</small></div>
+        <div class="fn-cd-disp"><small>Limite disponível</small><b>${R$(dispCartao(c))}</b>
+          ${uso !== null ? `<div class="fn-barra"><i style="width:${(uso * 100).toFixed(1)}%;background:${uso > 0.8 ? "#b8473a" : uso > 0.3 ? "#a87058" : "#4f7a54"}"></i></div><small>${Math.round(uso * 100)}% de ${R$(c.limite)} usado</small>` : ""}</div>
+        <div class="fn-par"><span>Situação<b>${fat ? (fat.pago ? "Paga" : vencido(fat) ? "Vencida" : "A pagar") : "–"}</b></span><span>Próxima fatura<b>${R$(c.proximaFatura)}</b></span><span>Falta pagar<b>${R$(dividaCartao(c))}</b></span></div>
+        <div class="fn-acoes">${botaoMin("c" + c.id, true)}${fat ? `<button class="fn-btn pequeno" type="button" data-pagar="${esc(fat.id)}">${ICONE.check}${fat.pago ? "Desmarcar" : "Paguei a fatura"}</button>` : `<button class="fn-btn pequeno" type="button" data-fatura="${esc(c.id)}">${ICONE.mais}Lançar fatura</button>`}<button class="fn-icone" type="button" data-editar-c="${esc(c.id)}" aria-label="Editar cartão">${ICONE.lapis}</button></div>
+      </div>
+      <div class="fn-cd-meio">
+        <div class="fn-cd-topo"><div><small>Fatura de ${MESES[st.ref.m].toLowerCase()}</small><b>${R$(valorFat)}</b><span class="fn-cd-expl">${somado > 0 ? `${R$(somado)} em compras lançadas${semDet > 0.004 ? ` · ${R$(semDet)} sem detalhe` : ""}` : "Lance as compras do dia a dia para ver onde foi o dinheiro"}</span></div>
+          <button class="fn-btn pequeno principal" type="button" data-nova-compra="${esc(c.id)}">${ICONE.mais}Compra</button></div>
+        <div class="fn-cd-graf">
+          <div class="fn-cd-bloco"><h4>Gastos por etiqueta</h4>${total > 0 ? `<div class="fn-cd-rosca">${rosca(itens, total, curto(total), itens.map((x) => corEtq(x.k)))}<ul>${itens.map((x) => `<li><i style="background:${corEtq(x.k)}"></i><span>${esc(x.k)}</span><em>${Math.round(x.v / total * 100)}%</em><b>${R$(x.v)}</b></li>`).join("")}</ul></div>` : `<p class="fn-vazio">Sem gastos nesta fatura ainda.</p>`}</div>
+          <div class="fn-cd-bloco"><h4>Gastos por dia</h4>${ld.length ? `<div class="fn-cd-barras">${ld.map(([dt, v]) => `<div title="${dataBR(dt)}: ${R$(v)}"><i style="height:${Math.max(4, v / maxD * 100).toFixed(1)}%"></i><small>${dt.slice(8, 10)}/${dt.slice(5, 7)}</small></div>`).join("")}</div>` : `<p class="fn-vazio">As compras lançadas aparecem aqui, dia a dia.</p>`}</div>
+        </div>
+        <div class="fn-cd-bloco"><h4>Compras na fatura</h4>
+          ${ks.length ? `<div class="fn-cd-lista">${ks.map((k) => { const e = k.categoria || catAuto(k.descricao) || "Outros"; return `<div class="fn-cd-item"><span class="fn-cd-dia">${dataBR(k.data).slice(0, 5)}</span><span class="fn-cd-desc"><b>${esc(k.descricao)}</b>${k.parte.de > 1 ? `<small>parcela ${k.parte.n} de ${k.parte.de}</small>` : ""}</span><span class="fn-cd-etq" style="--c:${corEtq(e)}">${esc(e)}</span><span class="fn-valor">${R$(k.parte.valor)}</span><button class="fn-icone" type="button" data-editar-compra="${esc(k.id)}" aria-label="Editar compra">${ICONE.lapis}</button></div>`; }).join("")}</div>` : `<p class="fn-vazio">Nenhuma compra lançada nesta fatura.</p>`}
+          <div class="fn-conferir"><span>Somado: <b>${R$(somado)}</b></span><label>Veio no banco <input class="fn-entrada" inputmode="decimal" data-conferir="${esc(c.id)}" value="${conf != null ? esc(Number(conf).toLocaleString("pt-BR", { minimumFractionDigits: 2 })) : ""}" placeholder="0,00"></label></div>
+          ${dif === null ? "" : Math.abs(dif) < 0.01 ? `<p class="fn-bateu ok">✓ Bateu certinho com o banco.</p>` : `<p class="fn-bateu mal">${dif > 0 ? `O banco cobrou ${R$(dif)} a mais do que você lançou.` : `O banco cobrou ${R$(-dif)} a menos do que você lançou. Confira se alguma compra caiu na próxima fatura.`} A fatura usa o valor do banco.</p>`}
+        </div>
+      </div>
+    </div>`;
+  }
   function blocoCompras(c) {
     const ks = comprasDaFatura(c, st.ref.y, st.ref.m).sort((a, b) => String(b.data).localeCompare(String(a.data))), somado = ks.reduce((a, k) => a + k.parte.valor, 0);
     const ym = ymDe(st.ref.y, st.ref.m), conf = (c.conferidas || {})[ym], dif = conf != null ? Math.round((conf - somado) * 100) / 100 : null;
@@ -984,6 +1028,7 @@
       }
       delete v.cartao; delete v.parcelas;
       const x = { ...l, ...v, valor: Number(v.valor) || 0, atrasado: false };
+      if (x.valorBase != null) x.valorBase = x.valor; // fatura editada à mão: esse passa a ser o valor dela
       const lista = D().lancamentos; const i = lista.findIndex((y) => y.id === x.id); if (i >= 0) lista[i] = x; else lista.push(x);
       anexarDepois(arq, x, x.id);
       toast(novo ? "Lançado." : "Salvo.");
@@ -1155,7 +1200,7 @@
     $$("[data-min]", raiz).forEach((b) => b.addEventListener("click", () => { MIN[b.dataset.min] = !minimo(b.dataset.min, b.dataset.padrao === "1"); guardarMin(); pintar(); }));
     $$("[data-min-todos]", raiz).forEach((b) => b.addEventListener("click", () => {
       const pre = b.dataset.minTodos, lista = pre === "c" ? d.cartoes : d.emprestimos, ids = lista.map((x) => pre + x.id);
-      const fechar = ids.some((id, i) => !minimo(id, lista[i].status === "Quitado"));
+      const fechar = ids.some((id, i) => !minimo(id, pre === "c" ? true : lista[i].status === "Quitado"));
       ids.forEach((id) => { MIN[id] = fechar; }); guardarMin(); pintar();
     }));
     $$("[data-fab]", raiz).forEach((b) => b.addEventListener("click", () => folha("O que você quer lançar?", [
