@@ -732,14 +732,49 @@
       ${r ? `<button class="btn" type="button" id="pc-plano-editar">Editar foco</button><button class="btn btn-perigo" type="button" id="pc-plano-excluir">Excluir</button>` : ""}</div></div>`;
     if (!r) { box.innerHTML = topo + `<p class="pc-ajuda">Ainda não tem plano. O primeiro chega no sábado de manhã, ou clique em Montar agora.</p>`; ligarPlano(box); return; }
     const p = r.plano || {}, c = p.contas || {};
-    const item = (it, onde) => `<li class="pc-plano-item pi-${esc(it.tipo || "prop")}${it.feito ? " feito" : ""}"><label><input type="checkbox" data-feito="${esc(it.id)}" data-onde="${onde}" ${it.feito ? "checked" : ""}><span><b>${esc(ROT_ITEM[it.tipo] || "Proposta")}</b> ${esc(String(it.texto || "").replace(/^(Gravar|Postar) /, ""))}</span></label>${it.post_id ? `<button type="button" class="pc-plano-abrir" data-post="${it.post_id}">abrir</button>` : ""}<button type="button" class="pc-plano-tirar" data-tirar="${esc(it.id)}" data-onde="${onde}" aria-label="Tirar do plano">×</button></li>`;
+    // visual de quadro (nov/2026, pedido da Mari: igual ao Organize de UGC's & Publis): um dia = uma coluna, uma tarefa = um cartão
+    const SV = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+    const IC_PL = {
+      gravar: SV('<rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/>'),
+      postar: SV('<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>'),
+      hora: SV('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+      ok: SV('<path d="m5 12 5 5 9-10"/>'),
+      abrir: SV('<path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>'),
+      tirar: SV('<path d="M6 6l12 12M18 6 6 18"/>'),
+    };
+    const separar = (it) => {
+      let t = String(it.texto || "").replace(/^(Gravar|Postar)\s+/i, "").trim(), fmt = "", hora = "";
+      const mf = t.match(/^(Reels?|Carrossel|Stories|Story|TikTok|Foto|Post|V[ií]deo|Shorts)\b\s*:?\s*/i);
+      if (mf) { fmt = mf[1]; t = t.slice(mf[0].length); }
+      const mh = t.match(/\s*(?:às|as)\s+(\d{1,2}(?::\d{2}|h\d{0,2})?)\s*$/i);
+      if (mh) { hora = mh[1]; t = t.slice(0, mh.index); }
+      return { titulo: t.trim() || String(it.texto || ""), fmt, hora };
+    };
+    const tarefas = (d) => (d.itens || []).filter((it) => it.tipo === "gravar" || it.tipo === "postar");
+    const todas = (p.dias || []).flatMap(tarefas), feitas = todas.filter((it) => it.feito).length;
+    const pct = todas.length ? Math.round(feitas / todas.length * 100) : 0;
+    const cartao = (it, onde) => {
+      const x = separar(it), tipo = it.tipo === "gravar" ? "gravar" : "postar";
+      return `<div class="pq-card pq-${tipo}${it.feito ? " feito" : ""}">
+        <div class="pq-card-topo"><span class="pq-ico">${IC_PL[tipo]}</span><span class="pq-tipo">${ROT_ITEM[tipo]}</span>
+          <span class="pq-acoes">${it.post_id ? `<button type="button" class="pq-btn" data-post="${it.post_id}" title="Abrir o post" aria-label="Abrir o post">${IC_PL.abrir}</button>` : ""}<button type="button" class="pq-btn" data-tirar="${esc(it.id)}" data-onde="${onde}" title="Tirar do plano" aria-label="Tirar do plano">${IC_PL.tirar}</button></span></div>
+        <div class="pq-titulo">${esc(x.titulo)}</div>
+        ${x.fmt ? `<div class="pq-sub">${esc(x.fmt)}</div>` : ""}
+        <div class="pq-rodape">${x.hora ? `<span class="pq-hora">${IC_PL.hora}${esc(x.hora)}</span>` : `<span></span>`}
+          <label class="pq-feito"><input type="checkbox" data-feito="${esc(it.id)}" data-onde="${onde}" ${it.feito ? "checked" : ""}><span>${it.feito ? IC_PL.ok + "Feito" : "Marcar feito"}</span></label></div>
+      </div>`;
+    };
+    const hj = iso(hoje);
     box.innerHTML = topo + `
       ${r.foco ? `<p class="pc-plano-foco"><b>Foco:</b> ${esc(r.foco)}</p>` : ""}
-      <p class="pc-plano-resumo">${plural(c.posts || 0, "post", "posts")}${p.novos ? ` (${plural(p.novos, "ideia nova", "ideias novas")} com roteiro)` : ""}${r.origem === "sabado" ? " · chegou no sábado" : ""}</p>
+      <div class="pq-resumo"><div class="pq-resumo-linha"><span>${plural(feitas, "tarefa feita", "tarefas feitas")} de ${todas.length} · ${plural(c.posts || 0, "post", "posts")}${p.novos ? ` (${plural(p.novos, "ideia nova", "ideias novas")} com roteiro)` : ""}</span><span>${pct}%</span></div><div class="pq-barra"><span style="width:${pct}%"></span></div>
+        <div class="pq-legenda"><span class="pq-leg pq-gravar">${IC_PL.gravar}Gravar</span><span class="pq-leg pq-postar">${IC_PL.postar}Postar</span></div></div>
       ${p.aviso ? `<p class="faixa faixa-erro">${esc(p.aviso)}</p>` : ""}
-      <div class="pc-plano-dias">${(p.dias || []).map((d) => `<div class="pc-plano-dia${d.data === iso(hoje) ? " hoje" : ""}"><div class="pc-plano-dia-cab"><b>${esc(d.nome)}</b><small>${brCurta(d.data)}</small></div>
-        <ul>${(d.itens || []).filter((it) => it.tipo === "gravar" || it.tipo === "postar").map((it) => item(it, d.data)).join("") || `<li class="pc-plano-livre">livre</li>`}</ul></div>`).join("")}</div>
-      ${false ? `<div class="pc-plano-props"><b>Propostas para responder</b> <button type="button" class="btn-link" data-ir="propostas">abrir Propostas</button><ul>${p.propostas.map((it) => item(it, "propostas")).join("")}</ul></div>` : ""}`;
+      <div class="pq-quadro">${(p.dias || []).map((d) => { const its = tarefas(d), passou = d.data < hj; return `<div class="pq-col${d.data === hj ? " hoje" : ""}${passou ? " passou" : ""}${its.length ? "" : " livre"}">
+        <div class="pq-col-topo"><span class="pq-ponto"></span><span class="pq-col-nome">${esc(d.nome)}${d.data === hj ? ` <em>hoje</em>` : ""}</span><span class="pq-col-data">${brCurta(d.data)}</span><span class="pq-col-n">${its.length}</span></div>
+        ${its.map((it) => cartao(it, d.data)).join("") || `<div class="pq-vazio">Dia livre</div>`}</div>`; }).join("")}</div>`;
+    const qd = $(".pq-quadro", box), colHoje = $(".pq-col.hoje", box);
+    if (qd && colHoje) qd.scrollLeft = Math.max(0, colHoje.offsetLeft - qd.offsetLeft - 8);
     ligarPlano(box);
   }
   async function salvarPlano(campos) {
