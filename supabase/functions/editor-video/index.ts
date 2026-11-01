@@ -15,6 +15,8 @@
 // - JSON { acao: "corrigir", comentario, plano, opc, titulo, palavras, padrao, roteiro, historico }:
 //   ela comenta o que não gostou; volta o plano corrigido, os ajustes visuais que mudam
 //   (legenda, título, cor, efeitos), o que foi feito e uma regra para guardar no padrão.
+// Vídeo longo (nov/2026): a fala vai em frases curtas com o tempo no começo (falaCompacta) e, se o modelo recusar
+// (limite grátis de tokens por minuto), tenta outros modelos do Groq (chatJson, lista MODELOS).
 // Segredo: GROQ_API_KEY (só no Supabase). Só a dona do painel pode usar.
 // =========================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -68,23 +70,53 @@ function normalizar(a: any) {
   };
 }
 
+// nov/2026: vídeo longo estourava o limite grátis do Groq (8 mil tokens por minuto no gpt-oss-120b) e dava
+// "A IA não respondeu agora". Agora a fala vai em frases curtas com o tempo no começo de cada uma (bem menor
+// que palavra por palavra) e, se um modelo recusar (limite, pedido grande), tenta o próximo.
+const MODELOS = ["openai/gpt-oss-120b", "meta-llama/llama-4-scout-17b-16e-instruct", "llama-3.3-70b-versatile", "openai/gpt-oss-20b"];
+async function chatJson(chave: string, pedido: string, max: number, temperatura = 0.3) {
+  let limite = false;
+  for (const model of MODELOS) {
+    const corpo: any = { model, temperature: temperatura, max_tokens: model.startsWith("openai/") ? max : Math.min(max, 8000), response_format: { type: "json_object" }, messages: [{ role: "user", content: pedido }] };
+    if (model.startsWith("openai/")) corpo.reasoning_effort = "low";
+    const r = await fetch(`${GROQ}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+    const j = await r.json().catch(() => ({}));
+    const conteudo = String(j.choices?.[0]?.message?.content || "");
+    if (r.ok && conteudo) return conteudo;
+    if (r.status === 429) limite = true;
+    console.error("Modelo recusou:", model, r.status, String(j?.error?.message || "").slice(0, 300));
+  }
+  throw new Error(limite ? "O limite grátis da IA deste minuto acabou. Espere um minutinho e tente de novo." : "A IA não respondeu agora. Tente de novo.");
+}
+// fala em frases curtas: "[12.3] palavra palavra ..." (nova frase a cada 10 palavras ou numa pausa maior que meio segundo)
+function falaCompacta(palavras: any[]) {
+  const out: string[] = []; let atual: string[] = [], n = 0, fimAnt = -1;
+  for (const p of palavras) {
+    const s = Number(p.s) || 0;
+    if (!atual.length || n >= 10 || (fimAnt >= 0 && s - fimAnt > 0.5)) { if (atual.length) out.push(atual.join(" ")); atual = [`[${s.toFixed(1)}]`]; n = 0; }
+    atual.push(String(p.w || "").trim()); n++; fimAnt = Number(p.e) || s;
+  }
+  if (atual.length) out.push(atual.join(" "));
+  return out.join(" ");
+}
+
 async function plano(chave: string, c: any) {
   const palavras = (Array.isArray(c.palavras) ? c.palavras : []).slice(0, 4000);
   if (!palavras.length) {
     if (c.roteiro) return planoPeloRoteiro(chave, c);
     throw new Error("Não tem fala nesse vídeo para eu planejar a edição.");
   }
-  const fala = palavras.map((p: any) => `[${Number(p.s).toFixed(1)}] ${p.w}`).join(" ");
+  const fala = falaCompacta(palavras), longo = palavras.length > 500;
   const pedido = `Você é videomaker e editor de Reels de uma criadora brasileira de UGC. Planeje a edição do vídeo bruto abaixo seguindo o PADRÃO DE EDIÇÃO dela.
 
 PADRÃO DE EDIÇÃO:
-${txt(c.padrao, 6000)}
+${txt(c.padrao, longo ? 3000 : 6000)}
 
 ${c.tema ? "TEMA / MARCA: " + txt(c.tema, 300) + "\n" : ""}${c.roteiro ? `ROTEIRO QUE ELA IDEALIZOU (cenas, falas, voice-over e direções; use como guia da edição):
-${txt(c.roteiro, 3500)}
+${txt(c.roteiro, longo ? 2000 : 3500)}
 
 ` : ""}DURAÇÃO DO BRUTO: ${num(c.duracao) ?? "?"} s
-FALA (cada palavra com o segundo em que começa, no tempo do vídeo bruto):
+FALA (frases curtas; o número entre colchetes é o segundo do vídeo bruto em que a frase começa, e as palavras seguem em ritmo normal até a próxima marca):
 ${fala}
 
 Responda SOMENTE um JSON:
@@ -108,13 +140,7 @@ Regras:
 - COM ROTEIRO: o título sai do gancho do roteiro (condensado). Direções de cena, texto na tela e voice-over do roteiro viram "broll" (no tempo do bloco correspondente, dizendo "do roteiro: ...") e efeitos (texto na tela = pop, troca de cena = woosh).
 - COM ROTEIRO: "roteiro_check" com todos os blocos do roteiro, na ordem. "faltou" quando o bloco não aparece na fala (diga o que gravar), "mudou" quando ela falou diferente de um jeito que muda a ideia. "t" é o segundo do bruto onde o bloco começa (0 se faltou).` : ""}
 - Português do Brasil. Nunca use travessão.`;
-  const r = await fetch(`${GROQ}/chat/completions`, {
-    method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.3, max_tokens: 4500, reasoning_effort: "low", response_format: { type: "json_object" }, messages: [{ role: "user", content: pedido }] }),
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(r.status === 429 ? "O limite grátis da IA deste minuto acabou. Espere um pouquinho e tente de novo." : "A IA não respondeu agora. Tente de novo.");
-  return normalizar(lerJson(String(j.choices?.[0]?.message?.content || "")));
+  return normalizar(lerJson(await chatJson(chave, pedido, longo ? 3500 : 4500)));
 }
 
 // vídeo SEM fala (gravado sem som, ou só cenas): a edição sai do roteiro. Cada clipe enviado é
@@ -152,13 +178,7 @@ Regras:
 - "zooms": 1 a cada 3 a 5 s; "efeitos": woosh ou suave em cada troca de clipe, pop quando entra texto na tela, cristal quando aparece o produto, riser/hit no gancho, spray/brilho quando a direção de cena pedir. Ela gosta de vídeo dinâmico.
 - Todos os tempos em segundos do bruto, 1 casa decimal, dentro de 0 e a duração.
 - Português do Brasil. Nunca use travessão.`;
-  const r = await fetch(`${GROQ}/chat/completions`, {
-    method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.3, max_tokens: 4500, reasoning_effort: "low", response_format: { type: "json_object" }, messages: [{ role: "user", content: pedido }] }),
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(r.status === 429 ? "O limite grátis da IA deste minuto acabou. Espere um pouquinho e tente de novo." : "A IA não respondeu agora. Tente de novo.");
-  const p = normalizar(lerJson(String(j.choices?.[0]?.message?.content || "")));
+  const p = normalizar(lerJson(await chatJson(chave, pedido, 4500)));
   return { ...p, sem_fala: true, destaques: [] };
 }
 
@@ -202,7 +222,7 @@ for (const k of ["chamativas", "sonsChamativas", "confete", "tremer", "flash", "
 
 async function corrigir(chave: string, c: any) {
   const palavras = (Array.isArray(c.palavras) ? c.palavras : []).slice(0, 3000);
-  const fala = palavras.map((p: any) => `[${Number(p.s).toFixed(1)}] ${p.w}`).join(" ");
+  const fala = palavras.length ? falaCompacta(palavras) : "";
   const atual = { titulo: txt(c.titulo, 60), ...(c.plano || {}) };
   delete (atual as any).roteiro_check;
   const pedido = `Você é videomaker e editor de Reels de uma criadora brasileira de UGC. Você editou um vídeo e ela pediu correções. Corrija a edição exatamente como ela pediu.
@@ -210,7 +230,7 @@ async function corrigir(chave: string, c: any) {
 PADRÃO DE EDIÇÃO DELA (tirado das referências que ela mandou):
 ${txt(c.padrao, 4000)}
 
-${c.roteiro ? "ROTEIRO DELA:\n" + txt(c.roteiro, 2000) + "\n\n" : ""}${fala ? "FALA DO VÍDEO BRUTO (segundo em que cada palavra começa):\n" + fala : "O VÍDEO NÃO TEM FALA: o que aparece escrito na tela está em \"textos\" do plano (de, ate, texto). Para mudar o texto na tela, mexa em \"textos\"."}
+${c.roteiro ? "ROTEIRO DELA:\n" + txt(c.roteiro, 2000) + "\n\n" : ""}${fala ? "FALA DO VÍDEO BRUTO (frases curtas; o número entre colchetes é o segundo em que a frase começa):\n" + fala : "O VÍDEO NÃO TEM FALA: o que aparece escrito na tela está em \"textos\" do plano (de, ate, texto). Para mudar o texto na tela, mexa em \"textos\"."}
 
 PLANO ATUAL DA EDIÇÃO:
 ${JSON.stringify(atual).slice(0, 6000)}
@@ -227,13 +247,7 @@ Responda SOMENTE um JSON com o plano inteiro já corrigido (mesmo formato do pla
 "regra": uma regra curta e geral para o padrão de edição dela valer nos próximos vídeos (ex. "Legenda em maiúsculas, forte com contorno, no meio da tela"), ou "" se a correção só vale para este vídeo.
 IMPORTANTE: o pedido dela TEM que mudar o vídeo. Traduza cada pedido em mudança concreta no plano (remover com os tempos certos para cortar trechos, efeitos com tempo e tipo, zooms, destaques, título) ou nos ajustes visuais (opc). Exemplos: "corta o começo até eu falar X" = remover de 0 até o tempo da palavra X; "tira os cliques" = tirar efeitos click/shutter e sfxAuto "pouco"; "mais dinâmico" = mais efeitos e zooms, ritmo "turbo", sfxAuto "muito"; "legenda maior" = tamLeg maior. Mantenha no plano tudo que ela não pediu para mudar. Se algo não der para fazer com esses recursos, diga claramente na resposta o que não deu e como ela faz à mão (abas Cortes, Legendas e Visual).
 Se ela pedir para corrigir o TEXTO de uma legenda, explique na resposta que ela pode editar direto na lista de Legendas (o texto da legenda não muda por aqui). Regras: efeitos só destes tipos: woosh, suave, pop, click, shutter, typing, riser, hit, ding, cristal, brilho, spray, mensagem, relogio. Tempos em segundos do bruto. Português do Brasil. Nunca use travessão.`;
-  const r = await fetch(`${GROQ}/chat/completions`, {
-    method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.2, max_tokens: 8000, reasoning_effort: "low", response_format: { type: "json_object" }, messages: [{ role: "user", content: pedido }] }),
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(r.status === 429 ? "O limite grátis da IA deste minuto acabou. Espere um pouquinho e tente de novo." : "A IA não respondeu agora. Tente de novo.");
-  const a = lerJson(String(j.choices?.[0]?.message?.content || ""));
+  const a = lerJson(await chatJson(chave, pedido, palavras.length > 500 ? 5000 : 7000, 0.2));
   if (!a || typeof a !== "object" || (!a.opc && !Array.isArray(a.efeitos) && !Array.isArray(a.remover) && !a.titulo)) throw new Error("Não consegui aplicar essa correção agora. Tente de novo.");
   // o que a IA não devolveu continua como estava (resposta pela metade não apaga a edição)
   const novo = normalizar({ ...(c.plano || {}), titulo: c.titulo, ...a });
