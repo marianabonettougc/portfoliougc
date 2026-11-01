@@ -493,3 +493,26 @@ a{color:var(--principal)}
 .fn-voltar:hover{color:inherit}
 .fn-voltar svg,.fn-voltar-cel svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .fn-voltar-cel{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit}
+
+/* cards do Dashboard clicáveis + janela de detalhe (nov/2026) */
+.fn-kpi.clica{cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}
+.fn-kpi.clica:hover{transform:translateY(-2px)}
+.fn-kpi.clica:active{transform:scale(.98)}
+.fn-kpi.clica:focus-visible{outline:3px solid var(--principal);outline-offset:2px}
+.fn-detalhe{width:calc(100% - 32px);max-width:540px;max-height:86vh;overflow:auto;border-radius:22px;padding:20px}
+.fn-det-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.fn-det-cab h2{margin:0;color:var(--texto);font-size:17px}
+.fn-det-res{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:14px}
+.fn-det-res > div{background:var(--bege);border-radius:14px;padding:10px 12px;min-width:0}
+.fn-det-res small{display:block;font-size:11px;color:var(--suave)}
+.fn-det-res b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.fn-det-res .ok b{color:var(--verde)} .fn-det-res .mal b{color:var(--vermelho)} .fn-det-res .amb b{color:#b8862b}
+.fn-detalhe h4{font-size:13px;margin:4px 0 4px;color:var(--suave);font-weight:600}
+.fn-detalhe button.fn-item{width:100%;background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;cursor:pointer;color:inherit;font:inherit}
+.fn-detalhe button.fn-item:first-child{border-top:0}
+.fn-det-nota{font-size:11.5px;color:var(--suave);margin:8px 0 0}
+.fn-det-acoes{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.fn-det-acoes .fn-btn{flex:1 1 0;justify-content:center}
+.tema-mari .fn-det-res > div{background:#f4f2fe}
+.tema-edu .fn-det-res > div{background:#eef2f8}
+@media (max-width:900px){.fn-detalhe{max-height:88vh;max-width:100%;width:100%;border-radius:24px 24px 0 0}}
