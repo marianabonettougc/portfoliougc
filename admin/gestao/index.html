@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611010250"></script>
-<script src="../../js/dialogos.js?v=202611010250"></script>
-<script src="../../js/corretor.js?v=202611010250"></script>
+<script src="../../js/banco.js?v=202611010300"></script>
+<script src="../../js/dialogos.js?v=202611010300"></script>
+<script src="../../js/corretor.js?v=202611010300"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -142,6 +142,12 @@
   .dn-card{ display:flex; align-items:center; gap:14px; text-align:left; background:var(--db-papel); border:1px solid var(--db-linha); border-radius:16px; padding:16px 18px; font:inherit; color:var(--db-texto); cursor:pointer; min-width:0; }
   .dn-card:hover{ border-color:var(--db-linha2); }
   .dn-clica{ cursor:pointer; }
+  .dn-apr li{ display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; }
+  .dn-apr li > button:first-child{ flex:1 1 220px; min-width:0; }
+  .dn-apr-acoes{ display:flex; gap:6px; margin-left:auto; padding-bottom:8px; }
+  .dn-apr .dn-apr-acoes button{ width:auto; display:inline-flex; align-items:center; gap:4px; border:1px solid var(--db-linha); background:var(--db-papel); color:var(--db-texto); border-radius:999px; padding:4px 10px; font:500 12px Poppins,sans-serif; cursor:pointer; }
+  .dn-apr-acoes .dn-apr-ok{ color:var(--db-verde); }
+  .dn-leg{ align-items:center; } .dn-abrir-cal{ margin-left:auto; display:inline-flex; align-items:center; gap:4px; }
   .dn-ico{ width:46px; height:46px; border-radius:50%; background:var(--db-bege2); color:var(--db-cafe); display:grid; place-items:center; flex:none; }
   .dn-ico-p{ width:36px; height:36px; }
   .dn-card-txt{ display:flex; flex-direction:column; min-width:0; }
@@ -2750,13 +2756,28 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const aprovacoes = [];
   ativos.forEach(j=>itensDoJob(j).forEach(([it,t])=>{
     const st = statusDoItem(it,t);
-    if(st==="Aprovação de roteiro") aprovacoes.push({id:"ar"+it.id, tipo:"roteiro", titulo:`Roteiro ${it.label||""}, ${j.marca}`, desde:it.prazoRoteiro||"", pagina:"jobs"});
-    else if(st==="Aprovação do conteúdo") aprovacoes.push({id:"ac"+it.id, tipo:"video", titulo:`${it.label||"Conteúdo"}, ${j.marca}`, desde:it.prazoConteudo||"", pagina:"jobs"});
+    if(st==="Aprovação de roteiro") aprovacoes.push({id:"ar"+it.id, tipo:"roteiro", titulo:`Roteiro ${it.label||""}, ${j.marca}`, desde:it.prazoRoteiro||"", pagina:"jobs", jobId:j.id, itemId:it.id});
+    else if(st==="Aprovação do conteúdo") aprovacoes.push({id:"ac"+it.id, tipo:"video", titulo:`${it.label||"Conteúdo"}, ${j.marca}`, desde:it.prazoConteudo||"", pagina:"jobs", jobId:j.id, itemId:it.id});
   }));
   ativos.filter(j=>["Aguardando Aprovação","Aprovação do Conteúdo","Aprovação de Roteiro"].includes(j.status) && !aprovacoes.some(a=>a.titulo.endsWith(", "+j.marca)))
-    .forEach(j=>aprovacoes.push({id:"aj"+j.id, tipo:/roteiro/i.test(j.status)?"roteiro":"video", titulo:`${resumoEntregas(j)||"Conteúdo"}, ${j.marca}`, desde:"", pagina:"jobs"}));
+    .forEach(j=>aprovacoes.push({id:"aj"+j.id, tipo:/roteiro/i.test(j.status)?"roteiro":"video", titulo:`${resumoEntregas(j)||"Conteúdo"}, ${j.marca}`, desde:"", pagina:"jobs", jobId:j.id}));
   (state.roteiros||[]).filter(r=>r.etapa==="Em Aprovação").forEach(r=>aprovacoes.push({id:"rq"+r.id, tipo:"roteiro", titulo:`Roteiro ${r.titulo}${r.cliente ? ", "+r.cliente : ""}`, desde:"", pagina:"roteiros"}));
   aprovacoes.sort((a,b)=>(a.desde||"9999").localeCompare(b.desde||"9999"));
+  // abrir um job direto na janela de edição (aba UGC's & Publis)
+  const abrirJob = (id) => { window.__abrirJob = id; go("jobs"); };
+  // muda o status de UM conteúdo do job (ex.: vídeo 2 aprovado); o job anda junto pelo conteúdo mais atrasado
+  function mudarItem(jobId, itemId, novo){
+    mudar(s=>({...s, jobs:(s.jobs||[]).map(j=>{
+      if(j.id!==jobId) return j;
+      const e = j.entregaveis || {}, m = (l)=>(l||[]).map(i=>i.id===itemId ? {...i, roteiroStatus:novo, concluido: novo==="Finalizado"} : i);
+      const nj = {...j, entregaveis:{...e, videos:m(e.videos), stories:m(e.stories)}};
+      const ets = [...(nj.entregaveis.videos||[]), ...(nj.entregaveis.stories||[])].map(etapaItem).filter(n=>n>=0);
+      if(ets.length && nj.status!=="Cancelado"){ const st = jobDoStatusItem(ROTEIRO_STATUS_OPTIONS[Math.min(...ets)], nj); if(st) nj.status = st; }
+      return nj;
+    })}));
+  }
+  // prazo: se o conteúdo está com a marca (aprovação) ou já foi entregue, o atraso não é dela
+  const comAMarca = (at) => at===3 || at===5 || at===6;
   // semana com setas (a rotina mostra o dia escolhido)
   const [semanaDesloc,setSemanaDesloc] = useState(0);
   const diasVistos = diasDaSemana.map(d=>{ const x = new Date(d); x.setDate(d.getDate()+semanaDesloc*7); return x; });
@@ -2829,12 +2850,12 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           {campanhas.length ? <div className="dn-tabela">
             <div className="dn-linha dn-cab"><span>Marca</span><span>Entregas</span><span>Etapa</span><span>Prazo</span></div>
             {campanhas.slice(0,6).map(j=>{ const p = progressoJob(j), at = etapaDoJob(j, state.roteiros), d = j.prazoEntrega ? diasAte(j.prazoEntrega) : null;
-              const abrir = ()=>{ window.__abrirJob = j.id; go("jobs"); };
-              return <div className="dn-linha dn-clica" key={j.id} onClick={(e)=>{ if(!e.target.closest("button")) abrir(); }}>
+              const abrir = ()=>abrirJob(j.id), marca = comAMarca(at);
+              return <div className="dn-linha dn-clica" key={j.id} onClick={abrir}>
                 <button className="dn-marca" onClick={abrir}><DbLogo marca={j.marca} logos={logos}/><span><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></button>
                 <span className="dn-prog">{p.total ? <><small>{p.feitos} de {p.total}</small><i><b style={{width:Math.max(3,p.pct)+"%"}}/></i></> : <small>sem entregáveis</small>}</span>
-                <span><button className={"dn-chip c-"+classeEtapa(at)} onClick={()=>avancarJob(j)} title={at<ETAPAS_JOB.length-1 ? `${ETAPAS_JOB[at]}. Toque para passar para ${ETAPAS_JOB[at+1]}` : ETAPAS_JOB[at]}>{nomeEtapa(at)}</button></span>
-                <span className="dn-prazo">{j.prazoEntrega ? <><b>{dataBR(j.prazoEntrega).slice(0,5)}</b><small className={d<0?"atr":d===0?"hj":""}>{d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : `em ${d} dia${d===1?"":"s"}`}</small></> : <small>sem prazo</small>}</span>
+                <span><span className={"dn-chip c-"+classeEtapa(at)} title={ETAPAS_JOB[at]}>{nomeEtapa(at)}</span></span>
+                <span className="dn-prazo">{j.prazoEntrega ? <><b>{dataBR(j.prazoEntrega).slice(0,5)}</b><small className={marca ? "" : d<0?"atr":d===0?"hj":""}>{marca && d<=0 ? (at===5 ? "entregue" : "com a marca") : d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : `em ${d} dia${d===1?"":"s"}`}</small></> : <small>sem prazo</small>}</span>
               </div>; })}
           </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
         </section>
@@ -2892,28 +2913,32 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
       <div className="dn-g2">
         {/* semana */}
         <section className="db-bloco dn-semana-bloco">
-          <div className="dn-bt"><h2>Minha semana</h2>
+          <div className="dn-bt"><h2 className="dn-clica" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")} title="Abrir o calendário">Minha semana</h2>
             <span className="dn-bt-dir"><button className="db-redondo db-redondo-p" onClick={()=>setSemanaDesloc(s=>s-1)} aria-label="Semana anterior"><DbIcone tipo="esq" tam={15}/></button>
               <span className="dn-sel">{diasVistos[0].getDate()} {MESES_EXT[diasVistos[0].getMonth()].slice(0,3)} a {diasVistos[6].getDate()} {MESES_EXT[diasVistos[6].getMonth()].slice(0,3)}</span>
               <button className="db-redondo db-redondo-p" onClick={()=>setSemanaDesloc(s=>s+1)} aria-label="Próxima semana"><DbIcone tipo="dir" tam={15}/></button></span></div>
           <div className="dn-sem">
             {diasVistos.map((d,i)=>{ const iso = isoLocal(d); const its = itensDoDia(iso);
-              return <button key={iso} className={"dn-dia"+(iso===hoje?" hoje":"")+(iso===diaSel?" sel":"")} onClick={()=>setDiaSel(iso)}>
+              return <button key={iso} className={"dn-dia"+(iso===hoje?" hoje":"")+(iso===diaSel?" sel":"")} onClick={()=>{ setDiaSel(iso); if(window.innerWidth<1000) setTimeout(()=>{ if(rotinaRef.current) rotinaRef.current.scrollIntoView({behavior:"smooth", block:"start"}); }, 60); }}>
                 <small>{DIAS_SEMANA[i]}</small><b>{String(d.getDate()).padStart(2,"0")}</b>
-                <span className="dn-evs">{its.slice(0,3).map(it=><span key={it.id} className={"dn-ev "+tipoItem(it)}><small>{ROTULO_TIPO[tipoItem(it)]}</small>{nomeEv(it)}</span>)}
+                <span className="dn-evs">{its.slice(0,3).map(it=><span key={it.id} className={"dn-ev "+tipoItem(it)} onClick={(e)=>{ if(it.pagina){ e.stopPropagation(); go(it.pagina); } }}><small>{ROTULO_TIPO[tipoItem(it)]}</small>{nomeEv(it)}</span>)}
                   {its.length>3 && <span className="dn-ev-mais">+{its.length-3}</span>}</span>
               </button>; })}
           </div>
-          <div className="dn-leg"><span className="grav">Gravar</span><span className="post">Postar</span><span className="ent">Entregar</span></div>
+          <div className="dn-leg"><span className="grav">Gravar</span><span className="post">Postar</span><span className="ent">Entregar</span><button className="db-link dn-abrir-cal" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}>Abrir calendário<DbIcone tipo="seta" tam={14}/></button></div>
         </section>
 
         {/* aguardando aprovação */}
         <section className="db-bloco dn-aprov">
           <div className="dn-bt"><h2>Aguardando aprovação</h2><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button></div>
           {aprovacoes.length ? <ul className="dn-apr">{aprovacoes.slice(0,5).map(a=>{ const d = a.desde ? -diasAte(a.desde) : null;
-            return <li key={a.id}><button onClick={()=>go(a.pagina)}><span className="dn-ico dn-ico-p"><DbIcone tipo={a.tipo==="roteiro"?"documento":"filme"} tam={17}/></span>
-              <span className="dn-txt"><b>{a.titulo}</b><small>{a.desde ? (d>=0 ? "Enviado em " : "Envio previsto para ")+dataBR(a.desde).slice(0,5) : "Esperando a marca"}</small></span>
-              {d>0 && <span className="dn-ha">há {d} dia{d===1?"":"s"}</span>}</button></li>; })}</ul>
+            const rot = a.tipo==="roteiro";
+            return <li key={a.id}><button onClick={()=>a.jobId ? abrirJob(a.jobId) : go(a.pagina)}><span className="dn-ico dn-ico-p"><DbIcone tipo={rot?"documento":"filme"} tam={17}/></span>
+              <span className="dn-txt"><b>{a.titulo}</b><small>{a.desde ? (d>=0 ? "Enviado em " : "Envio previsto para ")+dataBR(a.desde).slice(0,5) : "Esperando a marca"}{d>0 ? ` · há ${d} dia${d===1?"":"s"}` : ""}</small></span></button>
+              {a.itemId && <span className="dn-apr-acoes">
+                <button className="dn-apr-ok" onClick={()=>mudarItem(a.jobId, a.itemId, rot ? "Em produção" : "Finalizado")} title={rot ? "Roteiro aprovado: vai para produção" : "Conteúdo aprovado: finalizado"}><DbIcone tipo="check" tam={14}/>Aprovado</button>
+                <button className="dn-apr-aj" onClick={()=>mudarItem(a.jobId, a.itemId, rot ? "Roteirização" : "Refação")} title="A marca pediu ajuste">Ajuste</button>
+              </span>}</li>; })}</ul>
             : <p className="db-vazio">Nada esperando aprovação.</p>}
         </section>
 

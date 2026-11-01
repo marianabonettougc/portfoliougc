@@ -8,6 +8,7 @@
 // Como funciona: o Dashboard chama esta função ao abrir. Se já passaram 12 horas
 // desde a última busca, ela pede ao Apify uma busca nova; na próxima vez que o
 // Dashboard abrir (ou no botão Buscar agora), ela recolhe o resultado.
+// Capas: cada capa é copiada para o Storage (bucket público "capas", pasta insp/) porque o link do Instagram expira.
 // Só a dona do painel pode usar.
 // =========================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -65,6 +66,42 @@ async function recolher(token: string, estado: any, perfis: Set<string>) {
   return pendentes;
 }
 
+// as capas do Instagram/TikTok expiram em poucos dias: guarda uma cópia no Storage (bucket público "capas") e troca o link
+const NAVEGADOR = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+async function baixar(url: string, ua = NAVEGADOR) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+  try { return await fetch(url, { headers: { "User-Agent": ua }, redirect: "follow", signal: ctl.signal }); } finally { clearTimeout(t); }
+}
+async function imagemDe(url: string): Promise<{ bytes: Uint8Array; tipo: string } | null> {
+  try { const r = await baixar(url); const tipo = r.headers.get("content-type") || ""; if (!r.ok || !tipo.startsWith("image/")) return null;
+    const bytes = new Uint8Array(await r.arrayBuffer()); return bytes.length > 500 ? { bytes, tipo } : null; } catch { return null; }
+}
+async function capaNova(link: string): Promise<string> {
+  if (/tiktok\.com/i.test(link)) { try { const j = await (await baixar(`https://www.tiktok.com/oembed?url=${encodeURIComponent(link)}`)).json(); return j.thumbnail_url || ""; } catch { return ""; } }
+  for (const ua of ["facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)", NAVEGADOR]) {
+    try { const html = await (await baixar(link, ua)).text();
+      const m = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i) || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image/i);
+      if (m) return m[1].replace(/&amp;/g, "&"); } catch { /* tenta o próximo */ }
+  }
+  return "";
+}
+async function guardarCapas(limite = 40) {
+  const db = admin(), base = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/capas/`;
+  const umDia = new Date(Date.now() - 86400000).toISOString();
+  const { data } = await db.from("inspiracoes").select("id,rede,post_id,link,capa,capa_tentou").eq("oculto", false)
+    .or(`capa_tentou.is.null,capa_tentou.lt.${umDia}`).order("publicado_em", { ascending: false, nullsFirst: false }).limit(200);
+  const fila = (data || []).filter((x: any) => !String(x.capa || "").startsWith(base)).slice(0, limite);
+  const um = async (x: any) => {
+    let img = x.capa ? await imagemDe(x.capa) : null;
+    if (!img && x.link) { const u = await capaNova(x.link); if (u) img = await imagemDe(u); }
+    if (!img) { await db.from("inspiracoes").update({ capa_tentou: new Date().toISOString() }).eq("id", x.id); return; }
+    const caminho = `insp/${x.rede}-${String(x.post_id).replace(/[^\w-]/g, "")}.${img.tipo.includes("png") ? "png" : img.tipo.includes("webp") ? "webp" : "jpg"}`;
+    const { error } = await db.storage.from("capas").upload(caminho, img.bytes, { contentType: img.tipo, upsert: true });
+    await db.from("inspiracoes").update(error ? { capa_tentou: new Date().toISOString() } : { capa: base + caminho, capa_tentou: new Date().toISOString() }).eq("id", x.id);
+  };
+  for (let i = 0; i < fila.length; i += 8) await Promise.all(fila.slice(i, i + 8).map(um));
+}
+
 async function iniciar(token: string, ig: string[], tt: string[]) {
   const runs: { id: string; rede: string }[] = [];
   let erro = "";
@@ -109,6 +146,7 @@ Deno.serve(async (req) => {
       await salvarEstado(estado);
     }
 
+    try { await guardarCapas(corpo.capas ? 80 : 40); } catch (e) { console.error("capas:", e); }
     const { data: itens } = await supa.from("inspiracoes").select("*").in("perfil", [...todos].length ? [...todos] : ["-"]).eq("oculto", false)
       .order("publicado_em", { ascending: false, nullsFirst: false }).limit(80);
     return resposta({ itens: itens || [], semToken: !token, rodando, ultimaBusca: estado.iniciadoEm || null, aviso: aviso || estado.erro || "" });
