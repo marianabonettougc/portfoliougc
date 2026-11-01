@@ -312,7 +312,7 @@
   }
 
   // ---------- desenho ----------
-  const kpi = (t, v, ic, sub, tom, chip) => `<div class="fn-kpi ${tom || ""}"><div class="fn-kpi-t"><span class="fn-kpi-ic">${ICONE[ic] || ""}</span>${esc(t)}</div><div class="fn-kpi-v">${String(v).replace(/,(\d{2})$/, '<small>,$1</small>')}</div><div class="fn-kpi-s">${chip ? `<span class="fn-chip ${chip[1] || ""}">${chip[0]}</span>` : ""}${sub ? `<span>${sub}</span>` : ""}</div></div>`;
+  const kpi = (t, v, ic, sub, tom, chip, abre) => `<div class="fn-kpi ${tom || ""}${abre ? " clica" : ""}"${abre ? ` data-kpi="${abre}" role="button" tabindex="0" aria-label="Ver detalhes: ${esc(t)}"` : ""}><div class="fn-kpi-t"><span class="fn-kpi-ic">${ICONE[ic] || ""}</span>${esc(t)}</div><div class="fn-kpi-v">${String(v).replace(/,(\d{2})$/, '<small>,$1</small>')}</div><div class="fn-kpi-s">${chip ? `<span class="fn-chip ${chip[1] || ""}">${chip[0]}</span>` : ""}${sub ? `<span>${sub}</span>` : ""}</div></div>`;
   const delta = (a, b, inverter) => { const p = pct(a, b); if (p === null) return null; const bom = inverter ? p <= 0 : p >= 0; return [(p > 0 ? "▲ " : p < 0 ? "▼ " : "") + Math.abs(p) + "%", bom ? "" : "mal"]; };
   const CORES = ["#6b4a35", "#a87058", "#cdb39b", "#4f7a54", "#c9973b", "#4a6a8a", "#8a6650", "#d3a98f"];
   function rosca(itens, total, centro) {
@@ -387,11 +387,11 @@
     const proximos = d.lancamentos.filter((l) => l.tipo === "saida" && !l.pago).filter((l) => { const dias = (new Date(l.data + "T00:00:00") - new Date(hojeIso() + "T00:00:00")) / 864e5; return dias <= 30; }).sort((a, b) => a.data.localeCompare(b.data)).slice(0, 7);
     const dE = delta(ent, entA), dS = delta(sai, saiA, true);
     return `<div class="fn-kpis">
-        ${kpi("Entrou no mês", R$(ent), "entra", `${R$(soma(entradas(lm).filter((l) => !l.pago)))} a receber`, "", dE)}
-        ${kpi("Saiu no mês", R$(sai), "sai", `${R$(soma(saidas(lm).filter((l) => !l.pago)))} a pagar`, "", dS)}
-        ${kpi(sobra >= 0 ? "Sobrou no mês" : "Faltou no mês", R$(sobra), "carteira", "entradas menos saídas", sobra >= 0 ? "destaque" : "ruim")}
-        ${kpi("Dívida total", R$(divTotal), "queda", `${dividas.length} dívida${dividas.length === 1 ? "" : "s"} aberta${dividas.length === 1 ? "" : "s"}`)}
-        ${kpi("Livre das dívidas", !dividas.length ? "Sem dívidas 🎉" : p.meses === null ? "+10 anos" : mesDaqui(p.meses), "bandeira", p.meses ? `${p.meses} meses no plano` : "", "bom")}
+        ${kpi("Entrou no mês", R$(ent), "entra", `${R$(soma(entradas(lm).filter((l) => !l.pago)))} a receber`, "", dE, "entrou")}
+        ${kpi("Saiu no mês", R$(sai), "sai", `${R$(soma(saidas(lm).filter((l) => !l.pago)))} a pagar`, "", dS, "saiu")}
+        ${kpi(sobra >= 0 ? "Sobrou no mês" : "Faltou no mês", R$(sobra), "carteira", "entradas menos saídas", sobra >= 0 ? "destaque" : "ruim", null, "sobra")}
+        ${kpi("Dívida total", R$(divTotal), "queda", `${dividas.length} dívida${dividas.length === 1 ? "" : "s"} aberta${dividas.length === 1 ? "" : "s"}`, "", null, "divida")}
+        ${kpi("Livre das dívidas", !dividas.length ? "Sem dívidas 🎉" : p.meses === null ? "+10 anos" : mesDaqui(p.meses), "bandeira", p.meses ? `${p.meses} meses no plano` : "", "bom", null, "livre")}
       </div>
       <div class="fn-grade">
         <div class="fn-caixa"><div class="fn-cab"><div><h3>Entrou x saiu em ${st.ref.y}</h3><p class="sub">Toque num mês para ver os detalhes</p></div></div>
@@ -1034,11 +1034,57 @@
     f.showModal();
   }
 
+  // detalhe dos cards coloridos do Dashboard (abre ao tocar no card)
+  function detalheKpi(qual) {
+    const d = D(), lm = doMes(st.ref.y, st.ref.m), mesN = MESES[st.ref.m].toLowerCase() + " de " + st.ref.y;
+    const ant = new Date(st.ref.y, st.ref.m - 1, 1), la = doMes(ant.getFullYear(), ant.getMonth());
+    const dividas = listaDividas(), divTotal = dividas.reduce((a, x) => a + x.saldo, 0), p = plano(dividas, d.extra, st.metodo);
+    const linha = (l) => { const ent = l.tipo === "entrada", sit = l.pago ? (ent ? "Recebido" : "Pago") : vencido(l) ? "Vencido" : ent ? "A receber" : "A pagar";
+      return `<button type="button" class="fn-item" data-det-l="${esc(l.id)}"><div class="x"><b>${esc(l.descricao || "Sem descrição")}</b><small>${dataBR(l.data)} · ${esc(l.categoria || "")}</small></div><span class="fn-chip ${l.pago ? "" : vencido(l) ? "mal" : "amb"}">${sit}</span><span class="fn-valor ${ent ? "entra" : "sai"}">${R$(l.valor)}</span></button>`; };
+    const resumo = (itens) => `<div class="fn-det-res">${itens.map(([t, v, c]) => `<div${c ? ` class="${c}"` : ""}><small>${t}</small><b>${v}</b></div>`).join("")}</div>`;
+    const ordena = (l) => [...l].sort((a, b) => a.data.localeCompare(b.data));
+    let titulo = "", corpo = "", acoes = [];
+    if (qual === "entrou" || qual === "saiu") {
+      const ent = qual === "entrou", lista = ent ? entradas(lm) : saidas(lm), tot = soma(lista), feito = soma(lista.filter((l) => l.pago)), antT = soma(ent ? entradas(la) : saidas(la));
+      titulo = (ent ? "Entrou em " : "Saiu em ") + mesN;
+      corpo = resumo([["Total", R$(tot)], [ent ? "Recebido" : "Pago", R$(feito), "ok"], [ent ? "A receber" : "A pagar", R$(tot - feito), "amb"], ["Mês passado", R$(antT)]])
+        + (lista.length ? `<div class="fn-lista">${ordena(lista).map(linha).join("")}</div>` : `<p class="fn-vazio">Nada ${ent ? "entrou" : "saiu"} neste mês.</p>`);
+      acoes = [[ent ? "Ver todas as entradas" : "Ver todas as saídas", ent ? "entradas" : "saidas"]];
+    } else if (qual === "sobra") {
+      const e = soma(entradas(lm)), s = soma(saidas(lm)), cats = {};
+      saidas(lm).forEach((l) => { cats[l.categoria || "Outros"] = (cats[l.categoria || "Outros"] || 0) + Number(l.valor || 0); });
+      titulo = (e - s >= 0 ? "Sobrou em " : "Faltou em ") + mesN;
+      corpo = resumo([["Entrou", R$(e), "ok"], ["Saiu", R$(s), "mal"], [e - s >= 0 ? "Sobrou" : "Faltou", R$(e - s), e - s >= 0 ? "ok" : "mal"]])
+        + `<h4>Saídas por tipo</h4>` + (Object.keys(cats).length ? `<div class="fn-lista">${Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="fn-item"><div class="x"><b>${esc(k)}</b><small>${Math.round(v / Math.max(s, 1) * 100)}% das saídas</small></div><span class="fn-valor sai">${R$(v)}</span></div>`).join("")}</div>` : `<p class="fn-vazio">Nenhuma saída neste mês.</p>`);
+      acoes = [["Ver entradas", "entradas"], ["Ver saídas", "saidas"]];
+    } else if (qual === "divida") {
+      titulo = "Dívida total";
+      corpo = resumo([["Total devido", R$(divTotal), "mal"], ["Em cartões", R$(dividas.filter((x) => x.tipo === "Cartão").reduce((a, x) => a + x.saldo, 0))], ["Em empréstimos", R$(dividas.filter((x) => x.tipo !== "Cartão").reduce((a, x) => a + x.saldo, 0))]])
+        + (dividas.length ? `<div class="fn-lista">${[...dividas].sort((a, b) => b.saldo - a.saldo).map((x) => `<button type="button" class="fn-item" data-aba-det="${x.tipo === "Cartão" ? "cartoes" : "emprestimos"}"><div class="x"><b>${esc(x.nome)}</b><small>${x.tipo} · mínimo ${R$(x.minimo)}/mês${x.juros ? ` · ${String(x.juros).replace(".", ",")}% a.m.` : ""}</small></div><span class="fn-valor sai">${R$(x.saldo)}</span></button>`).join("")}</div>` : `<p class="fn-vazio">Nenhuma dívida aberta. 🎉</p>`);
+      acoes = [["Ver cartões", "cartoes"], ["Ver empréstimos", "emprestimos"]];
+    } else if (qual === "livre") {
+      titulo = "Livre das dívidas";
+      corpo = (dividas.length ? resumo([["Livre em", p.meses === null ? "+10 anos" : mesDaqui(p.meses), "ok"], ["Extra por mês", R$(d.extra)], ["Método", st.metodo === "bola" ? "Menor primeiro" : "Juros maior primeiro"]])
+        + `<h4>Ordem de quitação</h4><div class="fn-lista">${p.ordem.map((x, i) => `<div class="fn-item"><span class="fn-av" style="width:28px;height:28px;font-size:12px">${i + 1}</span><div class="x"><b>${esc(x.nome)}</b><small>${x.tipo} · ${R$(x.saldo)}</small></div><span class="fn-chip neutro">${x.quitada ? mesDaqui(x.quitada) : "–"}</span></div>`).join("")}</div>
+        <p class="fn-det-nota">O plano completo (com o valor extra por mês e a troca de método) fica mais abaixo no Início.</p>` : `<p class="fn-vazio">Você não tem dívidas abertas. 🎉</p>`);
+      acoes = [["Ver empréstimos", "emprestimos"], ["Ver cartões", "cartoes"]];
+    } else return;
+    let f = $("#fn-detalhe"); if (!f) { f = document.createElement("dialog"); f.id = "fn-detalhe"; f.className = "fn-folha fn-detalhe"; document.body.appendChild(f); }
+    f.innerHTML = tingir(`<div class="fn-det-cab"><h2>${esc(titulo)}</h2><button class="fn-icone" type="button" data-fechar aria-label="Fechar">✕</button></div>${corpo}
+      <div class="fn-det-acoes">${acoes.map(([t, a]) => `<button class="fn-btn" type="button" data-aba-det="${a}">${esc(t)}</button>`).join("")}</div>`);
+    $$("[data-det-l]", f).forEach((b) => b.addEventListener("click", () => { const l = d.lancamentos.find((x) => String(x.id) === b.dataset.detL); f.close(); if (l) editarLancamento(l); }));
+    $$("[data-aba-det]", f).forEach((b) => b.addEventListener("click", () => { f.close(); st.aba = b.dataset.abaDet; pintar(); window.scrollTo(0, 0); }));
+    $("[data-fechar]", f).addEventListener("click", () => f.close());
+    f.onclick = (e) => { if (e.target === f) f.close(); };
+    f.showModal();
+  }
+
   // ---------- eventos ----------
   function ligar() {
     requestAnimationFrame(() => $$(".fn-rolar").forEach((r) => { r.scrollLeft = 0; }));
     const raiz = $("#raiz"), d = D(), acha = (lista, id) => (lista || []).find((x) => String(x.id) === String(id));
     $$("[data-aba]", raiz).forEach((b) => b.addEventListener("click", () => { st.aba = b.dataset.aba; pintar(); window.scrollTo(0, 0); }));
+    $$("[data-kpi]", raiz).forEach((b) => { b.addEventListener("click", () => detalheKpi(b.dataset.kpi)); b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); detalheKpi(b.dataset.kpi); } }); });
     $$("[data-min]", raiz).forEach((b) => b.addEventListener("click", () => { MIN[b.dataset.min] = !minimo(b.dataset.min, b.dataset.padrao === "1"); guardarMin(); pintar(); }));
     $$("[data-min-todos]", raiz).forEach((b) => b.addEventListener("click", () => {
       const pre = b.dataset.minTodos, lista = pre === "c" ? d.cartoes : d.emprestimos, ids = lista.map((x) => pre + x.id);
