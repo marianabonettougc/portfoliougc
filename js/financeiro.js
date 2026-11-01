@@ -95,7 +95,7 @@
   ICONE.calendario = '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
   ICONE.banco = '<svg viewBox="0 0 24 24"><path d="M3.5 9.5 12 4l8.5 5.5M5 20.5h14M6.5 10.5v7M10 10.5v7M14 10.5v7M17.5 10.5v7M4 9.5h16"/></svg>';
 
-  const st = { sessao: null, email: "", dona: false, perfis: {}, atual: "mari", aba: "dash", ref: (() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })(), anoAba: "saida", anoAbertos: {}, metodo: "avalanche", salvando: null };
+  const st = { sessao: null, email: "", dona: false, perfis: {}, atual: "mari", aba: "dash", ref: (() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })(), anoAba: "saida", anoAbertos: {}, metodo: "recomendado", salvando: null };
   const vazio = () => ({ cartoes: [], emprestimos: [], lancamentos: [], reserva: { atual: 0, metaMeses: 6, aporte: 0 }, investimentos: [], contas: [], compras: [], extra: 150 });
   const D = () => st.perfis[st.atual] || (st.perfis[st.atual] = vazio());
 
@@ -226,7 +226,10 @@
   }
   function plano(dividas, extra, metodo) {
     const lista = dividas.map((d) => ({ ...d, resta: d.saldo, quitada: null }));
-    const ordem = [...lista].sort((a, b) => (metodo === "avalanche" ? (b.juros - a.juros) || (a.resta - b.resta) : a.resta - b.resta));
+    // nov/2026: quatro estratégias (Cartões): recomendado (juros + tamanho + parcela juntos), menor dívida, maiores juros, liberar orçamento (maior parcela)
+    const mx = (k) => Math.max(1e-9, ...lista.map((d) => Number(d[k]) || 0));
+    const nota = (d) => 0.5 * ((Number(d.juros) || 0) / mx("juros")) + 0.3 * (1 - d.resta / mx("resta")) + 0.2 * (d.minimo / mx("minimo"));
+    const ordem = [...lista].sort((a, b) => metodo === "avalanche" ? (b.juros - a.juros) || (a.resta - b.resta) : metodo === "parcela" ? (b.minimo - a.minimo) || (a.resta - b.resta) : metodo === "recomendado" ? nota(b) - nota(a) : a.resta - b.resta);
     const linha = []; let mes = 0;
     while (lista.some((d) => d.resta > 0.5) && mes < 120) {
       mes++; let livre = Number(extra) || 0;
@@ -400,7 +403,7 @@
           <div class="fn-topo-acoes">${st.aba !== "acesso" && st.aba !== "anual" ? `<div class="fn-mes"><button type="button" data-mes="-1" aria-label="Mês anterior">‹</button><span>${MESES[st.ref.m]} ${st.ref.y}</span><button type="button" data-mes="1" aria-label="Próximo mês">›</button></div>
             <button class="fn-btn" type="button" data-novo="saida">${ICONE.sai}Saída</button><button class="fn-btn principal" type="button" data-novo="entrada">${ICONE.entra}Entrada</button>` : ""}<button class="fn-icone" type="button" data-olho title="Esconder valores" aria-label="Esconder valores">${ICONE.olho}</button></div></div>
         ${bloq ? `<div class="fn-aviso-bloq">${ICONE.anual}<span>Aqui é só para ver. Para lançar ou mudar valores, use a <b>Visão anual</b>.</span><button class="fn-btn pequeno principal" type="button" data-aba="anual">Abrir a Visão anual</button></div>` : ""}
-        <div id="fn-conteudo">${{ dash: telaDash, entradas: () => telaMovimento("entrada"), saidas: () => telaMovimento("saida"), cartoes: telaCartoes, emprestimos: telaEmprestimos, reserva: telaReserva, anual: telaAnual, acesso: telaAcesso }[st.aba]()}</div>
+        <div id="fn-conteudo">${blocoAjuda(st.aba)}${{ dash: telaDash, entradas: () => telaMovimento("entrada"), saidas: () => telaMovimento("saida"), cartoes: telaCartoes, emprestimos: telaEmprestimos, reserva: telaReserva, anual: telaAnual, acesso: telaAcesso }[st.aba]()}</div>
       </main>
       <nav class="fn-baixo">${NO_CELULAR.map((k) => `<button type="button" data-aba="${k}" class="${st.aba === k ? "on" : ""}">${ICONE[k] || ""}${CURTO[k] || TITULO[k]}</button>`).join("")}<button type="button" data-mais class="${NO_CELULAR.includes(st.aba) ? "" : "on"}">${ICONE.mais3}Mais</button></nav>
       <button class="fn-fab" type="button" data-fab aria-label="Lançar entrada, saída ou compra">${ICONE.mais}</button>
@@ -433,12 +436,10 @@
       <div class="fn-grade tres">
         <div class="fn-caixa"><h3>Para onde foi o dinheiro</h3><p class="sub">Saídas de ${MESES[st.ref.m].toLowerCase()} por tipo${top.length ? ` · ${top.length} tipo${top.length === 1 ? "" : "s"}` : ""}</p>${top.length ? `<div class="fn-rosca">${rosca(top, sai, K(sai), CORES_CAT)}<ul class="fn-tipos">${top.map((c, i) => `<li><i style="background:${CORES_CAT[i % CORES_CAT.length]}"></i><span>${esc(c.k)}</span><em>${R$(c.v)}</em><b>${Math.round(c.v / Math.max(sai, 1) * 100)}%</b></li>`).join("")}</ul></div>` : `<p class="fn-vazio">Nenhuma saída neste mês.</p>`}</div>
         ${blocoVencimentos(proximos, pagasMes)}
-        <div class="fn-caixa"><h3>Ações rápidas</h3><p class="sub">Lance na hora, do celular</p><div class="fn-par" style="grid-template-columns:1fr 1fr;gap:10px">
-          <button class="fn-btn" type="button" data-novo="entrada">${ICONE.entra}Entrada</button><button class="fn-btn" type="button" data-novo="saida">${ICONE.sai}Saída</button>
-          <button class="fn-btn" type="button" data-nova-compra>${ICONE.cartoes}Compra no cartão</button><button class="fn-btn" type="button" data-novo-emp>${ICONE.emprestimos}Empréstimo</button></div></div>
+        ${blocoSituacao(lm, ent, sai)}
       </div>
+      ${blocoJornada(lm, dividas, p)}
       ${blocoConsultora(conselhosGerais())}
-      ${blocoPlano(dividas, p)}
       <div class="fn-caixa${minimo("dash-lanc", false) ? " min" : ""}"><div class="fn-cab"><div><h3>Lançamentos de ${MESES[st.ref.m].toLowerCase()}</h3><p class="sub">${lm.length} lançamento${lm.length === 1 ? "" : "s"}${minimo("dash-lanc", false) ? " · toque na setinha para ver" : ""}</p></div>${botaoMin("dash-lanc", false)}</div>
         ${lm.length ? `<div class="fn-rolar"><table class="fn-tabela"><thead><tr><th>Data</th><th>Descrição</th><th class="esconde">Categoria</th><th>Situação</th><th class="num">Valor</th><th></th></tr></thead><tbody>
           ${[...lm].sort((a, b) => a.data.localeCompare(b.data)).map((l) => `<tr><td>${dataBR(l.data).slice(0, 5)}</td><td>${esc(l.descricao)}</td><td class="esconde"><span class="fn-tag">${esc(l.categoria || "")}</span></td><td><button class="fn-chip ${l.pago ? "" : vencido(l) ? "mal" : "amb"}" type="button" data-pagar="${esc(l.id)}" style="border:0;cursor:pointer">${l.pago ? (l.tipo === "entrada" ? "Recebido" : "Pago") : vencido(l) ? "Vencido" : "A " + (l.tipo === "entrada" ? "receber" : "pagar")}</button></td><td class="num"><span class="fn-valor ${l.tipo === "entrada" ? "entra" : "sai"}">${l.tipo === "entrada" ? "+" : "-"} ${R$(l.valor)}</span></td><td class="num"><button class="fn-icone" type="button" data-editar-l="${esc(l.id)}" aria-label="Editar">${ICONE.lapis}</button></td></tr>`).join("")}
@@ -465,6 +466,7 @@
         ${kpi("Dívida nos cartões", R$(div), "queda", "")}
         ${kpi("Quitados", `${cs.filter((c) => c.status === "Quitado").length} de ${cs.length}`, "check", "", "bom")}
       </div>
+      ${blocoSairCartoes()}
       ${blocoConsultora(conselhosCartoes(), "Consultora: cartões")}
       <div class="fn-cab" style="margin-bottom:12px"><p class="fn-dica">Abra um cartão para ver a fatura por etiqueta. As compras do dia a dia ficam dentro da fatura e nunca somam duas vezes: a fatura vale o maior entre o valor dela e as compras lançadas. No fim do mês, digite o que veio no banco.</p><div class="fn-acoes"><button class="fn-btn" type="button" data-min-todos="c">Minimizar / abrir todos</button><button class="fn-btn" type="button" data-novo-cartao>${ICONE.mais}Novo cartão</button><button class="fn-btn principal" type="button" data-nova-compra>${ICONE.mais}Compra no cartão</button></div></div>
       <div class="fn-cartoes">${[...cs].sort((a, b) => dividaCartao(b) - dividaCartao(a)).map((c) => {
@@ -490,6 +492,7 @@
         ${kpi("Em atraso", String(es.filter((e) => /atras/i.test(e.status || "")).length), "bandeira", "", es.some((e) => /atras/i.test(e.status || "")) ? "ruim" : "")}
         ${kpi("Quitados", `${es.filter((e) => e.status === "Quitado").length} de ${es.length}`, "check", "", "destaque")}
       </div>
+      ${blocoEmpNovos()}
       ${blocoConsultora(conselhosEmprestimos(), "Consultora: empréstimos")}
       <div class="fn-cab" style="margin-bottom:12px"><span></span><div class="fn-acoes"><button class="fn-btn" type="button" data-min-todos="e">Minimizar / abrir todos</button><button class="fn-btn principal" type="button" data-novo-emp>${ICONE.mais}Novo empréstimo</button></div></div>
       <div class="fn-cartoes">${[...es].sort((a, b) => dividaEmp(b) - dividaEmp(a)).map((e) => {
@@ -592,6 +595,85 @@
     $$("[data-jc-editar]", dlg).forEach((b) => b.addEventListener("click", () => editarCompra((D().compras || []).find((k) => k.id === b.dataset.jcEditar))));
     $("#jc-conf", dlg).addEventListener("change", (e) => { c.conferidas = c.conferidas || {}; c.conferidas[ym] = e.target.value.trim() === "" ? null : numOuNada(e.target.value); salvar(); pintar(); janelaCompras(c, ym); });
     if (!dlg.open) dlg.showModal();
+  }
+  // nov/2026 (pedido da Mari): "Como usar esta aba", para não esquecer; fica fechado até ela tocar
+  const AJUDA = {
+    dash: ["Esta tela só mostra: tudo vem do que você lança na Visão anual.", "Os cartões coloridos do topo abrem o detalhe ao tocar.", "Situação do mês: se sobrou ou faltou, o que mais pesou e quanto das entradas vai para dívidas (o ideal é até 30%).", "Minha jornada: quanto falta de dívida, o seu plano do mês (marca sozinho) e o melhor movimento agora.", "Use as setas do mês no topo para ver outros meses."],
+    anual: ["É aqui que você lança e edita tudo, igual à planilha. O resto do app só mostra.", "Escolha Saídas ou Entradas, o ano e o mês. + Nova saída / + Nova entrada para lançar.", "Gasto no cartão: em Nova saída, escolha o cartão em \"Como paguei\". Ele entra dentro da fatura e não soma duas vezes.", "Na linha da fatura, o botão do cartão abre as compras dela: + Compra, editar e \"Veio no banco\".", "Troque a situação (pago, a pagar) direto na tabela. O botão de copiar leva a linha para o mês seguinte."],
+    entradas: ["Só mostra as entradas do mês. Para lançar ou mudar, use a Visão anual.", "Entradas do CNPJ (publi e UGC) chegam sozinhas do painel e aparecem com a marca CNPJ.", "Salário, MARKETPLACE e PUBLI COMERCIAL você lança na Visão anual."],
+    saidas: ["Só mostra as saídas do mês. Para lançar ou mudar, use a Visão anual.", "\"Por tipo\" abre as faturas de cartão pelas etiquetas das compras: é aqui que você vê onde cortar."],
+    cartoes: ["Cada cartão começa minimizado: toque na setinha para abrir a fatura, as etiquetas, os gastos por dia e as compras.", "Compras do cartão você lança na Visão anual (Nova saída com o cartão em \"Como paguei\", ou pelo botão do cartão na linha da fatura).", "A fatura vale o maior entre o valor dela e as compras lançadas; \"Veio no banco\" manda em tudo.", "Sair das dívidas: escolha a estratégia e arraste o valor extra para ver quando você fica livre."],
+    emprestimos: ["A projeção usa as parcelas que estão na Visão anual: o saldo cai a cada mês até zerar.", "Cadastre ou edite o empréstimo (nome, parcela, juros) aqui; as parcelas do mês você marca como pagas na Visão anual.", "A dica inteligente mostra qual empréstimo termina primeiro e quanto sobra por mês quando ele acabar."],
+    reserva: ["Guarde ou retire dinheiro da reserva aqui; a meta é de alguns meses dos seus gastos.", "As contas e investimentos ficam cadastrados aqui mesmo."],
+  };
+  const blocoAjuda = (aba) => AJUDA[aba] ? `<details class="fn-ajuda"><summary>${ICONE.brilho}Como usar esta aba</summary><ul>${AJUDA[aba].map((t) => `<li>${esc(t)}</li>`).join("")}</ul></details>` : "";
+
+  // ---------- empréstimos: projeção do saldo, resumo e dica (pelas parcelas lançadas) ----------
+  function parcelasEmp() {
+    const hj = hojeIso().slice(0, 7);
+    const ls = D().lancamentos.filter((l) => l.tipo === "saida" && !l.pago && (l.categoria === "Empréstimo" || String(l.id).startsWith("cpfe-")) && l.data.slice(0, 7) >= hj);
+    const grupos = {}; ls.forEach((l) => { const k = String(l.id).startsWith("cpfe-") ? String(l.id).split("-").slice(0, 2).join("-") : l.descricao; (grupos[k] = grupos[k] || { nome: l.descricao, ls: [] }).ls.push(l); });
+    return { ls, grupos: Object.values(grupos).map((g) => ({ nome: g.nome.replace(/^Parcela\s+/i, ""), total: soma(g.ls), parcela: Number(g.ls.sort((a, b) => a.data.localeCompare(b.data))[0].valor) || 0, fim: g.ls[g.ls.length - 1].data, n: g.ls.length })).sort((a, b) => a.fim.localeCompare(b.fim)) };
+  }
+  function blocoEmpNovos() {
+    const { ls, grupos } = parcelasEmp(); const hoje = new Date();
+    const meses = Array.from({ length: 12 }, (_, i) => { const x = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1); const ym = ymDe(x.getFullYear(), x.getMonth()); return { r: MES3[x.getMonth()], v: soma(ls.filter((l) => l.data.slice(0, 7) >= ym)) }; });
+    const max = Math.max(1, ...meses.map((m) => m.v)), total = meses[0].v, porMes = soma(ls.filter((l) => l.data.slice(0, 7) === hojeIso().slice(0, 7)));
+    const prim = grupos[0];
+    const dica = !grupos.length ? "Lance as parcelas dos empréstimos na Visão anual (com a etiqueta Empréstimo) que eu projeto quando você fica livre." :
+      `${esc(prim.nome)} é o primeiro a acabar: última parcela em ${MESES[new Date(prim.fim + "T00:00:00").getMonth()].toLowerCase()} de ${prim.fim.slice(0, 4)}. Depois dele sobram ${R$(prim.parcela)} por mês: em vez de gastar, jogue esse valor na dívida de juros mais altos.`;
+    return `<div class="fn-grade meio">
+      <div class="fn-caixa"><h3>Projeção do saldo devedor</h3><p class="sub">Como o total cai nos próximos meses, mantendo as parcelas atuais</p>
+        ${total > 0 ? `<div class="fn-proj">${meses.map((m) => `<div title="${m.r}: ${R$(m.v)}"><i style="height:${Math.max(2, m.v / max * 100).toFixed(1)}%"></i><small>${m.r}</small></div>`).join("")}</div>` : `<p class="fn-vazio">Sem saldo devedor para projetar. 🎉</p>`}</div>
+      <div class="fn-caixa"><h3>Resumo dos empréstimos</h3><p class="sub">${total > 0 ? `${R$(total)} pela frente · ${R$(porMes)} neste mês` : "Nenhum empréstimo com parcela a pagar"}</p>
+        <div class="fn-lista">${grupos.map((g) => `<div class="fn-item"><div class="x"><b>${esc(g.nome)}</b><small>${g.n} parcela${g.n === 1 ? "" : "s"} de ${R$(g.parcela)} · termina em ${MES3[new Date(g.fim + "T00:00:00").getMonth()].toLowerCase()}/${g.fim.slice(2, 4)}</small></div><span class="fn-valor">${R$(g.total)}</span></div>`).join("")}</div></div>
+    </div>
+    <div class="fn-dica-int">${ICONE.brilho}<div><b>Dica inteligente</b><span>${dica}</span></div></div>`;
+  }
+
+  // ---------- cartões: sair das dívidas (estratégia, ataque primeiro, jornada, dinheiro extra) ----------
+  const ESTRATEGIAS = [["recomendado", "Recomendado pelo app", "Considera juros, tamanho da dívida e peso no orçamento juntos."], ["bola", "Menor dívida primeiro", "Quita a menor primeiro, para sentir progresso rápido."], ["avalanche", "Maiores juros primeiro", "Ataca a de maior juros: economiza mais no total."], ["parcela", "Liberar orçamento mais rápido", "Ataca a maior parcela, para sobrar dinheiro livre antes."]];
+  function blocoSairCartoes() {
+    const d = D(), dividas = listaDividas().filter((x) => x.tipo === "Cartão"), p = plano(dividas, d.extra, st.metodo), p0 = plano(dividas, 0, st.metodo);
+    const cs = d.cartoes, com = cs.filter((c) => dividaCartao(c) > 0).length, sem = cs.length - com, pct = cs.length ? Math.round(sem / cs.length * 100) : 100;
+    const ganho = p.meses !== null && p0.meses !== null ? p0.meses - p.meses : null;
+    return `<div class="fn-caixa" style="margin-bottom:14px"><h3>Estratégia de quitação</h3><p class="sub">Escolha como atacar as dívidas dos cartões</p>
+        <div class="fn-estr">${ESTRATEGIAS.map(([k, t, x]) => `<button type="button" data-metodo="${k}" class="${st.metodo === k ? "on" : ""}"><b>${t}${st.metodo === k ? " ✓" : ""}</b><small>${x}</small></button>`).join("")}</div></div>
+      <div class="fn-grade meio">
+        <div class="fn-caixa"><h3 class="fn-h-ataque">🔥 Ataque primeiro</h3><p class="sub">Ordem sugerida para você se livrar das dívidas</p>
+          ${p.ordem.length ? `<div class="fn-lista">${p.ordem.map((x, i) => `<div class="fn-item"><span class="fn-av" style="width:28px;height:28px;font-size:12px;background:${i ? "#cdb39b" : "#6b4a35"}">${i + 1}</span><div class="x"><b>${esc(x.nome)}</b><small>${x.juros ? String(x.juros).replace(".", ",") + "% a.m. · " : ""}parcela ${R$(x.minimo)}${x.quitada ? ` · livre em ${mesDaqui(x.quitada)}` : ""}</small></div><span class="fn-valor">${R$(x.saldo)}</span></div>`).join("")}</div>` : `<p class="fn-vazio">Nenhuma dívida ativa nos cartões. 🎉</p>`}</div>
+        <div class="fn-caixa"><h3>Sua jornada de liberdade</h3><p class="sub">${pct >= 100 ? "Todos os cartões sem dívida!" : "Você está cada vez mais perto de se livrar dos cartões"}</p>
+          <div class="fn-jornada"><b>${pct}%</b><small>dos cartões sem dívida</small><div class="fn-barra"><i style="width:${pct}%;background:#4f7a54"></i></div>
+          <div class="fn-par" style="grid-template-columns:repeat(3,1fr);text-align:center"><span>Cartões<b>${cs.length}</b></span><span>Sem dívida<b style="color:#4f7a54">${sem}</b></span><span>Com dívida<b style="color:#b8473a">${com}</b></span></div></div></div>
+      </div>
+      ${dividas.length ? `<div class="fn-caixa" style="margin-bottom:14px"><h3>💬 E se eu tiver dinheiro extra?</h3><p class="sub">Veja como um valor a mais por mês acelera a sua liberdade</p>
+        <label class="fn-extra-rot" for="fn-extra-r">Quanto consigo pôr por mês além das faturas: <b id="fn-extra-v">${R$(d.extra)}</b></label>
+        <input type="range" id="fn-extra-r" class="fn-extra-r" min="0" max="1500" step="50" value="${Math.min(1500, Number(d.extra) || 0)}">
+        <p class="fn-extra-res">${p.meses === null ? "Com esse valor, as dívidas dos cartões passam de 10 anos. Tente um valor maior." : `Livre dos cartões em <b>${mesDaqui(p.meses)}</b> (${p.meses} ${p.meses === 1 ? "mês" : "meses"})${ganho > 0 ? `, ${ganho} ${ganho === 1 ? "mês" : "meses"} antes do que pagando só as faturas` : ""}.`}</p></div>` : ""}`;
+  }
+
+  // ---------- dashboard: situação do mês e minha jornada ----------
+  function blocoSituacao(lm, ent, sai) {
+    const sobra = ent - sai, top = porTipo(saidas(lm), false).slice(0, 3);
+    const divid = soma(saidas(lm).filter((l) => ["Cartão", "Empréstimo", "Financiamento", "Dívida pessoal"].includes(l.categoria) || String(l.id).startsWith("cpff-") || String(l.id).startsWith("cpfe-")));
+    const comp = ent > 0 ? Math.round(divid / ent * 100) : null;
+    return `<div class="fn-caixa"><h3 class="${sobra >= 0 ? "fn-h-bom" : "fn-h-mal"}">${ICONE.bandeira}Situação de ${MESES[st.ref.m].toLowerCase()}</h3>
+      <p class="fn-sit-frase">${sobra >= 0 ? `Sobraram ${R$(sobra)} este mês.` : `Seu orçamento está negativo em ${R$(-sobra)}.`}</p><p class="sub">${sobra >= 0 ? "Você recebeu mais do que gastou. Guarde parte na reserva." : "Você gastou mais do que recebeu este mês."}</p>
+      ${top.length ? `<p class="fn-mini-tit">O que mais está pesando</p><div class="fn-lista">${top.map(([k, v]) => `<div class="fn-item"><div class="x"><b>${esc(k)}</b></div><span class="fn-valor sai">${R$(v)}</span></div>`).join("")}</div>` : ""}
+      ${comp !== null ? `<p class="fn-mini-tit">Comprometimento da renda com dívidas</p><div class="fn-comp"><b class="${comp > 30 ? "mal" : "bom"}">${comp}%</b><small>de ${R$(ent)} · ideal até 30%</small></div><div class="fn-barra"><i style="width:${Math.min(100, comp)}%;background:${comp > 30 ? "#b8473a" : "#4f7a54"}"></i></div>` : ""}</div>`;
+  }
+  function blocoJornada(lm, dividas, p) {
+    const d = D(), ym = ymDe(st.ref.y, st.ref.m), divTotal = dividas.reduce((a, x) => a + x.saldo, 0);
+    const fixas = saidas(lm).filter((l) => l.categoria === "Conta fixa"), okFixas = fixas.length > 0 && fixas.every((l) => l.pago);
+    const novasParc = (d.compras || []).some((k) => String(k.data).slice(0, 7) === ym && (Number(k.parcelas) || 1) > 1);
+    const guardou = ((d.reserva && d.reserva.movs) || []).some((m) => m.tipo !== "saque" && String(m.data).slice(0, 7) === ym);
+    const passos = [["Pagar todas as contas fixas", okFixas], ["Não criar novas parcelas ou dívidas", !novasParc], ["Guardar algo na reserva", guardou]];
+    const alvo = p.ordem.find((x) => x.saldo > 0);
+    return `<div class="fn-grade tres">
+      <div class="fn-caixa"><h3>Dívidas</h3><p class="fn-sit-valor mal">${R$(divTotal)}</p><p class="sub">restantes em cartões e empréstimos${p.meses !== null && dividas.length ? ` · livre em ${mesDaqui(p.meses)}` : ""}</p></div>
+      <div class="fn-caixa"><h3>Seu plano para ${MESES[st.ref.m].toLowerCase()}</h3><ul class="fn-passos">${passos.map(([t, ok], i) => `<li class="${ok ? "ok" : ""}"><span>${ok ? "✓" : i + 1}</span>${t}</li>`).join("")}</ul></div>
+      <div class="fn-caixa"><h3 class="fn-h-estrela">⭐ Melhor movimento agora</h3>${alvo ? `<p class="fn-sit-frase" style="font-size:15px">Atacar <b>${esc(alvo.nome)}</b></p><p class="sub">Faltam ${R$(alvo.saldo)}${alvo.juros ? ` · ${String(alvo.juros).replace(".", ",")}% a.m.` : ""}. Pague o mínimo das outras e coloque o extra aqui.</p><button class="fn-btn pequeno" type="button" data-aba="${alvo.tipo === "Cartão" ? "cartoes" : "emprestimos"}">Ver o plano</button>` : `<p class="sub">Sem dívidas ativas: nada para atacar agora. 🎉</p>`}</div>
+    </div>`;
   }
   function blocoCompras(c) {
     const ks = comprasDaFatura(c, st.ref.y, st.ref.m).sort((a, b) => String(b.data).localeCompare(String(a.data))), somado = ks.reduce((a, k) => a + k.parte.valor, 0);
@@ -1293,6 +1375,7 @@
       else if (l) editarLancamento(l); else editarLancamento(null, tipo, { descricao: nomeL, categoria: cat || (tipo === "entrada" ? "Salário" : "Outros"), data: `${ym}-${String(Math.min(28, Math.max(1, Number(dia) || 10))).padStart(2, "0")}`, pago: false });
     }));
     $$("[data-metodo]", raiz).forEach((b) => b.addEventListener("click", () => { st.metodo = b.dataset.metodo; pintar(); }));
+    const xr = $("#fn-extra-r"); if (xr) { xr.addEventListener("input", () => { $("#fn-extra-v").textContent = R$(Number(xr.value)); }); xr.addEventListener("change", () => { D().extra = Number(xr.value) || 0; salvar(); const y = window.scrollY; pintar(); window.scrollTo(0, y); }); }
     const ex = $("#fn-extra"); if (ex) ex.addEventListener("change", () => { d.extra = num(ex.value); salvar(); pintar(); });
     [["#fn-res", "atual"], ["#fn-aporte", "aporte"], ["#fn-metam", "metaMeses"]].forEach(([s, k]) => { const el = $(s); if (el) el.addEventListener("change", () => { d.reserva[k] = num(el.value); salvar(); pintar(); }); });
     const fm = $("#fn-add-membro");

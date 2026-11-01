@@ -615,3 +615,41 @@ a{color:var(--principal)}
 .fn-aviso-bloq{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:color-mix(in srgb,var(--principal) 8%,var(--cartao));border:1px solid color-mix(in srgb,var(--principal) 22%,transparent);border-radius:14px;padding:10px 14px;margin:0 0 14px;font-size:13px}
 .fn-aviso-bloq svg{width:18px;height:18px;fill:none;stroke:var(--principal);stroke-width:1.7;flex-shrink:0}
 .fn-aviso-bloq span{flex:1 1 220px}
+/* nov/2026: Como usar, empréstimos (projeção, resumo, dica), cartões (estratégia, jornada, extra), dashboard (situação, jornada) */
+.fn-ajuda{margin:0 0 14px;background:var(--cartao);border:1px solid var(--linha);border-radius:14px;padding:0 14px}
+.fn-ajuda summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:10px 0;font-size:13px;font-weight:600;color:var(--principal)}
+.fn-ajuda summary::-webkit-details-marker{display:none}
+.fn-ajuda summary::after{content:"+";margin-left:auto;font-size:16px;font-weight:400}
+.fn-ajuda[open] summary::after{content:"–"}
+.fn-ajuda summary svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
+.fn-ajuda ul{margin:0 0 12px;padding-left:18px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--suave)}
+.fn-proj{display:flex;align-items:flex-end;gap:6px;height:160px;margin-top:8px}
+.fn-proj div{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;min-width:0}
+.fn-proj i{width:100%;max-width:30px;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,var(--principal),color-mix(in srgb,var(--principal) 40%,#fff))}
+.fn-proj small{font-size:10px;color:var(--suave)}
+.fn-dica-int{display:flex;gap:12px;align-items:flex-start;background:#fbf1cf;border:1px solid #f1df9e;border-radius:16px;padding:14px 16px;margin-bottom:14px;font-size:13px}
+.fn-dica-int svg{width:20px;height:20px;flex-shrink:0;fill:none;stroke:#c9973b;stroke-width:1.8;stroke-linecap:round}
+.fn-dica-int b{display:block;margin-bottom:2px}.fn-dica-int span{color:var(--suave)}
+.fn-estr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:8px}
+.fn-estr button{text-align:left;border:1px solid var(--linha);background:var(--cartao);border-radius:14px;padding:12px 14px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:4px}
+.fn-estr button b{font-size:13.5px}.fn-estr button small{font-size:12px;color:var(--suave);line-height:1.35}
+.fn-estr button.on{border-color:var(--principal);box-shadow:0 0 0 1px var(--principal) inset}
+.fn-jornada{display:flex;flex-direction:column;gap:8px;text-align:center}
+.fn-jornada > b{font-size:40px;font-weight:700;color:#4f7a54;line-height:1}
+.fn-jornada > small{color:var(--suave);font-size:12px}
+.fn-extra-rot{display:block;font-size:13px;margin:6px 0}.fn-extra-rot b{font-size:20px;color:var(--principal);margin-left:4px}
+.fn-extra-r{width:100%;accent-color:var(--principal)}
+.fn-extra-res{font-size:13px;color:var(--suave);margin:8px 0 0}.fn-extra-res b{color:var(--texto)}
+.fn-h-bom,.fn-h-mal,.fn-h-estrela,.fn-h-ataque{display:flex;align-items:center;gap:6px}
+.fn-h-mal{color:#b8473a}.fn-h-bom{color:#4f7a54}
+.fn-h-mal svg,.fn-h-bom svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
+.fn-sit-frase{font-size:17px;font-weight:600;margin:6px 0 2px}
+.fn-sit-valor{font-size:26px;font-weight:700;margin:6px 0 2px}.fn-sit-valor.mal{color:#b8473a}
+.fn-mini-tit{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--suave);margin:12px 0 4px}
+.fn-comp{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}.fn-comp b{font-size:24px}.fn-comp b.mal{color:#b8473a}.fn-comp b.bom{color:#4f7a54}.fn-comp small{color:var(--suave);font-size:12px}
+.fn-passos{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:10px;font-size:13.5px}
+.fn-passos li{display:flex;align-items:center;gap:10px}
+.fn-passos li span{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;background:var(--bege);color:var(--suave);flex-shrink:0}
+.fn-passos li.ok span{background:#4f7a54;color:#fff}
+@media(max-width:1000px){.fn-estr{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.fn-estr{grid-template-columns:1fr}}
