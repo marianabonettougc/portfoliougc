@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611010308"></script>
-<script src="../../js/dialogos.js?v=202611010308"></script>
-<script src="../../js/corretor.js?v=202611010308"></script>
+<script src="../../js/banco.js?v=202611010313"></script>
+<script src="../../js/dialogos.js?v=202611010313"></script>
+<script src="../../js/corretor.js?v=202611010313"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -1266,7 +1266,12 @@ function Toggle({on, onClick}){
 // nov/2026 (pedido da Mari): "Finalizado" virou dois. Aguardando pagamento continua nos Ativos; Pago vai para o Histórico (sai do Organize)
 const FIN_AGUARDANDO = "Finalizado · Aguardando pagamento";
 const FIN_PAGO = "Finalizado · Pago";
-const JOB_STATUS = ["Aguardando Briefing","Aguardando Produto","Roteirização","Aprovação de Roteiro","Em Produção","Conteúdo Entregue","Aprovação do Conteúdo","Refação",FIN_AGUARDANDO,FIN_PAGO,"Cancelado"];
+// nov/2026 (pedido da Mari): as aprovações viraram "Aguardando aprovação de..." e "Conteúdo Entregue" saiu da lista (entregar = esperar a aprovação)
+const ST_APR_ROT = "Aguardando aprovação de roteiro";
+const ST_APR_CONT = "Aguardando aprovação de conteúdo";
+const JOB_STATUS = ["Aguardando Briefing","Aguardando Produto","Roteirização",ST_APR_ROT,"Em Produção",ST_APR_CONT,"Refação",FIN_AGUARDANDO,FIN_PAGO,"Cancelado"];
+// nomes antigos do status do job -> nomes novos (convertidos ao abrir o painel)
+const JOB_STATUS_ANTIGO = {"Aprovação de Roteiro":ST_APR_ROT, "Aprovação do Conteúdo":ST_APR_CONT, "Aguardando Aprovação":ST_APR_CONT, "Conteúdo Entregue":ST_APR_CONT};
 const statusDoJobLista = (state, atual) => { const l = [...JOB_STATUS, ...((state && state.statusJobExtras)||[])]; return atual && !l.includes(atual) ? [atual, ...l] : l; };;
 const JOB_FINISHED = ["Finalizado",FIN_AGUARDANDO,FIN_PAGO,"Cancelado"];
 const ehFinalizado = (st) => st==="Finalizado" || st===FIN_AGUARDANDO || st===FIN_PAGO;
@@ -1292,13 +1297,13 @@ const jobStatusTone = (s) => ({
   "Lead":"gray","Em Negociação":"yellow","Fechado":"blue","Aguardando Aprovação":"wine","Aguardando Produto":"yellow",
   "Aprovado":"blue","Planejado":"yellow","Em Produção":"blue","Gravado":"wine","Conteúdo Entregue":"green",
   "Finalizado":"green","Cancelado":"gray",[FIN_AGUARDANDO]:"yellow",[FIN_PAGO]:"green",
-  "Aguardando Briefing":"yellow","Roteirização":"yellow","Aprovação de Roteiro":"wine","Aprovação do Conteúdo":"wine","Refação":"yellow"
+  "Aguardando Briefing":"yellow","Roteirização":"yellow","Aprovação de Roteiro":"wine","Aprovação do Conteúdo":"wine","Refação":"yellow",[ST_APR_ROT]:"wine",[ST_APR_CONT]:"wine"
 }[s] || "gray");
 const KANBAN_COLORS = {
   "Lead":"#8a634b","Em Negociação":"#c9a24a","Fechado":"#a87058","Aguardando Aprovação":"#c98f7a","Aguardando Produto":"#a87058",
   "Aprovado":"#4f7a54","Planejado":"#c9a24a","Em Produção":"#6b4a35","Gravado":"#8a634b","Conteúdo Entregue":"#7a9a6e",
   "Finalizado":"#4f7a54","Cancelado":"#b9a99a",[FIN_AGUARDANDO]:"#c9a24a",[FIN_PAGO]:"#4f7a54",
-  "Aguardando Briefing":"#d9a46a","Roteirização":"#b98a5e","Aprovação de Roteiro":"#c98f7a","Aprovação do Conteúdo":"#c98f7a","Refação":"#c5533f"
+  "Aguardando Briefing":"#d9a46a","Roteirização":"#b98a5e","Aprovação de Roteiro":"#c98f7a","Aprovação do Conteúdo":"#c98f7a","Refação":"#c5533f",[ST_APR_ROT]:"#c98f7a",[ST_APR_CONT]:"#c98f7a"
 };
 const PAYMENT_METHODS = ["PIX","Transferência","Boleto","Cartão","PayPal","Outro"];
 const MOEDAS = [{code:"BRL",symbol:"R$"},{code:"USD",symbol:"US$"},{code:"EUR",symbol:"€"}];
@@ -1309,14 +1314,17 @@ const fmtMoneyCur = (v, moeda) => {
 const NICHOS_DEFAULT = ["Beleza","Maternidade","Pet","Casa","Moda","Eletrônicos","Alimentos","Infantil","Fitness","Outro"];
 // status de cada vídeo/story do job: as mesmas etapas da "Minha prioridade" do Dashboard (a última é Entregue)
 // out/2026 (pedido da Mari): as etapas de cada Reels/story; a última (Finalizado) marca como concluído
-const ROTEIRO_STATUS_OPTIONS = ["Aguardando briefing","Aguardando produto","Roteirização","Aprovação de roteiro","Em produção","Conteúdo entregue","Aprovação do conteúdo","Refação","Finalizado"];
+// a posição de cada status é a etapa (0 a 8); "Conteúdo entregue" (5) continua só para ler dados antigos e não aparece para escolher
+const ROTEIRO_STATUS_OPTIONS = ["Aguardando briefing","Aguardando produto","Roteirização",ST_APR_ROT,"Em produção","Conteúdo entregue",ST_APR_CONT,"Refação","Finalizado"];
 const STATUS_FINAL = (tipo) => tipo==="fotos" ? "Entregue" : "Finalizado";
 // nomes antigos (antes de out/2026) -> nomes novos
-const STATUS_VIDEO_ANTIGO = {"Roteiro pendente":"Roteirização", "Roteiro pronto":"Aprovação de roteiro", "Gravado":"Em produção", "Editado":"Aprovação do conteúdo",
-  "Roteiro":"Roteirização", "Ag. aprovação de roteiro":"Aprovação de roteiro", "Gravação":"Em produção", "Edição":"Em produção", "Aprovação":"Aprovação do conteúdo", "Entregue":"Finalizado"};
+const STATUS_VIDEO_ANTIGO = {"Roteiro pendente":"Roteirização", "Roteiro pronto":ST_APR_ROT, "Gravado":"Em produção", "Editado":ST_APR_CONT,
+  "Roteiro":"Roteirização", "Ag. aprovação de roteiro":ST_APR_ROT, "Gravação":"Em produção", "Edição":"Em produção", "Aprovação":ST_APR_CONT, "Entregue":"Finalizado",
+  "Aprovação de roteiro":ST_APR_ROT, "Aprovação do conteúdo":ST_APR_CONT, "Conteúdo entregue":ST_APR_CONT};
 const statusDoItem = (it, tipo) => tipo==="fotos" ? (it.roteiroStatus||FOTO_STATUS_OPTIONS[0]) : (STATUS_VIDEO_ANTIGO[it.roteiroStatus] || it.roteiroStatus || ROTEIRO_STATUS_OPTIONS[0]);
 const FOTO_STATUS_OPTIONS = ["A planejar","Planejada","Tirada","Editado","Entregue"];
-const STATUS_OPTIONS_BY_TIPO = {videos:ROTEIRO_STATUS_OPTIONS, fotos:FOTO_STATUS_OPTIONS, stories:ROTEIRO_STATUS_OPTIONS};
+const STATUS_ITEM_ESCOLHA = ROTEIRO_STATUS_OPTIONS.filter(o=>o!=="Conteúdo entregue");
+const STATUS_OPTIONS_BY_TIPO = {videos:STATUS_ITEM_ESCOLHA, fotos:FOTO_STATUS_OPTIONS, stories:STATUS_ITEM_ESCOLHA};
 const TIPO_CONTEUDO_OPTIONS = ["Reels","Stories","Feed","Carrossel","Shorts","TikTok"];
 const FINALIDADES = ["Publi","UGC","Conteúdos"];
 const FINALIDADE_COLOR = {Publi:"#6b4a35", UGC:"#a87058", "Conteúdos":"#6B4E3D"};
@@ -1698,7 +1706,7 @@ const ETAPAS_JOB = ROTEIRO_STATUS_OPTIONS;
 // nomes curtos para as bolinhas do Dashboard (o nome inteiro aparece ao passar o mouse)
 const etapaCurta = (e) => String(e).replace(/^Aguardando /i, "Ag. ").replace(/^Aprovação d[eo] /i, "Aprov. ");
 // etapa do job na "Minha prioridade" (ordem de prioridade em etapaDoJob); as bolinhas são clicáveis (jobNaEtapa)
-const ETAPA_JOB_DO_STATUS = {"Aguardando Briefing":0, "Aguardando Produto":1, "Roteirização":2, "Aprovação de Roteiro":3, "Em Produção":4, "Gravado":4, "Conteúdo Entregue":5, "Aguardando Aprovação":6, "Aprovação do Conteúdo":6, "Refação":7, "Finalizado":8, [FIN_AGUARDANDO]:8, [FIN_PAGO]:8};
+const ETAPA_JOB_DO_STATUS = {"Aguardando Briefing":0, "Aguardando Produto":1, "Roteirização":2, "Aprovação de Roteiro":3, [ST_APR_ROT]:3, [ST_APR_CONT]:6, "Em Produção":4, "Gravado":4, "Conteúdo Entregue":5, "Aguardando Aprovação":6, "Aprovação do Conteúdo":6, "Refação":7, "Finalizado":8, [FIN_AGUARDANDO]:8, [FIN_PAGO]:8};
 const ETAPA_JOB_DO_QUADRO = {"Ideias":2, "Roteirização":2, "Revisão":2, "Em Aprovação":3, "Gravação":4, "Edição":4, "Pronto para postar":6, "Pronto p/ Postar":6, "Finalizado":8};
 const etapaDoJob = (job, roteiros) => Math.max(ETAPA_JOB_DO_STATUS[job && job.status] ?? 0, etapaDoAndamento(job, roteiros));
 // o status do job (Em Produção, Conteúdo Entregue...) é o mínimo; o andamento dos conteúdos pode estar mais adiantado
@@ -2381,7 +2389,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const followups = state.followups || [];
   const tarefas = state.tarefasDia || [];
   const ativos = jobs.filter(j=>!JOB_FINISHED.includes(j.status));
-  const andamento = ativos.filter(j=>!["Aguardando Aprovação","Conteúdo Entregue"].includes(j.status));
+  const andamento = ativos.filter(j=>!["Aguardando Aprovação","Conteúdo Entregue",ST_APR_ROT,ST_APR_CONT].includes(j.status));
 
   // ----- semana -----
   const inicioSemana = new Date(hojeD); inicioSemana.setDate(hojeD.getDate() - ((hojeD.getDay()+6)%7));
@@ -2764,10 +2772,10 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const aprovacoes = [];
   ativos.forEach(j=>itensDoJob(j).forEach(([it,t])=>{
     const st = statusDoItem(it,t);
-    if(st==="Aprovação de roteiro") aprovacoes.push({id:"ar"+it.id, tipo:"roteiro", titulo:`Roteiro ${it.label||""}, ${j.marca}`, desde:it.prazoRoteiro||"", pagina:"jobs", jobId:j.id, itemId:it.id});
-    else if(st==="Aprovação do conteúdo") aprovacoes.push({id:"ac"+it.id, tipo:"video", titulo:`${it.label||"Conteúdo"}, ${j.marca}`, desde:it.prazoConteudo||"", pagina:"jobs", jobId:j.id, itemId:it.id});
+    if(st===ST_APR_ROT) aprovacoes.push({id:"ar"+it.id, tipo:"roteiro", titulo:`Roteiro ${it.label||""}, ${j.marca}`, desde:it.prazoRoteiro||"", pagina:"jobs", jobId:j.id, itemId:it.id});
+    else if(st===ST_APR_CONT) aprovacoes.push({id:"ac"+it.id, tipo:"video", titulo:`${it.label||"Conteúdo"}, ${j.marca}`, desde:it.prazoConteudo||"", pagina:"jobs", jobId:j.id, itemId:it.id});
   }));
-  ativos.filter(j=>["Aguardando Aprovação","Aprovação do Conteúdo","Aprovação de Roteiro"].includes(j.status) && !aprovacoes.some(a=>a.titulo.endsWith(", "+j.marca)))
+  ativos.filter(j=>["Aguardando Aprovação","Aprovação do Conteúdo","Aprovação de Roteiro",ST_APR_ROT,ST_APR_CONT].includes(j.status) && !aprovacoes.some(a=>a.titulo.endsWith(", "+j.marca)))
     .forEach(j=>aprovacoes.push({id:"aj"+j.id, tipo:/roteiro/i.test(j.status)?"roteiro":"video", titulo:`${resumoEntregas(j)||"Conteúdo"}, ${j.marca}`, desde:"", pagina:"jobs", jobId:j.id}));
   (state.roteiros||[]).filter(r=>r.etapa==="Em Aprovação").forEach(r=>aprovacoes.push({id:"rq"+r.id, tipo:"roteiro", titulo:`Roteiro ${r.titulo}${r.cliente ? ", "+r.cliente : ""}`, desde:"", pagina:"roteiros"}));
   aprovacoes.sort((a,b)=>(a.desde||"9999").localeCompare(b.desde||"9999"));
@@ -4222,6 +4230,7 @@ function normalizarStatusJobs(state){
     let n = j;
     // "Finalizado" antigo: pago (ou permuta) vai para o Histórico, sem pagamento fica nos Ativos aguardando
     if(j.status==="Finalizado") n = {...j, status: finalDoJob(j)};
+    else if(JOB_STATUS_ANTIGO[j.status]) n = {...j, status: JOB_STATUS_ANTIGO[j.status]};
     else if(j.status!=="Cancelado" && !JOB_STATUS.includes(j.status) && !((state.statusJobExtras||[]).includes(j.status))){
       const e = j.entregaveis || {}, ks = [...(e.videos||[]), ...(e.stories||[])].map(etapaItem).filter(k=>k>=0);
       n = {...j, status: ks.length ? (jobDoStatusItem(ROTEIRO_STATUS_OPTIONS[Math.min(...ks)], j) || "Aguardando Briefing") : "Aguardando Briefing"};
@@ -6656,7 +6665,7 @@ function Performance({state, updateState, embutido}){
 
   const entreguesMes = state.jobs.filter(j=>{
     // entregues: conteúdo já entregue, no mês da entrega (o campo "data de entrega real" saiu; usa o prazo)
-    const quando = j.dataEntregaReal || ((j.status==="Conteúdo Entregue" || ehFinalizado(j.status)) ? j.prazoEntrega : "");
+    const quando = j.dataEntregaReal || ((j.status==="Conteúdo Entregue" || j.status===ST_APR_CONT || ehFinalizado(j.status)) ? j.prazoEntrega : "");
     if(!quando) return false;
     const d = new Date(quando+"T00:00:00");
     return d.getMonth()===selMonth && d.getFullYear()===selYear;
