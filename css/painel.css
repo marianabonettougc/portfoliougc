@@ -2242,3 +2242,8 @@ a.pc2-tag:hover{color:var(--texto)}
 .pq-card.feito .pq-titulo{text-decoration:line-through;color:var(--suave)}
 .pq-card.feito .pq-feito span{background:var(--verde-suave);color:var(--verde)}
 @media (max-width:520px){.pq-col{flex-basis:84%;width:84%}}
+/* vídeo guardado no painel (bucket videos, js/guardar-video.js) */
+.rf-video{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin:12px 0 4px}
+.rf-video video{width:100%;max-width:280px;max-height:420px;border-radius:12px;background:#000}
+.rs-video-guardado{margin:10px 0 0;font-size:13px;color:var(--texto-suave,#6e5646)}
+.cr-player video{width:100%;height:100%;object-fit:contain;background:#000}

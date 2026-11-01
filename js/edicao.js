@@ -2476,6 +2476,29 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     if (!arq) return;
     if (st.refUrl) URL.revokeObjectURL(st.refUrl);
     st.refArq = arq; st.refUrl = URL.createObjectURL(arq); st.ref = null; st.refEtapas = []; pintarReferencia(true);
+    guardarReferencia(arq);
+  }
+  // o vídeo de referência fica guardado no painel (bucket videos) e aparece em Referências (tabela roteiros),
+  // porque ela apaga o vídeo do celular depois de mandar
+  function guardarReferencia(arq) {
+    const pv = window.painelVideos;
+    if (!pv || !pv.ehVideo(arq)) return;
+    st.refGuardado = (async () => {
+      try {
+        const g = await pv.guardar(arq, { pasta: "referencias-edicao" });
+        if (!g) return null;
+        const { data, error } = await banco().from("roteiros").insert({
+          titulo: (arq.name || "Referência da edição").replace(/\.[^.]+$/, "").slice(0, 120), de_quem: "outra", origem: "outro", link: null,
+          notas: "Vídeo de referência enviado na Edição de vídeos", status: "pronto", video_path: g.path, video_tamanho: g.tamanho
+        }).select("id").single();
+        if (error) throw new Error(error.message);
+        toast("Vídeo de referência guardado no painel (em Referências).");
+        return { id: data.id, path: g.path };
+      } catch (e) {
+        toast("Não consegui guardar o vídeo de referência no painel: " + (e.message || "erro") + ". Não apague do celular ainda.", true);
+        return null;
+      }
+    })();
   }
   function etapaRef(texto, estado) { const ult = st.refEtapas[st.refEtapas.length - 1]; if (ult && ult.estado === "andando") ult.estado = "ok"; st.refEtapas.push({ texto, estado: estado || "andando" }); const ol = $("#ed-ref-etapas"); if (ol) ol.innerHTML = st.refEtapas.map((e) => `<li class="${e.estado}">${esc(e.texto)}</li>`).join(""); }
   const mediana = (l) => { const a = [...l].sort((x, y) => x - y); return a.length ? a[Math.floor(a.length / 2)] : 0; };
@@ -2553,6 +2576,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       const focos = st.refFocos.map((k) => (FOCOS_REF.find((f) => f[0] === k) || [k, k])[1]);
       const r = await chamarExtras({ acao: "referencia", pedido: st.refPedido, focos, medidas, fala: palavras.map((w) => w.w).join(" ").slice(0, 2500), quadros });
       st.ref = { ...r, opc: filtrarOpcRef(r.opc || {}, st.refFocos, st.refPedido), medidas, minis, nome: st.refArq.name, em: new Date().toISOString(), aplicado: false };
+      // a fala ouvida vira a transcrição da referência guardada
+      if (st.refGuardado && palavras.length) st.refGuardado.then((g) => { if (g) { st.ref.videoPath = g.path; banco().from("roteiros").update({ transcricao: palavras.map((w) => w.w).join(" ").trim(), duracao: Math.round(dur) || null }).eq("id", g.id).then(() => {}); } });
       etapaRef(r.visao ? "Pronto! Olhei os quadros, medi o ritmo e ouvi os sons." : "Pronto! Medi os cortes, o ritmo da fala e os sons. A imagem (legenda, fonte, cor) eu copio pelo que você escreveu: hoje não tem modelo que enxerga imagem na sua conta do Groq.", "ok");
       salvarDepois();
     } catch (e) {

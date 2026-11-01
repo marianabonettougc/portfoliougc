@@ -148,8 +148,11 @@
   }
   async function apagar(tabela, id) {
     try {
+      let video = null;
+      if (tabela === "roteiros") { const { data } = await banco.from("roteiros").select("video_path").eq("id", id).maybeSingle(); video = data && data.video_path; }
       const { error } = await banco.from(tabela).delete().eq("id", id);
       if (error) throw error;
+      if (video && window.painelVideos) window.painelVideos.apagar(video);
       return true;
     } catch (err) {
       avisar(traduzErro(err, tabela), true);
@@ -1376,8 +1379,12 @@
       <span class="cr-capa-assistir">${ic("play", 12)}${r.duracao ? mmss(r.duracao) : "assistir"}</span><span class="cr-capa-rede">${iconeRede(r.origem)}</span></div>`;
   };
   // tocar o vídeo numa janela (o mesmo player da Análise)
-  function assistir(r) {
+  async function assistir(r) {
     const emb = embedDoLink(r.link);
+    if (!emb && r.video_path && window.painelVideos) {
+      const u = await window.painelVideos.url(r.video_path);
+      if (u) { abrirJanela({ titulo: r.titulo || "Vídeo de referência", sobretitulo: "Guardado no painel", corpo: `<div class="cr-player cr-player-janela"><video src="${esc(u)}" controls playsinline autoplay></video></div>`, botoes: [{ texto: "Baixar o vídeo", acao: () => { window.painelVideos.baixar(r.video_path); return false; } }, { texto: "Fechar" }] }); return; }
+    }
     if (!emb) { if (r.link) window.open(r.link, "_blank", "noopener"); else avisar("Esse vídeo foi enviado como arquivo: ele toca na Análise logo depois de enviar.", true); return; }
     abrirJanela({ titulo: r.titulo || "Vídeo de referência", sobretitulo: nomeOrigem(r.origem), corpo: `<div class="cr-player cr-player-janela"><iframe src="${emb}" title="Vídeo" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen></iframe></div>`, botoes: [{ texto: "Fechar" }] });
   }
@@ -1717,8 +1724,10 @@
     }
     const emb = embedDoLink(r.link);
     const player = central.videoLocal ? `<video src="${central.videoLocal}" controls playsinline></video>`
+      : !emb && r.video_path ? `<video data-video-path="${esc(r.video_path)}" controls playsinline></video>`
       : emb ? `<iframe src="${emb}" title="Vídeo de referência" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen loading="lazy"></iframe>`
       : `<div class="cr-sem-video">${ic("play", 34)}<small>${r.link ? "Esse link não toca aqui dentro." : "Vídeo enviado como arquivo"}</small></div>`;
+    if (!central.videoLocal && !emb && r.video_path) setTimeout(() => window.painelVideos && window.painelVideos.tocarEm(sec), 0);
     const { lista, aproximado } = temposDaTranscricao(r);
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga">
       ${cabecalho("Análise de transcrição", "Veja os principais pontos, a estrutura e os aprendizados do conteúdo.", `<div class="cr-acoes-topo">${seletorReferencia(r)}<button class="btn btn-principal cr-btn" type="button" data-criar>Criar roteiro a partir desta referência${ic("seta", 16)}</button></div>`)}

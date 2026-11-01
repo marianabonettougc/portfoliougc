@@ -138,9 +138,11 @@
     return data;
   }
   async function remover(id) {
+    const r0 = st.lista.find((r) => r.id === id);
     const { error } = await banco().from("roteiros").delete().eq("id", id);
     if (error) throw new Error(erroBanco(error));
     st.lista = st.lista.filter((r) => r.id !== id);
+    if (r0 && r0.video_path && window.painelVideos) window.painelVideos.apagar(r0.video_path);
   }
 
   // =========================================================
@@ -284,12 +286,12 @@
           </form>
         </div>
         <div data-painel-modo="arquivo" hidden>
-          <label class="cr-soltar" id="rs-soltar">${ic("subir", 30)}<b>Arraste um vídeo ou áudio aqui, ou clique para escolher</b><small>Vídeo MP4, MOV ou AVI · áudio MP3, WAV ou M4A (até 25 MB)</small><input type="file" id="rs-arquivo" accept="video/*,audio/*,.m4a,.mp3,.wav,.ogg,.opus" hidden></label>
+          <label class="cr-soltar" id="rs-soltar">${ic("subir", 30)}<b>Arraste um vídeo ou áudio aqui, ou clique para escolher</b><small>Vídeo MP4, MOV ou AVI (fica guardado no painel) · áudio MP3, WAV ou M4A (até 25 MB)</small><input type="file" id="rs-arquivo" accept="video/*,audio/*,.m4a,.mp3,.wav,.ogg,.opus" hidden></label>
         </div>
         <div data-painel-modo="audio" hidden>
           <button type="button" class="cr-soltar cr-gravar" id="rs-gravar">${ic("mic", 30)}<b>Toque para gravar</b><small>até 10 minutos · toque de novo para parar e transcrever</small></button>
         </div>
-        <p class="cr-formatos">Formatos aceitos: vídeo MP4, MOV e AVI · áudio MP3, WAV, M4A e OGG · até 25 MB (limite da transcrição) · <button type="button" class="rs-link-btn" id="rs-manual">escrever na mão</button></p>
+        <p class="cr-formatos">Formatos aceitos: vídeo MP4, MOV e AVI · áudio MP3, WAV, M4A e OGG · o vídeo fica guardado no painel, então você pode apagar do celular · áudio até 25 MB · <button type="button" class="rs-link-btn" id="rs-manual">escrever na mão</button></p>
         <div id="rs-aviso" class="rs-aviso" aria-live="polite" hidden></div>
         <div class="cr-rodape-card rs-rodape">
           <label class="rs-quem-mini">Vídeo
@@ -477,9 +479,10 @@
 
   // tocar o vídeo numa janela
   let dlgVideo = null;
-  function assistir(r) {
+  async function assistir(r) {
     const emb = embedDoLink(r.link);
-    if (!emb) { if (r.link) window.open(r.link, "_blank", "noopener"); else toast("Esse vídeo foi enviado como arquivo, então não tem link pra tocar aqui.", true); return; }
+    const guardado = !emb && r.video_path && window.painelVideos ? await window.painelVideos.url(r.video_path) : "";
+    if (!emb && !guardado) { if (r.link) window.open(r.link, "_blank", "noopener"); else toast("Esse vídeo foi enviado como arquivo, então não tem link pra tocar aqui.", true); return; }
     if (!dlgVideo) {
       dlgVideo = document.createElement("dialog");
       dlgVideo.className = "janela rs-janela-video";
@@ -489,7 +492,9 @@
     }
     dlgVideo.innerHTML = `<div class="janela-cabeca"><div><small class="janela-sobretitulo">${esc(NOME_FONTE[r.origem] || "Vídeo")}</small><h2>${esc(r.titulo || "Vídeo")}</h2></div>
         <button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-      <div class="janela-corpo"><div class="cr-player cr-player-janela"><iframe src="${esc(emb.src)}" title="Vídeo" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen></iframe></div></div>`;
+      <div class="janela-corpo"><div class="cr-player cr-player-janela">${guardado ? `<video src="${esc(guardado)}" controls playsinline autoplay></video>` : `<iframe src="${esc(emb.src)}" title="Vídeo" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen></iframe>`}</div>${guardado ? `<p class="rs-video-guardado">Guardado no painel · <button type="button" class="rs-link-btn" data-baixar-video>baixar o vídeo</button></p>` : ""}</div>`;
+    const bx = dlgVideo.querySelector("[data-baixar-video]");
+    if (bx) bx.addEventListener("click", () => window.painelVideos.baixar(r.video_path, (r.titulo || "video").replace(/[\\/:*?"<>|]+/g, " ").trim() + "." + (r.video_path.split(".").pop() || "mp4")));
     dlgVideo.showModal();
   }
 
@@ -533,43 +538,79 @@
 
   // ---------- Enviar arquivo e Gravar áudio: função transcrever do Supabase (Whisper, até 25 MB) ----------
   let ocupadoArquivo = false;
+  // vídeo enviado fica guardado no painel (bucket "videos", js/guardar-video.js): ela apaga do celular depois.
+  // Vídeo acima de 20 MB é reduzido para 720p antes; a versão reduzida também serve para transcrever (sem o limite de 25 MB do original).
   async function transcreverArquivo(arq, extra) {
     if (ocupadoArquivo) return;
     if (st.faltaSql) { aviso("erro", "Falta rodar o arquivo sql-roteiros.sql no Supabase (SQL Editor). Depois é só recarregar esta página."); return; }
-    if (arq.size > 25 * 1024 * 1024) { aviso("erro", "Esse arquivo passa de 25 MB, o limite da transcrição. Envie um arquivo menor ou cole o link."); return; }
+    const pv = window.painelVideos;
+    const ehVid = !!(pv && pv.ehVideo(arq));
+    if (!ehVid && arq.size > 25 * 1024 * 1024) { aviso("erro", "Esse arquivo passa de 25 MB, o limite da transcrição. Envie um arquivo menor ou cole o link."); return; }
     ocupadoArquivo = true;
     const botoes = $$("#rs-soltar, #rs-gravar, #rs-arquivo", st.sec);
     botoes.forEach((b) => { b.classList.add("rs-ocupado"); });
     const inicio = Date.now();
-    const atualizarAviso = () => aviso("andamento", `<b>${esc(extra.mensagem || "Transcrevendo o arquivo")}… ${tempoTxt(Math.round((Date.now() - inicio) / 1000))}.</b> Costuma levar menos de 1 minuto.`);
+    let fase = "", pct = 0;
+    const atualizarAviso = () => {
+      const t = tempoTxt(Math.round((Date.now() - inicio) / 1000));
+      if (fase === "reduzir") aviso("andamento", `<b>Preparando o vídeo para guardar no painel… ${pct}% (${t}).</b> Leva mais ou menos o tempo do vídeo. Deixe esta tela aberta.`);
+      else aviso("andamento", `<b>${esc(extra.mensagem || "Transcrevendo o arquivo")}… ${t}.</b> Costuma levar menos de 1 minuto.${ehVid ? " O vídeo está sendo guardado no painel." : ""}`);
+    };
     atualizarAviso();
     const relogio = setInterval(atualizarAviso, 1000);
+    let guardar = Promise.resolve(null), erroGuardar = "";
+    let paraTranscrever = arq;
+    const nulo = (v) => (v == null || String(v).trim() === "" ? null : v);
+    const tituloBase = String(extra.titulo || "").slice(0, 120);
     try {
+      let capa = null;
+      if (ehVid) {
+        capa = await capaDoArquivo(arq);
+        if (arq.size > 20 * 1024 * 1024) { fase = "reduzir"; atualizarAviso(); }
+        const prep = await pv.preparar(arq, (p) => { pct = p; });
+        fase = ""; atualizarAviso();
+        if (prep !== arq) paraTranscrever = new File([prep], (arq.name || "video").replace(/\.[^.]+$/, "") + (/webm/.test(prep.type) ? ".webm" : ".mp4"), { type: prep.type });
+        guardar = pv.subir(prep, arq.name, "transcricoes").catch((e) => { erroGuardar = e.message || "erro"; return null; });
+      } else {
+        capa = await capaDoArquivo(arq);
+      }
+      if (paraTranscrever.size > 25 * 1024 * 1024) throw new Error("O vídeo é longo demais para transcrever de uma vez (passa de 25 MB mesmo reduzido).");
       const corpo = new FormData();
-      corpo.append("arquivo", arq, arq.name || "video.mp4");
+      corpo.append("arquivo", paraTranscrever, paraTranscrever.name || "video.mp4");
       corpo.append("link", "");
-      const capa = await capaDoArquivo(arq);
       const { data, error } = await banco().functions.invoke("transcrever", { body: corpo });
       let msg = data && data.erro;
       if (error) { try { msg = (await error.context.json()).erro; } catch (e) { /* segue */ } msg = msg || "Não consegui falar com o programa de transcrição. Tente de novo."; }
-      if (msg) throw new Error(msg);
+      if (msg) throw Object.assign(new Error(msg), { capa });
       const c = (data && data.campos) || {};
       const texto = String((data && data.transcricao) || "").trim();
-      if (!texto) throw new Error("Não achei fala nesse arquivo.");
-      const nulo = (v) => (v == null || String(v).trim() === "" ? null : v);
+      if (!texto) throw Object.assign(new Error("Não achei fala nesse arquivo."), { capa });
+      const g = await guardar;
       const linha = await inserir({
-        titulo: String(c.titulo || extra.titulo || "").slice(0, 120), de_quem: st.deQuem === "meu" ? "meu" : "outra", origem: "outro", link: null,
+        titulo: String(c.titulo || tituloBase).slice(0, 120), de_quem: st.deQuem === "meu" ? "meu" : "outra", origem: "outro", link: null,
         etiquetas: nulo(c.etiquetas), gancho: nulo(c.gancho), gancho_tipo: nulo(c.gancho_tipo), desenvolvimento: nulo(c.desenvolvimento), cta: nulo(c.cta),
         expressoes: nulo(c.expressoes), por_que: nulo(c.por_que), transcricao: texto,
-        segmentos: Array.isArray(data.segmentos) && data.segmentos.length ? data.segmentos : null, duracao: data.duracao || null, capa: capa || null, status: "pronto"
+        segmentos: Array.isArray(data.segmentos) && data.segmentos.length ? data.segmentos : null, duracao: data.duracao || null, capa: capa || null, status: "pronto",
+        video_path: g ? g.path : null, video_tamanho: g ? g.tamanho : null
       });
       clearInterval(relogio);
-      aviso("ok", "Pronto. Revisa, dá um nome e salva.");
+      const okMsg = g ? "Pronto. O vídeo ficou guardado no painel. Revisa, dá um nome e salva." : ehVid ? `Pronto, mas o vídeo NÃO ficou guardado (${esc(erroGuardar)}). Não apague do celular ainda.` : "Pronto. Revisa, dá um nome e salva.";
+      aviso(g || !ehVid ? "ok" : "erro", okMsg);
       pintarTudo();
-      abrirEditor(linha, null, "Pronto. Revisa, dá um nome e salva.");
+      abrirEditor(linha, null, okMsg);
     } catch (e) {
       clearInterval(relogio);
-      aviso("erro", esc(e.message || "Algo deu errado na transcrição. Tente de novo."));
+      // a transcrição falhou, mas o vídeo não pode se perder: guarda a linha com o vídeo para ela escrever na mão ou tentar de novo
+      let guardouLinha = false;
+      try {
+        const g = await guardar;
+        if (g) {
+          await inserir({ titulo: tituloBase || "Vídeo enviado", de_quem: st.deQuem === "meu" ? "meu" : "outra", origem: "outro", link: null, capa: e.capa || null,
+            status: "erro", erro: String(e.message || "Falha na transcrição").slice(0, 300), video_path: g.path, video_tamanho: g.tamanho });
+          guardouLinha = true; pintarTudo();
+        }
+      } catch (e2) { /* segue */ }
+      aviso("erro", esc(e.message || "Algo deu errado na transcrição. Tente de novo.") + (guardouLinha ? " O vídeo ficou guardado no painel mesmo assim (está na lista com o aviso de erro)." : ehVid ? " O vídeo não foi guardado: não apague do celular." : ""));
     }
     botoes.forEach((b) => { b.classList.remove("rs-ocupado"); });
     ocupadoArquivo = false;

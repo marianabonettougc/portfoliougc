@@ -157,6 +157,7 @@
           <div><span class="rf-fonte">${esc(FONTES[x.fonte] || "")}</span><h3>${esc(x.titulo)}</h3>
             <p>${x.perfil ? "@" + esc(String(x.perfil).replace(/^@/, "")) : ""}${x.link ? ` · <a href="${esc(x.link)}" target="_blank" rel="noopener">abrir o vídeo</a>` : ""}${x.colecao ? " · pasta " + esc(x.colecao) : ""}</p></div>
         </header>
+        ${x.video_path ? `<div class="rf-video"><video data-video-path="${esc(x.video_path)}" controls playsinline preload="metadata"></video><button type="button" class="btn-texto" data-baixar-video>Baixar o vídeo guardado</button></div>` : ""}
         <div class="rf-acoes">
           <button type="button" class="btn btn-principal" data-criar>Criar roteiro com a Skill</button>
           <button type="button" class="btn" data-transcrever ${ocupado ? "disabled" : ""}>${ocupado === "transcrever" ? "Transcrevendo (até 1 minuto)..." : x.transcricao ? "Transcrever de novo" : "Transcrever"}</button>
@@ -169,6 +170,7 @@
         <section class="rf-gerados"><h4>Roteiros criados a partir daqui</h4>${gerados == null ? `<p class="rf-vazio">Procurando...</p>` : gerados.length ? `<ul>${gerados.map((r) => `<li><button type="button" class="btn-texto" data-roteiro="${esc(r.id)}">${esc(r.titulo || "Roteiro")}</button> <span>${esc(r.etapa || "")}</span></li>`).join("")}</ul>` : `<p class="rf-vazio">Nenhum ainda.</p>`}</section>
       </div>`;
       $(".rf-fechar", j).addEventListener("click", fechar);
+      if (x.video_path && window.painelVideos) { window.painelVideos.tocarEm(j); const bx = $("[data-baixar-video]", j); if (bx) bx.addEventListener("click", () => window.painelVideos.baixar(x.video_path)); }
       $("[data-criar]", j).addEventListener("click", () => criarRoteiro(x));
       $("[data-transcrever]", j).addEventListener("click", () => rodar("transcrever", transcrever, "Transcrição guardada nesta referência"));
       $("[data-analisar]", j).addEventListener("click", () => rodar("analisar", analisar, "Análise da Skill guardada"));
