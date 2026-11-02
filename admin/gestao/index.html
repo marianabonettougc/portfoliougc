@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611021900"></script>
-<script src="../../js/dialogos.js?v=202611021900"></script>
-<script src="../../js/corretor.js?v=202611021900"></script>
+<script src="../../js/banco.js?v=202611020301"></script>
+<script src="../../js/dialogos.js?v=202611020301"></script>
+<script src="../../js/corretor.js?v=202611020301"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -154,6 +154,8 @@
   .dn-apr li > button:first-child{ flex:1 1 220px; min-width:0; }
   .dn-apr-acoes{ display:flex; gap:6px; margin-left:auto; padding-bottom:8px; }
   .dn-apr .dn-apr-acoes button{ width:auto; display:inline-flex; align-items:center; gap:4px; border:1px solid var(--db-linha); background:var(--db-papel); color:var(--db-texto); border-radius:999px; padding:4px 10px; font:500 12px Poppins,sans-serif; cursor:pointer; }
+  .dn-apr-rola{ max-height:258px; overflow-y:auto; scrollbar-width:none; overscroll-behavior:contain; } .dn-apr-rola::-webkit-scrollbar{ display:none; }
+  .dn-apr-mais{ display:flex; justify-content:center; padding-top:8px; border-top:1px solid var(--db-linha); }
   .dn-apr-acoes .dn-apr-ok{ color:var(--db-verde); }
   .dn-leg{ align-items:center; } .dn-abrir-cal{ margin-left:auto; display:inline-flex; align-items:center; gap:4px; }
   .dn-ico{ width:46px; height:46px; border-radius:50%; background:var(--db-bege2); color:var(--db-cafe); display:grid; place-items:center; flex:none; }
@@ -854,27 +856,6 @@
   .kanban-col{ background:var(--sand); border-radius:var(--radius-lg); padding:12px; min-height:160px; }
   .kanban-col h4{ font-size:14px; margin:2px 6px 10px; text-transform:uppercase; letter-spacing:.04em; color:var(--graphite-soft); }
   .kanban-card{ background:var(--card-bg); border-radius:12px; padding:12px; margin-bottom:8px; box-shadow:var(--shadow); }
-  /* Quadro de roteiros compacto (nov/2026, print da Mari) */
-  .rq-quadro{ display:flex; gap:12px; overflow-x:auto; padding-bottom:10px; align-items:flex-start; }
-  .rq-col{ width:248px; flex:0 0 248px; background:var(--sand); border-radius:14px; padding:10px 8px 8px; border:1px solid var(--line); }
-  .rq-col .lista-topo{ margin:0 2px 8px; }
-  .rq-col .lista-nome{ font-size:12.5px; }
-  .rq-col .lista-conta{ font-size:12.5px; }
-  .rq-vazio{ border:1.5px dashed var(--line); border-radius:10px; padding:14px 8px; text-align:center; font-size:12.5px; color:var(--graphite-soft); }
-  .rq-card{ background:var(--card-bg); border:1px solid var(--line); border-radius:10px; padding:9px 11px 8px; margin-bottom:8px; cursor:pointer; min-width:0; }
-  .rq-card:hover{ border-color:var(--graphite-soft); }
-  .rq-topo{ display:flex; align-items:center; gap:4px; margin-bottom:4px; }
-  .rq-tag{ flex:1; min-width:0; display:flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
-  .rq-ic{ width:22px; height:22px; display:grid; place-items:center; border:0; background:none; border-radius:6px; color:var(--graphite-soft); opacity:.7; cursor:pointer; padding:0; }
-  .rq-ic:hover{ opacity:1; background:var(--sand); }
-  .rq-tit{ font-weight:600; font-size:13.5px; line-height:1.3; color:var(--graphite); overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-  .rq-sub{ font-size:12px; color:var(--graphite-soft); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .rq-sub:empty{ display:none; }
-  .rq-pe{ display:flex; align-items:center; justify-content:space-between; gap:6px; border-top:1px solid var(--line); margin-top:8px; padding-top:6px; font-size:12px; color:var(--graphite-soft); }
-  .rq-data{ display:inline-flex; align-items:center; gap:4px; }
-  .rq-job{ display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--sand); color:var(--graphite-soft); }
-  .rq-pe .postar-data{ font-size:11.5px; }
-  .rq-quadro .lista-nova{ min-width:220px; }
   .quadros-barra{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
   .quadros-select{ min-width:200px; padding:9px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card-bg); font:inherit; font-size:14px; color:var(--graphite); }
   .quadros-menu-caixa{ position:relative; }
@@ -2946,6 +2927,14 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const [blocosFechados,setBlocosFechados] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("dnFechados")||"[]"); }catch(e){ return []; } });
   const fechadoB = (k) => blocosFechados.includes(k);
   const alternarB = (k) => setBlocosFechados(l=>{ const n = l.includes(k) ? l.filter(x=>x!==k) : [...l, k]; try{ localStorage.setItem("dnFechados", JSON.stringify(n)); }catch(e){} return n; });
+  // nov/2026 (pedido da Mari): Aguardando aprovação mostra 3 por vez e a setinha desce para ver as próximas
+  const aprRef = useRef(null);
+  const [aprFim,setAprFim] = useState(false);
+  const aprChecar = () => { const el = aprRef.current; if(el) setAprFim(el.scrollTop + el.clientHeight >= el.scrollHeight - 4); };
+  const aprDescer = () => { const el = aprRef.current; if(!el) return;
+    if(el.scrollTop + el.clientHeight >= el.scrollHeight - 4){ el.scrollTo({top:0, behavior:"smooth"}); return; }
+    const lis = [...el.children]; const prox = lis.find(li => li.offsetTop - el.offsetTop > el.scrollTop + 4);
+    el.scrollTo({top: prox ? prox.offsetTop - el.offsetTop : el.scrollHeight, behavior:"smooth"}); };
   const minB = (k) => <button key={"min"+k} type="button" className="dn-min" onClick={(e)=>{ e.stopPropagation(); alternarB(k); }} title={fechadoB(k) ? "Maximizar" : "Minimizar"} aria-label={fechadoB(k) ? "Maximizar" : "Minimizar"} aria-expanded={!fechadoB(k)}><Icon name={fechadoB(k) ? "expand_more" : "expand_less"} size={19}/></button>;
   const diasVistos = diasDaSemana.map(d=>{ const x = new Date(d); x.setDate(d.getDate()+semanaDesloc*7); return x; });
   const tipoItem = (it) => /grav/i.test(it.texto) ? "grav" : /^postar|post/i.test(it.texto) ? "post" : /entreg|enviar|aprova/i.test(it.texto) ? "ent" : it.apple ? "apple" : "outro";
@@ -3098,7 +3087,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         {/* aguardando aprovação */}
         <section className={"db-bloco dn-aprov"+(fechadoB("aprov")?" fechado":"")}>
           <div className="dn-bt"><h2>Aguardando aprovação</h2><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("aprov")}</span></div>
-          {aprovacoes.length ? <ul className="dn-apr">{aprovacoes.slice(0,5).map(a=>{ const d = a.desde ? -diasAte(a.desde) : null;
+          {aprovacoes.length ? <><ul className={"dn-apr"+(aprovacoes.length>3?" dn-apr-rola":"")} ref={aprRef} onScroll={aprChecar}>{aprovacoes.map(a=>{ const d = a.desde ? -diasAte(a.desde) : null;
             const rot = a.tipo==="roteiro";
             return <li key={a.id}><button onClick={()=>a.jobId ? abrirJob(a.jobId) : go(a.pagina)}><span className="dn-ico dn-ico-p"><DbIcone tipo={rot?"documento":"filme"} tam={17}/></span>
               <span className="dn-txt"><b>{a.titulo}</b><small>{a.desde ? (d>=0 ? "Enviado em " : "Envio previsto para ")+dataBR(a.desde).slice(0,5) : "Esperando a marca"}{d>0 ? ` · há ${d} dia${d===1?"":"s"}` : ""}</small></span></button>
@@ -3106,6 +3095,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                 <button className="dn-apr-ok" onClick={()=>mudarItem(a.jobId, a.itemId, rot ? "Em produção" : "Finalizado")} title={rot ? "Roteiro aprovado: vai para produção" : "Conteúdo aprovado: finalizado"}><DbIcone tipo="check" tam={14}/>Aprovado</button>
                 <button className="dn-apr-aj" onClick={()=>mudarItem(a.jobId, a.itemId, rot ? "Roteirização" : "Refação")} title="A marca pediu ajuste">Ajuste</button>
               </span>}</li>; })}</ul>
+            {aprovacoes.length>3 && <div className="dn-apr-mais"><button type="button" className="dn-min" onClick={aprDescer} title={aprFim ? "Voltar ao começo" : "Ver as próximas"} aria-label={aprFim ? "Voltar ao começo" : "Ver as próximas"}><Icon name={aprFim ? "expand_less" : "expand_more"} size={19}/></button></div>}</>
             : <p className="db-vazio">Nada esperando aprovação.</p>}
         </section>
 
@@ -3879,14 +3869,14 @@ function ImportarRoteiroJob({f, setF, state}){
       if(msg) throw new Error(msg);
       const lista = separarRoteirosDoDocs(data.texto);
       if(lista.length>1) setAchados(lista.map(r=>({...r, marcado:true})));
-      else usar(data.titulo || (lista[0]||{}).titulo || "Roteiro do Google Docs", lista.length ? roteiroDoDocs(lista[0], {}).conteudo : data.texto, {roteiroDoc:link.trim(), roteiroId:"", roteirosIds:[], roteiroBase:""});
+      else usar(data.titulo || (lista[0]||{}).titulo || "Roteiro do Google Docs", lista.length ? roteiroDoDocs(lista[0], {}).conteudo : data.texto, {roteiroDoc:link.trim(), roteiroId:""});
     }catch(e){ setErro(String(e.message||e)); }
     setLendo(false);
   }
   function usarAchados(){
     const marc = achados.filter(r=>r.marcado);
     if(!marc.length) return;
-    usar(marc.length===1 ? marc[0].titulo : `${marc.length} roteiros do Google Docs`, marc.map(r=>`${r.titulo}\n\n${roteiroDoDocs(r, {}).conteudo}`).join("\n\n----------\n\n"), {roteiroDoc:link.trim(), roteiroId:"", roteirosIds:[], roteiroBase:""});
+    usar(marc.length===1 ? marc[0].titulo : `${marc.length} roteiros do Google Docs`, marc.map(r=>`${r.titulo}\n\n${roteiroDoDocs(r, {}).conteudo}`).join("\n\n----------\n\n"), {roteiroDoc:link.trim(), roteiroId:""});
   }
   const marcaJob = String(f.marca||"").trim().toLowerCase();
   const roteiros = (state.roteiros||[]).filter(r=>!busca.trim() || [r.titulo, r.cliente, r.conteudo].join(" ").toLowerCase().includes(busca.trim().toLowerCase()))
@@ -3896,7 +3886,7 @@ function ImportarRoteiroJob({f, setF, state}){
       {f.roteiroConteudo ? (
         <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6}}>
           <Icon name="description" size={16}/><strong style={{flex:1, fontSize:14.5}}>{f.roteiroTitulo || "Roteiro"}</strong>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={async ()=>{ if(await painelDialogo.confirmar("Tirar o roteiro deste job? Se ele veio de Meus roteiros ou do Google Docs, continua salvo lá.", { ok: "Tirar" })) setF(p=>({...p, roteiroConteudo:"", roteiroTitulo:"", roteiroId:"", roteirosIds:[], roteiroBase:"", roteiroDoc:"", roteiroStatus:"Em criação"})); }}>Remover</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={async ()=>{ if(await painelDialogo.confirmar("Tirar o roteiro deste job? Se ele veio de Meus roteiros ou do Google Docs, continua salvo lá.", { ok: "Tirar" })) setF(p=>({...p, roteiroConteudo:"", roteiroTitulo:"", roteiroId:"", roteiroDoc:"", roteiroStatus:"Em criação"})); }}>Remover</button>
         </div>
       ) : null}
       <textarea className="brief-texto" value={f.roteiroConteudo||""} onChange={e=>{ const v=e.target.value; setF(p=>({...p, roteiroConteudo:v, roteiroStatus: v.trim() ? (p.roteiroStatus==="Em criação" ? "Pronto" : p.roteiroStatus) : "Em criação"})); }} placeholder="Escreva ou cole o roteiro aqui, ou importe do Google Docs ou de Meus roteiros..."/>
@@ -3928,7 +3918,7 @@ function ImportarRoteiroJob({f, setF, state}){
           <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar roteiro por título ou cliente..."/>
           <div style={{maxHeight:240, overflow:"auto", marginTop:8, border:"1px solid var(--line)", borderRadius:12}}>
             {roteiros.length ? roteiros.slice(0,60).map(r=>(
-              <button type="button" key={r.id} onClick={()=>usar(r.titulo, r.conteudo, {roteiroId:r.id, roteirosIds:[r.id], roteiroBase:"", roteiroDoc:""})} style={{display:"block", width:"100%", textAlign:"left", padding:"10px 12px", border:0, borderBottom:"1px solid var(--line)", background:"transparent", cursor:"pointer", fontFamily:"inherit"}}>
+              <button type="button" key={r.id} onClick={()=>usar(r.titulo, r.conteudo, {roteiroId:r.id, roteiroDoc:""})} style={{display:"block", width:"100%", textAlign:"left", padding:"10px 12px", border:0, borderBottom:"1px solid var(--line)", background:"transparent", cursor:"pointer", fontFamily:"inherit"}}>
                 <div style={{fontSize:14.5, fontWeight:600}}>{r.titulo || "Sem título"}</div>
                 <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>{[r.cliente, r.etapa, r.plataforma].filter(Boolean).join(" · ")}</div>
               </button>
@@ -7508,77 +7498,6 @@ const quadroDo = (r) => r.quadroId || "principal";
 const colunasDe = (q) => (q && Array.isArray(q.colunas) && q.colunas.length) ? q.colunas : ROTEIRO_ETAPAS;
 // roteiro com uma etapa que não existe mais no quadro aparece na primeira lista (nunca some)
 const etapaNoQuadro = (r, cols) => { const e = ETAPA_ANTIGA[r.etapa] || r.etapa; return cols.includes(e) ? e : cols.includes(r.etapa) ? r.etapa : cols[0]; };
-/* Roteiro de marca entra no job dela em UGC's & Publis (nov/2026, pedido da Mari).
-   O roteiro novo (ou com título/cliente trocado) procura o job ativo da marca pelo cliente, título e 1ª linha;
-   r.jobId fixa o job ("-" = não ligar). O job guarda roteirosIds; roteiroBase = texto que já estava no job. */
-const normMarca = (t) => String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim();
-const PALAVRAS_FRACAS = new Set(["promocao","aniversario","roteiro","roteiros","ugc","publi","black","friday","de","da","do","das","dos","e","the","by","campanha","acao","job","outubro","novembro","dezembro","janeiro","fevereiro","marco","abril","maio","junho","julho","agosto","setembro"]);
-const jobAtivoParaRoteiro = (j) => j && j.status!==FIN_PAGO && j.status!=="Cancelado";
-const ETAPAS_DE_ROTEIRO = ["Aguardando Briefing","Aguardando Produto","Roteirização","Aprovação de Roteiro","Refação"];
-function jobDoRoteiro(r, jobs){
-  if(!r || r.jobId==="-") return null;
-  const lista = (jobs||[]).filter(jobAtivoParaRoteiro);
-  if(r.jobId) return lista.find(j=>j.id===r.jobId) || null;
-  const texto = " " + normMarca([r.cliente, r.titulo, String(r.conteudo||"").split("\n").find(l=>l.trim())].filter(Boolean).join(" ")) + " ";
-  let melhor = null, nota = 0;
-  lista.forEach(j=>{
-    const m = normMarca(j.marca); if(!m) return;
-    const palavras = m.split(" ").filter(p=>p.length>=2 && !PALAVRAS_FRACAS.has(p));
-    if(!palavras.length) return;
-    const tem = (p) => texto.includes(" "+p+" ");
-    if(!tem(palavras[0]) && !(r.cliente && normMarca(r.cliente)===m)) return;
-    let n = (texto.includes(" "+m+" ") ? 10 : 0) + palavras.filter(tem).length*2 + (ETAPAS_DE_ROTEIRO.includes(j.status) ? 1 : 0);
-    if(r.cliente && normMarca(r.cliente)===m) n += 20;
-    if(n>nota || (n===nota && melhor && (j.dataFechamento||j.criadoEm||"") > (melhor.dataFechamento||melhor.criadoEm||""))){ melhor = j; nota = n; }
-  });
-  return melhor;
-}
-function textoDoJobComRoteiros(job, ids, roteiros){
-  const lista = ids.map(id=>roteiros.find(r=>r.id===id)).filter(Boolean);
-  const base = String(job.roteiroBase||"").trim();
-  if(!base && lista.length===1) return {roteiroConteudo:lista[0].conteudo||"", roteiroTitulo:lista[0].titulo||""};
-  const partes = (base ? [base] : []).concat(lista.map(r=>`${r.titulo||"Roteiro"}\n\n${r.conteudo||""}`));
-  return {roteiroConteudo:partes.join("\n\n----------\n\n"), roteiroTitulo: lista.length===1 && !base ? lista[0].titulo : `${lista.length + (base?1:0)} roteiros`};
-}
-function sincronizarRoteirosJobs(antes, depois){
-  if(!antes || !depois || antes.roteiros===depois.roteiros || !Array.isArray(depois.roteiros)) return depois;
-  const velhos = new Map((antes.roteiros||[]).map(r=>[r.id, r]));
-  const roteiros = depois.roteiros;
-  let jobs = depois.jobs || [];
-  let mudouJob = false, mudouRot = false;
-  const idsDo = (j) => Array.isArray(j.roteirosIds) ? j.roteirosIds : (j.roteiroId ? [j.roteiroId] : []);
-  const refazer = (j, ids) => { mudouJob = true; return {...j, roteirosIds:ids, roteiroId: ids.length===1 && !j.roteiroBase ? ids[0] : "", ...textoDoJobComRoteiros(j, ids, roteiros), roteiroStatus: (ids.length || j.roteiroBase) ? (j.roteiroStatus==="Em criação" ? "Pronto" : (j.roteiroStatus||"Pronto")) : "Em criação"}; };
-  // roteiro apagado: sai do job
-  const vivos = new Set(roteiros.map(r=>r.id));
-  jobs = jobs.map(j=>{ const ids = idsDo(j); if(!ids.length || ids.every(id=>vivos.has(id))) return j;
-    const novos = ids.filter(id=>vivos.has(id)); if(!novos.length && !j.roteiroBase) { mudouJob = true; return {...j, roteirosIds:[], roteiroId:"", roteiroConteudo:"", roteiroTitulo:"", roteiroStatus:"Em criação"}; } return refazer(j, novos); });
-  const novosRot = roteiros.map(r=>{
-    const v = velhos.get(r.id);
-    if(v===r) return r;
-    const novo = !v, trocouChave = v && (v.titulo!==r.titulo || v.cliente!==r.cliente || v.jobId!==r.jobId), trocouTexto = v && (v.conteudo!==r.conteudo || v.titulo!==r.titulo);
-    const ligadoA = jobs.filter(j=>idsDo(j).includes(r.id));
-    if(novo || trocouChave){
-      const alvo = jobDoRoteiro(r, jobs);
-      // tira de jobs antigos se mudou de job
-      ligadoA.filter(j=>!alvo || j.id!==alvo.id).forEach(j=>{ jobs = jobs.map(x=>x.id===j.id ? refazer(x, idsDo(x).filter(id=>id!==r.id)) : x); });
-      if(alvo){
-        jobs = jobs.map(j=>{
-          if(j.id!==alvo.id) return j;
-          const ids = idsDo(j);
-          if(ids.includes(r.id)) return refazer(j, ids);
-          const base = !ids.length && String(j.roteiroConteudo||"").trim() ? j.roteiroConteudo : (j.roteiroBase||"");
-          return refazer({...j, roteiroBase:base}, [...ids, r.id]);
-        });
-        if(!r.cliente || r.finalidade==="Conteúdos" || !r.finalidade){ mudouRot = true; return {...r, cliente: r.cliente || String(alvo.marca||"").trim(), finalidade: (!r.finalidade || r.finalidade==="Conteúdos") && (alvo.categoria==="Publi" || alvo.categoria==="UGC") ? alvo.categoria : r.finalidade}; }
-      }
-      return r;
-    }
-    if(trocouTexto && ligadoA.length) ligadoA.forEach(j=>{ jobs = jobs.map(x=>x.id===j.id ? refazer(x, idsDo(x)) : x); });
-    return r;
-  });
-  if(!mudouJob && !mudouRot) return depois;
-  return {...depois, jobs: mudouJob ? jobs : depois.jobs, roteiros: mudouRot ? novosRot : roteiros};
-}
 // roteiro pronto para postar: precisa da data de postagem (aparece como alerta no Dashboard)
 const prontoParaPostar = (r) => (ETAPA_ANTIGA[r.etapa] || r.etapa) === ETAPA_POSTAR;
 
@@ -7813,7 +7732,7 @@ function SeloPostagem({roteiro, onClick}){
   return <button type="button" className={"postar-data "+i.classe} style={{border:i.classe==="sem-data"?undefined:"none", cursor:"pointer"}} onClick={onClick} title="Mudar a data de postagem"><Icon name="event" size={13}/>{i.texto}</button>;
 }
 
-function RoteiroModal({onClose, onSave, initial, etapas=ROTEIRO_ETAPAS, jobs=[]}){
+function RoteiroModal({onClose, onSave, initial, etapas=ROTEIRO_ETAPAS}){
   const [f,setF] = useState(initial ? {...initial, etapa: etapaNoQuadro(initial, etapas)} : {titulo:"", plataforma:"Instagram", status:"Em aberto", finalidade:"Conteúdos", etapa:etapas[0], dataPublicacao:"", conteudo:""});
   const [erroForm,setErroForm] = useState("");
   const set=(k,v)=>{ setErroForm(""); setF(p=>({...p,[k]:v})); };
@@ -7862,15 +7781,6 @@ function RoteiroModal({onClose, onSave, initial, etapas=ROTEIRO_ETAPAS, jobs=[]}
       </div>}
       <Field label="Título"><input value={f.titulo} onChange={e=>set("titulo",e.target.value)} placeholder="Ex: Roteiro skincare noturno"/></Field>
       <Field label="Cliente (opcional)"><input value={f.cliente||""} onChange={e=>set("cliente",e.target.value)} placeholder="Marca ou cliente deste roteiro"/></Field>
-      {(()=>{ const ativos = (jobs||[]).filter(jobAtivoParaRoteiro); const auto = f.jobId ? null : jobDoRoteiro({...f, jobId:""}, jobs);
-        return <Field label="Job em UGC's & Publis">
-          <select value={f.jobId||""} onChange={e=>set("jobId",e.target.value)}>
-            <option value="">{auto ? `Automático: ${String(auto.marca).trim()}` : "Automático (pela marca)"}</option>
-            {ativos.map(j=><option key={j.id} value={j.id}>{String(j.marca||"Sem marca").trim()}{j.categoria?` · ${j.categoria}`:""} · {j.status}</option>)}
-            <option value="-">Não ligar a nenhum job</option>
-          </select>
-          <div style={{fontSize:12, color:"var(--graphite-soft)", marginTop:4}}>O roteiro aparece na parte Roteiro do job e acompanha as mudanças feitas aqui.</div>
-        </Field>; })()}
       <div className="field-row">
         <Field label="Plataforma">
           <select value={f.plataforma} onChange={e=>set("plataforma",e.target.value)}>
@@ -8127,12 +8037,12 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
       </div>
 
       {view==="Quadro" ? (
-        <div className="rq-quadro">
+        <div style={{display:"flex", gap:14, overflowX:"auto", paddingBottom:10}}>
           {colunas.map((etapa, ci)=>{
             const colItems = doQuadro(state.roteiros).filter(r=>etapaNoQuadro(r, colunas)===etapa && (!query || JSON.stringify(r).toLowerCase().includes(query.toLowerCase())));
             return (
               <div key={etapa} onDragOver={(e)=>{e.preventDefault(); setDragOverCol(etapa);}} onDrop={(e)=>onDrop(e,etapa)}
-                className="rq-col" style={{outline: dragOverCol===etapa ? "2px dashed var(--butter)":"none"}}>
+                style={{minWidth:250, flexShrink:0, background:"var(--sand)", borderRadius:16, padding:12, outline: dragOverCol===etapa ? "2px dashed var(--butter)":"none"}}>
                 <div className="lista-topo">
                   {editandoCol===etapa ? (
                     <input className="lista-nome-input" autoFocus defaultValue={etapa} aria-label="Nome da lista"
@@ -8152,27 +8062,20 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
                     </div>}
                   </div>
                 </div>
-                {colItems.length===0 && <div className="rq-vazio">Arraste roteiros para cá</div>}
-                {colItems.map(item=>{
-                  const fin = item.finalidade||"Conteúdos";
-                  const data = item.dataPublicacao ? new Date(item.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR',{day:"2-digit", month:"2-digit"}) : "";
-                  const ligado = (state.jobs||[]).find(j=>(j.roteirosIds||[]).includes(item.id) || j.roteiroId===item.id);
-                  return (
-                  <div className="rq-card" key={item.id} draggable onDragStart={(e)=>onDragStart(e,item.id)} onClick={()=>setEditing(item)}>
-                    <div className="rq-topo">
-                      <span className="rq-tag" style={{color:FINALIDADE_COLOR[fin]||"var(--graphite-soft)"}}><Icon name={fin==="Publi"?"campaign":fin==="UGC"?"videocam":"edit_note"} size={14}/>{fin}</span>
-                      <button className="rq-ic" title="Editar" aria-label="Editar roteiro" onClick={e=>{ e.stopPropagation(); setEditing(item); }}><Icon name="open_in_new" size={14}/></button>
-                      <button className="rq-ic" title="Excluir" aria-label="Excluir roteiro" onClick={async e=>{ e.stopPropagation(); if(await painelDialogo.confirmar(`Excluir o roteiro "${item.titulo||"sem título"}"?`, {ok:"Excluir", perigo:true})) remove(item.id); }}><Icon name="close" size={14}/></button>
+                {colItems.length===0 && <div style={{border:"1.5px dashed var(--line)", borderRadius:12, padding:"20px 10px", textAlign:"center", fontSize:13, color:"var(--graphite-soft)"}}>Arraste roteiros para cá</div>}
+                {colItems.map(item=>(
+                  <div className="kanban-card" key={item.id} draggable onDragStart={(e)=>onDragStart(e,item.id)}>
+                    <Badge tone={FINALIDADE_TONE[item.finalidade]||"gray"}>{item.finalidade||"Conteúdos"}</Badge>
+                    <div style={{fontWeight:600, fontSize:14, margin:"6px 0 3px"}}>{item.titulo}</div>
+                    {(item.tipoUgc || item.funil) && <div style={{fontSize:12, color:"var(--graphite-soft)", marginBottom:4}}>{[item.tipoUgc, item.funil, item.nicho].filter(Boolean).join(" · ")}</div>}
+                    <div style={{fontSize:12.5, color:"var(--graphite-soft)", marginBottom:8}}>{item.plataforma}{item.cliente && " · "+item.cliente}{item.origem==="Google Docs" && " · Google Docs"}{item.dataPublicacao && !prontoParaPostar(item) && " · "+new Date(item.dataPublicacao+"T00:00:00").toLocaleDateString('pt-BR')}</div>
+                    {prontoParaPostar(item) && <div style={{marginBottom:8}}><SeloPostagem roteiro={item} onClick={()=>setPedirData({id:item.id, data:item.dataPublicacao||""})}/></div>}
+                    <div style={{display:"flex", gap:6}}>
+                      <button className="btn btn-ghost btn-sm" onClick={()=>setEditing(item)}>Editar</button>
+                      <button className="icon-btn" style={{width:30,height:30}} onClick={()=>remove(item.id)}><Icon name="delete" size={14}/></button>
                     </div>
-                    <div className="rq-tit">{item.titulo||"Sem título"}</div>
-                    <div className="rq-sub">{[item.cliente, item.plataforma, item.tipoUgc].filter(Boolean).join(" · ")}</div>
-                    {(prontoParaPostar(item) || data || ligado) && <div className="rq-pe">
-                      {prontoParaPostar(item) ? <span onClick={e=>e.stopPropagation()}><SeloPostagem roteiro={item} onClick={()=>setPedirData({id:item.id, data:item.dataPublicacao||""})}/></span>
-                        : data ? <span className="rq-data"><Icon name="schedule" size={13}/>{data}</span> : <span/>}
-                      {ligado && <span className="rq-job" title={"Está no job "+String(ligado.marca).trim()+" em UGC's & Publis"}><Icon name="link" size={12}/>no job</span>}
-                    </div>}
-                  </div>);
-                })}
+                  </div>
+                ))}
               </div>
             );
           })}
@@ -8212,8 +8115,8 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
           </div>
         ))}</div>
       )}
-      {modal && <RoteiroModal etapas={colunas} jobs={state.jobs} onClose={()=>setModal(false)} onSave={save}/>}
-      {editing && <RoteiroModal etapas={colunas} jobs={state.jobs} initial={editing} onClose={()=>setEditing(null)} onSave={save}/>}
+      {modal && <RoteiroModal etapas={colunas} onClose={()=>setModal(false)} onSave={save}/>}
+      {editing && <RoteiroModal etapas={colunas} initial={editing} onClose={()=>setEditing(null)} onSave={save}/>}
       {skillAberto && <CriarRoteiroUGC referencia={skillAberto.referencia} ideiaInicial={skillAberto.ideia} conteudoId={skillAberto.conteudoId} inicial={skillAberto.inicial}
         nichos={(state.jobs||[]).map(j=>j.nicho).filter(Boolean)} onClose={()=>setSkillAberto(null)} onSalvar={salvarDaSkill} onVerQuadro={()=>setSkillAberto(null)}/>}
       {escolherRef && <EscolherReferencia onClose={()=>setEscolherRef(false)} onEscolher={(x)=>{ setEscolherRef(false); setSkillAberto({referencia:x}); }}/>}
@@ -10176,8 +10079,6 @@ function App({session}){
       Object.keys(next).forEach(k=>{ const v = next[k]; const velhos = velhosRef.current[k]; if(v && typeof v==="object" && velhos && velhos.has(v) && v!==atual[k]) return; limpo[k] = v; });
       next = limpo;
     }
-    // roteiro de marca novo/alterado entra no job dela em UGC's & Publis
-    try{ next = sincronizarRoteirosJobs(atual, next); }catch(e){ console.warn("sincronizar roteiro/job", e); }
     if(atual) Object.keys(atual).forEach(k=>{ const v = atual[k]; if(v && typeof v==="object" && next[k]!==v){ (velhosRef.current[k] = velhosRef.current[k] || new WeakSet()).add(v); } });
     stateRef.current = next;
     setState(next);
