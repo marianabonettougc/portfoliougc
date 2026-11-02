@@ -94,7 +94,7 @@ REFERÊNCIA: VÍDEO PRÉ-EDITADO (Floratta Blue Crystal, out/2026)
 IDEIA PARA DEPOIS
 - Texto atrás da pessoa (DbT3IhlRUgA): o título fica atrás do corpo dela.`;
 
-  const EFEITOS = { woosh: "Woosh", suave: "Whoosh suave", pop: "Pop", click: "Click", shutter: "Shutter", typing: "Typing", riser: "Riser", hit: "Hit", ding: "Ding", cristal: "Ding de cristal", brilho: "Brilho (sparkle)", spray: "Spray / borrifo", mensagem: "Mensagem chegando", relogio: "Tique-taque" };
+  const EFEITOS = { woosh: "Woosh", suave: "Whoosh suave", pop: "Pop", click: "Click", shutter: "Shutter", typing: "Typing", riser: "Riser", hit: "Hit", ding: "Ding", cristal: "Ding de cristal", brilho: "Brilho (sparkle)", spray: "Spray / borrifo", mensagem: "Mensagem chegando", relogio: "Tique-taque", zumbido: "Zumbido de pernilongo", interruptor: "Interruptor de luz" };
   const ESTILOS = { capcut: "CapCut (Poppins média, minúscula, sombra suave)", minimal: "Fina e branca", bold: "Forte com contorno", caixa: "Caixinha bege" };
   const TITULOS = { simples: "Limpo, serifada itálica (sem caixinhas)", etapas: "Em etapas com clique (duas fontes e estrelinhas)", frase: "Frase gigante na tela (3 cores)", caixa: "Caixinhas" };
   // fontes da legenda: "minha" é a fonte que ela enviou (Bootzy do CapCut), guardada em configuracoes "fonte_legenda"
@@ -126,7 +126,7 @@ IDEIA PARA DEPOIS
   const CHAVES_ESTILO = ["karaoke", "fonteLeg", "corLegenda", "porLegenda", "tamLeg", "sombra", "estilo", "estiloTitulo", "maiusculas", "sons", "dinamismo", "transicao", "ritmo", "flash", "tremer", "chamativas", "sonsChamativas", "confete", "altura", "vol", "cor", "legenda", "titulo", "efeitos", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo"];
 
   // ---------- quadro de efeitos (aba "Efeitos"): tudo o que o editor sabe fazer, achado por busca ----------
-  const DESC_SONS = { woosh: "Troca de assunto e zoom", suave: "Corte para o rosto, bem baixinho", pop: "Quando entra texto ou informação", click: "Cortes rápidos de close", shutter: "Clique de câmera, gravação de tela", typing: "Quando aparece algo escrito", riser: "Antes de revelar o produto", hit: "Logo depois do riser, na revelação", ding: "Produto aparece inteiro", cristal: "Nome da marca, frasco brilhando", brilho: "Névoa, brilho, produto reluzindo", spray: "Borrifo do produto", mensagem: "Antes do print ou áudio de WhatsApp", relogio: "Fixação, \"no fim do dia\"" };
+  const DESC_SONS = { woosh: "Troca de assunto e zoom", suave: "Corte para o rosto, bem baixinho", pop: "Quando entra texto ou informação", click: "Cortes rápidos de close", shutter: "Clique de câmera, gravação de tela", typing: "Quando aparece algo escrito", riser: "Antes de revelar o produto", hit: "Logo depois do riser, na revelação", ding: "Produto aparece inteiro", cristal: "Nome da marca, frasco brilhando", brilho: "Névoa, brilho, produto reluzindo", spray: "Borrifo do produto", mensagem: "Antes do print ou áudio de WhatsApp", relogio: "Fixação, \"no fim do dia\"", zumbido: "Pernilongo, mosquito, inseto voando", interruptor: "Apagar ou acender a luz" };
   const CATS_FX = [["todos", "Todos"], ["sons", "Sons"], ["camera", "Câmera e zoom"], ["transicao", "Transições"], ["legenda", "Legenda"], ["titulo", "Título"]];
 
   const st = {
@@ -423,7 +423,7 @@ IDEIA PARA DEPOIS
     vari: { n: st.vari.n, mudar: st.vari.mudar, base: st.vari.base, lista: st.vari.lista.map(({ arquivo, ...v }) => v) }, editLeg: st.editLeg, marcas: st.marcas, capa: st.capa, correcoes: st.correcoes, ref: st.ref, refPedido: st.refPedido, carro: st.carro,
     efeitos: st.efeitos.filter((e) => !e.doTitulo && !e.daChamativa).map(({ id, ...e }) => e),
     camadas: st.camadas.map(({ _box, ...c }) => c), soCamadas: st.soCamadas || undefined,
-    fotos: (st.fotos || []).filter((f) => f.path).map(({ img, ...f }) => f),
+    fotos: (st.fotos || []).filter((f) => f.path || f.pedir).map(({ img, _box, ...f }) => f),
     clipes: (st.clipes.length ? st.clipes : st.pendentes || []).map((c) => ({ nome: c.nome, dur: Math.round((c.dur || 0) * 100) / 100, palavras: c.palavras || null, mudo: c.mudo || undefined })),
   });
   let tempoSalvar = null;
@@ -891,9 +891,31 @@ IDEIA PARA DEPOIS
         const img = new Image(); img.crossOrigin = "anonymous"; img.onload = () => { redesenhar(); pintarFotos(); }; img.src = data.signedUrl; f.img = img; } catch (e) { /* tenta na próxima */ }
     }
   }
+  // foto "por cima" (nov/2026, vídeo da SBP): fica num lugar da tela (x, y = centro, fração da tela), com
+  // largura larg (fração da largura), inclinação rot (graus), cantos arredondados e sombra; entra com um pop.
+  // Ela arrasta na prévia para mudar o lugar e ajusta tamanho e inclinação na lista de fotos.
+  const FOTO_CIMA = { x: 0.5, y: 0.4, larg: 0.32, rot: 0 };
+  function desenharFotoCima(f, t, W, H) {
+    const d = t - f.t0, iw = f.img.naturalWidth, ih = f.img.naturalHeight;
+    const k = Math.min(1, d / 0.22), c = 1.9, pop = k >= 1 ? 1 : 1 + (c + 1) * (k - 1) ** 3 + c * (k - 1) ** 2;
+    const a = clamp(Math.min(d / 0.06, (f.dur - d) / 0.08));
+    const w = W * (f.larg ?? FOTO_CIMA.larg) * Math.max(0.05, pop), h = w * ih / iw, cx = W * (f.x ?? FOTO_CIMA.x), cy = H * (f.y ?? FOTO_CIMA.y), r = Math.min(w, h) * 0.075;
+    c2d.save(); c2d.globalAlpha = a; c2d.translate(cx, cy); c2d.rotate(((f.rot ?? 0) * Math.PI) / 180);
+    c2d.shadowColor = "rgba(0,0,0,.42)"; c2d.shadowBlur = 30 * W / 1080; c2d.shadowOffsetY = 10 * W / 1080;
+    arredondado(-w / 2, -h / 2, w, h, r); c2d.fillStyle = "#fff"; c2d.fill(); c2d.shadowColor = "transparent";
+    arredondado(-w / 2, -h / 2, w, h, r); c2d.clip(); c2d.drawImage(f.img, -w / 2, -h / 2, w, h);
+    c2d.restore();
+    const wf = W * (f.larg ?? FOTO_CIMA.larg), hf = wf * ih / iw; f._box = [cx - wf / 2, cy - hf / 2, cx + wf / 2, cy + hf / 2];
+    if (st.fotoSel === f.id && !st.exportando) { c2d.save(); c2d.setLineDash([10, 8]); c2d.lineWidth = 3; c2d.strokeStyle = "rgba(255,243,176,.95)"; c2d.translate(cx, cy); c2d.rotate(((f.rot ?? 0) * Math.PI) / 180); c2d.strokeRect(-wf / 2 - 6, -hf / 2 - 6, wf + 12, hf + 12); c2d.restore(); }
+  }
   function desenharFotos(t, W, H) {
-    const f = (st.fotos || []).find((x) => x.t0 != null && t >= x.t0 && t < x.t0 + x.dur && x.img && x.img.complete && x.img.naturalWidth);
-    if (!f) return;
+    const ativas = (st.fotos || []).filter((x) => x.t0 != null && t >= x.t0 && t < x.t0 + x.dur && x.img && x.img.complete && x.img.naturalWidth);
+    (st.fotos || []).forEach((x) => { if (!ativas.includes(x)) x._box = null; });
+    const f = ativas.find((x) => x.modo !== "cima");
+    if (f) desenharFotoCheia(f, t, W, H);
+    ativas.filter((x) => x.modo === "cima").forEach((x) => desenharFotoCima(x, t, W, H));
+  }
+  function desenharFotoCheia(f, t, W, H) {
     const d = t - f.t0, p = clamp(d / f.dur), a = Math.min(1, d / 0.15, (f.dur - d) / 0.15);
     const iw = f.img.naturalWidth, ih = f.img.naturalHeight, z = 1 + 0.08 * p, esc0 = Math.max(W / iw, H / ih) * z;
     c2d.save(); c2d.globalAlpha = clamp(a); c2d.drawImage(f.img, (W - iw * esc0) / 2, (H - ih * esc0) / 2, iw * esc0, ih * esc0); c2d.restore();
@@ -901,18 +923,41 @@ IDEIA PARA DEPOIS
   function pintarFotos() {
     const box = $("#ed-fotos-lista"); if (!box) return;
     const fs = st.fotos || [];
+    const faltam = fs.filter((f) => !f.img && !f.path);
     box.innerHTML = !fs.length ? "" : `<div class="ed-fotos-topo"><b>${fs.length} foto${fs.length === 1 ? "" : "s"} na edição</b>${st.duracao ? `<button class="btn" type="button" id="ed-fotos-dist">Espalhar sozinho</button>` : `<small>Elas entram assim que eu editar o vídeo.</small>`}</div>
-      <div class="ed-fotos-grade">${fs.map((f) => `<div class="ed-foto" data-foto="${f.id}">
-        <button type="button" class="ed-foto-img" data-foto-ver="${f.id}" aria-label="Ver no vídeo" ${f.t0 == null ? "disabled" : ""}>${f.img ? `<img src="${esc(f.img.src)}" alt="">` : ""}</button>
+      ${faltam.length ? `<p class="ed-obs ed-fotos-falta">Escolha ${faltam.length === 1 ? "a foto marcada" : `as ${faltam.length} fotos marcadas`} do seu aparelho para ela${faltam.length === 1 ? "" : "s"} aparecer${faltam.length === 1 ? "" : "em"} no vídeo. Depois disso ela${faltam.length === 1 ? " fica guardada" : "s ficam guardadas"} no projeto.</p>` : ""}
+      <div class="ed-fotos-grade">${fs.map((f) => `<div class="ed-foto${st.fotoSel === f.id ? " sel" : ""}${!f.img && !f.path ? " falta" : ""}" data-foto="${f.id}">
+        <button type="button" class="ed-foto-img" data-foto-ver="${f.id}" aria-label="Ver no vídeo" ${f.t0 == null ? "disabled" : ""}>${f.img ? `<img src="${esc(f.img.src)}" alt="">` : `<span>${esc(f.nome || "foto")}</span>`}</button>
+        ${!f.img && !f.path ? `<label class="btn ed-foto-escolher">Escolher a foto<input type="file" accept="image/*" data-foto-arq="${f.id}" hidden></label>` : ""}
+        <label class="ed-foto-modo">Como entra <select class="entrada" data-foto-modo="${f.id}"><option value="cheia" ${f.modo !== "cima" ? "selected" : ""}>Tela cheia</option><option value="cima" ${f.modo === "cima" ? "selected" : ""}>Por cima</option></select></label>
         <label>Entra em <input class="entrada" type="number" min="0" step="0.1" value="${f.t0 == null ? "" : f.t0}" data-foto-t0="${f.id}" placeholder="auto" ${st.duracao ? "" : "disabled"}> s</label>
-        <label>Dura <input class="entrada" type="number" min="0.5" max="10" step="0.5" value="${f.dur}" data-foto-dur="${f.id}"> s</label>
+        <label>Dura <input class="entrada" type="number" min="0.3" max="10" step="0.1" value="${f.dur}" data-foto-dur="${f.id}"> s</label>
+        ${f.modo === "cima" ? `<label>Tamanho <input type="range" min="10" max="90" step="1" value="${Math.round((f.larg ?? FOTO_CIMA.larg) * 100)}" data-foto-larg="${f.id}"></label>
+        <label>Inclinação <input type="range" min="-30" max="30" step="1" value="${Math.round(f.rot ?? 0)}" data-foto-rot="${f.id}"></label>
+        <small class="ed-foto-dica">Arraste a foto na prévia para mudar o lugar.</small>` : ""}
         <button class="icone-btn" type="button" data-foto-tirar="${f.id}" aria-label="Tirar foto">${ic.x}</button></div>`).join("")}</div>`;
     const acha = (id) => fs.find((x) => x.id === id);
+    const mudou = (f, ver) => { if (!st.tocando) { if (ver && f.t0 != null && (st.t < f.t0 || st.t >= f.t0 + f.dur)) irPara(f.t0 + Math.min(0.3, f.dur / 2)); else desenhar(st.t); } salvarDepois(); };
     const dist = $("#ed-fotos-dist", box); if (dist) dist.addEventListener("click", () => { distribuirFotos(true); pintarFotos(); redesenhar(); salvarDepois(); });
-    $$("[data-foto-t0]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoT0); const v = parseFloat(String(i.value).replace(",", ".")); f.t0 = Number.isFinite(v) ? Math.max(0, Math.min(v, Math.max(0, (st.duracao || 0) - 0.5))) : null; salvarDepois(); if (f.t0 != null) irPara(f.t0 + 0.2); pintarLinha(); }));
-    $$("[data-foto-dur]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoDur); f.dur = Math.max(0.5, Math.min(10, parseFloat(String(i.value).replace(",", ".")) || DUR_FOTO)); salvarDepois(); redesenhar(); }));
-    $$("[data-foto-ver]", box).forEach((b) => b.addEventListener("click", () => { const f = acha(b.dataset.fotoVer); if (f && f.t0 != null) irPara(f.t0 + 0.2); }));
+    $$("[data-foto-t0]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoT0); const v = parseFloat(String(i.value).replace(",", ".")); f.t0 = Number.isFinite(v) ? Math.max(0, Math.min(v, Math.max(0, (st.duracao || 0) - 0.3))) : null; salvarDepois(); if (f.t0 != null) irPara(f.t0 + Math.min(0.3, f.dur / 2)); pintarLinha(); }));
+    $$("[data-foto-dur]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoDur); f.dur = Math.max(0.3, Math.min(10, parseFloat(String(i.value).replace(",", ".")) || DUR_FOTO)); salvarDepois(); redesenhar(); }));
+    $$("[data-foto-modo]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoModo); f.modo = i.value; if (f.modo === "cima") { for (const k of Object.keys(FOTO_CIMA)) if (f[k] == null) f[k] = FOTO_CIMA[k]; st.fotoSel = f.id; } pintarFotos(); mudou(f, true); }));
+    $$("[data-foto-larg]", box).forEach((i) => i.addEventListener("input", () => { const f = acha(i.dataset.fotoLarg); f.larg = Number(i.value) / 100; st.fotoSel = f.id; mudou(f, true); }));
+    $$("[data-foto-rot]", box).forEach((i) => i.addEventListener("input", () => { const f = acha(i.dataset.fotoRot); f.rot = Number(i.value); st.fotoSel = f.id; mudou(f, true); }));
+    $$("[data-foto-arq]", box).forEach((i) => i.addEventListener("change", async () => { const f = acha(i.dataset.fotoArq), arq = i.files && i.files[0]; if (!f || !arq) return; await anexarFoto(f, arq); }));
+    $$("[data-foto-ver]", box).forEach((b) => b.addEventListener("click", () => { const f = acha(b.dataset.fotoVer); if (f && f.t0 != null) { st.fotoSel = f.modo === "cima" ? f.id : null; irPara(f.t0 + Math.min(0.3, f.dur / 2)); pintarFotos(); } }));
     $$("[data-foto-tirar]", box).forEach((b) => b.addEventListener("click", () => { const f = acha(b.dataset.fotoTirar); st.fotos = fs.filter((x) => x !== f); if (f.path) banco().storage.from("anexos").remove([f.path]).catch(() => {}); pintarFotos(); redesenhar(); salvarDepois(); }));
+  }
+  // foto de um projeto preparado pelo Claude (ou que não chegou a subir): ela escolhe o arquivo de novo e a foto é guardada
+  async function anexarFoto(f, arq) {
+    try {
+      const blob = await reduzirFoto(arq); const img = new Image();
+      img.onload = () => { redesenhar(); pintarFotos(); }; img.src = URL.createObjectURL(blob);
+      f.img = img; f.nome = f.nome || arq.name; pintarFotos();
+      const caminho = `edicao/fotos/${f.id}.jpg`;
+      const { error } = await banco().storage.from("anexos").upload(caminho, blob, { contentType: "image/jpeg", upsert: true });
+      if (error) toast("A foto entrou, mas não consegui guardar no projeto. Se fechar, escolha de novo.", true); else { f.path = caminho; delete f.pedir; salvarDepois(); }
+    } catch (e) { toast("Não consegui abrir " + arq.name + ". Tente JPG ou PNG.", true); }
   }
   function montar() {
     if (st.opc.relaxante) Object.assign(st.opc, { dinamismo: "calmo", zoomCortes: false, zoomEnfase: false, flash: false, tremer: false, transicao: "nenhuma", sonsSuaves: true });
@@ -1078,6 +1123,7 @@ IDEIA PARA DEPOIS
       if (e.oculta) continue;
       if (e.texto != null) g.texto = e.texto;
       if (e.chamativa != null) g.chamativa = e.chamativa; else g.chamativa = g.palavras.some((w) => w.destaque);
+      if (e.alt != null) g.alt = e.alt; // altura só desta legenda (fração da tela), para não cobrir o rosto
       g.k = g.palavras[0].k;
       saida.push(g);
     }
@@ -1399,10 +1445,19 @@ IDEIA PARA DEPOIS
     let pega = null;
     const ponto = (e) => { const r = canvas.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * canvas.width, (e.clientY - r.top) / r.height * canvas.height]; };
     canvas.addEventListener("pointerdown", (e) => {
-      if (!st.camadas.length || st.exportando) return;
+      if (st.exportando) return;
       const [x, y] = ponto(e);
       const cam = [...st.camadas].reverse().find((c) => c._box && x >= c._box[0] && x <= c._box[2] && y >= c._box[1] && y <= c._box[3]);
-      if (!cam) return;
+      if (!cam) {
+        // foto "por cima": arrastar muda o lugar (a de cima ganha)
+        const foto = [...(st.fotos || [])].reverse().find((f) => f.modo === "cima" && f._box && x >= f._box[0] && x <= f._box[2] && y >= f._box[1] && y <= f._box[3]);
+        if (!foto) return;
+        e.preventDefault(); canvas.setPointerCapture(e.pointerId);
+        if (st.fotoSel !== foto.id) { st.fotoSel = foto.id; pintarFotos(); }
+        pega = { foto, x0: x, y0: y, cx: foto.x ?? FOTO_CIMA.x, cy: foto.y ?? FOTO_CIMA.y };
+        if (!st.tocando) desenhar(st.t);
+        return;
+      }
       e.preventDefault(); canvas.setPointerCapture(e.pointerId);
       if (st.camSel !== cam.id) { st.camSel = cam.id; pintarCamadas(); }
       pega = { cam, x0: x, y0: y, cx: cam.x, cy: cam.y }; st.arrastandoCam = true;
@@ -1410,13 +1465,14 @@ IDEIA PARA DEPOIS
     canvas.addEventListener("pointermove", (e) => {
       if (!pega) return; e.preventDefault();
       const [x, y] = ponto(e);
+      if (pega.foto) { pega.foto.x = clamp(pega.cx + (x - pega.x0) / canvas.width); pega.foto.y = clamp(pega.cy + (y - pega.y0) / canvas.height); if (!st.tocando) desenhar(st.t); return; }
       if (!pega.guardou) { pega.guardou = true; guardarCam(); }
       let nx = clamp(pega.cx + (x - pega.x0) / canvas.width), ny = clamp(pega.cy + (y - pega.y0) / canvas.height);
       if (Math.abs(nx - 0.5) < IMA) nx = 0.5; if (Math.abs(ny - 0.5) < IMA) ny = 0.5;
       pega.cam.x = nx; pega.cam.y = ny;
       if (!st.tocando) desenhar(st.t);
     });
-    const soltar = () => { if (!pega) return; pega = null; st.arrastandoCam = false; if (!st.tocando) desenhar(st.t); pintarCamadas(); salvarDepois(); };
+    const soltar = () => { if (!pega) return; if (pega.foto) { pega = null; salvarDepois(); return; } pega = null; st.arrastandoCam = false; if (!st.tocando) desenhar(st.t); pintarCamadas(); salvarDepois(); };
     canvas.addEventListener("pointerup", soltar); canvas.addEventListener("pointercancel", soltar);
   }
   // ---------- desfazer (botão e Ctrl+Z / Cmd+Z): a última mudança, seja texto, linha do tempo, estilo ou ajuste ----------
@@ -1587,7 +1643,7 @@ IDEIA PARA DEPOIS
     return linhas;
   }
   function desenharLegenda(g, u, W, H) {
-    const est = st.opc.estilo, y = H * st.opc.altura;
+    const est = st.opc.estilo, y = H * (g.alt ?? st.opc.altura);
     const textoDe = (w) => { const x = w.w.replace(/^[,.;:!?]+|[,.;:]+$/g, ""); return st.opc.maiusculas || est === "bold" ? x.toUpperCase() : x.toLowerCase(); };
     const tam = est === "minimal" ? 92 * u : est === "bold" ? 84 * u : 70 * u;
     const peso = est === "minimal" ? 300 : est === "bold" ? 800 : 600;
@@ -1621,9 +1677,10 @@ IDEIA PARA DEPOIS
   const CAVEAT = (tam) => `700 ${tam}px Caveat, "Segoe Script", cursive`;
   const MONT = (tam) => `800 ${tam}px Montserrat, Poppins, "Helvetica Neue", Arial, sans-serif`;
   function legendaCapcut(g, u, W, H) {
-    const tam = 74 * u * (Number(st.opc.tamLeg) || 1), y = H * st.opc.altura;
+    const tam = 74 * u * (Number(st.opc.tamLeg) || 1), y = H * (g.alt ?? st.opc.altura);
     let texto = textoLeg(g).replace(/^[,.;:!?]+|[,.;:]+$/g, "");
-    texto = st.opc.maiusculas ? texto.toUpperCase() : texto.toLowerCase();
+    // minúscula, menos siglas de marca escritas em maiúscula (SBP, LG)
+    texto = st.opc.maiusculas ? texto.toUpperCase() : texto.split(" ").map((w) => (/^[A-ZÀ-Ý0-9%&]{2,}[!?]?$/.test(w) && /[A-Z]/.test(w) ? w : w.toLowerCase())).join(" ");
     const xc = xLegenda(W), fonte = fonteLeg(tam), linhas = quebrar(texto, W * (st.opc.ladoLeg && st.opc.ladoLeg !== "centro" ? 0.56 : 0.8), fonte);
     const k = Math.min(1, (st.t - g.o0) / 0.09), escala = 0.92 + 0.08 * suave(Math.max(0, k));
     c2d.save(); c2d.translate(xc, y); c2d.scale(escala, escala); c2d.translate(-xc, -y);
@@ -1873,6 +1930,22 @@ IDEIA PARA DEPOIS
     } else if (tipo === "relogio") {
       // tique-taque rápido por 1 segundo
       for (let i = 0; i < 6; i++) { const t0 = q + i * 0.17, f = ac.createBiquadFilter(), g = ac.createGain(); f.type = "bandpass"; f.frequency.value = i % 2 ? 2400 : 3200; f.Q.value = 6; f.connect(g); g.connect(saida); env(g, t0, 0.9, 0.001, 0.025); ruido(t0, 0.03, f); }
+    } else if (tipo === "zumbido") {
+      // pernilongo passando perto do ouvido (nov/2026, vídeo da SBP): serra aguda que oscila e passa de um lado para o outro
+      const d = 0.9, o = ac.createOscillator(), lfo = ac.createOscillator(), lg = ac.createGain(), trem = ac.createOscillator(), tg = ac.createGain();
+      const hp = ac.createBiquadFilter(), lp = ac.createBiquadFilter(), g = ac.createGain(), am = ac.createGain();
+      o.type = "sawtooth"; o.frequency.value = 640; lfo.frequency.value = 7; lg.gain.value = 60; lfo.connect(lg); lg.connect(o.frequency);
+      hp.type = "highpass"; hp.frequency.value = 500; lp.type = "lowpass"; lp.frequency.value = 5000;
+      am.gain.value = 0.7; trem.frequency.value = 11; tg.gain.value = 0.3; trem.connect(tg); tg.connect(am.gain);
+      o.connect(hp); hp.connect(lp); lp.connect(am); am.connect(g);
+      let fim = g;
+      if (ac.createStereoPanner) { const pan = ac.createStereoPanner(); pan.pan.setValueAtTime(-0.8, q); pan.pan.linearRampToValueAtTime(0.8, q + d); g.connect(pan); fim = pan; }
+      fim.connect(saida);
+      g.gain.setValueAtTime(0.0001, q); g.gain.exponentialRampToValueAtTime(0.35, q + 0.25); g.gain.setValueAtTime(0.35, q + d - 0.3); g.gain.exponentialRampToValueAtTime(0.0001, q + d);
+      [o, lfo, trem].forEach((x) => { x.start(q); x.stop(q + d + 0.05); });
+    } else if (tipo === "interruptor") {
+      // clique do interruptor de luz: estalo grave e um agudo logo depois
+      [[0, 900, 1], [0.035, 2400, 0.6]].forEach(([dt, fr, a]) => { const f = ac.createBiquadFilter(), g = ac.createGain(); f.type = "bandpass"; f.frequency.value = fr; f.Q.value = 1.2; f.connect(g); g.connect(saida); env(g, q + dt, 1.2 * a, 0.001, 0.035); ruido(q + dt, 0.05, f); });
     }
   }
 
@@ -2152,7 +2225,7 @@ IDEIA PARA DEPOIS
             <section class="ed-cartao">
               <label class="ed-soltar" id="ed-soltar">${ic.filme}<b>Enviar vídeo bruto</b><small>Pode mandar vários clipes, eles entram na ordem. MP4 ou MOV.</small><input type="file" id="ed-arquivo" accept="video/*,.mov,.mp4,.m4v,.webm" multiple hidden></label>
               <div id="ed-clipes"></div>
-              <label class="ed-soltar ed-soltar-fotos" id="ed-soltar-fotos">${ic.brilho}<b>Enviar fotos para inserir</b><small>Até 30 fotos. Elas entram por cima da sua fala, em tela cheia, com uma aproximação lenta. Eu espalho sozinha e você ajusta.</small><input type="file" id="ed-fotos" accept="image/*" multiple hidden></label>
+              <label class="ed-soltar ed-soltar-fotos" id="ed-soltar-fotos">${ic.brilho}<b>Enviar fotos para inserir</b><small>Até 30 fotos. Cada uma entra em tela cheia (com uma aproximação lenta) ou por cima do vídeo, no lugar, tamanho e inclinação que você escolher. Eu espalho sozinha e você ajusta.</small><input type="file" id="ed-fotos" accept="image/*" multiple hidden></label>
               <div id="ed-fotos-lista" class="ed-fotos-lista"></div>
               <input class="entrada" id="ed-tema" placeholder="Tema ou marca do vídeo (opcional, ajuda no título)">
               <details class="ed-roteiro" id="ed-roteiro-box"${st.roteiro ? " open" : ""}><summary><b>Seu roteiro</b> <small>(opcional, deixa a edição bem mais certeira)</small></summary>
@@ -3473,6 +3546,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <button class="icone-btn" type="button" data-tirar="${c.id}" aria-label="Tirar clipe" ${st.trabalhando || st.exportando ? "disabled" : ""}>${ic.x}</button></div>`).join("");
     $$("[data-mover]", sec).forEach((b) => b.addEventListener("click", () => moverClipe(b.dataset.mover, +b.dataset.passo)));
     ligarArrasteClipes($("#ed-clipes", sec));
+    pintarFotos();
     $$("[data-tirar]", sec).forEach((b) => b.addEventListener("click", () => {
       const c = st.clipes.find((x) => x.id === b.dataset.tirar); if (!c) return;
       c.el.remove(); URL.revokeObjectURL(c.el.src); st.clipes = st.clipes.filter((x) => x !== c); st.segs = []; st.plano = null; st.editLeg = {}; pintar();
@@ -3741,9 +3815,10 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     box.hidden = false;
     const n = Object.keys(st.editLeg).length;
     box.innerHTML = `<div class="ed-titulo-linha"><h3 class="ed-titulo">Legendas</h3><span class="ed-sub">${st.legendas.length}${n ? ` · <button type="button" class="login-link" id="ed-leg-desfazer">desfazer edições</button>` : ""}</span></div>
-      <p class="ed-obs">Corrija o texto, junte com a próxima, apague ou marque ★ para virar palavra chamativa. Toque no tempo para ver na prévia.</p>
+      <p class="ed-obs">Corrija o texto, suba ou desça (↑ ↓) só aquela legenda, junte com a próxima, apague ou marque ★ para virar palavra chamativa. Toque no tempo para ver na prévia.</p>
       <div class="ed-legs">${st.legendas.map((g, i) => `<div class="ed-leg${g.chamativa ? " cham" : ""}" data-i="${i}"><button type="button" class="ed-ir" data-ir>${tempo(g.o0)}</button>
         <input class="entrada" data-txt value="${esc(textoLeg(g))}" aria-label="Texto da legenda">
+        <span class="ed-leg-alt"><button type="button" class="icone-btn" data-subir title="Subir esta legenda" aria-label="Subir esta legenda">↑</button><button type="button" class="icone-btn" data-descer title="Descer esta legenda" aria-label="Descer esta legenda">↓</button>${g.alt != null ? `<button type="button" class="icone-btn" data-alt0 title="Voltar à altura padrão" aria-label="Voltar à altura padrão">↺</button>` : ""}</span>
         <button type="button" class="icone-btn" data-cham title="Palavra chamativa" aria-label="Palavra chamativa">${g.chamativa ? "★" : "☆"}</button>
         <button type="button" class="icone-btn" data-juntar title="Juntar com a próxima" aria-label="Juntar com a próxima" ${i === st.legendas.length - 1 ? "disabled" : ""}>⤵</button>
         <button type="button" class="icone-btn" data-apagar title="Apagar legenda" aria-label="Apagar legenda">${ic.x}</button></div>`).join("")}</div>`;
@@ -3753,6 +3828,10 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       $("[data-ir]", l).addEventListener("click", () => irPara(g.o0 + 0.02));
       $("[data-txt]", l).addEventListener("change", (e) => { const v = e.target.value.trim(); if (!v) editar(g, { oculta: true }); else editar(g, { texto: v }); });
       $("[data-cham]", l).addEventListener("click", () => editar(g, { chamativa: !g.chamativa }));
+      const alt = (dy) => { const v = Math.round(clamp((g.alt ?? st.opc.altura) + dy, 0.12, 0.88) * 100) / 100; editar(g, { alt: v }); irPara(g.o0 + 0.05); };
+      $("[data-subir]", l).addEventListener("click", () => alt(-0.04));
+      $("[data-descer]", l).addEventListener("click", () => alt(0.04));
+      const a0 = $("[data-alt0]", l); if (a0) a0.addEventListener("click", () => editar(g, { alt: undefined }));
       $("[data-juntar]", l).addEventListener("click", () => editar(g, { juntar: true, texto: undefined }));
       $("[data-apagar]", l).addEventListener("click", () => editar(g, { oculta: true }));
     });
