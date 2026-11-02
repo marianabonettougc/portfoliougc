@@ -128,7 +128,7 @@ IDEIA PARA DEPOIS
     { id: "reels", nome: "Reels clássico", para: "O pedido completo do carrossel: corta pausas maiores que meio segundo, legenda no meio com 2 a 3 palavras, a palavra falada em destaque e título animado no começo", opc: { fonteLeg: "poppins", corLegenda: "#ffffff", cor: "#f2c14e", porLegenda: 3, tamLeg: 1.05, altura: 0.5, karaoke: true, titulo: true, legenda: true, silencio: true, ritmo: "classico", sons: "medio", dinamismo: "normal", transicao: "punch" } },
     { id: "leve", nome: "Lifestyle leve", para: "Dia a dia, maternidade e casa, ritmo gostoso", opc: { fonteLeg: "poppins", corLegenda: "#ffffff", porLegenda: 3, tamLeg: 1, sons: "medio", dinamismo: "normal", transicao: "punch", ritmo: "rapido" } },
   ];
-  const CHAVES_ESTILO = ["karaoke", "fonteLeg", "corLegenda", "porLegenda", "tamLeg", "sombra", "estilo", "estiloTitulo", "maiusculas", "sons", "dinamismo", "transicao", "ritmo", "flash", "tremer", "chamativas", "sonsChamativas", "confete", "altura", "vol", "cor", "legenda", "titulo", "efeitos", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo"];
+  const CHAVES_ESTILO = ["karaoke", "fonteLeg", "corLegenda", "porLegenda", "tamLeg", "sombra", "estilo", "estiloTitulo", "maiusculas", "sons", "dinamismo", "transicao", "ritmo", "flash", "tremer", "chamativas", "sonsChamativas", "confete", "altura", "vol", "cor", "legenda", "titulo", "efeitos", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo", "tamTitulo"];
 
   // ---------- quadro de efeitos (aba "Efeitos"): tudo o que o editor sabe fazer, achado por busca ----------
   const DESC_SONS = { woosh: "Troca de assunto e zoom", suave: "Corte para o rosto, bem baixinho", pop: "Quando entra texto ou informação", click: "Cortes rápidos de close", shutter: "Clique de câmera, gravação de tela", typing: "Quando aparece algo escrito", riser: "Antes de revelar o produto", hit: "Logo depois do riser, na revelação", ding: "Produto aparece inteiro", cristal: "Nome da marca, frasco brilhando", brilho: "Névoa, brilho, produto reluzindo", spray: "Borrifo do produto", mensagem: "Antes do print ou áudio de WhatsApp", relogio: "Fixação, \"no fim do dia\"", zumbido: "Pernilongo, mosquito, inseto voando", interruptor: "Apagar ou acender a luz" };
@@ -139,7 +139,7 @@ IDEIA PARA DEPOIS
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     camadas: [], camSel: null, soCamadas: false, histCam: [], desf: [],
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: false, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1, legenda: true, sons: "muitos", dinamismo: "dinamico", formato: "vertical", relaxante: false, sonsSuaves: false, fonteTitulo: "dmserif", corTitulo: "", ladoLeg: "centro", alturaTitulo: 0.24, preservarCenas: true, zoomNivel: "discreto" },
+    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: false, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1, legenda: true, sons: "muitos", dinamismo: "dinamico", formato: "vertical", relaxante: false, sonsSuaves: false, fonteTitulo: "dmserif", corTitulo: "", ladoLeg: "centro", alturaTitulo: 0.24, tamTitulo: 1, preservarCenas: true, zoomNivel: "discreto" },
     opsHist: [], opsPos: 0, opsLog: [],
     pedidos: "", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, aba: "video", projeto: null, projetos: [], pendentes: null, salvando: "",
     estiloAtivo: (() => { try { return localStorage.getItem("ed-estilo-ativo") || ""; } catch (e) { return ""; } })(), meusEstilos: [], estiloEditando: null, estiloApagar: null, fxBusca: "", fxCat: "todos", guiasIG: false, estHist: [], estMsg: "", ref: null, refArq: null, refUrl: "", refTrab: false, refEtapas: [], refPedido: "", refFocos: [], carro: null, carroTrab: false,
@@ -149,7 +149,7 @@ IDEIA PARA DEPOIS
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
   try { const salvo = JSON.parse(localStorage.getItem("ed-opc3") || "null"); if (salvo && typeof salvo === "object") { Object.assign(st.opc, salvo); if (!salvo.zoomNivel) { st.opc.zoomNivel = "discreto"; st.opc.zoomCortes = false; } } if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
-  const OPC_VISUAIS = ["karaoke", "sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg", "legenda", "sons", "dinamismo", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo", "preservarCenas", "zoomNivel"];
+  const OPC_VISUAIS = ["karaoke", "sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg", "legenda", "sons", "dinamismo", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo", "tamTitulo", "preservarCenas", "zoomNivel"];
   function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc3", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
@@ -1288,7 +1288,7 @@ IDEIA PARA DEPOIS
         ${f.modo === "cima" ? `<label>Formato <select class="entrada" data-foto-quad="${f.id}"><option value="" ${f.quad ? "" : "selected"}>Original</option><option value="1" ${f.quad ? "selected" : ""}>Card quadrado</option></select></label>
         <label>Tamanho <input type="range" min="10" max="90" step="1" value="${Math.round((f.larg ?? FOTO_CIMA.larg) * 100)}" data-foto-larg="${f.id}"></label>
         <label>Inclinação <input type="range" min="-30" max="30" step="1" value="${Math.round(f.rot ?? 0)}" data-foto-rot="${f.id}"></label>
-        <small class="ed-foto-dica">Arraste a foto na prévia para mudar o lugar.</small>` : ""}
+        <small class="ed-foto-dica">Na prévia: arraste a foto para mudar o lugar; puxe um cantinho (ou gire a rodinha do mouse em cima dela) para aumentar e diminuir.</small>` : ""}
         <button class="icone-btn" type="button" data-foto-tirar="${f.id}" aria-label="Tirar foto">${ic.x}</button></div>`).join("")}</div>`;
     const acha = (id) => fs.find((x) => x.id === id);
     const mudou = (f, ver) => { if (!st.tocando) { if (ver && f.t0 != null && (st.t < f.t0 || st.t >= f.t0 + f.dur)) irPara(f.t0 + Math.min(0.3, f.dur / 2)); else desenhar(st.t); } salvarDepois(); };
@@ -1712,6 +1712,7 @@ IDEIA PARA DEPOIS
     if ((st.opc.flash || st.opc.dinamismo === "dinamico") && s) { const i = st.segs.indexOf(s), ant = st.segs[i - 1]; const d = t - s.o0; if (ant && ant.ci !== s.ci && d < 0.12) { c2d.fillStyle = `rgba(255,255,255,${0.85 * (1 - d / 0.12)})`; c2d.fillRect(0, 0, W, H); } }
     // flash que ela pôs à mão na linha do tempo
     for (const f of st.flashes || []) { const d = t - f; if (d >= 0 && d < 0.14) { c2d.fillStyle = `rgba(255,255,255,${0.85 * (1 - d / 0.14)})`; c2d.fillRect(0, 0, W, H); } }
+    st._legBox = null; st._titBox = null;
     desenharFotos(t, W, H);
     desenharVisuais(t, u, W, H);
     // legenda (ou palavra chamativa)
@@ -1721,6 +1722,7 @@ IDEIA PARA DEPOIS
     // título do gancho
     if (st.opc.titulo && st.titulo && t < DUR_TITULO) desenharTitulo(t, u, W, H);
     desenharCamadas(t, u, W, H);
+    if (!st.exportando) desenharAlcas(u);
     if (st.guiasIG && !st.exportando && !horizontal()) guiasInstagram(u, W, H);
   }
   // ---------- textos na tela (camadas editáveis: mudar frase, tempo, tamanho e arrastar) ----------
@@ -1803,41 +1805,124 @@ IDEIA PARA DEPOIS
     c2d.restore();
   }
   const IMA = 0.018; // distância (fração da tela) em que o texto gruda no centro
-  // arrastar o texto direto na prévia (mouse ou dedo)
+  // ---------- mexer direto na prévia (nov/2026): arrastar muda o lugar; puxar um cantinho ou girar a rodinha do
+  // mouse aumenta e diminui. Vale para fotos por cima, textos na tela, legenda e título do gancho.
+  function alvoSelecionado() {
+    const cam = st.camSel && st.camadas.find((c) => c.id === st.camSel && c._box);
+    if (cam) return { tipo: "cam", ref: cam, box: cam._box };
+    const foto = st.fotoSel && (st.fotos || []).find((f) => f.id === st.fotoSel && f.modo === "cima" && f._box);
+    if (foto) return { tipo: "foto", ref: foto, box: foto._box };
+    if (st.selTela === "leg" && st._legBox) return { tipo: "leg", box: st._legBox };
+    if (st.selTela === "tit" && st._titBox) return { tipo: "tit", box: st._titBox };
+    return null;
+  }
+  function alvoEm(x, y) {
+    const dentro = (b) => b && x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3];
+    const cam = [...st.camadas].reverse().find((c) => dentro(c._box)); if (cam) return { tipo: "cam", ref: cam, box: cam._box };
+    const foto = [...(st.fotos || [])].reverse().find((f) => f.modo === "cima" && dentro(f._box)); if (foto) return { tipo: "foto", ref: foto, box: foto._box };
+    if (dentro(st._titBox)) return { tipo: "tit", box: st._titBox };
+    if (dentro(st._legBox)) return { tipo: "leg", box: st._legBox };
+    return null;
+  }
+  // tamanho atual de cada coisa (1 = normal) e como muda
+  function tamanhoDe(a) { return a.tipo === "cam" ? (a.ref.escala || 1) : a.tipo === "foto" ? (a.ref.larg ?? FOTO_CIMA.larg) : a.tipo === "leg" ? (Number(st.opc.tamLeg) || 1) : (Number(st.opc.tamTitulo) || 1); }
+  function mudarTamanho(a, v) {
+    if (a.tipo === "cam") a.ref.escala = Math.round(clamp(v, 0.3, 4) * 100) / 100;
+    else if (a.tipo === "foto") a.ref.larg = Math.round(clamp(v, 0.08, 0.98) * 1000) / 1000;
+    else if (a.tipo === "leg") st.opc.tamLeg = Math.round(clamp(v, 0.5, 2.2) * 100) / 100;
+    else st.opc.tamTitulo = Math.round(clamp(v, 0.5, 2.2) * 100) / 100;
+  }
+  function selecionar(a) {
+    const camAntes = st.camSel, fotoAntes = st.fotoSel;
+    st.camSel = a && a.tipo === "cam" ? a.ref.id : null;
+    st.fotoSel = a && a.tipo === "foto" ? a.ref.id : null;
+    st.selTela = a && (a.tipo === "leg" || a.tipo === "tit") ? a.tipo : null;
+    if (camAntes !== st.camSel) pintarCamadas();
+    if (fotoAntes !== st.fotoSel) pintarFotos();
+  }
+  function cantoEm(box, x, y, r) {
+    const cs = [[box[0], box[1]], [box[2], box[1]], [box[0], box[3]], [box[2], box[3]]];
+    return cs.some(([cx, cy]) => Math.abs(x - cx) <= r && Math.abs(y - cy) <= r);
+  }
+  function desenharAlcas(u) {
+    const a = alvoSelecionado(); if (!a) return;
+    const b = a.box, r = 13 * u;
+    c2d.save();
+    if (a.tipo === "leg" || a.tipo === "tit") { c2d.strokeStyle = "rgba(255,255,255,.9)"; c2d.lineWidth = 3 * u; c2d.setLineDash([12 * u, 8 * u]); c2d.strokeRect(b[0], b[1], b[2] - b[0], b[3] - b[1]); }
+    c2d.setLineDash([]); c2d.fillStyle = "#ffffff"; c2d.strokeStyle = "#3d2b20"; c2d.lineWidth = 3 * u;
+    for (const [cx, cy] of [[b[0], b[1]], [b[2], b[1]], [b[0], b[3]], [b[2], b[3]]]) { c2d.beginPath(); c2d.rect(cx - r, cy - r, r * 2, r * 2); c2d.fill(); c2d.stroke(); }
+    c2d.restore();
+  }
+  function depoisDeMexer(a) {
+    if (a.tipo === "cam") { pintarCamadas(); salvarDepois(); }
+    else if (a.tipo === "foto") { pintarFotos(); salvarDepois(); }
+    else { guardarOpc(); const tl = document.getElementById("ed-tamleg"); if (tl && a.tipo === "leg") tl.value = st.opc.tamLeg; }
+  }
   function ligarArrasteCamadas() {
     if (!canvas || canvas.dataset.camadas) return; canvas.dataset.camadas = "1";
     let pega = null;
     const ponto = (e) => { const r = canvas.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * canvas.width, (e.clientY - r.top) / r.height * canvas.height]; };
+    // raio do cantinho: uns 14 px na tela, seja qual for o tamanho da prévia
+    const raio = () => { const r = canvas.getBoundingClientRect(); return Math.max(10, 16 * canvas.width / Math.max(1, r.width)); };
+    const redesenhaJa = () => { if (!st.tocando) desenhar(st.t); };
     canvas.addEventListener("pointerdown", (e) => {
       if (st.exportando) return;
       const [x, y] = ponto(e);
-      const cam = [...st.camadas].reverse().find((c) => c._box && x >= c._box[0] && x <= c._box[2] && y >= c._box[1] && y <= c._box[3]);
-      if (!cam) {
-        // foto "por cima": arrastar muda o lugar (a de cima ganha)
-        const foto = [...(st.fotos || [])].reverse().find((f) => f.modo === "cima" && f._box && x >= f._box[0] && x <= f._box[2] && y >= f._box[1] && y <= f._box[3]);
-        if (!foto) return;
+      // 1) cantinho da coisa selecionada: aumentar / diminuir
+      const sel = alvoSelecionado();
+      if (sel && cantoEm(sel.box, x, y, raio())) {
         e.preventDefault(); canvas.setPointerCapture(e.pointerId);
-        if (st.fotoSel !== foto.id) { st.fotoSel = foto.id; pintarFotos(); }
-        pega = { foto, x0: x, y0: y, cx: foto.x ?? FOTO_CIMA.x, cy: foto.y ?? FOTO_CIMA.y };
-        if (!st.tocando) desenhar(st.t);
+        const cx = (sel.box[0] + sel.box[2]) / 2, cy = (sel.box[1] + sel.box[3]) / 2;
+        if (sel.tipo === "cam") guardarCam();
+        pega = { modo: "tam", alvo: sel, cx, cy, d0: Math.max(8, Math.hypot(x - cx, y - cy)), v0: tamanhoDe(sel) };
         return;
       }
+      // 2) em cima de alguma coisa: seleciona e arrasta
+      const a = alvoEm(x, y);
+      if (!a) { if (st.camSel || st.fotoSel || st.selTela) { selecionar(null); redesenhaJa(); } return; }
       e.preventDefault(); canvas.setPointerCapture(e.pointerId);
-      if (st.camSel !== cam.id) { st.camSel = cam.id; pintarCamadas(); }
-      pega = { cam, x0: x, y0: y, cx: cam.x, cy: cam.y }; st.arrastandoCam = true;
+      selecionar(a);
+      if (a.tipo === "cam") { pega = { modo: "mover", alvo: a, x0: x, y0: y, cx: a.ref.x, cy: a.ref.y }; st.arrastandoCam = true; }
+      else if (a.tipo === "foto") pega = { modo: "mover", alvo: a, x0: x, y0: y, cx: a.ref.x ?? FOTO_CIMA.x, cy: a.ref.y ?? FOTO_CIMA.y };
+      else if (a.tipo === "leg") pega = { modo: "mover", alvo: a, y0: y, cy: Number(st.opc.altura) || 0.52 };
+      else pega = { modo: "mover", alvo: a, y0: y, cy: Number(st.opc.alturaTitulo) || 0.24 };
+      redesenhaJa();
     });
     canvas.addEventListener("pointermove", (e) => {
-      if (!pega) return; e.preventDefault();
       const [x, y] = ponto(e);
-      if (pega.foto) { pega.foto.x = clamp(pega.cx + (x - pega.x0) / canvas.width); pega.foto.y = clamp(pega.cy + (y - pega.y0) / canvas.height); if (!st.tocando) desenhar(st.t); return; }
-      if (!pega.guardou) { pega.guardou = true; guardarCam(); }
-      let nx = clamp(pega.cx + (x - pega.x0) / canvas.width), ny = clamp(pega.cy + (y - pega.y0) / canvas.height);
-      if (Math.abs(nx - 0.5) < IMA) nx = 0.5; if (Math.abs(ny - 0.5) < IMA) ny = 0.5;
-      pega.cam.x = nx; pega.cam.y = ny;
-      if (!st.tocando) desenhar(st.t);
+      if (!pega) {
+        // cursor mostra o que dá para fazer (mouse)
+        const sel = alvoSelecionado();
+        canvas.style.cursor = sel && cantoEm(sel.box, x, y, raio()) ? (((x < (sel.box[0] + sel.box[2]) / 2) === (y < (sel.box[1] + sel.box[3]) / 2)) ? "nwse-resize" : "nesw-resize") : alvoEm(x, y) ? "move" : "";
+        return;
+      }
+      e.preventDefault();
+      const a = pega.alvo;
+      if (pega.modo === "tam") { mudarTamanho(a, pega.v0 * Math.hypot(x - pega.cx, y - pega.cy) / pega.d0); redesenhaJa(); return; }
+      if (a.tipo === "foto") { a.ref.x = clamp(pega.cx + (x - pega.x0) / canvas.width); a.ref.y = clamp(pega.cy + (y - pega.y0) / canvas.height); }
+      else if (a.tipo === "cam") {
+        if (!pega.guardou) { pega.guardou = true; guardarCam(); }
+        let nx = clamp(pega.cx + (x - pega.x0) / canvas.width), ny = clamp(pega.cy + (y - pega.y0) / canvas.height);
+        if (Math.abs(nx - 0.5) < IMA) nx = 0.5; if (Math.abs(ny - 0.5) < IMA) ny = 0.5;
+        a.ref.x = nx; a.ref.y = ny;
+      } else if (a.tipo === "leg") st.opc.altura = Math.round(clamp(pega.cy + (y - pega.y0) / canvas.height, 0.12, 0.9) * 1000) / 1000;
+      else st.opc.alturaTitulo = Math.round(clamp(pega.cy + (y - pega.y0) / canvas.height, 0.08, 0.9) * 1000) / 1000;
+      redesenhaJa();
     });
-    const soltar = () => { if (!pega) return; if (pega.foto) { pega = null; salvarDepois(); return; } pega = null; st.arrastandoCam = false; if (!st.tocando) desenhar(st.t); pintarCamadas(); salvarDepois(); };
+    const soltar = () => { if (!pega) return; const a = pega.alvo; pega = null; st.arrastandoCam = false; redesenhaJa(); depoisDeMexer(a); };
     canvas.addEventListener("pointerup", soltar); canvas.addEventListener("pointercancel", soltar);
+    // rodinha do mouse em cima de uma coisa: aumenta (para cima) e diminui (para baixo)
+    let rodaFim = null;
+    canvas.addEventListener("wheel", (e) => {
+      if (st.exportando) return;
+      const [x, y] = ponto(e), a = alvoEm(x, y) || alvoSelecionado();
+      if (!a || !(alvoEm(x, y))) return;
+      e.preventDefault();
+      if (a.tipo === "cam" && !rodaFim) guardarCam();
+      selecionar(a);
+      mudarTamanho(a, tamanhoDe(a) * (e.deltaY < 0 ? 1.06 : 1 / 1.06)); redesenhaJa();
+      clearTimeout(rodaFim); rodaFim = setTimeout(() => { rodaFim = null; depoisDeMexer(a); }, 350);
+    }, { passive: false });
   }
   // ---------- desfazer (botão e Ctrl+Z / Cmd+Z): a última mudança, seja texto, linha do tempo, estilo ou ajuste ----------
   function marcarDesfazer(tipo) { st.desf.push(tipo); if (st.desf.length > 120) st.desf.shift(); setTimeout(pintarBotaoDesfazer, 0); }
@@ -1892,7 +1977,7 @@ IDEIA PARA DEPOIS
     const fmt = (n) => (Math.round(n * 10) / 10).toFixed(1).replace(".", ",");
     const ordenadas = st.camadas.slice().sort((a, b) => a.t0 - b.t0);
     box.innerHTML = `<div class="ed-cam-topo"><h3 class="ed-cam-tit">Textos na tela</h3><button class="btn btn-leve" type="button" data-desfazer-tudo title="Desfazer (Ctrl+Z)" ${podeDesfazer() ? "" : "disabled"}>${ic.desfazer}Desfazer</button></div>
-      <p class="ed-obs">Toque num texto para mudar a frase, o tempo e o tamanho. Para mudar o lugar, arraste o texto direto no vídeo: aparecem as linhas do meio da tela e, perto do centro, o texto gruda nele (a linha fica amarela). Tudo salva sozinho no projeto.</p>
+      <p class="ed-obs">Toque num texto para mudar a frase, o tempo e o tamanho. Para mudar o lugar, arraste o texto direto no vídeo: aparecem as linhas do meio da tela e, perto do centro, o texto gruda nele (a linha fica amarela). Para aumentar ou diminuir, puxe um dos cantinhos brancos ou gire a rodinha do mouse em cima do texto. A legenda e o título também: clique neles no vídeo e puxe um cantinho (arrastar sobe e desce). Tudo salva sozinho no projeto.</p>
       <div class="ed-cam-acoes"><button class="btn" type="button" id="ed-cam-novo">${ic.mais}Novo texto aqui (${fmt(st.t)} s)</button></div>
       ${ordenadas.length ? "" : `<p class="rr-vazio">Nenhum texto ainda.</p>`}
       ${ordenadas.map((c) => {
@@ -2009,7 +2094,7 @@ IDEIA PARA DEPOIS
   function desenharLegenda(g, u, W, H) {
     const est = st.opc.estilo, y = H * (g.alt ?? st.opc.altura);
     const textoDe = (w) => { const x = w.w.replace(/^[,.;:!?]+|[,.;:]+$/g, ""); return st.opc.maiusculas || est === "bold" ? x.toUpperCase() : x.toLowerCase(); };
-    const tam = est === "minimal" ? 92 * u : est === "bold" ? 84 * u : 70 * u;
+    const tam = (est === "minimal" ? 92 * u : est === "bold" ? 84 * u : 70 * u) * (Number(st.opc.tamLeg) || 1);
     const peso = est === "minimal" ? 300 : est === "bold" ? 800 : 600;
     const fonte = `${peso} ${tam}px Poppins, "Helvetica Neue", Arial, sans-serif`;
     c2d.font = fonte; c2d.textAlign = "left"; c2d.textBaseline = "middle";
@@ -2018,6 +2103,7 @@ IDEIA PARA DEPOIS
     const espaco = c2d.measureText(" ").width;
     const largura = partes.reduce((s, p) => s + c2d.measureText(p.t).width, 0) + espaco * (partes.length - 1);
     const xc = xLegenda(W); let x = xc - largura / 2;
+    st._legBox = [xc - largura / 2 - 16 * u, y - tam * 0.75, xc + largura / 2 + 16 * u, y + tam * 0.75];
     // entrada com um "pulinho"
     const k = Math.min(1, (st.t - g.o0) / 0.08), escala = 0.9 + 0.1 * suave(Math.max(0, k));
     c2d.save(); c2d.translate(xc, y); c2d.scale(escala, escala); c2d.translate(-xc, -y);
@@ -2046,6 +2132,7 @@ IDEIA PARA DEPOIS
     // minúscula, menos siglas de marca escritas em maiúscula (SBP, LG)
     texto = st.opc.maiusculas ? texto.toUpperCase() : texto.split(" ").map((w) => (/^[A-ZÀ-Ý0-9%&]{2,}[!?]?$/.test(w) && /[A-Z]/.test(w) ? w : w.toLowerCase())).join(" ");
     const xc = xLegenda(W), fonte = fonteLeg(tam), linhas = quebrar(texto, W * (st.opc.ladoLeg && st.opc.ladoLeg !== "centro" ? 0.56 : 0.8), fonte);
+    c2d.font = fonte; { const lw = Math.max(...linhas.map((l) => c2d.measureText(l).width), 1), lh = linhas.length * tam * 1.12; st._legBox = [xc - lw / 2 - 16 * u, y - lh / 2 - 6 * u, xc + lw / 2 + 16 * u, y + lh / 2 + 6 * u]; }
     const k = Math.min(1, (st.t - g.o0) / 0.09), escala = 0.92 + 0.08 * suave(Math.max(0, k));
     c2d.save(); c2d.translate(xc, y); c2d.scale(escala, escala); c2d.translate(-xc, -y);
     c2d.textAlign = "center"; c2d.textBaseline = "middle";
@@ -2118,8 +2205,9 @@ IDEIA PARA DEPOIS
   function tituloSimples(t, u, W, H) {
     const saida = t > DUR_TITULO - 0.3 ? Math.max(0, (DUR_TITULO - t) / 0.3) : 1;
     const k = Math.min(1, t / 0.35), y = H * (Number(st.opc.alturaTitulo) || 0.24) + (1 - suave(k)) * 30 * u;
-    let tam = 118 * u; const fonte = (x) => fonteTitulo(x);
-    const linhas = quebrar(st.titulo.toLowerCase(), W * 0.82, fonte(tam));
+    let tam = 118 * u * (Number(st.opc.tamTitulo) || 1); const fonte = (x) => fonteTitulo(x);
+    const linhas = quebrar(st.titulo.toLowerCase(), W * 0.9, fonte(tam));
+    { c2d.save(); c2d.font = fonte(tam); const lw = Math.max(...linhas.map((l) => c2d.measureText(l).width), 1), lh = linhas.length * tam * 1.05, yc = H * (Number(st.opc.alturaTitulo) || 0.24); st._titBox = [W / 2 - lw / 2 - 16 * u, yc - lh / 2 - 8 * u, W / 2 + lw / 2 + 16 * u, yc + lh / 2 + 8 * u]; c2d.restore(); }
     c2d.save(); c2d.globalAlpha = saida * suave(k); c2d.font = fonte(tam); c2d.textAlign = "center"; c2d.textBaseline = "middle";
     c2d.shadowColor = "rgba(0,0,0,.5)"; c2d.shadowBlur = 18 * u; c2d.shadowOffsetY = 3 * u;
     c2d.fillStyle = st.opc.corTitulo || st.opc.corLegenda || "#fff3b0";
@@ -3996,7 +4084,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <select class="entrada" id="ed-fonte">${Object.entries(FONTES_LEG).filter(([k]) => k !== "minha" || st.minhaFonte).map(([k, t]) => `<option value="${k}" ${o.fonteLeg === k ? "selected" : ""}>${k === "minha" ? esc(st.minhaFonte) : t}</option>`).join("")}</select>
       <label class="btn ed-enviar-fonte">${st.minhaFonte ? "Trocar minha fonte" : "Enviar minha fonte (Bootzy)"}<input type="file" id="ed-fonte-arq" accept=".ttf,.otf,.woff,.woff2,font/*" hidden></label>
       <label class="ed-rotulo" for="ed-tamleg">Tamanho da legenda</label>
-      <input type="range" id="ed-tamleg" min="0.7" max="1.5" step="0.05" value="${o.tamLeg || 1}">
+      <input type="range" id="ed-tamleg" min="0.5" max="2.2" step="0.05" value="${o.tamLeg || 1}">
       <div class="ed-linha"><label class="ed-rotulo" for="ed-sombra">Sombra</label><select class="entrada" id="ed-sombra"><option value="suave" ${o.sombra !== "dura" ? "selected" : ""}>Suave</option><option value="dura" ${o.sombra === "dura" ? "selected" : ""}>Dura (deslocada)</option></select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-por">Palavras por legenda</label><select class="entrada" id="ed-por">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(o.porLegenda) === n ? "selected" : ""}>${n}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-cor-leg">Cor da legenda</label><span class="ed-cores">${["#fff3b0", "#ffffff", "#ffe45c"].map((c) => `<button type="button" class="ed-cor${o.corLegenda === c ? " ativa" : ""}" data-cor-leg="${c}" style="background:${c}" aria-label="Cor ${c}"></button>`).join("")}<input type="color" id="ed-cor-leg" value="${o.corLegenda}"></span></div>` : ""}
