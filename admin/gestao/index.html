@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611021901"></script>
-<script src="../../js/dialogos.js?v=202611021901"></script>
-<script src="../../js/corretor.js?v=202611021901"></script>
+<script src="../../js/banco.js?v=202611021902"></script>
+<script src="../../js/dialogos.js?v=202611021902"></script>
+<script src="../../js/corretor.js?v=202611021902"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -156,6 +156,8 @@
   .dn-apr .dn-apr-acoes button{ width:auto; display:inline-flex; align-items:center; gap:4px; border:1px solid var(--db-linha); background:var(--db-papel); color:var(--db-texto); border-radius:999px; padding:4px 10px; font:500 12px Poppins,sans-serif; cursor:pointer; }
   .dn-apr-rola{ max-height:258px; overflow-y:auto; scrollbar-width:none; overscroll-behavior:contain; } .dn-apr-rola::-webkit-scrollbar{ display:none; }
   .dn-apr-mais{ display:flex; justify-content:center; padding-top:8px; border-top:1px solid var(--db-linha); }
+  .dn-apr-mais .dn-min:disabled{ opacity:.4; cursor:default; } /* nov/2026: a setinha fica sempre; com 3 ou menos, apagadinha */
+  .db-bloco.fechado .dn-apr-mais{ display:none; }
   .dn-apr-acoes .dn-apr-ok{ color:var(--db-verde); }
   .dn-leg{ align-items:center; } .dn-abrir-cal{ margin-left:auto; display:inline-flex; align-items:center; gap:4px; }
   .dn-ico{ width:46px; height:46px; border-radius:50%; background:var(--db-bege2); color:var(--db-cafe); display:grid; place-items:center; flex:none; }
@@ -2948,7 +2950,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const [blocosFechados,setBlocosFechados] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("dnFechados")||"[]"); }catch(e){ return []; } });
   const fechadoB = (k) => blocosFechados.includes(k);
   const alternarB = (k) => setBlocosFechados(l=>{ const n = l.includes(k) ? l.filter(x=>x!==k) : [...l, k]; try{ localStorage.setItem("dnFechados", JSON.stringify(n)); }catch(e){} return n; });
-  // nov/2026 (pedido da Mari): Aguardando aprovação mostra 3 por vez e a setinha desce para ver as próximas
+  // nov/2026 (pedido da Mari): Aguardando aprovação mostra 3 por vez e a setinha desce para ver as próximas (setinha sempre visível; com 3 ou menos fica apagadinha)
   const aprRef = useRef(null);
   const [aprFim,setAprFim] = useState(false);
   const aprChecar = () => { const el = aprRef.current; if(el) setAprFim(el.scrollTop + el.clientHeight >= el.scrollHeight - 4); };
@@ -3116,7 +3118,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                 <button className="dn-apr-ok" onClick={()=>mudarItem(a.jobId, a.itemId, rot ? "Em produção" : "Finalizado")} title={rot ? "Roteiro aprovado: vai para produção" : "Conteúdo aprovado: finalizado"}><DbIcone tipo="check" tam={14}/>Aprovado</button>
                 <button className="dn-apr-aj" onClick={()=>mudarItem(a.jobId, a.itemId, rot ? "Roteirização" : "Refação")} title="A marca pediu ajuste">Ajuste</button>
               </span>}</li>; })}</ul>
-            {aprovacoes.length>3 && <div className="dn-apr-mais"><button type="button" className="dn-min" onClick={aprDescer} title={aprFim ? "Voltar ao começo" : "Ver as próximas"} aria-label={aprFim ? "Voltar ao começo" : "Ver as próximas"}><Icon name={aprFim ? "expand_less" : "expand_more"} size={19}/></button></div>}</>
+            <div className="dn-apr-mais"><button type="button" className="dn-min" onClick={aprDescer} disabled={aprovacoes.length<=3} title={aprovacoes.length<=3 ? "Tudo já está à mostra" : aprFim ? "Voltar ao começo" : "Ver as próximas"} aria-label={aprovacoes.length<=3 ? "Tudo já está à mostra" : aprFim ? "Voltar ao começo" : "Ver as próximas"}><Icon name={aprFim && aprovacoes.length>3 ? "expand_less" : "expand_more"} size={19}/></button></div></>
             : <p className="db-vazio">Nada esperando aprovação.</p>}
         </section>
 
