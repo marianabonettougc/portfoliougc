@@ -66,7 +66,7 @@
 RITMO
 - Cortes secos (jump cut), sem transição enfeitada. Corta todo silêncio, respiração e tomada errada.
 - B-roll de produto cobrindo a fala: close do produto, detalhe, uso real (chinelo no pé, perfume na pele), print de tela quando falar de busca ou app.
-- Zoom leve só para esconder o pulo entre cortes e nas frases de ênfase.
+- ZOOM DISCRETO (nov/2026, ela pediu): poucos zooms, suaves (até 6%), só em momento-chave (revelação, produto aparecendo, frase mais forte), no máximo 1 a cada 8 a 12 s. Nunca zoom alternado entrando e saindo (vai-e-volta) nem zoom em todo corte.
 
 LEGENDA
 - Minúscula, de 2 a 4 palavras por vez, no meio da tela, sombra suave para ler em fundo claro. Nunca em maiúsculas, nunca negrito pesado, nunca contorno.
@@ -83,13 +83,13 @@ O QUE NÃO USAR (ela pediu)
 DINAMISMO E EFEITOS SONOROS (ela gosta de vídeo bem dinâmico, que chama atenção)
 - Sons que ela usa (Floratta Blue Crystal): spray no borrifo do produto, brilho (sparkle) baixinho na névoa ou no produto brilhando, whoosh suave no corte para o rosto, riser curto antes de revelar o produto, ding de cristal quando o produto aparece inteiro e quando fala o nome da marca, pop quando aparece texto escrito (notas do perfume, nome do produto, pergunta do CTA), whoosh curto alternado com clique nos cortes de close, som de mensagem chegando quando entra print de WhatsApp, tique-taque de relógio quando fala de fixação ou "no fim do dia". Nada por cima de áudio de prova (áudio de WhatsApp, depoimento).
 - Muitos efeitos sonoros: 1 a cada 1,5 a 2 segundos. Woosh nas trocas de assunto e nos zooms, clique/shutter nos cortes rápidos, pop e ding quando entra texto, produto ou informação, riser antes de revelar algo e hit logo depois, typing quando aparece algo escrito, som do próprio produto junto do gesto (spray, embalagem, chuveiro).
-- Cortes rápidos sem respiro, zoom rápido (punch) nos cortes de ênfase, troca de plano a cada 1 a 2 segundos quando der (b-roll).
+- Cortes rápidos sem respiro, troca de plano a cada 1 a 2 segundos quando der (b-roll).
 
 REFERÊNCIA: VÍDEO PRÉ-EDITADO (Floratta Blue Crystal, out/2026)
 - Quando ela manda um vídeo que já vem pré-editado (cortes, título, textos e b-roll prontos), a edição é leve: poucos efeitos, só nos momentos-chave. Não refazer cortes nem legenda.
 - Sons usados nele (6 em 82 s, uns 20 a 25% do volume da voz): pop baixinho quando o título do gancho aparece; brilho quando entra a figurinha do produto; whoosh suave no corte para o b-roll do produto; spray quando o dedo aperta a válvula; som de mensagem quando ela pega o celular, antes do áudio de prova (nunca por cima dele); clique de câmera quando entra a gravação de tela.
 - Efeitos de cena usados nele: aproximação lenta (até 6%) durante o título do gancho; aproximação lenta (até 8%) no b-roll de close do produto; flash branco rápido (0,1 s) no corte para o produto; zoom de ênfase de 8% que volta ao normal em 1,3 s em 2 cortes de volta para o rosto.
-- Versão final do mesmo vídeo, depois que ela colocou legenda (1 palavra no meio da tela) e música de fundo e pediu para ficar dinâmico: 44 sons em 82 s (1 a cada 2 s, uns 12 a 20% do volume): clique ou whoosh suave em todo corte e em todo zoom, pop quando entra texto, brilho e ding de cristal quando o frasco aparece e quando fala a marca, riser curto antes do close do produto, spray em todo borrifo, tique-taque quando fala de fixação, mensagem antes do áudio de prova. Zoom alternado (100% e 110 a 112%, entrando um pouco mais perto e assentando) a cada 3 a 4 s nas falas longas, sempre numa pausa da fala; aproximação lenta nos b-rolls e no frasco na mão; flash branco no corte para o produto e na volta da gravação de tela. Zoom centrado um pouco acima do meio para não cortar o rosto nem a legenda. Nada durante o áudio de prova além de uma aproximação lenta.
+- Versão final do mesmo vídeo, depois que ela colocou legenda (1 palavra no meio da tela) e música de fundo e pediu para ficar dinâmico: 44 sons em 82 s (1 a cada 2 s, uns 12 a 20% do volume): clique ou whoosh suave em todo corte e em todo zoom, pop quando entra texto, brilho e ding de cristal quando o frasco aparece e quando fala a marca, riser curto antes do close do produto, spray em todo borrifo, tique-taque quando fala de fixação, mensagem antes do áudio de prova. (Zoom: ela mudou para DISCRETO em nov/2026, então nada de zoom alternado.) aproximação lenta nos b-rolls e no frasco na mão; flash branco no corte para o produto e na volta da gravação de tela. Zoom centrado um pouco acima do meio para não cortar o rosto nem a legenda. Nada durante o áudio de prova além de uma aproximação lenta.
 
 IDEIA PARA DEPOIS
 - Texto atrás da pessoa (DbT3IhlRUgA): o título fica atrás do corpo dela.`;
@@ -100,7 +100,12 @@ IDEIA PARA DEPOIS
   // fontes da legenda: "minha" é a fonte que ela enviou (Bootzy do CapCut), guardada em configuracoes "fonte_legenda"
   const FONTES_LEG = { minha: "Minha fonte (Bootzy)", arimo: "Parecida com a Bootzy (Arimo)", montserrat: "Sem serifa forte (Montserrat)", poppins: "Sem serifa média (Poppins)", nunito: "Arredondada forte (Nunito)", dmserif: "Serifada itálica (DM Serif)", instrument: "Serifada itálica fina (Instrument Serif)" };
   const QTD_SONS = [["nenhum", "Nenhum"], ["impacto", "Só nas frases de impacto"], ["poucos", "Poucos"], ["medio", "Médio"], ["muitos", "Muitos (1 a cada 2 s, seu padrão)"]];
-  const DINAMISMO = [["calmo", "Calmo (sem zoom nem transição)"], ["normal", "Normal"], ["dinamico", "Dinâmico (zoom entrando e saindo, transição, seu padrão)"]];
+  const DINAMISMO = [["calmo", "Calmo (sem zoom nem transição)"], ["normal", "Normal"], ["dinamico", "Dinâmico (cortes rápidos e transição)"]];
+  // EDIT.AI (nov/2026, pedido dela): o zoom tem nível próprio e o padrão é DISCRETO (nada de vai-e-volta)
+  const ZOOM_NIVEIS = [["discreto", "Discreto (poucos e suaves, só nos momentos-chave; seu padrão)"], ["equilibrado", "Equilibrado"], ["dinamico", "Dinâmico (entra e sai a cada ~2,5 s)"]];
+  const ZOOM_FORCA = { discreto: 0.06, equilibrado: 0.09, dinamico: 0.12 };
+  const ZOOM_ESPACO = { discreto: 7, equilibrado: 3.5, dinamico: 0 };
+  const nivelZoom = () => (ZOOM_FORCA[st.opc.zoomNivel] ? st.opc.zoomNivel : "discreto");
   const fonteLeg = (tam, chave = st.opc.fonteLeg) => ({
     minha: `${tam}px "MinhaFonte", Arimo, Arial, sans-serif`, arimo: `700 ${tam}px Arimo, "Helvetica Neue", Arial, sans-serif`, montserrat: `700 ${tam}px Montserrat, Poppins, sans-serif`, poppins: `500 ${tam}px Poppins, sans-serif`,
     nunito: `800 ${tam}px Nunito, Poppins, sans-serif`, dmserif: `italic 400 ${tam * 1.12}px "DM Serif Display", Georgia, serif`, instrument: `italic 400 ${tam * 1.28}px "Instrument Serif", Georgia, serif`,
@@ -134,7 +139,8 @@ IDEIA PARA DEPOIS
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     camadas: [], camSel: null, soCamadas: false, histCam: [], desf: [],
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: true, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1, legenda: true, sons: "muitos", dinamismo: "dinamico", formato: "vertical", relaxante: false, sonsSuaves: false, fonteTitulo: "dmserif", corTitulo: "", ladoLeg: "centro", alturaTitulo: 0.24 },
+    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: false, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1, legenda: true, sons: "muitos", dinamismo: "dinamico", formato: "vertical", relaxante: false, sonsSuaves: false, fonteTitulo: "dmserif", corTitulo: "", ladoLeg: "centro", alturaTitulo: 0.24, preservarCenas: true, zoomNivel: "discreto" },
+    opsHist: [], opsPos: 0, opsLog: [],
     pedidos: "", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, aba: "video", projeto: null, projetos: [], pendentes: null, salvando: "",
     estiloAtivo: (() => { try { return localStorage.getItem("ed-estilo-ativo") || ""; } catch (e) { return ""; } })(), meusEstilos: [], estiloEditando: null, estiloApagar: null, fxBusca: "", fxCat: "todos", guiasIG: false, estHist: [], estMsg: "", ref: null, refArq: null, refUrl: "", refTrab: false, refEtapas: [], refPedido: "", refFocos: [], carro: null, carroTrab: false,
     story: { geral: "", sug: {}, notas: {}, notaGeral: "", trab: false }, vari: { n: 3, mudar: { gancho: true, curta: true, ordem: true, legenda: false, sons: false }, lista: [], base: "", trab: false, gerando: null }, variBase: null, variAtiva: null,
@@ -142,8 +148,8 @@ IDEIA PARA DEPOIS
   };
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
-  try { const salvo = JSON.parse(localStorage.getItem("ed-opc3") || "null"); if (salvo && typeof salvo === "object") Object.assign(st.opc, salvo); if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
-  const OPC_VISUAIS = ["karaoke", "sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg", "legenda", "sons", "dinamismo", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo"];
+  try { const salvo = JSON.parse(localStorage.getItem("ed-opc3") || "null"); if (salvo && typeof salvo === "object") { Object.assign(st.opc, salvo); if (!salvo.zoomNivel) { st.opc.zoomNivel = "discreto"; st.opc.zoomCortes = false; } } if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
+  const OPC_VISUAIS = ["karaoke", "sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg", "legenda", "sons", "dinamismo", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo", "preservarCenas", "zoomNivel"];
   function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc3", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
@@ -393,7 +399,7 @@ IDEIA PARA DEPOIS
       try {
         const el = await carregarVideo(a), clipe = { id: uid(), nome: a.name, arquivo: a, el, dur: el.duration || 0, w: el.videoWidth, h: el.videoHeight, palavras: null };
         // abrindo um projeto: o arquivo certo recupera a transcrição salva
-        if (pend) { const i = pend.findIndex((x) => !x.usado && (x.nome === a.name || Math.abs((x.dur || 0) - clipe.dur) < 0.25)); if (i >= 0) { pend[i].usado = true; clipe.palavras = pend[i].palavras && (pend[i].palavras.length || pend[i].mudo) ? pend[i].palavras : null; clipe.mudo = Boolean(pend[i].mudo); clipe.ordem = i; } }
+        if (pend) { const i = pend.findIndex((x) => !x.usado && (x.nome === a.name || Math.abs((x.dur || 0) - clipe.dur) < 0.25)); if (i >= 0) { pend[i].usado = true; clipe.palavras = pend[i].palavras && (pend[i].palavras.length || pend[i].mudo) ? pend[i].palavras : null; clipe.mudo = Boolean(pend[i].mudo); clipe.visual = pend[i].visual || null; clipe.ordem = i; } }
         clipe.capa = miniaturaDoClipe(el);
         st.clipes.push(clipe);
       } catch (e) { toast(e.message, true); }
@@ -424,7 +430,8 @@ IDEIA PARA DEPOIS
     efeitos: st.efeitos.filter((e) => !e.doTitulo && !e.daChamativa).map(({ id, ...e }) => e),
     camadas: st.camadas.map(({ _box, ...c }) => c), soCamadas: st.soCamadas || undefined,
     fotos: (st.fotos || []).filter((f) => f.path || f.pedir).map(({ img, _box, ...f }) => f),
-    clipes: (st.clipes.length ? st.clipes : st.pendentes || []).map((c) => ({ nome: c.nome, dur: Math.round((c.dur || 0) * 100) / 100, palavras: c.palavras || null, mudo: c.mudo || undefined })),
+    clipes: (st.clipes.length ? st.clipes : st.pendentes || []).map((c) => ({ nome: c.nome, dur: Math.round((c.dur || 0) * 100) / 100, palavras: c.palavras || null, mudo: c.mudo || undefined, visual: c.visual || undefined })),
+    operacoes: st.opsLog || [],
   });
   let tempoSalvar = null;
   function salvarDepois() { clearTimeout(tempoSalvar); tempoSalvar = setTimeout(salvarProjeto, 1500); }
@@ -451,7 +458,7 @@ IDEIA PARA DEPOIS
     st.clipes.forEach((c) => { try { c.el.remove(); URL.revokeObjectURL(c.el.src); } catch (e) { /* segue */ } });
     const capaBox = $("#ed-capa"); if (capaBox) capaBox.dataset.pronto = "";
     (st.fotos || []).forEach((f) => { try { if (f.img && f.img.src.startsWith("blob:")) URL.revokeObjectURL(f.img.src); } catch (e) { /* segue */ } });
-    Object.assign(st, { fotos: [], camadas: [], camSel: null, soCamadas: false, histCam: [], desf: [], story: novoStory(), vari: novaVari(), variBase: null, variAtiva: null, ref: null, refPedido: "", carro: null, clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, aba: "video", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "", pedidos: "" });
+    Object.assign(st, { fotos: [], camadas: [], camSel: null, soCamadas: false, histCam: [], desf: [], story: novoStory(), vari: novaVari(), variBase: null, variAtiva: null, ref: null, refPedido: "", carro: null, clipes: [], plano: null, segs: [], legendas: [], efeitos: [], titulo: "", tituloDestaque: "", editLeg: {}, marcas: {}, capa: null, aba: "video", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], etapas: [], pendentes: null, efeitosSalvos: null, t: 0, arquivoFinal: null, tema: "", roteiro: "", pedidos: "", opsHist: [], opsPos: 0, opsLog: [], desfazerAjuste: null });
   }
   async function abrirProjeto(id) {
     const { data, error } = await banco().from("edicao_projetos").select("*").eq("id", id).maybeSingle();
@@ -460,12 +467,13 @@ IDEIA PARA DEPOIS
     const d = data.dados || {};
     st.projeto = { id: data.id, nome: data.nome };
     st.tema = d.tema || ""; st.roteiro = d.roteiro || ""; st.pedidos = d.pedidos || ""; st.manual = { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [], ...(d.manual || {}) }; st.plano = d.plano || null; st.titulo = d.titulo || ""; st.tituloDestaque = d.tituloDestaque || "";
-    st.editLeg = d.editLeg || {}; st.marcas = d.marcas || {}; st.capa = d.capa || null; st.correcoes = d.correcoes || []; st.ref = d.ref || null; st.refPedido = d.refPedido || ""; st.carro = d.carro || null;
+    st.editLeg = d.editLeg || {}; st.marcas = d.marcas || {}; st.capa = d.capa || null; st.correcoes = d.correcoes || []; st.opsLog = Array.isArray(d.operacoes) ? d.operacoes : []; st.ref = d.ref || null; st.refPedido = d.refPedido || ""; st.carro = d.carro || null;
     st.camadas = Array.isArray(d.camadas) ? d.camadas.map((c) => ({ ...c, id: c.id || uid() })) : []; st.soCamadas = Boolean(d.soCamadas); st.camSel = null;
     st.fotos = Array.isArray(d.fotos) ? d.fotos.map((f) => ({ ...f })) : []; carregarImgsFotos();
     if (st.camadas.length) st.aba = "textos";
     st.story = { ...novoStory(), ...(d.story || {}) }; st.vari = { ...novaVari(), ...(d.vari || {}), trab: false, gerando: null };
     if (d.opc && d.versao >= 3) Object.assign(st.opc, d.opc);
+    if (!d.opc || !d.opc.zoomNivel) { st.opc.zoomNivel = "discreto"; st.opc.zoomCortes = false; }
     if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
     st.efeitosSalvos = Array.isArray(d.efeitos) ? d.efeitos.map((e) => ({ ...e, id: uid() })) : null;
     st.pendentes = (d.clipes || []).length ? d.clipes.map((c) => ({ ...c, usado: false })) : null;
@@ -539,10 +547,12 @@ IDEIA PARA DEPOIS
     if (volume && new RegExp(SONS).test(t)) o.vol = /(mais alto|aument|alto demais nao|nao (da|esta) pra ouvir|baixo demais)/.test(t) ? 0.65 : 0.22;
     // dinamismo: cortes, transição, zoom entrando e saindo
     if (/dinamic|(corte|cortes)[^.;!?]{0,30}(transic|zoom)|transic[^.;!?]{0,30}zoom|zoom (in|out|entrando|saindo)|diminuicao de zoom|mais cortes|mais ritmo|ritmo (rapido|acelerado)|mais agil/.test(t) && !/(menos|sem|nao)[^.;!?]{0,8}dinamic/.test(t)) {
-      o.dinamismo = "dinamico"; o.ritmo = "turbo"; o.zoomCortes = true; o.zoomEnfase = true; if (o.transicao !== "nenhuma") o.transicao = "deslize";
+      o.dinamismo = "dinamico"; o.ritmo = "turbo"; o.zoomEnfase = true; if (o.transicao !== "nenhuma") o.transicao = "deslize";
       if (!so) { o.silencio = true; o.erros = true; }
     }
     if (/(mais calmo|menos dinamic|sem dinamismo|mais lento|menos cortes|menos zoom|mais tranquilo)/.test(t)) { o.dinamismo = "calmo"; o.ritmo = "normal"; }
+    if (/zooms? (discreto|suave|leve|sutil)|menos zoom|pouco zoom|vai.?e.?volta|zoom (entrando e saindo|alternado)[^.;!?]{0,20}(nao|chato|odeio|tira)/.test(t)) { o.zoomNivel = "discreto"; o.zoomCortes = false; }
+    else if (/zooms? (dinamic|entrando e saindo|alternado)|mais zoom|bastante zoom/.test(t) && !/(nao|sem)[^.;!?]{0,10}zoom/.test(t)) o.zoomNivel = "dinamico";
     // formato do vídeo
     if (/horizontal|16 ?(:|x|por) ?9|paisagem|formato largo|widescreen|(video|formato|edicao|ele|tudo) (todo )?(deitado|na horizontal)/.test(t) && !/(nao|sem)[^.;!?]{0,12}horizontal/.test(t)) o.formato = "horizontal";
     else if (/\bvertical\b|em pe\b|9 ?(:|x|por) ?16|formato (de )?(reels|stories)/.test(t)) o.formato = "vertical";
@@ -575,7 +585,8 @@ IDEIA PARA DEPOIS
     else if (o.silencio === false) d.push("sem recortar a fala");
     if (o.sons) d.push({ nenhum: "sem efeitos sonoros", impacto: "efeitos só nas frases de impacto", poucos: "poucos efeitos sonoros", medio: "efeitos na medida", muitos: "muitos efeitos sonoros" }[o.sons]);
     if ("vol" in o) d.push(o.vol > 0.4 ? "efeitos mais altos" : "efeitos mais baixinhos");
-    if (o.dinamismo === "dinamico") d.push("dinâmico: cortes sem pausa, zoom entrando e saindo, transição e flash na troca de cena");
+    if (o.dinamismo === "dinamico") d.push("dinâmico: cortes sem pausa, transição e flash na troca de cena (o zoom continua no nível escolhido)");
+    if (o.zoomNivel) d.push(o.zoomNivel === "discreto" ? "zoom discreto (poucos e suaves, sem vai-e-volta)" : o.zoomNivel === "dinamico" ? "zoom dinâmico (entrando e saindo)" : "zoom equilibrado");
     if (o.relaxante) d.push("relaxante: poucos sons e só os suaves, sem zoom, flash nem transição, com respiro nos cortes");
     else if (o.dinamismo === "calmo") d.push("mais calmo: sem zoom nem transição");
     if (o.corTextos) { const nomes = { "#0a4ea0": "azul da Ortobom", "#1d2f5c": "azul-marinho", "#7cc0ee": "azul-claro", "#1f5fbf": "azul", "#ffffff": "branco", "#111111": "preto", "#ffd84d": "amarelo", "#f28cb1": "rosa", "#e0393e": "vermelho", "#3fa66b": "verde", "#f28c28": "laranja", "#8a6cf0": "roxo", "#d4af37": "dourado", "#fff3b0": "creme" }; d.push(`textos na tela e legenda em ${nomes[o.corTextos] || o.corTextos}${o.corAlvo === "tudo" ? " (todas as linhas, inclusive as pequenas)" : " (as frases grandes; para mudar as linhas pequenas também, peça \"tudo\")"}`); }
@@ -616,13 +627,7 @@ IDEIA PARA DEPOIS
     });
   }
   function fotoDaEdicao() { return JSON.parse(JSON.stringify({ plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, opc: st.opc, manual: st.manual, marcas: st.marcas })); }
-  function desfazerAjuste() {
-    const f = st.desfazerAjuste; if (!f) return;
-    if (st.tocando) parar();
-    Object.assign(st, { plano: f.plano, titulo: f.titulo, tituloDestaque: f.tituloDestaque, opc: f.opc, manual: f.manual, marcas: f.marcas, desfazerAjuste: null });
-    ajustarVoz(); montar(); pintar(); irPara(0); salvarDepois();
-    toast("Voltei a edição para como estava antes do último ajuste.");
-  }
+  function desfazerAjuste() { desfazerOp(); }
   async function corrigir(texto, o = {}) {
     texto = String(texto || "").trim();
     if (!texto) { toast("Escreva o que você quer mudar.", true); return; }
@@ -631,7 +636,8 @@ IDEIA PARA DEPOIS
     const foto = fotoDaEdicao();
     try {
       if (st.tocando) parar();
-      const antes = { dur: st.duracao, ef: st.efeitos.length, zo: st.zooms.length, tit: st.titulo, opc: { ...st.opc }, rem: JSON.stringify((st.plano || {}).remover || []), dest: JSON.stringify((st.plano || {}).destaques || []) };
+      const nZooms = () => st.zooms.length + (st.zoomsManuais || []).length + (st.zoomsAuto || []).length + st.segs.filter((sg) => sg.zoom > 1).length;
+      const antes = { dur: st.duracao, ef: st.efeitos.length, zo: nZooms(), tit: st.titulo, opc: { ...st.opc }, rem: JSON.stringify((st.plano || {}).remover || []), dest: JSON.stringify((st.plano || {}).destaques || []) };
       const locais = o.soIA ? {} : regrasDoPedido(texto);
       let sobra = o.soIA ? [texto] : partesSemRegra(texto);
       // vídeo sem fala que ficou sem texto na tela: monta os textos pelas cenas do roteiro
@@ -642,15 +648,33 @@ IDEIA PARA DEPOIS
         st.plano = { ...novo, sem_fala: true }; if (novo.titulo) { st.titulo = novo.titulo; st.tituloDestaque = novo.titulo_destaque || ""; }
         sobra = sobra.filter((x) => !pareceRoteiro(x) && x.length < 200);
       }
-      let r = { plano: null, opc: {}, resposta: "", regra: "" };
-      // só chama a IA para o que o painel não entendeu sozinho (e ela recebe só essa parte)
+      let r = { opc: {}, resposta: "", regra: "" }, feitosOps = [];
+      // só chama a IA para o que o painel não entendeu sozinho (e ela recebe só essa parte).
+      // EDIT.AI: a IA devolve OPERAÇÕES sobre a edição que já existe (não refaz o plano inteiro)
       if (sobra.length) {
-        r = await chamar({ acao: "corrigir", comentario: sobra.join(". "), plano: st.plano, titulo: st.titulo, opc: Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])),
-          palavras: palavrasBrutas().map((w) => ({ w: w.w, s: w.s })), duracao: st.clipes.reduce((s, c) => s + c.dur, 0), padrao: padraoComPedidos(), roteiro: roteiroUsado() || undefined, historico: st.correcoes.map((c) => c.texto) });
-        const check = st.plano.roteiro_check;
-        st.plano = { ...r.plano, roteiro_check: (r.plano.roteiro_check || []).length ? r.plano.roteiro_check : check };
-        if (r.plano.titulo) { st.titulo = r.plano.titulo; st.tituloDestaque = r.plano.titulo_destaque || st.tituloDestaque; }
-        if (r.opc && r.opc.sfxAuto && !locais.sons) locais.sons = { desligado: "nenhum", pouco: "poucos", medio: "medio", muito: "muitos" }[r.opc.sfxAuto];
+        let op;
+        try {
+          op = await chamar({ acao: "operar", pedido: sobra.join(". "), estado: estadoParaIA(), opc: Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])),
+            palavras: palavrasBrutas().map((w) => ({ w: w.w, s: w.s })), padrao: padraoComPedidos(), roteiro: roteiroUsado() || undefined, visual: textoVisual() || undefined,
+            sem_fala: Boolean(st.plano.sem_fala) || undefined, historico: st.correcoes.map((c) => c.texto) });
+        } catch (e) {
+          if (!/desconhecida/i.test(e.message || "")) throw e;
+          // função do servidor ainda na versão antiga: usa o ajuste antigo (plano inteiro corrigido)
+          const v = await chamar({ acao: "corrigir", comentario: sobra.join(". "), plano: st.plano, titulo: st.titulo, opc: Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])),
+            palavras: palavrasBrutas().map((w) => ({ w: w.w, s: w.s })), duracao: st.clipes.reduce((a, c) => a + c.dur, 0), padrao: padraoComPedidos(), roteiro: roteiroUsado() || undefined, historico: st.correcoes.map((c) => c.texto) });
+          const check = st.plano.roteiro_check;
+          st.plano = { ...v.plano, roteiro_check: (v.plano.roteiro_check || []).length ? v.plano.roteiro_check : check };
+          if (v.plano.titulo) { st.titulo = v.plano.titulo; st.tituloDestaque = v.plano.titulo_destaque || st.tituloDestaque; }
+          op = { ops: Object.entries(v.opc || {}).map(([chave, valor]) => ({ op: "ajuste", chave, valor })), resposta: v.resposta, regra: v.regra };
+        }
+        if (op.perguntar && !(op.ops || []).length && !Object.keys(locais).length) {
+          st.correcoes.push({ texto, resposta: op.perguntar, mudou: [], pergunta: true });
+          st.corrigindo = false; pintar(); toast("A IA ficou com uma dúvida antes de mexer. Veja em Pedir ajuste.");
+          return;
+        }
+        feitosOps = aplicarOps(op.ops || []);
+        r = { opc: Object.fromEntries((op.ops || []).filter((x) => x.op === "ajuste").map((x) => [x.chave, x.valor])), resposta: op.resposta || op.perguntar || (feitosOps.length ? "Fiz: " + feitosOps.join("; ") + "." : ""), regra: op.regra || "" };
+        if (r.opc.sfxAuto && !locais.sons) locais.sons = { desligado: "nenhum", pouco: "poucos", medio: "medio", muito: "muitos" }[r.opc.sfxAuto];
       }
       const { preEditado: _pe, corTextos: _ct, corAlvo: _ca, ...locaisOpc } = locais;
       if (locais.corTextos) {
@@ -668,7 +692,7 @@ IDEIA PARA DEPOIS
       if (Math.abs(st.duracao - antes.dur) > 0.05) mud.push(`duração ${tempo(antes.dur)} → ${tempo(st.duracao)}`);
       if (JSON.stringify(st.plano.remover || []) !== antes.rem) mud.push("cortes");
       if (st.efeitos.length !== antes.ef) mud.push(`efeitos ${antes.ef} → ${st.efeitos.length}`);
-      if (st.zooms.length !== antes.zo) mud.push(`zooms ${antes.zo} → ${st.zooms.length}`);
+      if (nZooms() !== antes.zo) mud.push(`zooms ${antes.zo} → ${nZooms()}`);
       if (st.titulo !== antes.tit) mud.push("título");
       if (JSON.stringify(st.plano.destaques || []) !== antes.dest) mud.push("palavras de destaque");
       const nomesOpc = { estilo: "estilo da legenda", fonteLeg: "fonte", corLegenda: "cor da legenda", porLegenda: "palavras por legenda", tamLeg: "tamanho da legenda", altura: "altura da legenda", sombra: "sombra", estiloTitulo: "estilo do título", ritmo: "ritmo", sfxAuto: "sons automáticos", transicao: "transição", vol: "volume dos efeitos", maiusculas: "maiúsculas", cor: "cor do destaque", sonsTitulo: "som do título", legenda: "legenda", sons: "quantidade de efeitos", dinamismo: "dinamismo", vicios: "vícios de fala", vozForte: "volume da voz", efeitos: "efeitos sonoros", titulo: "título na tela", zoomCortes: "zoom nos cortes", zoomEnfase: "zoom na ênfase", chamativas: "palavras chamativas", flash: "flash", tremer: "tremidinha", silencio: "corte de silêncios", erros: "tomadas erradas", formato: "formato do vídeo", relaxante: "clima relaxante", sonsSuaves: "só sons suaves", formatoEscolhido: "formato do vídeo", ritmo: "ritmo" };
@@ -676,7 +700,8 @@ IDEIA PARA DEPOIS
       const ultima = st.correcoes[st.correcoes.length - 1];
       ultima.mudou = mud;
       if (!mud.length) ultima.resposta += " (Nada mudou no vídeo. Tente dizer de outro jeito, com o momento e o que quer, ou ajuste direto nas abas e na linha do tempo.)";
-      st.desfazerAjuste = mud.length ? foto : null; if (mud.length) marcarDesfazer("ajuste");
+      ultima.feito = feitosOps;
+      if (mud.length || feitosOps.length) registrarOp(texto, mud.join(", ") || feitosOps.join("; "), foto);
       if (st.lembrar && !o.soIA && r.regra && !st.padrao.includes(r.regra)) {
         const marca = "CORREÇÕES QUE ELA PEDIU (valem sempre):";
         const novo = st.padrao.includes(marca) ? st.padrao.replace(marca, marca + "\n- " + r.regra) : st.padrao.trim() + "\n\n" + marca + "\n- " + r.regra;
@@ -692,17 +717,241 @@ IDEIA PARA DEPOIS
     const box = $("#ed-ajustar"); if (!box) return;
     if (!st.segs.length || !st.plano) { box.hidden = true; return; }
     box.hidden = false;
-    const ult = st.correcoes.slice(-2);
+    const ult = st.correcoes.slice(-2), hist = st.opsHist || [], pos = st.opsPos || 0;
     const txt = $("#ed-ajustar-txt", box); const rascunho = txt ? txt.value : "";
     box.innerHTML = `<h3 class="ed-titulo">Pedir ajuste</h3>
       ${ult.map((c) => `<div class="ed-corr"><p class="ed-corr-eu">${esc(c.texto)}</p><p class="ed-corr-ia">${esc(c.resposta)}${c.mudou && c.mudou.length ? `<small>Mudou: ${esc(c.mudou.join(", "))}</small>` : ""}</p></div>`).join("")}
       <textarea class="entrada" id="ed-ajustar-txt" rows="3" placeholder="Escreva como falaria com uma editora. Ex.: quero poucos efeitos sonoros; deixa mais dinâmico; sem legenda; corta o começo até eu falar o nome do produto." ${st.corrigindo ? "disabled" : ""}>${esc(rascunho)}</textarea>
       <div class="rr-ajustar-acoes"><button class="btn btn-principal" type="button" id="ed-ajustar-btn" ${st.corrigindo ? "disabled" : ""}>${st.corrigindo ? "Ajustando…" : ic.brilho + "Ajustar"}</button>
-      ${st.desfazerAjuste ? `<button class="btn" type="button" id="ed-ajustar-desfazer">Desfazer último ajuste</button>` : ""}</div>
+      ${pos ? `<button class="btn" type="button" id="ed-ajustar-desfazer">${ic.desfazer}Desfazer</button>` : ""}${hist[pos] ? `<button class="btn" type="button" id="ed-ajustar-refazer">Refazer</button>` : ""}</div>
+      ${hist.length ? `<details class="ed-hist"><summary>Histórico de alterações (${pos} de ${hist.length})</summary><ol>${hist.map((h, i) => `<li class="${i < pos ? "ok" : "desfeito"}"><b>${esc(h.texto)}</b>${h.resumo ? `<small>${esc(h.resumo)}</small>` : ""}${i < pos ? "" : " <small>(desfeito)</small>"}</li>`).join("")}</ol></details>` : ""}
       <label class="ed-chk"><input type="checkbox" id="ed-corr-lembrar" ${st.lembrar ? "checked" : ""}> Lembrar nas próximas edições</label>`;
     $("#ed-ajustar-btn", box).addEventListener("click", () => { const v = $("#ed-ajustar-txt", box).value; corrigir(v).then(() => { const t = $("#ed-ajustar-txt"); if (t && st.correcoes.length && st.correcoes[st.correcoes.length - 1].texto === v.trim()) t.value = ""; }); });
-    const d = $("#ed-ajustar-desfazer", box); if (d) d.addEventListener("click", desfazerAjuste);
+    const d = $("#ed-ajustar-desfazer", box); if (d) d.addEventListener("click", () => desfazerOp());
+    const rf = $("#ed-ajustar-refazer", box); if (rf) rf.addEventListener("click", () => refazerOp());
     $("#ed-corr-lembrar", box).addEventListener("change", (e) => { st.lembrar = e.target.checked; });
+  }
+
+
+  // =========================================================
+  // EDIT.AI (nov/2026): a IA olha o vídeo e a edição muda por operações
+  // 1. ANÁLISE VISUAL: o painel tira 1 quadro pequeno a cada ~1 s de cada clipe (no próprio navegador),
+  //    manda em lotes de 5 para a função editor-video (acao "visao", modelo de visão do Groq) e guarda
+  //    no clipe o que viu (tipo de cena, produto na tela, ação, onde está o rosto e a importância).
+  //    Os "momentos" (demonstração, produto aparecendo, b-roll de ação) entram no plano da IA e ficam
+  //    protegidos do corte de silêncio: uma demonstração sem fala (ex.: água caindo na caixa de som) não some.
+  //    Fica salvo no projeto por clipe (clipes[].visual), então trocar a ordem ou reabrir não refaz.
+  // 2. OPERAÇÕES: o "Pedir ajuste" agora recebe da IA uma lista de operações (cortar, devolver, zoom_por,
+  //    zoom_tirar, som_por, som_tirar, destaque_por, destaque_tirar, titulo, ajuste, texto_tela, preservar)
+  //    aplicadas no projeto que já existe. Só muda o que ela pediu; cada pedido entra no histórico com
+  //    desfazer e refazer (Ctrl+Z / Ctrl+Shift+Z). Pedido ambíguo que pode estragar a edição: a IA pergunta antes.
+  // =========================================================
+  const CENAS_VISAO = { fala: "falando para a câmera", demonstracao: "demonstração", produto: "produto em destaque", broll: "b-roll", tela: "print ou gravação de tela", ambiente: "ambiente", outro: "outra cena" };
+  const CENAS_PROTEGIDAS = ["demonstracao", "produto", "broll", "tela"];
+
+  function etapaTexto(texto) { const ult = st.etapas[st.etapas.length - 1]; if (ult && ult.estado === "andando") { ult.texto = texto; pintarEtapas(); pintarTrabalhando(); } else etapa(texto); }
+
+  // quadros pequenos de um clipe (jpeg ~384 px) + quanto a imagem mexeu desde o quadro anterior (0 a 1)
+  async function quadrosDoClipe(c, passo, aoQuadro) {
+    const v = c.el, lado = 384;
+    const w0 = v.videoWidth || c.w || 720, h0 = v.videoHeight || c.h || 1280, f = lado / Math.max(w0, h0);
+    const cv = document.createElement("canvas"); cv.width = Math.max(2, Math.round(w0 * f)); cv.height = Math.max(2, Math.round(h0 * f));
+    const x = cv.getContext("2d");
+    const mini = document.createElement("canvas"); mini.width = 16; mini.height = 16; const mx = mini.getContext("2d", { willReadFrequently: true });
+    const tempos = []; for (let t = Math.min(0.4, c.dur / 2); t < c.dur - 0.05; t += passo) tempos.push(+t.toFixed(2));
+    if (!tempos.length) tempos.push(+(c.dur / 2).toFixed(2));
+    const saida = []; let ant = null;
+    const estavaMudo = v.muted; v.muted = true;
+    try {
+      for (const t of tempos) {
+        v.currentTime = t; await esperarEvento(v, "seeked");
+        x.drawImage(v, 0, 0, cv.width, cv.height);
+        let mov = 0;
+        try {
+          mx.drawImage(v, 0, 0, 16, 16); const d = mx.getImageData(0, 0, 16, 16).data, cinza = new Float32Array(256);
+          for (let i = 0; i < 256; i++) cinza[i] = (d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2]) / 3;
+          if (ant) { let s = 0; for (let i = 0; i < 256; i++) s += Math.abs(cinza[i] - ant[i]); mov = Math.min(1, s / 256 / 48); }
+          ant = cinza;
+        } catch (e) { /* sem leitura de pixels: segue sem o movimento */ }
+        saida.push({ t, img: cv.toDataURL("image/jpeg", 0.62), mov: +mov.toFixed(2) });
+        if (aoQuadro) aoQuadro();
+      }
+    } finally { v.muted = estavaMudo; try { v.currentTime = 0; } catch (e) { /* segue */ } }
+    return saida;
+  }
+
+  // olha os clipes que ainda não foram vistos; não para a edição se der erro (segue só pela fala)
+  async function analisarVisual(forcar) {
+    const faltam = st.clipes.filter((c) => forcar || !c.visual);
+    if (!faltam.length) return true;
+    if (st.tocando) parar();
+    const total = faltam.reduce((a, c) => a + c.dur, 0);
+    const passo = Math.max(1, Math.round((total / 60) * 10) / 10); // no máximo ~60 quadros no vídeo todo
+    const nQuadros = faltam.reduce((a, c) => a + Math.max(1, Math.ceil((c.dur - 0.4) / passo)), 0);
+    let tirados = 0, vistos = 0;
+    etapa(`Olhando as imagens do vídeo (0 de ${nQuadros} quadros)`);
+    try {
+      for (const c of faltam) {
+        const qs = await quadrosDoClipe(c, passo, () => { tirados++; if (tirados % 5 === 0) etapaTexto(`Tirando os quadros do vídeo (${tirados} de ${nQuadros})`); });
+        const vistosClipe = [];
+        for (let i = 0; i < qs.length; i += 5) {
+          const lote = qs.slice(i, i + 5);
+          let r = null;
+          for (let tent = 0; tent < 3 && !r; tent++) {
+            try { r = await chamar({ acao: "visao", quadros: lote.map((q) => ({ t: q.t, img: q.img })), tema: st.tema || undefined }); }
+            catch (e) {
+              if (tent < 2 && /limite|minut|429/i.test(e.message || "")) { etapaTexto(`O limite grátis da IA deste minuto acabou, esperando 20 s para continuar olhando (${vistos} de ${nQuadros})`); await espera(20000); }
+              else throw e;
+            }
+          }
+          (r.quadros || []).forEach((q) => { const base = lote[q.i]; if (base) vistosClipe.push({ t: base.t, cena: q.cena, produto: Boolean(q.produto), rosto: q.rosto || "", acao: q.acao || "", imp: Number(q.importancia) || 0, mov: base.mov }); });
+          vistos += lote.length;
+          etapaTexto(`Olhando as imagens do vídeo (${vistos} de ${nQuadros} quadros)`);
+        }
+        c.visual = { versao: 1, passo, modelo: "", quadros: vistosClipe.sort((a, b) => a.t - b.t) };
+      }
+      const ms = momentosVisuais();
+      etapa(ms.length ? `Olhei o vídeo: ${ms.length} momento${ms.length > 1 ? "s" : ""} importante${ms.length > 1 ? "s" : ""} na imagem (veja em "O que eu vi no vídeo").` : "Olhei o vídeo: não achei demonstração nem produto em destaque sem fala.", "ok");
+      salvarDepois();
+      return true;
+    } catch (e) {
+      etapa(`Não consegui olhar as imagens agora (${e.message || "erro"}). Segui só pela fala.`, "erro");
+      return false;
+    }
+  }
+
+  // momentos importantes na imagem, no tempo do bruto (clipes enfileirados)
+  function momentosVisuais() {
+    const out = [];
+    for (const c of st.clipes) {
+      const vis = c.visual; if (!vis || !(vis.quadros || []).length) continue;
+      const meio = (vis.passo || 1) / 2; let cur = null;
+      for (const q of vis.quadros) {
+        const forte = q.cena === "demonstracao" || (CENAS_PROTEGIDAS.includes(q.cena) && q.imp >= 2) || (q.imp >= 3 && q.cena !== "fala");
+        if (!forte) { if (cur) { out.push(cur); cur = null; } continue; }
+        const a = c.offset + Math.max(0, q.t - meio), b = c.offset + Math.min(c.dur, q.t + meio);
+        if (cur && a - cur.ate <= 0.05) { cur.ate = b; if (q.imp > cur.imp) Object.assign(cur, { imp: q.imp, desc: q.acao, tipo: q.cena }); cur.produto = cur.produto || q.produto; }
+        else { if (cur) out.push(cur); cur = { de: +a.toFixed(2), ate: +b.toFixed(2), imp: q.imp, desc: q.acao, tipo: q.cena, produto: q.produto }; }
+      }
+      if (cur) out.push(cur);
+    }
+    return out.map((m) => ({ ...m, ate: +m.ate.toFixed(2) }));
+  }
+  // o que vai para a IA (plano e ajustes): os momentos e as trocas de cena, curtinho
+  function textoVisual() {
+    const linhas = [];
+    for (const m of momentosVisuais()) linhas.push(`[${m.de.toFixed(1)}-${m.ate.toFixed(1)}] MOMENTO ${CENAS_VISAO[m.tipo] || m.tipo}${m.produto ? " (produto na tela)" : ""}: ${m.desc}`);
+    for (const c of st.clipes) {
+      let ultima = "";
+      for (const q of (c.visual && c.visual.quadros) || []) {
+        if (q.cena === ultima) continue; ultima = q.cena;
+        linhas.push(`[${(c.offset + q.t).toFixed(1)}] cena: ${CENAS_VISAO[q.cena] || q.cena}${q.produto ? ", produto visível" : ""}${q.rosto && q.rosto !== "nenhum" ? ", rosto " + q.rosto : ""}: ${q.acao}`);
+      }
+    }
+    return linhas.slice(0, 40).join("\n");
+  }
+  // trechos que não podem sumir no corte de silêncio (momentos da imagem + os que ela pediu para preservar)
+  function trechosProtegidos() {
+    const lista = st.opc.preservarCenas === false ? [] : momentosVisuais().map((m) => [m.de, m.ate]);
+    return [...lista, ...((st.manual && st.manual.preservar) || [])];
+  }
+
+  function pintarVi() {
+    const box = $("#ed-vi"); if (!box) return;
+    const vistos = st.clipes.filter((c) => c.visual && (c.visual.quadros || []).length);
+    if (!vistos.length) { box.hidden = true; return; }
+    box.hidden = false;
+    const ms = momentosVisuais(), aberto = box.querySelector("details") && box.querySelector("details").open;
+    box.innerHTML = `<details${aberto ? " open" : ""}><summary class="ed-titulo-linha"><h3 class="ed-titulo">O que eu vi no vídeo</h3><span class="ed-sub">${ms.length} momento${ms.length === 1 ? "" : "s"} importante${ms.length === 1 ? "" : "s"}</span></summary>
+      <p class="ed-obs">Eu olho um quadro a cada ${String(vistos[0].visual.passo || 1).replace(".", ",")} s. Demonstração, produto em destaque e b-roll de ação ficam no vídeo mesmo sem fala, e a IA usa esses momentos para pôr zoom, efeito e destaque.</p>
+      ${ms.length ? `<ul class="ed-vi-lista">${ms.map((m) => `<li><button class="btn btn-leve" type="button" data-vi-ir="${m.de}">${tempo(m.de)}–${tempo(m.ate)}</button> <b>${esc(CENAS_VISAO[m.tipo] || m.tipo)}</b>${m.produto ? " · produto na tela" : ""}: ${esc(m.desc)}</li>`).join("")}</ul>` : `<p class="ed-obs">Nenhum momento sem fala que precise ficar.</p>`}
+      <label class="ed-chk"><input type="checkbox" id="ed-vi-preservar" ${st.opc.preservarCenas === false ? "" : "checked"}> Manter esses momentos mesmo sem fala</label>
+      <button class="btn" type="button" id="ed-vi-refazer" ${st.trabalhando || st.exportando ? "disabled" : ""}>Olhar o vídeo de novo</button></details>`;
+    $$("[data-vi-ir]", box).forEach((b) => b.addEventListener("click", () => { const o = paraFinalPerto(Number(b.dataset.viIr)); if (o != null && st.segs.length) irPara(o); }));
+    $("#ed-vi-preservar", box).addEventListener("change", (e) => { st.opc.preservarCenas = e.target.checked; guardarOpc(); if (st.segs.length) remontar(); });
+    $("#ed-vi-refazer", box).addEventListener("click", async () => {
+      if (st.trabalhando) return; st.trabalhando = true; pintar();
+      await analisarVisual(true);
+      st.trabalhando = false; if (st.plano) montar(); pintar();
+    });
+  }
+
+  // ---------- operações: o estado atual que a IA precisa para mudar só o que ela pediu ----------
+  function estadoParaIA() {
+    const g = (t) => { const x = brutoDe(t); return x == null ? null : +x.toFixed(2); };
+    const p = st.plano || {};
+    const zooms = [
+      ...(p.zooms || []).map((z) => ({ g: z.t, de: "plano" })),
+      ...(st.manual.zooms || []).map((x) => ({ g: x, de: "você" })),
+      ...(st.zoomsAuto || []).map((z) => ({ g: g(z.t), de: "dinamismo" })),
+      ...st.segs.filter((s) => s.zoom > 1).map((s) => ({ g: +s.g0.toFixed(2), de: "corte" })),
+    ].filter((z) => z.g != null).sort((a, b) => a.g - b.g).slice(0, 120);
+    const efeitos = st.efeitos.map((e) => ({ g: g(e.t), tipo: e.tipo, de: e.manual ? "você" : e.doTitulo ? "título" : e.auto ? "automático" : "plano" })).filter((e) => e.g != null).slice(0, 150);
+    const agora = g(st.t);
+    const falaAgora = agora == null ? "" : palavrasBrutas().filter((w) => Math.abs(w.s - agora) < 2.5).map((w) => w.w).join(" ");
+    return { agora, falaAgora, titulo: st.titulo, remover: p.remover || [], destaques: p.destaques || [], zooms, efeitos, textos: p.textos || undefined, duracao: st.clipes.reduce((a, c) => a + c.dur, 0), duracaoFinal: +st.duracao.toFixed(2) };
+  }
+
+  // aplica as operações no projeto que já existe (tempos no bruto). Devolve o que foi feito, em português.
+  function aplicarOps(ops) {
+    const p = st.plano = st.plano || {}, m = st.manual, feito = [];
+    const dentro = (t, de, ate) => t >= de - 0.05 && t <= ate + 0.05;
+    const tirarFaixa = (lista, de, ate) => lista.flatMap((r) => { if (r.ate <= de || r.de >= ate) return [r]; const out = []; if (r.de < de) out.push({ ...r, ate: de }); if (r.ate > ate) out.push({ ...r, de: ate }); return out; });
+    const ok = new Set(OPC_VISUAIS);
+    for (const o of ops || []) {
+      switch (o.op) {
+        case "cortar": (p.remover = p.remover || []).push({ de: o.de, ate: o.ate, motivo: "você pediu" }); m.preservar = (m.preservar || []).filter(([a, b]) => b <= o.de || a >= o.ate); feito.push(`cortei de ${tempo(o.de)} a ${tempo(o.ate)}`); break;
+        case "devolver":
+          p.remover = tirarFaixa(p.remover || [], o.de, o.ate);
+          m.cortes = (m.cortes || []).filter(([a, b]) => b <= o.de || a >= o.ate);
+          for (const w of palavrasRevisao()) if (dentro(w.g, o.de, o.ate) && st.marcas[w.k] === "cortar") delete st.marcas[w.k];
+          (m.preservar = m.preservar || []).push([o.de, o.ate]);
+          feito.push(`devolvi o trecho de ${tempo(o.de)} a ${tempo(o.ate)}`); break;
+        case "preservar": (m.preservar = m.preservar || []).push([o.de, o.ate]); feito.push(`mantive a cena de ${tempo(o.de)} a ${tempo(o.ate)}`); break;
+        case "zoom_por": (m.zooms = m.zooms || []).push(+o.t.toFixed(2)); m.semZoom = (m.semZoom || []).filter(([a, b]) => !dentro(o.t, a, b)); feito.push(`zoom em ${tempo(o.t)}`); break;
+        case "zoom_tirar": p.zooms = (p.zooms || []).filter((z) => !dentro(z.t, o.de, o.ate)); m.zooms = (m.zooms || []).filter((x) => !dentro(x, o.de, o.ate)); (m.semZoom = m.semZoom || []).push([o.de, o.ate]); feito.push(`tirei o zoom de ${tempo(o.de)} a ${tempo(o.ate)}`); break;
+        case "som_por": (m.sons = m.sons || []).push({ id: uid(), g: +o.t.toFixed(2), tipo: o.tipo }); feito.push(`${(EFEITOS[o.tipo] || o.tipo).toLowerCase()} em ${tempo(o.t)}`); break;
+        case "som_tirar": {
+          let n = 0; const casa = (tipo) => !o.tipo || o.tipo === tipo;
+          const antesP = (p.efeitos || []).length; p.efeitos = (p.efeitos || []).filter((e) => !(dentro(e.t, o.de, o.ate) && casa(e.tipo))); n += antesP - p.efeitos.length;
+          const antesM = (m.sons || []).length; m.sons = (m.sons || []).filter((e) => !(dentro(e.g, o.de, o.ate) && casa(e.tipo))); n += antesM - m.sons.length;
+          for (const e of st.efeitos) { const g = brutoDe(e.t); if (g == null || !dentro(g, o.de, o.ate) || !casa(e.tipo)) continue; if (e.doTitulo) { st.opc.sonsTitulo = false; n++; } else if (e.auto && e.chave) { (m.tirados = m.tirados || []).push(e.chave); n++; } }
+          feito.push(n ? `tirei ${n} ${n > 1 ? "sons" : "som"} de ${tempo(o.de)} a ${tempo(o.ate)}` : `não achei som de ${tempo(o.de)} a ${tempo(o.ate)}`); break;
+        }
+        case "destaque_por": (p.destaques = p.destaques || []).push({ t: o.t, palavra: o.palavra || "" }); feito.push(`destaque em "${o.palavra || tempo(o.t)}"`); break;
+        case "destaque_tirar": p.destaques = (p.destaques || []).filter((d) => !dentro(d.t, o.de, o.ate)); feito.push(`tirei o destaque de ${tempo(o.de)} a ${tempo(o.ate)}`); break;
+        case "titulo": st.titulo = p.titulo = o.texto || ""; st.tituloDestaque = p.titulo_destaque = o.destaque || ""; if (o.texto) st.opc.titulo = true; feito.push(o.texto ? `título: "${o.texto}"` : "tirei o título"); break;
+        case "texto_tela": p.textos = (p.textos || []).filter((x) => x.ate <= o.de || x.de >= o.ate); if (o.texto) p.textos.push({ de: o.de, ate: o.ate, texto: o.texto }); p.textos.sort((a, b) => a.de - b.de); feito.push(o.texto ? `texto na tela em ${tempo(o.de)}` : `tirei o texto de ${tempo(o.de)}`); break;
+        case "ajuste": if (ok.has(o.chave)) { st.opc[o.chave] = o.valor; feito.push("ajuste: " + o.chave); } break;
+        default: break;
+      }
+    }
+    return feito;
+  }
+
+  // histórico de alterações (cada pedido = 1 passo), com desfazer e refazer
+  function registrarOp(texto, resumo, antes) {
+    st.opsHist = (st.opsHist || []).slice(0, st.opsPos || 0);
+    st.opsHist.push({ texto, resumo, antes, depois: fotoDaEdicao(), em: new Date().toISOString() });
+    if (st.opsHist.length > 40) st.opsHist.shift();
+    st.opsPos = st.opsHist.length;
+    st.opsLog = [...(st.opsLog || []), { texto, resumo, em: new Date().toISOString() }].slice(-80);
+    marcarDesfazer("ajuste");
+  }
+  function voltarFoto(f) {
+    if (st.tocando) parar();
+    Object.assign(st, JSON.parse(JSON.stringify({ plano: f.plano, titulo: f.titulo, tituloDestaque: f.tituloDestaque, opc: f.opc, manual: f.manual, marcas: f.marcas })));
+    ajustarVoz(); montar(); st.t = Math.min(st.t, st.duracao); pintar(); salvarDepois();
+  }
+  function desfazerOp() {
+    if (!st.opsPos) return false;
+    const h = st.opsHist[st.opsPos - 1]; st.opsPos--;
+    voltarFoto(h.antes); toast(`Desfeito: "${h.texto.slice(0, 60)}"`); return true;
+  }
+  function refazerOp() {
+    const h = (st.opsHist || [])[st.opsPos || 0]; if (!h) { toast("Não tem nada para refazer.", true); return false; }
+    st.opsPos = (st.opsPos || 0) + 1; marcarDesfazer("ajuste");
+    voltarFoto(h.depois); toast(`Refeito: "${h.texto.slice(0, 60)}"`); return true;
   }
 
 
@@ -738,17 +987,19 @@ IDEIA PARA DEPOIS
         }
         c.offset = offset; offset += c.dur;
       }
+      if (st.opc.analiseVisual !== false) await analisarVisual(false);
+      const visual = textoVisual() || undefined;
       const todas = palavrasBrutas();
       if (todas.length) {
         etapa("Pensando na edição (cortes, título, zoom e efeitos)");
-        st.plano = await chamar({ acao: "plano", palavras: todas, duracao: offset, padrao: padraoComPedidos(), tema: st.tema, roteiro: roteiroUsado() || undefined });
+        st.plano = await chamar({ acao: "plano", palavras: todas, duracao: offset, padrao: padraoComPedidos(), tema: st.tema, roteiro: roteiroUsado() || undefined, visual, zoom: nivelZoom() });
         st.titulo = st.plano.titulo || "";
         st.tituloDestaque = st.plano.titulo_destaque || "";
       } else if (roteiroUsado()) {
         if (!st.roteiro.trim()) etapa("Achei o roteiro no campo \"O que você quer nesta edição\" e vou usar ele para montar o texto na tela.", "ok");
         // vídeo sem fala: a edição sai do roteiro (cada clipe é uma cena, na ordem)
         etapa("O vídeo não tem fala, então vou montar a edição pelo seu roteiro (cada clipe é uma cena, na ordem da lista)");
-        st.plano = await chamar({ acao: "plano", palavras: [], duracao: offset, padrao: padraoComPedidos(), tema: st.tema, roteiro: roteiroUsado(),
+        st.plano = await chamar({ acao: "plano", palavras: [], duracao: offset, padrao: padraoComPedidos(), tema: st.tema, roteiro: roteiroUsado(), visual, zoom: nivelZoom(),
           clipes: st.clipes.map((c) => ({ nome: c.nome, de: +c.offset.toFixed(2), ate: +(c.offset + c.dur).toFixed(2), dur: +c.dur.toFixed(2) })) });
         st.plano.sem_fala = true;
         st.titulo = st.plano.titulo || "";
@@ -796,6 +1047,14 @@ IDEIA PARA DEPOIS
       if (atual) faixas.push(atual);
     }
     let lista = faixas;
+    // EDIT.AI: demonstração, produto e b-roll que a IA viu (e trechos que ela pediu para manter) ficam mesmo sem fala
+    const prot = st.opc.silencio ? trechosProtegidos() : [];
+    if (prot.length) {
+      const juntas = [...lista.map(([a, b]) => [a, b]), ...prot.map(([a, b]) => [Math.max(0, a), b])].sort((x, y) => x[0] - y[0]), u = [];
+      for (const [a, b] of juntas) { const ult = u[u.length - 1]; if (ult && a <= ult[1] + 0.05) ult[1] = Math.max(ult[1], b); else u.push([a, b]); }
+      // não junta clipes diferentes: corta cada faixa nos limites dos clipes
+      lista = u.flatMap(([a, b]) => st.clipes.map((c) => [Math.max(a, c.offset), Math.min(b, c.offset + c.dur)]).filter(([x, y]) => y - x > 0.01));
+    }
     const tirar = (de, ate) => {
       const nova = [];
       for (const [a, b] of lista) { if (ate <= a || de >= b) { nova.push([a, b]); continue; } if (de > a) nova.push([a, de]); if (ate < b) nova.push([ate, b]); }
@@ -988,7 +1247,7 @@ IDEIA PARA DEPOIS
     st.duracao = out;
     if ((st.fotos || []).some((f) => f.t0 == null)) distribuirFotos(false);
     // zoom alternado nos cortes (só quando o corte é dentro do mesmo clipe, o "pulo" da imagem)
-    st.segs.forEach((s, i) => { const ant = st.segs[i - 1]; s.zoom = ant && ant.ci === s.ci && st.opc.zoomCortes && st.opc.dinamismo !== "calmo" ? (ant.zoom > 1 ? 1 : st.opc.dinamismo === "dinamico" ? 1.12 : 1.08) : 1; });
+    st.segs.forEach((s, i) => { const ant = st.segs[i - 1]; s.zoom = ant && ant.ci === s.ci && st.opc.zoomCortes && st.opc.dinamismo !== "calmo" ? (ant.zoom > 1 ? 1 : 1 + ZOOM_FORCA[nivelZoom()]) : 1; });
     const p = st.plano || {};
     // legendas palavra por palavra
     const palavras = [];
@@ -1030,6 +1289,15 @@ IDEIA PARA DEPOIS
     // momentos fortes (hit, ding, riser) ganham tremidinha
     filtrarSonsPelaQuantidade();
     zoomsDoDinamismo();
+    // zoom discreto/equilibrado: os zooms da IA ficam espaçados (no discreto, no mínimo 7 s entre um e outro)
+    const espaco = ZOOM_ESPACO[nivelZoom()];
+    if (espaco) { let ult = -99; st.zooms = st.zooms.sort((a, b) => a - b).filter((t) => { if (t - ult < espaco) return false; ult = t; return true; }); }
+    const semZoom = st.manual.semZoom || [];
+    if (semZoom.length) {
+      const bloq = (t) => { const g = brutoDe(t); return g != null && semZoom.some(([a, b]) => g >= a - 0.05 && g <= b + 0.05); };
+      st.zooms = st.zooms.filter((t) => !bloq(t)); st.zoomsManuais = st.zoomsManuais.filter((t) => !bloq(t)); st.zoomsAuto = st.zoomsAuto.filter((z) => !bloq(z.t));
+      st.segs.forEach((sg) => { if (sg.zoom > 1 && bloq(sg.o0 + 0.02)) sg.zoom = 1; });
+    }
     st.fortes = st.efeitos.filter((e) => ["hit", "ding"].includes(e.tipo)).map((e) => e.t);
   }
   // ---------- dinamismo: efeitos sonoros automáticos nos cortes e nas entradas de texto ----------
@@ -1093,7 +1361,7 @@ IDEIA PARA DEPOIS
   // deslize e flash na troca de cena (as referências dela); "calmo" = sem zoom nem transição
   function zoomsDoDinamismo() {
     st.zoomsAuto = [];
-    if (st.opc.dinamismo !== "dinamico") return;
+    if (nivelZoom() !== "dinamico" || st.opc.dinamismo === "calmo") return;
     let i = 0;
     for (const sg of st.segs) {
       for (let t = sg.o0 + 1.1; t < sg.o1 - 0.9; t += 2.5) st.zoomsAuto.push({ t, tipo: i++ % 2 ? "out" : "in" });
@@ -1204,7 +1472,7 @@ IDEIA PARA DEPOIS
       const d = t - zt;
       if (d < -0.15 || d > 1.4) continue;
       const k = d < 0 ? (d + 0.15) / 0.15 : d < 1.1 ? 1 : 1 - (d - 1.1) / 0.3;
-      z = Math.max(z, 1 + 0.12 * suave(Math.max(0, Math.min(1, k))));
+      z = Math.max(z, 1 + ZOOM_FORCA[nivelZoom()] * suave(Math.max(0, Math.min(1, k))));
     }
     return z;
   }
@@ -1497,7 +1765,7 @@ IDEIA PARA DEPOIS
     cam: { pode: () => st.histCam.length > 0, faz: () => desfazerCam(), msg: "Desfeito: o texto voltou como estava." },
     manual: { pode: podeDesfazerManual, faz: () => desfazerManual(), msg: "Desfeito na linha do tempo." },
     est: { pode: () => st.estHist.length > 0, faz: () => desfazerEstilo(), msg: "Desfeito: o estilo voltou como estava." },
-    ajuste: { pode: () => Boolean(st.desfazerAjuste), faz: () => desfazerAjuste(), msg: "" },
+    ajuste: { pode: () => (st.opsPos || 0) > 0, faz: () => desfazerOp(), msg: "" },
   };
   function podeDesfazer() { return st.desf.some((k) => DESFAZ[k] && DESFAZ[k].pode()) || st.histCam.length > 0; }
   function desfazerTudo() {
@@ -1513,13 +1781,13 @@ IDEIA PARA DEPOIS
   function ligarAtalhoDesfazer() {
     if (window.__edDesfazer) return; window.__edDesfazer = true;
     document.addEventListener("keydown", (e) => {
-      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || String(e.key).toLowerCase() !== "z") return;
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || String(e.key).toLowerCase() !== "z") return;
       const aba = document.getElementById("aba-edicao"); if (!aba || aba.hidden) return;
       if (document.querySelector("dialog[open]")) return;
       const el = document.activeElement, tag = el && el.tagName;
       // dentro de um campo de texto, o Ctrl+Z continua desfazendo a digitação (o do próprio navegador)
       if (el && (el.isContentEditable || tag === "TEXTAREA" || tag === "SELECT" || (tag === "INPUT" && !/^(range|color|checkbox|radio|button)$/i.test(el.type)))) return;
-      e.preventDefault(); desfazerTudo();
+      e.preventDefault(); if (e.shiftKey) refazerOp(); else desfazerTudo();
     });
   }
   function camadaAtual() { return st.camadas.find((c) => c.id === st.camSel); }
@@ -2244,6 +2512,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
               <ol class="ed-etapas" id="ed-etapas"></ol>
             </section>
             <section class="ed-cartao" id="ed-ouvi" hidden></section>
+            <section class="ed-cartao" id="ed-vi" hidden></section>
           </div>
           <div class="rr-painel" data-painel="referencia" hidden><section class="ed-cartao" id="ed-referencia"></section></div>
           <div class="rr-painel" data-painel="estilos" hidden><section class="ed-cartao" id="ed-estilos"></section></div>
@@ -3559,7 +3828,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     prepararCanvas(); ligarArrasteCamadas(); ligarAtalhoDesfazer();
     if (st.aba === "textos") pintarCamadas();
     $("#ed-vazio", sec).hidden = Boolean(st.segs.length);
-    pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa(); pintarLinha(); pintarAbas(); pintarModo(); pintarOuvi(); pintarAjustar(); pintarPassos();
+    pintarEtapas(); pintarAjustes(); pintarCortes(); pintarLegendas(); pintarPlano(); pintarControles(); pintarFinal(); pintarCapa(); pintarLinha(); pintarAbas(); pintarModo(); pintarOuvi(); pintarVi(); pintarAjustar(); pintarPassos();
     if (st.aba === "estilos") pintarEstilos(); else if (st.aba === "efeitos") pintarEfeitos(); else if (st.aba === "referencia") pintarReferencia(); else if (st.aba === "carrossel") pintarCarrossel(); else if (st.aba === "storyboard") pintarStoryboard(true); else if (st.aba === "variacoes") pintarVariacoes(true);
     pintarTrabalhando(); pintarFotos();
     if (st.segs.length && !st.tocando) desenhar(st.t);
@@ -3629,6 +3898,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-cor-leg">Cor da legenda</label><span class="ed-cores">${["#fff3b0", "#ffffff", "#ffe45c"].map((c) => `<button type="button" class="ed-cor${o.corLegenda === c ? " ativa" : ""}" data-cor-leg="${c}" style="background:${c}" aria-label="Cor ${c}"></button>`).join("")}<input type="color" id="ed-cor-leg" value="${o.corLegenda}"></span></div>` : ""}
       <div class="ed-linha"><label class="ed-rotulo" for="ed-sons">Quantidade de efeitos sonoros</label><select class="entrada" id="ed-sons">${QTD_SONS.map(([k, t]) => `<option value="${k}" ${o.sons === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-dina">Dinamismo</label><select class="entrada" id="ed-dina">${DINAMISMO.map(([k, t]) => `<option value="${k}" ${o.dinamismo === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+      <div class="ed-linha"><label class="ed-rotulo" for="ed-zoomnivel">Zoom</label><select class="entrada" id="ed-zoomnivel">${ZOOM_NIVEIS.map(([k, t]) => `<option value="${k}" ${nivelZoom() === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-trans">Transição nos cortes</label><select class="entrada" id="ed-trans">${[["nenhuma", "Nenhuma"], ["punch", "Zoom rápido"], ["deslize", "Zoom rápido + deslize na troca de cena"]].map(([k, t]) => `<option value="${k}" ${o.transicao === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-ritmo">Ritmo dos cortes</label><select class="entrada" id="ed-ritmo">${[["classico", "Corta só pausas maiores que meio segundo"], ["normal", "Normal (deixa respiro)"], ["rapido", "Rápido (corta respiros)"], ["turbo", "Turbo (sem nenhuma pausa)"]].map(([k, t]) => `<option value="${k}" ${(o.ritmo || "rapido") === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-chks">${chk("chamativas", "Palavras chamativas (grandes, coloridas)")}${chk("sonsChamativas", "Pop nas palavras chamativas")}${chk("tremer", "Tremidinha no impacto")}${chk("flash", "Flash na troca de cena")}</div>
@@ -3645,6 +3915,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     box.onchange = guardarOpc;
     $("#ed-estilo", box).addEventListener("change", (e) => { o.estilo = e.target.value; remontar(); });
     $("#ed-sons", box).addEventListener("change", (e) => { o.sons = e.target.value; remontar(); });
+    $("#ed-zoomnivel", box).addEventListener("change", (e) => { o.zoomNivel = e.target.value; if (o.zoomNivel === "discreto") o.zoomCortes = false; remontar(); });
     $("#ed-dina", box).addEventListener("change", (e) => { o.dinamismo = e.target.value; if (o.dinamismo !== "calmo") { o.relaxante = false; o.sonsSuaves = false; } remontar(); });
     $("#ed-trans", box).addEventListener("change", (e) => { o.transicao = e.target.value; guardarOpc(); redesenhar(); });
     $("#ed-ritmo", box).addEventListener("change", (e) => { o.ritmo = e.target.value; remontar(); });
