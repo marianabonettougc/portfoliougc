@@ -342,11 +342,19 @@ IDEIA PARA DEPOIS
   }
 
   // ---------- clipes ----------
-  function carregarVideo(arquivo) {
+  // nov/2026: o vídeo é copiado para a memória do navegador ao entrar. Antes ele lia direto do arquivo no
+  // computador e, se o arquivo mudava de lugar, era sincronizado pela nuvem ou o Windows soltava o acesso,
+  // a prévia parava com "O navegador bloqueou o som" (na verdade o vídeo tinha sumido).
+  async function copiaNaMemoria(arquivo) {
+    if (!arquivo || arquivo.size > 900 * 1024 * 1024) return arquivo;
+    try { return new Blob([await arquivo.arrayBuffer()], { type: arquivo.type || "video/mp4" }); } catch (e) { return arquivo; }
+  }
+  async function carregarVideo(arquivo) {
+    const dados = await copiaNaMemoria(arquivo);
     return new Promise((ok, falha) => {
       const v = document.createElement("video");
       v.preload = "auto"; v.playsInline = true; v.setAttribute("playsinline", ""); v.crossOrigin = "anonymous";
-      v.src = URL.createObjectURL(arquivo);
+      v.src = URL.createObjectURL(dados);
       // vídeo gravado pelo navegador (WebM) às vezes vem sem duração: pula pro fim para descobrir
       v.onloadedmetadata = () => {
         if (isFinite(v.duration)) { preparar(v).then(() => ok(v)); return; }
@@ -392,6 +400,23 @@ IDEIA PARA DEPOIS
     if (nova.every((x, n) => x === st.clipes[n])) return;
     reordenarClipes(nova);
   }
+  // o arquivo do clipe sumiu (erro no vídeo): ela escolhe o mesmo vídeo de novo e a edição continua igual
+  async function religarClipe(c, arq) {
+    if (!c || !arq) return;
+    toast("Abrindo o vídeo de novo…");
+    const dados = await copiaNaMemoria(arq), antigo = c.el.src;
+    await new Promise((ok, falha) => {
+      const fim = () => { c.el.removeEventListener("loadeddata", fim); c.el.removeEventListener("error", erro); ok(); };
+      const erro = () => { c.el.removeEventListener("loadeddata", fim); c.el.removeEventListener("error", erro); falha(new Error(`Não consegui abrir "${arq.name}".`)); };
+      c.el.addEventListener("loadeddata", fim); c.el.addEventListener("error", erro);
+      c.el.src = URL.createObjectURL(dados); c.el.load();
+    }).then(() => {
+      try { URL.revokeObjectURL(antigo); } catch (e) { /* segue */ }
+      if (Math.abs((c.el.duration || 0) - c.dur) > 0.5) toast(`Esse vídeo tem duração diferente de "${c.nome}". Se a edição ficou estranha, confira se escolheu o vídeo certo.`, true);
+      c.arquivo = arq; c.quebrado = false; pintar(); redesenhar(); toast("Vídeo de volta. Pode dar o play.");
+    }).catch((e) => toast(e.message, true));
+  }
+  function clipeQuebrado() { return st.clipes.find((c) => c.el && (c.el.error || c.quebrado)); }
   async function adicionarClipes(arquivos) {
     const pend = st.pendentes;
     for (const a of arquivos) {
@@ -401,6 +426,7 @@ IDEIA PARA DEPOIS
         // abrindo um projeto: o arquivo certo recupera a transcrição salva
         if (pend) { const i = pend.findIndex((x) => !x.usado && (x.nome === a.name || Math.abs((x.dur || 0) - clipe.dur) < 0.25)); if (i >= 0) { pend[i].usado = true; clipe.palavras = pend[i].palavras && (pend[i].palavras.length || pend[i].mudo) ? pend[i].palavras : null; clipe.mudo = Boolean(pend[i].mudo); clipe.visual = pend[i].visual || null; clipe.ordem = i; } }
         clipe.capa = miniaturaDoClipe(el);
+        el.addEventListener("error", () => { if (!st.clipes.includes(clipe)) return; clipe.quebrado = true; pintar(); });
         st.clipes.push(clipe);
       } catch (e) { toast(e.message, true); }
     }
@@ -626,7 +652,7 @@ IDEIA PARA DEPOIS
       return !Object.keys(regrasDoPedido(x)).length;
     });
   }
-  function fotoDaEdicao() { return JSON.parse(JSON.stringify({ plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, opc: st.opc, manual: st.manual, marcas: st.marcas })); }
+  function fotoDaEdicao() { return JSON.parse(JSON.stringify({ plano: st.plano, titulo: st.titulo, tituloDestaque: st.tituloDestaque, opc: st.opc, manual: st.manual, marcas: st.marcas, fotos: (st.fotos || []).map(({ img, _box, ...f }) => f) })); }
   function desfazerAjuste() { desfazerOp(); }
   async function corrigir(texto, o = {}) {
     texto = String(texto || "").trim();
@@ -637,9 +663,17 @@ IDEIA PARA DEPOIS
     try {
       if (st.tocando) parar();
       const nZooms = () => st.zooms.length + (st.zoomsManuais || []).length + (st.zoomsAuto || []).length + st.segs.filter((sg) => sg.zoom > 1).length;
-      const antes = { dur: st.duracao, ef: st.efeitos.length, zo: nZooms(), tit: st.titulo, opc: { ...st.opc }, rem: JSON.stringify((st.plano || {}).remover || []), dest: JSON.stringify((st.plano || {}).destaques || []) };
+      const antes = { dur: st.duracao, ef: st.efeitos.length, zo: nZooms(), tit: st.titulo, opc: { ...st.opc }, rem: JSON.stringify((st.plano || {}).remover || []), dest: JSON.stringify((st.plano || {}).destaques || []), fot: fotosAssinatura(), txt: JSON.stringify((st.plano || {}).textos || []) };
       const locais = o.soIA ? {} : regrasDoPedido(texto);
       let sobra = o.soIA ? [texto] : partesSemRegra(texto);
+      // fotos num momento da fala ("as imagens aparecem quando eu falo: ..."): resolve aqui, sem IA
+      const pedFotos = o.soIA ? null : pedidoDeFotos(texto);
+      let fotosFeito = "";
+      if (pedFotos && pedFotos.erro) fotosFeito = pedFotos.erro;
+      else if (pedFotos) {
+        fotosFeito = porFotosCards((st.fotos || []).slice(0, 4), pedFotos.g, { quad: pedFotos.quad, lugar: pedFotos.lugar }) || "";
+        sobra = sobra.filter((x) => !/(foto|imagem|imagens|card|aparec|apont|quadrad|rosto|tapar|cobrir|quando eu)/i.test(semAcento(x)) && !(pedFotos.frase && semAcento(pedFotos.frase).includes(semAcento(x))));
+      }
       // vídeo sem fala que ficou sem texto na tela: monta os textos pelas cenas do roteiro
       if (!palavrasBrutas().length && roteiroUsado() && !((st.plano.textos || []).length)) {
         if (Object.keys(locais).length) { const { preEditado: _x, ...lo } = locais; Object.assign(st.opc, lo); }
@@ -672,8 +706,8 @@ IDEIA PARA DEPOIS
           st.corrigindo = false; pintar(); toast("A IA ficou com uma dúvida antes de mexer. Veja em Pedir ajuste.");
           return;
         }
-        feitosOps = aplicarOps(op.ops || []);
-        r = { opc: Object.fromEntries((op.ops || []).filter((x) => x.op === "ajuste").map((x) => [x.chave, x.valor])), resposta: op.resposta || op.perguntar || (feitosOps.length ? "Fiz: " + feitosOps.join("; ") + "." : ""), regra: op.regra || "" };
+        feitosOps = aplicarOps((op.ops || []).filter((x) => !(pedFotos && !pedFotos.erro && x.op === "foto_por")));
+        r = { opc: Object.fromEntries((op.ops || []).filter((x) => x.op === "ajuste").map((x) => [x.chave, x.valor])), resposta: feitosOps.length ? (op.resposta || "Fiz: " + feitosOps.join("; ") + ".") : (op.perguntar || `Essa parte não consegui fazer por aqui: "${sobra.join(". ").slice(0, 160)}". Ajuste direto nas abas (Fotos, Visual, Sons) ou escreva de outro jeito.`), regra: op.regra || "" };
         if (r.opc.sfxAuto && !locais.sons) locais.sons = { desligado: "nenhum", pouco: "poucos", medio: "medio", muito: "muitos" }[r.opc.sfxAuto];
       }
       const { preEditado: _pe, corTextos: _ct, corAlvo: _ca, ...locaisOpc } = locais;
@@ -684,7 +718,8 @@ IDEIA PARA DEPOIS
       Object.assign(st.opc, r.opc || {}, locaisOpc); r.opc = { ...(r.opc || {}), ...locaisOpc };
       ajustarVoz(); st.opc.confete = false; if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
       const entendi = descreverRegras(locais);
-      const resposta = [entendi.length ? "Entendi: " + entendi.join("; ") + "." : "", sobra.length ? (r.resposta || "") : ""].filter(Boolean).join(" ");
+      if (fotosFeito && !(pedFotos && pedFotos.erro)) { entendi.push(fotosFeito); feitosOps.unshift(fotosFeito); }
+      const resposta = [entendi.length ? "Entendi: " + entendi.join("; ") + "." : "", pedFotos && pedFotos.erro ? pedFotos.erro : "", sobra.length ? (r.resposta || "") : ""].filter(Boolean).join(" ");
       st.correcoes.push({ texto, resposta: resposta || "Ok.", regra: r.regra || "" });
       montar(); st.t = 0;
       // o que mudou de verdade (para ela ver que ajustou, ou saber que não deu)
@@ -695,11 +730,13 @@ IDEIA PARA DEPOIS
       if (nZooms() !== antes.zo) mud.push(`zooms ${antes.zo} → ${nZooms()}`);
       if (st.titulo !== antes.tit) mud.push("título");
       if (JSON.stringify(st.plano.destaques || []) !== antes.dest) mud.push("palavras de destaque");
+      if (fotosAssinatura() !== antes.fot) mud.push("fotos");
+      if (JSON.stringify(st.plano.textos || []) !== antes.txt) mud.push("textos na tela");
       const nomesOpc = { estilo: "estilo da legenda", fonteLeg: "fonte", corLegenda: "cor da legenda", porLegenda: "palavras por legenda", tamLeg: "tamanho da legenda", altura: "altura da legenda", sombra: "sombra", estiloTitulo: "estilo do título", ritmo: "ritmo", sfxAuto: "sons automáticos", transicao: "transição", vol: "volume dos efeitos", maiusculas: "maiúsculas", cor: "cor do destaque", sonsTitulo: "som do título", legenda: "legenda", sons: "quantidade de efeitos", dinamismo: "dinamismo", vicios: "vícios de fala", vozForte: "volume da voz", efeitos: "efeitos sonoros", titulo: "título na tela", zoomCortes: "zoom nos cortes", zoomEnfase: "zoom na ênfase", chamativas: "palavras chamativas", flash: "flash", tremer: "tremidinha", silencio: "corte de silêncios", erros: "tomadas erradas", formato: "formato do vídeo", relaxante: "clima relaxante", sonsSuaves: "só sons suaves", formatoEscolhido: "formato do vídeo", ritmo: "ritmo" };
       Object.keys(r.opc || {}).forEach((k) => { if (antes.opc[k] !== st.opc[k] && !mud.includes(nomesOpc[k] || k)) mud.push(nomesOpc[k] || k); });
       const ultima = st.correcoes[st.correcoes.length - 1];
       ultima.mudou = mud;
-      if (!mud.length) ultima.resposta += " (Nada mudou no vídeo. Tente dizer de outro jeito, com o momento e o que quer, ou ajuste direto nas abas e na linha do tempo.)";
+      if (!mud.length && !feitosOps.length) ultima.resposta += " (Nada mudou no vídeo. Tente dizer de outro jeito, com o momento e o que quer, ou ajuste direto nas abas e na linha do tempo.)";
       ultima.feito = feitosOps;
       if (mud.length || feitosOps.length) registrarOp(texto, mud.join(", ") || feitosOps.join("; "), foto);
       if (st.lembrar && !o.soIA && r.regra && !st.padrao.includes(r.regra)) {
@@ -889,8 +926,55 @@ IDEIA PARA DEPOIS
     const efeitos = st.efeitos.map((e) => ({ g: g(e.t), tipo: e.tipo, de: e.manual ? "você" : e.doTitulo ? "título" : e.auto ? "automático" : "plano" })).filter((e) => e.g != null).slice(0, 150);
     const agora = g(st.t);
     const falaAgora = agora == null ? "" : palavrasBrutas().filter((w) => Math.abs(w.s - agora) < 2.5).map((w) => w.w).join(" ");
-    return { agora, falaAgora, titulo: st.titulo, remover: p.remover || [], destaques: p.destaques || [], zooms, efeitos, textos: p.textos || undefined, duracao: st.clipes.reduce((a, c) => a + c.dur, 0), duracaoFinal: +st.duracao.toFixed(2) };
+    const fotos = (st.fotos || []).map((f, i) => ({ i, nome: f.nome || "", g: f.t0 == null ? null : g(f.t0), modo: f.modo === "cima" ? "card por cima" : "tela cheia" }));
+    return { agora, falaAgora, titulo: st.titulo, remover: p.remover || [], destaques: p.destaques || [], zooms, efeitos, fotos, textos: p.sem_fala ? (p.textos || undefined) : undefined, duracao: st.clipes.reduce((a, c) => a + c.dur, 0), duracaoFinal: +st.duracao.toFixed(2) };
   }
+
+  // ---------- fotos como cards por cima, num momento da fala (nov/2026, pedido da Mari) ----------
+  // onde está o rosto perto do segundo g do bruto (do que o modelo de visão viu), ou null
+  function rostoPerto(g) {
+    let melhor = null, dist = 1e9;
+    for (const c of st.clipes) for (const q of (c.visual && c.visual.quadros) || []) { const d = Math.abs(c.offset + q.t - g); if (q.rosto && q.rosto !== "nenhum" && d < dist) { dist = d; melhor = q.rosto; } }
+    return dist <= 3 ? melhor : null;
+  }
+  // acha na fala o segundo do bruto em que ela diz a frase (aceita pequenas diferenças da transcrição)
+  function acharFala(frase) {
+    const alvo = semAcento(frase).split(" ").filter(Boolean).slice(0, 8); if (!alvo.length) return null;
+    const ws = palavrasBrutas().map((w) => ({ n: semAcento(w.w), s: w.s }));
+    let melhor = -1, nota = 0;
+    for (let i = 0; i < ws.length; i++) {
+      let n = 0; for (let k = 0; k < alvo.length && i + k < ws.length; k++) if (ws[i + k].n === alvo[k] || (alvo[k].length > 3 && ws[i + k].n.startsWith(alvo[k].slice(0, 4)))) n++;
+      if (n > nota || (n === nota && n > 0 && ws[i].n === alvo[0] && ws[melhor].n !== alvo[0])) { nota = n; melhor = i; }
+    }
+    return melhor >= 0 && nota >= Math.min(2, alvo.length) && nota >= alvo.length * 0.5 ? ws[melhor].s : null;
+  }
+  // põe as fotos como cards por cima a partir do segundo g do bruto, lado a lado, sem cobrir o rosto
+  function porFotosCards(lista, g, o = {}) {
+    const t = paraFinalPerto(g); if (t == null || !lista.length) return null;
+    const rosto = rostoPerto(g);
+    const embaixo = rosto === "alto" || (o.lugar === "baixo" && rosto !== "baixo");
+    const y = embaixo ? 0.66 : 0.2;
+    const n = lista.length, larg = n === 1 ? 0.4 : n === 2 ? 0.38 : Math.min(0.29, 0.88 / n), dur = Math.min(8, Math.max(1, o.dur || 2.8));
+    lista.forEach((f, i) => Object.assign(f, {
+      modo: "cima", quad: o.quad !== false, larg, y, rot: n === 1 ? 0 : (i % 2 ? 4 : -4),
+      x: n === 1 ? 0.5 : 0.06 + larg / 2 + i * ((0.88 - larg) / (n - 1)),
+      t0: Math.round(Math.min(t + i * 0.15, Math.max(0, st.duracao - 0.5)) * 100) / 100, dur: Math.max(0.6, dur - i * 0.15),
+    }));
+    st.fotoSel = null;
+    return `${n === 1 ? "a foto entra" : `as ${n} fotos entram`} como card${o.quad !== false ? " quadrado" : ""} ${embaixo ? "na parte de baixo" : "no alto da tela"} em ${tempo(t)}${rosto ? " (sem cobrir o rosto)" : ""}`;
+  }
+  // pedido do tipo "as imagens aparecem quando eu falo: ..." (resolvido aqui, sem depender da IA)
+  function pedidoDeFotos(texto) {
+    const n = semAcento(texto);
+    if (!(st.fotos || []).length || !/\b(foto|fotos|imagem|imagens|card|cards|print|prints)\b/.test(n)) return null;
+    if (/\b(tira|tire|tirar|remove|remova|apaga|apague)\b/.test(n)) return null;
+    const m = String(texto).match(/quando eu (?:falo|digo|falar|disser|pergunto|perguntar|comento|comentar)\s*[:\-"“']?\s*([^?.!\n"”]{3,120})/i);
+    if (!m) return null;
+    const g = acharFala(m[1]);
+    if (g == null) return { erro: `Não achei "${m[1].trim()}" na fala do vídeo para pôr as fotos. Escreva a frase do jeito que você falou ou ajuste em Fotos (Entra em).` };
+    return { g, frase: m[1].trim(), quad: /quadrad|\bcards?\b/.test(n) || undefined, lugar: /\b(embaixo|em baixo|parte de baixo)\b/.test(n) ? "baixo" : null };
+  }
+  const fotosAssinatura = () => JSON.stringify((st.fotos || []).map((f) => [f.t0, f.dur, f.modo, f.x, f.y, f.larg, f.quad]));
 
   // aplica as operações no projeto que já existe (tempos no bruto). Devolve o que foi feito, em português.
   function aplicarOps(ops) {
@@ -921,7 +1005,14 @@ IDEIA PARA DEPOIS
         case "destaque_por": (p.destaques = p.destaques || []).push({ t: o.t, palavra: o.palavra || "" }); feito.push(`destaque em "${o.palavra || tempo(o.t)}"`); break;
         case "destaque_tirar": p.destaques = (p.destaques || []).filter((d) => !dentro(d.t, o.de, o.ate)); feito.push(`tirei o destaque de ${tempo(o.de)} a ${tempo(o.ate)}`); break;
         case "titulo": st.titulo = p.titulo = o.texto || ""; st.tituloDestaque = p.titulo_destaque = o.destaque || ""; if (o.texto) st.opc.titulo = true; feito.push(o.texto ? `título: "${o.texto}"` : "tirei o título"); break;
-        case "texto_tela": p.textos = (p.textos || []).filter((x) => x.ate <= o.de || x.de >= o.ate); if (o.texto) p.textos.push({ de: o.de, ate: o.ate, texto: o.texto }); p.textos.sort((a, b) => a.de - b.de); feito.push(o.texto ? `texto na tela em ${tempo(o.de)}` : `tirei o texto de ${tempo(o.de)}`); break;
+        case "foto_por": {
+          const fs = st.fotos || [], lista = Array.isArray(o.fotos) && o.fotos.length ? o.fotos.map((i) => fs[i]).filter(Boolean) : fs.slice(0, 4);
+          if (!lista.length) { feito.push("não tem foto enviada neste projeto para pôr (envie em Fotos)"); break; }
+          const r = porFotosCards(lista, o.t, { dur: o.dur, lugar: o.lugar, quad: o.formato === "original" ? false : true });
+          feito.push(r || `não achei o momento ${tempo(o.t)} no vídeo editado`); break;
+        }
+        case "texto_tela": if (palavrasBrutas().length && !p.sem_fala) break; // texto por cena só existe em vídeo sem fala
+          p.textos = (p.textos || []).filter((x) => x.ate <= o.de || x.de >= o.ate); if (o.texto) p.textos.push({ de: o.de, ate: o.ate, texto: o.texto }); p.textos.sort((a, b) => a.de - b.de); feito.push(o.texto ? `texto na tela em ${tempo(o.de)}` : `tirei o texto de ${tempo(o.de)}`); break;
         case "ajuste": if (ok.has(o.chave)) { st.opc[o.chave] = o.valor; feito.push("ajuste: " + o.chave); } break;
         default: break;
       }
@@ -941,6 +1032,7 @@ IDEIA PARA DEPOIS
   function voltarFoto(f) {
     if (st.tocando) parar();
     Object.assign(st, JSON.parse(JSON.stringify({ plano: f.plano, titulo: f.titulo, tituloDestaque: f.tituloDestaque, opc: f.opc, manual: f.manual, marcas: f.marcas })));
+    if (Array.isArray(f.fotos)) { const porId = new Map(f.fotos.map((x) => [x.id, x])); (st.fotos || []).forEach((x) => { const s = porId.get(x.id); if (s) for (const k of ["t0", "dur", "modo", "x", "y", "larg", "rot", "quad"]) { if (s[k] === undefined) delete x[k]; else x[k] = s[k]; } }); pintarFotos(); }
     ajustarVoz(); montar(); st.t = Math.min(st.t, st.duracao); pintar(); salvarDepois();
   }
   function desfazerOp() {
@@ -1155,14 +1247,16 @@ IDEIA PARA DEPOIS
   // Ela arrasta na prévia para mudar o lugar e ajusta tamanho e inclinação na lista de fotos.
   const FOTO_CIMA = { x: 0.5, y: 0.4, larg: 0.32, rot: 0 };
   function desenharFotoCima(f, t, W, H) {
-    const d = t - f.t0, iw = f.img.naturalWidth, ih = f.img.naturalHeight;
+    const d = t - f.t0, nw = f.img.naturalWidth, nh = f.img.naturalHeight;
+    // card quadrado (nov/2026): recorta o meio da foto num quadrado
+    const lado = Math.min(nw, nh), sx = f.quad ? (nw - lado) / 2 : 0, sy = f.quad ? (nh - lado) / 2 : 0, iw = f.quad ? lado : nw, ih = f.quad ? lado : nh;
     const k = Math.min(1, d / 0.22), c = 1.9, pop = k >= 1 ? 1 : 1 + (c + 1) * (k - 1) ** 3 + c * (k - 1) ** 2;
     const a = clamp(Math.min(d / 0.06, (f.dur - d) / 0.08));
     const w = W * (f.larg ?? FOTO_CIMA.larg) * Math.max(0.05, pop), h = w * ih / iw, cx = W * (f.x ?? FOTO_CIMA.x), cy = H * (f.y ?? FOTO_CIMA.y), r = Math.min(w, h) * 0.075;
     c2d.save(); c2d.globalAlpha = a; c2d.translate(cx, cy); c2d.rotate(((f.rot ?? 0) * Math.PI) / 180);
     c2d.shadowColor = "rgba(0,0,0,.42)"; c2d.shadowBlur = 30 * W / 1080; c2d.shadowOffsetY = 10 * W / 1080;
     arredondado(-w / 2, -h / 2, w, h, r); c2d.fillStyle = "#fff"; c2d.fill(); c2d.shadowColor = "transparent";
-    arredondado(-w / 2, -h / 2, w, h, r); c2d.clip(); c2d.drawImage(f.img, -w / 2, -h / 2, w, h);
+    arredondado(-w / 2, -h / 2, w, h, r); c2d.clip(); c2d.drawImage(f.img, sx, sy, iw, ih, -w / 2, -h / 2, w, h);
     c2d.restore();
     const wf = W * (f.larg ?? FOTO_CIMA.larg), hf = wf * ih / iw; f._box = [cx - wf / 2, cy - hf / 2, cx + wf / 2, cy + hf / 2];
     if (st.fotoSel === f.id && !st.exportando) { c2d.save(); c2d.setLineDash([10, 8]); c2d.lineWidth = 3; c2d.strokeStyle = "rgba(255,243,176,.95)"; c2d.translate(cx, cy); c2d.rotate(((f.rot ?? 0) * Math.PI) / 180); c2d.strokeRect(-wf / 2 - 6, -hf / 2 - 6, wf + 12, hf + 12); c2d.restore(); }
@@ -1191,7 +1285,8 @@ IDEIA PARA DEPOIS
         <label class="ed-foto-modo">Como entra <select class="entrada" data-foto-modo="${f.id}"><option value="cheia" ${f.modo !== "cima" ? "selected" : ""}>Tela cheia</option><option value="cima" ${f.modo === "cima" ? "selected" : ""}>Por cima</option></select></label>
         <label>Entra em <input class="entrada" type="number" min="0" step="0.1" value="${f.t0 == null ? "" : f.t0}" data-foto-t0="${f.id}" placeholder="auto" ${st.duracao ? "" : "disabled"}> s</label>
         <label>Dura <input class="entrada" type="number" min="0.3" max="10" step="0.1" value="${f.dur}" data-foto-dur="${f.id}"> s</label>
-        ${f.modo === "cima" ? `<label>Tamanho <input type="range" min="10" max="90" step="1" value="${Math.round((f.larg ?? FOTO_CIMA.larg) * 100)}" data-foto-larg="${f.id}"></label>
+        ${f.modo === "cima" ? `<label>Formato <select class="entrada" data-foto-quad="${f.id}"><option value="" ${f.quad ? "" : "selected"}>Original</option><option value="1" ${f.quad ? "selected" : ""}>Card quadrado</option></select></label>
+        <label>Tamanho <input type="range" min="10" max="90" step="1" value="${Math.round((f.larg ?? FOTO_CIMA.larg) * 100)}" data-foto-larg="${f.id}"></label>
         <label>Inclinação <input type="range" min="-30" max="30" step="1" value="${Math.round(f.rot ?? 0)}" data-foto-rot="${f.id}"></label>
         <small class="ed-foto-dica">Arraste a foto na prévia para mudar o lugar.</small>` : ""}
         <button class="icone-btn" type="button" data-foto-tirar="${f.id}" aria-label="Tirar foto">${ic.x}</button></div>`).join("")}</div>`;
@@ -1201,6 +1296,7 @@ IDEIA PARA DEPOIS
     $$("[data-foto-t0]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoT0); const v = parseFloat(String(i.value).replace(",", ".")); f.t0 = Number.isFinite(v) ? Math.max(0, Math.min(v, Math.max(0, (st.duracao || 0) - 0.3))) : null; salvarDepois(); if (f.t0 != null) irPara(f.t0 + Math.min(0.3, f.dur / 2)); pintarLinha(); }));
     $$("[data-foto-dur]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoDur); f.dur = Math.max(0.3, Math.min(10, parseFloat(String(i.value).replace(",", ".")) || DUR_FOTO)); salvarDepois(); redesenhar(); }));
     $$("[data-foto-modo]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoModo); f.modo = i.value; if (f.modo === "cima") { for (const k of Object.keys(FOTO_CIMA)) if (f[k] == null) f[k] = FOTO_CIMA[k]; st.fotoSel = f.id; } pintarFotos(); mudou(f, true); }));
+    $$("[data-foto-quad]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoQuad); f.quad = Boolean(i.value); st.fotoSel = f.id; mudou(f, true); }));
     $$("[data-foto-larg]", box).forEach((i) => i.addEventListener("input", () => { const f = acha(i.dataset.fotoLarg); f.larg = Number(i.value) / 100; st.fotoSel = f.id; mudou(f, true); }));
     $$("[data-foto-rot]", box).forEach((i) => i.addEventListener("input", () => { const f = acha(i.dataset.fotoRot); f.rot = Number(i.value); st.fotoSel = f.id; mudou(f, true); }));
     $$("[data-foto-arq]", box).forEach((i) => i.addEventListener("change", async () => { const f = acha(i.dataset.fotoArq), arq = i.files && i.files[0]; if (!f || !arq) return; await anexarFoto(f, arq); }));
@@ -2235,7 +2331,13 @@ IDEIA PARA DEPOIS
       const inicioFinal = s.o0 + dentro;
       if (st.opc.efeitos) for (const e of st.efeitos) if (e.t >= inicioFinal && e.t < s.o1) tocarEfeito(e.tipo, ac.currentTime + (e.t - inicioFinal), st.opc.vol);
       if (gravador && gravador.state === "paused") gravador.resume();
-      try { await v.play(); } catch (e) { toast("O navegador bloqueou o som. Clique em play de novo.", true); break; }
+      try { await v.play(); } catch (e) {
+        const q = v.error ? st.clipes[s.ci] : clipeQuebrado();
+        if (q) { q.quebrado = true; pintar(); toast(`Perdi o acesso ao arquivo do vídeo "${q.nome}" (ele mudou de lugar, foi renomeado ou está numa pasta da nuvem). Clique em "Escolher de novo" ao lado dele, na lista de vídeos, e escolha o mesmo arquivo. A edição continua igual.`, true); }
+        else if (e && e.name === "NotAllowedError") toast("O navegador bloqueou o som. Clique em play de novo.", true);
+        else if (!(e && e.name === "AbortError")) toast("A prévia não conseguiu tocar esse trecho" + (e && e.message ? ": " + e.message : ".") , true);
+        break;
+      }
       await new Promise((ok) => {
         const passo = () => {
           const t = s.o0 + (v.currentTime - s.a);
@@ -3809,11 +3911,13 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   function pintar() {
     const sec = document.getElementById("aba-" + ABA);
     if (!sec || !$("#ed-clipes", sec)) return;
-    $("#ed-clipes", sec).innerHTML = (st.pendentes ? `<div class="faixa ed-pendentes"><b>Projeto "${esc(st.projeto ? st.projeto.nome : "")}"</b>: escolha de novo ${st.pendentes.length > 1 ? "os vídeos" : "o vídeo"} deste projeto para a edição voltar como você deixou: ${st.pendentes.map((x) => `<span class="${x.usado ? "ok" : ""}">${esc(x.nome)}${x.usado ? " ✓" : ""}</span>`).join(", ")}.</div>` : "") + (st.clipes.length > 1 ? `<p class="ed-clipes-dica">Arraste a cena (ou use as setas) para trocar a ordem. O X tira a cena; para colocar outra, envie mais vídeos.</p>` : "") + st.clipes.map((c, i) => `<div class="ed-clipe" data-clipe="${c.id}" draggable="${st.trabalhando || st.exportando ? "false" : "true"}"><span class="ed-alca" aria-hidden="true">${ic.alca}</span><span class="ed-num">${i + 1}</span>${c.capa ? `<img class="ed-capa-clipe" src="${c.capa}" alt="">` : ""}<div><b>${esc(c.nome)}</b><small>${tempo(c.dur)}${c.w ? ` · ${c.w}x${c.h}` : ""}${c.mudo ? " · sem som" : c.palavras ? ` · ${c.palavras.length} palavras ouvidas` : ""}</small></div>
+    $("#ed-clipes", sec).innerHTML = (st.pendentes ? `<div class="faixa ed-pendentes"><b>Projeto "${esc(st.projeto ? st.projeto.nome : "")}"</b>: escolha de novo ${st.pendentes.length > 1 ? "os vídeos" : "o vídeo"} deste projeto para a edição voltar como você deixou: ${st.pendentes.map((x) => `<span class="${x.usado ? "ok" : ""}">${esc(x.nome)}${x.usado ? " ✓" : ""}</span>`).join(", ")}.</div>` : "") + (st.clipes.length > 1 ? `<p class="ed-clipes-dica">Arraste a cena (ou use as setas) para trocar a ordem. O X tira a cena; para colocar outra, envie mais vídeos.</p>` : "") + st.clipes.map((c, i) => `<div class="ed-clipe" data-clipe="${c.id}" draggable="${st.trabalhando || st.exportando ? "false" : "true"}"><span class="ed-alca" aria-hidden="true">${ic.alca}</span><span class="ed-num">${i + 1}</span>${c.capa ? `<img class="ed-capa-clipe" src="${c.capa}" alt="">` : ""}<div><b>${esc(c.nome)}</b><small>${tempo(c.dur)}${c.w ? ` · ${c.w}x${c.h}` : ""}${c.mudo ? " · sem som" : c.palavras ? ` · ${c.palavras.length} palavras ouvidas` : ""}</small>${c.quebrado || (c.el && c.el.error) ? `<small class="ed-clipe-erro">Perdi o acesso a este arquivo.</small>` : ""}</div>
+      ${c.quebrado || (c.el && c.el.error) ? `<label class="btn btn-principal">Escolher de novo<input type="file" accept="video/*,.mov,.mp4,.m4v,.webm" data-religar="${c.id}" hidden></label>` : ""}
       <button class="icone-btn" type="button" data-mover="${c.id}" data-passo="-1" aria-label="Subir cena" ${i === 0 || st.trabalhando || st.exportando ? "disabled" : ""}>${ic.cima}</button>
       <button class="icone-btn" type="button" data-mover="${c.id}" data-passo="1" aria-label="Descer cena" ${i === st.clipes.length - 1 || st.trabalhando || st.exportando ? "disabled" : ""}>${ic.baixo}</button>
       <button class="icone-btn" type="button" data-tirar="${c.id}" aria-label="Tirar clipe" ${st.trabalhando || st.exportando ? "disabled" : ""}>${ic.x}</button></div>`).join("");
     $$("[data-mover]", sec).forEach((b) => b.addEventListener("click", () => moverClipe(b.dataset.mover, +b.dataset.passo)));
+    $$("[data-religar]", sec).forEach((i) => i.addEventListener("change", () => { const c = st.clipes.find((x) => x.id === i.dataset.religar); if (c && i.files && i.files[0]) religarClipe(c, i.files[0]); }));
     ligarArrasteClipes($("#ed-clipes", sec));
     pintarFotos();
     $$("[data-tirar]", sec).forEach((b) => b.addEventListener("click", () => {
