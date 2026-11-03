@@ -66,7 +66,7 @@
   const hoje = new Date();
   // todos: todos os conteúdos (um registro por conteúdo, o mesmo em todas as visões); posts: só os do mês do calendário
   const st = { pronto: false, mes: `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`, semana: 0, todos: [], lab: [], faltaTabela: false, gerando: false, transcrevendo: false, perfil: PERFIL_PADRAO,
-    cal: "mes", semIni: null, filtro: { q: "", nicho: "", formato: "", funil: "", tipo: "" }, ideiaFiltro: "" };
+    cal: (() => { try { return localStorage.getItem("pc-calvista") || "5sem"; } catch (e) { return "5sem"; } })(), semIni: null, ini5: null, filtro: { q: "", nicho: "", formato: "", funil: "", tipo: "" }, ideiaFiltro: "" };
   const mesDe = (p) => (p.data ? String(p.data).slice(0, 7) : p.mes);
   Object.defineProperty(st, "posts", { get: () => st.todos.filter((p) => mesDe(p) === st.mes) });
 
@@ -410,7 +410,7 @@
       <section data-pcpar="cal" class="pc2-cal">
         <div class="pc-cal-cab">
           <div class="pc2-cal-tit"><select class="entrada" id="pc-mes" aria-label="Mês"></select><span class="pc-ajuda" id="pc-sobre-mes" hidden></span>
-            <div class="pc2-seg" role="group" aria-label="Visualização"><button type="button" data-calvista="mes">Mensal</button><button type="button" data-calvista="semana">Semanal</button></div></div>
+            <div class="pc2-seg" role="group" aria-label="Visualização"><button type="button" data-calvista="5sem">5 semanas</button><button type="button" data-calvista="mes">Mensal</button><button type="button" data-calvista="semana">Semanal</button></div></div>
           <div class="pc-cal-nav"><button class="icone-btn" type="button" id="pc-ant" aria-label="Anterior">${ic.esq}</button><button class="icone-btn" type="button" id="pc-prox" aria-label="Próximo">${ic.dir}</button><button class="btn pc-btn-hoje" type="button" id="pc-hoje">Hoje</button><span id="pc-semana-rot"></span></div>
         </div>
         <p class="pc-ajuda pc2-dica">Arraste um conteúdo para outro dia para mudar a data. O + cria um conteúdo naquele dia. Toque num conteúdo para ver tudo.</p>
@@ -452,17 +452,18 @@
     $("#pc-ajustes", sec).addEventListener("click", () => mostrarParte($("#pc-config", sec).hidden ? "cfg" : anterior));
     $("#pc-cfg-fechar", sec).addEventListener("click", () => mostrarParte(anterior));
     $("#pc-novo", sec).addEventListener("click", () => abrir(novoConteudo({})));
-    $$("[data-calvista]", sec).forEach((b) => b.addEventListener("click", () => { st.cal = b.dataset.calvista; if (st.cal === "semana" && !st.semIni) st.semIni = segundaDe(iso(hoje)); pintar(); }));
+    $$("[data-calvista]", sec).forEach((b) => b.addEventListener("click", () => { st.cal = b.dataset.calvista; try { localStorage.setItem("pc-calvista", st.cal); } catch (e) { /* sem armazenamento */ } if (st.cal === "semana" && !st.semIni) st.semIni = segundaDe(iso(hoje)); pintar(); }));
     const sel = $("#pc-mes", sec);
     sel.addEventListener("change", () => { st.mes = sel.value; st.semana = 0; ajustarSemana(); pintar(); });
     const trocarMes = (k) => {
+      if (st.cal === "5sem") { const d = deIso(st.ini5 || segundaDe(iso(hoje))); d.setDate(d.getDate() + 7 * k); st.ini5 = iso(d); st.mes = st.ini5.slice(0, 7); pintar(); return; }
       if (st.cal === "semana") { const d = deIso(st.semIni || segundaDe(iso(hoje))); d.setDate(d.getDate() + 7 * k); st.semIni = iso(d); st.mes = st.semIni.slice(0, 7); pintar(); return; }
       const [a, m] = st.mes.split("-").map(Number); const d = new Date(a, m - 1 + k, 1); st.mes = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; ajustarSemana(); pintar();
     };
     $("#pc-ant", sec).addEventListener("click", () => trocarMes(-1));
     $("#pc-prox", sec).addEventListener("click", () => trocarMes(1));
     $("#pc-hoje", sec).addEventListener("click", () => {
-      st.mes = `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`; st.semIni = segundaDe(iso(hoje)); ajustarSemana(); pintar();
+      st.mes = `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`; st.semIni = segundaDe(iso(hoje)); st.ini5 = segundaDe(iso(hoje)); ajustarSemana(); pintar();
       if (st.cal === "mes") { const alvo = $("#pc-sem-" + st.semana, sec); if (alvo) alvo.scrollIntoView({ behavior: "smooth", block: "start" }); }
     });
     $("#pc-qtd", sec).addEventListener("change", pintar);
@@ -515,12 +516,12 @@
         <button type="button" class="pc3-tema${tema ? " tem" : ""}" data-tema="${seg}" title="Tema da semana">${tema ? esc(tema) : "+ tema da semana"}</button>
         <div class="pc3-grade">${sem.map((d) => celulaDia(d, d.getMonth() !== mesNum)).join("")}</div></div>`;
     }).join("");
+    pintarSemanal(sec);
     $$("[data-tema]", sec).forEach((b) => b.addEventListener("click", async () => {
       const atual = (st.temas || {})[b.dataset.tema] || "";
       const novo = await painelDialogo.texto("Tema desta semana (ex.: Black Friday para marcas). Deixe vazio para tirar.", atual);
       if (novo === null) return; await salvarTema(b.dataset.tema, novo.trim()); pintar();
     }));
-    pintarSemanal(sec);
     pintarGeral(sec); pintarKanban(sec); pintarIdeias(sec);
     const cal = $("[data-pcpar=cal]", sec);
     ligarCliques(cal);
@@ -827,10 +828,41 @@
   }
 
   // ---------- calendário semanal (as mesmas pílulas e o mesmo arrastar do mensal) ----------
+  // ---------- 5 semanas (nov/2026, referência da Mari): cada semana numa linha, resumo (posts, topo, meio, fundo, tema),
+  // cartões coloridos pelo pilar com "FUNIL · FORMATO" no topo; Stories em texto; gravações e compromissos em pílulas pequenas
+  const CORES_5S = [["#a8573f", "#fff"], ["#4a3324", "#fff"], ["#ead08a", "#3d2b20"], ["#c98f5e", "#fff"], ["#8a6650", "#fff"], ["#e3c3a2", "#3d2b20"]];
+  const corPilar = (p) => { const i = indicePilar(p.pilar); return CORES_5S[i < 0 ? 4 : i % CORES_5S.length]; };
+  function cartao5(p) {
+    if (/stories/i.test(p.formato || "")) return `<button type="button" class="pc5-story${p.status === "Publicado" ? " feito" : ""}" data-id="${p.id}" data-arrasta="pub:${p.id}"><b>Stories:</b> ${esc(p.tema || p.hook || "Sem título")}</button>`;
+    const [bg, cor] = corPilar(p);
+    return `<button type="button" class="pc5-card${p.status === "Publicado" ? " feito" : ""}" style="--bg:${bg};--cor:${cor}" data-id="${p.id}" data-arrasta="pub:${p.id}" title="${esc([p.pilar, p.status, p.horario, ehPubli(p) ? tipoTxt(p) : ""].filter(Boolean).join(" · "))}">
+      <small>${funilIc}${esc((p.funil || "Topo").toUpperCase())} · ${esc((p.formato || "Reels").toUpperCase())}${ehPubli(p) ? " · PUBLI" : ""}</small><span>${esc(p.tema || p.hook || "Sem título")}</span></button>`;
+  }
+  function pintar5(sec) {
+    const ini = st.ini5 || segundaDe(iso(hoje)); st.ini5 = ini;
+    const br = (d) => `${d.getDate()}/${d.getMonth() + 1}`;
+    const semanas = [...Array(5)].map((_, w) => [...Array(7)].map((_, k) => { const d = deIso(ini); d.setDate(d.getDate() + w * 7 + k); return d; }));
+    $("#pc-semana-rot", sec).textContent = `${br(semanas[0][0])} a ${br(semanas[4][6])}`;
+    const pil = (st.perfil.pilares || []).slice(0, 6), temas = [...new Set(semanas.map((sem) => (st.temas || {})[iso(sem[0])]).filter(Boolean))];
+    $("#pc-legenda", sec).innerHTML = pil.map((x, i) => `<span><i style="background:${CORES_5S[i % CORES_5S.length][0]}"></i>${esc(x.nome)}</span>`).join("") + temas.map((t) => `<span class="pc5-tema-leg">${esc(t)}</span>`).join("");
+    $("#pc-quadro", sec).innerHTML = semanas.map((sem, n) => {
+      const seg = iso(sem[0]), tema = (st.temas || {})[seg], doSem = st.todos.filter((p) => p.data >= iso(sem[0]) && p.data <= iso(sem[6]));
+      const conta = (f) => doSem.filter((p) => (p.funil || "") === f).length;
+      return `<div class="pc5-sem${sem.some((d) => iso(d) === iso(hoje)) ? " atual" : ""}" id="pc-sem-${n}">
+        <div class="pc5-cab"><b>Semana ${n + 1}</b><span>${br(sem[0])} a ${br(sem[6])}</span><span class="pc5-n">${doSem.length} post${doSem.length === 1 ? "" : "s"}</span>
+          <span class="pc5-f" title="Topo">${funilIc}T ${conta("Topo")}</span><span class="pc5-f" title="Meio">${funilIc}M ${conta("Meio")}</span><span class="pc5-f" title="Fundo">${funilIc}F ${conta("Fundo")}</span>
+          <button type="button" class="pc5-tema${tema ? " tem" : ""}" data-tema="${seg}" title="Tema ou campanha da semana">${tema ? esc(tema) : "+ tema da semana"}</button></div>
+        <div class="pc5-grade">${sem.map((d) => { const s2 = iso(d), ps = st.todos.filter((p) => p.data === s2).sort((a, b) => String(a.horario || "").localeCompare(String(b.horario || "")));
+          const gravs = st.todos.filter((p) => p.data_gravacao === s2 && p.status !== "Publicado").map((p) => `<button type="button" class="pc3-pill k-grav" data-id="${p.id}" data-arrasta="grav:${p.id}">Gravar: ${esc(p.tema || "Sem título")}</button>`).join("");
+          const comp = (st.agenda || []).filter((x) => x.data === s2).map((x) => `<button type="button" class="pc3-pill k-comp" ${x.ir ? `data-ir="${x.ir}"` : ""} title="${esc(x.rotulo + ": " + x.texto)}">${esc(x.texto)}</button>`).join("");
+          return `<div class="pc3-dia pc5-dia${s2 === iso(hoje) ? " hoje" : ""}" data-dia="${s2}"><div class="pc3-dia-cab"><span><small>${DIAS[(d.getDay() + 6) % 7]}</small><b>${d.getDate()}</b></span><button type="button" class="pc3-add" data-novo="${s2}" aria-label="Novo post em ${br(d)}">${ic.mais}</button></div>${ps.map(cartao5).join("")}${gravs}${comp}</div>`; }).join("")}</div></div>`;
+    }).join("");
+  }
   function pintarSemanal(sec) {
     const semana = st.cal === "semana";
     $$("[data-calvista]", sec).forEach((b) => b.classList.toggle("ativa", b.dataset.calvista === st.cal));
     $("#pc-quadro", sec).hidden = semana; $("#pc-semanal", sec).hidden = !semana;
+    if (st.cal === "5sem") { pintar5(sec); return; }
     if (!semana) return;
     const ini = st.semIni || segundaDe(iso(hoje)); st.semIni = ini;
     const dias = [...Array(7)].map((_, k) => { const d = deIso(ini); d.setDate(d.getDate() + k); return d; });
