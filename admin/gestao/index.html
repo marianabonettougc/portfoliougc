@@ -2915,7 +2915,6 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   async function avancarJob(j){
     const at = etapaDoJob(j, state.roteiros);
     if(at>=ETAPAS_JOB.length-1) return;
-    if(!await painelDialogo.confirmar(`Passar ${j.marca} de "${ETAPAS_JOB[at]}" para "${ETAPAS_JOB[at+1]}"?`, { ok: "Avançar" })) return;
     mudar(s=>({...s, jobs:(s.jobs||[]).map(x=>x.id===j.id ? jobNaEtapa(x, at+1) : x)}));
   }
   // esperando a marca aprovar: roteiro ou conteúdo enviado
@@ -3033,7 +3032,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
               return <div className="dn-linha dn-clica" key={j.id} onClick={abrir}>
                 <button className="dn-marca" onClick={abrir}><DbLogo marca={j.marca} logos={logos}/><span><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></button>
                 <span className="dn-prog">{p.total ? <><small>{p.feitos} de {p.total}</small><i><b style={{width:Math.max(3,p.pct)+"%"}}/></i></> : <small>sem entregáveis</small>}</span>
-                <span><span className={"dn-chip c-"+classeEtapa(at)} title={ETAPAS_JOB[at]}>{nomeEtapa(at)}</span></span>
+                <span><button className={"dn-chip c-"+classeEtapa(at)} title={at>=ETAPAS_JOB.length-1 ? ETAPAS_JOB[at] : `${ETAPAS_JOB[at]} · toque para passar para "${ETAPAS_JOB[at+1]}"`} onClick={e=>{ e.stopPropagation(); avancarJob(j); }}>{nomeEtapa(at)}</button></span>
                 <span className="dn-prazo">{j.prazoEntrega ? <><b>{dataBR(j.prazoEntrega).slice(0,5)}</b><small className={marca ? "" : d<0?"atr":d===0?"hj":""}>{marca && d<=0 ? (at===5 ? "entregue" : "com a marca") : d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : `em ${d} dia${d===1?"":"s"}`}</small></> : <small>sem prazo</small>}</span>
               </div>; })}
           </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
