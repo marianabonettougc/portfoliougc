@@ -601,3 +601,11 @@ insert into storage.buckets (id, name, public, file_size_limit) values ('finance
 create policy "financeiro: cada perfil na sua pasta" on storage.objects for all to authenticated
   using (bucket_id = 'financeiro' and (storage.foldername(name))[1] = public.perfil_financeiro())
   with check (bucket_id = 'financeiro' and (storage.foldername(name))[1] = public.perfil_financeiro());
+
+-- nov/2026: Minhas marcas virou a tela de Contatos (migração marcas_contatos_crm). Só acrescenta campos:
+alter table public.marcas add column if not exists contato text;
+alter table public.marcas add column if not exists responsavel text;
+alter table public.marcas add column if not exists origem text;
+alter table public.marcas add column if not exists favorito boolean not null default false;
+alter table public.marcas add column if not exists notas jsonb not null default '[]'::jsonb;
+alter table public.marcas drop constraint if exists marcas_situacao_check; -- status com nomes dela (configuracoes, chave contatos_config)

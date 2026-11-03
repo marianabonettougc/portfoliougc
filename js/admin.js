@@ -661,103 +661,290 @@
   // =========================================================
   // 2. MARCAS
   // =========================================================
-  const SITUACOES = [{ v: "lead", t: "Lead" }, { v: "conversando", t: "Conversando" }, { v: "cliente", t: "Cliente" }, { v: "parada", t: "Parada" }];
+  // nov/2026 (referência da Mari, tela de leads): Minhas marcas virou a tela de CONTATOS. Indicadores com mini gráfico,
+  // abas (Todos, Favoritos, Novos, Conversando, Clientes, Atrasados), busca, filtro, ordem, tabela com seleção e ações em
+  // massa, e o perfil do contato ao lado (Atividade, Notas, Jobs). Sem score. Ela renomeia as colunas e os status e cria
+  // status novos em "Personalizar" (configuracoes, chave contatos_config); tudo editável e apagável.
+  const SITUACOES_PADRAO = [{ v: "lead", t: "Lead" }, { v: "conversando", t: "Conversando" }, { v: "cliente", t: "Cliente" }, { v: "parada", t: "Parada" }];
+  const COLUNAS_PADRAO = { contato: "Contato", marca: "Marca", email: "E-mail", status: "Status", responsavel: "Responsável", origem: "Origem", data: "Último contato" };
+  const ORIGENS_CT = ["Site", "Instagram", "E-mail", "WhatsApp", "TikTok", "LinkedIn", "Indicação", "Evento", "Outro"];
+  const cfgContatos = { status: null, colunas: {} };
+  let SITUACOES = SITUACOES_PADRAO;
   const nomeSituacao = (s) => (SITUACOES.find((x) => x.v === s) || { t: s || "" }).t;
-  const estadoMarcas = { busca: "", situacao: "" };
+  const rotuloCol = (k) => cfgContatos.colunas[k] || COLUNAS_PADRAO[k];
+  const estadoMarcas = { busca: "", aba: "todos", origem: "", status: "", ordem: "recente", sel: new Set(), aberto: null, abaPerfil: "notas", cfgCarregada: false, menu: null };
+  const DIA = 86400000;
+  const diasDesde = (iso) => { const d = paraData(iso); return d ? Math.floor((Date.now() - d.getTime()) / DIA) : null; };
+  const atrasado = (m) => ["lead", "conversando"].includes(m.situacao) && (diasDesde(m.ultimo_contato || m.criado_em) ?? 0) > 15;
+  const novoContato = (m) => (diasDesde(m.criado_em) ?? 99) <= 7;
+  const iniciais = (t) => String(t || "?").trim().split(/\s+/).slice(0, 2).map((p) => p[0] || "").join("").toUpperCase() || "?";
+  const tempoAtras = (iso) => { const d = diasDesde(iso); if (d === null) return ""; if (d <= 0) return "hoje"; if (d === 1) return "ontem"; if (d < 30) return `há ${d} dias`; return fmtData(iso); };
 
-  function marcasFiltradas() {
-    const b = estadoMarcas.busca.toLowerCase().replace(/^@/, "");
-    return dados.marcas.filter((m) => {
-      if (estadoMarcas.situacao && m.situacao !== estadoMarcas.situacao) return false;
-      if (!b) return true;
-      return [m.nome, arroba(m.instagram), m.email].some((c) => String(c || "").toLowerCase().includes(b));
-    });
+  async function carregarCfgContatos() {
+    if (estadoMarcas.cfgCarregada) return; estadoMarcas.cfgCarregada = true;
+    try {
+      const { data } = await banco.from("configuracoes").select("valor").eq("chave", "contatos_config").maybeSingle();
+      const v = data && data.valor ? (typeof data.valor === "string" ? JSON.parse(data.valor) : data.valor) : {};
+      if (Array.isArray(v.status) && v.status.length) { cfgContatos.status = v.status; SITUACOES = v.status; }
+      cfgContatos.colunas = v.colunas || {};
+    } catch (e) { /* fica o padrão */ }
+    // status que existem nos contatos e não estão na lista continuam aparecendo
+    dados.marcas.forEach((m) => { if (m.situacao && !SITUACOES.some((s) => s.v === m.situacao)) SITUACOES = [...SITUACOES, { v: m.situacao, t: m.situacao }]; });
+  }
+  async function salvarCfgContatos() {
+    const valor = JSON.stringify({ status: SITUACOES, colunas: cfgContatos.colunas });
+    const { error } = await banco.from("configuracoes").upsert({ chave: "contatos_config", valor, updated_at: new Date().toISOString() }, { onConflict: "chave" });
+    if (error) avisar("Não consegui salvar a personalização: " + error.message, true);
   }
 
-  function desenharMarcas() {
+  const ABAS_CONTATOS = [["todos", "Todos"], ["favoritos", "Favoritos"], ["novos", "Novos"], ["conversando", "Conversando"], ["cliente", "Clientes"], ["atrasados", "Atrasados"]];
+  function naAba(m, aba) {
+    if (aba === "favoritos") return m.favorito;
+    if (aba === "novos") return novoContato(m);
+    if (aba === "atrasados") return atrasado(m);
+    if (aba === "conversando" || aba === "cliente") return m.situacao === aba;
+    return true;
+  }
+  function marcasFiltradas() {
+    const b = estadoMarcas.busca.toLowerCase().replace(/^@/, "");
+    const lista = dados.marcas.filter((m) => {
+      if (!naAba(m, estadoMarcas.aba)) return false;
+      if (estadoMarcas.status && m.situacao !== estadoMarcas.status) return false;
+      if (estadoMarcas.origem && (m.origem || "") !== estadoMarcas.origem) return false;
+      if (!b) return true;
+      return [m.nome, m.contato, arroba(m.instagram), m.email, m.responsavel, m.origem, m.telefone].some((c) => String(c || "").toLowerCase().includes(b));
+    });
+    const o = estadoMarcas.ordem;
+    return lista.sort((a, z) => o === "az" ? String(a.contato || a.nome).localeCompare(String(z.contato || z.nome)) : o === "contato" ? String(z.ultimo_contato || "").localeCompare(String(a.ultimo_contato || "")) : String(z.criado_em || "").localeCompare(String(a.criado_em || "")));
+  }
+
+  // mini gráfico das últimas 8 semanas
+  function spark(valores) {
+    const max = Math.max(1, ...valores), w = 92, h = 30, pts = valores.map((v, i) => `${(i / Math.max(1, valores.length - 1) * w).toFixed(1)},${(h - 3 - v / max * (h - 6)).toFixed(1)}`).join(" ");
+    return `<svg class="ct-spark" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  }
+  function semanal(filtro) { return [...Array(8)].map((_, i) => { const fim = Date.now() - (7 - i) * 7 * DIA, ini = fim - 7 * DIA; return dados.marcas.filter((m) => { const t = paraData(m.criado_em); return t && t.getTime() > ini && t.getTime() <= fim && filtro(m); }).length; }); }
+  function indicadoresContatos() {
+    const n30 = dados.marcas.filter((m) => (diasDesde(m.criado_em) ?? 99) <= 30).length, n60 = dados.marcas.filter((m) => { const d = diasDesde(m.criado_em) ?? 99; return d > 30 && d <= 60; }).length;
+    const pct = (a, b) => b ? Math.round((a - b) / b * 100) : (a ? 100 : 0);
+    const conv = dados.marcas.filter((m) => m.situacao === "conversando").length, cli = dados.marcas.filter((m) => m.situacao === "cliente").length, atr = dados.marcas.filter(atrasado).length;
+    const taxa = dados.marcas.length ? Math.round(cli / dados.marcas.length * 100) : 0;
+    const card = (rot, val, sub, cls, serie) => `<div class="ct-kpi"><div><small>${rot}</small><b>${val}</b><span class="${cls}">${sub}</span></div>${spark(serie)}</div>`;
+    return `<div class="ct-kpis">
+      ${card("Novos contatos", n30, `${pct(n30, n60) >= 0 ? "↗" : "↘"} ${Math.abs(pct(n30, n60))}% em 30 dias`, pct(n30, n60) >= 0 ? "bom" : "mal", semanal(() => true))}
+      ${card(nomeSituacao("conversando") || "Conversando", conv, "negociando agora", "", semanal((m) => m.situacao === "conversando"))}
+      ${card(nomeSituacao("cliente") || "Clientes", cli, `${taxa}% viraram cliente`, "bom", semanal((m) => m.situacao === "cliente"))}
+      ${card("Atrasados", atr, "sem retorno há +15 dias", atr ? "mal" : "", semanal(atrasado))}
+    </div>`;
+  }
+
+  async function desenharMarcas() {
     const sec = $("#aba-marcas");
-    if (!$("#marcas-ferramentas")) {
-      sec.innerHTML = `
-        <div class="ferramentas" id="marcas-ferramentas">
-          <input class="entrada" type="search" id="marcas-busca" placeholder="Buscar por nome, @ ou e-mail" aria-label="Buscar marcas">
-          <select class="entrada" id="marcas-situacao" aria-label="Filtrar por situação"><option value="">Todas as situações</option>${SITUACOES.map((s) => `<option value="${s.v}">${s.t}</option>`).join("")}</select>
-          <div class="direita">
-            <button class="btn" type="button" id="marcas-csv">${ICONE.baixar}Baixar CSV</button>
-            <button class="btn btn-principal" type="button" id="marcas-nova">${ICONE.mais}Adicionar marca</button>
-          </div>
-        </div>
-        <div id="marcas-lista"></div>`;
+    await carregarCfgContatos();
+    if (!$("#ct-raiz")) {
+      sec.innerHTML = `<div id="ct-raiz" class="ct">
+        <div class="ct-topo"><h2>Contatos <span id="ct-total"></span></h2><div class="ct-topo-acoes"><button class="btn" type="button" id="ct-perso">Personalizar</button><button class="btn" type="button" id="marcas-csv">${ICONE.baixar}Baixar CSV</button><button class="btn btn-principal" type="button" id="marcas-nova">${ICONE.mais}Adicionar contato</button></div></div>
+        <div id="ct-kpis"></div>
+        <nav class="ct-abas" id="ct-abas" role="tablist"></nav>
+        <div class="ct-barra"><input class="entrada ct-busca" type="search" id="marcas-busca" placeholder="Buscar por nome, marca, @, e-mail..." aria-label="Buscar contatos">
+          <select class="entrada ct-sel" id="ct-f-status" aria-label="Filtrar por status"></select><select class="entrada ct-sel" id="ct-f-origem" aria-label="Filtrar por origem"></select>
+          <select class="entrada ct-sel" id="ct-ordem" aria-label="Ordenar"><option value="recente">Mais recentes</option><option value="contato">Último contato</option><option value="az">Nome (A a Z)</option></select></div>
+        <div id="marcas-lista"></div><div id="ct-massa"></div><aside id="ct-perfil" class="ct-perfil" hidden></aside></div>`;
       $("#marcas-busca").addEventListener("input", (e) => { estadoMarcas.busca = e.target.value.trim(); desenharListaMarcas(); });
-      $("#marcas-situacao").addEventListener("change", (e) => { estadoMarcas.situacao = e.target.value; desenharListaMarcas(); });
+      $("#ct-f-status").addEventListener("change", (e) => { estadoMarcas.status = e.target.value; desenharListaMarcas(); });
+      $("#ct-f-origem").addEventListener("change", (e) => { estadoMarcas.origem = e.target.value; desenharListaMarcas(); });
+      $("#ct-ordem").addEventListener("change", (e) => { estadoMarcas.ordem = e.target.value; desenharListaMarcas(); });
       $("#marcas-nova").addEventListener("click", () => formMarca());
+      $("#ct-perso").addEventListener("click", personalizarContatos);
       $("#marcas-csv").addEventListener("click", () => {
         const lista = marcasFiltradas();
-        baixarCSV(`marcas-${hojeChave()}.csv`, ["Marca", "Instagram", "E-mail", "Telefone", "Situação", "Observação", "Último contato"],
-          lista.map((m) => [m.nome, m.instagram, m.email, m.telefone, nomeSituacao(m.situacao), m.obs, fmtData(m.ultimo_contato)]));
+        baixarCSV(`contatos-${hojeChave()}.csv`, [rotuloCol("contato"), rotuloCol("marca"), "Instagram", rotuloCol("email"), "Telefone", rotuloCol("status"), rotuloCol("responsavel"), rotuloCol("origem"), "Observação", rotuloCol("data")],
+          lista.map((m) => [m.contato, m.nome, m.instagram, m.email, m.telefone, nomeSituacao(m.situacao), m.responsavel, m.origem, m.obs, fmtData(m.ultimo_contato)]));
       });
+      document.addEventListener("click", (e) => { if (estadoMarcas.menu && !e.target.closest(".ct-menu, [data-ct-menu]")) { estadoMarcas.menu = null; $$(".ct-menu").forEach((x) => x.remove()); } });
     }
     desenharListaMarcas();
   }
 
   function desenharListaMarcas() {
-    const caixa = $("#marcas-lista");
+    const caixa = $("#marcas-lista"); if (!caixa) return;
+    $("#ct-total").textContent = dados.marcas.length;
+    $("#ct-kpis").innerHTML = indicadoresContatos();
+    $("#ct-abas").innerHTML = ABAS_CONTATOS.map(([k, t]) => `<button type="button" role="tab" data-ct-aba="${k}" class="${estadoMarcas.aba === k ? "on" : ""}">${k === "conversando" || k === "cliente" ? esc(nomeSituacao(k) || t) : t}<span>${dados.marcas.filter((m) => naAba(m, k)).length}</span></button>`).join("");
+    $$("[data-ct-aba]").forEach((b) => b.addEventListener("click", () => { estadoMarcas.aba = b.dataset.ctAba; desenharListaMarcas(); }));
+    $("#ct-f-status").innerHTML = `<option value="">Todos os status</option>${SITUACOES.map((s) => `<option value="${esc(s.v)}" ${estadoMarcas.status === s.v ? "selected" : ""}>${esc(s.t)}</option>`).join("")}`;
+    const origens = [...new Set([...ORIGENS_CT, ...dados.marcas.map((m) => m.origem).filter(Boolean)])];
+    $("#ct-f-origem").innerHTML = `<option value="">Todas as origens</option>${origens.map((o) => `<option ${estadoMarcas.origem === o ? "selected" : ""}>${esc(o)}</option>`).join("")}`;
     if (faltando.marcas) { caixa.innerHTML = `<p class="vazio">${esc(faltando.marcas)}</p>`; return; }
     const lista = marcasFiltradas();
-    if (!lista.length) { caixa.innerHTML = `<p class="vazio">${dados.marcas.length ? "Nenhuma marca encontrada com essa busca." : "Sua base ainda está vazia. Clique em \"Adicionar marca\" ou espere os contatos do formulário do site."}</p>`; return; }
-    caixa.innerHTML = `
-      <div class="tabela-caixa"><table class="tabela">
-        <thead><tr><th>Marca</th><th>Instagram</th><th>E-mail</th><th>Telefone</th><th>Situação</th><th>Observação</th><th>Último contato</th></tr></thead>
+    estadoMarcas.sel = new Set([...estadoMarcas.sel].filter((id) => dados.marcas.some((m) => String(m.id) === id)));
+    if (!lista.length) caixa.innerHTML = `<p class="vazio">${dados.marcas.length ? "Nenhum contato nessa busca ou aba." : "Sua base ainda está vazia. Clique em \"Adicionar contato\" ou espere os contatos do formulário do site."}</p>`;
+    else caixa.innerHTML = `<div class="tabela-caixa ct-tabela-caixa"><table class="tabela ct-tabela">
+        <thead><tr><th class="ct-chk"><input type="checkbox" id="ct-todos" aria-label="Selecionar todos" ${lista.every((m) => estadoMarcas.sel.has(String(m.id))) ? "checked" : ""}></th>${["contato", "marca", "email", "status", "responsavel", "origem", "data"].map((k) => `<th>${esc(rotuloCol(k))}</th>`).join("")}<th></th></tr></thead>
         <tbody>${lista.map((m) => {
-          const ig = arroba(m.instagram);
-          const wa = linkWhats(m.telefone);
-          return `<tr class="clicavel" data-id="${m.id}">
-            <td><b style="font-weight:500">${esc(m.nome)}</b>${exemploTag(m)}</td>
-            <td>${ig ? `<a class="link-mini" href="https://instagram.com/${encodeURIComponent(ig)}" target="_blank" rel="noopener">@${esc(ig)}</a>` : ""}</td>
+          const ig = arroba(m.instagram), id = String(m.id), sel = estadoMarcas.sel.has(id);
+          return `<tr class="clicavel${sel ? " sel" : ""}${String(estadoMarcas.aberto) === id ? " aberto" : ""}" data-id="${id}">
+            <td class="ct-chk"><input type="checkbox" data-ct-sel="${id}" ${sel ? "checked" : ""} aria-label="Selecionar"></td>
+            <td><div class="ct-pessoa"><span class="ct-av">${esc(iniciais(m.contato || m.nome))}</span><b>${esc(m.contato || m.nome)}</b>${m.favorito ? `<span class="ct-fav" title="Favorito">★</span>` : ""}${exemploTag(m)}</div></td>
+            <td>${esc(m.nome)}${ig ? `<small class="ct-ig">@${esc(ig)}</small>` : ""}</td>
             <td>${m.email ? `<a class="link-mini" href="mailto:${esc(m.email)}">${esc(m.email)}</a>` : ""}</td>
-            <td style="white-space:nowrap">${esc(m.telefone)}${wa ? `<a class="whats" href="${wa}" target="_blank" rel="noopener" title="Abrir no WhatsApp" aria-label="Abrir WhatsApp de ${esc(m.nome)}">${ICONE.whats}</a>` : ""}</td>
-            <td><span class="pilula p-${esc(m.situacao)}">${esc(nomeSituacao(m.situacao))}</span></td>
-            <td class="curto" title="${esc(m.obs)}">${esc(m.obs)}</td>
-            <td style="white-space:nowrap">${fmtData(m.ultimo_contato)}</td>
+            <td><select class="ct-status s-${esc(m.situacao)}" data-ct-status="${id}" aria-label="Status">${SITUACOES.map((s) => `<option value="${esc(s.v)}" ${s.v === m.situacao ? "selected" : ""}>${esc(s.t)}</option>`).join("")}</select></td>
+            <td><b class="ct-resp">${esc(m.responsavel || "")}</b></td>
+            <td>${esc(m.origem || "")}</td>
+            <td style="white-space:nowrap">${fmtData(m.ultimo_contato)}${atrasado(m) ? `<small class="ct-atraso">sem retorno</small>` : ""}</td>
+            <td class="ct-mais"><button type="button" class="icone-btn" data-ct-menu="${id}" aria-label="Mais opções">⋯</button></td>
           </tr>`;
-        }).join("")}</tbody>
-      </table></div>
-      <p style="font-size:11.5px;color:var(--suave);margin:8px 2px 0">${plural(lista.length, "marca", "marcas")}. Clique na linha para editar.</p>`;
-    $("tbody", caixa).addEventListener("click", (e) => {
-      if (e.target.closest("a")) return;
-      const tr = e.target.closest("tr");
-      const m = tr && dados.marcas.find((x) => String(x.id) === tr.dataset.id);
-      if (m) formMarca(m);
+        }).join("")}</tbody></table></div>
+      <p style="font-size:11.5px;color:var(--suave);margin:8px 2px 0">${plural(lista.length, "contato", "contatos")}. Toque na linha para abrir o perfil.</p>`;
+    const todos = $("#ct-todos", caixa);
+    if (todos) todos.addEventListener("change", () => { lista.forEach((m) => todos.checked ? estadoMarcas.sel.add(String(m.id)) : estadoMarcas.sel.delete(String(m.id))); desenharListaMarcas(); });
+    $$("[data-ct-sel]", caixa).forEach((c) => c.addEventListener("change", () => { c.checked ? estadoMarcas.sel.add(c.dataset.ctSel) : estadoMarcas.sel.delete(c.dataset.ctSel); desenharListaMarcas(); }));
+    $$("[data-ct-status]", caixa).forEach((s) => s.addEventListener("change", async () => { if (await gravar("marcas", { situacao: s.value }, s.dataset.ctStatus)) { avisar("Status mudado"); await recarregar("marcas"); } }));
+    $$("[data-ct-menu]", caixa).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); menuContato(b, dados.marcas.find((x) => String(x.id) === b.dataset.ctMenu)); }));
+    const tb = $("tbody", caixa);
+    if (tb) tb.addEventListener("click", (e) => {
+      if (e.target.closest("a, input, select, button")) return;
+      const tr = e.target.closest("tr"); if (tr) abrirPerfil(tr.dataset.id);
+    });
+    desenharMassa(); desenharPerfil();
+  }
+
+  function menuContato(bt, m) {
+    $$(".ct-menu").forEach((x) => x.remove()); if (!m) return;
+    const r = bt.getBoundingClientRect(), menu = document.createElement("div");
+    menu.className = "ct-menu"; estadoMarcas.menu = m.id;
+    menu.style.top = (r.bottom + window.scrollY + 4) + "px"; menu.style.left = Math.max(8, r.right + window.scrollX - 190) + "px";
+    menu.innerHTML = `<button type="button" data-a="perfil">Abrir perfil</button><button type="button" data-a="editar">Editar</button><button type="button" data-a="fav">${m.favorito ? "Tirar dos favoritos" : "Favoritar"}</button>${m.telefone ? `<button type="button" data-a="whats">Chamar no WhatsApp</button>` : ""}<button type="button" data-a="apagar" class="perigo">Excluir</button>`;
+    document.body.appendChild(menu);
+    menu.addEventListener("click", async (e) => {
+      const a = e.target.closest("[data-a]"); if (!a) return; menu.remove(); estadoMarcas.menu = null;
+      if (a.dataset.a === "perfil") abrirPerfil(String(m.id));
+      if (a.dataset.a === "editar") formMarca(m);
+      if (a.dataset.a === "fav" && await gravar("marcas", { favorito: !m.favorito }, m.id)) await recarregar("marcas");
+      if (a.dataset.a === "whats") window.open(linkWhats(m.telefone), "_blank", "noopener");
+      if (a.dataset.a === "apagar" && await confirmar(`Excluir "${m.contato || m.nome}" da sua base?`) && await apagar("marcas", m.id)) { avisar("Contato excluído"); if (String(estadoMarcas.aberto) === String(m.id)) estadoMarcas.aberto = null; await recarregar("marcas"); }
+    });
+  }
+
+  // barra de ações em massa (aparece quando ela marca contatos)
+  function desenharMassa() {
+    const box = $("#ct-massa"); if (!box) return;
+    const n = estadoMarcas.sel.size;
+    box.innerHTML = n ? `<div class="ct-massa"><span>Selecionados: ${n}</span>
+      <label>Status <select class="entrada" id="ct-m-status"><option value="">mudar…</option>${SITUACOES.map((s) => `<option value="${esc(s.v)}">${esc(s.t)}</option>`).join("")}</select></label>
+      <button type="button" class="btn" id="ct-m-resp">${ICONE.editar}Responsável</button><button type="button" class="btn" id="ct-m-fav">${ICONE.estrela}Favoritar</button>
+      <button type="button" class="btn" id="ct-m-apagar">${ICONE.apagar}Excluir</button><button type="button" class="btn ct-m-sair" id="ct-m-sair">Descartar</button></div>` : "";
+    if (!n) return;
+    const ids = [...estadoMarcas.sel];
+    const emTodos = async (linha, msg) => { const r = await Promise.all(ids.map((id) => gravar("marcas", linha, id))); if (r.every(Boolean)) avisar(msg); await recarregar("marcas"); };
+    $("#ct-m-status").addEventListener("change", (e) => { if (e.target.value) emTodos({ situacao: e.target.value }, "Status mudado"); });
+    $("#ct-m-resp").addEventListener("click", async () => { const v = await painelDialogo.texto(`Responsável pelos ${n} contatos (ex.: Eu, Assessoria, Agência). Deixe vazio para tirar.`, ""); if (v !== null) emTodos({ responsavel: v.trim() || null }, "Responsável salvo"); });
+    $("#ct-m-fav").addEventListener("click", () => emTodos({ favorito: true }, "Favoritados"));
+    $("#ct-m-apagar").addEventListener("click", async () => {
+      if (!(await confirmar(`Excluir ${plural(n, "contato", "contatos")} da sua base?`))) return;
+      for (const id of ids) await apagar("marcas", id);
+      estadoMarcas.sel.clear(); avisar("Contatos excluídos"); await recarregar("marcas");
+    });
+    $("#ct-m-sair").addEventListener("click", () => { estadoMarcas.sel.clear(); desenharListaMarcas(); });
+  }
+
+  // perfil do contato ao lado (no celular abre por cima)
+  function abrirPerfil(id) { estadoMarcas.aberto = id; desenharListaMarcas(); }
+  function desenharPerfil() {
+    const box = $("#ct-perfil"); if (!box) return;
+    const m = dados.marcas.find((x) => String(x.id) === String(estadoMarcas.aberto));
+    const raiz = $("#ct-raiz"); if (raiz) raiz.classList.toggle("com-perfil", Boolean(m));
+    if (!m) { box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    const ig = arroba(m.instagram), notas = Array.isArray(m.notas) ? m.notas : [], ab = estadoMarcas.abaPerfil;
+    const jobs = (dados.campanhas || []).filter((c) => String(c.cliente || c.marca || "").trim().toLowerCase() === String(m.nome || "").trim().toLowerCase());
+    const atividade = [
+      m.criado_em && { t: m.criado_em, x: `Entrou na base${m.origem ? " pelo " + m.origem : ""}` },
+      m.ultimo_contato && { t: m.ultimo_contato, x: "Último contato" },
+      ...notas.map((n) => ({ t: n.em, x: "Nota: " + String(n.texto || "").slice(0, 60) })),
+    ].filter(Boolean).sort((a, b) => String(b.t).localeCompare(String(a.t)));
+    box.innerHTML = `<div class="ct-p-cab"><span>Perfil do contato</span><button type="button" class="icone-btn" id="ct-p-fechar" aria-label="Fechar">✕</button></div>
+      <div class="ct-p-id"><span class="ct-av grande">${esc(iniciais(m.contato || m.nome))}</span><div><b>${esc(m.contato || m.nome)}</b>
+        <small>${esc(m.nome)}${ig ? ` · <a class="link-mini" href="https://instagram.com/${encodeURIComponent(ig)}" target="_blank" rel="noopener">@${esc(ig)}</a>` : ""}</small>
+        ${m.email ? `<small><a class="link-mini" href="mailto:${esc(m.email)}">${esc(m.email)}</a></small>` : ""}${m.telefone ? `<small>${esc(m.telefone)}</small>` : ""}</div></div>
+      <div class="ct-p-acoes">${m.telefone ? `<a class="btn btn-principal" href="${linkWhats(m.telefone)}" target="_blank" rel="noopener">${ICONE.whats}Chamar no WhatsApp</a>` : m.email ? `<a class="btn btn-principal" href="mailto:${esc(m.email)}">Enviar e-mail</a>` : ""}<button type="button" class="btn" id="ct-p-editar">${ICONE.editar}Editar perfil</button></div>
+      <nav class="ct-p-abas">${[["atividade", "Atividade"], ["notas", "Notas"], ["jobs", "Jobs"]].map(([k, t]) => `<button type="button" data-ct-p="${k}" class="${ab === k ? "on" : ""}">${t}${k === "notas" && notas.length ? ` (${notas.length})` : ""}</button>`).join("")}</nav>
+      <div class="ct-p-corpo">${ab === "notas" ? `${notas.length ? notas.slice().reverse().map((n) => `<div class="ct-nota"><span class="ct-av mini">${esc(iniciais("Você"))}</span><div><b>Você</b> <small>${esc(tempoAtras(n.em))}</small><p>${esc(n.texto)}</p></div><button type="button" class="icone-btn" data-ct-nota-x="${esc(n.id)}" aria-label="Apagar nota">${ICONE.apagar}</button></div>`).join("") : `<p class="vazio">Nenhuma nota ainda.${m.obs ? "" : ""}</p>`}${m.obs ? `<div class="ct-nota obs"><div><b>Observação</b><p>${esc(m.obs)}</p></div></div>` : ""}
+          <form class="ct-p-nova" id="ct-p-nova"><textarea class="entrada" id="ct-p-texto" rows="2" placeholder="Escreva uma nota sobre esse contato…"></textarea><button class="btn btn-principal" type="submit">Salvar</button></form>`
+        : ab === "jobs" ? (jobs.length ? jobs.map((c) => `<div class="ct-nota"><div><b>${esc(c.titulo || c.nome || "Campanha")}</b><small>${esc([c.status, c.prazo && fmtData(c.prazo)].filter(Boolean).join(" · "))}</small></div></div>`).join("") : `<p class="vazio">Nenhum job com "${esc(m.nome)}" em UGC's & Publis ainda.</p>`)
+        : (atividade.length ? atividade.map((a) => `<div class="ct-ativ"><i></i><div><b>${esc(a.x)}</b><small>${esc(fmtData(a.t))}</small></div></div>`).join("") : `<p class="vazio">Sem atividade registrada.</p>`)}</div>`;
+    $("#ct-p-fechar", box).addEventListener("click", () => { estadoMarcas.aberto = null; desenharListaMarcas(); });
+    $("#ct-p-editar", box).addEventListener("click", () => formMarca(m));
+    $$("[data-ct-p]", box).forEach((b) => b.addEventListener("click", () => { estadoMarcas.abaPerfil = b.dataset.ctP; desenharPerfil(); }));
+    const f = $("#ct-p-nova", box);
+    if (f) f.addEventListener("submit", async (e) => {
+      e.preventDefault(); const t = $("#ct-p-texto", box).value.trim(); if (!t) return;
+      const novas = [...notas, { id: Math.random().toString(36).slice(2, 10), texto: t, em: new Date().toISOString() }];
+      if (await gravar("marcas", { notas: novas, ultimo_contato: hojeChave() }, m.id)) { avisar("Nota salva"); await recarregar("marcas"); }
+    });
+    $$("[data-ct-nota-x]", box).forEach((b) => b.addEventListener("click", async () => {
+      if (!(await confirmar("Apagar esta nota?"))) return;
+      if (await gravar("marcas", { notas: notas.filter((n) => n.id !== b.dataset.ctNotaX) }, m.id)) await recarregar("marcas");
+    }));
+  }
+
+  // renomear colunas e status, criar status novo e apagar status sem uso
+  function personalizarContatos() {
+    const usados = (v) => dados.marcas.filter((m) => m.situacao === v).length;
+    abrirJanela({
+      titulo: "Personalizar contatos",
+      corpo: `<p class="dica-campo" style="margin-top:0">Mude o nome das colunas e dos status do jeito que fizer sentido para você.</p>
+        <h4 style="margin:10px 0 6px">Colunas</h4><div class="linha-campos">${Object.keys(COLUNAS_PADRAO).map((k) => campo({ nome: "col_" + k, rotulo: COLUNAS_PADRAO[k], valor: rotuloCol(k) })).join("")}</div>
+        <h4 style="margin:14px 0 6px">Status</h4><div class="linha-campos">${SITUACOES.map((s, i) => campo({ nome: "st_" + i, rotulo: `Status ${i + 1}${usados(s.v) ? ` (${usados(s.v)} contato${usados(s.v) === 1 ? "" : "s"})` : " (sem uso: deixe vazio para apagar)"}`, valor: s.t })).join("")}
+          ${campo({ nome: "st_novo", rotulo: "Criar status novo", valor: "", dica: "Ex.: Proposta enviada" })}</div>`,
+      botoes: [{ texto: "Voltar ao padrão", acao: async () => { SITUACOES = SITUACOES_PADRAO.concat(SITUACOES.filter((s) => !SITUACOES_PADRAO.some((p) => p.v === s.v) && usados(s.v))); cfgContatos.colunas = {}; await salvarCfgContatos(); desenharListaMarcas(); avisar("Nomes padrão de volta"); } },
+        { texto: "Cancelar" },
+        { texto: "Salvar", classe: "btn-principal", acao: async () => {
+          const f = lerFormulario();
+          cfgContatos.colunas = {}; Object.keys(COLUNAS_PADRAO).forEach((k) => { const v = String(f["col_" + k] || "").trim(); if (v && v !== COLUNAS_PADRAO[k]) cfgContatos.colunas[k] = v; });
+          const nova = [];
+          SITUACOES.forEach((s, i) => { const t = String(f["st_" + i] || "").trim(); if (t) nova.push({ v: s.v, t }); else if (usados(s.v)) nova.push(s); });
+          const tn = String(f.st_novo || "").trim();
+          if (tn) { const v = tn.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "status_" + Date.now(); if (!nova.some((s) => s.v === v)) nova.push({ v, t: tn }); }
+          if (!nova.length) { avisar("Deixe pelo menos um status.", true); return false; }
+          SITUACOES = nova; await salvarCfgContatos(); desenharListaMarcas(); avisar("Personalização salva");
+        } }]
     });
   }
 
   function formMarca(m) {
     const novo = !m;
-    m = m || { situacao: "lead", ultimo_contato: hojeChave() };
+    m = m || { situacao: SITUACOES[0] ? SITUACOES[0].v : "lead", ultimo_contato: hojeChave() };
+    const origens = [...new Set([...ORIGENS_CT, ...dados.marcas.map((x) => x.origem).filter(Boolean)])];
     abrirJanela({
-      titulo: novo ? "Adicionar marca" : "Editar marca",
+      titulo: novo ? "Adicionar contato" : "Editar contato",
       corpo:
-        campo({ nome: "nome", rotulo: "Marca", valor: m.nome, obrigatorio: true }) +
         `<div class="linha-campos">` +
+        campo({ nome: "contato", rotulo: rotuloCol("contato") + " (pessoa)", valor: m.contato, dica: "Quem fala com você na marca" }) +
+        campo({ nome: "nome", rotulo: rotuloCol("marca"), valor: m.nome, obrigatorio: true }) +
         campo({ nome: "instagram", rotulo: "Instagram", valor: m.instagram, dica: "Ex.: @marca" }) +
-        campo({ nome: "email", rotulo: "E-mail", valor: m.email, tipo: "email" }) +
+        campo({ nome: "email", rotulo: rotuloCol("email"), valor: m.email, tipo: "email" }) +
         campo({ nome: "telefone", rotulo: "Telefone / WhatsApp", valor: m.telefone, dica: "Com DDD. Ex.: 11999999999" }) +
-        campo({ nome: "situacao", rotulo: "Situação", tipo: "select", valor: m.situacao, opcoes: SITUACOES }) +
-        campo({ nome: "ultimo_contato", rotulo: "Último contato", tipo: "date", valor: m.ultimo_contato || "" }) +
+        campo({ nome: "situacao", rotulo: rotuloCol("status"), tipo: "select", valor: m.situacao, opcoes: SITUACOES }) +
+        campo({ nome: "responsavel", rotulo: rotuloCol("responsavel"), valor: m.responsavel, dica: "Ex.: Eu, Assessoria, Agência" }) +
+        campo({ nome: "origem", rotulo: rotuloCol("origem"), valor: m.origem, lista: origens }) +
+        campo({ nome: "ultimo_contato", rotulo: rotuloCol("data"), tipo: "date", valor: m.ultimo_contato || "" }) +
         `</div>` +
         campo({ nome: "obs", rotulo: "Observação", tipo: "textarea", valor: m.obs }) +
+        marcaCheck("favorito", "Favorito", Boolean(m.favorito)) +
         (m.exemplo ? marcaCheck("exemplo", "É linha de exemplo", true) : ""),
       botoes: [
-        ...(novo ? [] : [{ texto: ICONE.apagar + "Apagar", classe: "btn-perigo", acao: async () => {
-          if (await confirmar(`Apagar a marca "${m.nome}" da sua base?`) && await apagar("marcas", m.id)) { avisar("Marca apagada"); await recarregar("marcas"); }
+        ...(novo ? [] : [{ texto: ICONE.apagar + "Excluir", classe: "btn-perigo", acao: async () => {
+          if (await confirmar(`Excluir "${m.contato || m.nome}" da sua base?`) && await apagar("marcas", m.id)) { avisar("Contato excluído"); if (String(estadoMarcas.aberto) === String(m.id)) estadoMarcas.aberto = null; await recarregar("marcas"); }
         } }]),
         { texto: "Cancelar" },
         { texto: "Salvar", classe: "btn-principal", acao: async () => {
           const f = lerFormulario();
           if (!f.nome) { avisar("Preencha o nome da marca.", true); return false; }
-          const linha = { nome: f.nome, instagram: nulo(f.instagram), email: nulo(f.email), telefone: nulo(f.telefone), situacao: f.situacao, ultimo_contato: nulo(f.ultimo_contato), obs: nulo(f.obs) };
+          const linha = { nome: f.nome, contato: nulo(f.contato), instagram: nulo(f.instagram), email: nulo(f.email), telefone: nulo(f.telefone), situacao: f.situacao, responsavel: nulo(f.responsavel), origem: nulo(f.origem), ultimo_contato: nulo(f.ultimo_contato), obs: nulo(f.obs), favorito: Boolean(f.favorito) };
           if ("exemplo" in f) linha.exemplo = f.exemplo;
           if (!(await gravar("marcas", linha, novo ? null : m.id))) return false;
-          avisar(novo ? "Marca adicionada" : "Marca salva");
+          avisar(novo ? "Contato adicionado" : "Contato salvo");
           await recarregar("marcas");
         } }
       ]

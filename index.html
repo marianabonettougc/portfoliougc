@@ -2073,6 +2073,8 @@ async function salvarLead(d) {
   try {
     const { error } = await banco.from("marcas").insert({
       nome: d.marca || d.nome,
+      contato: d.marca ? d.nome : null,
+      origem: "Site",
       email: d.email,
       situacao: "lead",
       obs: partes.join(" | "),
