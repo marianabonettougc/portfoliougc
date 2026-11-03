@@ -2357,3 +2357,14 @@ a.pc2-tag:hover{color:var(--texto)}
 @media(max-width:560px){.ct-spark{width:60px}.ct-kpi b{font-size:22px}.ct-perfil{top:auto;left:8px;right:8px;width:auto;max-height:82vh}}
 @media(min-width:901px){.ct.com-perfil{padding-right:396px}.ct-perfil{top:96px}}
 .ct-kpi span{display:block;margin-top:2px}.ct-kpi > div{min-width:0}
+
+/* Perfil do contato: só aparece ao clicar no contato + visual da referência (nov/2026) */
+.ct-perfil[hidden]{display:none!important}
+.ct-p-cab span{display:flex;align-items:center;gap:6px}.ct-p-cab svg{width:14px;height:14px}
+.ct-p-id{align-items:flex-start}
+.ct-p-dados{min-width:0}.ct-p-dados b{margin-bottom:4px}
+.ct-p-dados small{display:flex!important;align-items:center;gap:7px;margin-top:4px!important;color:var(--texto)!important;font-size:12.5px!important;overflow-wrap:anywhere}
+.ct-p-dados small svg{width:14px;height:14px;flex-shrink:0;stroke:var(--suave)}
+.ct-p-acoes{flex-wrap:nowrap}.ct-p-acoes .btn{flex:1;justify-content:center}
+.ct-p-corpo{flex:1}
+.ct-p-nova{margin-top:auto;border-top:1px solid var(--linha);padding-top:10px}
