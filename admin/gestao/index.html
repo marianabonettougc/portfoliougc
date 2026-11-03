@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611031726"></script>
-<script src="../../js/dialogos.js?v=202611031726"></script>
-<script src="../../js/corretor.js?v=202611031726"></script>
+<script src="../../js/banco.js?v=202611031727"></script>
+<script src="../../js/dialogos.js?v=202611031727"></script>
+<script src="../../js/corretor.js?v=202611031727"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -142,56 +142,57 @@
   .dn-card{ display:flex; align-items:center; gap:14px; text-align:left; background:var(--db-papel); border:1px solid var(--db-linha); border-radius:16px; padding:16px 18px; font:inherit; color:var(--db-texto); cursor:pointer; min-width:0; }
   .dn-card:hover{ border-color:var(--db-linha2); }
   .dn-clica{ cursor:pointer; }
-  /* Dashboard na pegada da referência Zenova (nov/2026): degradê suave e cartões de vidro, na paleta da Mari */
-  .dz{position:relative;isolation:isolate;padding:4px 2px 24px}
-  .dz::before{content:"";position:absolute;inset:-24px -28px -56px;z-index:-1;border-radius:0 0 28px 28px;background:
-    radial-gradient(60% 50% at 0% 0%, rgba(246,215,195,.85), transparent 70%),
-    radial-gradient(45% 45% at 100% 8%, rgba(244,227,173,.75), transparent 72%),
-    radial-gradient(55% 55% at 85% 70%, rgba(239,195,168,.55), transparent 75%),
-    radial-gradient(50% 50% at 10% 85%, rgba(242,227,179,.55), transparent 75%), #f8f1e7}
-  .dz .db-bloco,.dz .dn-card{background:rgba(255,252,247,.64);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.75);border-radius:22px;box-shadow:0 10px 30px rgba(107,74,53,.08)}
-  .dz-grade{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:18px;align-items:start}
-  .dz-esq,.dz-dir{display:flex;flex-direction:column;gap:16px;min-width:0}
-  .dz .dn-ola{flex-direction:column;align-items:flex-start;gap:6px;margin:6px 4px 2px}
-  .dz .dn-ola h1{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:38px;line-height:1.05;letter-spacing:-.01em}
-  .dz .dn-ola p{font-size:13.5px}
-  .dz .dn-data{order:-1;font-size:12.5px;color:var(--db-suave)}
-  .dz-sub{display:block;font-size:12px;color:var(--db-suave);margin-top:2px}
-  .dz-prog{position:relative;height:6px;border-radius:999px;background:rgba(107,74,53,.12);margin:32px 2px 14px}
-  .dz-prog i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:linear-gradient(90deg,#c98f5e,#6b4a35)}
-  .dz-prog b{position:absolute;top:-24px;font-size:10.5px;font-weight:600;background:#3d2b20;color:#fff;border-radius:6px;padding:2px 6px}
-  .dz-tabs{display:flex;gap:4px;background:rgba(255,255,255,.6);border-radius:12px;padding:4px;margin-bottom:8px}
-  .dz-tabs button{flex:1;border:0;background:transparent;border-radius:9px;padding:6px 4px;font:500 12px Poppins,sans-serif;color:var(--db-suave);cursor:pointer}
-  .dz-tabs button span{margin-left:5px;font-size:10.5px;opacity:.75}
-  .dz-tabs button.on{background:#fff;color:var(--db-texto);box-shadow:0 2px 6px rgba(107,74,53,.1)}
-  .dz-lista{list-style:none;margin:0;padding:0;background:rgba(255,255,255,.55);border-radius:14px}
-  .dz-lista li{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid rgba(107,74,53,.08);font-size:12.5px;cursor:pointer}
+  /* Dashboard na pegada da referência Zenova (nov/2026), compacto e na paleta do painel (creme, branco quente, bege, café, terracota) */
+  .dz{padding:0}
+  .dz .db-bloco{padding:14px 16px;border-radius:16px}
+  .dz .dn-bt{margin-bottom:8px}
+  .dz .dn-bt h2{font-size:17px}
+  .dz-grade{display:grid;grid-template-columns:minmax(250px,300px) minmax(0,1fr);gap:12px;align-items:start}
+  .dz-esq,.dz-dir{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .dz .dn-ola{flex-direction:column;align-items:flex-start;gap:2px;margin:0 2px}
+  .dz .dn-ola h1{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:26px;line-height:1.1}
+  .dz .dn-ola p{font-size:12.5px;margin:2px 0 0}
+  .dz .dn-data{order:-1;font-size:11.5px;color:var(--db-suave)}
+  .dz-sub{display:block;font-size:11.5px;color:var(--db-suave);margin-top:1px}
+  .dz-prog{position:relative;height:5px;border-radius:999px;background:var(--db-bege);margin:24px 2px 10px}
+  .dz-prog i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--db-cafe)}
+  .dz-prog b{position:absolute;top:-20px;font-size:10px;font-weight:600;background:var(--db-cafe);color:#fff;border-radius:6px;padding:1px 5px}
+  .dz-tabs{display:flex;gap:2px;background:var(--db-bege2);border-radius:10px;padding:3px;margin-bottom:6px}
+  .dz-tabs button{flex:1;border:0;background:transparent;border-radius:8px;padding:5px 4px;font:500 11.5px Poppins,sans-serif;color:var(--db-suave);cursor:pointer}
+  .dz-tabs button span{margin-left:4px;font-size:10px;opacity:.75}
+  .dz-tabs button.on{background:var(--db-papel);color:var(--db-texto);box-shadow:0 1px 3px rgba(107,74,53,.12)}
+  .dz-lista{list-style:none;margin:0;padding:0}
+  .dz-lista li{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 2px;border-top:1px solid var(--db-linha);font-size:12px;cursor:pointer}
   .dz-lista li:first-child{border-top:0}
   .dz-lista li b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dz-lista li small{font-size:10.5px;color:var(--db-suave);white-space:nowrap}
   .dz-lista li.ok b{text-decoration:line-through;color:var(--db-suave)}
-  .dz-circ{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(107,74,53,.35);display:grid;place-items:center;font-size:10px;color:#fff}
+  .dz-circ{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--db-linha2);display:grid;place-items:center;font-size:9px;color:#fff}
   .dz-lista li.ok .dz-circ{background:var(--db-verde);border-color:var(--db-verde)}
   .dz-lista .dz-vazio{display:block;color:var(--db-suave);cursor:default}
-  .dz-seg{display:inline-flex;background:rgba(255,255,255,.65);border-radius:999px;padding:3px;gap:2px}
-  .dz-seg button{border:0;background:transparent;border-radius:999px;padding:5px 12px;font:500 12px Poppins,sans-serif;color:var(--db-suave);cursor:pointer}
-  .dz-seg button.on{background:#fff;color:var(--db-texto);box-shadow:0 2px 6px rgba(107,74,53,.1)}
-  .dz-cal-corpo{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(250px,1fr);gap:18px;align-items:start}
+  .dz-seg{display:inline-flex;background:var(--db-bege2);border-radius:999px;padding:3px;gap:2px}
+  .dz-seg button{border:0;background:transparent;border-radius:999px;padding:4px 11px;font:500 11.5px Poppins,sans-serif;color:var(--db-suave);cursor:pointer}
+  .dz-seg button.on{background:var(--db-papel);color:var(--db-texto);box-shadow:0 1px 3px rgba(107,74,53,.12)}
+  .dz-cal-corpo{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(220px,260px);gap:14px;align-items:start}
   .dz-cal-corpo.v-dia,.dz-cal-corpo.v-semana{grid-template-columns:minmax(0,1fr)}
-  .dz-rotina,.dz-semana{background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
-  .dz-rotina > .dn-bt h2{font-size:15px}
-  .dz-mes{background:rgba(255,255,255,.5);border-radius:18px;padding:12px}
-  .dz-mes-cab{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-  .dz-mes-cab b{font-size:14px;font-weight:600}
-  .dz-mes-grade{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
-  .dz-mes-grade small{font-size:10px;color:var(--db-suave);padding:2px 0}
-  .dz-mes-grade button{position:relative;border:0;background:transparent;border-radius:50%;aspect-ratio:1;font:500 12.5px Poppins,sans-serif;color:var(--db-texto);cursor:pointer}
-  .dz-mes-grade button:hover{background:rgba(255,255,255,.8)}
-  .dz-mes-grade button i{position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--db-cafe,#6b4a35)}
-  .dz-mes-grade button.hoje{box-shadow:inset 0 0 0 1.5px #c98f5e}
-  .dz-mes-grade button.sel{background:#3d2b20;color:#fff}.dz-mes-grade button.sel i{background:#fff}
-  .dz-duo{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
-  .dz .dz-dir .dn-cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .dz-rotina,.dz-semana{background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 !important}
+  .dz-rotina > .dn-bt h2{font-size:14px}
+  .dz-mes{background:var(--db-bege2);border-radius:14px;padding:8px 10px}
+  .dz-mes-cab{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .dz-mes-cab b{font-size:13px;font-weight:600}
+  .dz-mes-grade{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+  .dz-mes-grade small{font-size:9.5px;color:var(--db-suave);padding:2px 0}
+  .dz-mes-grade button{position:relative;border:0;background:transparent;border-radius:8px;height:28px;font:500 11.5px Poppins,sans-serif;color:var(--db-texto);cursor:pointer}
+  .dz-mes-grade button:hover{background:var(--db-papel)}
+  .dz-mes-grade button i{position:absolute;left:50%;bottom:2px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--db-cafe)}
+  .dz-mes-grade button.hoje{box-shadow:inset 0 0 0 1.5px #a87058}
+  .dz-mes-grade button.sel{background:var(--db-cafe);color:#fff}.dz-mes-grade button.sel i{background:#fff}
+  .dz-duo{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px;align-items:start}
+  .dz .dz-dir .dn-cards{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .dz .dn-card{padding:10px 12px;gap:10px;border-radius:14px}
+  .dz .dn-card .dn-ico{width:34px;height:34px}
+  .dz .dn-card-txt small{font-size:11px}.dz .dn-card-txt b{font-size:17px}.dz .dn-card-txt em{font-size:10.5px}
+  .dz .dn-seta{display:none}
   @media (max-width:1300px){ .dz .dz-dir .dn-cards{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-duo{grid-template-columns:minmax(0,1fr)} }
   @media (max-width:1000px){ .dz-grade{grid-template-columns:minmax(0,1fr)} .dz-cal-corpo{grid-template-columns:minmax(0,1fr)} }
 
