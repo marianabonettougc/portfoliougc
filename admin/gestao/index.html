@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611031727"></script>
-<script src="../../js/dialogos.js?v=202611031727"></script>
-<script src="../../js/corretor.js?v=202611031727"></script>
+<script src="../../js/banco.js?v=202611031728"></script>
+<script src="../../js/dialogos.js?v=202611031728"></script>
+<script src="../../js/corretor.js?v=202611031728"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -143,7 +143,8 @@
   .dn-card:hover{ border-color:var(--db-linha2); }
   .dn-clica{ cursor:pointer; }
   /* Dashboard na pegada da referência Zenova (nov/2026), compacto e na paleta do painel (creme, branco quente, bege, café, terracota) */
-  .dz{padding:0}
+  .dz{position:relative;isolation:isolate;padding:2px 0 16px}
+  .dz::before{content:"";position:absolute;inset:-24px -28px -40px;z-index:-1;border-radius:0 0 28px 28px;background:radial-gradient(900px 420px at 8% 0%,rgba(239,229,216,.95),transparent 60%),radial-gradient(700px 380px at 92% 6%,rgba(242,226,180,.55),transparent 62%),radial-gradient(800px 500px at 60% 85%,rgba(214,170,140,.28),transparent 65%),var(--db-creme)}
   .dz .db-bloco{padding:14px 16px;border-radius:16px}
   .dz .dn-bt{margin-bottom:8px}
   .dz .dn-bt h2{font-size:17px}
@@ -190,11 +191,12 @@
   .dz-duo{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px;align-items:start}
   .dz .dz-dir .dn-cards{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
   .dz .dn-card{padding:10px 12px;gap:10px;border-radius:14px}
-  .dz .dn-card .dn-ico{width:34px;height:34px}
+  .dz .dn-card .dn-ico{width:30px;height:30px;flex:none}
+  .dz .dn-card-txt{min-width:0}.dz .dn-card-txt small,.dz .dn-card-txt em{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dz .dn-card-txt small{font-size:11px}.dz .dn-card-txt b{font-size:17px}.dz .dn-card-txt em{font-size:10.5px}
   .dz .dn-seta{display:none}
-  @media (max-width:1300px){ .dz .dz-dir .dn-cards{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-duo{grid-template-columns:minmax(0,1fr)} }
-  @media (max-width:1000px){ .dz-grade{grid-template-columns:minmax(0,1fr)} .dz-cal-corpo{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:1300px){ .dz-duo{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:1000px){ .dz .dz-dir .dn-cards{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-grade{grid-template-columns:minmax(0,1fr)} .dz-cal-corpo{grid-template-columns:minmax(0,1fr)} }
 
   .dn-min{ display:inline-grid; place-items:center; width:30px; height:30px; border:1px solid var(--db-linha); border-radius:999px; background:var(--db-papel); color:var(--db-texto); cursor:pointer; padding:0; flex-shrink:0; }
   .db-bloco.fechado > *:not(.dn-bt):not(.db-bloco-topo){ display:none !important; }
