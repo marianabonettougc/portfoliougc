@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611031406"></script>
-<script src="../../js/dialogos.js?v=202611031406"></script>
-<script src="../../js/corretor.js?v=202611031406"></script>
+<script src="../../js/banco.js?v=202611031726"></script>
+<script src="../../js/dialogos.js?v=202611031726"></script>
+<script src="../../js/corretor.js?v=202611031726"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -142,6 +142,59 @@
   .dn-card{ display:flex; align-items:center; gap:14px; text-align:left; background:var(--db-papel); border:1px solid var(--db-linha); border-radius:16px; padding:16px 18px; font:inherit; color:var(--db-texto); cursor:pointer; min-width:0; }
   .dn-card:hover{ border-color:var(--db-linha2); }
   .dn-clica{ cursor:pointer; }
+  /* Dashboard na pegada da referência Zenova (nov/2026): degradê suave e cartões de vidro, na paleta da Mari */
+  .dz{position:relative;isolation:isolate;padding:4px 2px 24px}
+  .dz::before{content:"";position:absolute;inset:-24px -28px -56px;z-index:-1;border-radius:0 0 28px 28px;background:
+    radial-gradient(60% 50% at 0% 0%, rgba(246,215,195,.85), transparent 70%),
+    radial-gradient(45% 45% at 100% 8%, rgba(244,227,173,.75), transparent 72%),
+    radial-gradient(55% 55% at 85% 70%, rgba(239,195,168,.55), transparent 75%),
+    radial-gradient(50% 50% at 10% 85%, rgba(242,227,179,.55), transparent 75%), #f8f1e7}
+  .dz .db-bloco,.dz .dn-card{background:rgba(255,252,247,.64);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.75);border-radius:22px;box-shadow:0 10px 30px rgba(107,74,53,.08)}
+  .dz-grade{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:18px;align-items:start}
+  .dz-esq,.dz-dir{display:flex;flex-direction:column;gap:16px;min-width:0}
+  .dz .dn-ola{flex-direction:column;align-items:flex-start;gap:6px;margin:6px 4px 2px}
+  .dz .dn-ola h1{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:38px;line-height:1.05;letter-spacing:-.01em}
+  .dz .dn-ola p{font-size:13.5px}
+  .dz .dn-data{order:-1;font-size:12.5px;color:var(--db-suave)}
+  .dz-sub{display:block;font-size:12px;color:var(--db-suave);margin-top:2px}
+  .dz-prog{position:relative;height:6px;border-radius:999px;background:rgba(107,74,53,.12);margin:32px 2px 14px}
+  .dz-prog i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:linear-gradient(90deg,#c98f5e,#6b4a35)}
+  .dz-prog b{position:absolute;top:-24px;font-size:10.5px;font-weight:600;background:#3d2b20;color:#fff;border-radius:6px;padding:2px 6px}
+  .dz-tabs{display:flex;gap:4px;background:rgba(255,255,255,.6);border-radius:12px;padding:4px;margin-bottom:8px}
+  .dz-tabs button{flex:1;border:0;background:transparent;border-radius:9px;padding:6px 4px;font:500 12px Poppins,sans-serif;color:var(--db-suave);cursor:pointer}
+  .dz-tabs button span{margin-left:5px;font-size:10.5px;opacity:.75}
+  .dz-tabs button.on{background:#fff;color:var(--db-texto);box-shadow:0 2px 6px rgba(107,74,53,.1)}
+  .dz-lista{list-style:none;margin:0;padding:0;background:rgba(255,255,255,.55);border-radius:14px}
+  .dz-lista li{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid rgba(107,74,53,.08);font-size:12.5px;cursor:pointer}
+  .dz-lista li:first-child{border-top:0}
+  .dz-lista li b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dz-lista li small{font-size:10.5px;color:var(--db-suave);white-space:nowrap}
+  .dz-lista li.ok b{text-decoration:line-through;color:var(--db-suave)}
+  .dz-circ{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(107,74,53,.35);display:grid;place-items:center;font-size:10px;color:#fff}
+  .dz-lista li.ok .dz-circ{background:var(--db-verde);border-color:var(--db-verde)}
+  .dz-lista .dz-vazio{display:block;color:var(--db-suave);cursor:default}
+  .dz-seg{display:inline-flex;background:rgba(255,255,255,.65);border-radius:999px;padding:3px;gap:2px}
+  .dz-seg button{border:0;background:transparent;border-radius:999px;padding:5px 12px;font:500 12px Poppins,sans-serif;color:var(--db-suave);cursor:pointer}
+  .dz-seg button.on{background:#fff;color:var(--db-texto);box-shadow:0 2px 6px rgba(107,74,53,.1)}
+  .dz-cal-corpo{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(250px,1fr);gap:18px;align-items:start}
+  .dz-cal-corpo.v-dia,.dz-cal-corpo.v-semana{grid-template-columns:minmax(0,1fr)}
+  .dz-rotina,.dz-semana{background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+  .dz-rotina > .dn-bt h2{font-size:15px}
+  .dz-mes{background:rgba(255,255,255,.5);border-radius:18px;padding:12px}
+  .dz-mes-cab{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .dz-mes-cab b{font-size:14px;font-weight:600}
+  .dz-mes-grade{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+  .dz-mes-grade small{font-size:10px;color:var(--db-suave);padding:2px 0}
+  .dz-mes-grade button{position:relative;border:0;background:transparent;border-radius:50%;aspect-ratio:1;font:500 12.5px Poppins,sans-serif;color:var(--db-texto);cursor:pointer}
+  .dz-mes-grade button:hover{background:rgba(255,255,255,.8)}
+  .dz-mes-grade button i{position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--db-cafe,#6b4a35)}
+  .dz-mes-grade button.hoje{box-shadow:inset 0 0 0 1.5px #c98f5e}
+  .dz-mes-grade button.sel{background:#3d2b20;color:#fff}.dz-mes-grade button.sel i{background:#fff}
+  .dz-duo{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+  .dz .dz-dir .dn-cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media (max-width:1300px){ .dz .dz-dir .dn-cards{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-duo{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:1000px){ .dz-grade{grid-template-columns:minmax(0,1fr)} .dz-cal-corpo{grid-template-columns:minmax(0,1fr)} }
+
   .dn-min{ display:inline-grid; place-items:center; width:30px; height:30px; border:1px solid var(--db-linha); border-radius:999px; background:var(--db-papel); color:var(--db-texto); cursor:pointer; padding:0; flex-shrink:0; }
   .db-bloco.fechado > *:not(.dn-bt):not(.db-bloco-topo){ display:none !important; }
   .db-bloco.fechado .dn-bt, .db-bloco.fechado .db-bloco-topo{ margin-bottom:0; }
@@ -2974,8 +3027,20 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const rotinaRef = useRef(null);
   function novaTarefaHoje(){ setDiaSel(hoje); setSemanaDesloc(0); setNovaTarefa({hora:"", titulo:"", sub:""}); setTimeout(()=>{ if(rotinaRef.current) rotinaRef.current.scrollIntoView({behavior:"smooth", block:"start"}); }, 50); }
 
+  // nov/2026 (referência Zenova da Mari): calendário com Dia / Semana / Mês e a linha do tempo da semana
+  const [calVista,setCalVista] = useState(()=>{ try{ return localStorage.getItem("dzCalVista") || "mes"; }catch(e){ return "mes"; } });
+  useEffect(()=>{ try{ localStorage.setItem("dzCalVista", calVista); }catch(e){} }, [calVista]);
+  const [mesCal,setMesCal] = useState(()=>{ const d = new Date(hoje+"T00:00:00"); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  useEffect(()=>{ const d = new Date(diaSel+"T00:00:00"); if(d.getMonth()!==mesCal.getMonth() || d.getFullYear()!==mesCal.getFullYear()) setMesCal(new Date(d.getFullYear(), d.getMonth(), 1)); }, [diaSel]);
+  const diasMes = (()=>{ const a = mesCal.getFullYear(), m = mesCal.getMonth(), ini = (new Date(a, m, 1).getDay()+6)%7, n = new Date(a, m+1, 0).getDate();
+    return [...Array(ini).fill(null), ...Array.from({length:n}, (_,i)=>{ const iso = isoLocal(new Date(a, m, i+1)); return {dia:i+1, iso, n:itensDoDia(iso).length}; })]; })();
+  const [linhaAba,setLinhaAba] = useState("prox");
+  const feitoEm = (iso, it) => it.tarefa ? !!it.tarefa.feito : it.followup ? it.followup.status==="Feito" : !!feitos[iso+"|"+it.id];
+  const linhaTodos = diasDaSemana.flatMap(d=>{ const iso = isoLocal(d); return itensDoDia(iso).map(it=>({iso, it, ok:feitoEm(iso, it)})); });
+  const linhaItens = { prox: linhaTodos.filter(x=>!x.ok && x.iso>=hoje), feitas: linhaTodos.filter(x=>x.ok), atr: linhaTodos.filter(x=>!x.ok && x.iso<hoje) };
+  const linhaPct = linhaTodos.length ? Math.round(linhaItens.feitas.length/linhaTodos.length*100) : 0;
   return (
-    <div className="db dn">
+    <div className="db dn dz">
       {/* topo: busca, olho, alertas e nova tarefa */}
       <div className="dn-topo">
         <div className="db-busca">
@@ -2999,6 +3064,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         <button className="dn-btn" onClick={novaTarefaHoje}><DbIcone tipo="mais" tam={17}/><span>Nova tarefa</span></button>
       </div>
 
+      <div className="dz-grade">
+        <div className="dz-esq">
       {/* saudação com o resumo do dia */}
       <div className="dn-ola">
         <div>
@@ -3009,6 +3076,31 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         <span className="dn-data">{dataExtenso}</span>
       </div>
 
+        {/* linha do tempo da semana (nov/2026, referência Zenova da Mari): progresso e Próximas / Feitas / Atrasadas */}
+        <section className="db-bloco dz-linha">
+          <div className="dn-bt"><div><h2>Sua semana</h2><small className="dz-sub">Veja a semana tomar forma</small></div></div>
+          <div className="dz-prog"><i style={{width:linhaPct+"%"}}/><b style={{left:"calc("+linhaPct+"% - 18px)"}}>{linhaPct}%</b></div>
+          <div className="dz-tabs" role="tablist">{[["prox","Próximas"],["feitas","Feitas"],["atr","Atrasadas"]].map(([k,t])=><button key={k} role="tab" className={linhaAba===k?"on":""} onClick={()=>setLinhaAba(k)}>{t}<span>{linhaItens[k].length}</span></button>)}</div>
+          <ul className="dz-lista">{linhaItens[linhaAba].slice(0,6).map(x=><li key={x.iso+x.it.id} className={x.ok?"ok":""} onClick={()=>{ setDiaSel(x.iso); setCalVista(v=>v==="dia"?"dia":v); }}><span className="dz-circ">{x.ok ? "✓" : ""}</span><b>{x.it.texto}</b><small>{DIAS_NOME[new Date(x.iso+"T00:00:00").getDay()].slice(0,3)}, {dataBR(x.iso).slice(0,5)}</small></li>)}
+            {!linhaItens[linhaAba].length && <li className="dz-vazio">{linhaAba==="atr" ? "Nada atrasado. 🎉" : linhaAba==="feitas" ? "Nada feito ainda nesta semana." : "Nada pela frente nesta semana."}</li>}</ul>
+        </section>
+        {/* aguardando aprovação */}
+        <section className={"db-bloco dn-aprov"+(fechadoB("aprov")?" fechado":"")}>
+          <div className="dn-bt"><h2>Aguardando aprovação</h2><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("aprov")}</span></div>
+          {aprovacoes.length ? <><ul className={"dn-apr"+(aprovacoes.length>3?" dn-apr-rola":"")} ref={aprRef} onScroll={aprChecar}>{aprovacoes.map(a=>{ const d = a.desde ? -diasAte(a.desde) : null;
+            const rot = a.tipo==="roteiro";
+            return <li key={a.id}><button onClick={()=>a.jobId ? abrirJob(a.jobId) : go(a.pagina)}><span className="dn-ico dn-ico-p"><DbIcone tipo={rot?"documento":"filme"} tam={17}/></span>
+              <span className="dn-txt"><b>{a.titulo}</b><small>{a.desde ? (d>=0 ? "Enviado em " : "Envio previsto para ")+dataBR(a.desde).slice(0,5) : "Esperando a marca"}{d>0 ? ` · há ${d} dia${d===1?"":"s"}` : ""}</small></span></button>
+              {a.itemId && <span className="dn-apr-acoes">
+                <button className="dn-apr-ok" onClick={()=>mudarItem(a.jobId, a.itemId, rot ? "Em produção" : "Finalizado")} title={rot ? "Roteiro aprovado: vai para produção" : "Conteúdo aprovado: finalizado"}><DbIcone tipo="check" tam={14}/>Aprovado</button>
+                <button className="dn-apr-aj" onClick={()=>mudarItem(a.jobId, a.itemId, rot ? "Roteirização" : "Refação")} title="A marca pediu ajuste">Ajuste</button>
+              </span>}</li>; })}</ul>
+            <div className="dn-apr-mais"><button type="button" className="dn-min" onClick={aprDescer} disabled={aprovacoes.length<=3} title={aprovacoes.length<=3 ? "Tudo já está à mostra" : aprFim ? "Voltar ao começo" : "Ver as próximas"} aria-label={aprovacoes.length<=3 ? "Tudo já está à mostra" : aprFim ? "Voltar ao começo" : "Ver as próximas"}><Icon name={aprFim && aprovacoes.length>3 ? "expand_less" : "expand_more"} size={19}/></button></div></>
+            : <p className="db-vazio">Nada esperando aprovação.</p>}
+        </section>
+
+        </div>
+        <div className="dz-dir">
       {/* quatro números */}
       <div className="dn-cards">
         <button className="dn-card" onClick={()=>go("financeiro")}><span className="dn-ico"><DbIcone tipo="moeda" tam={21}/></span>
@@ -3021,25 +3113,13 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           <span className="dn-card-txt"><small>Propostas sem resposta</small><b>{dnExtras.propostas ? dnExtras.propostas.total : "..."}</b><em>{dnExtras.propostas && dnExtras.propostas.velhas ? `${dnExtras.propostas.velhas} há mais de 7 dias` : "no e-mail"}</em></span><span className="dn-seta"><DbIcone tipo="seta" tam={17}/></span></button>
       </div>
 
-      <div className="dn-g1">
-        {/* campanhas em andamento */}
-        <section className={"db-bloco dn-campanhas"+(fechadoB("campanhas")?" fechado":"")}>
-          <div className="dn-bt"><h2>Campanhas em andamento</h2><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("campanhas")}</span></div>
-          {campanhas.length ? <div className="dn-tabela">
-            <div className="dn-linha dn-cab"><span>Marca</span><span>Entregas</span><span>Etapa</span><span>Prazo</span></div>
-            {campanhas.slice(0,6).map(j=>{ const p = progressoJob(j), at = etapaDoJob(j, state.roteiros), d = j.prazoEntrega ? diasAte(j.prazoEntrega) : null;
-              const abrir = ()=>abrirJob(j.id), marca = comAMarca(at);
-              return <div className="dn-linha dn-clica" key={j.id} onClick={abrir}>
-                <button className="dn-marca" onClick={abrir}><DbLogo marca={j.marca} logos={logos}/><span><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></button>
-                <span className="dn-prog">{p.total ? <><small>{p.feitos} de {p.total}</small><i><b style={{width:Math.max(3,p.pct)+"%"}}/></i></> : <small>sem entregáveis</small>}</span>
-                <span><button className={"dn-chip c-"+classeEtapa(at)} title={at>=ETAPAS_JOB.length-1 ? ETAPAS_JOB[at] : `${ETAPAS_JOB[at]} · toque para passar para "${ETAPAS_JOB[at+1]}"`} onClick={e=>{ e.stopPropagation(); avancarJob(j); }}>{nomeEtapa(at)}</button></span>
-                <span className="dn-prazo">{j.prazoEntrega ? <><b>{dataBR(j.prazoEntrega).slice(0,5)}</b><small className={marca ? "" : d<0?"atr":d===0?"hj":""}>{marca && d<=0 ? (at===5 ? "entregue" : "com a marca") : d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : `em ${d} dia${d===1?"":"s"}`}</small></> : <small>sem prazo</small>}</span>
-              </div>; })}
-          </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
-        </section>
-
+          {/* calendário: a lista do dia escolhido + o mês (ou a semana) */}
+          <section className="db-bloco dz-cal">
+            <div className="dn-bt"><div><h2>Calendário</h2><small className="dz-sub">Sua agenda de conteúdo e jobs</small></div>
+              <span className="dz-seg" role="group" aria-label="Visualização">{[["dia","Dia"],["semana","Semana"],["mes","Mês"]].map(([k,t])=><button key={k} className={calVista===k?"on":""} onClick={()=>setCalVista(k)}>{t}</button>)}</span></div>
+            <div className={"dz-cal-corpo v-"+calVista}>
         {/* rotina do dia escolhido (hoje, ou o dia tocado na semana) */}
-        <section className={"db-bloco dn-rotina"+(fechadoB("rotina")?" fechado":"")} ref={rotinaRef}>
+        <section className={"dn-rotina dz-rotina"+(fechadoB("rotina")?" fechado":"")} ref={rotinaRef}>
           <div className="dn-bt"><h2>{diaSel===hoje ? "Minha rotina de hoje" : `Rotina de ${DIAS_NOME[diaSelD.getDay()].toLowerCase()}, ${dataBR(diaSel).slice(0,5)}`}</h2>
             <span className="dn-bt-dir">{agenda.length>0 && <span className="dn-tag">{feitosDia} de {agenda.length}</span>}<button className="dn-mais" onClick={()=>setNovaTarefa({hora:"", titulo:"", sub:""})} aria-label="Adicionar tarefa"><DbIcone tipo="mais" tam={16}/></button>{minB("rotina")}</span></div>
           {diaSel!==hoje && <button className="db-link dn-voltar" onClick={()=>{ setDiaSel(hoje); setSemanaDesloc(0); }}>Voltar para hoje</button>}
@@ -3086,11 +3166,16 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             <div><button type="button" className="db-link" onClick={()=>setNovaTarefa(null)}>Cancelar</button><button className="db-btn-escuro" type="submit">Salvar</button></div>
           </form>}
         </section>
-      </div>
-
-      <div className="dn-g2">
+              {calVista==="mes" && <div className="dz-mes">
+                <div className="dz-mes-cab"><button className="db-redondo db-redondo-p" onClick={()=>setMesCal(m=>new Date(m.getFullYear(), m.getMonth()-1, 1))} aria-label="Mês anterior"><DbIcone tipo="esq" tam={15}/></button>
+                  <b>{MESES_EXT[mesCal.getMonth()].replace(/^./, c=>c.toUpperCase())} {mesCal.getFullYear()}</b>
+                  <button className="db-redondo db-redondo-p" onClick={()=>setMesCal(m=>new Date(m.getFullYear(), m.getMonth()+1, 1))} aria-label="Próximo mês"><DbIcone tipo="dir" tam={15}/></button></div>
+                <div className="dz-mes-grade">{["S","T","Q","Q","S","S","D"].map((d,i)=><small key={"c"+i}>{d}</small>)}
+                  {diasMes.map((d,i)=>d ? <button key={i} className={(d.iso===hoje?"hoje ":"")+(d.iso===diaSel?"sel ":"")+(d.n?"tem":"")} onClick={()=>setDiaSel(d.iso)} aria-label={dataBR(d.iso)+(d.n?`, ${d.n} item${d.n===1?"":"s"}`:"")}>{d.dia}{d.n>0 && <i/>}</button> : <span key={i}/>)}</div>
+              </div>}
+              {calVista==="semana" && <>
         {/* semana */}
-        <section className={"db-bloco dn-semana-bloco"+(fechadoB("semana")?" fechado":"")}>
+        <section className={"dn-semana-bloco dz-semana"+(fechadoB("semana")?" fechado":"")}>
           <div className="dn-bt"><h2 className="dn-clica" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")} title="Abrir o calendário">Minha semana</h2>
             <span className="dn-bt-dir"><button className="db-redondo db-redondo-p" onClick={()=>setSemanaDesloc(s=>s-1)} aria-label="Semana anterior"><DbIcone tipo="esq" tam={15}/></button>
               <span className="dn-sel">{diasVistos[0].getDate()} {MESES_EXT[diasVistos[0].getMonth()].slice(0,3)} a {diasVistos[6].getDate()} {MESES_EXT[diasVistos[6].getMonth()].slice(0,3)}</span>
@@ -3106,19 +3191,24 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           <div className="dn-leg"><span className="grav">Gravar</span><span className="post">Postar</span><span className="ent">Entregar</span><button className="db-link dn-abrir-cal" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}>Abrir calendário<DbIcone tipo="seta" tam={14}/></button></div>
         </section>
 
-        {/* aguardando aprovação */}
-        <section className={"db-bloco dn-aprov"+(fechadoB("aprov")?" fechado":"")}>
-          <div className="dn-bt"><h2>Aguardando aprovação</h2><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("aprov")}</span></div>
-          {aprovacoes.length ? <><ul className={"dn-apr"+(aprovacoes.length>3?" dn-apr-rola":"")} ref={aprRef} onScroll={aprChecar}>{aprovacoes.map(a=>{ const d = a.desde ? -diasAte(a.desde) : null;
-            const rot = a.tipo==="roteiro";
-            return <li key={a.id}><button onClick={()=>a.jobId ? abrirJob(a.jobId) : go(a.pagina)}><span className="dn-ico dn-ico-p"><DbIcone tipo={rot?"documento":"filme"} tam={17}/></span>
-              <span className="dn-txt"><b>{a.titulo}</b><small>{a.desde ? (d>=0 ? "Enviado em " : "Envio previsto para ")+dataBR(a.desde).slice(0,5) : "Esperando a marca"}{d>0 ? ` · há ${d} dia${d===1?"":"s"}` : ""}</small></span></button>
-              {a.itemId && <span className="dn-apr-acoes">
-                <button className="dn-apr-ok" onClick={()=>mudarItem(a.jobId, a.itemId, rot ? "Em produção" : "Finalizado")} title={rot ? "Roteiro aprovado: vai para produção" : "Conteúdo aprovado: finalizado"}><DbIcone tipo="check" tam={14}/>Aprovado</button>
-                <button className="dn-apr-aj" onClick={()=>mudarItem(a.jobId, a.itemId, rot ? "Roteirização" : "Refação")} title="A marca pediu ajuste">Ajuste</button>
-              </span>}</li>; })}</ul>
-            <div className="dn-apr-mais"><button type="button" className="dn-min" onClick={aprDescer} disabled={aprovacoes.length<=3} title={aprovacoes.length<=3 ? "Tudo já está à mostra" : aprFim ? "Voltar ao começo" : "Ver as próximas"} aria-label={aprovacoes.length<=3 ? "Tudo já está à mostra" : aprFim ? "Voltar ao começo" : "Ver as próximas"}><Icon name={aprFim && aprovacoes.length>3 ? "expand_less" : "expand_more"} size={19}/></button></div></>
-            : <p className="db-vazio">Nada esperando aprovação.</p>}
+              </>}
+            </div>
+          </section>
+          <div className="dz-duo">
+        {/* campanhas em andamento */}
+        <section className={"db-bloco dn-campanhas"+(fechadoB("campanhas")?" fechado":"")}>
+          <div className="dn-bt"><h2>Campanhas em andamento</h2><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("campanhas")}</span></div>
+          {campanhas.length ? <div className="dn-tabela">
+            <div className="dn-linha dn-cab"><span>Marca</span><span>Entregas</span><span>Etapa</span><span>Prazo</span></div>
+            {campanhas.slice(0,6).map(j=>{ const p = progressoJob(j), at = etapaDoJob(j, state.roteiros), d = j.prazoEntrega ? diasAte(j.prazoEntrega) : null;
+              const abrir = ()=>abrirJob(j.id), marca = comAMarca(at);
+              return <div className="dn-linha dn-clica" key={j.id} onClick={abrir}>
+                <button className="dn-marca" onClick={abrir}><DbLogo marca={j.marca} logos={logos}/><span><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></button>
+                <span className="dn-prog">{p.total ? <><small>{p.feitos} de {p.total}</small><i><b style={{width:Math.max(3,p.pct)+"%"}}/></i></> : <small>sem entregáveis</small>}</span>
+                <span><button className={"dn-chip c-"+classeEtapa(at)} title={at>=ETAPAS_JOB.length-1 ? ETAPAS_JOB[at] : `${ETAPAS_JOB[at]} · toque para passar para "${ETAPAS_JOB[at+1]}"`} onClick={e=>{ e.stopPropagation(); avancarJob(j); }}>{nomeEtapa(at)}</button></span>
+                <span className="dn-prazo">{j.prazoEntrega ? <><b>{dataBR(j.prazoEntrega).slice(0,5)}</b><small className={marca ? "" : d<0?"atr":d===0?"hj":""}>{marca && d<=0 ? (at===5 ? "entregue" : "com a marca") : d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : `em ${d} dia${d===1?"":"s"}`}</small></> : <small>sem prazo</small>}</span>
+              </div>; })}
+          </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
         </section>
 
         {/* financeiro */}
@@ -3128,6 +3218,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             <button className={atrasadoValor>0?"at":""} onClick={()=>go("financeiro")}><b>{dnMoeda(atrasadoValor)}</b><small>{atrasadoValor>0 ? `Atrasado (${atrasadoLista.length})` : "Nada atrasado"}</small></button></div>
           <div className="dn-graf dn-clica" onClick={()=>go("financeiro")} aria-label="Recebido nos últimos 6 meses">{meses6.map((m,i)=><div key={m.k} title={m.rotulo+": "+dnMoeda(m.valor)}><i className={i===5?"at":""} style={{height:Math.max(4, m.valor/maxMes*100)+"%"}}/><small>{m.rotulo}</small></div>)}</div>
         </section>
+          </div>
+        </div>
       </div>
 
       {/* inspirações | ferramentas */}
