@@ -148,7 +148,6 @@
         <h2 class="pp-titulo">Oportunidades em plataformas</h2>
         <p class="pp-sub">Creators.llc, Creatify, Conty, BrandLovers e parecidas · ${plats.length} ${plats.length === 1 ? "conversa" : "conversas"}</p>
         <div class="pp-lista">${plats.map((c) => cartao(c, true)).join("") || `<p class="pp-vazio">Nada de plataforma${st.busca ? " com esse filtro" : " por enquanto"}.</p>`}</div>
-      </section>
       </section>` : `<section class="pp-bloco"><h2 class="pp-titulo">Arquivados</h2><p class="pp-sub">${arquivados.length} ${arquivados.length === 1 ? "conversa guardada" : "conversas guardadas"} · ficam aqui até você desarquivar</p><div class="pp-lista">${arquivados.map((c) => cartao(c, c.topo.tipo === "plataforma", true)).join("") || `<p class="pp-vazio">Sua pasta de arquivados está vazia.</p>`}</div></section>`}
       ${st.visao === "ativas" ? `<details class="pp-dobra" ${st.abertos.auto ? "open" : ""} data-dobra="auto"><summary>E-mails automáticos (${autos.length})</summary>
         <ul class="pp-mini">${autos.map((e) => linhaMini(e, "eproposta", "é proposta")).join("") || "<li class='pp-vazio'>Nenhum.</li>"}</ul></details>
