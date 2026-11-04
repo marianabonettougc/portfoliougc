@@ -49,3 +49,26 @@ create policy "visitante registra analytics do portfolio"
 grant insert on public.portfolio_eventos to anon, authenticated;
 grant select on public.portfolio_eventos to authenticated;
 grant usage, select on sequence public.portfolio_eventos_id_seq to anon, authenticated;
+
+-- Habilita eventos em tempo real para o painel de analytics.
+-- Seguro para executar mais de uma vez: só adiciona tabelas ainda ausentes.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'visitas'
+  ) then
+    alter publication supabase_realtime add table public.visitas;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'portfolio_eventos'
+  ) then
+    alter publication supabase_realtime add table public.portfolio_eventos;
+  end if;
+end $$;
