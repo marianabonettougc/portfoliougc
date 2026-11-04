@@ -35,7 +35,7 @@
   const CURTO = { dash: "Início", reserva: "Reserva", anual: "Ano" };
   const TITULO = { dash: "Visão geral", entradas: "Entradas", saidas: "Saídas", cartoes: "Cartões", emprestimos: "Empréstimos", reserva: "Reserva & Investimentos", anual: "Visão anual", acesso: "Acesso" };
   const CAT_ENTRADA = ["Salário", "UGC", "PUBLI", "PUBLI COMERCIAL", "MARKETPLACE", "Outros"]; // nov/2026: etiquetas pedidas pela Mari (+ as que ela criar, em dados.etiquetas)
-  const CAT_SAIDA = ["Conta fixa", "Cartão", "Empréstimo", "Financiamento", "Dívida pessoal", "Mercado", "Farmácia", "Delivery", "Restaurante", "Assinaturas", "Transporte", "Combustível", "Compras online", "Roupas", "Beleza", "Casa", "Filhos", "Pet", "Saúde", "Educação", "Lazer", "Outros"];
+  const CAT_SAIDA = ["Conta fixa", "Cartão", "Empréstimo", "Financiamento", "Dívida pessoal", "Mercado", "Farmácia", "Delivery", "Restaurante", "Streaming", "Assinaturas", "Transporte", "Combustível", "Compras online", "Roupas", "Beleza", "Casa", "Filhos", "Pet", "Saúde", "Educação", "Lazer", "Outros"];
   // nov/2026: a saída ganha o tipo sozinha pelo que ela escreve (ela pode trocar)
   const REGRAS_CAT = [
     ["Cartão", /^fatura\b/], ["Empréstimo", /\b(parcela|emprest|consignad)/],
@@ -43,7 +43,8 @@
     ["Farmácia", /\b(farmac|drogari|droga raia|drogasil|pague menos|panvel|pacheco|remedio)/],
     ["Compras online", /\b(shopee|mercado livre|amazon|shein|magalu|magazine luiza|aliexpress|temu|americanas)/],
     ["Mercado", /\b(mercado|supermerc|atacad|assai|hortifruti|sacolao|feira|acougue|carrefour|extra|pao de acucar|dia%?)\b/],
-    ["Assinaturas", /\b(netflix|spotify|disney|hbo|max\b|prime video|youtube|deezer|globoplay|icloud|apple|canva|capcut|chatgpt|openai|adobe|assinatura|mensalidade)/],
+    ["Streaming", /\b(netflix|spotify|disney|hbo|max\b|prime video|youtube|deezer|globoplay)/],
+    ["Assinaturas", /\b(icloud|apple|canva|capcut|chatgpt|openai|adobe|assinatura|mensalidade)/],
     ["Restaurante", /\b(restaurante|lanchonete|padaria|cafe|cafeteria|pizza|hamburg|burger|mcdonald|bk\b|sushi|acai|sorvete|bar\b)/],
     ["Combustível", /\b(posto|gasolina|combustiv|etanol|alcool|diesel|shell|ipiranga)/],
     ["Transporte", /\b(uber|99\b|99 pop|taxi|onibus|metro|van\b|pedagio|estacionamento|passagem|bilhete)/],
@@ -95,7 +96,7 @@
   ICONE.calendario = '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
   ICONE.banco = '<svg viewBox="0 0 24 24"><path d="M3.5 9.5 12 4l8.5 5.5M5 20.5h14M6.5 10.5v7M10 10.5v7M14 10.5v7M17.5 10.5v7M4 9.5h16"/></svg>';
 
-  const st = { sessao: null, email: "", dona: false, perfis: {}, atual: "mari", aba: "dash", ref: (() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })(), anoAba: "saida", anoAbertos: {}, metodo: "recomendado", salvando: null };
+  const st = { sessao: null, email: "", dona: false, perfis: {}, atual: "mari", aba: "dash", ref: (() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })(), anoAba: "saida", anoAbertos: {}, metodo: "recomendado", visaoGastos: "categoria", salvando: null };
   const vazio = () => ({ cartoes: [], emprestimos: [], lancamentos: [], reserva: { atual: 0, metaMeses: 6, aporte: 0 }, investimentos: [], contas: [], compras: [], extra: 150 });
   const D = () => st.perfis[st.atual] || (st.perfis[st.atual] = vazio());
 
@@ -417,7 +418,7 @@
     const dividas = listaDividas(), divTotal = dividas.reduce((a, x) => a + x.saldo, 0), p = plano(dividas, d.extra, st.metodo);
     const res = Number(d.reserva.atual) || 0, meta = custoMensal() * (Number(d.reserva.metaMeses) || 6);
     const anos = MES3.map((n, i) => { const l = doMes(st.ref.y, i); return { n, i, e: soma(entradas(l)), s: soma(saidas(l)) }; }), max = Math.max(1, ...anos.map((x) => Math.max(x.e, x.s)));
-    const top = porTipo(saidas(lm), false).map(([k, v]) => ({ k, v }));
+    const top = (st.visaoGastos === "pagamento" ? porFormaPagamento(saidas(lm)) : porTipo(saidas(lm), false)).map(([k, v]) => ({ k, v }));
     const pagasMes = saidas(lm).filter((l) => l.pago).length;
     const proximos = d.lancamentos.filter((l) => l.tipo === "saida" && !l.pago).filter((l) => { const dias = (new Date(l.data + "T00:00:00") - new Date(hojeIso() + "T00:00:00")) / 864e5; return dias <= 30; }).sort((a, b) => a.data.localeCompare(b.data)).slice(0, 40);
     const dE = delta(ent, entA), dS = delta(sai, saiA, true);
@@ -434,7 +435,7 @@
           <div class="fn-anel">${anel(meta ? res / meta : 0, meta ? Math.min(100, Math.round(res / meta * 100)) + "%" : "–")}<div><div class="fn-kpi-v" style="margin:0">${R$(res)}</div><small style="color:var(--suave)">de ${R$(meta)}</small><div style="margin-top:10px"><button class="fn-btn pequeno" type="button" data-aba="reserva">Ver reserva e investimentos</button></div></div></div></div>
       </div>
       <div class="fn-grade tres">
-        <div class="fn-caixa"><h3>Para onde foi o dinheiro</h3><p class="sub">Saídas de ${MESES[st.ref.m].toLowerCase()} por tipo${top.length ? ` · ${top.length} tipo${top.length === 1 ? "" : "s"}` : ""}</p>${top.length ? `<div class="fn-rosca">${rosca(top, sai, K(sai), CORES_CAT)}<ul class="fn-tipos">${top.map((c, i) => `<li><i style="background:${CORES_CAT[i % CORES_CAT.length]}"></i><span>${esc(c.k)}</span><em>${R$(c.v)}</em><b>${Math.round(c.v / Math.max(sai, 1) * 100)}%</b></li>`).join("")}</ul></div>` : `<p class="fn-vazio">Nenhuma saída neste mês.</p>`}</div>
+        <div class="fn-caixa"><div class="fn-cab"><div><h3>Para onde foi o dinheiro</h3><p class="sub">Saídas de ${MESES[st.ref.m].toLowerCase()} por ${st.visaoGastos === "pagamento" ? "forma de pagamento" : "categoria"}${top.length ? ` · ${top.length} ${top.length === 1 ? "grupo" : "grupos"}` : ""}</p></div><div class="fn-seg" role="group" aria-label="Visualização dos gastos"><button type="button" data-grafico-gastos="categoria" class="${st.visaoGastos === "categoria" ? "on" : ""}">Categorias</button><button type="button" data-grafico-gastos="pagamento" class="${st.visaoGastos === "pagamento" ? "on" : ""}">Pagamento</button></div></div>${top.length ? `<div class="fn-rosca">${rosca(top, sai, K(sai), CORES_CAT)}<ul class="fn-tipos">${top.map((c, i) => `<li><i style="background:${CORES_CAT[i % CORES_CAT.length]}"></i><span>${esc(c.k)}</span><em>${R$(c.v)}</em><b>${Math.round(c.v / Math.max(sai, 1) * 100)}%</b></li>`).join("")}</ul></div>` : `<p class="fn-vazio">Nenhuma saída neste mês.</p>`}</div>
         ${blocoVencimentos(proximos, pagasMes)}
         ${blocoSituacao(lm, ent, sai)}
       </div>
@@ -691,12 +692,23 @@
       if (c) { // o que não foi lançado como compra fica em Cartão
         let resto = Number(l.valor) || 0; const dt = new Date(l.data + "T00:00:00");
         comprasDaFatura(c, dt.getFullYear(), dt.getMonth()).forEach((k) => { const v = Math.min(resto, k.parte.valor); if (v > 0) { add(k.categoria || catAuto(k.descricao) || "Outros", v); resto -= v; } });
-        if (resto > 0.004) add("Cartão", resto); return;
+        if (resto > 0.004) add("Gastos não detalhados", resto); return;
       }
       const cat = l.categoria && l.categoria !== "Outros" ? l.categoria : (!ent && catAuto(l.descricao)) || l.categoria || "Outros";
       add(cat, Number(l.valor) || 0);
     });
     return Object.entries(porCat).filter(([, v]) => v > 0.004).sort((a, b) => b[1] - a[1]);
+  }
+  // A fatura é agrupada pelo cartão; as demais saídas usam a forma registrada no lançamento.
+  function porFormaPagamento(lm) {
+    const grupos = {}, add = (k, v) => { grupos[k] = (grupos[k] || 0) + (Number(v) || 0); };
+    lm.forEach((l) => {
+      const c = D().cartoes.find((y) => eDoCartao(l, y));
+      if (c) { add(c.nome, l.valor); return; }
+      const forma = FORMAS.find(([k]) => k === l.forma);
+      add(forma ? forma[1] : "Não informado", l.valor);
+    });
+    return Object.entries(grupos).filter(([, v]) => v > 0.004).sort((a, b) => b[1] - a[1]);
   }
   function telaMovimento(tipo) {
     const ent = tipo === "entrada", lm = doMes(st.ref.y, st.ref.m).filter((l) => l.tipo === tipo), ant = new Date(st.ref.y, st.ref.m - 1, 1), la = doMes(ant.getFullYear(), ant.getMonth()).filter((l) => l.tipo === tipo);
@@ -1374,7 +1386,8 @@
       if (ls.length > 1) folha(`${nomeL} em ${MESES[Number(m)]}`, ls.map((x) => ({ ic: ICONE.lapis, t: `${dataBR(x.data).slice(0, 5)} · ${R$(x.valor)}`, acao: () => editarLancamento(x) })));
       else if (l) editarLancamento(l); else editarLancamento(null, tipo, { descricao: nomeL, categoria: cat || (tipo === "entrada" ? "Salário" : "Outros"), data: `${ym}-${String(Math.min(28, Math.max(1, Number(dia) || 10))).padStart(2, "0")}`, pago: false });
     }));
-    $$("[data-metodo]", raiz).forEach((b) => b.addEventListener("click", () => { st.metodo = b.dataset.metodo; pintar(); }));
+    $("[data-metodo]", raiz).forEach((b) => b.addEventListener("click", () => { st.metodo = b.dataset.metodo; pintar(); }));
+    $("[data-grafico-gastos]", raiz).forEach((b) => b.addEventListener("click", () => { st.visaoGastos = b.dataset.graficoGastos; pintar(); }));
     const xr = $("#fn-extra-r"); if (xr) { xr.addEventListener("input", () => { $("#fn-extra-v").textContent = R$(Number(xr.value)); }); xr.addEventListener("change", () => { D().extra = Number(xr.value) || 0; salvar(); const y = window.scrollY; pintar(); window.scrollTo(0, y); }); }
     const ex = $("#fn-extra"); if (ex) ex.addEventListener("change", () => { d.extra = num(ex.value); salvar(); pintar(); });
     [["#fn-res", "atual"], ["#fn-aporte", "aporte"], ["#fn-metam", "metaMeses"]].forEach(([s, k]) => { const el = $(s); if (el) el.addEventListener("change", () => { d.reserva[k] = num(el.value); salvar(); pintar(); }); });
