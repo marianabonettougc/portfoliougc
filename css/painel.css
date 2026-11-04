@@ -2456,3 +2456,8 @@ a.pc2-tag:hover{color:var(--texto)}
 #aba-portfolio .analytics-thumb{width:76px;height:52px;flex:0 0 76px;object-fit:cover;border-radius:8px;background:#eee3d8;border:1px solid rgba(107,74,53,.10)}
 #aba-portfolio .analytics-mini{width:76px;height:52px;flex:0 0 76px;border-radius:8px}
 @media(max-width:600px){#aba-portfolio .analytics-thumb,#aba-portfolio .analytics-mini{width:68px;height:48px;flex-basis:68px}}
+
+/* Dispositivos de acesso no analytics */
+#aba-portfolio .dispositivos-acesso li{grid-template-columns:minmax(105px,1fr) 28px minmax(70px,1.4fr) 38px;align-items:center;gap:8px 10px}
+#aba-portfolio .dispositivos-acesso li small{font-size:10px;color:#987f6e;text-align:right}
+@media(max-width:600px){#aba-portfolio .dispositivos-acesso li{grid-template-columns:minmax(85px,1fr) 24px minmax(55px,1.2fr) 34px}}
