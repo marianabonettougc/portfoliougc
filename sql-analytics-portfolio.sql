@@ -17,6 +17,7 @@ create table if not exists public.portfolio_eventos (
   alvo text,
   destino text,
   video_titulo text,
+  video_marca text,
   video_link text
 );
 
@@ -39,6 +40,7 @@ create policy "visitante registra analytics do portfolio"
     evento in ('video_play', 'click')
     and length(visitante_id) between 8 and 80
     and (video_titulo is null or length(video_titulo) <= 180)
+    and (video_marca is null or length(video_marca) <= 120)
     and (video_link is null or length(video_link) <= 500)
     and (alvo is null or length(alvo) <= 120)
     and (destino is null or length(destino) <= 500)
