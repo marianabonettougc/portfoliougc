@@ -152,7 +152,7 @@
       ${st.visao === "ativas" ? `<details class="pp-dobra" ${st.abertos.auto ? "open" : ""} data-dobra="auto"><summary>E-mails automáticos (${autos.length})</summary>
         <ul class="pp-mini">${autos.map((e) => linhaMini(e, "eproposta", "é proposta")).join("") || "<li class='pp-vazio'>Nenhum.</li>"}</ul></details>
       <details class="pp-dobra" ${st.abertos.nao ? "open" : ""} data-dobra="nao"><summary>Marcados como não é proposta (${naos.length})</summary>
-        <ul class="pp-mini">${naos.map((e) => linhaMini(e, "voltar", "voltar")).join("") || "<li class='pp-vazio'>Nenhum.</li>"}</ul></details>
+        <ul class="pp-mini">${naos.map((e) => linhaMini(e, "voltar", "voltar")).join("") || "<li class='pp-vazio'>Nenhum.</li>"}</ul></details>` : ""}
       ${st.visao === "ativas" && st.ocultar.length ? `<div class="pp-ocultos"><span>Escondidos sempre:</span>${st.ocultar.map((m) => `<span class="pp-chip">${esc(m)}<button type="button" data-desocultar="${esc(m)}" aria-label="Voltar a mostrar ${esc(m)}">×</button></span>`).join("")}</div>` : ""}`;
     ligar(sec);
   }
