@@ -428,8 +428,8 @@
     const dividas = listaDividas(), divTotal = dividas.reduce((a, x) => a + x.saldo, 0), p = plano(dividas, d.extra, st.metodo);
     const res = Number(d.reserva.atual) || 0, meta = custoMensal() * (Number(d.reserva.metaMeses) || 6);
     const anos = MES3.map((n, i) => { const l = doMes(st.ref.y, i); return { n, i, e: soma(entradas(l)), s: soma(saidas(l)) }; }), max = Math.max(1, ...anos.map((x) => Math.max(x.e, x.s)));
-    const top = (st.visaoGastos === "pagamento" ? porFormaPagamento(saidas(lm)) : porTipo(saidas(lm), false)).map(([k, v]) => ({ k, v }));
-    const pagasMes = saidas(lm).filter((l) => l.pago).length;
+    const top = (st.visaoGastos === "pagamento" ? porFormaPagamento(atual.saidas) : porTipo(atual.saidas, false)).map(([k, v]) => ({ k, v }));
+    const pagasMes = atual.saidas.filter((l) => l.pago).length;
     const proximos = d.lancamentos.filter((l) => l.tipo === "saida" && !l.pago).filter((l) => { const dias = (new Date(l.data + "T00:00:00") - new Date(hojeIso() + "T00:00:00")) / 864e5; return dias <= 30; }).sort((a, b) => a.data.localeCompare(b.data)).slice(0, 40);
     const dE = delta(ent, entA), dS = delta(sai, saiA, true);
     return `<div class="fn-kpis">
