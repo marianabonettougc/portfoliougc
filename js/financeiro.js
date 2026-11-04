@@ -171,6 +171,16 @@
   const soma = (l) => l.reduce((a, x) => a + (Number(x.valor) || 0), 0);
   const entradas = (l) => l.filter((x) => x.tipo === "entrada"), saidas = (l) => l.filter((x) => x.tipo === "saida");
   const vencido = (l) => !l.pago && l.tipo === "saida" && (l.atrasado || l.data < hojeIso());
+  // Fonte única de cálculo por período: Dashboard, Entradas/Saídas, Visão Anual e consultora leem os mesmos lançamentos.
+  function resumoMes(y, m) {
+    const lancamentos = doMes(y, m), ent = entradas(lancamentos), sai = saidas(lancamentos);
+    const recebido = soma(ent.filter((l) => l.pago)), pago = soma(sai.filter((l) => l.pago));
+    return { lancamentos, entradas: ent, saidas: sai, totalEntradas: soma(ent), totalSaidas: soma(sai), recebido, aReceber: soma(ent) - recebido, pago, aPagar: soma(sai) - pago, saldo: soma(ent) - soma(sai) };
+  }
+  function resumoAno(y) {
+    const meses = Array.from({ length: 12 }, (_, m) => resumoMes(y, m));
+    return { meses, totalEntradas: meses.reduce((a, x) => a + x.totalEntradas, 0), totalSaidas: meses.reduce((a, x) => a + x.totalSaidas, 0) };
+  }
   function dividaCartao(c) {
     if (c.status === "Quitado") return 0;
     if (Number(c.divida) > 0) return Number(c.divida);
@@ -215,7 +225,7 @@
   const dividaEmp = (e) => (e.status === "Quitado" ? 0 : Number(e.saldo) || 0);
   function media3() {
     const h = new Date(); let e = 0, s = 0;
-    for (let n = 1; n <= 3; n++) { const d = new Date(h.getFullYear(), h.getMonth() - n, 1); const l = doMes(d.getFullYear(), d.getMonth()); e += soma(entradas(l)); s += soma(saidas(l)); }
+    for (let n = 1; n <= 3; n++) { const d = new Date(h.getFullYear(), h.getMonth() - n, 1), r = resumoMes(d.getFullYear(), d.getMonth()); e += r.totalEntradas; s += r.totalSaidas; }
     return { e: e / 3, s: s / 3 };
   }
   function listaDividas() {
@@ -413,8 +423,8 @@
   }
 
   function telaDash() {
-    const d = D(), lm = doMes(st.ref.y, st.ref.m), ant = new Date(st.ref.y, st.ref.m - 1, 1), la = doMes(ant.getFullYear(), ant.getMonth());
-    const ent = soma(entradas(lm)), sai = soma(saidas(lm)), entA = soma(entradas(la)), saiA = soma(saidas(la)), sobra = ent - sai;
+    const d = D(), atual = resumoMes(st.ref.y, st.ref.m), lm = atual.lancamentos, ant = new Date(st.ref.y, st.ref.m - 1, 1), anterior = resumoMes(ant.getFullYear(), ant.getMonth());
+    const ent = atual.totalEntradas, sai = atual.totalSaidas, entA = anterior.totalEntradas, saiA = anterior.totalSaidas, sobra = atual.saldo;
     const dividas = listaDividas(), divTotal = dividas.reduce((a, x) => a + x.saldo, 0), p = plano(dividas, d.extra, st.metodo);
     const res = Number(d.reserva.atual) || 0, meta = custoMensal() * (Number(d.reserva.metaMeses) || 6);
     const anos = MES3.map((n, i) => { const l = doMes(st.ref.y, i); return { n, i, e: soma(entradas(l)), s: soma(saidas(l)) }; }), max = Math.max(1, ...anos.map((x) => Math.max(x.e, x.s)));
@@ -711,8 +721,8 @@
     return Object.entries(grupos).filter(([, v]) => v > 0.004).sort((a, b) => b[1] - a[1]);
   }
   function telaMovimento(tipo) {
-    const ent = tipo === "entrada", lm = doMes(st.ref.y, st.ref.m).filter((l) => l.tipo === tipo), ant = new Date(st.ref.y, st.ref.m - 1, 1), la = doMes(ant.getFullYear(), ant.getMonth()).filter((l) => l.tipo === tipo);
-    const total = soma(lm), feito = soma(lm.filter((l) => l.pago)), ano = D().lancamentos.filter((l) => l.tipo === tipo && String(l.data).startsWith(st.ref.y + "-"));
+    const ent = tipo === "entrada", atual = resumoMes(st.ref.y, st.ref.m), anterior = resumoMes(new Date(st.ref.y, st.ref.m - 1, 1).getFullYear(), new Date(st.ref.y, st.ref.m - 1, 1).getMonth()), anual = resumoAno(st.ref.y);
+    const lm = atual[ent ? "entradas" : "saidas"], la = anterior[ent ? "entradas" : "saidas"], total = ent ? atual.totalEntradas : atual.totalSaidas, feito = ent ? atual.recebido : atual.pago, ano = anual.meses.flatMap((m) => m[ent ? "entradas" : "saidas"]);
     const mesesComValor = new Set(ano.map((l) => l.data.slice(5, 7))).size || 1;
     const cats = porTipo(lm, ent);
     const atalhos = ent ? ["Salário", "PUBLI", "MARKETPLACE"] : ["Conta fixa", "Mercado", "Delivery"];
@@ -975,10 +985,10 @@
   const vencidoL = (l) => !l.pago && (l.atrasado || (l.data && l.data < hojeIso()));
   function telaAnual() {
     if (st.anoModo === "planilha") return telaPlanilha();
-    const y = st.ref.y, tipo = st.anoAba === "entrada" ? "entrada" : "saida", ent = tipo === "entrada";
+    const y = st.ref.y, tipo = st.anoAba === "entrada" ? "entrada" : "saida", ent = tipo === "entrada", anoResumo = resumoAno(y);
     if (st.anoMes == null) st.anoMes = y === new Date().getFullYear() ? new Date().getMonth() : 0;
     const m = st.anoMes, mesHoje = y === new Date().getFullYear() ? new Date().getMonth() : -1;
-    const doMesT = (mm) => doMes(y, mm).filter((l) => l.tipo === tipo);
+    const doMesT = (mm) => (anoResumo.meses[mm][ent ? "entradas" : "saidas"]);
     const todos = doMesT(m), q = (st.anoBusca || "").trim().toLowerCase();
     const sit = (l) => l.pago ? "pago" : vencidoL(l) ? "atraso" : "pendente";
     const lista = todos.filter((l) => (!q || [l.descricao, l.categoria, l.obs, l.influencer, l.marketplace].join(" ").toLowerCase().includes(q)) && (!st.anoStatus || sit(l) === st.anoStatus))
