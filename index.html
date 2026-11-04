@@ -28,7 +28,7 @@
 <!-- Banco de dados (Supabase): o site lê os vídeos, salva os contatos e conta as visitas -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="js/banco.js?v=202610121913" defer></script>
-<script src="js/analytics-portfolio.js?v=20261104b" defer></script>
+<script src="js/analytics-portfolio.js?v=202611042330" defer></script>
 <style>
   /* =========================================================
      IDENTIDADE: CARTÃO DE CAFETERIA PREMIUM
@@ -2203,7 +2203,11 @@ async function registrarVisita(forcar) {
   const banco = await bancoPronto();
   if (!banco) return { ok: false, motivo: "a ligação com o banco não carregou (js/banco.js ou a biblioteca do Supabase)" };
   try {
-    const { error } = await banco.from("visitas").insert({ pagina: location.pathname || "/", origem: deOndeVeio(), visitante_id: window.MBAnalytics ? window.MBAnalytics.visitorId : null });
+    const agente = navigator.userAgent || "";
+    const dispositivo = /iPad|Tablet|PlayBook|Silk/i.test(agente) || (/Android/i.test(agente) && !/Mobile/i.test(agente)) || (/Macintosh/i.test(agente) && navigator.maxTouchPoints > 1)
+      ? "Tablet"
+      : /Mobi|Android|iPhone|iPod|Windows Phone/i.test(agente) ? "Celular" : "Computador";
+    const { error } = await banco.from("visitas").insert({ pagina: location.pathname || "/", origem: deOndeVeio(), dispositivo, visitante_id: window.MBAnalytics ? window.MBAnalytics.visitorId : null });
     if (error) { console.warn("Visita não registrada:", error); return { ok: false, motivo: `${error.code || ""} ${error.message || ""}`.trim() }; }
     try { sessionStorage.setItem("mb_visita", "1"); } catch (e) {}   // só marca depois de gravar de verdade
     return { ok: true };
