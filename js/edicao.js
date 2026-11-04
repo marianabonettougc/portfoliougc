@@ -76,7 +76,6 @@
       }
     }catch(e){studio.jobs=[];studio.roteiros=[];console.warn("Estúdio UGC: não foi possível ler jobs e roteiros",e);}
     try{const {data,error}=await banco().from("painel_conteudo").select("id,tema,data,formato,status,marca").order("data",{ascending:false,nullsFirst:false}).limit(300);if(error)throw error;studio.conteudos=data||[];}catch(e){studio.conteudos=[];}
-    pintarStudio();
   }
   async function carregarStudio(){
     if(!st.projeto){studio.carregado=false;pintarStudio();return;}
