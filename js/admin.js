@@ -116,7 +116,7 @@
 
   // Visitas podem passar de mil: busca em páginas
   async function carregarVisitas() {
-    const inicio = hoje(); inicio.setDate(inicio.getDate() - 13);
+    const inicio = hoje(); inicio.setDate(inicio.getDate() - 29);
     const todas = [];
     try {
       for (let pag = 0; pag < 50; pag++) {
@@ -128,6 +128,15 @@
       }
       dados.visitas = todas;
       delete faltando.visitas;
+      const { data: eventos, error: erroEventos } = await banco.from("portfolio_eventos").select("*")
+        .gte("criado_em", inicio.toISOString()).order("criado_em", { ascending: false }).limit(2000);
+      if (erroEventos) {
+        dados.eventos = [];
+        faltando.eventos = traduzErro(erroEventos, "portfolio_eventos");
+      } else {
+        dados.eventos = eventos || [];
+        delete faltando.eventos;
+      }
     } catch (err) {
       dados.visitas = [];
       faltando.visitas = traduzErro(err, "visitas");
@@ -465,59 +474,84 @@
 
   function desenharPortfolio() {
     const sec = $("#aba-portfolio");
-    const visitas = dados.visitas;
-    const total = visitas.length;
     const hc = hojeChave();
+    const periodoAtual = window.__mbPortfolioPeriodo || "14";
+    const diasPeriodo = Number(periodoAtual) || 14;
+    const limite = new Date(); limite.setHours(0,0,0,0); limite.setDate(limite.getDate() - (diasPeriodo - 1));
+    const visitas = dados.visitas.filter(v => new Date(v.data) >= limite);
+    const eventos = (dados.eventos || []).filter(v => new Date(v.criado_em) >= limite);
+    const total = visitas.length;
     const deHoje = visitas.filter((v) => chaveDia(new Date(v.data)) === hc).length;
     const noAr = dados.videos.filter((v) => v.visivel && !v.exemplo);
     const nichos = maisFrequente(noAr.map((v) => v.nicho));
     const origens = maisFrequente(visitas.map((v) => v.origem || "Direto"));
-
-    // últimos 14 dias
+    const visitantes = new Set(visitas.map(v => v.visitante_id).filter(Boolean)).size;
+    const identificadas = visitas.filter(v => v.visitante_id).length;
     const dias = [];
-    for (let i = 13; i >= 0; i--) { const d = hoje(); d.setDate(d.getDate() - i); dias.push({ chave: chaveDia(d), data: d, n: 0 }); }
+    for (let i = diasPeriodo - 1; i >= 0; i--) { const d = hoje(); d.setDate(d.getDate() - i); dias.push({ chave: chaveDia(d), data: d, n: 0 }); }
     const porDia = Object.fromEntries(dias.map((d) => [d.chave, d]));
     visitas.forEach((v) => { const k = chaveDia(new Date(v.data)); if (porDia[k]) porDia[k].n++; });
     const maior = Math.max(0, ...dias.map((d) => d.n));
-
     const topoOrigem = origens.length ? origens[0][0] : "";
     const hora = atualizadoEm ? atualizadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
+    const reproducoes = eventos.filter(e => e.evento === "video_play");
+    const cliques = eventos.filter(e => e.evento === "click");
+    const videosTop = maisFrequente(reproducoes.map(e => e.video_titulo || "Vídeo"));
+    const botoesTop = maisFrequente(cliques.map(e => e.alvo || "Link"));
+    const recentes = reproducoes.slice(0, 10);
+    const fmtHora = (v) => { const d = new Date(v); return d.toLocaleDateString("pt-BR") + " · " + d.toLocaleTimeString("pt-BR", {hour:"2-digit",minute:"2-digit"}); };
     sec.innerHTML = `
       <div class="ferramentas" style="margin-bottom:10px">
-        <span style="font-size:11.5px;color:var(--suave)">${hora ? `Atualizado às ${hora}. Os números se atualizam sozinhos a cada minuto.` : "Carregando os números..."}</span>
+        <span style="font-size:11.5px;color:var(--suave)">${hora ? `Atualizado às ${hora}. Atualização automática a cada minuto.` : "Carregando os números..."}</span>
         <div class="direita">
-          <label class="check-linha" style="margin:0;font-size:11.5px;color:var(--suave)" title="Desligado: quando você abre o seu portfólio neste navegador, a visita não entra na conta.">
-            <input type="checkbox" id="contar-minhas"${contarMinhas() ? " checked" : ""}> Contar minhas visitas neste navegador</label>
+          <label class="check-linha" style="margin:0;font-size:11.5px;color:var(--suave)" title="Desligado: suas visitas neste navegador não entram nas métricas.">
+            <input type="checkbox" id="contar-minhas"${contarMinhas() ? " checked" : ""}> Contar minhas visitas</label>
+          <select id="portfolio-periodo" aria-label="Período das métricas" style="min-width:112px"><option value="7"${diasPeriodo===7?" selected":""}>7 dias</option><option value="14"${diasPeriodo===14?" selected":""}>14 dias</option><option value="30"${diasPeriodo===30?" selected":""}>30 dias</option></select>
           <button class="btn" type="button" id="btn-atualizar">Atualizar</button>
         </div>
       </div>
       <div class="numeros">
-        <div class="numero"><small>Visitas em 14 dias</small><strong>${total}</strong></div>
+        <div class="numero"><small>Visitas</small><strong>${total}</strong><em>nos últimos ${diasPeriodo} dias</em></div>
+        <div class="numero"><small>Visitantes identificados</small><strong>${visitantes}</strong><em>${identificadas} visitas com identificador anônimo</em></div>
         <div class="numero"><small>Visitas hoje</small><strong>${deHoje}</strong></div>
         <div class="numero"><small>Vídeos no ar</small><strong>${noAr.length}</strong></div>
-        <div class="numero"><small>Nicho mais forte</small><strong>${nichos.length ? esc(nichos[0][0]) : "-"}</strong><em>${nichos.length ? plural(nichos[0][1], "vídeo", "vídeos") : "preencha o nicho dos vídeos"}</em></div>
-        <div class="numero"><small>De onde mais vêm</small><strong>${topoOrigem ? esc(topoOrigem) : "-"}</strong><em>${topoOrigem ? Math.round((origens[0][1] / total) * 100) + "% das visitas" : "ainda sem visitas"}</em></div>
+        <div class="numero"><small>Origem principal</small><strong>${topoOrigem ? esc(topoOrigem) : "-"}</strong><em>${topoOrigem ? Math.round((origens[0][1] / total) * 100) + "% das visitas" : "ainda sem visitas"}</em></div>
       </div>
       <div class="duas-colunas">
         <div class="bloco">
-          <div class="bloco-titulo"><h2>Visitas nos últimos 14 dias</h2></div>
-          ${total === 0
-            ? `<p class="vazio">Quando as pessoas começarem a visitar o seu portfólio, aqui vai aparecer uma barrinha por dia mostrando quantas visitas chegaram em cada um dos últimos 14 dias.</p>`
-            : `<div class="grafico" role="img" aria-label="Visitas por dia nos últimos 14 dias">${dias.map((d) => `
-                <div class="coluna${d.chave === hc ? " hoje" : ""}" title="${d.data.toLocaleDateString("pt-BR")}: ${plural(d.n, "visita", "visitas")}">
-                  <span class="valor">${d.n || ""}</span>
-                  <span class="barra" style="height:${maior > 0 ? (d.n / maior) * 100 : 0}%"></span>
-                  <span class="dia">${d.data.getDate()}</span>
-                </div>`).join("")}</div>`}
+          <div class="bloco-titulo"><h2>Visitas nos últimos ${diasPeriodo} dias</h2></div>
+          ${total === 0 ? `<p class="vazio">Quando chegarem novas visitas, o gráfico diário aparecerá aqui.</p>` :
+          `<div class="grafico" role="img" aria-label="Visitas por dia nos últimos ${diasPeriodo} dias" style="grid-template-columns:repeat(${diasPeriodo},minmax(0,1fr))">${dias.map((d) => `
+            <div class="coluna${d.chave === hc ? " hoje" : ""}" title="${d.data.toLocaleDateString("pt-BR")}: ${plural(d.n, "visita", "visitas")}">
+              <span class="valor">${d.n || ""}</span><span class="barra" style="height:${maior > 0 ? (d.n / maior) * 100 : 0}%"></span><span class="dia">${d.data.getDate()}</span>
+            </div>`).join("")}</div>`}
         </div>
         <div class="bloco">
-          <div class="bloco-titulo"><h2>Por onde as pessoas chegaram</h2></div>
-          ${origens.length === 0
-            ? `<p class="vazio">Aqui vai aparecer de onde vieram as visitas (Instagram, Google, WhatsApp, link direto) assim que chegarem as primeiras.</p>`
-            : `<ul class="origens">${origens.map(([nome, n]) => `<li><span>${esc(nome)}</span><b>${n}</b><span class="trilho"><i style="width:${Math.round((n / total) * 100)}%"></i></span></li>`).join("")}</ul>`}
+          <div class="bloco-titulo"><h2>Por onde acessaram meu portfólio</h2></div>
+          ${origens.length === 0 ? `<p class="vazio">As origens aparecerão aqui conforme novas visitas forem registradas.</p>` :
+          `<ul class="origens">${origens.map(([nome, n]) => `<li><span>${esc(nome)}</span><b>${n}</b><span class="trilho"><i style="width:${Math.round((n / total) * 100)}%"></i></span></li>`).join("")}</ul>`}
         </div>
       </div>
-      <div class="bloco">
+      <div class="analytics-grade">
+        <div class="bloco">
+          <div class="bloco-titulo"><h2>Últimos vídeos assistidos</h2><span class="analytics-contagem">${reproducoes.length} reproduções</span></div>
+          ${recentes.length ? `<div class="analytics-lista">${recentes.map(e => `<div class="analytics-linha"><div class="analytics-mini">▶</div><div class="analytics-detalhe"><b>${esc(e.video_titulo || "Vídeo")}</b><small>${esc(e.video_marca || "Portfólio")} · ${fmtHora(e.criado_em)}</small></div></div>`).join("")}</div>` : `<p class="vazio">Quando alguém iniciar um vídeo no portfólio, ele aparecerá aqui.</p>`}
+        </div>
+        <div class="bloco">
+          <div class="bloco-titulo"><h2>Vídeos mais assistidos</h2></div>
+          ${videosTop.length ? `<ul class="analytics-ranking">${videosTop.slice(0,8).map(([nome,n]) => `<li><span>${esc(nome)}</span><b>${n}</b></li>`).join("")}</ul>` : `<p class="vazio">Ainda não há reproduções registradas.</p>`}
+        </div>
+        <div class="bloco">
+          <div class="bloco-titulo"><h2>Botões e links mais clicados</h2><span class="analytics-contagem">${cliques.length} cliques</span></div>
+          ${botoesTop.length ? `<ul class="analytics-ranking">${botoesTop.slice(0,8).map(([nome,n]) => `<li><span>${esc(nome)}</span><b>${n}</b></li>`).join("")}</ul>` : `<p class="vazio">Os cliques em links e botões aparecerão aqui.</p>`}
+        </div>
+        <div class="bloco">
+          <div class="bloco-titulo"><h2>Páginas mais visitadas</h2></div>
+          ${maisFrequente(visitas.map(v => v.pagina || "/")).length ? `<ul class="analytics-ranking">${maisFrequente(visitas.map(v => v.pagina || "/")).slice(0,8).map(([nome,n]) => `<li><span>${esc(nome)}</span><b>${n}</b></li>`).join("")}</ul>` : `<p class="vazio">Ainda não há páginas registradas.</p>`}
+        </div>
+      </div>
+      <p class="analytics-nota">Privacidade: usamos um identificador aleatório salvo no navegador para estimar visitantes únicos. Não coletamos nome, e-mail ou endereço IP. A lista de vídeos registra quando a reprodução começa, não o tempo total assistido.</p>
+      <div class="bloco" style="margin-top:16px">
         <div class="bloco-titulo"><h2>Meus vídeos</h2>
           <button class="btn btn-principal" type="button" id="video-novo">${ICONE.mais}Adicionar vídeo</button></div>
         ${faltando.videos ? `<p class="vazio">${esc(faltando.videos)}</p>` : dados.videos.length === 0 ? `<p class="vazio">Nenhum vídeo ainda. Clique em "Adicionar vídeo".</p>` : `
@@ -540,6 +574,7 @@
 
     $("#video-novo").addEventListener("click", () => formVideo());
     $("#btn-atualizar").addEventListener("click", () => atualizarPortfolio(true));
+    $("#portfolio-periodo").addEventListener("change", (e) => { window.__mbPortfolioPeriodo = e.target.value; desenhar("portfolio", desenharPortfolio); });
     $("#contar-minhas").addEventListener("change", (e) => {
       try { localStorage.setItem(CHAVE_CONTAR, e.target.checked ? "1" : "0"); } catch (er) {}
       aplicarContagem();

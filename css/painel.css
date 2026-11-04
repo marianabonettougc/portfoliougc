@@ -2368,3 +2368,22 @@ a.pc2-tag:hover{color:var(--texto)}
 .ct-p-acoes{flex-wrap:nowrap}.ct-p-acoes .btn{flex:1;justify-content:center}
 .ct-p-corpo{flex:1}
 .ct-p-nova{margin-top:auto;border-top:1px solid var(--linha);padding-top:10px}
+
+
+/* Analytics do portfólio: painel de desempenho */
+.analytics-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+.analytics-contagem{font-size:11px;color:var(--suave);font-weight:500}
+.analytics-lista{display:flex;flex-direction:column;gap:0}
+.analytics-linha{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--linha)}
+.analytics-linha:last-child{border-bottom:0}
+.analytics-mini{width:34px;height:42px;flex:0 0 34px;display:grid;place-items:center;border-radius:8px;background:var(--bege);color:var(--terracota);font-weight:700}
+.analytics-detalhe{min-width:0;display:flex;flex-direction:column;gap:2px}
+.analytics-detalhe b{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.analytics-detalhe small{font-size:10.5px;color:var(--suave)}
+.analytics-ranking{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.analytics-ranking li{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;font-size:12px}
+.analytics-ranking li span{min-width:0;overflow-wrap:anywhere}
+.analytics-ranking li b{font-variant-numeric:tabular-nums}
+.analytics-nota{font-size:10.5px;color:var(--suave);line-height:1.5;margin:10px 2px}
+@media(max-width:760px){.analytics-grade{grid-template-columns:1fr}}
+@media(max-width:560px){#portfolio-periodo{min-width:88px!important}.analytics-linha{gap:8px}}

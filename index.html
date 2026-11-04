@@ -28,6 +28,7 @@
 <!-- Banco de dados (Supabase): o site lê os vídeos, salva os contatos e conta as visitas -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="js/banco.js?v=202610121913" defer></script>
+<script src="js/analytics-portfolio.js?v=20261104" defer></script>
 <style>
   /* =========================================================
      IDENTIDADE: CARTÃO DE CAFETERIA PREMIUM
@@ -1681,6 +1682,7 @@ function fecharPlayer() {
 function abrirPlayer(d) {
   const id = idDoYoutube(d.link);
   if (!id) return;
+  let analyticsRegistrado = false;
   focoAntes = document.activeElement;
   pausarPrevias(true);
   // os vídeos da Mari são verticais: a janela abre em pé (para um vídeo deitado, use horizontal: true no bloco do vídeo)
@@ -1733,7 +1735,7 @@ function abrirPlayer(d) {
           clearInterval(relogio);
           relogio = setInterval(atualizarTempo, 250);
         },
-        onStateChange: (e) => { if (e.data === 1 || e.data === 3) semLegenda(e.target); if (e.data === 1) { try { e.target.setPlaybackQuality("hd1080"); } catch (er) {} } atualizarBotoes(); },
+        onStateChange: (e) => { if (e.data === 1 || e.data === 3) semLegenda(e.target); if (e.data === 1) { try { e.target.setPlaybackQuality("hd1080"); } catch (er) {} if (!analyticsRegistrado && window.MBAnalytics) { analyticsRegistrado = true; window.MBAnalytics.videoPlay({ titulo: d.titulo || d.marca || "Vídeo", link: d.link || "" }); } } atualizarBotoes(); },
         onApiChange: (e) => semLegenda(e.target)
       }
     });
@@ -2201,7 +2203,7 @@ async function registrarVisita(forcar) {
   const banco = await bancoPronto();
   if (!banco) return { ok: false, motivo: "a ligação com o banco não carregou (js/banco.js ou a biblioteca do Supabase)" };
   try {
-    const { error } = await banco.from("visitas").insert({ pagina: location.pathname || "/", origem: deOndeVeio() });
+    const { error } = await banco.from("visitas").insert({ pagina: location.pathname || "/", origem: deOndeVeio(), visitante_id: window.MBAnalytics ? window.MBAnalytics.visitorId : null });
     if (error) { console.warn("Visita não registrada:", error); return { ok: false, motivo: `${error.code || ""} ${error.message || ""}`.trim() }; }
     try { sessionStorage.setItem("mb_visita", "1"); } catch (e) {}   // só marca depois de gravar de verdade
     return { ok: true };
