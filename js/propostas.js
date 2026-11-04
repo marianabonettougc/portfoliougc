@@ -158,7 +158,7 @@
   }
 
   function ligar(sec) {
-    $("[data-visao]", sec).forEach((b) => b.addEventListener("click", () => { st.visao = b.dataset.visao; pintar(); }));
+    $$("[data-visao]", sec).forEach((b) => b.addEventListener("click", () => { st.visao = b.dataset.visao; pintar(); }));
     const busca = $("#pp-busca", sec);
     busca.addEventListener("input", () => { st.busca = busca.value; const pos = busca.selectionStart; pintar(); const n = $("#pp-busca"); n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) { /* campo search */ } });
     $$("[data-dobra]", sec).forEach((d) => d.addEventListener("toggle", () => { st.abertos[d.dataset.dobra] = d.open; }));
