@@ -667,6 +667,9 @@ IDEIA PARA DEPOIS
     const sec = document.getElementById("aba-" + ABA);
     if (sec) { $("#ed-tema", sec).value = ""; $("#ed-roteiro", sec).value = ""; $("#ed-pedidos", sec).value = ""; }
     pintar(); pintarProjeto(); pintarStudio();
+    const app=appGestaoAtual();
+    studio.jobs=(app.jobs||[]).filter(j=>!j.exemplo); studio.roteiros=(app.roteiros||[]).filter(j=>!j.exemplo);
+    banco().from("painel_conteudo").select("id,tema,data,formato,status,marca").order("data",{ascending:false,nullsFirst:false}).limit(300).then(({data})=>{studio.conteudos=data||[];pintarStudio();});
   }
   function pintarProjeto() {
     const box = $("#ed-projeto"); if (!box) return;
