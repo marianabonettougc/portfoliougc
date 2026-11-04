@@ -64,13 +64,22 @@
     jobs:[],roteiros:[],conteudos:[],arquivos:[],gravacoes:[],entregas:[],aba:"visao",carregado:false };
   const STUDIO_ETAPAS=[["planejamento","Planejamento"],["pre_producao","Pré-produção"],["gravacao","Gravação"],["edicao","Edição"],["revisao","Revisão"],["entregue","Entregue"]];
   const studioAttr=v=>esc(v).replace(/\`/g,"&#96;");
-  function appGestaoAtual(){try{return window.parent&&window.parent.__estadoAtual?window.parent.__estadoAtual():(window.__estadoAtual?window.__estadoAtual():{});}catch(e){return {};}}
   async function carregarStudio(){
     if(!st.projeto){studio.carregado=false;pintarStudio();return;}
-    const app=appGestaoAtual();
-    studio.jobs=(app.jobs||[]).filter(j=>!j.exemplo);
-    studio.roteiros=(app.roteiros||[]).filter(j=>!j.exemplo);
+    // Jobs e roteiros ativos ficam no mesmo app_state que o aplicativo de gestão.
+    try{
+      const {data:{user}}=await banco().auth.getUser();
+      if(user){
+        const {data,error}=await banco().from("app_state").select("data").eq("user_id",user.id).maybeSingle();
+        if(error)throw error;
+        const app=(data&&data.data)||{};
+        studio.jobs=(app.jobs||[]).filter(j=>!j.exemplo);
+        studio.roteiros=(app.roteiros||[]).filter(j=>!j.exemplo);
+      }
+    }catch(e){studio.jobs=[];studio.roteiros=[];console.warn("Estúdio UGC: não foi possível ler jobs e roteiros",e);}
     try{const {data,error}=await banco().from("painel_conteudo").select("id,tema,data,formato,status,marca").order("data",{ascending:false,nullsFirst:false}).limit(300);if(error)throw error;studio.conteudos=data||[];}catch(e){studio.conteudos=[];}
+    const {data:projeto,error:erroProjeto}=await banco().from("edicao_projetos").select("*").eq("id",st.projeto.id).maybeSingle();
+    if(!erroProjeto&&projeto){studio.meta={job_id:projeto.job_id||"",roteiro_id:projeto.roteiro_id||"",conteudo_id:projeto.conteudo_id||null,etapa:projeto.etapa||"planejamento",prazo:projeto.prazo||"",observacoes:projeto.observacoes||""};}
     const id=st.projeto.id;
     const [arq,grav,ent]=await Promise.all([
       banco().from("edicao_arquivos").select("*").eq("projeto_id",id).order("criado_em",{ascending:false}),
