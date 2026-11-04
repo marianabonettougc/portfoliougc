@@ -64,9 +64,7 @@
     jobs:[],roteiros:[],conteudos:[],arquivos:[],gravacoes:[],entregas:[],aba:"visao",carregado:false };
   const STUDIO_ETAPAS=[["planejamento","Planejamento"],["pre_producao","Pré-produção"],["gravacao","Gravação"],["edicao","Edição"],["revisao","Revisão"],["entregue","Entregue"]];
   const studioAttr=v=>esc(v).replace(/\`/g,"&#96;");
-  async function carregarStudio(){
-    if(!st.projeto){studio.carregado=false;pintarStudio();return;}
-    // Jobs e roteiros ativos ficam no mesmo app_state que o aplicativo de gestão.
+  async function carregarOpcoesStudio(){
     try{
       const {data:{user}}=await banco().auth.getUser();
       if(user){
@@ -78,6 +76,11 @@
       }
     }catch(e){studio.jobs=[];studio.roteiros=[];console.warn("Estúdio UGC: não foi possível ler jobs e roteiros",e);}
     try{const {data,error}=await banco().from("painel_conteudo").select("id,tema,data,formato,status,marca").order("data",{ascending:false,nullsFirst:false}).limit(300);if(error)throw error;studio.conteudos=data||[];}catch(e){studio.conteudos=[];}
+    pintarStudio();
+  }
+  async function carregarStudio(){
+    if(!st.projeto){studio.carregado=false;pintarStudio();return;}
+    await carregarOpcoesStudio();
     const {data:projeto,error:erroProjeto}=await banco().from("edicao_projetos").select("*").eq("id",st.projeto.id).maybeSingle();
     if(!erroProjeto&&projeto){studio.meta={job_id:projeto.job_id||"",roteiro_id:projeto.roteiro_id||"",conteudo_id:projeto.conteudo_id||null,etapa:projeto.etapa||"planejamento",prazo:projeto.prazo||"",observacoes:projeto.observacoes||""};}
     const id=st.projeto.id;
@@ -678,10 +681,9 @@ IDEIA PARA DEPOIS
     studio.arquivos=[]; studio.gravacoes=[]; studio.entregas=[]; studio.aba="visao"; studio.carregado=false;
     const sec = document.getElementById("aba-" + ABA);
     if (sec) { $("#ed-tema", sec).value = ""; $("#ed-roteiro", sec).value = ""; $("#ed-pedidos", sec).value = ""; }
-    pintar(); pintarProjeto(); pintarStudio();
-    const app=appGestaoAtual();
-    studio.jobs=(app.jobs||[]).filter(j=>!j.exemplo); studio.roteiros=(app.roteiros||[]).filter(j=>!j.exemplo);
-    banco().from("painel_conteudo").select("id,tema,data,formato,status,marca").order("data",{ascending:false,nullsFirst:false}).limit(300).then(({data})=>{studio.conteudos=data||[];pintarStudio();});
+    pintar(); pintarProjeto();
+    carregarOpcoesStudio();
+    pintarStudio();
   }
   function pintarProjeto() {
     const box = $("#ed-projeto"); if (!box) return;
