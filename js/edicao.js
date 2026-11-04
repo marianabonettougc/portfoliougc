@@ -59,6 +59,98 @@
   const tempo = (s) => { s = Math.max(0, Number(s) || 0); const m = Math.floor(s / 60); return m + ":" + String(Math.floor(s % 60)).padStart(2, "0") + "," + Math.floor((s % 1) * 10); };
   const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
   const uid = () => Math.random().toString(36).slice(2, 9);
+  // Estúdio UGC: extensão ao editor existente, sem duplicar ferramentas.
+  const studio = { meta:{job_id:"",roteiro_id:"",conteudo_id:null,etapa:"planejamento",prazo:"",observacoes:""},
+    jobs:[],roteiros:[],conteudos:[],arquivos:[],gravacoes:[],entregas:[],aba:"visao",carregado:false };
+  const STUDIO_ETAPAS=[["planejamento","Planejamento"],["pre_producao","Pré-produção"],["gravacao","Gravação"],["edicao","Edição"],["revisao","Revisão"],["entregue","Entregue"]];
+  const studioAttr=v=>esc(v).replace(/\`/g,"&#96;");
+  function appGestaoAtual(){try{return window.parent&&window.parent.__estadoAtual?window.parent.__estadoAtual():(window.__estadoAtual?window.__estadoAtual():{});}catch(e){return {};}}
+  async function carregarStudio(){
+    if(!st.projeto){studio.carregado=false;pintarStudio();return;}
+    const app=appGestaoAtual();
+    studio.jobs=(app.jobs||[]).filter(j=>!j.exemplo);
+    studio.roteiros=(app.roteiros||[]).filter(j=>!j.exemplo);
+    try{const {data,error}=await banco().from("painel_conteudo").select("id,tema,data,formato,status,marca").order("data",{ascending:false,nullsFirst:false}).limit(300);if(error)throw error;studio.conteudos=data||[];}catch(e){studio.conteudos=[];}
+    const id=st.projeto.id;
+    const [arq,grav,ent]=await Promise.all([
+      banco().from("edicao_arquivos").select("*").eq("projeto_id",id).order("criado_em",{ascending:false}),
+      banco().from("edicao_gravacoes").select("*").eq("projeto_id",id).order("data",{ascending:true}),
+      banco().from("edicao_entregas").select("*").eq("projeto_id",id).order("criado_em",{ascending:false})
+    ]);
+    studio.arquivos=arq.error?[]:(arq.data||[]);
+    studio.gravacoes=grav.error?[]:(grav.data||[]);
+    studio.entregas=ent.error?[]:(ent.data||[]);
+    studio.carregado=true;pintarStudio();
+  }
+  async function salvarMetaStudio(campo,valor){
+    if(!st.projeto){toast("Salve o projeto antes de vincular informações.",true);return;}
+    const {error}=await banco().from("edicao_projetos").update({[campo]:valor}).eq("id",st.projeto.id);
+    if(error){toast("Não consegui salvar: "+error.message,true);return;}
+    studio.meta[campo]=valor;
+  }
+  async function criarRegistroStudio(tabela,campos){
+    if(!st.projeto)throw new Error("Salve o projeto de edição primeiro.");
+    const {data,error}=await banco().from(tabela).insert({projeto_id:st.projeto.id,...campos}).select().single();
+    if(error)throw error;return data;
+  }
+  const nomeJobStudio=j=>[j.marca||j.cliente||"Marca",j.campanha||j.titulo||"Job"].join(" · ");
+  function pintarStudio(){
+    const host=$("#ed-studio");if(!host)return;
+    const opts=(xs,v)=>xs.map(x=>'<option value="'+studioAttr(x.value)+'" '+(String(v)===String(x.value)?"selected":"")+'>'+esc(x.label)+'</option>').join("");
+    const job=studio.jobs.find(j=>String(j.id)===String(studio.meta.job_id));
+    const roteiro=studio.roteiros.find(r=>String(r.id)===String(studio.meta.roteiro_id));
+    host.innerHTML=`
+      <section class="ed-cartao es-topo">
+       <div class="ed-titulo-linha"><h3 class="ed-titulo">Estúdio de produção</h3><span class="ed-sub">${job?esc(nomeJobStudio(job)):"Projeto independente"}</span></div>
+       <div class="es-kpis"><div><b>${studio.arquivos.length}</b><small>arquivos</small></div><div><b>${studio.gravacoes.length}</b><small>gravações</small></div><div><b>${studio.entregas.length}</b><small>entregas</small></div></div>
+       ${st.projeto?'<div class="es-grid"><label class="ed-rotulo">Job / campanha<select class="entrada" data-studio-meta="job_id"><option value="">Sem vínculo</option>'+opts(studio.jobs.map(j=>({value:j.id,label:nomeJobStudio(j)})),studio.meta.job_id)+'</select></label><label class="ed-rotulo">Roteiro<select class="entrada" data-studio-meta="roteiro_id"><option value="">Sem vínculo</option>'+opts(studio.roteiros.map(j=>({value:j.id,label:j.titulo||"Roteiro"})),studio.meta.roteiro_id)+'</select></label><label class="ed-rotulo">Conteúdo planejado<select class="entrada" data-studio-meta="conteudo_id"><option value="">Sem vínculo</option>'+opts(studio.conteudos.map(j=>({value:j.id,label:(j.data?j.data.slice(0,10)+" · ":"")+(j.tema||"Conteúdo")})),studio.meta.conteudo_id)+'</select></label><label class="ed-rotulo">Etapa<select class="entrada" data-studio-meta="etapa">'+opts(STUDIO_ETAPAS.map(j=>({value:j[0],label:j[1]})),studio.meta.etapa)+'</select></label><label class="ed-rotulo">Prazo<input type="date" class="entrada" data-studio-meta="prazo" value="'+studioAttr(studio.meta.prazo||"")+'"></label><label class="ed-rotulo es-wide">Notas<textarea class="entrada" rows="2" data-studio-meta="observacoes">'+esc(studio.meta.observacoes||"")+'</textarea></label></div>':'<p class="ed-obs">Salve o primeiro projeto para ativar os vínculos, arquivos e acompanhamento de produção. O editor automático continua disponível nesta tela.</p>'}
+       <p class="ed-obs">A edição por IA, storyboard, variações e capa continuam no editor existente. Esta área conecta a produção a jobs, roteiros e entregas.</p>
+      </section>
+      <nav class="es-tabs"><button data-studio-tab="visao" class="${studio.aba==="visao"?"on":""}">Visão geral</button><button data-studio-tab="arquivos" class="${studio.aba==="arquivos"?"on":""}">Arquivos · ${studio.arquivos.length}</button><button data-studio-tab="gravacoes" class="${studio.aba==="gravacoes"?"on":""}">Gravações · ${studio.gravacoes.length}</button><button data-studio-tab="entregas" class="${studio.aba==="entregas"?"on":""}">Entregas · ${studio.entregas.length}</button></nav>
+      <div class="es-conteudo">${studio.aba==="arquivos"?renderArquivosStudio():studio.aba==="gravacoes"?renderGravacoesStudio():studio.aba==="entregas"?renderEntregasStudio():renderVisaoStudio(job,roteiro)}</div>`;
+    host.querySelectorAll("[data-studio-meta]").forEach(el=>el.addEventListener("change",()=>salvarMetaStudio(el.dataset.studioMeta,el.value||null)));
+    host.querySelectorAll("[data-studio-tab]").forEach(el=>el.addEventListener("click",()=>{studio.aba=el.dataset.studioTab;pintarStudio();}));
+    const fi=$("#es-arquivo",host);if(fi)fi.addEventListener("change",()=>anexarArquivoStudio(fi.files&&fi.files[0]));
+    const bg=$("#es-gravacao",host);if(bg)bg.addEventListener("click",criarGravacaoStudio);
+    const be=$("#es-entrega",host);if(be)be.addEventListener("click",criarEntregaStudio);
+    host.querySelectorAll("[data-gravacao-status]").forEach(el=>el.addEventListener("change",()=>atualizarRegistroStudio("edicao_gravacoes",el.dataset.gravacaoStatus,{status:el.value})));
+    host.querySelectorAll("[data-entrega-status]").forEach(el=>el.addEventListener("change",()=>atualizarRegistroStudio("edicao_entregas",el.dataset.entregaStatus,{status:el.value})));
+    host.querySelectorAll("[data-arquivo-remover]").forEach(el=>el.addEventListener("click",()=>removerArquivoStudio(el.dataset.arquivoRemover)));
+  }
+  function renderVisaoStudio(job,roteiro){
+    const ix=STUDIO_ETAPAS.findIndex(x=>x[0]===studio.meta.etapa);
+    return `<div class="es-resumo"><section class="ed-cartao"><h3 class="ed-titulo">Produção em andamento</h3><p>${job?esc(nomeJobStudio(job)):"Vincule um job ou mantenha independente."}</p><small>${roteiro?"Roteiro: "+esc(roteiro.titulo||"Roteiro vinculado"):"Nenhum roteiro vinculado"}</small><div class="es-progresso"><span style="width:${Math.round((Math.max(ix,0)+1)/STUDIO_ETAPAS.length*100)}%"></span></div><small>${STUDIO_ETAPAS[Math.max(ix,0)][1]}</small></section><section class="ed-cartao"><h3 class="ed-titulo">Fluxo de trabalho</h3><ol class="ed-lista"><li>Conferir briefing e roteiro</li><li>Planejar cenas e gravação</li><li>Editar no editor automático existente</li><li>Preparar capa, revisar e registrar entregas</li></ol></section></div><section class="ed-cartao"><h3 class="ed-titulo">Ferramentas já integradas</h3><p class="ed-obs">Editor automático, correções por IA, análise de referência, storyboard, cortes, legendas, efeitos, capas, variações e carrossel. Sem duplicar funcionalidades.</p></section>`;
+  }
+  function renderArquivosStudio(){
+    return `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Arquivos do projeto</h3><label class="btn">Adicionar arquivo<input id="es-arquivo" type="file" hidden></label></div><p class="ed-obs">Anexos ficam em armazenamento privado. O vídeo bruto continua no aparelho até ser enviado explicitamente.</p>${studio.arquivos.map(a=>`<div class="es-item"><div><b>${esc(a.nome)}</b><small>${esc(a.tipo)} · ${a.tamanho?Math.round(a.tamanho/1024)+" KB":"arquivo"}</small></div><button class="icone-btn" type="button" data-arquivo-remover="${a.id}">${ic.x}</button></div>`).join("")||'<p class="rr-vazio">Nenhum arquivo anexado.</p>'}</section>`;
+  }
+  function renderGravacoesStudio(){
+    return `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Gravações</h3><button class="btn btn-principal" id="es-gravacao">+ Planejar gravação</button></div>${studio.gravacoes.map(g=>`<div class="es-item"><div><b>${esc(g.titulo)}</b><small>${esc(g.data||"Sem data")}</small></div><select class="entrada" data-gravacao-status="${g.id}"><option value="planejada" ${g.status==="planejada"?"selected":""}>Planejada</option><option value="gravada" ${g.status==="gravada"?"selected":""}>Gravada</option><option value="cancelada" ${g.status==="cancelada"?"selected":""}>Cancelada</option></select></div>`).join("")||'<p class="rr-vazio">Nenhuma gravação planejada.</p>'}</section>`;
+  }
+  function renderEntregasStudio(){
+    return `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Entregas</h3><button class="btn btn-principal" id="es-entrega">+ Nova entrega</button></div>${studio.entregas.map(e=>`<div class="es-item"><div><b>${esc(e.titulo)}</b><small>${esc(e.formato)} · v${e.versao} · prazo ${esc(e.prazo||"não definido")}</small>${e.link?'<a href="'+studioAttr(e.link)+'" target="_blank" rel="noopener">Abrir entrega</a>':""}</div><select class="entrada" data-entrega-status="${e.id}"><option value="em_producao" ${e.status==="em_producao"?"selected":""}>Em produção</option><option value="revisao_interna" ${e.status==="revisao_interna"?"selected":""}>Revisão interna</option><option value="enviada" ${e.status==="enviada"?"selected":""}>Enviada</option><option value="ajustes" ${e.status==="ajustes"?"selected":""}>Ajustes</option><option value="aprovada" ${e.status==="aprovada"?"selected":""}>Aprovada</option><option value="publicada" ${e.status==="publicada"?"selected":""}>Publicada</option></select></div>`).join("")||'<p class="rr-vazio">Nenhuma entrega cadastrada.</p>'}</section>`;
+  }
+  async function anexarArquivoStudio(file){
+    if(!file||!st.projeto)return;
+    try{const path=st.projeto.id+"/"+Date.now()+"-"+file.name.replace(/[^a-zA-Z0-9._-]/g,"_");const {error:up}=await banco().storage.from("estudio-ugc").upload(path,file,{upsert:false,contentType:file.type||"application/octet-stream"});if(up)throw up;const {data,error}=await banco().from("edicao_arquivos").insert({projeto_id:st.projeto.id,nome:file.name,tipo:file.type.startsWith("image/")?"imagem":file.type.startsWith("video/")?"video":"documento",storage_path:path,tamanho:file.size,mime_type:file.type}).select().single();if(error)throw error;studio.arquivos.unshift(data);pintarStudio();toast("Arquivo anexado.");}catch(e){toast("Não consegui anexar: "+e.message,true);}
+  }
+  async function criarGravacaoStudio(){
+    const titulo=prompt("Nome da gravação:");if(!titulo)return;const data=prompt("Data (AAAA-MM-DD), opcional:")||null;
+    try{const {data:row,error}=await banco().from("edicao_gravacoes").insert({projeto_id:st.projeto.id,titulo,data,status:"planejada",checklist:[{texto:"Separar materiais",feito:false},{texto:"Conferir roteiro e cenas",feito:false},{texto:"Gravar falas e gancho",feito:false},{texto:"Gravar b-roll",feito:false}]}).select().single();if(error)throw error;studio.gravacoes.push(row);studio.aba="gravacoes";pintarStudio();}catch(e){toast(e.message,true);}
+  }
+  async function criarEntregaStudio(){
+    const titulo=prompt("Nome da entrega (ex.: Reels 01, Stories 1/3):");if(!titulo)return;
+    try{const {data:row,error}=await banco().from("edicao_entregas").insert({projeto_id:st.projeto.id,titulo,formato:"Reels",prazo:studio.meta.prazo||null}).select().single();if(error)throw error;studio.entregas.unshift(row);studio.aba="entregas";pintarStudio();}catch(e){toast(e.message,true);}
+  }
+  async function atualizarRegistroStudio(tabela,id,campos){
+    const {error}=await banco().from(tabela).update({...campos,atualizado_em:new Date().toISOString()}).eq("id",id);if(error){toast(error.message,true);return;}
+    const arr=tabela==="edicao_gravacoes"?studio.gravacoes:studio.entregas;const x=arr.find(i=>i.id===id);if(x)Object.assign(x,campos);
+  }
+  async function removerArquivoStudio(id){
+    const a=studio.arquivos.find(x=>x.id===id);if(!a||!confirm("Remover o anexo deste projeto?"))return;
+    try{if(a.storage_path){const {error:s}=await banco().storage.from("estudio-ugc").remove([a.storage_path]);if(s)throw s;}const {error}=await banco().from("edicao_arquivos").delete().eq("id",id);if(error)throw error;studio.arquivos=studio.arquivos.filter(x=>x.id!==id);pintarStudio();}catch(e){toast(e.message,true);}
+  }
+
   const MARCA_V3 = "SÓ ESTAS REFERÊNCIAS (out/2026, v5)";
   const PADRAO = `PADRÃO DE EDIÇÃO DA MARI. SÓ ESTAS REFERÊNCIAS (out/2026, v5): DaN7lnRi16X, Daa8wYaCgkQ e DdIK7JosJYp (vídeos dela), DbT3IhlRUgA e DWzaZKBj6I7. Ignore qualquer referência ou estilo antigo.
 
