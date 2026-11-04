@@ -69,6 +69,11 @@
     return c.lista.some((e) => semAcento([e.de_nome, e.de_email, e.assunto, e.resumo, e.marca, e.plataforma, e.trecho].join(" ")).includes(q));
   }
 
+  const textoConversa = (c) => semAcento(c.lista.map((e) => [e.de_nome, e.de_email, e.assunto, e.resumo, e.marca, e.plataforma, e.trecho].join(" ")).join(" "));
+  const ehShein = (c) => /shein|sheincreatorcenter|kolus/.test(textoConversa(c));
+  const ehCurso = (c) => /curso|cursos|aula|mentoria|treinamento|formacao|masterclass|workshop|aluno|aluna|acesso liberado|material didatico/.test(textoConversa(c));
+  const ehPubliComercial = (c) => !ehShein(c) && !ehCurso(c) && c.lista.some((e) => e.tipo === "proposta" && e.status !== "nao_proposta" && e.status !== "arquivado");
+  const conversasCategoria = (pred) => conversas((e) => e.status !== "nao_proposta" && e.status !== "arquivado").filter(pred).filter(casaBusca);
   function pintarBolinha() {
     const b = $('.menu-item[data-aba="propostas"]') || $('.menu-item[data-aba="marcas"]'); if (!b) return;
     const n = conversas(ehProposta).filter((c) => c.naoLida).length;
@@ -126,14 +131,21 @@
     const props = conversas(ehProposta).filter(casaBusca);
     const arquivados = conversas((e) => e.status === "arquivado").filter(casaBusca);
     const plats = conversas(ehPlataforma).filter(casaBusca);
+    const shein = conversasCategoria(ehShein);
+    const publi = conversasCategoria(ehPubliComercial);
+    const cursos = conversasCategoria(ehCurso);
     const autos = st.emails.filter((e) => e.tipo === "automatico" && e.status !== "nao_proposta").filter((e) => casaBusca({ lista: [e] }));
     const naos = st.emails.filter((e) => e.status === "nao_proposta").filter((e) => casaBusca({ lista: [e] }));
     const naoLidas = conversas(ehProposta).filter((c) => c.naoLida).length;
     const linhaMini = (e, acao, texto) => `<li data-email="${e.id}"><span class="pp-mini-de">${esc(e.de_nome || e.de_email || "")}</span><span class="pp-mini-ass">${esc(e.assunto || "")}</span><span class="pp-mini-data">${dataCurta(e.recebido_em)}</span><button class="pp-link" data-mini="${acao}">${texto}</button></li>`;
     sec.innerHTML = `
-      <div class="pp-visoes" role="tablist" aria-label="Visualização das propostas">
-        <button type="button" class="btn btn-mini ${st.visao === "ativas" ? "btn-principal" : ""}" data-visao="ativas">Propostas e oportunidades</button>
+      <div class="pp-visoes" role="tablist" aria-label="Pastas de e-mails">
+        <button type="button" class="btn btn-mini ${st.visao === "ativas" ? "btn-principal" : ""}" data-visao="ativas">Propostas</button>
         <button type="button" class="btn btn-mini ${st.visao === "arquivadas" ? "btn-principal" : ""}" data-visao="arquivadas">Arquivados (${arquivados.length})</button>
+        <button type="button" class="btn btn-mini ${st.visao === "plataformas" ? "btn-principal" : ""}" data-visao="plataformas">Plataformas (${plats.length})</button>
+        <button type="button" class="btn btn-mini ${st.visao === "shein" ? "btn-principal" : ""}" data-visao="shein">Shein (${shein.length})</button>
+        <button type="button" class="btn btn-mini ${st.visao === "publi" ? "btn-principal" : ""}" data-visao="publi">Publi comercial (${publi.length})</button>
+        <button type="button" class="btn btn-mini ${st.visao === "cursos" ? "btn-principal" : ""}" data-visao="cursos">Cursos (${cursos.length})</button>
       </div>
       <div class="pp-topo">
         <input class="pp-busca" type="search" id="pp-busca" placeholder="Filtrar (ex.: nome da marca)" value="${esc(st.busca)}">
@@ -141,14 +153,13 @@
       </div>
       ${st.visao === "ativas" ? `<section class="pp-bloco">
         <h2 class="pp-titulo">Propostas</h2>
-        <p class="pp-sub">${props.length} ${props.length === 1 ? "conversa escrita por pessoas" : "conversas escritas por pessoas"} nos últimos 90 dias · ${naoLidas} ${naoLidas === 1 ? "não lida" : "não lidas"}</p>
+        <p class="pp-sub">${props.length} conversas escritas por pessoas nos últimos 90 dias · ${naoLidas} não lidas</p>
         <div class="pp-lista">${props.map((c) => cartao(c, false)).join("") || `<p class="pp-vazio">Nenhuma proposta${st.busca ? " com esse filtro" : " por enquanto"}.</p>`}</div>
-      </section>
-      <section class="pp-bloco">
-        <h2 class="pp-titulo">Oportunidades em plataformas</h2>
-        <p class="pp-sub">Creators.llc, Creatify, Conty, BrandLovers e parecidas · ${plats.length} ${plats.length === 1 ? "conversa" : "conversas"}</p>
-        <div class="pp-lista">${plats.map((c) => cartao(c, true)).join("") || `<p class="pp-vazio">Nada de plataforma${st.busca ? " com esse filtro" : " por enquanto"}.</p>`}</div>
-      </section>` : `<section class="pp-bloco"><h2 class="pp-titulo">Arquivados</h2><p class="pp-sub">${arquivados.length} ${arquivados.length === 1 ? "conversa guardada" : "conversas guardadas"} · ficam aqui até você desarquivar</p><div class="pp-lista">${arquivados.map((c) => cartao(c, c.topo.tipo === "plataforma", true)).join("") || `<p class="pp-vazio">Sua pasta de arquivados está vazia.</p>`}</div></section>`}
+      </section>` : st.visao === "arquivadas" ? `<section class="pp-bloco"><h2 class="pp-titulo">Arquivados</h2><p class="pp-sub">${arquivados.length} conversas guardadas · ficam aqui até você desarquivar</p><div class="pp-lista">${arquivados.map((c) => cartao(c, c.topo.tipo === "plataforma", true)).join("") || `<p class="pp-vazio">Sua pasta de arquivados está vazia.</p>`}</div></section>` :
+      st.visao === "plataformas" ? `<section class="pp-bloco"><h2 class="pp-titulo">Plataformas</h2><p class="pp-sub">${plats.length} conversas de plataformas</p><div class="pp-lista">${plats.map((c) => cartao(c, true)).join("") || `<p class="pp-vazio">Nenhuma conversa de plataforma por enquanto.</p>`}</div></section>` :
+      st.visao === "shein" ? `<section class="pp-bloco"><h2 class="pp-titulo">Shein</h2><p class="pp-sub">${shein.length} conversas relacionadas à SHEIN</p><div class="pp-lista">${shein.map((c) => cartao(c, c.topo.tipo === "plataforma")).join("") || `<p class="pp-vazio">Nenhum e-mail da SHEIN encontrado.</p>`}</div></section>` :
+      st.visao === "publi" ? `<section class="pp-bloco"><h2 class="pp-titulo">Publi comercial</h2><p class="pp-sub">${publi.length} propostas comerciais</p><div class="pp-lista">${publi.map((c) => cartao(c, false)).join("") || `<p class="pp-vazio">Nenhuma proposta comercial por enquanto.</p>`}</div></section>` :
+      `<section class="pp-bloco"><h2 class="pp-titulo">Cursos</h2><p class="pp-sub">${cursos.length} conversas relacionadas a cursos e treinamentos</p><div class="pp-lista">${cursos.map((c) => cartao(c, c.topo.tipo === "plataforma")).join("") || `<p class="pp-vazio">Nenhum e-mail de cursos encontrado.</p>`}</div></section>`}
       ${st.visao === "ativas" ? `<details class="pp-dobra" ${st.abertos.auto ? "open" : ""} data-dobra="auto"><summary>E-mails automáticos (${autos.length})</summary>
         <ul class="pp-mini">${autos.map((e) => linhaMini(e, "eproposta", "é proposta")).join("") || "<li class='pp-vazio'>Nenhum.</li>"}</ul></details>
       <details class="pp-dobra" ${st.abertos.nao ? "open" : ""} data-dobra="nao"><summary>Marcados como não é proposta (${naos.length})</summary>
