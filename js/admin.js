@@ -502,7 +502,7 @@
     const fmtHora = (v) => { const d = new Date(v); return d.toLocaleDateString("pt-BR") + " · " + d.toLocaleTimeString("pt-BR", {hour:"2-digit",minute:"2-digit"}); };
     sec.innerHTML = `
       <div class="ferramentas" style="margin-bottom:10px">
-        <span style="font-size:11.5px;color:var(--suave)">${hora ? `Atualizado às ${hora}. Atualização automática a cada minuto.` : "Carregando os números..."}</span>
+        <span style="font-size:11.5px;color:var(--suave)">${hora ? `Atualizado às ${hora}. Atualização em tempo real quando conectada.` : "Carregando os números..."}</span>
         <div class="direita">
           <label class="check-linha" style="margin:0;font-size:11.5px;color:var(--suave)" title="Desligado: suas visitas neste navegador não entram nas métricas.">
             <input type="checkbox" id="contar-minhas"${contarMinhas() ? " checked" : ""}> Contar minhas visitas</label>
@@ -2929,9 +2929,43 @@
     desenhar("portfolio", desenharPortfolio);
     if (manual) avisar("Números atualizados");
   }
-  // sozinho a cada minuto, só quando a aba do navegador está aberta na frente
-  setInterval(() => { if (!document.hidden && !janela.open) atualizarPortfolio(false); }, 60000);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) atualizarPortfolio(false); });
+  // Atualização em tempo real via Supabase Realtime.
+  // As tabelas visitas e portfolio_eventos precisam estar na publicação supabase_realtime.
+  let atualizacaoPendente = false;
+  let canalAnalytics = null;
+  function agendarAtualizacaoTempoReal() {
+    if (atualizacaoPendente || document.hidden || janela.open) return;
+    atualizacaoPendente = true;
+    setTimeout(async () => {
+      atualizacaoPendente = false;
+      if (!document.hidden && !janela.open) await atualizarPortfolio(false);
+    }, 450);
+  }
+  function iniciarTempoRealAnalytics() {
+    const status = (texto, conectado) => {
+      const el = $("#portfolio-realtime-status");
+      if (el) { el.textContent = texto; el.style.color = conectado ? "#4f7a54" : "#987f6e"; }
+    };
+    if (!banco || typeof banco.channel !== "function") {
+      status("Atualização automática ativa", false);
+      return;
+    }
+    canalAnalytics = banco.channel("portfolio-analytics-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "visitas" }, agendarAtualizacaoTempoReal)
+      .on("postgres_changes", { event: "*", schema: "public", table: "portfolio_eventos" }, agendarAtualizacaoTempoReal)
+      .subscribe((estado) => {
+        if (estado === "SUBSCRIBED") status("● Tempo real ativo", true);
+        else if (estado === "CHANNEL_ERROR" || estado === "TIMED_OUT" || estado === "CLOSED") status("Reconectando…", false);
+      });
+  }
+  iniciarTempoRealAnalytics();
+  // Rede de segurança: atualiza a cada 30 segundos caso a conexão em tempo real caia.
+  setInterval(() => {
+    if (!document.hidden && !janela.open) atualizarPortfolio(false);
+  }, 30000);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) atualizarPortfolio(false);
+  });
 
   mostrarAba((location.hash || "").replace("#", "") || "portfolio");
   // Desenha logo de cara (vazio) e vai preenchendo conforme os dados chegam
