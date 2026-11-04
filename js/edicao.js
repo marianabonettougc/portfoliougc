@@ -125,6 +125,7 @@
     const bg=$("#es-gravacao",host);if(bg)bg.addEventListener("click",criarGravacaoStudio);
     const be=$("#es-entrega",host);if(be)be.addEventListener("click",criarEntregaStudio);
     host.querySelectorAll("[data-gravacao-status]").forEach(el=>el.addEventListener("change",()=>atualizarRegistroStudio("edicao_gravacoes",el.dataset.gravacaoStatus,{status:el.value})));
+    host.querySelectorAll("[data-check-gravacao]").forEach(el=>el.addEventListener("change",()=>salvarChecklistGravacao(el.dataset.checkGravacao,Number(el.dataset.checkIndex),el.checked)));
     host.querySelectorAll("[data-entrega-status]").forEach(el=>el.addEventListener("change",()=>atualizarRegistroStudio("edicao_entregas",el.dataset.entregaStatus,{status:el.value})));
     host.querySelectorAll("[data-arquivo-remover]").forEach(el=>el.addEventListener("click",()=>removerArquivoStudio(el.dataset.arquivoRemover)));
     host.querySelectorAll("[data-arquivo-abrir]").forEach(el=>el.addEventListener("click",()=>abrirArquivoStudio(el.dataset.arquivoAbrir)));
@@ -137,7 +138,10 @@
     return `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Arquivos do projeto</h3><label class="btn">Adicionar arquivo<input id="es-arquivo" type="file" hidden></label></div><p class="ed-obs">Anexos ficam em armazenamento privado. O vídeo bruto continua no aparelho até ser enviado explicitamente.</p>${studio.arquivos.map(a=>`<div class="es-item"><div><b>${esc(a.nome)}</b><small>${esc(a.tipo)} · ${a.tamanho?Math.round(a.tamanho/1024)+" KB":"arquivo"}</small></div><div><button class="btn btn-ghost btn-sm" type="button" data-arquivo-abrir="${a.id}">Abrir</button> <button class="icone-btn" type="button" data-arquivo-remover="${a.id}">${ic.x}</button></div></div>`).join("")||'<p class="rr-vazio">Nenhum arquivo anexado.</p>'}</section>`;
   }
   function renderGravacoesStudio(){
-    return `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Gravações</h3><button class="btn btn-principal" id="es-gravacao">+ Planejar gravação</button></div>${studio.gravacoes.map(g=>`<div class="es-item"><div><b>${esc(g.titulo)}</b><small>${esc(g.data||"Sem data")}</small></div><select class="entrada" data-gravacao-status="${g.id}"><option value="planejada" ${g.status==="planejada"?"selected":""}>Planejada</option><option value="gravada" ${g.status==="gravada"?"selected":""}>Gravada</option><option value="cancelada" ${g.status==="cancelada"?"selected":""}>Cancelada</option></select></div>`).join("")||'<p class="rr-vazio">Nenhuma gravação planejada.</p>'}</section>`;
+    return `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Gravações</h3><button class="btn btn-principal" id="es-gravacao">+ Planejar gravação</button></div>
+      ${studio.gravacoes.map(g=>`<div class="es-item"><div><b>${esc(g.titulo)}</b><small>${esc(g.data||"Sem data")} · ${esc(g.local||"Local a definir")}</small>
+        <div class="es-checklist">${(g.checklist||[]).map((x,i)=>`<label><input type="checkbox" data-check-gravacao="${g.id}" data-check-index="${i}" ${x.feito?"checked":""}> ${esc(x.texto)}</label>`).join("")}</div></div>
+        <select class="entrada" data-gravacao-status="${g.id}"><option value="planejada" ${g.status==="planejada"?"selected":""}>Planejada</option><option value="gravada" ${g.status==="gravada"?"selected":""}>Gravada</option><option value="cancelada" ${g.status==="cancelada"?"selected":""}>Cancelada</option></select></div>`).join("")||'<p class="rr-vazio">Nenhuma gravação planejada.</p>'}</section>`;
   }
   function renderEntregasStudio(){
     return `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Entregas</h3><button class="btn btn-principal" id="es-entrega">+ Nova entrega</button></div>${studio.entregas.map(e=>`<div class="es-item"><div><b>${esc(e.titulo)}</b><small>${esc(e.formato)} · v${e.versao} · prazo ${esc(e.prazo||"não definido")}</small>${e.link?'<a href="'+studioAttr(e.link)+'" target="_blank" rel="noopener">Abrir entrega</a>':""}</div><select class="entrada" data-entrega-status="${e.id}"><option value="em_producao" ${e.status==="em_producao"?"selected":""}>Em produção</option><option value="revisao_interna" ${e.status==="revisao_interna"?"selected":""}>Revisão interna</option><option value="enviada" ${e.status==="enviada"?"selected":""}>Enviada</option><option value="ajustes" ${e.status==="ajustes"?"selected":""}>Ajustes</option><option value="aprovada" ${e.status==="aprovada"?"selected":""}>Aprovada</option><option value="publicada" ${e.status==="publicada"?"selected":""}>Publicada</option></select></div>`).join("")||'<p class="rr-vazio">Nenhuma entrega cadastrada.</p>'}</section>`;
@@ -161,8 +165,16 @@
     window.open(data.signedUrl,"_blank","noopener");
   }
   async function criarGravacaoStudio(){
-    const titulo=prompt("Nome da gravação:");if(!titulo)return;const data=prompt("Data (AAAA-MM-DD), opcional:")||null;
-    try{const {data:row,error}=await banco().from("edicao_gravacoes").insert({projeto_id:st.projeto.id,titulo,data,status:"planejada",checklist:[{texto:"Separar materiais",feito:false},{texto:"Conferir roteiro e cenas",feito:false},{texto:"Gravar falas e gancho",feito:false},{texto:"Gravar b-roll",feito:false}]}).select().single();if(error)throw error;studio.gravacoes.push(row);studio.aba="gravacoes";pintarStudio();}catch(e){toast(e.message,true);}
+    const titulo=prompt("Nome da gravação:");if(!titulo)return;
+    const data=prompt("Data (AAAA-MM-DD), opcional:")||null;
+    const local=prompt("Local da gravação (opcional):")||"";
+    try{const {data:row,error}=await banco().from("edicao_gravacoes").insert({projeto_id:st.projeto.id,titulo,data,local,status:"planejada",checklist:[{texto:"Separar produto e materiais",feito:false},{texto:"Conferir briefing e roteiro",feito:false},{texto:"Preparar cenário e iluminação",feito:false},{texto:"Gravar gancho e falas",feito:false},{texto:"Gravar b-roll e detalhes",feito:false}]}).select().single();if(error)throw error;studio.gravacoes.push(row);studio.aba="gravacoes";pintarStudio();}catch(e){toast(e.message,true);}
+  }
+  async function salvarChecklistGravacao(id,index,feito){
+    const g=studio.gravacoes.find(x=>x.id===id);if(!g)return;
+    const checklist=(g.checklist||[]).map((x,i)=>i===index?{...x,feito}:x);
+    const {error}=await banco().from("edicao_gravacoes").update({checklist,atualizado_em:new Date().toISOString()}).eq("id",id);
+    if(error){toast("Não consegui salvar o checklist: "+error.message,true);return;}g.checklist=checklist;
   }
   async function criarEntregaStudio(){
     const titulo=prompt("Nome da entrega (ex.: Reels 01, Stories 1/3):");if(!titulo)return;
