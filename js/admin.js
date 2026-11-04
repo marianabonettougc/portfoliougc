@@ -130,12 +130,15 @@
       delete faltando.visitas;
       const { data: eventos, error: erroEventos } = await banco.from("portfolio_eventos").select("*")
         .gte("criado_em", inicio.toISOString()).order("criado_em", { ascending: false }).limit(2000);
-      if (erroEventos) throw erroEventos;
-      dados.eventos = eventos || [];
-      delete faltando.eventos;
+      if (erroEventos) {
+        dados.eventos = [];
+        faltando.eventos = traduzErro(erroEventos, "portfolio_eventos");
+      } else {
+        dados.eventos = eventos || [];
+        delete faltando.eventos;
+      }
     } catch (err) {
       dados.visitas = [];
-      dados.eventos = [];
       faltando.visitas = traduzErro(err, "visitas");
     }
     mostrarAvisos();
@@ -518,7 +521,7 @@
         <div class="bloco">
           <div class="bloco-titulo"><h2>Visitas nos últimos ${diasPeriodo} dias</h2></div>
           ${total === 0 ? `<p class="vazio">Quando chegarem novas visitas, o gráfico diário aparecerá aqui.</p>` :
-          `<div class="grafico" role="img" aria-label="Visitas por dia nos últimos ${diasPeriodo} dias">${dias.map((d) => `
+          `<div class="grafico" role="img" aria-label="Visitas por dia nos últimos ${diasPeriodo} dias" style="grid-template-columns:repeat(${diasPeriodo},minmax(0,1fr))">${dias.map((d) => `
             <div class="coluna${d.chave === hc ? " hoje" : ""}" title="${d.data.toLocaleDateString("pt-BR")}: ${plural(d.n, "visita", "visitas")}">
               <span class="valor">${d.n || ""}</span><span class="barra" style="height:${maior > 0 ? (d.n / maior) * 100 : 0}%"></span><span class="dia">${d.data.getDate()}</span>
             </div>`).join("")}</div>`}
