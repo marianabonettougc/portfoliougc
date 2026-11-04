@@ -72,6 +72,7 @@
   const textoConversa = (c) => semAcento(c.lista.map((e) => [e.de_nome, e.de_email, e.assunto, e.resumo, e.marca, e.plataforma, e.trecho].join(" ")).join(" "));
   const ehShein = (c) => /shein|sheincreatorcenter|kolus/.test(textoConversa(c));
   const ehCurso = (c) => /curso|cursos|aula|mentoria|treinamento|formacao|masterclass|workshop|aluno|aluna|acesso liberado|material didatico/.test(textoConversa(c));
+  const ehAssinatura = (c) => /assinatura|subscription|renovacao|renovação|cobranca|cobrança|mensalidade|plano mensal|plano anual|fatura|recibo|pagamento recorrente|renova automaticamente|cancelamento de plano/.test(textoConversa(c));
   const ehPubliComercial = (c) => !ehShein(c) && !ehCurso(c) && c.lista.some((e) => e.tipo === "proposta" && e.status !== "nao_proposta" && e.status !== "arquivado");
   const conversasCategoria = (pred) => conversas((e) => e.status !== "nao_proposta" && e.status !== "arquivado").filter(pred).filter(casaBusca);
   function pintarBolinha() {
@@ -134,6 +135,7 @@
     const shein = conversasCategoria(ehShein);
     const publi = conversasCategoria(ehPubliComercial);
     const cursos = conversasCategoria(ehCurso);
+    const assinaturas = conversasCategoria(ehAssinatura);
     const autos = st.emails.filter((e) => e.tipo === "automatico" && e.status !== "nao_proposta").filter((e) => casaBusca({ lista: [e] }));
     const naos = st.emails.filter((e) => e.status === "nao_proposta").filter((e) => casaBusca({ lista: [e] }));
     const naoLidas = conversas(ehProposta).filter((c) => c.naoLida).length;
@@ -146,6 +148,7 @@
         <button type="button" class="btn btn-mini ${st.visao === "shein" ? "btn-principal" : ""}" data-visao="shein">Shein (${shein.length})</button>
         <button type="button" class="btn btn-mini ${st.visao === "publi" ? "btn-principal" : ""}" data-visao="publi">Publi comercial (${publi.length})</button>
         <button type="button" class="btn btn-mini ${st.visao === "cursos" ? "btn-principal" : ""}" data-visao="cursos">Cursos (${cursos.length})</button>
+        <button type="button" class="btn btn-mini ${st.visao === "assinaturas" ? "btn-principal" : ""}" data-visao="assinaturas">Assinatura (${assinaturas.length})</button>
       </div>
       <div class="pp-topo">
         <input class="pp-busca" type="search" id="pp-busca" placeholder="Filtrar (ex.: nome da marca)" value="${esc(st.busca)}">
@@ -159,7 +162,8 @@
       st.visao === "plataformas" ? `<section class="pp-bloco"><h2 class="pp-titulo">Plataformas</h2><p class="pp-sub">${plats.length} conversas de plataformas</p><div class="pp-lista">${plats.map((c) => cartao(c, true)).join("") || `<p class="pp-vazio">Nenhuma conversa de plataforma por enquanto.</p>`}</div></section>` :
       st.visao === "shein" ? `<section class="pp-bloco"><h2 class="pp-titulo">Shein</h2><p class="pp-sub">${shein.length} conversas relacionadas à SHEIN</p><div class="pp-lista">${shein.map((c) => cartao(c, c.topo.tipo === "plataforma")).join("") || `<p class="pp-vazio">Nenhum e-mail da SHEIN encontrado.</p>`}</div></section>` :
       st.visao === "publi" ? `<section class="pp-bloco"><h2 class="pp-titulo">Publi comercial</h2><p class="pp-sub">${publi.length} propostas comerciais</p><div class="pp-lista">${publi.map((c) => cartao(c, false)).join("") || `<p class="pp-vazio">Nenhuma proposta comercial por enquanto.</p>`}</div></section>` :
-      `<section class="pp-bloco"><h2 class="pp-titulo">Cursos</h2><p class="pp-sub">${cursos.length} conversas relacionadas a cursos e treinamentos</p><div class="pp-lista">${cursos.map((c) => cartao(c, c.topo.tipo === "plataforma")).join("") || `<p class="pp-vazio">Nenhum e-mail de cursos encontrado.</p>`}</div></section>`}
+      st.visao === "cursos" ? `<section class="pp-bloco"><h2 class="pp-titulo">Cursos</h2><p class="pp-sub">${cursos.length} conversas relacionadas a cursos e treinamentos</p><div class="pp-lista">${cursos.map((c) => cartao(c, c.topo.tipo === "plataforma")).join("") || `<p class="pp-vazio">Nenhum e-mail de cursos encontrado.</p>`}</div></section>` :
+      `<section class="pp-bloco"><h2 class="pp-titulo">Assinatura</h2><p class="pp-sub">${assinaturas.length} conversas sobre assinaturas, cobranças e renovações</p><div class="pp-lista">${assinaturas.map((c) => cartao(c, c.topo.tipo === "plataforma")).join("") || `<p class="pp-vazio">Nenhum e-mail de assinatura encontrado.</p>`}</div></section>`}
       ${st.visao === "ativas" ? `<details class="pp-dobra" ${st.abertos.auto ? "open" : ""} data-dobra="auto"><summary>E-mails automáticos (${autos.length})</summary>
         <ul class="pp-mini">${autos.map((e) => linhaMini(e, "eproposta", "é proposta")).join("") || "<li class='pp-vazio'>Nenhum.</li>"}</ul></details>
       <details class="pp-dobra" ${st.abertos.nao ? "open" : ""} data-dobra="nao"><summary>Marcados como não é proposta (${naos.length})</summary>
