@@ -4566,7 +4566,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;500;600;800&family=Montserrat:wght@700;800&family=Nunito:wght@800&family=Arimo:wght@700&family=Instrument+Serif:ital@1&family=Fredoka:wght@700&family=Caveat:wght@700&family=JetBrains+Mono:wght@500&display=swap"; document.head.appendChild(l); }
       montarTela(sec); st.pronto = true;
       carregarProjetos();
-      carregarOpcoesStudio().then(pintarStudio);
+      carregarOpcoesStudio().then(()=>{if(st.projeto) return carregarStudio(); pintarStudio();});
       carregarPadrao(); carregarMinhaFonte(); carregarEstilos();
       try { await Promise.all(["300 40px Poppins", "500 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"', "800 40px Montserrat", "700 40px Montserrat", "800 40px Nunito", "700 40px Arimo", 'italic 40px "Instrument Serif"', "700 40px Fredoka", "700 40px Caveat"].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
     }
