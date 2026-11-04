@@ -502,7 +502,7 @@
     const fmtHora = (v) => { const d = new Date(v); return d.toLocaleDateString("pt-BR") + " · " + d.toLocaleTimeString("pt-BR", {hour:"2-digit",minute:"2-digit"}); };
     sec.innerHTML = `
       <div class="ferramentas" style="margin-bottom:10px">
-        <span style="font-size:11.5px;color:var(--suave)">${hora ? `Atualizado às ${hora}. Atualização em tempo real quando conectada.` : "Carregando os números..."}</span>
+        <span style="font-size:11.5px;color:var(--suave)">${hora ? `Atualizado às ${hora}.` : "Carregando os números..."} <span id="portfolio-realtime-status" style="font-weight:600;color:#987f6e">Conectando ao tempo real…</span></span>
         <div class="direita">
           <label class="check-linha" style="margin:0;font-size:11.5px;color:var(--suave)" title="Desligado: suas visitas neste navegador não entram nas métricas.">
             <input type="checkbox" id="contar-minhas"${contarMinhas() ? " checked" : ""}> Contar minhas visitas</label>
