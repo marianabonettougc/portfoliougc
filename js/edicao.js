@@ -127,6 +127,8 @@
     host.querySelectorAll("[data-gravacao-status]").forEach(el=>el.addEventListener("change",()=>atualizarRegistroStudio("edicao_gravacoes",el.dataset.gravacaoStatus,{status:el.value})));
     host.querySelectorAll("[data-check-gravacao]").forEach(el=>el.addEventListener("change",()=>salvarChecklistGravacao(el.dataset.checkGravacao,Number(el.dataset.checkIndex),el.checked)));
     host.querySelectorAll("[data-entrega-status]").forEach(el=>el.addEventListener("change",()=>atualizarRegistroStudio("edicao_entregas",el.dataset.entregaStatus,{status:el.value})));
+    host.querySelectorAll("[data-entrega-link]").forEach(el=>el.addEventListener("click",()=>editarLinkEntregaStudio(el.dataset.entregaLink)));
+    host.querySelectorAll("[data-entrega-versao]").forEach(el=>el.addEventListener("click",()=>novaVersaoEntregaStudio(el.dataset.entregaVersao)));
     host.querySelectorAll("[data-arquivo-remover]").forEach(el=>el.addEventListener("click",()=>removerArquivoStudio(el.dataset.arquivoRemover)));
     host.querySelectorAll("[data-arquivo-abrir]").forEach(el=>el.addEventListener("click",()=>abrirArquivoStudio(el.dataset.arquivoAbrir)));
   }
@@ -144,7 +146,11 @@
         <select class="entrada" data-gravacao-status="${g.id}"><option value="planejada" ${g.status==="planejada"?"selected":""}>Planejada</option><option value="gravada" ${g.status==="gravada"?"selected":""}>Gravada</option><option value="cancelada" ${g.status==="cancelada"?"selected":""}>Cancelada</option></select></div>`).join("")||'<p class="rr-vazio">Nenhuma gravação planejada.</p>'}</section>`;
   }
   function renderEntregasStudio(){
-    return `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Entregas</h3><button class="btn btn-principal" id="es-entrega">+ Nova entrega</button></div>${studio.entregas.map(e=>`<div class="es-item"><div><b>${esc(e.titulo)}</b><small>${esc(e.formato)} · v${e.versao} · prazo ${esc(e.prazo||"não definido")}</small>${e.link?'<a href="'+studioAttr(e.link)+'" target="_blank" rel="noopener">Abrir entrega</a>':""}</div><select class="entrada" data-entrega-status="${e.id}"><option value="em_producao" ${e.status==="em_producao"?"selected":""}>Em produção</option><option value="revisao_interna" ${e.status==="revisao_interna"?"selected":""}>Revisão interna</option><option value="enviada" ${e.status==="enviada"?"selected":""}>Enviada</option><option value="ajustes" ${e.status==="ajustes"?"selected":""}>Ajustes</option><option value="aprovada" ${e.status==="aprovada"?"selected":""}>Aprovada</option><option value="publicada" ${e.status==="publicada"?"selected":""}>Publicada</option></select></div>`).join("")||'<p class="rr-vazio">Nenhuma entrega cadastrada.</p>'}</section>`;
+    return `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Entregas</h3><button class="btn btn-principal" id="es-entrega">+ Nova entrega</button></div>
+      ${studio.entregas.map(e=>`<div class="es-item"><div><b>${esc(e.titulo)}</b><small>${esc(e.formato)} · v${e.versao} · prazo ${esc(e.prazo||"não definido")}</small>
+        ${e.link?'<a href="'+studioAttr(e.link)+'" target="_blank" rel="noopener">Abrir entrega</a>':""}
+        <div class="es-entrega-acoes"><button class="btn btn-ghost btn-sm" type="button" data-entrega-link="${e.id}">${e.link?"Trocar link":"Adicionar link"}</button><button class="btn btn-ghost btn-sm" type="button" data-entrega-versao="${e.id}">Nova versão</button></div></div>
+        <select class="entrada" data-entrega-status="${e.id}"><option value="em_producao" ${e.status==="em_producao"?"selected":""}>Em produção</option><option value="revisao_interna" ${e.status==="revisao_interna"?"selected":""}>Revisão interna</option><option value="enviada" ${e.status==="enviada"?"selected":""}>Enviada</option><option value="ajustes" ${e.status==="ajustes"?"selected":""}>Ajustes</option><option value="aprovada" ${e.status==="aprovada"?"selected":""}>Aprovada</option><option value="publicada" ${e.status==="publicada"?"selected":""}>Publicada</option></select></div>`).join("")||'<p class="rr-vazio">Nenhuma entrega cadastrada.</p>'}</section>`;
   }
   async function anexarArquivoStudio(file){
     if(!file||!st.projeto)return;
@@ -179,6 +185,22 @@
   async function criarEntregaStudio(){
     const titulo=prompt("Nome da entrega (ex.: Reels 01, Stories 1/3):");if(!titulo)return;
     try{const {data:row,error}=await banco().from("edicao_entregas").insert({projeto_id:st.projeto.id,titulo,formato:"Reels",prazo:studio.meta.prazo||null}).select().single();if(error)throw error;studio.entregas.unshift(row);studio.aba="entregas";pintarStudio();}catch(e){toast(e.message,true);}
+  }
+  async function editarLinkEntregaStudio(id){
+    const e=studio.entregas.find(x=>x.id===id);if(!e)return;
+    const link=prompt("Cole o link do arquivo entregue (Drive, Dropbox, YouTube não listado etc.):",e.link||"");
+    if(link===null)return;
+    if(link && !/^https:\/\//i.test(link)){toast("Informe um link HTTPS válido.",true);return;}
+    await atualizarRegistroStudio("edicao_entregas",id,{link});
+    e.link=link;pintarStudio();
+  }
+  async function novaVersaoEntregaStudio(id){
+    const e=studio.entregas.find(x=>x.id===id);if(!e)return;
+    const titulo=prompt("Nome da nova versão:",e.titulo+" · V"+(Number(e.versao||1)+1));if(!titulo)return;
+    try{
+      const row=await criarRegistroStudio("edicao_entregas",{titulo,formato:e.formato,versao:Number(e.versao||1)+1,status:"em_producao",prazo:e.prazo||null});
+      studio.entregas.unshift(row);pintarStudio();
+    }catch(err){toast(err.message,true);}
   }
   async function atualizarRegistroStudio(tabela,id,campos){
     const {error}=await banco().from(tabela).update({...campos,atualizado_em:new Date().toISOString()}).eq("id",id);if(error){toast(error.message,true);return;}
