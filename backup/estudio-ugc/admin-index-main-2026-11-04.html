@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="conferindo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Cache-Control" content="no-cache">
+<script>
+// Atualiza sozinho: se existir uma versão mais nova do painel publicada, recarrega a página nova
+window.VERSAO_PAINEL = "202611042330";
+fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).then((j) => {
+  if (j.versao && j.versao !== window.VERSAO_PAINEL) {
+    const u = new URL(location.href);
+    if (u.searchParams.get("v") !== j.versao) { u.searchParams.set("v", j.versao); location.replace(u.toString()); }
+  }
+}).catch(() => {});
+</script>
+<title>Painel | Mari Bonetto</title>
+<!-- app na Tela de Início do celular (notificações) -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icones/icone-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Painel Mari">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#5a3a28">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/painel.css?v=202611042330">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/banco.js?v=202611042330"></script>
+<script src="../js/dialogos.js?v=202611042330"></script>
+<script src="../js/guardar-video.js?v=202611042330"></script>
+<script>
+// PRIMEIRA COISA: conferir a sessão. Sem sessão, vai para o login.
+// A página só aparece depois dessa conferência (antes ela fica escondida).
+window.sessaoPronta = (async function () {
+  const irProLogin = () => { location.replace("../login/"); return null; };
+  if (!window.banco) return irProLogin();
+  try {
+    const { data } = await window.banco.auth.getSession();
+    const sessao = data && data.session;
+    if (!sessao) return irProLogin();
+    if (sessao.user && sessao.user.email !== window.BANCO_EMAIL_DONA) {
+      await window.banco.auth.signOut();
+      return irProLogin();
+    }
+    return sessao;
+  } catch (e) {
+    return irProLogin();
+  }
+})();
+</script>
+</head>
+<body>
+<div class="painel" id="painel">
+  <!-- MENU LATERAL -->
+  <aside class="menu" id="menu" aria-label="Menu do painel">
+    <div class="menu-marca">Mari Bonetto<span>painel</span></div>
+
+    <div class="menu-secao" data-secao="hoje">
+      <button class="menu-grupo" type="button" aria-expanded="true">Hoje<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
+    <button class="menu-item" data-aba="dashboard" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5L12 5l8 6.5"/><path d="M6 10v9.5h12V10"/><path d="M10 19.5v-5h4v5"/></svg>Dashboard</button>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="conteudo">
+      <button class="menu-grupo" type="button" aria-expanded="true">Conteúdo<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
+    <button class="menu-item" data-aba="planejar" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M9 9.5v11M14.5 9.5v11M8 3v3M16 3v3"/></svg>Conteúdos</button>
+    <button class="menu-item" data-aba="quadro" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="16.5" y="4" width="4" height="7" rx="1.5"/></svg>Meus roteiros</button>
+    <button class="menu-item" data-aba="central" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M10 9.5v5l4-2.5z"/></svg>Referências</button>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="marcas-jobs">
+      <button class="menu-grupo" type="button" aria-expanded="true">Marcas e jobs<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
+    <button class="menu-item" data-aba="campanhas" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6.5" width="12.5" height="11" rx="2.5"/><path d="M15.5 10.5l5-3v9l-5-3z"/></svg>UGC's &amp; Publis</button>
+    <button class="menu-item" data-aba="marcas" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7"/><path d="M3 12.5h18"/></svg>Marcas</button>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="edicao">
+      <button class="menu-grupo" type="button" aria-expanded="true">Edição<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
+    <button class="menu-item" data-aba="edicao" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 9h17M3.5 15h17M8 5v4M16 5v4M8 15v4M16 15v4"/></svg>Edição de vídeos</button>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="dinheiro">
+      <button class="menu-grupo" type="button" aria-expanded="true">Dinheiro<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
+    <button class="menu-item" data-aba="financeiro" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9.5v5M17.5 9.5v5"/></svg>CNPJ geral</button>
+    <button class="menu-item" data-aba="tiktokshop" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9l1.5-4.5h13L20 9"/><path d="M4 9h16v2.5a2.7 2.7 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0A2.7 2.7 0 0 1 4 11.5z"/><path d="M5.5 13.5v6.5h13v-6.5"/></svg>TikTok Shop</button>
+    <a class="menu-item" href="/financeiro/" target="_blank" rel="noopener">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20.5c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>App de Finanças<svg class="traco menu-externo" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="meu-site">
+      <button class="menu-grupo" type="button" aria-expanded="true">Meu site<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
+    <button class="menu-item" data-aba="portfolio" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2.5"/><path d="M10 9.2v5.6l4.6-2.8z"/><path d="M8 21h8"/></svg>Portfólio</button>
+      </div>
+    </div>
+    <div class="menu-secao" data-secao="geral">
+      <button class="menu-grupo" type="button" aria-expanded="true">Ajustes<svg class="menu-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="menu-secao-itens">
+    <button class="menu-item" data-aba="config" type="button">
+      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>Configurações</button>
+      </div>
+    </div>
+
+    <div class="menu-rodape">
+      <div class="menu-email" id="menu-email"></div>
+      <button class="btn" id="btn-sair" type="button">
+        <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></svg>Sair</button>
+    </div>
+  </aside>
+  <div class="menu-fundo" id="menu-fundo"></div>
+
+  <!-- CONTEÚDO -->
+  <main class="conteudo">
+    <div class="topo">
+      <button class="icone-btn" id="btn-menu" type="button" aria-label="Abrir menu">
+        <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <h1 id="titulo-aba">Portfólio</h1>
+      <button class="btn olho-valores" id="btn-olho" type="button" aria-pressed="false" hidden>
+        <svg class="traco olho-aberto" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="traco olho-fechado" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16"/><path d="M9.9 5.8A9.7 9.7 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3 3.8M6.3 7.6A17 17 0 0 0 2.5 12S6 18.5 12 18.5a9.5 9.5 0 0 0 4.2-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+        <span id="olho-texto">Ocultar valores</span></button>
+    </div>
+    <div id="avisos" aria-live="polite"></div>
+    <nav class="sub-abas" id="sub-abas" aria-label="Partes desta área" hidden></nav>
+
+    <section class="aba" id="aba-portfolio"></section>
+    <section class="aba" id="aba-marcas" hidden></section>
+    <section class="aba" id="aba-calendario" hidden></section>
+    <section class="aba" id="aba-campanhas" hidden></section>
+    <section class="aba" id="aba-roteiros" hidden></section>
+    <section class="aba" id="aba-checklist" hidden></section>
+    <section class="aba aba-gestao" id="aba-gestao" hidden></section>
+    <section class="aba" id="aba-transcritos" hidden></section>
+    <section class="aba" id="aba-laboratorio" hidden></section>
+    <section class="aba" id="aba-editorial" hidden></section>
+    <section class="aba" id="aba-edicao" hidden></section>
+    <section class="aba" id="aba-planejar" hidden></section>
+    <section class="aba" id="aba-notificacoes" hidden></section>
+    <section class="aba" id="aba-ferarquivos" hidden></section>
+    <section class="aba" id="aba-fercapa" hidden></section>
+    <section class="aba" id="aba-ferideias" hidden></section>
+    <section class="aba" id="aba-propostas" hidden></section>
+  </main>
+</div>
+
+<!-- Janela usada por todos os formulários -->
+<dialog class="janela" id="janela">
+  <form method="dialog" id="janela-form" novalidate>
+    <div class="janela-cabeca"><div><small id="janela-sobretitulo" class="janela-sobretitulo" hidden></small><h2 id="janela-titulo"></h2></div>
+      <button class="icone-btn" type="button" id="janela-fechar" aria-label="Fechar">
+        <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="janela-corpo" id="janela-corpo"></div>
+    <div class="janela-rodape" id="janela-rodape"></div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="../js/lembretes.js?v=202611042330"></script>
+<script src="../js/biblioteca.js?v=202611042330"></script>
+<script src="../js/referencias.js?v=202611042330"></script>
+<script src="../js/admin.js?v=202611042330"></script>
+<script src="../js/roteiros-supadata.js?v=202611042330"></script>
+<script src="../js/laboratorio.js?v=202611042330"></script>
+<script src="../js/editorial.js?v=202611042330"></script>
+<script src="../js/edicao.js?v=202611042330"></script>
+<script src="../js/painel-conteudo.js?v=202611042330"></script>
+<script src="../js/ferramentas.js?v=202611042330"></script>
+<script src="../js/propostas.js?v=202611050130"></script>
+<script src="../js/corretor.js?v=202611042330"></script>
+</body>
+</html>
