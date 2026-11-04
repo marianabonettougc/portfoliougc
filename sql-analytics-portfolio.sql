@@ -3,7 +3,8 @@
 -- Não coleta nome, e-mail, IP ou dados de contato.
 
 alter table public.visitas
-  add column if not exists visitante_id text;
+  add column if not exists visitante_id text,
+  add column if not exists dispositivo text;
 
 create index if not exists visitas_data_idx on public.visitas (data desc);
 create index if not exists visitas_visitante_data_idx on public.visitas (visitante_id, data desc);
