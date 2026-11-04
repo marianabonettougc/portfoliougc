@@ -2769,10 +2769,33 @@ IDEIA PARA DEPOIS
   function montarTela(sec) {
     // layout "reel review" (referência do editor da getgitgirl), nas cores do painel dela: player 9:16 fixo à esquerda,
     // abas em pílula à direita e a linha do tempo com legendas e efeitos embaixo
+    if (!document.getElementById("ed-studio-css")) {
+      const css = document.createElement("style"); css.id = "ed-studio-css";
+      css.textContent = `
+        .ed-studio{margin:14px 0 20px}.ed-studio .ed-cartao{margin-bottom:10px}
+        .ed-studio .es-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+        .ed-studio .es-kpis>div{background:var(--sand);border-radius:12px;padding:11px 13px;display:flex;flex-direction:column}
+        .ed-studio .es-kpis b{font-size:20px;font-weight:700}.ed-studio .es-kpis small{color:var(--graphite-soft);font-size:11px}
+        .ed-studio .es-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+        .ed-studio .es-grid .ed-rotulo{display:flex;flex-direction:column;gap:5px}
+        .ed-studio .es-wide{grid-column:1/-1}
+        .ed-studio .es-tabs{display:flex;gap:6px;overflow:auto;padding:3px 0 10px}
+        .ed-studio .es-tabs button{border:1px solid var(--line);border-radius:999px;background:var(--card-bg);padding:8px 13px;color:var(--graphite-soft);font:inherit;font-size:12px;white-space:nowrap;cursor:pointer}
+        .ed-studio .es-tabs button.on{background:var(--graphite);color:#fff;border-color:var(--graphite)}
+        .ed-studio .es-resumo{display:grid;grid-template-columns:1.1fr .9fr;gap:10px}
+        .ed-studio .es-progresso{height:7px;background:var(--sand);border-radius:8px;overflow:hidden;margin:14px 0 6px}
+        .ed-studio .es-progresso span{display:block;height:100%;background:var(--butter);border-radius:8px}
+        .ed-studio .es-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+        .ed-studio .es-item>div{min-width:0;display:flex;flex-direction:column;gap:3px}.ed-studio .es-item small{font-size:11px;color:var(--graphite-soft)}
+        .ed-studio .es-item .entrada{max-width:175px}
+        @media(max-width:700px){.ed-studio .es-grid,.ed-studio .es-resumo{grid-template-columns:1fr}.ed-studio .es-kpis{gap:5px}.ed-studio .es-kpis>div{padding:9px}.ed-studio .es-kpis b{font-size:17px}}
+      `; document.head.appendChild(css);
+    }
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga ed rr">
-      <header class="rr-cabeca"><div><h2 class="rr-h1">edição de reels</h2><p class="rr-lede">Mande o bruto e eu edito no seu padrão. Você revisa cada corte, legenda e efeito antes de baixar.</p></div>
+      <header class="rr-cabeca"><div><h2 class="rr-h1">estúdio ugc</h2><p class="rr-lede">Organize jobs, roteiros, arquivos, gravações e entregas. A edição continua com todas as ferramentas que você já usa.</p></div>
         <div class="cr-acoes-topo"><button class="btn" type="button" id="ed-ver-padrao">Meu padrão de edição</button></div></header>
       <div class="ed-projeto" id="ed-projeto"></div>
+      <div class="ed-studio" id="ed-studio"></div>
       <ol class="ed-passos" id="ed-passos" aria-label="Passos da edição"></ol>
       <div class="rr-wrap">
         <aside class="rr-lado">
