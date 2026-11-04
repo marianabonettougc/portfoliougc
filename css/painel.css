@@ -2451,3 +2451,8 @@ a.pc2-tag:hover{color:var(--texto)}
   #aba-portfolio .ferramentas:has(#portfolio-periodo){align-items:flex-start;flex-direction:column}
   #aba-portfolio .ferramentas .direita{width:100%;margin-left:0}
 }
+
+/* Miniaturas dos vídeos visualizados no analytics */
+#aba-portfolio .analytics-thumb{width:76px;height:52px;flex:0 0 76px;object-fit:cover;border-radius:8px;background:#eee3d8;border:1px solid rgba(107,74,53,.10)}
+#aba-portfolio .analytics-mini{width:76px;height:52px;flex:0 0 76px;border-radius:8px}
+@media(max-width:600px){#aba-portfolio .analytics-thumb,#aba-portfolio .analytics-mini{width:68px;height:48px;flex-basis:68px}}
