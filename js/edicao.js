@@ -102,7 +102,8 @@
     const {data,error}=await banco().from(tabela).insert({projeto_id:st.projeto.id,...campos}).select().single();
     if(error)throw error;return data;
   }
-  const nomeJobStudio=j=>[j.marca||j.cliente||"Marca",j.campanha||j.titulo||"Job"].join(" · ");
+  const nomeJobStudio=j=>[j.marca||j.marcaNome||"Marca",j.campanha||j.titulo||j.nome||j.produto||"Job"].join(" · ");
+  const textoDoRoteiroStudio=r=>r.conteudo || r.roteiro || r.texto || "";
   const chaveDoRoteiroStudio=r=>r.id || r.roteiroId || r.titulo || "";
 
   function pintarStudio(){
@@ -114,12 +115,23 @@
       <section class="ed-cartao es-topo">
        <div class="ed-titulo-linha"><h3 class="ed-titulo">Estúdio de produção</h3><span class="ed-sub">${job?esc(nomeJobStudio(job)):"Projeto independente"}</span></div>
        <div class="es-kpis"><div><b>${studio.arquivos.length}</b><small>arquivos</small></div><div><b>${studio.gravacoes.length}</b><small>gravações</small></div><div><b>${studio.entregas.length}</b><small>entregas</small></div></div>
+       ${job?'<div class="es-job-contexto"><b>'+esc(job.marca||"Marca")+'</b><small>'+esc(job.status||"")+(job.prazoEntrega?" · prazo "+esc(job.prazoEntrega):"")+'</small><p>'+esc(job.briefing||job.observacoes||"Sem briefing registrado no job.")+'</p></div>':""}
        ${st.projeto?'<div class="es-grid"><label class="ed-rotulo">Job / campanha<select class="entrada" data-studio-meta="job_id"><option value="">Sem vínculo</option>'+opts(studio.jobs.map(j=>({value:j.id,label:nomeJobStudio(j)})),studio.meta.job_id)+'</select></label><label class="ed-rotulo">Roteiro<select class="entrada" data-studio-meta="roteiro_id"><option value="">Sem vínculo</option>'+opts(studio.roteiros.map(j=>({value:chaveDoRoteiroStudio(j),label:j.titulo||j.nome||"Roteiro"})),studio.meta.roteiro_id)+'</select></label><label class="ed-rotulo">Conteúdo planejado<select class="entrada" data-studio-meta="conteudo_id"><option value="">Sem vínculo</option>'+opts(studio.conteudos.map(j=>({value:j.id,label:(j.data?j.data.slice(0,10)+" · ":"")+(j.tema||"Conteúdo")})),studio.meta.conteudo_id)+'</select></label><label class="ed-rotulo">Etapa<select class="entrada" data-studio-meta="etapa">'+opts(STUDIO_ETAPAS.map(j=>({value:j[0],label:j[1]})),studio.meta.etapa)+'</select></label><label class="ed-rotulo">Prazo<input type="date" class="entrada" data-studio-meta="prazo" value="'+studioAttr(studio.meta.prazo||"")+'"></label><label class="ed-rotulo es-wide">Notas<textarea class="entrada" rows="2" data-studio-meta="observacoes">'+esc(studio.meta.observacoes||"")+'</textarea></label></div>':'<p class="ed-obs">Salve o primeiro projeto para ativar os vínculos, arquivos e acompanhamento de produção. O editor automático continua disponível nesta tela.</p>'}
        <p class="ed-obs">A edição por IA, storyboard, variações e capa continuam no editor existente. Esta área conecta a produção a jobs, roteiros e entregas.</p>
       </section>
       <nav class="es-tabs"><button data-studio-tab="visao" class="${studio.aba==="visao"?"on":""}">Visão geral</button><button data-studio-tab="arquivos" class="${studio.aba==="arquivos"?"on":""}">Arquivos · ${studio.arquivos.length}</button><button data-studio-tab="gravacoes" class="${studio.aba==="gravacoes"?"on":""}">Gravações · ${studio.gravacoes.length}</button><button data-studio-tab="entregas" class="${studio.aba==="entregas"?"on":""}">Entregas · ${studio.entregas.length}</button></nav>
       <div class="es-conteudo">${studio.aba==="arquivos"?renderArquivosStudio():studio.aba==="gravacoes"?renderGravacoesStudio():studio.aba==="entregas"?renderEntregasStudio():renderVisaoStudio(job,roteiro)}</div>`;
-    host.querySelectorAll("[data-studio-meta]").forEach(el=>el.addEventListener("change",()=>salvarMetaStudio(el.dataset.studioMeta,el.value||null)));
+    host.querySelectorAll("[data-studio-meta]").forEach(el=>el.addEventListener("change",async()=>{
+      const campo=el.dataset.studioMeta, valor=el.value||null;
+      if(campo==="roteiro_id"&&valor){
+        const r=studio.roteiros.find(x=>String(chaveDoRoteiroStudio(x))===String(valor));
+        if(r&&textoDoRoteiroStudio(r).trim()&&(!st.roteiro.trim()||await painelDialogo.confirmar("Substituir o roteiro de edição pelo roteiro selecionado?",{ok:"Usar roteiro"}))){
+          st.roteiro=textoDoRoteiroStudio(r);const sec=document.getElementById("aba-edicao");
+          if(sec&&$("#ed-roteiro",sec)){$("#ed-roteiro",sec).value=st.roteiro;$("#ed-roteiro-box",sec).open=true;}salvarDepois();
+        }
+      }
+      await salvarMetaStudio(campo,valor);pintarStudio();
+    }));
     host.querySelectorAll("[data-studio-tab]").forEach(el=>el.addEventListener("click",()=>{studio.aba=el.dataset.studioTab;pintarStudio();}));
     const fi=$("#es-arquivo",host);if(fi)fi.addEventListener("change",()=>anexarArquivoStudio(fi.files&&fi.files[0]));
     const bg=$("#es-gravacao",host);if(bg)bg.addEventListener("click",criarGravacaoStudio);
