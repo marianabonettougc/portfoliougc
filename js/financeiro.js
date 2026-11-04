@@ -1394,8 +1394,8 @@
       if (ls.length > 1) folha(`${nomeL} em ${MESES[Number(m)]}`, ls.map((x) => ({ ic: ICONE.lapis, t: `${dataBR(x.data).slice(0, 5)} · ${R$(x.valor)}`, acao: () => editarLancamento(x) })));
       else if (l) editarLancamento(l); else editarLancamento(null, tipo, { descricao: nomeL, categoria: cat || (tipo === "entrada" ? "Salário" : "Outros"), data: `${ym}-${String(Math.min(28, Math.max(1, Number(dia) || 10))).padStart(2, "0")}`, pago: false });
     }));
-    $("[data-metodo]", raiz).forEach((b) => b.addEventListener("click", () => { st.metodo = b.dataset.metodo; pintar(); }));
-    $("[data-grafico-gastos]", raiz).forEach((b) => b.addEventListener("click", () => { st.visaoGastos = b.dataset.graficoGastos; pintar(); }));
+    $$("[data-metodo]", raiz).forEach((b) => b.addEventListener("click", () => { st.metodo = b.dataset.metodo; pintar(); }));
+    $$("[data-grafico-gastos]", raiz).forEach((b) => b.addEventListener("click", () => { st.visaoGastos = b.dataset.graficoGastos; pintar(); }));
     const xr = $("#fn-extra-r"); if (xr) { xr.addEventListener("input", () => { $("#fn-extra-v").textContent = R$(Number(xr.value)); }); xr.addEventListener("change", () => { D().extra = Number(xr.value) || 0; salvar(); const y = window.scrollY; pintar(); window.scrollTo(0, y); }); }
     const ex = $("#fn-extra"); if (ex) ex.addEventListener("change", () => { d.extra = num(ex.value); salvar(); pintar(); });
     [["#fn-res", "atual"], ["#fn-aporte", "aporte"], ["#fn-metam", "metaMeses"]].forEach(([s, k]) => { const el = $(s); if (el) el.addEventListener("change", () => { d.reserva[k] = num(el.value); salvar(); pintar(); }); });
