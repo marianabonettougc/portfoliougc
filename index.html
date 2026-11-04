@@ -1682,6 +1682,7 @@ function fecharPlayer() {
 function abrirPlayer(d) {
   const id = idDoYoutube(d.link);
   if (!id) return;
+  let analyticsRegistrado = false;
   focoAntes = document.activeElement;
   pausarPrevias(true);
   // os vídeos da Mari são verticais: a janela abre em pé (para um vídeo deitado, use horizontal: true no bloco do vídeo)
@@ -1734,7 +1735,7 @@ function abrirPlayer(d) {
           clearInterval(relogio);
           relogio = setInterval(atualizarTempo, 250);
         },
-        onStateChange: (e) => { if (e.data === 1 || e.data === 3) semLegenda(e.target); if (e.data === 1) { try { e.target.setPlaybackQuality("hd1080"); } catch (er) {} if (window.MBAnalytics) window.MBAnalytics.videoPlay({ titulo: d.titulo || d.marca || "Vídeo", link: d.link || "" }); } atualizarBotoes(); },
+        onStateChange: (e) => { if (e.data === 1 || e.data === 3) semLegenda(e.target); if (e.data === 1) { try { e.target.setPlaybackQuality("hd1080"); } catch (er) {} if (!analyticsRegistrado && window.MBAnalytics) { analyticsRegistrado = true; window.MBAnalytics.videoPlay({ titulo: d.titulo || d.marca || "Vídeo", link: d.link || "" }); } } atualizarBotoes(); },
         onApiChange: (e) => semLegenda(e.target)
       }
     });
