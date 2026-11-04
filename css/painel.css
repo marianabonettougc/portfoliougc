@@ -2387,3 +2387,67 @@ a.pc2-tag:hover{color:var(--texto)}
 .analytics-nota{font-size:10.5px;color:var(--suave);line-height:1.5;margin:10px 2px}
 @media(max-width:760px){.analytics-grade{grid-template-columns:1fr}}
 @media(max-width:560px){#portfolio-periodo{min-width:88px!important}.analytics-linha{gap:8px}}
+
+/* =========================================================
+   ANALYTICS — visual minimalista inspirado no dashboard
+   Paleta Mari: areia, nude, terracota e marrom
+   ========================================================= */
+#aba-portfolio .ferramentas:has(#portfolio-periodo){
+  align-items:center;padding:2px 0 14px;border-bottom:1px solid rgba(107,74,53,.10);
+}
+#aba-portfolio .ferramentas:has(#portfolio-periodo)>span{font-size:11px!important;letter-spacing:.01em}
+#aba-portfolio #portfolio-periodo{height:34px;border:1px solid rgba(107,74,53,.13);border-radius:9px;background:#fffdf9;color:var(--texto);padding:0 10px;font-size:11.5px}
+#aba-portfolio #btn-atualizar{height:34px;border-radius:9px;background:linear-gradient(135deg,#8b6249,#6b4a35);border:0;color:#fff;font-size:11.5px}
+#aba-portfolio .numeros{
+  grid-template-columns:repeat(5,minmax(0,1fr));gap:0;background:transparent;border:0;overflow:visible;margin:16px 0 18px;
+}
+#aba-portfolio .numero{
+  position:relative;min-width:0;margin-right:10px;padding:15px 14px 13px;border:1px solid rgba(107,74,53,.09)!important;border-radius:13px;
+  background:linear-gradient(145deg,#fffdf9 0%,#f4eadf 100%);box-shadow:0 4px 14px rgba(61,43,32,.035);
+}
+#aba-portfolio .numero:nth-child(2){background:linear-gradient(145deg,#fffdf9 0%,#f0e5dc 100%)}
+#aba-portfolio .numero:nth-child(3){background:linear-gradient(145deg,#fffdf9 0%,#f3e8df 100%)}
+#aba-portfolio .numero:nth-child(4){background:linear-gradient(145deg,#fffdf9 0%,#eee8dc 100%)}
+#aba-portfolio .numero:nth-child(5){background:linear-gradient(145deg,#fffdf9 0%,#ead9ca 100%)}
+#aba-portfolio .numero small{font-size:10px;letter-spacing:.055em;text-transform:uppercase;font-weight:500;color:#806b5d}
+#aba-portfolio .numero strong{font-size:23px;line-height:1.25;margin-top:7px;color:#493326;font-weight:600}
+#aba-portfolio .numero em{font-size:10px;color:#8b7668;margin-top:4px;line-height:1.4}
+#aba-portfolio .duas-colunas{grid-template-columns:minmax(0,1fr);gap:12px}
+#aba-portfolio .duas-colunas .bloco,
+#aba-portfolio .analytics-grade .bloco,
+#aba-portfolio>.bloco{border:1px solid rgba(107,74,53,.09);border-radius:14px;background:linear-gradient(145deg,#fffdf9 0%,#faf5ee 100%);box-shadow:0 5px 18px rgba(61,43,32,.035);padding:17px 18px}
+#aba-portfolio .bloco-titulo{margin-bottom:14px}
+#aba-portfolio .bloco-titulo h2{font-size:12px;letter-spacing:.01em;color:#594333;font-weight:600}
+#aba-portfolio .grafico{height:128px;gap:7px;border-bottom:1px solid rgba(107,74,53,.09)}
+#aba-portfolio .grafico .barra{max-width:22px;background:linear-gradient(180deg,#c99c7e,#9c6b50);border-radius:5px 5px 2px 2px;opacity:.9}
+#aba-portfolio .grafico .coluna.hoje .barra{background:linear-gradient(180deg,#8d6148,#65432f)}
+#aba-portfolio .grafico .valor,#aba-portfolio .grafico .dia{font-size:9px;color:#947f70}
+#aba-portfolio .origens li{grid-template-columns:minmax(110px,180px) 30px minmax(0,1fr);align-items:center;gap:8px 12px;padding:8px 2px;border-bottom:0;font-size:11px;color:#6c5749}
+#aba-portfolio .origens .trilho{grid-column:3;height:7px;background:#eee5db;border-radius:99px}
+#aba-portfolio .origens .trilho i{background:linear-gradient(90deg,#c99d80,#8c6048);border-radius:99px}
+#aba-portfolio .analytics-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+#aba-portfolio .analytics-grade .bloco{margin:0;min-width:0}
+#aba-portfolio .analytics-contagem{font-size:10px;color:#987f6e}
+#aba-portfolio .analytics-linha{padding:10px 0;border-bottom-color:rgba(107,74,53,.09)}
+#aba-portfolio .analytics-mini{width:31px;height:38px;flex-basis:31px;border-radius:9px;background:linear-gradient(145deg,#f0dfd1,#e5cbb8);color:#80583f;font-size:11px}
+#aba-portfolio .analytics-detalhe b{font-size:11px;color:#49382c}
+#aba-portfolio .analytics-detalhe small{font-size:9.5px;color:#987f6e}
+#aba-portfolio .analytics-ranking{gap:0}
+#aba-portfolio .analytics-ranking li{align-items:center;padding:9px 0;border-bottom:1px solid rgba(107,74,53,.08);font-size:10.5px;color:#6b5749}
+#aba-portfolio .analytics-ranking li:last-child{border-bottom:0}
+#aba-portfolio .analytics-ranking li b{min-width:26px;padding:3px 8px;text-align:center;border-radius:7px;background:#f0e5da;color:#78563f;font-size:10px}
+#aba-portfolio .analytics-nota{font-size:9.5px;color:#9a8779;margin:10px 2px 16px}
+@media(max-width:900px){
+  #aba-portfolio .numeros{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  #aba-portfolio .numero{margin:0}
+}
+@media(max-width:600px){
+  #aba-portfolio .numeros{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  #aba-portfolio .numero{padding:12px 11px}
+  #aba-portfolio .numero strong{font-size:21px}
+  #aba-portfolio .analytics-grade{grid-template-columns:1fr}
+  #aba-portfolio .duas-colunas .bloco,#aba-portfolio .analytics-grade .bloco{padding:14px}
+  #aba-portfolio .origens li{grid-template-columns:minmax(90px,120px) 24px minmax(0,1fr);gap:7px}
+  #aba-portfolio .ferramentas:has(#portfolio-periodo){align-items:flex-start;flex-direction:column}
+  #aba-portfolio .ferramentas .direita{width:100%;margin-left:0}
+}
