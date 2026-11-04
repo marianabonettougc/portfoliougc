@@ -61,7 +61,7 @@
     st.emails.filter(filtro).forEach((e) => { const k = e.thread_id || e.gmail_id; if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(e); });
     return [...grupos.values()].map((l) => ({ chave: l[0].thread_id || l[0].gmail_id, topo: l[0], lista: l, naoLida: l.some((e) => !e.lida) }));
   }
-  const ehProposta = (e) => e.tipo === "proposta" && e.status !== "nao_proposta" && e.status !== "arquivado";
+  const ehProposta = (e) => (e.tipo === "proposta" || (e.de_email || "").toLowerCase() === "nfe@wap.ind.br") && e.status !== "nao_proposta" && e.status !== "arquivado";
   const ehPlataforma = (e) => e.tipo === "plataforma" && e.status !== "nao_proposta" && e.status !== "arquivado";
   function casaBusca(c) {
     if (!st.busca) return true;
@@ -73,7 +73,7 @@
   const ehShein = (c) => /shein|sheincreatorcenter|kolus|henry/.test(textoConversa(c));
   const ehCurso = (c) => /curso|cursos|aula|mentoria|treinamento|formacao|masterclass|workshop|aluno|aluna|acesso liberado|material didatico/.test(textoConversa(c));
   const ehAssinatura = (c) => /anthropic|claude\.ai|assinatura|subscription|renovacao|renovação|cobranca|cobrança|mensalidade|plano mensal|plano anual|fatura|recibo|pagamento recorrente|renova automaticamente|cancelamento de plano/.test(textoConversa(c));
-  const ehPubliComercial = (c) => !ehShein(c) && !ehCurso(c) && !ehAssinatura(c) && c.lista.some((e) => e.tipo === "proposta" && e.status !== "nao_proposta" && e.status !== "arquivado");
+  const ehPubliComercial = (c) => !ehShein(c) && !ehCurso(c) && !ehAssinatura(c) && c.lista.some((e) => (e.tipo === "proposta" || (e.de_email || "").toLowerCase() === "nfe@wap.ind.br") && e.status !== "nao_proposta" && e.status !== "arquivado");
   const conversasCategoria = (pred) => conversas((e) => e.status !== "nao_proposta" && e.status !== "arquivado").filter(pred).filter(casaBusca);
   function pintarBolinha() {
     const b = $('.menu-item[data-aba="propostas"]') || $('.menu-item[data-aba="marcas"]'); if (!b) return;
