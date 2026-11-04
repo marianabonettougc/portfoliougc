@@ -154,11 +154,14 @@
     const p = PERFIS.find((x) => x.id === id);
     let dados = st.perfis[id], juntou = false;
     try {
-      const { data: rem } = await banco.from("financeiro_contas").select("dados,atualizado_em").eq("id", id).maybeSingle();
+      const { data: rem, error: erroLeitura } = await banco.from("financeiro_contas").select("dados,atualizado_em").eq("id", id).maybeSingle();
+      // Se não conseguimos conferir a versão remota, não fazemos upsert: isso poderia sobrescrever
+      // alterações feitas em outro aparelho. É mais seguro manter a edição local pendente.
+      if (erroLeitura) { toast("Não salvei para proteger seus dados: não consegui conferir a versão mais recente. Tente novamente.", true); return; }
       if (rem && rem.dados && st.base[id] && (!st.baseEm[id] || new Date(rem.atualizado_em).getTime() !== new Date(st.baseEm[id]).getTime())) {
         dados = mesclar(st.base[id], dados, rem.dados); juntou = true;
       }
-    } catch (e) { /* sem conferir: salva o que tem */ }
+    } catch (e) { toast("Não salvei para proteger seus dados: falha ao conferir a versão mais recente. Tente novamente.", true); return; }
     const em = new Date().toISOString();
     const { error } = await banco.from("financeiro_contas").upsert({ id, nome: p.nome, dados, atualizado_em: em, atualizado_por: st.email });
     if (error) { toast("Não salvou: " + error.message, true); return; }
@@ -195,8 +198,15 @@
     const x = new Date(d.getFullYear(), m, 1); return { y: x.getFullYear(), m: x.getMonth() };
   }
   function parcelasDaCompra(c, k) {
-    const n = Math.max(1, parseInt(k.parcelas, 10) || 1), base = mesDaFatura(c, k.data), v = Math.round((Number(k.valor) || 0) / n * 100) / 100;
-    return Array.from({ length: n }, (_, i) => { const x = new Date(base.y, base.m + i, 1); return { y: x.getFullYear(), m: x.getMonth(), valor: v, n: i + 1, de: n }; });
+    const n = Math.max(1, parseInt(k.parcelas, 10) || 1), base = mesDaFatura(c, k.data);
+    // Divide em centavos e deixa eventual resto na última parcela, para a soma fechar
+    // exatamente com o valor original da compra (ex.: R$ 100,00 em 3x).
+    const totalCentavos = Math.round((Number(k.valor) || 0) * 100), baseCentavos = Math.floor(totalCentavos / n);
+    return Array.from({ length: n }, (_, i) => {
+      const x = new Date(base.y, base.m + i, 1);
+      const centavos = i === n - 1 ? totalCentavos - baseCentavos * (n - 1) : baseCentavos;
+      return { y: x.getFullYear(), m: x.getMonth(), valor: centavos / 100, n: i + 1, de: n };
+    });
   }
   const comprasDaFatura = (c, y, m) => (D().compras || []).filter((k) => k.cartao === c.id).flatMap((k) => parcelasDaCompra(c, k).filter((p) => p.y === y && p.m === m).map((p) => ({ ...k, parte: p })));
   function sincronizarFaturas() {
