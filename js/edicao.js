@@ -127,13 +127,14 @@
     host.querySelectorAll("[data-gravacao-status]").forEach(el=>el.addEventListener("change",()=>atualizarRegistroStudio("edicao_gravacoes",el.dataset.gravacaoStatus,{status:el.value})));
     host.querySelectorAll("[data-entrega-status]").forEach(el=>el.addEventListener("change",()=>atualizarRegistroStudio("edicao_entregas",el.dataset.entregaStatus,{status:el.value})));
     host.querySelectorAll("[data-arquivo-remover]").forEach(el=>el.addEventListener("click",()=>removerArquivoStudio(el.dataset.arquivoRemover)));
+    host.querySelectorAll("[data-arquivo-abrir]").forEach(el=>el.addEventListener("click",()=>abrirArquivoStudio(el.dataset.arquivoAbrir)));
   }
   function renderVisaoStudio(job,roteiro){
     const ix=STUDIO_ETAPAS.findIndex(x=>x[0]===studio.meta.etapa);
     return `<div class="es-resumo"><section class="ed-cartao"><h3 class="ed-titulo">Produção em andamento</h3><p>${job?esc(nomeJobStudio(job)):"Vincule um job ou mantenha independente."}</p><small>${roteiro?"Roteiro: "+esc(roteiro.titulo||"Roteiro vinculado"):"Nenhum roteiro vinculado"}</small><div class="es-progresso"><span style="width:${Math.round((Math.max(ix,0)+1)/STUDIO_ETAPAS.length*100)}%"></span></div><small>${STUDIO_ETAPAS[Math.max(ix,0)][1]}</small></section><section class="ed-cartao"><h3 class="ed-titulo">Fluxo de trabalho</h3><ol class="ed-lista"><li>Conferir briefing e roteiro</li><li>Planejar cenas e gravação</li><li>Editar no editor automático existente</li><li>Preparar capa, revisar e registrar entregas</li></ol></section></div><section class="ed-cartao"><h3 class="ed-titulo">Ferramentas já integradas</h3><p class="ed-obs">Editor automático, correções por IA, análise de referência, storyboard, cortes, legendas, efeitos, capas, variações e carrossel. Sem duplicar funcionalidades.</p></section>`;
   }
   function renderArquivosStudio(){
-    return `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Arquivos do projeto</h3><label class="btn">Adicionar arquivo<input id="es-arquivo" type="file" hidden></label></div><p class="ed-obs">Anexos ficam em armazenamento privado. O vídeo bruto continua no aparelho até ser enviado explicitamente.</p>${studio.arquivos.map(a=>`<div class="es-item"><div><b>${esc(a.nome)}</b><small>${esc(a.tipo)} · ${a.tamanho?Math.round(a.tamanho/1024)+" KB":"arquivo"}</small></div><button class="icone-btn" type="button" data-arquivo-remover="${a.id}">${ic.x}</button></div>`).join("")||'<p class="rr-vazio">Nenhum arquivo anexado.</p>'}</section>`;
+    return `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Arquivos do projeto</h3><label class="btn">Adicionar arquivo<input id="es-arquivo" type="file" hidden></label></div><p class="ed-obs">Anexos ficam em armazenamento privado. O vídeo bruto continua no aparelho até ser enviado explicitamente.</p>${studio.arquivos.map(a=>`<div class="es-item"><div><b>${esc(a.nome)}</b><small>${esc(a.tipo)} · ${a.tamanho?Math.round(a.tamanho/1024)+" KB":"arquivo"}</small></div><div><button class="btn btn-ghost btn-sm" type="button" data-arquivo-abrir="${a.id}">Abrir</button> <button class="icone-btn" type="button" data-arquivo-remover="${a.id}">${ic.x}</button></div></div>`).join("")||'<p class="rr-vazio">Nenhum arquivo anexado.</p>'}</section>`;
   }
   function renderGravacoesStudio(){
     return `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Gravações</h3><button class="btn btn-principal" id="es-gravacao">+ Planejar gravação</button></div>${studio.gravacoes.map(g=>`<div class="es-item"><div><b>${esc(g.titulo)}</b><small>${esc(g.data||"Sem data")}</small></div><select class="entrada" data-gravacao-status="${g.id}"><option value="planejada" ${g.status==="planejada"?"selected":""}>Planejada</option><option value="gravada" ${g.status==="gravada"?"selected":""}>Gravada</option><option value="cancelada" ${g.status==="cancelada"?"selected":""}>Cancelada</option></select></div>`).join("")||'<p class="rr-vazio">Nenhuma gravação planejada.</p>'}</section>`;
@@ -143,7 +144,21 @@
   }
   async function anexarArquivoStudio(file){
     if(!file||!st.projeto)return;
-    try{const path=st.projeto.id+"/"+Date.now()+"-"+file.name.replace(/[^a-zA-Z0-9._-]/g,"_");const {error:up}=await banco().storage.from("estudio-ugc").upload(path,file,{upsert:false,contentType:file.type||"application/octet-stream"});if(up)throw up;const {data,error}=await banco().from("edicao_arquivos").insert({projeto_id:st.projeto.id,nome:file.name,tipo:file.type.startsWith("image/")?"imagem":file.type.startsWith("video/")?"video":"documento",storage_path:path,tamanho:file.size,mime_type:file.type}).select().single();if(error)throw error;studio.arquivos.unshift(data);pintarStudio();toast("Arquivo anexado.");}catch(e){toast("Não consegui anexar: "+e.message,true);}
+    if(file.size>50*1024*1024){toast("O arquivo passa do limite de 50 MB do armazenamento do Estúdio.",true);return;}
+    const path=st.projeto.id+"/"+Date.now()+"-"+file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+    try{
+      const {error:up}=await banco().storage.from("estudio-ugc").upload(path,file,{upsert:false,contentType:file.type||"application/octet-stream"});
+      if(up)throw up;
+      const {data,error}=await banco().from("edicao_arquivos").insert({projeto_id:st.projeto.id,nome:file.name,tipo:file.type.startsWith("image/")?"imagem":file.type.startsWith("video/")?"video":"documento",storage_path:path,tamanho:file.size,mime_type:file.type}).select().single();
+      if(error){await banco().storage.from("estudio-ugc").remove([path]);throw error;}
+      studio.arquivos.unshift(data);pintarStudio();toast("Arquivo anexado.");
+    }catch(e){toast("Não consegui anexar: "+e.message,true);}
+  }
+  async function abrirArquivoStudio(id){
+    const a=studio.arquivos.find(x=>x.id===id);if(!a||!a.storage_path)return;
+    const {data,error}=await banco().storage.from("estudio-ugc").createSignedUrl(a.storage_path,3600);
+    if(error||!data||!data.signedUrl){toast("Não consegui abrir o anexo.",true);return;}
+    window.open(data.signedUrl,"_blank","noopener");
   }
   async function criarGravacaoStudio(){
     const titulo=prompt("Nome da gravação:");if(!titulo)return;const data=prompt("Data (AAAA-MM-DD), opcional:")||null;
