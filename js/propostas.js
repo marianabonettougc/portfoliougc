@@ -28,9 +28,9 @@
     lapis: ic('<path d="M4 20h4L19 9l-4-4L4 16z"/>'),
     lixo: ic('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>'),
   };
-  const ST_NOME = { nova: "Nova", respondida: "Respondida", contrato: "Virou job", marca_salva: "Marca salva", nao_proposta: "Não é proposta" };
+  const ST_NOME = { nova: "Nova", respondida: "Respondida", contrato: "Virou job", marca_salva: "Marca salva", nao_proposta: "Não é proposta", arquivado: "Arquivado" };
 
-  const st = { emails: [], sync: null, ocultar: [], busca: "", carregado: false, abertos: {} };
+  const st = { emails: [], sync: null, ocultar: [], busca: "", carregado: false, abertos: {}, visao: "ativas" };
   const toast = (m, erro) => { const t = $("#toast"); if (!t) return; t.textContent = m; t.classList.toggle("erro", !!erro); t.classList.add("visivel"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("visivel"), 3200); };
 
   async function lerConfig(chave) {
@@ -61,8 +61,8 @@
     st.emails.filter(filtro).forEach((e) => { const k = e.thread_id || e.gmail_id; if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(e); });
     return [...grupos.values()].map((l) => ({ chave: l[0].thread_id || l[0].gmail_id, topo: l[0], lista: l, naoLida: l.some((e) => !e.lida) }));
   }
-  const ehProposta = (e) => e.tipo === "proposta" && e.status !== "nao_proposta";
-  const ehPlataforma = (e) => e.tipo === "plataforma" && e.status !== "nao_proposta";
+  const ehProposta = (e) => e.tipo === "proposta" && e.status !== "nao_proposta" && e.status !== "arquivado";
+  const ehPlataforma = (e) => e.tipo === "plataforma" && e.status !== "nao_proposta" && e.status !== "arquivado";
   function casaBusca(c) {
     if (!st.busca) return true;
     const q = semAcento(st.busca);
@@ -87,7 +87,7 @@
   }
   const iniciais = (n) => String(n || "?").trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join("").toUpperCase();
 
-  function cartao(c, plataforma) {
+  function cartao(c, plataforma, arquivada = false) {
     const e = c.topo;
     const tags = [
       e.marca ? `<span class="pp-tag">${esc(e.marca)}</span>` : "",
@@ -112,6 +112,7 @@
         ${tags ? `<div class="pp-tags">${tags}</div>` : ""}
         <div class="pp-acoes">${bot}
           <button class="btn btn-mini" data-acao="editar" title="Editar">${IC.lapis}Editar</button>
+          <button class="btn btn-mini" data-acao="${arquivada ? "desarquivar" : "arquivar"}" title="${arquivada ? "Tirar dos arquivados" : "Arquivar"}">${arquivada ? "↩ Desarquivar" : "↓ Arquivar"}</button>
           <button class="btn btn-mini btn-perigo" data-acao="excluir" title="Excluir do painel">${IC.lixo}Excluir</button>
         </div>
         ${e.de_email ? `<button class="pp-link" data-acao="esconder">esconder sempre ${esc(e.de_email)}</button>` : ""}
@@ -123,17 +124,22 @@
     const sec = $("#aba-propostas"); if (!sec) return;
     if (!st.carregado) { sec.innerHTML = `<p class="pp-vazio">Carregando os e-mails…</p>`; return; }
     const props = conversas(ehProposta).filter(casaBusca);
+    const arquivados = conversas((e) => e.status === "arquivado").filter(casaBusca);
     const plats = conversas(ehPlataforma).filter(casaBusca);
     const autos = st.emails.filter((e) => e.tipo === "automatico" && e.status !== "nao_proposta").filter((e) => casaBusca({ lista: [e] }));
     const naos = st.emails.filter((e) => e.status === "nao_proposta").filter((e) => casaBusca({ lista: [e] }));
     const naoLidas = conversas(ehProposta).filter((c) => c.naoLida).length;
     const linhaMini = (e, acao, texto) => `<li data-email="${e.id}"><span class="pp-mini-de">${esc(e.de_nome || e.de_email || "")}</span><span class="pp-mini-ass">${esc(e.assunto || "")}</span><span class="pp-mini-data">${dataCurta(e.recebido_em)}</span><button class="pp-link" data-mini="${acao}">${texto}</button></li>`;
     sec.innerHTML = `
+      <div class="pp-visoes" role="tablist" aria-label="Visualização das propostas">
+        <button type="button" class="btn btn-mini ${st.visao === "ativas" ? "btn-principal" : ""}" data-visao="ativas">Propostas e oportunidades</button>
+        <button type="button" class="btn btn-mini ${st.visao === "arquivadas" ? "btn-principal" : ""}" data-visao="arquivadas">Arquivados (${arquivados.length})</button>
+      </div>
       <div class="pp-topo">
         <input class="pp-busca" type="search" id="pp-busca" placeholder="Filtrar (ex.: nome da marca)" value="${esc(st.busca)}">
         ${linhaSync()}
       </div>
-      <section class="pp-bloco">
+      ${st.visao === "ativas" ? `<section class="pp-bloco">
         <h2 class="pp-titulo">Propostas</h2>
         <p class="pp-sub">${props.length} ${props.length === 1 ? "conversa escrita por pessoas" : "conversas escritas por pessoas"} nos últimos 90 dias · ${naoLidas} ${naoLidas === 1 ? "não lida" : "não lidas"}</p>
         <div class="pp-lista">${props.map((c) => cartao(c, false)).join("") || `<p class="pp-vazio">Nenhuma proposta${st.busca ? " com esse filtro" : " por enquanto"}.</p>`}</div>
@@ -143,15 +149,17 @@
         <p class="pp-sub">Creators.llc, Creatify, Conty, BrandLovers e parecidas · ${plats.length} ${plats.length === 1 ? "conversa" : "conversas"}</p>
         <div class="pp-lista">${plats.map((c) => cartao(c, true)).join("") || `<p class="pp-vazio">Nada de plataforma${st.busca ? " com esse filtro" : " por enquanto"}.</p>`}</div>
       </section>
-      <details class="pp-dobra" ${st.abertos.auto ? "open" : ""} data-dobra="auto"><summary>E-mails automáticos (${autos.length})</summary>
+      </section>` : `<section class="pp-bloco"><h2 class="pp-titulo">Arquivados</h2><p class="pp-sub">${arquivados.length} ${arquivados.length === 1 ? "conversa guardada" : "conversas guardadas"} · ficam aqui até você desarquivar</p><div class="pp-lista">${arquivados.map((c) => cartao(c, c.topo.tipo === "plataforma", true)).join("") || `<p class="pp-vazio">Sua pasta de arquivados está vazia.</p>`}</div></section>`}
+      ${st.visao === "ativas" ? `<details class="pp-dobra" ${st.abertos.auto ? "open" : ""} data-dobra="auto"><summary>E-mails automáticos (${autos.length})</summary>
         <ul class="pp-mini">${autos.map((e) => linhaMini(e, "eproposta", "é proposta")).join("") || "<li class='pp-vazio'>Nenhum.</li>"}</ul></details>
       <details class="pp-dobra" ${st.abertos.nao ? "open" : ""} data-dobra="nao"><summary>Marcados como não é proposta (${naos.length})</summary>
         <ul class="pp-mini">${naos.map((e) => linhaMini(e, "voltar", "voltar")).join("") || "<li class='pp-vazio'>Nenhum.</li>"}</ul></details>
-      ${st.ocultar.length ? `<div class="pp-ocultos"><span>Escondidos sempre:</span>${st.ocultar.map((m) => `<span class="pp-chip">${esc(m)}<button type="button" data-desocultar="${esc(m)}" aria-label="Voltar a mostrar ${esc(m)}">×</button></span>`).join("")}</div>` : ""}`;
+      ${st.visao === "ativas" && st.ocultar.length ? `<div class="pp-ocultos"><span>Escondidos sempre:</span>${st.ocultar.map((m) => `<span class="pp-chip">${esc(m)}<button type="button" data-desocultar="${esc(m)}" aria-label="Voltar a mostrar ${esc(m)}">×</button></span>`).join("")}</div>` : ""}`;
     ligar(sec);
   }
 
   function ligar(sec) {
+    $("[data-visao]", sec).forEach((b) => b.addEventListener("click", () => { st.visao = b.dataset.visao; pintar(); }));
     const busca = $("#pp-busca", sec);
     busca.addEventListener("input", () => { st.busca = busca.value; const pos = busca.selectionStart; pintar(); const n = $("#pp-busca"); n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) { /* campo search */ } });
     $$("[data-dobra]", sec).forEach((d) => d.addEventListener("toggle", () => { st.abertos[d.dataset.dobra] = d.open; }));
@@ -206,7 +214,14 @@
         if (error) throw error;
         toast(`${nome.trim()} foi salva em Marcas.`);
       } else toast(`${nome.trim()} já estava em Marcas.`);
-      await mudar(lista, { status: "marca_salva", marca: nome.trim() });
+      await mudar(lista, { status: "arquivado", marca: nome.trim(), lida: true });
+      toast("Contato salvo em Marcas e e-mail guardado em Arquivados.");
+    } else if (qual === "arquivar") {
+      await mudar(lista, { status: "arquivado", lida: true });
+      toast("Conversa movida para Arquivados.");
+    } else if (qual === "desarquivar") {
+      await mudar(lista, { status: "nova" });
+      toast("Conversa voltou para Propostas.");
     } else if (qual === "naoproposta") {
       await mudar(lista, { status: "nao_proposta", lida: true });
       toast("Pronto. Os próximos e-mails desse remetente entram como automáticos.");
