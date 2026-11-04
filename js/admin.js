@@ -485,6 +485,8 @@
     const noAr = dados.videos.filter((v) => v.visivel && !v.exemplo);
     const nichos = maisFrequente(noAr.map((v) => v.nicho));
     const origens = maisFrequente(visitas.map((v) => v.origem || "Direto"));
+    const dispositivos = ["Celular", "Tablet", "Computador"].map(nome => [nome, visitas.filter(v => v.dispositivo === nome).length]).filter(([, quantidade]) => quantidade > 0).sort((a, b) => b[1] - a[1]);
+    const semDispositivo = visitas.filter(v => !v.dispositivo).length;
     const visitantes = new Set(visitas.map(v => v.visitante_id).filter(Boolean)).size;
     const identificadas = visitas.filter(v => v.visitante_id).length;
     const dias = [];
@@ -530,6 +532,20 @@
           <div class="bloco-titulo"><h2>Por onde acessaram meu portfólio</h2></div>
           ${origens.length === 0 ? `<p class="vazio">As origens aparecerão aqui conforme novas visitas forem registradas.</p>` :
           `<ul class="origens">${origens.map(([nome, n]) => `<li><span>${esc(nome)}</span><b>${n}</b><span class="trilho"><i style="width:${Math.round((n / total) * 100)}%"></i></span></li>`).join("")}</ul>`}
+        </div>
+      </div>
+      <div class="duas-colunas">
+        <div class="bloco">
+          <div class="bloco-titulo"><h2>Dispositivos de acesso</h2><span class="analytics-contagem">${total ? Math.round((visitas.filter(v => v.dispositivo).length / total) * 100) + "% identificados" : "0 acessos"}</span></div>
+          ${dispositivos.length ? `<ul class="origens dispositivos-acesso">${dispositivos.map(([nome, n]) => `<li><span>${nome === "Celular" ? "▯ " : nome === "Tablet" ? "▭ " : "▣ "}${esc(nome)}</span><b>${n}</b><span class="trilho"><i style="width:${Math.round((n / total) * 100)}%"></i></span><small>${Math.round((n / total) * 100)}%</small></li>`).join("")}</ul>` : `<p class="vazio">Os dispositivos aparecerão aqui conforme novas visitas forem registradas.</p>`}
+          ${semDispositivo ? `<p class="analytics-nota">${semDispositivo} visita(s) antiga(s) sem identificação de dispositivo.</p>` : ""}
+        </div>
+        <div class="bloco">
+          <div class="bloco-titulo"><h2>Resumo dos acessos</h2></div>
+          <ul class="analytics-ranking">
+            ${["Celular", "Tablet", "Computador"].map(nome => { const n = visitas.filter(v => v.dispositivo === nome).length; return `<li><span>${esc(nome)}</span><b>${total ? Math.round((n / total) * 100) : 0}%</b></li>`; }).join("")}
+          </ul>
+          <p class="analytics-nota">Classificação automática pelo navegador do visitante.</p>
         </div>
       </div>
       <div class="analytics-grade">
