@@ -39,7 +39,7 @@
     if (link.closest("#janela") || link.closest("#admin") || link.closest("[data-analytics-ignore]")) return;
     const href = link.getAttribute("href") || "";
     const alvo = (link.getAttribute("data-analytics") || link.getAttribute("aria-label") ||
-      link.innerText || link.textContent || href || "Clique").trim().replace(/\\s+/g, " ").slice(0,120);
+      link.innerText || link.textContent || href || "Clique").trim().replace(/\s+/g, " ").slice(0,120);
     if (!alvo) return;
     enviar("click", { alvo, destino: href.slice(0,500) });
   }, true);
