@@ -29,12 +29,13 @@
     visitorId: id,
     videoPlay: (video) => enviar("video_play", {
       video_titulo: String(video && video.titulo || "Vídeo").slice(0,180),
+      video_marca: String(video && video.marca || "").slice(0,120),
       video_link: String(video && video.link || "").slice(0,500),
       alvo: "Player de vídeo"
     })
   };
   document.addEventListener("click", function (e) {
-    const link = e.target && e.target.closest ? e.target.closest("a[href],button[data-analytics]") : null;
+    const link = e.target && e.target.closest ? e.target.closest("a[href],button") : null;
     if (!link) return;
     if (link.closest("#janela") || link.closest("#admin") || link.closest("[data-analytics-ignore]")) return;
     const href = link.getAttribute("href") || "";
