@@ -1735,7 +1735,7 @@ function abrirPlayer(d) {
           clearInterval(relogio);
           relogio = setInterval(atualizarTempo, 250);
         },
-        onStateChange: (e) => { if (e.data === 1 || e.data === 3) semLegenda(e.target); if (e.data === 1) { try { e.target.setPlaybackQuality("hd1080"); } catch (er) {} if (!analyticsRegistrado && window.MBAnalytics) { analyticsRegistrado = true; window.MBAnalytics.videoPlay({ titulo: d.titulo || d.marca || "Vídeo", link: d.link || "" }); } } atualizarBotoes(); },
+        onStateChange: (e) => { if (e.data === 1 || e.data === 3) semLegenda(e.target); if (e.data === 1) { try { e.target.setPlaybackQuality("hd1080"); } catch (er) {} if (!analyticsRegistrado && window.MBAnalytics) { analyticsRegistrado = true; window.MBAnalytics.videoPlay({ titulo: d.titulo || d.marca || "Vídeo", marca: d.marca || "", link: d.link || "" }); } } atualizarBotoes(); },
         onApiChange: (e) => semLegenda(e.target)
       }
     });
