@@ -8,6 +8,10 @@ alter table public.edicao_projetos
   add column if not exists prazo date,
   add column if not exists observacoes text;
 
+alter table public.edicao_projetos drop constraint if exists edicao_projetos_etapa_check;
+alter table public.edicao_projetos add constraint edicao_projetos_etapa_check
+  check (etapa in ('planejamento','pre_producao','gravacao','edicao','revisao','entregue'));
+
 create index if not exists edicao_projetos_job_idx on public.edicao_projetos(job_id);
 create index if not exists edicao_projetos_roteiro_idx on public.edicao_projetos(roteiro_id);
 create index if not exists edicao_projetos_conteudo_idx on public.edicao_projetos(conteudo_id);
