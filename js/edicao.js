@@ -568,11 +568,10 @@ IDEIA PARA DEPOIS
     st.salvando = "salvando"; pintarProjeto();
     try {
       const linha = { nome: nome.slice(0, 120), dados: dadosProjeto(), atualizado_em: new Date().toISOString() };
-      let criou = false;
       if (st.projeto && st.projeto.id) { const { error } = await banco().from("edicao_projetos").update(linha).eq("id", st.projeto.id); if (error) throw error; st.projeto.nome = linha.nome; }
-      else { const { data, error } = await banco().from("edicao_projetos").insert(linha).select("id,nome,atualizado_em").single(); if (error) throw error; st.projeto = { id: data.id, nome: data.nome }; criou = true; }
+      else { const { data, error } = await banco().from("edicao_projetos").insert(linha).select("id,nome,atualizado_em").single(); if (error) throw error; st.projeto = { id: data.id, nome: data.nome }; }
       st.salvando = "salvo";
-      if (criou) { await carregarStudio(); }
+      await carregarStudio();
       const p = st.projetos.find((x) => x.id === st.projeto.id); if (p) { p.nome = linha.nome; p.atualizado_em = linha.atualizado_em; } else st.projetos.unshift({ id: st.projeto.id, nome: linha.nome, atualizado_em: linha.atualizado_em });
     } catch (e) { st.salvando = "erro"; }
     pintarProjeto();
@@ -608,7 +607,6 @@ IDEIA PARA DEPOIS
     const sec = document.getElementById("aba-" + ABA);
     if (sec) { $("#ed-tema", sec).value = st.tema; $("#ed-roteiro", sec).value = st.roteiro; $("#ed-pedidos", sec).value = st.pedidos; $("#ed-roteiro-box", sec).open = Boolean(st.roteiro); }
     pintar(); pintarProjeto();
-    studio.meta = { job_id: data.job_id || "", roteiro_id: data.roteiro_id || "", conteudo_id: data.conteudo_id || null, etapa: data.etapa || "planejamento", prazo: data.prazo || "", observacoes: data.observacoes || "" };
     studio.aba = "visao"; await carregarStudio();
   }
   function novoProjeto() {
