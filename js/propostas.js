@@ -70,10 +70,10 @@
   }
 
   const textoConversa = (c) => semAcento(c.lista.map((e) => [e.de_nome, e.de_email, e.assunto, e.resumo, e.marca, e.plataforma, e.trecho].join(" ")).join(" "));
-  const ehShein = (c) => /shein|sheincreatorcenter|kolus/.test(textoConversa(c));
+  const ehShein = (c) => /shein|sheincreatorcenter|kolus|henry/.test(textoConversa(c));
   const ehCurso = (c) => /curso|cursos|aula|mentoria|treinamento|formacao|masterclass|workshop|aluno|aluna|acesso liberado|material didatico/.test(textoConversa(c));
-  const ehAssinatura = (c) => /assinatura|subscription|renovacao|renovação|cobranca|cobrança|mensalidade|plano mensal|plano anual|fatura|recibo|pagamento recorrente|renova automaticamente|cancelamento de plano/.test(textoConversa(c));
-  const ehPubliComercial = (c) => !ehShein(c) && !ehCurso(c) && c.lista.some((e) => e.tipo === "proposta" && e.status !== "nao_proposta" && e.status !== "arquivado");
+  const ehAssinatura = (c) => /anthropic|claude\.ai|assinatura|subscription|renovacao|renovação|cobranca|cobrança|mensalidade|plano mensal|plano anual|fatura|recibo|pagamento recorrente|renova automaticamente|cancelamento de plano/.test(textoConversa(c));
+  const ehPubliComercial = (c) => !ehShein(c) && !ehCurso(c) && !ehAssinatura(c) && c.lista.some((e) => e.tipo === "proposta" && e.status !== "nao_proposta" && e.status !== "arquivado");
   const conversasCategoria = (pred) => conversas((e) => e.status !== "nao_proposta" && e.status !== "arquivado").filter(pred).filter(casaBusca);
   function pintarBolinha() {
     const b = $('.menu-item[data-aba="propostas"]') || $('.menu-item[data-aba="marcas"]'); if (!b) return;
