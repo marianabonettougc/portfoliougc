@@ -535,7 +535,7 @@
       <div class="analytics-grade">
         <div class="bloco">
           <div class="bloco-titulo"><h2>Últimos vídeos assistidos</h2><span class="analytics-contagem">${reproducoes.length} reproduções</span></div>
-          ${recentes.length ? `<div class="analytics-lista">${recentes.map(e => `<div class="analytics-linha"><div class="analytics-mini">▶</div><div class="analytics-detalhe"><b>${esc(e.video_titulo || "Vídeo")}</b><small>${esc(e.video_marca || "Portfólio")} · ${fmtHora(e.criado_em)}</small></div></div>`).join("")}</div>` : `<p class="vazio">Quando alguém iniciar um vídeo no portfólio, ele aparecerá aqui.</p>`}
+          ${recentes.length ? `<div class="analytics-lista">${recentes.map(e => { const video = (dados.videos || []).find(v => (e.video_link && v.link && v.link === e.video_link) || (v.titulo && e.video_titulo && v.titulo === e.video_titulo)); const yt = idYoutube((e.video_link || (video && video.link) || "")); const capa = yt ? "https://i.ytimg.com/vi/" + yt + "/hqdefault.jpg" : ""; return '<div class="analytics-linha">' + (capa ? '<img class="analytics-thumb" src="' + capa + '" alt="" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'"><div class="analytics-mini" style="display:none">▶</div>' : '<div class="analytics-mini">▶</div>') + '<div class="analytics-detalhe"><b>' + esc(e.video_titulo || "Vídeo") + '</b><small>' + esc(e.video_marca || "Portfólio") + " · " + fmtHora(e.criado_em) + '</small></div></div>'; }).join("")}</div>` : `<p class="vazio">Quando alguém iniciar um vídeo no portfólio, ele aparecerá aqui.</p>`}
         </div>
         <div class="bloco">
           <div class="bloco-titulo"><h2>Vídeos mais assistidos</h2></div>
