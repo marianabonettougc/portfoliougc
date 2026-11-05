@@ -539,6 +539,7 @@
           <div class="bloco-titulo"><h2>Dispositivos de acesso</h2><span class="analytics-contagem">${total ? Math.round((visitas.filter(v => v.dispositivo).length / total) * 100) + "% identificados" : "0 acessos"}</span></div>
           ${dispositivos.length ? `<ul class="origens dispositivos-acesso">${dispositivos.map(([nome, n]) => `<li><span>${nome === "Celular" ? "▯ " : nome === "Tablet" ? "▭ " : "▣ "}${esc(nome)}</span><b>${n}</b><span class="trilho"><i style="width:${Math.round((n / total) * 100)}%"></i></span><small>${Math.round((n / total) * 100)}%</small></li>`).join("")}</ul>` : `<p class="vazio">Os dispositivos aparecerão aqui conforme novas visitas forem registradas.</p>`}
           ${semDispositivo ? `<p class="analytics-nota">${semDispositivo} visita(s) antiga(s) sem identificação de dispositivo.</p>` : ""}
+          <p class="analytics-nota">Classificação automática pelo navegador do visitante.</p>
         </div>
 
       </div>
