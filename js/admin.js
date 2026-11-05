@@ -540,13 +540,7 @@
           ${dispositivos.length ? `<ul class="origens dispositivos-acesso">${dispositivos.map(([nome, n]) => `<li><span>${nome === "Celular" ? "▯ " : nome === "Tablet" ? "▭ " : "▣ "}${esc(nome)}</span><b>${n}</b><span class="trilho"><i style="width:${Math.round((n / total) * 100)}%"></i></span><small>${Math.round((n / total) * 100)}%</small></li>`).join("")}</ul>` : `<p class="vazio">Os dispositivos aparecerão aqui conforme novas visitas forem registradas.</p>`}
           ${semDispositivo ? `<p class="analytics-nota">${semDispositivo} visita(s) antiga(s) sem identificação de dispositivo.</p>` : ""}
         </div>
-        <div class="bloco">
-          <div class="bloco-titulo"><h2>Resumo dos acessos</h2></div>
-          <ul class="analytics-ranking">
-            ${["Celular", "Tablet", "Computador"].map(nome => { const n = visitas.filter(v => v.dispositivo === nome).length; return `<li><span>${esc(nome)}</span><b>${total ? Math.round((n / total) * 100) : 0}%</b></li>`; }).join("")}
-          </ul>
-          <p class="analytics-nota">Classificação automática pelo navegador do visitante.</p>
-        </div>
+
       </div>
       <div class="analytics-grade">
         <div class="bloco">
