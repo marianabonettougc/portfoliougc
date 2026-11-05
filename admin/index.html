@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 // Atualiza sozinho: se existir uma versão mais nova do painel publicada, recarrega a página nova
-window.VERSAO_PAINEL = "202611040650";
+window.VERSAO_PAINEL = "202611042110";
 fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).then((j) => {
   if (j.versao && j.versao !== window.VERSAO_PAINEL) {
     const u = new URL(location.href);
@@ -176,7 +176,7 @@ window.sessaoPronta = (async function () {
 <script src="../js/lembretes.js?v=202611040650"></script>
 <script src="../js/biblioteca.js?v=202611040650"></script>
 <script src="../js/referencias.js?v=202611040650"></script>
-<script src="../js/admin.js?v=202611040650"></script>
+<script src="../js/admin.js?v=202611042110"></script>
 <script src="../js/roteiros-supadata.js?v=202611040650"></script>
 <script src="../js/laboratorio.js?v=202611040650"></script>
 <script src="../js/editorial.js?v=202611040650"></script>
