@@ -11,6 +11,12 @@
     document.getElementById("viewport").setAttribute("content", "width=1040");
     document.documentElement.classList.add("miniatura");
   }
+  // Página /valores (valores/index.html manda para "?valores"): carrega os preços e mostra o endereço /valores
+  if (/(^|[?&])valores(=|&|$)/.test(location.search.slice(1))) {
+    var raizV = location.pathname.replace(/[^/]*$/, "");
+    document.write('<base href="' + raizV + '"><meta name="robots" content="noindex, nofollow"><script src="' + raizV + 'valores/dados.js?v=' + Date.now() + '"><\/script>');
+    try { history.replaceState(null, "", raizV + "valores/" + location.hash); } catch (e) {}
+  }
 </script>
 <title>Mari Bonetto | Portfólio UGC</title>
 <meta name="description" content="Mari Bonetto, UGC Creator em Valinhos, SP. Conteúdo que parece indicação de amiga antes de parecer anúncio.">
