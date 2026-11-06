@@ -2,7 +2,14 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" id="viewport">
+<script>
+  // Mesmo ajuste do portfólio (index.html): no celular e tablet mostra o visual do computador reduzido.
+  // Precisa vir aqui também, porque o iPhone não troca a largura da tela depois que a página já abriu.
+  if (window.matchMedia("(pointer: coarse)").matches && !window.matchMedia("(any-pointer: fine)").matches && Math.min(screen.width, screen.height) < 1024) {
+    document.getElementById("viewport").setAttribute("content", "width=1040");
+  }
+</script>
 <meta name="robots" content="noindex, nofollow">
 <title>Mari Bonetto | Portfólio UGC</title>
 <style>body{margin:0;background:#f6efe6}</style>
