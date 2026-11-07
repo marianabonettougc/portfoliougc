@@ -267,10 +267,13 @@ IDEIA PARA DEPOIS
   const QTD_SONS = [["nenhum", "Nenhum"], ["impacto", "Só nas frases de impacto"], ["poucos", "Poucos"], ["medio", "Médio"], ["muitos", "Muitos (1 a cada 2 s, seu padrão)"]];
   const DINAMISMO = [["calmo", "Calmo (sem zoom nem transição)"], ["normal", "Normal"], ["dinamico", "Dinâmico (cortes rápidos e transição)"]];
   // EDIT.AI (nov/2026, pedido dela): o zoom tem nível próprio e o padrão é DISCRETO (nada de vai-e-volta)
-  const ZOOM_NIVEIS = [["discreto", "Discreto (poucos e suaves, só nos momentos-chave; seu padrão)"], ["equilibrado", "Equilibrado"], ["dinamico", "Dinâmico (entra e sai a cada ~2,5 s)"]];
-  const ZOOM_FORCA = { discreto: 0.06, equilibrado: 0.09, dinamico: 0.12 };
-  const ZOOM_ESPACO = { discreto: 7, equilibrado: 3.5, dinamico: 0 };
-  const nivelZoom = () => (ZOOM_FORCA[st.opc.zoomNivel] ? st.opc.zoomNivel : "discreto");
+  // nov/2026 (pedido dela, inspirado no AI Editing Studio): zoom suave SÓ nas palavras-chave de ênfase
+  // ("doce de leite zero açúcar" → entra em "zero açúcar"). Virou o padrão; nada de zoom em todo corte.
+  const ZOOM_NIVEIS = [["palavras", "Só nas palavras-chave (suave; seu padrão)"], ["discreto", "Discreto (poucos e suaves, só nos momentos-chave)"], ["equilibrado", "Equilibrado"], ["dinamico", "Dinâmico (entra e sai a cada ~2,5 s)"]];
+  const ZOOM_FORCA = { palavras: 0.07, discreto: 0.06, equilibrado: 0.09, dinamico: 0.12 };
+  const ZOOM_ESPACO = { palavras: 0, discreto: 7, equilibrado: 3.5, dinamico: 0 };
+  const nivelZoom = () => (ZOOM_FORCA[st.opc.zoomNivel] ? st.opc.zoomNivel : "palavras");
+  const zoomPalavras = () => nivelZoom() === "palavras";
   const fonteLeg = (tam, chave = st.opc.fonteLeg) => ({
     minha: `${tam}px "MinhaFonte", Arimo, Arial, sans-serif`, arimo: `700 ${tam}px Arimo, "Helvetica Neue", Arial, sans-serif`, montserrat: `700 ${tam}px Montserrat, Poppins, sans-serif`, poppins: `500 ${tam}px Poppins, sans-serif`,
     nunito: `800 ${tam}px Nunito, Poppins, sans-serif`, dmserif: `italic 400 ${tam * 1.12}px "DM Serif Display", Georgia, serif`, instrument: `italic 400 ${tam * 1.28}px "Instrument Serif", Georgia, serif`,
@@ -304,7 +307,7 @@ IDEIA PARA DEPOIS
     clipes: [], plano: null, segs: [], legendas: [], efeitos: [], zooms: [], titulo: "", duracao: 0,
     camadas: [], camSel: null, soCamadas: false, histCam: [], desf: [],
     etapas: [], trabalhando: false, tocando: false, exportando: false, parar: false, t: 0,
-    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "punch", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: false, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1, legenda: true, sons: "muitos", dinamismo: "dinamico", formato: "vertical", relaxante: false, sonsSuaves: false, fonteTitulo: "dmserif", corTitulo: "", ladoLeg: "centro", alturaTitulo: 0.24, tamTitulo: 1, preservarCenas: true, zoomNivel: "discreto" },
+    opc: { fonteLeg: "arimo", sombra: "suave", sonsTitulo: true, estilo: "capcut", corLegenda: "#fff3b0", porLegenda: 3, chamativas: false, sonsChamativas: false, confete: false, tremer: false, flash: false, sfxAuto: "medio", transicao: "nenhuma", ritmo: "rapido", altura: 0.52, silencio: true, erros: true, zoomCortes: false, zoomEnfase: true, efeitos: true, vol: 0.4, titulo: true, estiloTitulo: "simples", maiusculas: false, qualidade: 1080, cor: "#f2c14e", vicios: true, vozForte: true, tamLeg: 1, legenda: true, sons: "muitos", dinamismo: "dinamico", formato: "vertical", relaxante: false, sonsSuaves: false, fonteTitulo: "dmserif", corTitulo: "", ladoLeg: "centro", alturaTitulo: 0.24, tamTitulo: 1, preservarCenas: true, zoomNivel: "palavras", zoomPalavrasV1: true },
     opsHist: [], opsPos: 0, opsLog: [],
     pedidos: "", manual: { sons: [], tirados: [], zooms: [], flashes: [], cortes: [], divisoes: [] }, sel: null, correcoes: [], corrigindo: false, lembrar: true, editLeg: {}, marcas: {}, capa: null, aba: "video", projeto: null, projetos: [], pendentes: null, salvando: "",
     estiloAtivo: (() => { try { return localStorage.getItem("ed-estilo-ativo") || ""; } catch (e) { return ""; } })(), meusEstilos: [], estiloEditando: null, estiloApagar: null, fxBusca: "", fxCat: "todos", guiasIG: false, estHist: [], estMsg: "", ref: null, refArq: null, refUrl: "", refTrab: false, refEtapas: [], refPedido: "", refFocos: [], carro: null, carroTrab: false,
@@ -313,8 +316,10 @@ IDEIA PARA DEPOIS
   };
 
   // ajustes visuais que ela aprovou (legenda, título, cor, volume) valem para os próximos vídeos
-  try { const salvo = JSON.parse(localStorage.getItem("ed-opc3") || "null"); if (salvo && typeof salvo === "object") { Object.assign(st.opc, salvo); if (!salvo.zoomNivel) { st.opc.zoomNivel = "discreto"; st.opc.zoomCortes = false; } } if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
-  const OPC_VISUAIS = ["karaoke", "sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg", "legenda", "sons", "dinamismo", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo", "tamTitulo", "preservarCenas", "zoomNivel"];
+  try { const salvo = JSON.parse(localStorage.getItem("ed-opc3") || "null"); if (salvo && typeof salvo === "object") { Object.assign(st.opc, salvo); if (!salvo.zoomNivel) { st.opc.zoomNivel = "discreto"; st.opc.zoomCortes = false; } if (!salvo.zoomPalavrasV1) migrarZoomPalavras(st.opc); } if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples"; } catch (e) { /* sem armazenamento */ }
+  const OPC_VISUAIS = ["karaoke", "sfxAuto", "transicao", "ritmo", "fonteLeg", "sombra", "estilo", "corLegenda", "porLegenda", "chamativas", "sonsChamativas", "confete", "tremer", "flash", "estiloTitulo", "altura", "cor", "vol", "maiusculas", "titulo", "sonsTitulo", "efeitos", "silencio", "erros", "zoomCortes", "zoomEnfase", "vicios", "vozForte", "tamLeg", "legenda", "sons", "dinamismo", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo", "tamTitulo", "preservarCenas", "zoomNivel", "zoomPalavrasV1"];
+  // uma vez só (nov/2026): o zoom passa a ser só nas palavras-chave e o "zoom rápido" em todo corte sai
+  function migrarZoomPalavras(o) { o.zoomNivel = "palavras"; o.zoomCortes = false; if (o.transicao === "punch") o.transicao = "nenhuma"; o.zoomPalavrasV1 = true; }
   function guardarOpc() { if (typeof salvarDepois === "function" && st.segs.length) salvarDepois(); try { localStorage.setItem("ed-opc3", JSON.stringify(Object.fromEntries(OPC_VISUAIS.map((k) => [k, st.opc[k]])))); } catch (e) { /* sem armazenamento */ } }
 
   let tempoToast = null;
@@ -666,6 +671,7 @@ IDEIA PARA DEPOIS
     st.story = { ...novoStory(), ...(d.story || {}) }; st.vari = { ...novaVari(), ...(d.vari || {}), trab: false, gerando: null };
     if (d.opc && d.versao >= 3) Object.assign(st.opc, d.opc);
     if (!d.opc || !d.opc.zoomNivel) { st.opc.zoomNivel = "discreto"; st.opc.zoomCortes = false; }
+    if (!d.opc || !d.opc.zoomPalavrasV1) migrarZoomPalavras(st.opc);
     if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
     st.efeitosSalvos = Array.isArray(d.efeitos) ? d.efeitos.map((e) => ({ ...e, id: uid() })) : null;
     st.pendentes = (d.clipes || []).length ? d.clipes.map((c) => ({ ...c, usado: false })) : null;
@@ -748,7 +754,7 @@ IDEIA PARA DEPOIS
       if (!so) { o.silencio = true; o.erros = true; }
     }
     if (/(mais calmo|menos dinamic|sem dinamismo|mais lento|menos cortes|menos zoom|mais tranquilo)/.test(t)) { o.dinamismo = "calmo"; o.ritmo = "normal"; }
-    if (/zooms? (discreto|suave|leve|sutil)|menos zoom|pouco zoom|vai.?e.?volta|zoom (entrando e saindo|alternado)[^.;!?]{0,20}(nao|chato|odeio|tira)/.test(t)) { o.zoomNivel = "discreto"; o.zoomCortes = false; }
+    if (/zooms? (discreto|suave|leve|sutil)|menos zoom|pouco zoom|vai.?e.?volta|zoom (entrando e saindo|alternado)[^.;!?]{0,20}(nao|chato|odeio|tira)/.test(t)) { o.zoomNivel = /palavra|enfase|chave/.test(t) || !/discreto/.test(t) ? "palavras" : "discreto"; o.zoomCortes = false; }
     else if (/zooms? (dinamic|entrando e saindo|alternado)|mais zoom|bastante zoom/.test(t) && !/(nao|sem)[^.;!?]{0,10}zoom/.test(t)) o.zoomNivel = "dinamico";
     // formato do vídeo
     if (/horizontal|16 ?(:|x|por) ?9|paisagem|formato largo|widescreen|(video|formato|edicao|ele|tudo) (todo )?(deitado|na horizontal)/.test(t) && !/(nao|sem)[^.;!?]{0,12}horizontal/.test(t)) o.formato = "horizontal";
@@ -783,7 +789,7 @@ IDEIA PARA DEPOIS
     if (o.sons) d.push({ nenhum: "sem efeitos sonoros", impacto: "efeitos só nas frases de impacto", poucos: "poucos efeitos sonoros", medio: "efeitos na medida", muitos: "muitos efeitos sonoros" }[o.sons]);
     if ("vol" in o) d.push(o.vol > 0.4 ? "efeitos mais altos" : "efeitos mais baixinhos");
     if (o.dinamismo === "dinamico") d.push("dinâmico: cortes sem pausa, transição e flash na troca de cena (o zoom continua no nível escolhido)");
-    if (o.zoomNivel) d.push(o.zoomNivel === "discreto" ? "zoom discreto (poucos e suaves, sem vai-e-volta)" : o.zoomNivel === "dinamico" ? "zoom dinâmico (entrando e saindo)" : "zoom equilibrado");
+    if (o.zoomNivel) d.push(o.zoomNivel === "palavras" ? "zoom suave só nas palavras-chave" : o.zoomNivel === "discreto" ? "zoom discreto (poucos e suaves, sem vai-e-volta)" : o.zoomNivel === "dinamico" ? "zoom dinâmico (entrando e saindo)" : "zoom equilibrado");
     if (o.relaxante) d.push("relaxante: poucos sons e só os suaves, sem zoom, flash nem transição, com respiro nos cortes");
     else if (o.dinamismo === "calmo") d.push("mais calmo: sem zoom nem transição");
     if (o.corTextos) { const nomes = { "#0a4ea0": "azul da Ortobom", "#1d2f5c": "azul-marinho", "#7cc0ee": "azul-claro", "#1f5fbf": "azul", "#ffffff": "branco", "#111111": "preto", "#ffd84d": "amarelo", "#f28cb1": "rosa", "#e0393e": "vermelho", "#3fa66b": "verde", "#f28c28": "laranja", "#8a6cf0": "roxo", "#d4af37": "dourado", "#fff3b0": "creme" }; d.push(`textos na tela e legenda em ${nomes[o.corTextos] || o.corTextos}${o.corAlvo === "tudo" ? " (todas as linhas, inclusive as pequenas)" : " (as frases grandes; para mudar as linhas pequenas também, peça \"tudo\")"}`); }
@@ -833,7 +839,7 @@ IDEIA PARA DEPOIS
     const foto = fotoDaEdicao();
     try {
       if (st.tocando) parar();
-      const nZooms = () => st.zooms.length + (st.zoomsManuais || []).length + (st.zoomsAuto || []).length + st.segs.filter((sg) => sg.zoom > 1).length;
+      const nZooms = () => (st.zoomsPal || []).length + st.zooms.length + (st.zoomsManuais || []).length + (st.zoomsAuto || []).length + st.segs.filter((sg) => sg.zoom > 1).length;
       const antes = { dur: st.duracao, ef: st.efeitos.length, zo: nZooms(), tit: st.titulo, opc: { ...st.opc }, rem: JSON.stringify((st.plano || {}).remover || []), dest: JSON.stringify((st.plano || {}).destaques || []), fot: fotosAssinatura(), txt: JSON.stringify((st.plano || {}).textos || []) };
       const locais = o.soIA ? {} : regrasDoPedido(texto);
       let sobra = o.soIA ? [texto] : partesSemRegra(texto);
@@ -1092,6 +1098,7 @@ IDEIA PARA DEPOIS
       ...(p.zooms || []).map((z) => ({ g: z.t, de: "plano" })),
       ...(st.manual.zooms || []).map((x) => ({ g: x, de: "você" })),
       ...(st.zoomsAuto || []).map((z) => ({ g: g(z.t), de: "dinamismo" })),
+      ...(st.zoomsPal || []).map((z) => ({ g: +z.g.toFixed(2), de: "palavra-chave: " + z.palavra })),
       ...st.segs.filter((s) => s.zoom > 1).map((s) => ({ g: +s.g0.toFixed(2), de: "corte" })),
     ].filter((z) => z.g != null).sort((a, b) => a.g - b.g).slice(0, 120);
     const efeitos = st.efeitos.map((e) => ({ g: g(e.t), tipo: e.tipo, de: e.manual ? "você" : e.doTitulo ? "título" : e.auto ? "automático" : "plano" })).filter((e) => e.g != null).slice(0, 150);
@@ -1382,7 +1389,7 @@ IDEIA PARA DEPOIS
     for (const arq of imgs) {
       try {
         const blob = await reduzirFoto(arq), id = uid(), img = new Image(); img.src = URL.createObjectURL(blob);
-        const f = { id, nome: arq.name, t0: null, dur: DUR_FOTO, path: null, img }; st.fotos.push(f);
+        const f = { id, nome: arq.name, t0: null, dur: DUR_FOTO, path: null, img, palavra: palavraDoNome(arq.name) }; st.fotos.push(f);
         const caminho = `edicao/fotos/${id}.jpg`;
         banco().storage.from("anexos").upload(caminho, blob, { contentType: "image/jpeg", upsert: true }).then(({ error }) => { if (!error) { f.path = caminho; salvarDepois(); } else toast("Não consegui guardar a foto " + arq.name + " (ela fica só nesta tela).", true); });
       } catch (e) { toast("Não consegui abrir " + arq.name + ". Tente JPG ou PNG.", true); }
@@ -1405,6 +1412,31 @@ IDEIA PARA DEPOIS
       f.t0 = Math.round(Math.min(Math.max(ini, t), Math.max(ini, fim - f.dur)) * 10) / 10; ocupado.push([f.t0, f.t0 + f.dur]);
     });
     st.fotos.sort((a, b) => (a.t0 ?? 1e9) - (b.t0 ?? 1e9));
+  }
+  // ----- foto aparece quando ela fala (nov/2026, ideia do AI Editing Studio) -----
+  // Cada foto tem "Aparece quando eu falar": a palavra (ou frase curta) que chama a foto. Vem do nome do
+  // arquivo (doce-de-leite.jpg → "doce de leite") e ela pode trocar. A foto entra no começo dessa fala.
+  // Se ela mexer em "Entra em", a foto fica onde ela pôs (porPalavra false).
+  function palavraDoNome(nome) {
+    const lixo = /^(img|image|imagem|foto|photo|whatsapp|wa|screenshot|captura|tela|dsc|pxl|copy|copia|final|editada|edit)$/i;
+    const t = String(nome || "").replace(/\.[a-z0-9]+$/i, "").split(/[\s_.\-()]+/).filter((w) => w && !/\d/.test(w) && !lixo.test(w)).join(" ").trim();
+    return t.length >= 3 ? t.toLowerCase() : "";
+  }
+  function fotosNaFala() {
+    const ws = st.palavrasFim || []; if (!ws.length) return;
+    const usados = new Set();
+    for (const f of st.fotos || []) {
+      f.achou = null;
+      if (!f.palavra || f.porPalavra === false) continue;
+      const alvo = String(f.palavra).split(/\s+/).map(limpaPal).filter(Boolean); if (!alvo.length) continue;
+      const bate = (i) => alvo.every((a, j) => ws[i + j] && (limpaPal(ws[i + j].w) === a || (a.length >= 5 && limpaPal(ws[i + j].w).startsWith(a.slice(0, -1)))));
+      let i = ws.findIndex((_, k) => !usados.has(k) && bate(k));
+      if (i < 0) { const forte = alvo.filter((a) => a.length >= 4 && !PEQUENAS.has(a)); i = ws.findIndex((w, k) => !usados.has(k) && forte.includes(limpaPal(w.w))); }
+      if (i < 0) { f.achou = ""; continue; }
+      usados.add(i);
+      f.t0 = Math.round(Math.max(0, ws[i].o0 - 0.05) * 10) / 10; f.achou = ws[i].w;
+    }
+    (st.fotos || []).sort((a, b) => (a.t0 ?? 1e9) - (b.t0 ?? 1e9));
   }
   async function carregarImgsFotos() {
     for (const f of st.fotos || []) {
@@ -1454,6 +1486,8 @@ IDEIA PARA DEPOIS
         <button type="button" class="ed-foto-img" data-foto-ver="${f.id}" aria-label="Ver no vídeo" ${f.t0 == null ? "disabled" : ""}>${f.img ? `<img src="${esc(f.img.src)}" alt="">` : `<span>${esc(f.nome || "foto")}</span>`}</button>
         ${!f.img && !f.path ? `<label class="btn ed-foto-escolher">Escolher a foto<input type="file" accept="image/*" data-foto-arq="${f.id}" hidden></label>` : ""}
         <label class="ed-foto-modo">Como entra <select class="entrada" data-foto-modo="${f.id}"><option value="cheia" ${f.modo !== "cima" ? "selected" : ""}>Tela cheia</option><option value="cima" ${f.modo === "cima" ? "selected" : ""}>Por cima</option></select></label>
+        <label>Aparece quando eu falar <input class="entrada" type="text" value="${esc(f.palavra || "")}" data-foto-pal="${f.id}" placeholder="ex.: doce de leite"></label>
+        ${f.palavra && f.porPalavra !== false && f.achou ? `<small class="ed-foto-dica">Entra quando você fala "${esc(f.achou)}" (${String(f.t0).replace(".", ",")} s).</small>` : f.palavra && f.porPalavra !== false && f.achou === "" ? `<small class="ed-foto-dica">Não ouvi "${esc(f.palavra)}" na fala. Troque a palavra ou escolha o tempo em "Entra em".</small>` : f.palavra && f.porPalavra === false ? `<small class="ed-foto-dica">Você escolheu o tempo à mão. <button type="button" class="ed-link" data-foto-volta="${f.id}">Voltar a entrar na palavra</button></small>` : ""}
         <label>Entra em <input class="entrada" type="number" min="0" step="0.1" value="${f.t0 == null ? "" : f.t0}" data-foto-t0="${f.id}" placeholder="auto" ${st.duracao ? "" : "disabled"}> s</label>
         <label>Dura <input class="entrada" type="number" min="0.3" max="10" step="0.1" value="${f.dur}" data-foto-dur="${f.id}"> s</label>
         ${f.modo === "cima" ? `<label>Formato <select class="entrada" data-foto-quad="${f.id}"><option value="" ${f.quad ? "" : "selected"}>Original</option><option value="1" ${f.quad ? "selected" : ""}>Card quadrado</option></select></label>
@@ -1463,8 +1497,11 @@ IDEIA PARA DEPOIS
         <button class="icone-btn" type="button" data-foto-tirar="${f.id}" aria-label="Tirar foto">${ic.x}</button></div>`).join("")}</div>`;
     const acha = (id) => fs.find((x) => x.id === id);
     const mudou = (f, ver) => { if (!st.tocando) { if (ver && f.t0 != null && (st.t < f.t0 || st.t >= f.t0 + f.dur)) irPara(f.t0 + Math.min(0.3, f.dur / 2)); else desenhar(st.t); } salvarDepois(); };
-    const dist = $("#ed-fotos-dist", box); if (dist) dist.addEventListener("click", () => { distribuirFotos(true); pintarFotos(); redesenhar(); salvarDepois(); });
-    $$("[data-foto-t0]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoT0); const v = parseFloat(String(i.value).replace(",", ".")); f.t0 = Number.isFinite(v) ? Math.max(0, Math.min(v, Math.max(0, (st.duracao || 0) - 0.3))) : null; salvarDepois(); if (f.t0 != null) irPara(f.t0 + Math.min(0.3, f.dur / 2)); pintarLinha(); }));
+    const dist = $("#ed-fotos-dist", box); if (dist) dist.addEventListener("click", () => { distribuirFotos(true); fotosNaFala(); pintarFotos(); redesenhar(); salvarDepois(); });
+    const naFala = (f) => { f.porPalavra = true; fotosNaFala(); pintarFotos(); if (f.t0 != null && f.achou) irPara(f.t0 + Math.min(0.3, f.dur / 2)); else redesenhar(); pintarLinha(); salvarDepois(); };
+    $$("[data-foto-pal]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoPal); f.palavra = i.value.trim(); naFala(f); }));
+    $$("[data-foto-volta]", box).forEach((b) => b.addEventListener("click", () => naFala(acha(b.dataset.fotoVolta))));
+    $$("[data-foto-t0]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoT0); f.porPalavra = false; const v = parseFloat(String(i.value).replace(",", ".")); f.t0 = Number.isFinite(v) ? Math.max(0, Math.min(v, Math.max(0, (st.duracao || 0) - 0.3))) : null; salvarDepois(); if (f.t0 != null) irPara(f.t0 + Math.min(0.3, f.dur / 2)); pintarLinha(); }));
     $$("[data-foto-dur]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoDur); f.dur = Math.max(0.3, Math.min(10, parseFloat(String(i.value).replace(",", ".")) || DUR_FOTO)); salvarDepois(); redesenhar(); }));
     $$("[data-foto-modo]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoModo); f.modo = i.value; if (f.modo === "cima") { for (const k of Object.keys(FOTO_CIMA)) if (f[k] == null) f[k] = FOTO_CIMA[k]; st.fotoSel = f.id; } pintarFotos(); mudou(f, true); }));
     $$("[data-foto-quad]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoQuad); f.quad = Boolean(i.value); st.fotoSel = f.id; mudou(f, true); }));
@@ -1514,7 +1551,7 @@ IDEIA PARA DEPOIS
     st.duracao = out;
     if ((st.fotos || []).some((f) => f.t0 == null)) distribuirFotos(false);
     // zoom alternado nos cortes (só quando o corte é dentro do mesmo clipe, o "pulo" da imagem)
-    st.segs.forEach((s, i) => { const ant = st.segs[i - 1]; s.zoom = ant && ant.ci === s.ci && st.opc.zoomCortes && st.opc.dinamismo !== "calmo" ? (ant.zoom > 1 ? 1 : 1 + ZOOM_FORCA[nivelZoom()]) : 1; });
+    st.segs.forEach((s, i) => { const ant = st.segs[i - 1]; s.zoom = ant && ant.ci === s.ci && st.opc.zoomCortes && !zoomPalavras() && st.opc.dinamismo !== "calmo" ? (ant.zoom > 1 ? 1 : 1 + ZOOM_FORCA[nivelZoom()]) : 1; });
     const p = st.plano || {};
     // legendas palavra por palavra
     const palavras = [];
@@ -1530,6 +1567,7 @@ IDEIA PARA DEPOIS
       const alvo = perto.find((x) => d.palavra && limpa(x.w) === limpa(d.palavra)) || perto.sort((a, b) => Math.abs(a.g - d.t) - Math.abs(b.g - d.t))[0];
       if (alvo) alvo.destaque = true;
     }
+    st.palavrasFim = palavras;
     if (!palavras.length && (p.textos || []).length) {
       // vídeo sem fala montado pelo roteiro: cada texto na tela vira uma legenda inteira
       const grupos = [];
@@ -1565,6 +1603,8 @@ IDEIA PARA DEPOIS
       st.zooms = st.zooms.filter((t) => !bloq(t)); st.zoomsManuais = st.zoomsManuais.filter((t) => !bloq(t)); st.zoomsAuto = st.zoomsAuto.filter((z) => !bloq(z.t));
       st.segs.forEach((sg) => { if (sg.zoom > 1 && bloq(sg.o0 + 0.02)) sg.zoom = 1; });
     }
+    zoomsNasPalavras();
+    fotosNaFala();
     st.fortes = st.efeitos.filter((e) => ["hit", "ding"].includes(e.tipo)).map((e) => e.t);
   }
   // ---------- dinamismo: efeitos sonoros automáticos nos cortes e nas entradas de texto ----------
@@ -1626,6 +1666,60 @@ IDEIA PARA DEPOIS
   }
   // dinamismo: "dinamico" = zoom entrando e saindo a cada ~2,5 s nas falas longas, punch nos cortes,
   // deslize e flash na troca de cena (as referências dela); "calmo" = sem zoom nem transição
+  // ----- zoom nas palavras-chave (nov/2026) -----
+  // De onde vêm: as palavras de destaque da IA (benefício, número, nome do produto, a virada da frase),
+  // números ditos ("zero", "50%", "dobro") e os zooms que ela põe (+ Zoom aqui / Pedir ajuste), que
+  // grudam na palavra mais perto. A palavra vizinha que completa a ideia entra junto: "zero" + "açúcar".
+  const PEQUENAS = new Set("a o as os um uma uns umas de da do das dos e e em no na nos nas que eu me meu minha pra pro para por com se ele ela isso esse essa este esta aqui ai la mas mais muito muita bem tipo ne entao ja so tambem ate vai vou foi ser ter tem ta to voce voces gente porque quando como".split(" "));
+  const limpaPal = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9%]/g, "");
+  const numeroForte = (x) => /\d/.test(x) || /^(zero|dez|cem|mil|metade|dobro|triplo|gratis|unico|unica)$/.test(x);
+  const ANTES_FORTE = /^(sem|zero|super|nada|nenhum|nenhuma|nunca|tudo|todo|toda|mais|menos)$/;
+  function zoomsNasPalavras() {
+    st.zoomsPal = [];
+    if (!zoomPalavras() || st.opc.dinamismo === "calmo" || st.opc.relaxante) return;
+    const ws = st.palavrasFim || []; if (!ws.length) return;
+    const m = st.manual || {}, tirados = new Set(m.zoomPalTirados || []), semZoom = m.semZoom || [];
+    const bloq = (g) => semZoom.some(([a, b]) => g >= a - 0.05 && g <= b + 0.05);
+    const cands = [];
+    if (st.opc.zoomEnfase !== false) ws.forEach((w, i) => { if (w.destaque) cands.push({ i, de: "ia" }); else if (numeroForte(limpaPal(w.w))) cands.push({ i, de: "auto" }); });
+    (m.zooms || []).forEach((g) => {
+      let i = -1, melhor = 1.0;
+      ws.forEach((w, j) => { const d = g >= w.g && g <= w.g + (w.o1 - w.o0) ? 0 : Math.abs(w.g - g); if (d < melhor && !PEQUENAS.has(limpaPal(w.w))) { melhor = d; i = j; } });
+      if (i < 0) ws.forEach((w, j) => { const d = Math.abs(w.g - g); if (d < melhor) { melhor = d; i = j; } });
+      if (i >= 0) cands.push({ i, de: "voce", gm: g });
+    });
+    const forte = (j) => ws[j] && !PEQUENAS.has(limpaPal(ws[j].w)) && limpaPal(ws[j].w).length >= 3;
+    const colado = (x, y) => ws[x] && ws[y] && ws[y].o0 - ws[x].o1 < 0.3 && ws[y].o0 >= ws[x].o0 && !/[.!?,;:]$/.test(ws[x].w);
+    const porK = new Map();
+    for (const c of cands) {
+      let a = c.i, b = c.i;
+      const atual = limpaPal(ws[a].w);
+      if (numeroForte(atual) && colado(a, a + 1) && forte(a + 1)) b = a + 1;
+      if (a > 0 && colado(a - 1, a) && (numeroForte(limpaPal(ws[a - 1].w)) || ANTES_FORTE.test(limpaPal(ws[a - 1].w)))) a = a - 1;
+      const k = ws[a].k;
+      if (c.de !== "voce" && (tirados.has(k) || bloq(ws[a].g))) continue;
+      const z = { k, t0: ws[a].o0, t1: ws[b].o1, g: ws[a].g, palavra: ws.slice(a, b + 1).map((w) => w.w).join(" "), de: c.de, gm: c.gm };
+      const ja = porK.get(k); if (!ja || c.de === "voce") porK.set(k, z);
+    }
+    let ult = -99;
+    const lista = [...porK.values()].sort((x, y) => x.t0 - y.t0).filter((z) => {
+      if (z.de === "voce") { ult = z.t0; return true; }
+      if (z.t0 < 0.3 || z.t0 - ult < 3.5) return false; // respiro entre um zoom e outro
+      ult = z.t0; return true;
+    });
+    for (const z of lista) {
+      const s = st.segs.find((x) => z.t0 >= x.o0 - 0.01 && z.t0 < x.o1) || segNoFinal(z.t0);
+      z.fim = s ? s.o1 : z.t1 + 1.2;
+      z.solta = z.fim - z.t1 <= 1.2 ? "corte" : "suave"; // corte logo depois: segura até o corte, sem vai-e-volta
+    }
+    st.zoomsPal = lista;
+  }
+  function tirarZoomPal(i) {
+    const z = (st.zoomsPal || [])[i]; if (!z) return;
+    if (z.de === "voce") { const j = st.manual.zooms.indexOf(z.gm); if (j >= 0) st.manual.zooms.splice(j, 1); }
+    else { st.manual.zoomPalTirados = st.manual.zoomPalTirados || []; hist("zoomPalTirados"); st.manual.zoomPalTirados.push(z.k); }
+    st.sel = null; mexeuManual();
+  }
   function zoomsDoDinamismo() {
     st.zoomsAuto = [];
     if (nivelZoom() !== "dinamico" || st.opc.dinamismo === "calmo") return;
@@ -1643,7 +1737,7 @@ IDEIA PARA DEPOIS
     if (i <= 0) return { z: 0, x: 0 };
     const d = t - s.o0, troca = st.segs[i - 1].ci !== s.ci;
     let z = 0, x = 0;
-    if (d >= 0 && d < 0.2) z = 0.09 * (1 - suave(d / 0.2));
+    if (d >= 0 && d < 0.2 && !zoomPalavras()) z = 0.09 * (1 - suave(d / 0.2));
     if (tipo === "deslize" && troca && d >= 0 && d < 0.16) x = 0.22 * (1 - suave(d / 0.16));
     return { z, x };
   }
@@ -1735,6 +1829,15 @@ IDEIA PARA DEPOIS
       if (a.tipo === "in") { if (d < 0 || d > 2.4) continue; const k = d < 0.35 ? d / 0.35 : d < 2 ? 1 : 1 - (d - 2) / 0.4; z = Math.max(z, 1 + 0.1 * suave(Math.max(0, Math.min(1, k)))); }
       else { if (d < 0 || d > 0.8) continue; z = Math.max(z, 1 + 0.14 * (1 - suave(d / 0.8))); } // começa perto e abre
     }
+    for (const zp of st.zoomsPal || []) {
+      // entra suave na palavra-chave, assenta enquanto ela fala e solta: no corte (a volta some) ou bem devagar
+      if (t >= zp.fim || t < zp.t0 - 0.06) continue;
+      const segura = zp.solta === "corte" ? zp.fim : zp.t1 + 0.35;
+      let k = Math.min(1, (t - zp.t0 + 0.06) / 0.45);
+      if (t > segura) { const e = (t - segura) / 0.7; if (e >= 1) continue; k = Math.min(k, 1 - e); }
+      z = Math.max(z, 1 + ZOOM_FORCA.palavras * suave(Math.max(0, Math.min(1, k))));
+    }
+    if (zoomPalavras()) return z;
     for (const zt of [...(st.opc.zoomEnfase ? st.zooms : []), ...(st.zoomsManuais || [])]) {
       const d = t - zt;
       if (d < -0.15 || d > 1.4) continue;
@@ -2112,7 +2215,7 @@ IDEIA PARA DEPOIS
     st.camadas = f.camadas; st.camSel = st.camadas.some((c) => c.id === f.camSel) ? f.camSel : null; ultimaFotoCam = { chave: "", em: 0 };
     pintarCamadas(); if (!st.tocando) desenhar(st.t); salvarDepois(); return true;
   }
-  function podeDesfazerManual() { const m = st.manual || {}; return Boolean((m.ordHist || []).length || (m.divisoes || []).length || (m.cortes || []).length || (m.sons || []).length || (m.zooms || []).length || (m.flashes || []).length || (m.tirados || []).length); }
+  function podeDesfazerManual() { const m = st.manual || {}; return Boolean((m.ordHist || []).length || (m.divisoes || []).length || (m.cortes || []).length || (m.sons || []).length || (m.zooms || []).length || (m.zoomPalTirados || []).length || (m.flashes || []).length || (m.tirados || []).length); }
   const DESFAZ = {
     cam: { pode: () => st.histCam.length > 0, faz: () => desfazerCam(), msg: "Desfeito: o texto voltou como estava." },
     manual: { pode: podeDesfazerManual, faz: () => desfazerManual(), msg: "Desfeito na linha do tempo." },
@@ -4057,7 +4160,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   function desfazerManual() {
     const m = st.manual; m.divisoes = m.divisoes || [];
     m.visuais = m.visuais || [];
-    const ult = [["visuais", m.visuais], ["cortes", m.cortes], ["divisoes", m.divisoes], ["sons", m.sons], ["zooms", m.zooms], ["flashes", m.flashes], ["tirados", m.tirados]].find(([, l]) => l.length);
+    const ult = [["visuais", m.visuais], ["cortes", m.cortes], ["divisoes", m.divisoes], ["sons", m.sons], ["zooms", m.zooms], ["flashes", m.flashes], ["tirados", m.tirados], ["zoomPalTirados", m.zoomPalTirados || []]].find(([, l]) => l.length);
     // desfaz o último tipo mexido (guardamos a ordem num histórico simples)
     const h = (st.manual.hist || []).pop();
     if (h === "ord" && (m.ordHist || []).length) { const f0 = m.ordHist.pop(); m.ordem = f0.ordem; m.trocas = f0.trocas; mexeuManual(); return; }
@@ -4074,7 +4177,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const larg = Math.max(100, Math.round(d * 7));
     const marcas = []; for (let t = 0; t <= d; t += d > 60 ? 10 : 5) marcas.push(t);
     const sel = st.sel || {}, o = st.opc, m = st.manual;
-    const temDesfazer = (m.ordHist || []).length || (m.divisoes || []).length || m.cortes.length || m.sons.length || m.zooms.length || m.flashes.length || m.tirados.length;
+    const temDesfazer = (m.zoomPalTirados || []).length || (m.ordHist || []).length || (m.divisoes || []).length || m.cortes.length || m.sons.length || m.zooms.length || m.flashes.length || m.tirados.length;
     const efSel = sel.tipo === "som" ? st.efeitos.find((e) => e.id === sel.id) : null;
     box.innerHTML = `<div class="rr-ferramentas">
         <button type="button" class="btn btn-principal" data-f="play">${st.tocando ? ic.pausa + "Pausar" : ic.play + "Play"}</button>
@@ -4093,6 +4196,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
         ${sel.tipo === "plano" ? `<button type="button" class="btn" data-f="mover-tras" ${sel.i > 0 ? "" : "disabled"}>◀ Mover para trás</button><button type="button" class="btn" data-f="mover-frente" ${sel.i < st.segs.length - 1 ? "" : "disabled"}>Mover para frente ▶</button><button type="button" class="btn" data-f="trocar-cena">⇄ Trocar cena</button><button type="button" class="btn rr-perigo" data-f="apagar-plano">Apagar este plano</button>` : ""}
         ${efSel ? `<span class="rr-sel">${esc(EFEITOS[efSel.tipo] || efSel.tipo)} em ${tempo(efSel.t)}</span><button type="button" class="btn" data-f="ouvir-som">${ic.som}Ouvir</button><button type="button" class="btn rr-perigo" data-f="tirar-som">Tirar este som</button>` : ""}
         ${sel.tipo === "zoom" ? `<button type="button" class="btn rr-perigo" data-f="tirar-zoom">Tirar este zoom</button>` : ""}
+        ${sel.tipo === "zpal" && (st.zoomsPal || [])[sel.i] ? `<span class="rr-sel">Zoom em "${esc(st.zoomsPal[sel.i].palavra)}"</span><button type="button" class="btn rr-perigo" data-f="tirar-zpal">Tirar este zoom</button>` : ""}
         ${sel.tipo === "flash" ? `<button type="button" class="btn rr-perigo" data-f="tirar-flash">Tirar este flash</button>` : ""}
         ${sel.tipo === "visual" ? `<span class="rr-sel">${esc((VISUAIS.find(([k]) => k === (st.visuais[sel.i] || {}).tipo) || ["", "Efeito"])[1])}</span>${["checklist", "grafico", "orbita"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="editar-visual">${(st.visuais[sel.i] || {}).tipo === "orbita" ? "Editar texto" : "Editar itens"}</button>` : ""}${["celular", "checklist", "grafico", "rabiscos", "orbita"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="dur-visual">Duração</button>` : ""}<button type="button" class="btn rr-perigo" data-f="tirar-visual">Tirar este efeito</button>` : ""}
         ${temDesfazer ? `<button type="button" class="btn" data-f="desfazer">Desfazer</button>` : ""}
@@ -4102,7 +4206,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <div class="rr-regua" data-buscar>${marcas.map((t) => `<span style="left:${pct(t)}">${tempo(t).replace(/,\d$/, "")}</span>`).join("")}</div>
       <div class="rr-trilha rr-t-leg${o.legenda === false ? " desligada" : ""}">${st.legendas.map((g) => `<button type="button" class="rr-chip" data-ir="${g.o0}" style="left:${pct(g.o0)};width:calc(${pct(g.o1 - g.o0)} - 3px)" title="${esc(textoLeg(g))}"><b>T</b> ${esc(textoLeg(g))}</button>`).join("")}</div>
       <div class="rr-trilha rr-t-planos">${st.segs.map((sg, i) => `<button type="button" class="rr-plano-bl${i % 2 ? " par" : ""}${sg.zoom > 1 ? " zoom" : ""}${sg.trocado ? " trocado" : ""}${sel.tipo === "plano" && sel.i === i ? " sel" : ""}" data-plano="${i}" style="left:${pct(sg.o0)};width:calc(${pct(sg.o1 - sg.o0)} - 2px)" title="Plano ${i + 1} (${esc(st.clipes[sg.ci] ? st.clipes[sg.ci].nome : "")}): toque para escolher, arraste para mudar de lugar">${quadrosDoPlano(sg)}<span class="rr-plano-n">${i + 1}</span></button>`).join("")}</div>
-      <div class="rr-trilha rr-t-fx">${(st.zoomsManuais || []).map((t, i) => `<button type="button" class="rr-zoom${sel.tipo === "zoom" && sel.i === i ? " sel" : ""}" data-zoom="${i}" style="left:${pct(t)}" title="Zoom em ${tempo(t)}">Z</button>`).join("")}${(st.flashes || []).map((t, i) => `<button type="button" class="rr-flash${sel.tipo === "flash" && sel.i === i ? " sel" : ""}" data-flash="${i}" style="left:${pct(t)}" title="Flash em ${tempo(t)}">F</button>`).join("")}${(st.visuais || []).map((x, i) => `<button type="button" class="rr-vis${sel.tipo === "visual" && sel.i === i ? " sel" : ""}" data-vis="${i}" style="left:${pct(x.t)}" title="${esc((VISUAIS.find(([k]) => k === x.tipo) || ["", x.tipo])[1])} em ${tempo(x.t)}">${LETRA_VIS[x.tipo] || "✦"}</button>`).join("")}</div>
+      <div class="rr-trilha rr-t-fx">${zoomPalavras() ? (st.zoomsPal || []).map((z, i) => `<button type="button" class="rr-zoom${sel.tipo === "zpal" && sel.i === i ? " sel" : ""}" data-zpal="${i}" style="left:${pct(z.t0)}" title="Zoom em &quot;${esc(z.palavra)}&quot; (${tempo(z.t0)})">Z</button>`).join("") : ""}${(zoomPalavras() ? [] : st.zoomsManuais || []).map((t, i) => `<button type="button" class="rr-zoom${sel.tipo === "zoom" && sel.i === i ? " sel" : ""}" data-zoom="${i}" style="left:${pct(t)}" title="Zoom em ${tempo(t)}">Z</button>`).join("")}${(st.flashes || []).map((t, i) => `<button type="button" class="rr-flash${sel.tipo === "flash" && sel.i === i ? " sel" : ""}" data-flash="${i}" style="left:${pct(t)}" title="Flash em ${tempo(t)}">F</button>`).join("")}${(st.visuais || []).map((x, i) => `<button type="button" class="rr-vis${sel.tipo === "visual" && sel.i === i ? " sel" : ""}" data-vis="${i}" style="left:${pct(x.t)}" title="${esc((VISUAIS.find(([k]) => k === x.tipo) || ["", x.tipo])[1])} em ${tempo(x.t)}">${LETRA_VIS[x.tipo] || "✦"}</button>`).join("")}</div>
       <div class="rr-trilha rr-t-sons${o.efeitos ? "" : " desligada"}">${st.efeitos.map((e) => `<button type="button" class="rr-som${e.manual ? " manual" : ""}${sel.tipo === "som" && sel.id === e.id ? " sel" : ""}" data-som="${e.id}" style="left:${pct(e.t)}" title="${esc((EFEITOS[e.tipo] || e.tipo) + (e.por_que ? ": " + e.por_que : ""))}"></button>`).join("")}</div>
       <span class="rr-agulha" id="ed-agulha" style="left:${pct(st.t)}"></span>
     </div></div>
@@ -4128,6 +4232,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     if (f("tirar-som")) f("tirar-som").addEventListener("click", () => tirarSom(efSel));
     if (f("ouvir-som")) f("ouvir-som").addEventListener("click", () => { audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(efSel.tipo, ac.currentTime + 0.02, o.vol); });
     if (f("tirar-zoom")) f("tirar-zoom").addEventListener("click", () => { st.manual.zooms.splice(sel.i, 1); st.sel = null; mexeuManual(); });
+    if (f("tirar-zpal")) f("tirar-zpal").addEventListener("click", () => tirarZoomPal(sel.i));
+    $$("[data-zpal]", box).forEach((b) => b.addEventListener("click", () => { const i = Number(b.dataset.zpal); st.sel = { tipo: "zpal", i }; irPara(Math.max(0, st.zoomsPal[i].t0 - 0.3)); pintarLinha(); }));
     f("visual").addEventListener("click", () => porVisual($("#rr-vis-tipo", box).value));
     $$("[data-vis]", box).forEach((b) => b.addEventListener("click", () => { const i = Number(b.dataset.vis); st.sel = { tipo: "visual", i }; irPara(st.visuais[i].t + 0.05); pintarLinha(); }));
     const visSel = sel.tipo === "visual" ? (st.manual.visuais || []).find((x) => x.id === (st.visuais[sel.i] || {}).id) : null;
