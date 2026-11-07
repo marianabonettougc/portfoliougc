@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Gestão UGC | Painel Mari Bonetto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Instrument+Serif:ital@0;1&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -164,9 +164,10 @@
   .dz .dn-card-txt small{font-size:13px}.dz .dn-card-txt b{font-size:22px}.dz .dn-card-txt em{font-size:12px}
   .dz .dn-card-txt small,.dz .dn-card-txt em{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dz .dn-seta{display:none}
-  .dz-grade{display:grid;grid-template-columns:minmax(300px,1fr) minmax(0,2.2fr);grid-template-areas:"sem cal" "apr camp" "fin fin";gap:14px;align-items:stretch}
+  .dz-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(280px,1fr);grid-template-areas:"seg alc fazer" "cal cal prop" "camp camp fin";gap:14px;align-items:stretch}
+  .dz-grade.sem-ig{grid-template-areas:"seg seg fazer" "cal cal prop" "camp camp fin"}
   .dz-grade > *{min-width:0;margin:0 !important}
-  .dz-linha{grid-area:sem}.dz-cal{grid-area:cal}.dz-grade > .dn-aprov{grid-area:apr}.dz-grade > .dn-campanhas{grid-area:camp}.dz-grade > .dn-fin{grid-area:fin}
+  .dz-ig-seg,.dz-ig-con{grid-area:seg}.dz-ig-alc{grid-area:alc}.dz-fazer{grid-area:fazer}.dz-prop{grid-area:prop}.dz-cal{grid-area:cal}.dz-grade > .dn-campanhas{grid-area:camp}.dz-grade > .dn-fin{grid-area:fin}
   .dz-sub{display:block;font-size:13px;color:var(--db-suave);margin-top:2px}
   .dz-prog{position:relative;height:6px;border-radius:999px;background:var(--db-bege);margin:30px 2px 14px}
   .dz-prog i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:linear-gradient(90deg,#c08a5f,var(--db-cafe))}
@@ -201,8 +202,70 @@
   .dz-mes-grade button i{position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--db-cafe)}
   .dz-mes-grade button.hoje{box-shadow:inset 0 0 0 1.5px #a87058}
   .dz-mes-grade button.sel{background:var(--db-cafe);color:#fff}.dz-mes-grade button.sel i{background:#fff}
-  @media (max-width:1100px){ .dz > .dn-cards{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-grade{grid-template-columns:minmax(0,1fr);grid-template-areas:"sem" "cal" "apr" "camp" "fin"} .dz-cal-corpo{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:1100px){ .dz > .dn-cards{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-grade,.dz-grade.sem-ig{grid-template-columns:minmax(0,1fr);grid-template-areas:"seg" "alc" "fazer" "cal" "prop" "camp" "fin"} .dz-cal-corpo{grid-template-columns:minmax(0,1fr)} }
   @media (max-width:700px){ .dz .dn-ola{flex-direction:column;align-items:flex-start;gap:2px} .dz .dn-data{order:-1} .dz .dn-ola h1{font-size:27px} .dz > .dn-cards{gap:10px} .dz .dn-card{padding:12px 14px;gap:10px} .dz .dn-card .dn-ico{width:34px;height:34px} .dz .dn-card-txt b{font-size:18px} }
+
+  /* Dashboard (nov/2026, referência que a Mari gostou): serifada fina nos títulos, rótulos pequenos em caixa alta, Instagram, Para fazer e propostas */
+  .dz{--dz-serif:"Instrument Serif","DM Serif Display",Georgia,serif}
+  .dz .dn-ola h1{font-family:var(--dz-serif);font-size:42px;letter-spacing:-.2px}
+  .dz .dn-bt h2,.dz .dz-ig-cab h2{font-family:Poppins,sans-serif;font-weight:500;font-size:15.5px;letter-spacing:0}
+  .dz .dn-ola .dn-data{display:none}
+  .dz-sobre{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--db-suave);margin-bottom:6px}
+  .dz-sobre::before{content:"";width:22px;height:1px;background:var(--db-linha2)}
+  .dn-site{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--db-linha);background:var(--db-papel);color:var(--db-texto);font-size:13.5px;text-decoration:none;white-space:nowrap}
+  .dn-site:hover{border-color:var(--db-linha2)}
+  .dz-nums .dn-card{text-decoration:none;padding:15px 18px;justify-content:flex-start;overflow:hidden}
+  .dz-nums .dn-card-txt{flex:1 1 auto;min-width:0;width:100%}
+  .dz-nums .dn-card-txt b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dz-nums .dn-card-txt small{font-size:10.5px !important;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--db-suave)}
+  .dz-nums .dn-card-txt b{display:block;font-size:22px;margin:4px 0 2px}
+  .dz-nums .dn-card-txt em{font-style:normal;color:var(--db-suave)}
+  .dz-nums .dn-card-txt em.ruim{color:var(--db-vermelho)} .dz-nums .dn-card-txt em.bom{color:var(--db-verde)}
+  .dz-ig-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .dz-ig-cab h2{margin:0}
+  .dz-seg-p{padding:3px}.dz-seg-p button{padding:4px 10px;font-size:11.5px}
+  .dz-ig-seg{background:linear-gradient(160deg,#4a3326,#3d2b20 60%,#33241b) !important;color:#f6efe6;border-color:transparent !important;display:flex;flex-direction:column}
+  .dz-ig-seg h2{color:#f6efe6}
+  .dz-ig-seg .dz-seg{background:rgba(255,253,249,.1)} .dz-ig-seg .dz-seg button{color:rgba(246,239,230,.7)} .dz-ig-seg .dz-seg button.on{background:#f6efe6;color:#3d2b20}
+  .dz-ig-num{display:flex;align-items:flex-end;gap:14px}
+  .dz-ig-num > b{font-size:44px;font-weight:600;line-height:1;letter-spacing:-1px}
+  .dz-ig-novos{display:flex;flex-direction:column}.dz-ig-novos b{font-size:18px}
+  .dz-ig-novos small,.dz-ig-menos small{font-size:10px;letter-spacing:1px;text-transform:uppercase;opacity:.7}
+  .dz-ig-rot{display:block;font-size:10.5px;font-weight:600;letter-spacing:1.1px;text-transform:uppercase;color:var(--db-suave);margin-top:6px}
+  .dz-ig-seg .dz-ig-rot{color:rgba(246,239,230,.6)}
+  .dz-ig-menos{display:flex;flex-direction:column;margin-top:12px}.dz-ig-menos b{font-size:18px}
+  .dz-ig-barras{flex:1;min-height:90px;display:flex;align-items:flex-end;gap:6px;margin-top:14px;border-bottom:1px solid rgba(246,239,230,.2);padding-bottom:2px}
+  .dz-ig-barras i{flex:1;max-width:26px;background:#f6efe6;border-radius:4px 4px 1px 1px;opacity:.92}
+  .dz-ig-pe{margin-top:8px}
+  .dz-ig-erro{color:#f2c7b8;font-size:13.5px}
+  .dz-ig-tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .dz-ig-tres b,.dz-ig-views b{display:block;font-size:22px;font-weight:600;line-height:1.1}
+  .dz-ig-tres small,.dz-ig-views small{display:block;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--db-suave);margin:3px 0}
+  .dz-ig-tres em,.dz-ig-views em{font-style:normal;font-size:11.5px;font-weight:600;color:var(--db-suave)}
+  .dz-ig-alc em.sobe{color:var(--db-verde)} .dz-ig-alc em.desce{color:var(--db-vermelho)}
+  .dz-ig-views{margin-top:16px}
+  .dz-ig-linha{display:block;width:100%;height:96px;margin-top:6px;overflow:visible}
+  .dz-ig-linha .area{fill:rgba(168,112,88,.16)} .dz-ig-linha .traco{fill:none;stroke:#8a634b;stroke-width:1.6;vector-effect:non-scaling-stroke} .dz-ig-linha circle{fill:#3d2b20}
+  .dz-ig-acoes{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:13px}
+  .dz-ig-con p{font-size:14px;line-height:1.55;color:var(--db-texto);margin:0 0 12px;max-width:640px}
+  .dz-ig-form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .dz-ig-form input{flex:1 1 260px;min-width:0;height:44px;border:1px solid var(--db-linha);border-radius:12px;padding:0 14px;font:inherit;background:var(--db-papel);color:var(--db-texto)}
+  .dz-ig-passos{margin:10px 0 0;padding-left:20px;font-size:13.5px;line-height:1.55;color:var(--db-texto)} .dz-ig-passos li{margin-bottom:6px}
+  .dz-fazer-lista,.dz-prop-lista{list-style:none;margin:0;padding:0}
+  .dz-fazer-lista li{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 2px;border-top:1px solid var(--db-linha);font-size:14px;cursor:pointer}
+  .dz-fazer-lista li:first-child{border-top:0}
+  .dz-fazer-lista li b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dz-fazer-lista li small{font-size:12px;color:var(--db-suave);white-space:nowrap}
+  .dz-fazer-lista li small.atr{color:var(--db-vermelho);font-weight:600} .dz-fazer-lista li small.hj{color:#a87058;font-weight:600}
+  .dz-fazer-lista .dz-vazio{display:block;color:var(--db-suave);cursor:default}
+  .dz-tag-atr{background:rgba(197,83,63,.12) !important;color:var(--db-vermelho) !important}
+  .dz-prop-lista li{display:grid;grid-template-columns:minmax(80px,auto) minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 2px;border-top:1px solid var(--db-linha);font-size:13.5px;cursor:pointer}
+  .dz-prop-lista li:first-child{border-top:0}
+  .dz-prop-lista li b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+  .dz-prop-lista li span{color:var(--db-suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dz-prop-lista li small{font-size:12px;color:var(--db-suave)}
+  .dz-prop-lista li.nova b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#a87058;margin-right:7px;vertical-align:1px}
+  @media (max-width:700px){ .dz .dn-ola h1{font-size:32px} .dn-site span{display:none} .dn-site{width:40px;padding:0;justify-content:center} .dz-ig-num > b{font-size:36px} .dz-nums .dn-card{padding:12px 13px} .dz-nums .dn-card-txt small{letter-spacing:.6px !important;font-size:10px !important} .dz-nums .dn-card-txt b{font-size:18px} .dz-nums .dn-card-txt em{white-space:normal !important;font-size:11.5px} .dz-prop-lista li{grid-template-columns:minmax(0,1fr) auto} .dz-prop-lista li span{display:none} }
 
   .dn-min{ display:inline-grid; place-items:center; width:30px; height:30px; border:1px solid var(--db-linha); border-radius:999px; background:var(--db-papel); color:var(--db-texto); cursor:pointer; padding:0; flex-shrink:0; }
   .db-bloco.fechado > *:not(.dn-bt):not(.db-bloco-topo){ display:none !important; }
@@ -2954,20 +3017,63 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     return {k, rotulo:MESES_EXT[d.getMonth()].slice(0,3).replace(/^./, c=>c.toUpperCase()), valor:somaDe(receitas.filter(t=>t.status==="Confirmado" && String(t.data||"").startsWith(k)))}; });
   const maxMes = Math.max(1, ...meses6.map(m=>m.valor));
   // conteúdos do mês (Conteúdos do painel) e propostas do e-mail sem resposta
-  const [dnExtras,setDnExtras] = useState({conteudos:null, propostas:null});
+  const [dnExtras,setDnExtras] = useState({conteudos:null, propostas:null, visitas:null, propLista:[]});
   useEffect(()=>{
     let vivo = true;
     Promise.all([
       supabaseClient.from("painel_conteudo").select("status,data,mes").eq("mes", mesIso).then(r=>r.data||[]).catch(()=>null),
-      supabaseClient.from("propostas_email").select("status,recebido_em").eq("status","nova").then(r=>r.data||[]).catch(()=>null),
-    ]).then(([c,p])=>{ if(!vivo) return;
+      supabaseClient.from("propostas_email").select("id,de_nome,marca,assunto,recebido_em,lida,status,tipo").eq("status","nova").order("recebido_em",{ascending:false}).then(r=>r.data||[]).catch(()=>null),
+      supabaseClient.from("visitas").select("data,visitante_id").gte("data", new Date(Date.now()-7*86400000).toISOString()).limit(5000).then(r=>r.data||[]).catch(()=>null),
+    ]).then(([c,p,v])=>{ if(!vivo) return;
       const sete = Date.now()-7*86400000;
       setDnExtras({
         conteudos: c ? {total:c.length, publicados:c.filter(x=>x.status==="Publicado"||x.status==="Postado").length} : null,
-        propostas: p ? {total:p.length, velhas:p.filter(x=>x.recebido_em && new Date(x.recebido_em).getTime()<sete).length} : null });
+        propostas: p ? {total:p.length, velhas:p.filter(x=>x.recebido_em && new Date(x.recebido_em).getTime()<sete).length, naoLidas:p.filter(x=>!x.lida).length} : null,
+        propLista: (p||[]).slice(0,4),
+        visitas: v ? {hoje:v.filter(x=>isoLocal(new Date(x.data))===isoLocal(new Date())).length, semana:v.length} : null });
     });
     return ()=>{ vivo = false; };
   },[mesIso]);
+  // Instagram (nov/2026): números do perfil pela API oficial da Meta (Edge Function "instagram", só leitura, token só no banco)
+  const [igDias,setIgDias] = useState(()=>{ try{ return Number(localStorage.getItem("igDias"))||7; }catch(e){ return 7; } });
+  const [ig,setIg] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("igDash")||"null") || {carregando:true}; }catch(e){ return {carregando:true}; } });
+  const [igToken,setIgToken] = useState("");
+  const [igConectando,setIgConectando] = useState(false);
+  const [igAjuda,setIgAjuda] = useState(false);
+  async function carregarIg(dias, forcar){
+    try{
+      const { data, error } = await supabaseClient.functions.invoke("instagram", {body:{acao:"dados", dias, forcar:!!forcar}});
+      if(error) throw error;
+      setIg(data||{});
+      if(data && data.conectado && !data.error){ try{ localStorage.setItem("igDash", JSON.stringify(data)); }catch(e){} }
+      if(data && data.conectado===false){ try{ localStorage.removeItem("igDash"); }catch(e){} }
+    }catch(e){ setIg(x=>({...x, carregando:false, erroRede:"Não consegui ler o Instagram agora."})); }
+  }
+  useEffect(()=>{ try{ localStorage.setItem("igDias", String(igDias)); }catch(e){} carregarIg(igDias); }, [igDias]);
+  async function conectarIg(remover){
+    setIgConectando(true);
+    try{
+      const { data, error } = await supabaseClient.functions.invoke("instagram", {body: remover ? {acao:"remover"} : {acao:"salvar", token:igToken.trim()}});
+      if(error && !data) throw new Error("Não consegui conectar.");
+      if(data && data.error) throw new Error(data.error);
+      setIgToken("");
+      if(remover){ setIg({conectado:false}); try{ localStorage.removeItem("igDash"); }catch(e){} }
+      else await carregarIg(igDias, true);
+    }catch(e){ setIg(x=>({...x, erroConexao:String(e.message||e)})); }
+    setIgConectando(false);
+  }
+  const igNum = (n) => n==null ? "–" : n>=1e6 ? (n/1e6).toFixed(1).replace(".",",")+" mi" : n>=1e4 ? (n/1e3).toFixed(1).replace(".",",").replace(",0","")+" mil" : Number(n).toLocaleString("pt-BR");
+  const igVar = (v, pp) => v==null ? null : <em className={v>0?"sobe":v<0?"desce":""}>{v>0?"▲":v<0?"▼":"="} {String(Math.abs(v)).replace(".",",")}{pp?" p.p.":"%"}</em>;
+  const igLinha = (() => { const pts = (ig.alcanceDia||[]).map(x=>x.valor); if(pts.length<2) return null;
+    const max = Math.max(1, ...pts), w = 300, h = 90;
+    const xy = pts.map((v,i)=>[i/(pts.length-1)*w, h-4-(v/max)*(h-12)]);
+    const d = xy.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+    return {d, area: d+` L ${w} ${h} L 0 ${h} Z`, fim:xy[xy.length-1], w, h}; })();
+  const igBarras = (ig.novosDia||[]).slice(-Math.min(igDias,14));
+  const igMaxBar = Math.max(1, ...igBarras.map(x=>x.valor));
+  const igSeg = <span className="dz-seg dz-seg-p" role="group" aria-label="Período">{[7,14,30].map(n=><button key={n} className={igDias===n?"on":""} onClick={()=>setIgDias(n)}>{n} dias</button>)}</span>;
+  // em produção: campanhas ativas e entregas dos próximos 7 dias
+  const entregas7 = ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)>=0 && diasAte(j.prazoEntrega)<=7).length;
   // campanhas: jobs ativos, os atrasados primeiro e depois pelo prazo
   const itensDoJob = (j) => { const e = j.entregaveis || {}; return [...(e.videos||[]).map(i=>[i,"videos"]), ...(e.fotos||[]).map(i=>[i,"fotos"]), ...(e.stories||[]).map(i=>[i,"stories"])]; };
   const progressoJob = (j) => { const its = itensDoJob(j); const total = its.reduce((a,[i])=>a+qtdItem(i),0);
@@ -3072,52 +3178,90 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
               : <p className="db-vazio">Tudo em ordem por aqui!</p>}
           </div>}
         </div>
+        <a className="dn-site" href="https://marianabonetto.com.br/" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg><span>Ver meu site</span></a>
         <button className="dn-btn" onClick={novaTarefaHoje}><DbIcone tipo="mais" tam={17}/><span>Nova tarefa</span></button>
       </div>
 
       {/* saudação com o resumo do dia */}
       <div className="dn-ola">
         <div>
+          <span className="dz-sobre">Painel · {hojeD.toLocaleDateString("pt-BR",{weekday:"long", day:"numeric", month:"long"})}</span>
           <h1>{saudacao}, {nome}</h1>
           <p>{partesResumo.length ? <>Hoje: {partesResumo.map((p,i)=><React.Fragment key={i}>{i>0 && (i===partesResumo.length-1 ? " e " : ", ")}<b>{p}</b></React.Fragment>)}.</> : "Hoje não tem gravação, entrega nem post marcado."}
             {jobsAtrasados>0 && ` ${jobsAtrasados===1 ? "Um job está atrasado." : jobsAtrasados+" jobs estão atrasados."}`}</p>
         </div>
         <span className="dn-data">{dataExtenso}</span>
       </div>
-      {/* quatro números */}
-      <div className="dn-cards">
-        <button className="dn-card" onClick={()=>go("financeiro")}><span className="dn-ico"><DbIcone tipo="moeda" tam={21}/></span>
-          <span className="dn-card-txt"><small>A receber</small><b>{dnMoeda(aReceber)}</b><em>{plural(aReceberLista.length,"pagamento","pagamentos")}</em></span><span className="dn-seta"><DbIcone tipo="seta" tam={17}/></span></button>
-        <button className="dn-card" onClick={()=>go("financeiro")}><span className="dn-ico"><DbIcone tipo="grafico" tam={21}/></span>
-          <span className="dn-card-txt"><small>Faturamento do mês</small><b>{dnMoeda(faturamentoMes)}</b><em className={variacao>0?"bom":""}>{variacao===null ? "receitas de "+MESES_EXT[hojeD.getMonth()] : `${variacao>0?"+":""}${variacao}% sobre ${MESES_EXT[(hojeD.getMonth()+11)%12]}`}</em></span><span className="dn-seta"><DbIcone tipo="seta" tam={17}/></span></button>
-        <button className="dn-card" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}><span className="dn-ico"><DbIcone tipo="calendario" tam={21}/></span>
-          <span className="dn-card-txt"><small>Conteúdos do mês</small><b>{dnExtras.conteudos ? `${dnExtras.conteudos.publicados} de ${dnExtras.conteudos.total}` : "..."}</b><em>publicados</em></span><span className="dn-seta"><DbIcone tipo="seta" tam={17}/></span></button>
-        <button className="dn-card" onClick={()=>abrirAba ? abrirAba("propostas") : go("jobs")}><span className="dn-ico"><DbIcone tipo="aviao" tam={21}/></span>
-          <span className="dn-card-txt"><small>Propostas sem resposta</small><b>{dnExtras.propostas ? dnExtras.propostas.total : "..."}</b><em>{dnExtras.propostas && dnExtras.propostas.velhas ? `${dnExtras.propostas.velhas} há mais de 7 dias` : "no e-mail"}</em></span><span className="dn-seta"><DbIcone tipo="seta" tam={17}/></span></button>
+      {/* quatro números (nov/2026, referência da Mari): faturado, a receber, em produção e visitas no site */}
+      <div className="dn-cards dz-nums">
+        <button className="dn-card" onClick={()=>go("financeiro")}>
+          <span className="dn-card-txt"><small>Faturado em {MESES_EXT[hojeD.getMonth()]}</small><b>{dnMoeda(faturamentoMes)}</b><em className={variacao>0?"bom":""}>{variacao===null ? "sem mês anterior para comparar" : `${variacao>0?"+":""}${variacao}% sobre ${MESES_EXT[(hojeD.getMonth()+11)%12]}`}</em></span></button>
+        <button className="dn-card" onClick={()=>go("financeiro")}>
+          <span className="dn-card-txt"><small>Para receber</small><b>{dnMoeda(aReceber)}</b><em className={atrasadoLista.length?"ruim":""}>{atrasadoLista.length ? plural(atrasadoLista.length,"pagamento vencido","pagamentos vencidos") : "nada vencido"}</em></span></button>
+        <button className="dn-card" onClick={()=>go("jobs")}>
+          <span className="dn-card-txt"><small>Em produção</small><b>{plural(campanhas.length,"campanha","campanhas")}</b><em>{entregas7 ? plural(entregas7,"entrega","entregas")+" nos próximos 7 dias" : "nenhuma entrega nos próximos 7 dias"}</em></span></button>
+        <a className="dn-card" href="https://marianabonetto.com.br/" target="_blank" rel="noopener">
+          <span className="dn-card-txt"><small>Visitas no site</small><b>{dnExtras.visitas ? `${dnExtras.visitas.hoje} hoje` : "..."}</b><em>{dnExtras.visitas ? `${dnExtras.visitas.semana} nos últimos 7 dias` : "carregando"}</em></span></a>
       </div>
-      <div className="dz-grade">
+      <div className={"dz-grade"+(ig.conectado ? "" : " sem-ig")}>
 
-        {/* linha do tempo da semana (nov/2026, referência Zenova da Mari): progresso e Próximas / Feitas / Atrasadas */}
-        <section className="db-bloco dz-linha">
-          <div className="dn-bt"><div><h2>Sua semana</h2><small className="dz-sub">Veja a semana tomar forma</small></div></div>
-          <div className="dz-prog"><i style={{width:linhaPct+"%"}}/><b style={{left:"calc("+linhaPct+"% - 18px)"}}>{linhaPct}%</b></div>
-          <div className="dz-tabs" role="tablist">{[["prox","Próximas"],["feitas","Feitas"],["atr","Atrasadas"]].map(([k,t])=><button key={k} role="tab" className={linhaAba===k?"on":""} onClick={()=>setLinhaAba(k)}>{t}<span>{linhaItens[k].length}</span></button>)}</div>
-          <ul className="dz-lista">{linhaItens[linhaAba].slice(0,6).map(x=><li key={x.iso+x.it.id} className={x.ok?"ok":""} onClick={()=>{ setDiaSel(x.iso); setCalVista(v=>v==="dia"?"dia":v); }}><span className="dz-circ">{x.ok ? "✓" : ""}</span><b>{x.it.texto}</b><small>{DIAS_NOME[new Date(x.iso+"T00:00:00").getDay()].slice(0,3)}, {dataBR(x.iso).slice(0,5)}</small></li>)}
-            {!linhaItens[linhaAba].length && <li className="dz-vazio">{linhaAba==="atr" ? "Nada atrasado. 🎉" : linhaAba==="feitas" ? "Nada feito ainda nesta semana." : "Nada pela frente nesta semana."}</li>}</ul>
+        {/* Instagram: seguidores e alcance (API oficial da Meta) */}
+        {ig.conectado ? <>
+          <section className="db-bloco dz-ig-seg">
+            <div className="dz-ig-cab"><h2>Seguidores</h2>{igSeg}</div>
+            {ig.error ? <p className="dz-ig-erro">{ig.error}</p> : <>
+            <div className="dz-ig-num"><b>{igNum(ig.seguidores)}</b>{ig.novos!=null && <span className="dz-ig-novos"><b>+{igNum(ig.novos)}</b><small>novos em {igDias} dias</small></span>}</div>
+            <small className="dz-ig-rot">total hoje · @{ig.username}</small>
+            {ig.deixaram!=null && <div className="dz-ig-menos"><b>-{igNum(ig.deixaram)}</b><small>deixaram de seguir em {igDias} dias</small></div>}
+            <div className="dz-ig-barras" aria-label="Novos seguidores por dia">{igBarras.map(x=><i key={x.data} title={dataBR(x.data).slice(0,5)+": +"+x.valor} style={{height:Math.max(4, x.valor/igMaxBar*100)+"%"}}/>)}</div>
+            <small className="dz-ig-rot dz-ig-pe">Novos seguidores por dia</small></>}
+          </section>
+          <section className="db-bloco dz-ig-alc">
+            <div className="dz-ig-cab"><h2>Alcance</h2>{igSeg}</div>
+            <div className="dz-ig-tres">
+              <div><b>{igNum(ig.alcance)}</b><small>contas alcançadas</small>{igVar(ig.alcanceVar)}</div>
+              <div><b>{ig.engajamento==null ? "–" : String(ig.engajamento).replace(".",",")+"%"}</b><small>engajamento</small>{igVar(ig.engajamentoVar, true)}</div>
+              <div><b>{igNum(ig.interacoes)}</b><small>interações</small>{igVar(ig.interacoesVar)}</div>
+            </div>
+            <div className="dz-ig-views"><b>{igNum(ig.views)}</b><small>visualizações</small>{igVar(ig.viewsVar)}</div>
+            {igLinha && <svg className="dz-ig-linha" viewBox={`0 0 ${igLinha.w} ${igLinha.h}`} preserveAspectRatio="none" aria-label="Alcance por dia"><path d={igLinha.area} className="area"/><path d={igLinha.d} className="traco"/><circle cx={igLinha.fim[0]} cy={igLinha.fim[1]} r="3.5"/></svg>}
+            <small className="dz-ig-rot">{ig.de ? `${dataBR(ig.de).slice(0,5)} a ${dataBR(ig.ate).slice(0,5)}, comparado com os ${igDias} dias antes` : ""}</small>
+            <div className="dz-ig-acoes"><a className="db-link db-sublinhado" href={`https://www.instagram.com/${ig.username||""}/`} target="_blank" rel="noopener">Abrir o perfil</a>
+              <button className="db-link" onClick={()=>carregarIg(igDias, true)}>Atualizar</button>
+              <button className="db-link" onClick={async ()=>{ if(await painelDialogo.confirmar("Desconectar o Instagram do painel? Os números somem do Dashboard até conectar de novo.", { ok: "Desconectar", perigo: true })) conectarIg(true); }}>Desconectar</button></div>
+          </section>
+        </> : <section className="db-bloco dz-ig-con">
+            <div className="dz-ig-cab"><h2>Seu Instagram no painel</h2></div>
+            {ig.carregando ? <p className="db-vazio">Carregando...</p> : <>
+            <p>Seguidores, alcance, engajamento e visualizações aparecem aqui pela <b>API oficial da Meta</b>, só leitura. O painel não posta, não segue e não usa sua senha, então não tem risco para a conta.</p>
+            <div className="dz-ig-form"><input value={igToken} onChange={e=>setIgToken(e.target.value)} placeholder="Cole aqui o token do Instagram" aria-label="Token do Instagram"/>
+              <button className="db-btn-escuro" disabled={igConectando || igToken.trim().length<30} onClick={()=>conectarIg(false)}>{igConectando ? "Conectando..." : "Conectar"}</button></div>
+            {ig.erroConexao && <p className="db-erro">{ig.erroConexao}</p>}
+            <button className="db-link db-sublinhado" onClick={()=>setIgAjuda(a=>!a)}>{igAjuda ? "Esconder o passo a passo" : "Como gerar o token (uma vez só)"}</button>
+            {igAjuda && <ol className="dz-ig-passos">
+              <li>No app do Instagram: Configurações, Tipo de conta e ferramentas, e deixe a conta como <b>Criador de conteúdo</b> (ou Comercial).</li>
+              <li>No computador, entre em developers.facebook.com com o seu Facebook, clique em Meus apps, Criar app, escolha o caso de uso <b>Gerenciar mensagens e conteúdo no Instagram</b> (API do Instagram) e crie.</li>
+              <li>No app criado: Casos de uso, API do Instagram, <b>Configuração da API com login do Instagram</b>. Em Funções do app, adicione o seu @ como testador do Instagram e aceite o convite no Instagram (Configurações, Apps e sites, Convites de testador).</li>
+              <li>Volte em "Gerar tokens de acesso", clique em <b>Adicionar conta</b>, entre com o seu Instagram e depois em <b>Gerar token</b>. Copie e cole aqui.</li>
+              <li>O token vale 60 dias e o painel renova sozinho toda semana. O app pode ficar no modo de desenvolvimento: ele só lê a sua própria conta.</li>
+            </ol>}</>}
+          </section>}
+
+        {/* para fazer (nov/2026, no lugar de "Sua semana"): o que está atrasado primeiro e o que vem pela frente */}
+        <section className="db-bloco dz-fazer">
+          <div className="dn-bt"><h2>Para fazer</h2><span className="dn-bt-dir">{linhaItens.atr.length>0 && <span className="dn-tag dz-tag-atr">{linhaItens.atr.length} atrasado{linhaItens.atr.length===1?"":"s"}</span>}<button className="db-link" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}>Abrir</button></span></div>
+          <ul className="dz-fazer-lista">{[...linhaItens.atr, ...linhaItens.prox].slice(0,5).map(x=>{ const d = Math.round((new Date(x.iso+"T00:00:00")-hojeD)/86400000);
+            return <li key={x.iso+x.it.id} onClick={()=>setDiaSel(x.iso)}><span className="dz-circ"/><b>{x.it.texto}</b>
+              <small className={d<0?"atr":d===0?"hj":""}>{d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : d===1 ? "amanhã" : DIAS_NOME[new Date(x.iso+"T00:00:00").getDay()].slice(0,3).toLowerCase()+" "+dataBR(x.iso).slice(0,5)}</small></li>; })}
+            {!linhaItens.atr.length && !linhaItens.prox.length && <li className="dz-vazio">Nada pendente nesta semana. 🎉</li>}</ul>
         </section>
-        {/* aguardando aprovação */}
-        <section className={"db-bloco dn-aprov"+(fechadoB("aprov")?" fechado":"")}>
-          <div className="dn-bt"><h2>Aguardando aprovação</h2><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("aprov")}</span></div>
-          {aprovacoes.length ? <><ul className={"dn-apr"+(aprovacoes.length>3?" dn-apr-rola":"")} ref={aprRef} onScroll={aprChecar}>{aprovacoes.map(a=>{ const d = a.desde ? -diasAte(a.desde) : null;
-            const rot = a.tipo==="roteiro";
-            return <li key={a.id}><button onClick={()=>a.jobId ? abrirJob(a.jobId) : go(a.pagina)}><span className="dn-ico dn-ico-p"><DbIcone tipo={rot?"documento":"filme"} tam={17}/></span>
-              <span className="dn-txt"><b>{a.titulo}</b><small>{a.desde ? (d>=0 ? "Enviado em " : "Envio previsto para ")+dataBR(a.desde).slice(0,5) : "Esperando a marca"}{d>0 ? ` · há ${d} dia${d===1?"":"s"}` : ""}</small></span></button>
-              {a.itemId && <span className="dn-apr-acoes">
-                <button className="dn-apr-ok" onClick={()=>mudarItem(a.jobId, a.itemId, rot ? "Em produção" : "Finalizado")} title={rot ? "Roteiro aprovado: vai para produção" : "Conteúdo aprovado: finalizado"}><DbIcone tipo="check" tam={14}/>Aprovado</button>
-                <button className="dn-apr-aj" onClick={()=>mudarItem(a.jobId, a.itemId, rot ? "Roteirização" : "Refação")} title="A marca pediu ajuste">Ajuste</button>
-              </span>}</li>; })}</ul>
-            <div className="dn-apr-mais"><button type="button" className="dn-min" onClick={aprDescer} disabled={aprovacoes.length<=3} title={aprovacoes.length<=3 ? "Tudo já está à mostra" : aprFim ? "Voltar ao começo" : "Ver as próximas"} aria-label={aprovacoes.length<=3 ? "Tudo já está à mostra" : aprFim ? "Voltar ao começo" : "Ver as próximas"}><Icon name={aprFim && aprovacoes.length>3 ? "expand_less" : "expand_more"} size={19}/></button></div></>
-            : <p className="db-vazio">Nada esperando aprovação.</p>}
+
+        {/* e-mails de propostas (nov/2026, no lugar de "Aguardando aprovação") */}
+        <section className="db-bloco dz-prop">
+          <div className="dn-bt"><div><h2>E-mails de propostas</h2><small className="dz-sub">{dnExtras.propostas ? (dnExtras.propostas.total ? `${plural(dnExtras.propostas.total,"proposta sem resposta","propostas sem resposta")}${dnExtras.propostas.velhas ? `, ${dnExtras.propostas.velhas} há mais de 7 dias` : ""}` : "Nenhuma proposta esperando resposta") : "Carregando..."}</small></div>
+            <button className="db-link" onClick={()=>abrirAba ? abrirAba("propostas") : go("jobs")}>Ver todas</button></div>
+          <ul className="dz-prop-lista">{(dnExtras.propLista||[]).map(p=><li key={p.id} className={p.lida?"":"nova"} onClick={()=>abrirAba ? abrirAba("propostas") : go("jobs")}>
+            <b>{p.marca || p.de_nome || "Proposta"}</b><span>{p.assunto || ""}</span><small>{p.recebido_em ? dataBR(isoLocal(new Date(p.recebido_em))).slice(0,5) : ""}</small></li>)}</ul>
         </section>
 
           {/* calendário: a lista do dia escolhido + o mês (ou a semana) */}
