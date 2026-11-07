@@ -834,6 +834,7 @@ IDEIA PARA DEPOIS
   async function corrigir(texto, o = {}) {
     texto = String(texto || "").trim();
     if (!texto) { toast("Escreva o que você quer mudar.", true); return; }
+    if (texto.startsWith("/")) { await comandoBarra(texto); return; }
     if (!st.plano || st.corrigindo) return;
     st.corrigindo = true; pintarAjustar();
     const foto = fotoDaEdicao();
@@ -1996,8 +1997,232 @@ IDEIA PARA DEPOIS
   }
   const suave = (k) => k * k * (3 - 2 * k);
   // ----- efeitos visuais do carrossel que ela mandou (out/2026): zoom-through, pull-back reveal, celular, checklist e gráfico -----
-  const VISUAIS = [["mergulho", "Zoom-through (mergulha e sai na próxima cena)"], ["revelar", "Pull-back reveal (afasta e revela a cena)"], ["celular", "Phone mockup (vídeo dentro de um celular)"], ["checklist", "Checklist (itens marcados enquanto fala)"], ["grafico", "Gráfico que cresce"], ["rabiscos", "Doodle boil (rabiscos à mão que tremem)"], ["orbita", "Orbit (texto girando ao seu redor)"], ["moldura", "Moldura (o vídeo entra numa moldura, para prova e print)"]];
-  const LETRA_VIS = { mergulho: "M", revelar: "R", celular: "▯", checklist: "✓", grafico: "▮", rabiscos: "✎", orbita: "◎", moldura: "▢" };
+  const VISUAIS = [["mergulho", "Zoom-through (mergulha e sai na próxima cena)"], ["revelar", "Pull-back reveal (afasta e revela a cena)"], ["celular", "Phone mockup (vídeo dentro de um celular)"], ["checklist", "Checklist (itens marcados enquanto fala)"], ["grafico", "Gráfico que cresce"], ["rabiscos", "Doodle boil (rabiscos à mão que tremem)"], ["orbita", "Orbit (texto girando ao seu redor)"], ["moldura", "Moldura (o vídeo entra numa moldura, para prova e print)"], ["tierlist", "Tier list (ranking S, A, B, C, D)"], ["contador", "Over-the-shoulder (número contando ao seu lado)"], ["textoatras", "Text-behind (texto atrás de você)"], ["vidro", "Glass graph (gráfico de linha em vidro)"], ["gradewipe", "Grade wipe (troca a cor deslizando)"]];
+  const LETRA_VIS = { mergulho: "M", revelar: "R", celular: "▯", checklist: "✓", grafico: "▮", rabiscos: "✎", orbita: "◎", moldura: "▢", tierlist: "S", contador: "#", textoatras: "T", vidro: "◇", gradewipe: "◐" };
+  // ----- comandos do Reel da @camilaatunoni (nov/2026, pedido da Mari): /tier-list, /over-the-shoulder,
+  // /text-behind, /glass-graph, /grade-wipe e /captions. No vídeo original eles rodam no Higgsfield (pago);
+  // aqui são efeitos visuais do próprio editor, desenhados no navegador, sem custo. O recorte do
+  // text-behind usa o MediaPipe (Google, gratuito, roda no navegador). -----
+  const VIS_NOVOS = {
+    tierlist: { pergunta: "Um item por linha, no formato faixa: item (faixas S, A, B, C, D). Ex.: S: Sérum X", padrao: "S: Item 1\nA: Item 2\nB: Item 3\nC: Item 4\nD: Item 5", linhas: 6 },
+    contador: { pergunta: "Número final na 1ª linha e o texto de baixo na 2ª (ex.: 7.000 e seguidores). Pode ter R$, % ou k.", padrao: "7.000\nseguidores", linhas: 3 },
+    textoatras: { pergunta: "Texto que fica atrás de você (curto, ex.: ACHADINHO). Até 2 linhas.", padrao: "ACHADINHO", linhas: 2 },
+    vidro: { pergunta: "Pontos do gráfico, um por linha, no formato rótulo: valor. Se quiser título, escreva na 1ª linha sem número.", padrao: "Meus resultados\nJan: 10\nFev: 35\nMar: 60\nAbr: 120", linhas: 6 },
+    gradewipe: { pergunta: "Cor que entra deslizando: pb, quente, frio, cinema ou vintage", padrao: "pb", linhas: 1 },
+  };
+  const FAIXAS_TIER = [["S", "#ff7f7f"], ["A", "#ffbf7f"], ["B", "#ffdf80"], ["C", "#bfe38a"], ["D", "#86c5ff"]];
+  const GRADES = ["pb", "quente", "frio", "cinema", "vintage"];
+  const COMANDOS_BARRA = { "tier-list": "tierlist", tierlist: "tierlist", ranking: "tierlist", "over-the-shoulder": "contador", contador: "contador", numero: "contador", "text-behind": "textoatras", "texto-atras": "textoatras", "glass-graph": "vidro", "grafico-vidro": "vidro", "grade-wipe": "gradewipe", "troca-cor": "gradewipe", captions: "legenda", legendas: "legenda", legenda: "legenda" };
+  const linhasDe = (txt) => String(txt || "").split(/\n|;/).map((x) => x.trim()).filter(Boolean);
+  function durNovo(x) {
+    if (x.tipo === "tierlist") return Math.max(4, (x.itens || []).length * 1.1 + 2.4);
+    if (x.tipo === "vidro") return 4.5;
+    return 3;
+  }
+  function itensDoComando(tipo, arg) {
+    arg = String(arg || "").trim();
+    if (!arg) return null;
+    if (tipo === "textoatras") return linhasDe(arg.replace(/;/g, "\n")).slice(0, 2);
+    if (tipo === "gradewipe") return [arg.split(/\s+/)[0].toLowerCase()];
+    if (tipo === "contador") { const l = linhasDe(arg); if (l.length > 1) return l; const m = arg.match(/^(\D*?[\d.,]+\s*[%kKmM]?)\s+(.+)$/); return m ? [m[1].trim(), m[2].trim()] : [arg]; }
+    return linhasDe(arg);
+  }
+  function itensValidos(tipo, itens) {
+    if (!itens || !itens.length) return false;
+    if (tipo === "gradewipe" && !GRADES.includes(itens[0])) { toast("Grade wipe: use pb, quente, frio, cinema ou vintage.", true); return false; }
+    if (tipo === "vidro" && itens.filter((it) => /[:=\-]\s*[\d.,]+\s*%?\s*$/.test(it)).length < 2) { toast("Glass graph: preciso de pelo menos 2 pontos no formato rótulo: valor.", true); return false; }
+    if (tipo === "contador" && !/\d/.test(itens[0])) { toast("Over-the-shoulder: a 1ª linha precisa ter um número.", true); return false; }
+    return true;
+  }
+  async function pedirItensNovo(tipo) {
+    const c = VIS_NOVOS[tipo];
+    const txt = await painelDialogo.texto(c.pergunta, c.padrao, c.linhas > 1 ? { linhas: c.linhas } : undefined);
+    if (txt == null) return null;
+    let itens = linhasDe(tipo === "textoatras" ? String(txt).replace(/;/g, "\n") : txt);
+    if (tipo === "gradewipe") itens = itens.slice(0, 1).map((x) => x.toLowerCase());
+    if (tipo === "textoatras") itens = itens.slice(0, 2);
+    if (!itensValidos(tipo, itens)) return null;
+    if (tipo === "textoatras") recortePronto(true);
+    return itens;
+  }
+  // "/comando argumentos" no campo "Corrigir a edição": coloca o efeito no ponto da agulha
+  async function comandoBarra(texto) {
+    if (!st.plano || !st.segs.length) { toast("Edite o vídeo primeiro, depois use o comando.", true); return; }
+    let feitos = 0;
+    for (const l of String(texto).split(/\n(?=\s*\/)/)) {
+      const m = l.trim().match(/^\/([\wÀ-ſ-]+)\s*([\s\S]*)$/);
+      const nome = m ? m[1].toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "") : "";
+      const tipo = COMANDOS_BARRA[nome];
+      if (!tipo) { toast("Não conheço o comando " + (l.trim().split(/\s/)[0] || "") + ". Use /tier-list, /over-the-shoulder, /text-behind, /glass-graph, /grade-wipe ou /captions.", true); continue; }
+      if (tipo === "legenda") { st.opc.legenda = true; guardarOpc(); feitos++; continue; }
+      let itens = itensDoComando(tipo, m[2]);
+      if (itens == null) itens = await pedirItensNovo(tipo);
+      else if (!itensValidos(tipo, itens)) itens = null;
+      if (!itens) continue;
+      if (tipo === "textoatras") await recortePronto(true);
+      const g = brutoDe(st.t); if (g == null) { toast("Coloque a agulha num trecho do vídeo.", true); return; }
+      hist("visuais"); (st.manual.visuais = st.manual.visuais || []).push({ id: uid(), g: +g.toFixed(2), tipo, itens });
+      feitos++;
+    }
+    if (feitos) { mexeuManual(); toast("Comando aplicado no ponto da agulha. Dá o play para ver."); }
+  }
+  // ---- recorte da pessoa (text-behind): MediaPipe Selfie Segmenter, carregado só quando precisa ----
+  const rec = { seg: null, carregando: null, falhou: false, t: -99, quadro: null, pessoa: null, peq: null, mascara: null };
+  const precisaRecorte = () => (st.visuais || []).some((x) => x.tipo === "textoatras") || ((st.manual || {}).visuais || []).some((x) => x.tipo === "textoatras");
+  function recortePronto(avisar) {
+    if (rec.seg) return Promise.resolve(true);
+    if (rec.falhou) return Promise.resolve(false);
+    if (!rec.carregando) {
+      if (avisar) toast("Preparando o recorte do text-behind (só na primeira vez, leva uns segundos)...");
+      const V = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+      const MODELO = "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite";
+      rec.carregando = import(V + "/vision_bundle.mjs").then(async (mp) => {
+        const fs = await mp.FilesetResolver.forVisionTasks(V + "/wasm");
+        const opc = (delegate) => ({ baseOptions: { modelAssetPath: MODELO, delegate }, runningMode: "IMAGE", outputCategoryMask: false, outputConfidenceMasks: true });
+        try { rec.seg = await mp.ImageSegmenter.createFromOptions(fs, opc("GPU")); }
+        catch (e) { rec.seg = await mp.ImageSegmenter.createFromOptions(fs, opc("CPU")); }
+        rec.t = -99; if (!st.tocando && !st.exportando) { try { desenhar(st.t); } catch (e) { /* redesenha no próximo quadro */ } }
+        return true;
+      }).catch((e) => { console.warn("recorte do text-behind falhou:", e); rec.falhou = true; toast("Não consegui carregar o recorte. O texto vai ficar na frente.", true); return false; });
+    }
+    return rec.carregando;
+  }
+  // devolve um canvas só com a pessoa do quadro atual (o resto transparente)
+  function camadaPessoa(t, W, H) {
+    if (!rec.seg) return null;
+    if (!rec.quadro) for (const k of ["quadro", "pessoa", "peq", "mascara"]) rec[k] = document.createElement("canvas");
+    const pw = 256, ph = Math.max(16, Math.round(256 * H / W));
+    for (const [k, w, h] of [[rec.quadro, W, H], [rec.pessoa, W, H], [rec.peq, pw, ph], [rec.mascara, pw, ph]]) if (k.width !== w || k.height !== h) { k.width = w; k.height = h; rec.t = -99; }
+    const q = rec.quadro.getContext("2d"); q.clearRect(0, 0, W, H); q.drawImage(canvas, 0, 0);
+    if (st.exportando || Math.abs(t - rec.t) > 0.03) {
+      try {
+        const p = rec.peq.getContext("2d"); p.clearRect(0, 0, pw, ph); p.drawImage(canvas, 0, 0, pw, ph);
+        const r = rec.seg.segment(rec.peq);
+        const ms = (r && r.confidenceMasks) || [], m = ms[ms.length - 1];
+        if (m) {
+          const f = m.getAsFloat32Array(), mc = rec.mascara.getContext("2d"), img = mc.createImageData(pw, ph);
+          for (let i = 0; i < f.length && i < pw * ph; i++) img.data[i * 4 + 3] = Math.max(0, Math.min(1, (f[i] - 0.3) / 0.4)) * 255;
+          mc.putImageData(img, 0, 0);
+        }
+        if (r && r.close) r.close();
+        rec.t = t;
+      } catch (e) { console.warn("recorte:", e); }
+    }
+    const pc = rec.pessoa.getContext("2d");
+    pc.globalCompositeOperation = "source-over"; pc.clearRect(0, 0, W, H); pc.drawImage(rec.quadro, 0, 0);
+    pc.globalCompositeOperation = "destination-in"; pc.imageSmoothingEnabled = true; pc.drawImage(rec.mascara, 0, 0, W, H);
+    pc.globalCompositeOperation = "source-over";
+    return rec.pessoa;
+  }
+  const numeroBR = (s) => Number(String(s).replace(/\./g, "").replace(",", ".")) || 0;
+  function desenharVisualNovo(x, d, itens, t, u, W, H) {
+    if (!VIS_NOVOS[x.tipo]) return;
+    const dur = x.dur || durNovo(x);
+    if (d < 0 || d > dur) return;
+    const ent = suave(Math.min(1, d / 0.35)), sai = suave(Math.max(0, Math.min(1, (dur - d) / 0.3))), deitado = W > H;
+    if (x.tipo === "textoatras") {
+      const linhas = (itens.length ? itens : ["TEXTO"]).slice(0, 2).map((l) => String(l).toUpperCase().slice(0, 24));
+      const pessoa = rec.seg ? camadaPessoa(t, W, H) : (recortePronto(), null);
+      c2d.save(); c2d.globalAlpha = Math.min(ent, sai);
+      let px = (linhas.length > 1 ? 230 : 300) * u; c2d.font = "800 " + px + "px Poppins, sans-serif";
+      const larg = Math.max(...linhas.map((l) => c2d.measureText(l).width)); if (larg > W * 0.94) px *= (W * 0.94) / larg;
+      c2d.font = "800 " + px + "px Poppins, sans-serif"; c2d.textAlign = "center"; c2d.textBaseline = "middle";
+      const esc = 0.9 + 0.1 * ent, yc = H * (deitado ? 0.4 : 0.29);
+      c2d.translate(W / 2, yc); c2d.scale(esc, esc);
+      c2d.fillStyle = x.cor || "#ffffff"; c2d.shadowColor = "rgba(0,0,0,.22)"; c2d.shadowBlur = 18 * u;
+      linhas.forEach((l, i) => c2d.fillText(l, 0, (i - (linhas.length - 1) / 2) * px * 0.92));
+      c2d.restore();
+      if (pessoa) c2d.drawImage(pessoa, 0, 0);
+    }
+    if (x.tipo === "contador") {
+      const m = String(itens[0] || "0").match(/^(\D*?)([\d.,]+)(.*)$/);
+      const pre = m ? m[1] : "", alvo = m ? numeroBR(m[2]) : 0, suf = m ? m[3] : "";
+      const decs = m && /,\d+$/.test(m[2]) ? m[2].split(",")[1].length : 0;
+      const k = suave(Math.min(1, d / 1.2)), pop = suave(Math.min(1, d / 0.25));
+      const fmt = (v) => pre + v.toLocaleString("pt-BR", { minimumFractionDigits: decs, maximumFractionDigits: decs }) + suf;
+      c2d.save(); c2d.globalAlpha = Math.min(pop, sai);
+      c2d.translate(W * (deitado ? 0.78 : 0.74), H * (deitado ? 0.26 : 0.2)); const e = 0.7 + 0.3 * pop; c2d.scale(e, e);
+      c2d.textAlign = "center"; c2d.textBaseline = "alphabetic"; c2d.shadowColor = "rgba(0,0,0,.45)"; c2d.shadowBlur = 16 * u; c2d.fillStyle = x.cor || "#ffffff";
+      let px = 130 * u; c2d.font = "800 " + px + "px Poppins, sans-serif";
+      const lw = c2d.measureText(fmt(alvo)).width; if (lw > W * 0.48) { px *= (W * 0.48) / lw; c2d.font = "800 " + px + "px Poppins, sans-serif"; }
+      c2d.fillText(fmt(alvo * k), 0, 0);
+      if (itens.length > 1) { c2d.font = "600 " + Math.min(46 * u, px * 0.36) + "px Poppins, sans-serif"; c2d.fillText(itens.slice(1).join(" ").slice(0, 28), 0, px * 0.48); }
+      c2d.restore();
+    }
+    if (x.tipo === "tierlist") {
+      const dados = itens.map((it, i) => { const m = String(it).match(/^\s*([SABCD])\s*[:=\-]\s*(.+)$/i); return m ? { f: m[1].toUpperCase(), txt: m[2].trim() } : { f: FAIXAS_TIER[Math.min(4, i)][0], txt: String(it).trim() }; });
+      const passo = Math.max(0.45, (dur - 1.6) / Math.max(1, dados.length));
+      const larg = Math.min(W * 0.9, 940 * u), x0 = (W - larg) / 2, y0 = H * (deitado ? 0.06 : 0.07), alt = Math.min(H * (deitado ? 0.62 : 0.34), 700 * u), lh = alt / 5, lab = Math.min(lh, 130 * u);
+      c2d.save(); c2d.globalAlpha = Math.min(ent, sai); c2d.translate(0, (1 - ent) * -30 * u);
+      FAIXAS_TIER.forEach(([f, cor], r) => {
+        const y = y0 + r * lh, hh = lh - 4 * u;
+        c2d.fillStyle = "rgba(29,22,17,.86)"; c2d.fillRect(x0, y, larg, hh);
+        c2d.fillStyle = cor; c2d.fillRect(x0, y, lab, hh);
+        c2d.fillStyle = "#1d1611"; c2d.font = "800 " + (lh * 0.5) + "px Poppins, sans-serif"; c2d.textAlign = "center"; c2d.textBaseline = "middle"; c2d.fillText(f, x0 + lab / 2, y + hh / 2);
+        let cx = x0 + lab + 14 * u;
+        dados.forEach((q, i) => {
+          if (q.f !== f) return; const dt = d - 0.4 - i * passo; if (dt < 0) return;
+          const p = suave(Math.min(1, dt / 0.25));
+          c2d.font = "600 " + Math.min(38 * u, lh * 0.34) + "px Poppins, sans-serif";
+          const tw = Math.min(c2d.measureText(q.txt).width + 30 * u, x0 + larg - cx - 10 * u); if (tw < 40 * u) return;
+          const ch = lh * 0.62;
+          c2d.save(); c2d.globalAlpha *= p; c2d.translate(cx + tw / 2, y + hh / 2); c2d.scale(0.6 + 0.4 * p, 0.6 + 0.4 * p);
+          c2d.fillStyle = "#fffdf9"; arredondado(-tw / 2, -ch / 2, tw, ch, 12 * u); c2d.fill();
+          c2d.fillStyle = "#1d1611"; c2d.textAlign = "center"; c2d.textBaseline = "middle"; c2d.fillText(q.txt, 0, 2 * u, tw - 22 * u);
+          c2d.restore();
+          cx += tw + 10 * u;
+        });
+      });
+      c2d.restore();
+    }
+    if (x.tipo === "vidro") {
+      let titulo = ""; const pts = [];
+      itens.forEach((it) => { const m = String(it).match(/^(.*?)[:=\-]\s*([\d.,]+)\s*(%?)\s*$/); if (m) pts.push({ rot: m[1].trim(), val: numeroBR(m[2]), pct: m[3] }); else if (!titulo) titulo = String(it); });
+      if (pts.length < 2) return;
+      const cresce = suave(Math.min(1, Math.max(0, d - 0.25) / 1.4));
+      const larg = Math.min(W * 0.86, 900 * u), alt = Math.min(H * (deitado ? 0.56 : 0.32), 620 * u), x0 = (W - larg) / 2, y0 = H * (deitado ? 0.08 : 0.07);
+      c2d.save(); c2d.globalAlpha = Math.min(ent, sai); c2d.translate(0, (1 - ent) * 24 * u);
+      // "vidro" sem desfoque (ela não quer fundo desfocado atrás de elementos): branco translúcido + borda clara
+      const gr = c2d.createLinearGradient(0, y0, 0, y0 + alt); gr.addColorStop(0, "rgba(255,255,255,.32)"); gr.addColorStop(1, "rgba(255,255,255,.12)");
+      c2d.fillStyle = gr; arredondado(x0, y0, larg, alt, 32 * u); c2d.fill();
+      c2d.strokeStyle = "rgba(255,255,255,.6)"; c2d.lineWidth = 2.5 * u; c2d.stroke();
+      const pad = 44 * u, topo = y0 + pad + (titulo ? 70 * u : 30 * u), base = y0 + alt - pad - 30 * u, esq = x0 + pad + 10 * u, dir = x0 + larg - pad - 10 * u;
+      c2d.shadowColor = "rgba(0,0,0,.35)"; c2d.shadowBlur = 10 * u; c2d.fillStyle = "#ffffff"; c2d.textBaseline = "alphabetic";
+      if (titulo) { c2d.textAlign = "left"; c2d.font = "700 " + (42 * u) + "px Poppins, sans-serif"; c2d.fillText(titulo.slice(0, 34), x0 + pad, y0 + pad + 30 * u, larg - 2 * pad); }
+      const vals = pts.map((q) => q.val), max = Math.max(...vals), min = Math.min(0, ...vals);
+      const P = pts.map((q, i) => ({ x: esq + (dir - esq) * i / (pts.length - 1), y: base - (base - topo) * (q.val - min) / ((max - min) || 1), q }));
+      c2d.font = "500 " + (26 * u) + "px Poppins, sans-serif"; c2d.textAlign = "center";
+      P.forEach((p) => c2d.fillText(p.q.rot.slice(0, 10), p.x, base + 42 * u));
+      const tot = cresce * (P.length - 1), k = Math.min(P.length - 1, Math.floor(tot)), fr = tot - k;
+      const ate = P.slice(0, k + 1); if (k < P.length - 1) ate.push({ x: P[k].x + (P[k + 1].x - P[k].x) * fr, y: P[k].y + (P[k + 1].y - P[k].y) * fr });
+      c2d.shadowBlur = 0;
+      const ga = c2d.createLinearGradient(0, topo, 0, base); ga.addColorStop(0, "rgba(255,243,176,.5)"); ga.addColorStop(1, "rgba(255,243,176,0)");
+      c2d.beginPath(); c2d.moveTo(ate[0].x, base); ate.forEach((p) => c2d.lineTo(p.x, p.y)); c2d.lineTo(ate[ate.length - 1].x, base); c2d.closePath(); c2d.fillStyle = ga; c2d.fill();
+      c2d.beginPath(); ate.forEach((p, i) => (i ? c2d.lineTo(p.x, p.y) : c2d.moveTo(p.x, p.y)));
+      c2d.strokeStyle = x.cor || "#fff3b0"; c2d.lineWidth = 7 * u; c2d.lineJoin = "round"; c2d.lineCap = "round"; c2d.shadowColor = "rgba(0,0,0,.3)"; c2d.shadowBlur = 8 * u; c2d.stroke();
+      P.forEach((p, i) => {
+        if (i > tot + 0.001) return;
+        c2d.fillStyle = "#ffffff"; c2d.beginPath(); c2d.arc(p.x, p.y, 9 * u, 0, Math.PI * 2); c2d.fill();
+        c2d.font = "700 " + (30 * u) + "px Poppins, sans-serif"; c2d.fillText(p.q.val.toLocaleString("pt-BR") + p.q.pct, p.x, p.y - 22 * u);
+      });
+      c2d.restore();
+    }
+    if (x.tipo === "gradewipe") {
+      const g = String(itens[0] || "pb").toLowerCase();
+      const p = Math.min(suave(Math.min(1, d / 0.55)), suave(Math.max(0, Math.min(1, (dur - d) / 0.4))));
+      if (p <= 0) return;
+      const inc = H * 0.35, e = p * (W + inc);
+      c2d.save(); c2d.beginPath(); c2d.moveTo(0, 0); c2d.lineTo(e, 0); c2d.lineTo(e - inc, H); c2d.lineTo(0, H); c2d.closePath(); c2d.clip();
+      const pinta = (op, cor) => { c2d.globalCompositeOperation = op; c2d.fillStyle = cor; c2d.fillRect(0, 0, W, H); };
+      if (g === "pb") { pinta("saturation", "#808080"); pinta("soft-light", "rgba(0,0,0,.25)"); }
+      else if (g === "quente") pinta("soft-light", "rgba(255,140,40,.6)");
+      else if (g === "frio") pinta("soft-light", "rgba(40,120,255,.6)");
+      else if (g === "cinema") { pinta("soft-light", "rgba(0,150,160,.4)"); pinta("soft-light", "rgba(255,150,70,.32)"); pinta("multiply", "rgb(232,232,236)"); }
+      else { pinta("saturation", "rgba(128,128,128,.55)"); pinta("soft-light", "rgba(255,190,110,.55)"); pinta("lighten", "rgb(40,28,18)"); }
+      c2d.restore();
+      if (p < 1) { c2d.save(); c2d.strokeStyle = "rgba(255,255,255,.9)"; c2d.lineWidth = 6 * u; c2d.beginPath(); c2d.moveTo(e, 0); c2d.lineTo(e - inc, H); c2d.stroke(); c2d.restore(); }
+    }
+  }
   function zoomVisual(t) {
     let z = 1;
     for (const x of st.visuais || []) {
@@ -2086,6 +2311,7 @@ IDEIA PARA DEPOIS
         });
         c2d.restore();
       }
+      desenharVisualNovo(x, d, itens, t, u, W, H);
     }
   }
   // ----- música de fundo com ducking (abaixa quando ela fala) -----
@@ -2969,6 +3195,7 @@ IDEIA PARA DEPOIS
   }
   async function exportar() {
     if (!st.segs.length || st.exportando) return;
+    if (precisaRecorte()) await recortePronto(true);
     const pode = window.VideoEncoder && window.AudioEncoder && window.VideoFrame && window.OfflineAudioContext;
     if (pode) {
       try { const r = await exportarQuadros(); if (r !== "sem-suporte") return; }
@@ -4144,6 +4371,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   async function porVisual(tipo) {
     const g = brutoDe(st.t); if (g == null) return;
     let itens;
+    if (VIS_NOVOS[tipo]) { itens = await pedirItensNovo(tipo); if (!itens) return; }
     if (tipo === "checklist") { const txt = await painelDialogo.texto("Itens do checklist, um por linha (aparecem e são marcados um a um):", "Item 1\nItem 2\nItem 3", { linhas: 5 }); if (txt == null) return; itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); }
     if (tipo === "orbita") { const txt = await painelDialogo.texto("Texto que gira ao seu redor (curto, ex.: BLACK FRIDAY):", st.tema || "BLACK FRIDAY"); if (txt == null || !txt.trim()) return; itens = [txt.trim().slice(0, 40)]; }
     const tipos = new Set((st.manual.visuais || []).map((x) => x.tipo));
@@ -4347,7 +4575,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
         ${sel.tipo === "zoom" ? `<button type="button" class="btn rr-perigo" data-f="tirar-zoom">Tirar este zoom</button>` : ""}
         ${sel.tipo === "zpal" && (st.zoomsPal || [])[sel.i] ? `<span class="rr-sel">Zoom em "${esc(st.zoomsPal[sel.i].palavra)}"</span><button type="button" class="btn rr-perigo" data-f="tirar-zpal">Tirar este zoom</button>` : ""}
         ${sel.tipo === "flash" ? `<button type="button" class="btn rr-perigo" data-f="tirar-flash">Tirar este flash</button>` : ""}
-        ${sel.tipo === "visual" ? `<span class="rr-sel">${esc((VISUAIS.find(([k]) => k === (st.visuais[sel.i] || {}).tipo) || ["", "Efeito"])[1])}</span>${["checklist", "grafico", "orbita"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="editar-visual">${(st.visuais[sel.i] || {}).tipo === "orbita" ? "Editar texto" : "Editar itens"}</button>` : ""}${["celular", "checklist", "grafico", "rabiscos", "orbita", "moldura"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="dur-visual">Duração</button>` : ""}<button type="button" class="btn rr-perigo" data-f="tirar-visual">Tirar este efeito</button>` : ""}
+        ${sel.tipo === "visual" ? `<span class="rr-sel">${esc((VISUAIS.find(([k]) => k === (st.visuais[sel.i] || {}).tipo) || ["", "Efeito"])[1])}</span>${["checklist", "grafico", "orbita", "tierlist", "contador", "textoatras", "vidro", "gradewipe"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="editar-visual">${(st.visuais[sel.i] || {}).tipo === "orbita" ? "Editar texto" : "Editar itens"}</button>` : ""}${["celular", "checklist", "grafico", "rabiscos", "orbita", "moldura", "tierlist", "contador", "textoatras", "vidro", "gradewipe"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="dur-visual">Duração</button>` : ""}<button type="button" class="btn rr-perigo" data-f="tirar-visual">Tirar este efeito</button>` : ""}
         ${temDesfazer ? `<button type="button" class="btn" data-f="desfazer">Desfazer</button>` : ""}
       </div>
       ${sel.tipo === "plano" && st.segs[sel.i] ? trechoHtml(st.segs[sel.i], sel.i) : ""}
@@ -4387,8 +4615,8 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     $$("[data-vis]", box).forEach((b) => b.addEventListener("click", () => { const i = Number(b.dataset.vis); st.sel = { tipo: "visual", i }; irPara(st.visuais[i].t + 0.05); pintarLinha(); }));
     const visSel = sel.tipo === "visual" ? (st.manual.visuais || []).find((x) => x.id === (st.visuais[sel.i] || {}).id) : null;
     if (f("tirar-visual")) f("tirar-visual").addEventListener("click", () => { st.manual.visuais = st.manual.visuais.filter((x) => x !== visSel); st.sel = null; mexeuManual(); });
-    if (f("editar-visual")) f("editar-visual").addEventListener("click", async () => { const txt = await painelDialogo.texto(visSel.tipo === "grafico" ? "Uma barra por linha, no formato rótulo: valor (ex.: Antes: 20)" : "Um item por linha", (visSel.itens || []).join("\n"), { linhas: 5 }); if (txt == null) return; visSel.itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); mexeuManual(); });
-    if (f("dur-visual")) f("dur-visual").addEventListener("click", async () => { const txt = await painelDialogo.texto("Quantos segundos o efeito fica na tela?", String(visSel.dur || (visSel.tipo === "checklist" ? (visSel.itens || []).length * 1.1 + 2.2 : visSel.tipo === "grafico" ? 4.5 : 3)).replace(".", ",")); if (txt == null) return; const n = Number(String(txt).replace(",", ".")); if (n > 0) { visSel.dur = Math.min(20, n); mexeuManual(); } });
+    if (f("editar-visual")) f("editar-visual").addEventListener("click", async () => { const txt = await painelDialogo.texto(VIS_NOVOS[visSel.tipo] ? VIS_NOVOS[visSel.tipo].pergunta : visSel.tipo === "grafico" ? "Uma barra por linha, no formato rótulo: valor (ex.: Antes: 20)" : "Um item por linha", (visSel.itens || []).join("\n"), { linhas: 5 }); if (txt == null) return; visSel.itens = txt.split(/\n|;/).map((x) => x.trim()).filter(Boolean); mexeuManual(); });
+    if (f("dur-visual")) f("dur-visual").addEventListener("click", async () => { const txt = await painelDialogo.texto("Quantos segundos o efeito fica na tela?", String(visSel.dur || (visSel.tipo === "checklist" ? (visSel.itens || []).length * 1.1 + 2.2 : visSel.tipo === "grafico" ? 4.5 : VIS_NOVOS[visSel.tipo] ? durNovo(visSel) : 3)).replace(".", ",")); if (txt == null) return; const n = Number(String(txt).replace(",", ".")); if (n > 0) { visSel.dur = Math.min(20, n); mexeuManual(); } });
     ligarMusica(box);
     if (f("tirar-flash")) f("tirar-flash").addEventListener("click", () => { st.manual.flashes.splice(sel.i, 1); st.sel = null; mexeuManual(); });
     if (f("desfazer")) f("desfazer").addEventListener("click", desfazerManual);
