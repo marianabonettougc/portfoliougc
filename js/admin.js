@@ -265,7 +265,7 @@
   // MENU E ABAS
   // ---------------------------------------------------------
   const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Meus roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
-    prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Meus roteiros", propostas: "Marcas: propostas do e-mail", central: "Referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar roteiro",
+    prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Conteúdos", propostas: "Marcas: propostas do e-mail", central: "Referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar roteiro",
     meusroteiros: "Referências", modelos: "Modelos", biblioteca: "Referências",
     financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Referências: transcrever e analisar", laboratorio: "Referências: meus salvos", editorial: "Referências: perfis que eu acompanho", edicao: "Edição de vídeos", planejar: "Conteúdos", ferarquivos: "Edição: organizar gravações", fercapa: "Edição: checar capa", ferideias: "Conteúdos: organizar ideia ou print", notificacoes: "Configurações: notificações no celular" };
   // Abas do painel que são páginas do aplicativo Gestão UGC (aba do painel: página do aplicativo)
@@ -290,6 +290,30 @@
     nav.innerHTML = area.partes.map(([k, t]) => `<button type="button" class="sub-aba${k === atual ? " ativa" : ""}" data-sub="${k}" aria-current="${k === atual ? "page" : "false"}">${esc(t)}</button>`).join("");
     nav.querySelectorAll("[data-sub]").forEach((b) => b.addEventListener("click", () => mostrarAba(b.dataset.sub)));
   }
+  // Meus roteiros virou uma aba de Conteúdos (nov/2026, pedido da Mari): Visão geral | Quadro de produção | Meus roteiros |
+  // Calendário editorial | Banco de ideias. O roteiro continua sendo a página do aplicativo (#quadro); aqui só entra o
+  // mesmo cabeçalho e as mesmas abas de Conteúdos em cima dele. As outras abas voltam para #planejar na parte certa.
+  const PARTES_CONTEUDOS = [["geral", "Visão geral"], ["quadro", "Quadro de produção"], ["roteiros", "Meus roteiros"], ["cal", "Calendário editorial"], ["ideias", "Banco de ideias"]];
+  function pintarCabConteudos(nome) {
+    const cab = $("#cab-conteudos");
+    if (!cab) return;
+    if (nome !== "quadro") { cab.hidden = true; return; }
+    if (!cab.dataset.pronto) {
+      cab.innerHTML = `<div class="cr-pagina cr-pagina-larga pc pc2">
+        <header class="pc2-cab"><div><small class="pc2-sobre">Conteúdos</small><h2 class="pc2-titulo">Meus <em>roteiros</em></h2></div></header>
+        <nav class="sub-abas pc-abas" aria-label="Partes de Conteúdos">${PARTES_CONTEUDOS.map(([k, t]) => `<button type="button" class="sub-aba${k === "roteiros" ? " ativa" : ""}" data-cabpc="${k}" aria-current="${k === "roteiros" ? "page" : "false"}">${esc(t)}</button>`).join("")}</nav>
+      </div>`;
+      cab.querySelectorAll("[data-cabpc]").forEach((b) => b.addEventListener("click", () => {
+        const k = b.dataset.cabpc;
+        if (k === "roteiros") return;
+        try { localStorage.setItem("pc-parte2", k); } catch (e) { /* sem armazenamento */ }
+        mostrarAba("planejar");
+        if (window.painelConteudos) window.painelConteudos.parte(k);
+      }));
+      cab.dataset.pronto = "1";
+    }
+    cab.hidden = false;
+  }
   let abaAtual = "portfolio";
   function mostrarAba(nome) {
     if (nome === "gestao") nome = "dashboard"; // a antiga aba Gestão UGC virou várias abas
@@ -309,9 +333,10 @@
     const paginaApp = PAGINAS_APP[nome] || "";
     const secao = paginaApp ? "gestao" : VISTAS_ROTEIRO[nome] ? "roteiros" : nome;
     $$(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + secao; });
-    const noMenu = (areaDe(nome) || {}).menu || (nome === "ferideias" ? "planejar" : nome); // o organizador de ideias abre pelo Banco de ideias (Conteúdos)
+    const noMenu = (areaDe(nome) || {}).menu || (nome === "ferideias" || nome === "quadro" ? "planejar" : nome); // o organizador de ideias abre pelo Banco de ideias e Meus roteiros é uma aba de Conteúdos (nov/2026)
     $$(".menu-item[data-aba]").forEach((b) => { b.classList.toggle("ativo", b.dataset.aba === noMenu); b.setAttribute("aria-current", b.dataset.aba === noMenu ? "page" : "false"); });
     pintarSubAbas(nome);
+    pintarCabConteudos(nome);
     const botao = $(`.menu-item[data-aba="${noMenu}"]`);
     if (botao) abrirSecao(botao.closest(".menu-secao"), true);
     abrirGrupo(botao && botao.dataset.pai ? botao.dataset.pai : (botao && botao.classList.contains("tem-sub") ? nome : ""));
@@ -321,8 +346,9 @@
     $("#painel").classList.remove("menu-aberto");
     if (secao === "gestao") abrirGestao(paginaApp, nome === "config");
     if (VISTAS_ROTEIRO[nome]) { vistaRot = VISTAS_ROTEIRO[nome]; desenhar("roteiros", desenharRoteiros); }
-    $("#btn-olho").hidden = secao !== "gestao" || nome === "dashboard"; // o Dashboard tem o próprio olho
+    $("#btn-olho").hidden = secao !== "gestao" || nome === "dashboard" || nome === "quadro"; // o Dashboard tem o próprio olho
     document.body.classList.toggle("aba-dashboard", nome === "dashboard");
+    document.body.classList.toggle("aba-quadro", nome === "quadro");
     // avisa as abas que moram em arquivo próprio (ex.: js/roteiros-supadata.js, aba Transcrever vídeo)
     document.dispatchEvent(new CustomEvent("painel:aba", { detail: nome }));
   }

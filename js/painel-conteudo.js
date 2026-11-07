@@ -403,7 +403,7 @@
         <div class="pc2-cab-acoes"><button class="btn" type="button" id="pc-ajustes" aria-expanded="false">${ic.ajustes}Ajustes e IA</button><button class="btn btn-principal" type="button" id="pc-novo">${ic.mais}Novo conteúdo</button></div>
       </header>
       <nav class="sub-abas pc-abas" aria-label="Partes de Conteúdos">
-        <button type="button" class="sub-aba" data-pcaba="geral">Visão geral</button><button type="button" class="sub-aba" data-pcaba="quadro">Quadro de produção</button><button type="button" class="sub-aba" data-pcaba="cal">Calendário editorial</button><button type="button" class="sub-aba" data-pcaba="ideias">Banco de ideias</button>
+        <button type="button" class="sub-aba" data-pcaba="geral">Visão geral</button><button type="button" class="sub-aba" data-pcaba="quadro">Quadro de produção</button><button type="button" class="sub-aba" data-pcir="quadro">Meus roteiros</button><button type="button" class="sub-aba" data-pcaba="cal">Calendário editorial</button><button type="button" class="sub-aba" data-pcaba="ideias">Banco de ideias</button>
       </nav>
       <section data-pcpar="geral" id="pc-geral"></section>
       <section data-pcpar="quadro" id="pc-kanban"></section>
@@ -446,6 +446,9 @@
       try { localStorage.setItem("pc-parte2", k === "cfg" ? anterior : k); } catch (e) { /* sem armazenamento */ }
     };
     st.mostrarParte = mostrarParte;
+    window.painelConteudos = { parte: (k) => mostrarParte(k) };
+    // Meus roteiros é a página do aplicativo (#quadro), com este mesmo cabeçalho e abas em cima (js/admin.js)
+    $$("[data-pcir]", sec).forEach((b) => b.addEventListener("click", () => { location.hash = "#" + b.dataset.pcir; }));
     let parte = "geral"; try { parte = localStorage.getItem("pc-parte2") || "geral"; } catch (e) { /* sem armazenamento */ }
     mostrarParte(["geral", "quadro", "cal", "ideias"].includes(parte) ? parte : "geral");
     $$("[data-pcaba]", sec).forEach((b) => b.addEventListener("click", () => mostrarParte(b.dataset.pcaba)));
