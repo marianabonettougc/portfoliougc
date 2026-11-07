@@ -52,7 +52,7 @@ $("#mbc-delete").onclick=()=>{if(st.slides.length<2){note("O carrossel precisa t
 $("#mbc-prev").onclick=()=>{st.active=Math.max(0,st.active-1);render()};$("#mbc-next").onclick=()=>{st.active=Math.min(st.slides.length-1,st.active+1);render()};
 $("#mbc-insert").onchange=e=>{st.insertAt=+e.target.value-1;render()};
 $("#mbc-feed-upload").onchange=async e=>{for(const f of [...e.target.files].slice(0,9))st.feed.push({image:await fileData(f)});render()};
-$("#mbc-addref").onclick=()=>{const name=$("#mbc-ref-name").value.trim(),url=$("#mbc-ref-url").value.trim();if(!/^https?:\\/\\//i.test(url)){note("Insira um link válido.");return}st.refs.push({name:name||url,url});$("#mbc-ref-name").value="";$("#mbc-ref-url").value="";render()};
+$("#mbc-addref").onclick=()=>{const name=$("#mbc-ref-name").value.trim(),url=$("#mbc-ref-url").value.trim();if(!/^https?:\/\//i.test(url)){note("Insira um link válido.");return}st.refs.push({name:name||url,url});$("#mbc-ref-name").value="";$("#mbc-ref-url").value="";render()};
 $("#mbc-save").onclick=save;$("#mbc-save2").onclick=save;
 $("#mbc-reset").onclick=()=>{if(confirm("Restaurar as referências e a paleta iniciais?")){st=fresh();render()}};
 }
