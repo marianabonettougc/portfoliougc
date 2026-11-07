@@ -103,7 +103,7 @@ async function groq(chave: string, pedido: string, max = 3600) {
 function limpar(a: any) {
   const lista = Array.isArray(a?.ideias) ? a.ideias : [];
   return lista.map((x: any) => ({
-    tema: txt(x.tema, 120), formato: ["Reels", "Carrossel", "Stories"].includes(x.formato) ? x.formato : "Reels",
+    tema: txt(x.tema, 120), formato: ["Reels", "Carrossel", "Foto", "Stories"].includes(x.formato) ? x.formato : "Reels",
     tipo_roteiro: ["Spec ad", "Vitrine para marca", "Stories de bastidor"].includes(x.tipo_roteiro) ? x.tipo_roteiro : (x.formato === "Stories" ? "Stories de bastidor" : "Spec ad"),
     pilar: txt(x.pilar, 60), tipo_ugc: txt(x.tipo_ugc, 60),
     // classificação automática: só vale se for uma das opções; na dúvida fica em branco para ela preencher
@@ -130,7 +130,7 @@ async function criarIdeias(supa: any, chave: string, c: any) {
     supa.from("metodo_roteiro").select("conteudo").eq("arquivo", "references/tipos.md").maybeSingle(),
     lerPerfil(supa),
   ]);
-  const slots = (Array.isArray(c.slots) ? c.slots : []).slice(0, 3).map((s: any) => ({ pilar: txt(s.pilar, 60), funil: ["Topo", "Meio", "Fundo"].includes(s.funil) ? s.funil : "Topo", formato: ["Reels", "Carrossel", "Stories"].includes(s.formato) ? s.formato : "Reels" }));
+  const slots = (Array.isArray(c.slots) ? c.slots : []).slice(0, 3).map((s: any) => ({ pilar: txt(s.pilar, 60), funil: ["Topo", "Meio", "Fundo"].includes(s.funil) ? s.funil : "Topo", formato: ["Reels", "Carrossel", "Foto", "Stories"].includes(s.formato) ? s.formato : "Reels" }));
   const metodo = txt(est?.metodo, 4000);
   const tiposTxt = txt(tipos?.conteudo, 3000);
   const insp = (Array.isArray(c.inspiracoes) ? c.inspiracoes : []).slice(0, 12).map((p: any, i: number) =>
@@ -162,7 +162,7 @@ ${c.notas ? "PEDIDO DELA: " + txt(c.notas, 600) + "\n\n" : ""}${Array.isArray(c.
 - O pilar de cada ideia é um dos pilares do perfil, com o nome igual.
 - Inspire-se nos temas, formatos e estruturas das inspirações, mas NUNCA copie falas, frases, ganchos ou bordões das criadoras. Mesmo tema, outro ângulo, palavras dela.
 - A maioria das ideias é "Spec ad"; use "Vitrine para marca" e "Stories de bastidor" quando o tema pedir. Varie o tipo de UGC e o padrão de gancho.
-- Desenvolvimento completo e gravável: as falas dela em primeira pessoa, no português falado, um bloco por linha no formato "BLOCO: fala [direção de cena]". Spec ad: GANCHO, IDENTIFICAÇÃO, SOLUÇÃO, PROVA, FECHAMENTO. Vitrine: GANCHO, CONTEXTO, CONTEÚDO, FECHAMENTO. Carrossel: um bloco por slide (SLIDE 1, SLIDE 2...). Reels com 25 a 45 segundos de fala.
+- Desenvolvimento completo e gravável: as falas dela em primeira pessoa, no português falado, um bloco por linha no formato "BLOCO: fala [direção de cena]". Spec ad: GANCHO, IDENTIFICAÇÃO, SOLUÇÃO, PROVA, FECHAMENTO. Vitrine: GANCHO, CONTEXTO, CONTEÚDO, FECHAMENTO. Carrossel: um bloco por slide (SLIDE 1, SLIDE 2...). Foto no feed: um bloco FOTO com a cena da foto (enquadramento, produto, luz, o que ela faz) e TEXTO NA FOTO se tiver; o conteúdo vai na legenda, que puxa a ação. Reels com 25 a 45 segundos de fala.
 - Nunca invente número, preço, data, resultado ou nome de produto: o que depender de informação vira [campo entre colchetes].
 - CTA com uma ação só, coerente com o tipo de roteiro (de preferência comentar uma palavra única).
 - Legenda pronta para postar (2 a 4 linhas, repetindo a palavra do CTA) e 5 a 8 hashtags de nicho no fim.
@@ -170,7 +170,7 @@ ${c.notas ? "PEDIDO DELA: " + txt(c.notas, 600) + "\n\n" : ""}${Array.isArray(c.
 - Classifique cada ideia: "tipo_conteudo" é "UGC" quando o vídeo mostra um produto como anúncio (spec ad, publi, demonstração de produto) ou "Orgânico" quando é conteúdo do perfil dela sem produto como foco (vitrine para marca, bastidor, rotina). "nicho" é um destes: ${NICHOS.join(", ")}. Se não tiver certeza de algum dos dois, deixe o campo vazio. Não invente.
 
 Responda SOMENTE um JSON:
-{"ideias":[{"tema":"tema em poucas palavras","pilar":"nome do pilar","formato":"Reels | Carrossel | Stories","tipo_roteiro":"Spec ad | Vitrine para marca | Stories de bastidor","tipo_ugc":"um dos tipos acima","tipo_conteudo":"UGC | Orgânico | vazio","nicho":"um dos nichos ou vazio","funil":"Topo | Meio | Fundo","proposito":"o que esse conteúdo faz pelo perfil dela (atrair qual marca, gerar qual reação)","hook":"a primeira fala, para o dedo em 3 segundos","ganchos":["outra opção de gancho","mais uma"],"desenvolvimento":"GANCHO: ... [cena]\\nIDENTIFICAÇÃO: ... [cena]\\n...","cta":"o CTA","legenda":"legenda pronta + hashtags","porque":"1 ou 2 frases: por que esse roteiro passa no teste do spec ad e atrai marca","inspirado_em":"@perfil que inspirou (ou vazio)","referencia":1,"duracao_seg":35}]}`;
+{"ideias":[{"tema":"tema em poucas palavras","pilar":"nome do pilar","formato":"Reels | Carrossel | Foto | Stories","tipo_roteiro":"Spec ad | Vitrine para marca | Stories de bastidor","tipo_ugc":"um dos tipos acima","tipo_conteudo":"UGC | Orgânico | vazio","nicho":"um dos nichos ou vazio","funil":"Topo | Meio | Fundo","proposito":"o que esse conteúdo faz pelo perfil dela (atrair qual marca, gerar qual reação)","hook":"a primeira fala, para o dedo em 3 segundos","ganchos":["outra opção de gancho","mais uma"],"desenvolvimento":"GANCHO: ... [cena]\\nIDENTIFICAÇÃO: ... [cena]\\n...","cta":"o CTA","legenda":"legenda pronta + hashtags","porque":"1 ou 2 frases: por que esse roteiro passa no teste do spec ad e atrai marca","inspirado_em":"@perfil que inspirou (ou vazio)","referencia":1,"duracao_seg":35}]}`;
   const saida = limpar(await groq(chave, pedido));
   // uma reescrita automática se aparecer construção banida ou gancho batido
   const ruins = saida.map((x: any, i: number) => ({ i, p: problemas(x) })).filter((r: any) => r.p.length);

@@ -38,7 +38,7 @@
   const NICHOS = ["Maternidade", "Autocuidado", "Beleza e cabelo", "Moda", "Bem-estar", "Achadinhos de casa e tech"];
   const TIPOS_CONTEUDO = ["Orgânico", "UGC", "Publi"];
   const PRODUZIR = ["Ideia", "Roteirizado", "Para gravar"];
-  const FORMATOS = ["Reels", "Carrossel", "Stories"];
+  const FORMATOS = ["Reels", "Carrossel", "Foto", "Stories"];
   const FUNIS = ["Topo", "Meio", "Fundo"];
   const ROTEIROS = ["Spec ad", "Vitrine para marca", "Stories de bastidor"];
   const TIPOS = ["Falado com a câmera", "Teatro encenando uma situação", "Dois personagens comparativos", "Rotina ou dia a dia", "Testando o produto ou demonstração", "Focado em ads", "Problema versus solução", "Unboxing", "Sorteador de assuntos", "Várias vozes ou personagens com locução", "Entrevista de rua", "React", "Tutorial walkthrough", "Decupagem por frase"];
