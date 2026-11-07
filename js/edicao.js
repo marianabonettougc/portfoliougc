@@ -1191,6 +1191,8 @@ IDEIA PARA DEPOIS
         }
         case "texto_tela": if (palavrasBrutas().length && !p.sem_fala) break; // texto por cena só existe em vídeo sem fala
           p.textos = (p.textos || []).filter((x) => x.ate <= o.de || x.de >= o.ate); if (o.texto) p.textos.push({ de: o.de, ate: o.ate, texto: o.texto }); p.textos.sort((a, b) => a.de - b.de); feito.push(o.texto ? `texto na tela em ${tempo(o.de)}` : `tirei o texto de ${tempo(o.de)}`); break;
+        case "frase_por": case "frase_tirar": case "moldura_por": case "moldura_tirar":
+          (st._ed4Pend = st._ed4Pend || []).push(o); feito.push(o.op === "frase_por" ? `frase na tela em ${tempo(o.de)}` : o.op === "moldura_por" ? `moldura em ${tempo(o.de)}` : o.op === "frase_tirar" ? "tirei a frase" : "tirei a moldura"); break;
         case "ajuste": if (ok.has(o.chave)) { st.opc[o.chave] = o.valor; feito.push("ajuste: " + o.chave); } break;
         default: break;
       }
@@ -1261,7 +1263,7 @@ IDEIA PARA DEPOIS
       const visual = textoVisual() || undefined;
       const todas = palavrasBrutas();
       if (todas.length) {
-        etapa("Pensando na edição (cortes, título, zoom e efeitos)");
+        etapa("Marcando os takes, lendo a emoção de cada trecho e decidindo o que entra por cima (frases, moldura, efeitos)");
         st.plano = await chamar({ acao: "plano", palavras: todas, duracao: offset, padrao: padraoComPedidos(), tema: st.tema, roteiro: roteiroUsado() || undefined, visual, zoom: nivelZoom() });
         st.titulo = st.plano.titulo || "";
         st.tituloDestaque = st.plano.titulo_destaque || "";
@@ -1605,6 +1607,7 @@ IDEIA PARA DEPOIS
     }
     zoomsNasPalavras();
     fotosNaFala();
+    etapas4DepoisDeMontar();
     st.fortes = st.efeitos.filter((e) => ["hit", "ding"].includes(e.tipo)).map((e) => e.t);
   }
   // ---------- dinamismo: efeitos sonoros automáticos nos cortes e nas entradas de texto ----------
@@ -1806,6 +1809,151 @@ IDEIA PARA DEPOIS
     grupos.forEach((g, i) => { const prox = grupos[i + 1]; g.o1 = prox ? Math.min(prox.o0, Math.max(g.o1 + 0.12, g.o0 + 0.25)) : g.o1 + 0.3; });
     return grupos;
   }
+  // =========================================================
+  // 4 ETAPAS (nov/2026, ideia do carrossel da Julia Wolf "Tarantino"):
+  // 1. estuda a referência (já existia: analisarReferencia)
+  // 2. transcreve e marca os takes (bom, erro, repetição, respiro) -> plano.takes
+  // 3. lê a EMOÇÃO de cada trecho (gancho, tensão, prova, explicação, virada, CTA) -> plano.emocao
+  //    e a edição obedece: no trecho "segurar" (prova) sai zoom e som de corte, fica limpo
+  // 4. decide o que entra por cima: frases grandes na tela (viram camadas editáveis na aba Textos)
+  //    e molduras na prova (viram efeito visual "Moldura" na linha do tempo, dá para mover e tirar)
+  // =========================================================
+  const EMO_INFO = {
+    gancho: ["Gancho", "#E8A0AC"], tensao: ["Tensão", "#c9744f"], prova: ["Prova", "#7a5a48"],
+    explicacao: ["Explicação", "#d9cbbd"], virada: ["Virada", "#f2c14e"], cta: ["CTA", "#4a3328"],
+  };
+  const RITMO_TXT = { acelerar: "acelera", normal: "normal", segurar: "segura (edição limpa)" };
+  const SONS_DE_CORTE = new Set(["woosh", "click", "shutter", "pop", "riser", "hit", "typing"]);
+  // trechos da emoção no tempo final do vídeo editado
+  function emocaoFinal() {
+    const p = st.plano || {};
+    return (p.emocao || []).map((x) => {
+      const a = paraFinalPerto(x.de); let b = paraFinal(x.ate);
+      if (b == null) { const s = [...st.segs].reverse().find((sg) => sg.g0 < x.ate); b = s ? Math.min(s.o1, s.o0 + (x.ate - s.g0)) : null; }
+      return a == null || b == null || b - a < 0.2 ? null : { ...x, a, b };
+    }).filter(Boolean);
+  }
+  // roda no fim de montar(): a emoção manda no ritmo + aplica frases e molduras da IA uma vez por plano
+  function etapas4DepoisDeMontar() {
+    const p = st.plano; if (!p || !st.segs.length) return;
+    st.emocaoFinal = emocaoFinal();
+    if (st.opc.emocao !== false) {
+      const segurar = st.emocaoFinal.filter((x) => x.ritmo === "segurar");
+      const em = (t) => segurar.some((x) => t >= x.a - 0.05 && t <= x.b + 0.05);
+      if (segurar.length) {
+        st.efeitos = st.efeitos.filter((e) => e.manual || !em(e.t) || !(e.auto || SONS_DE_CORTE.has(e.tipo)));
+        st.zooms = (st.zooms || []).filter((t) => !em(t));
+        if (Array.isArray(st.zoomsAuto)) st.zoomsAuto = st.zoomsAuto.filter((z) => !em(z.t));
+        st.segs.forEach((sg) => { if (sg.zoom > 1 && em(sg.o0 + 0.02)) sg.zoom = 1; });
+      }
+    }
+    // frases e molduras da IA: aplica uma vez por plano (assinatura guardada no projeto)
+    const sig = JSON.stringify([p.frases_tela || [], p.molduras || []]);
+    const m = st.manual = st.manual || {};
+    let mudou = false;
+    if (m.ed4Sig !== sig) {
+      m.ed4Sig = sig;
+      st.camadas = (st.camadas || []).filter((c) => c.ia !== "frase");
+      m.visuais = (m.visuais || []).filter((v) => !v.ia);
+      for (const f of p.frases_tela || []) porFraseTela(f.de, f.ate, f.texto, true);
+      for (const x of p.molduras || []) porMoldura(x.de, x.ate, true);
+      mudou = true;
+    }
+    // pedidos de ajuste (operar) que chegaram antes de montar
+    for (const o of st._ed4Pend || []) {
+      if (o.op === "frase_por") porFraseTela(o.de, o.ate, o.texto, false);
+      if (o.op === "frase_tirar") st.camadas = (st.camadas || []).filter((c) => !(c.ia === "frase" && c.g0 != null && c.g0 < o.ate && c.g0 >= o.de - 0.3));
+      if (o.op === "moldura_por") porMoldura(o.de, o.ate, false);
+      if (o.op === "moldura_tirar") m.visuais = (m.visuais || []).filter((v) => !(v.tipo === "moldura" && v.g < o.ate && v.g + (v.dur || 3) > o.de));
+      mudou = true;
+    }
+    st._ed4Pend = [];
+    if (mudou) {
+      st.visuais = (m.visuais || []).map((v) => ({ ...v, t: paraFinalPerto(v.g) })).filter((v) => v.t != null);
+      salvarDepois();
+    }
+  }
+  // frase grande na tela = camada de texto editável (aba Textos), longe do rosto
+  function porFraseTela(de, ate, texto, daIA) {
+    texto = String(texto || "").trim(); if (!texto) return;
+    let t0 = paraFinalPerto(de), t1 = paraFinal(ate); if (t0 == null) return;
+    if (t1 == null || t1 <= t0) t1 = t0 + Math.max(1.5, Math.min(3.5, ate - de));
+    const minimo = st.opc.titulo !== false && st.titulo ? DUR_TITULO + 0.1 : 0;
+    if (t0 < minimo) { const d = t1 - t0; t0 = minimo; t1 = t0 + Math.max(1.5, d); }
+    if (st.duracao && t0 > st.duracao - 0.8) return;
+    if (st.duracao) t1 = Math.min(t1, st.duracao);
+    const ws = texto.split(/\s+/), meio = Math.ceil(ws.length / 2);
+    const linhas = ws.length > 3 ? [ws.slice(0, meio).join(" "), ws.slice(meio).join(" ")] : [texto];
+    const rosto = rostoPerto(de);
+    const y = rosto === "alto" ? 0.56 : 0.2; // rosto no alto da tela: a frase desce para não cobrir
+    st.camadas = st.camadas || [];
+    st.camadas.push({ id: uid(), ia: "frase", g0: +(+de).toFixed(2), t0: +t0.toFixed(2), t1: +t1.toFixed(2), x: 0.5, y, escala: 1,
+      linhas: linhas.map((l) => ({ texto: l, tipo: "ser", tam: linhas.length > 1 ? 96 : 110 })), origem: daIA ? "IA" : "pedido" });
+  }
+  // moldura = efeito visual da linha do tempo (dá para mover a duração e tirar como os outros)
+  function porMoldura(de, ate, daIA) {
+    const dur = Math.max(1.5, Math.min(6, (ate || de + 3) - de));
+    const m = st.manual; m.visuais = m.visuais || [];
+    m.visuais.push({ id: uid(), g: +(+de).toFixed(2), tipo: "moldura", dur: +dur.toFixed(2), ...(daIA ? { ia: true } : {}) });
+  }
+  // desenho da moldura: fundo liso (sem desfoque), vídeo menor com borda clara e cantos arredondados
+  function molduraEm(t) { return (st.visuais || []).find((x) => x.tipo === "moldura" && t >= x.t && t < x.t + (x.dur || 3)); }
+  function desenharMoldura(v, x0, y0, dw, dh, t, mold, W, H) {
+    const d = t - mold.t, dur = mold.dur || 3;
+    const k = suave(Math.max(0, Math.min(1, d / 0.3, (dur - d) / 0.25)));
+    const u = Math.min(W, H) / 1080;
+    c2d.save();
+    c2d.fillStyle = "#f3e9df"; c2d.fillRect(0, 0, W, H);
+    c2d.globalAlpha = 1 - k; c2d.drawImage(v, x0, y0, dw, dh); c2d.globalAlpha = 1;
+    const esc = 1 - 0.2 * k, fw = dw * esc, fh = dh * esc;
+    const fx = x0 + (dw - fw) / 2, fy = y0 + (dh - fh) / 2 - H * 0.02 * k;
+    const r = 34 * u, borda = 14 * u * k;
+    const caminho = (x, y, w, h, rr) => { c2d.beginPath(); c2d.moveTo(x + rr, y); c2d.arcTo(x + w, y, x + w, y + h, rr); c2d.arcTo(x + w, y + h, x, y + h, rr); c2d.arcTo(x, y + h, x, y, rr); c2d.arcTo(x, y, x + w, y, rr); c2d.closePath(); };
+    if (k > 0.01) {
+      c2d.shadowColor = "rgba(40,24,16,0.28)"; c2d.shadowBlur = 40 * u * k; c2d.shadowOffsetY = 14 * u * k;
+      c2d.fillStyle = "#ffffff"; caminho(fx - borda, fy - borda, fw + borda * 2, fh + borda * 2, r + borda); c2d.fill();
+      c2d.shadowColor = "transparent"; c2d.shadowBlur = 0; c2d.shadowOffsetY = 0;
+    }
+    caminho(fx, fy, fw, fh, r); c2d.clip(); c2d.drawImage(v, fx, fy, fw, fh);
+    c2d.restore();
+  }
+  // card "O que a IA entendeu (4 etapas)" na tela do editor
+  function painelEtapasHtml(p) {
+    if (!p) return "";
+    const temAlgo = (p.emocao || []).length || (p.takes || []).length || (p.frases_tela || []).length || (p.molduras || []).length;
+    if (!temAlgo) return "";
+    const ir = (g) => { const t = g == null ? null : paraFinalPerto(g); return t == null ? "" : `<button type="button" class="ed-ir" data-ed4-ir="${t.toFixed(2)}">${tempo(t)}</button>`; };
+    const ref = st.ref ? `<p class="ed-obs"><b>${esc(st.ref.nome || "Vídeo de referência")}</b>${(st.ref.regras || []).length ? ": " + esc(st.ref.regras.slice(0, 3).join("; ")) : ""}</p>` : `<p class="ed-obs">Sem referência neste vídeo. Mande um vídeo de referência e eu estudo antes de cortar.</p>`;
+    const takes = p.takes || [], conta = (s) => takes.filter((x) => x.status === s).length;
+    const nomeTake = { bom: "take bom", erro: "erro", repeticao: "repetição", respiro: "respiro" };
+    const takesHtml = takes.length ? `<p class="ed-obs">${conta("bom")} bons · ${conta("erro")} erros · ${conta("repeticao")} repetições · ${conta("respiro")} respiros</p>
+      <ul class="ed-lista ed4-takes">${takes.filter((x) => x.status !== "bom").slice(0, 12).map((x) => `<li><span>${esc(nomeTake[x.status] || x.status)}</span>${esc(x.obs || "")} <small>bruto ${x.de.toFixed(1)} s</small></li>`).join("")}</ul>`
+      : `<p class="ed-obs">${(p.remover || []).length} trechos tirados (erro, repetição, gaguejo).</p>`;
+    const emo = st.emocaoFinal || [], total = st.duracao || (emo.length ? emo[emo.length - 1].b : 0) || 1;
+    const barra = emo.length ? `<div class="ed4-barra" style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin:8px 0">${emo.map((x) => `<span title="${esc((EMO_INFO[x.tipo] || [x.tipo])[0])}" style="flex:${Math.max(0.02, (x.b - x.a) / total)};background:${(EMO_INFO[x.tipo] || ["", "#ccc"])[1]}"></span>`).join("")}</div>
+      <ul class="ed-lista ed4-emo">${emo.map((x) => `<li>${ir(x.de)}<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${(EMO_INFO[x.tipo] || ["", "#ccc"])[1]};margin-right:6px"></span><b>${esc((EMO_INFO[x.tipo] || [x.tipo])[0])}</b>&nbsp;· ${esc(RITMO_TXT[x.ritmo] || x.ritmo)}${x.por_que ? ` <small>${esc(x.por_que)}</small>` : ""}</li>`).join("")}</ul>
+      <label class="ed-obs" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-ed4-emocao ${st.opc.emocao !== false ? "checked" : ""}> A emoção manda no ritmo (prova sem zoom e sem som de corte)</label>`
+      : `<p class="ed-obs">Edite de novo para eu ler a emoção de cada trecho.</p>`;
+    const frases = (st.camadas || []).filter((c) => c.ia === "frase");
+    const molds = (st.visuais || []).filter((x) => x.tipo === "moldura");
+    const cima = `<ul class="ed-lista">
+      ${frases.map((c) => `<li><button type="button" class="ed-ir" data-ed4-ir="${(+c.t0).toFixed(2)}">${tempo(c.t0)}</button>Frase na tela: <b>${esc(c.linhas.map((l) => l.texto).join(" "))}</b></li>`).join("")}
+      ${molds.map((x) => `<li><button type="button" class="ed-ir" data-ed4-ir="${(+x.t).toFixed(2)}">${tempo(x.t)}</button>Moldura de ${(x.dur || 3).toFixed(1)} s</li>`).join("")}
+      <li><span></span>${(st.fotos || []).length} fotos · ${(st.efeitos || []).length} efeitos sonoros · ${(st.legendas || []).filter((g) => g.chamativa).length} palavras chamativas</li></ul>
+      <p class="ed-obs">As frases ficam na aba Textos (mude texto, tempo, tamanho e posição). A moldura fica na linha do tempo, em efeitos visuais.</p>`;
+    return `<section class="ed-cartao ed4"><div class="ed-titulo-linha"><h3 class="ed-titulo">O que a IA entendeu (4 etapas)</h3></div>
+      <h4 class="ed-sub">1. Referência</h4>${ref}
+      <h4 class="ed-sub">2. Takes</h4>${takesHtml}
+      <h4 class="ed-sub">3. Emoção de cada trecho</h4>${barra}
+      <h4 class="ed-sub">4. O que entra por cima</h4>${cima}</section>`;
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest("[data-ed4-ir]"); if (b) { e.preventDefault(); irPara(Number(b.dataset.ed4Ir) + 0.05); }
+  });
+  document.addEventListener("change", (e) => {
+    if (e.target && e.target.matches && e.target.matches("[data-ed4-emocao]")) { st.opc.emocao = e.target.checked; guardarOpc(); remontar(); salvarDepois(); }
+  });
+
   function paraFinal(g) { const s = st.segs.find((x) => g >= x.g0 && g < x.g1); return s ? s.o0 + (g - s.g0) : null; }
   function paraFinalPerto(g) { const o = paraFinal(g); if (o != null) return o; const s = st.segs.find((x) => x.g0 >= g); return s ? s.o0 : null; }
   function segNoFinal(t) { return st.segs.find((s) => t >= s.o0 && t < s.o1) || st.segs[st.segs.length - 1]; }
@@ -1848,8 +1996,8 @@ IDEIA PARA DEPOIS
   }
   const suave = (k) => k * k * (3 - 2 * k);
   // ----- efeitos visuais do carrossel que ela mandou (out/2026): zoom-through, pull-back reveal, celular, checklist e gráfico -----
-  const VISUAIS = [["mergulho", "Zoom-through (mergulha e sai na próxima cena)"], ["revelar", "Pull-back reveal (afasta e revela a cena)"], ["celular", "Phone mockup (vídeo dentro de um celular)"], ["checklist", "Checklist (itens marcados enquanto fala)"], ["grafico", "Gráfico que cresce"], ["rabiscos", "Doodle boil (rabiscos à mão que tremem)"], ["orbita", "Orbit (texto girando ao seu redor)"]];
-  const LETRA_VIS = { mergulho: "M", revelar: "R", celular: "▯", checklist: "✓", grafico: "▮", rabiscos: "✎", orbita: "◎" };
+  const VISUAIS = [["mergulho", "Zoom-through (mergulha e sai na próxima cena)"], ["revelar", "Pull-back reveal (afasta e revela a cena)"], ["celular", "Phone mockup (vídeo dentro de um celular)"], ["checklist", "Checklist (itens marcados enquanto fala)"], ["grafico", "Gráfico que cresce"], ["rabiscos", "Doodle boil (rabiscos à mão que tremem)"], ["orbita", "Orbit (texto girando ao seu redor)"], ["moldura", "Moldura (o vídeo entra numa moldura, para prova e print)"]];
+  const LETRA_VIS = { mergulho: "M", revelar: "R", celular: "▯", checklist: "✓", grafico: "▮", rabiscos: "✎", orbita: "◎", moldura: "▢" };
   function zoomVisual(t) {
     let z = 1;
     for (const x of st.visuais || []) {
@@ -1977,7 +2125,8 @@ IDEIA PARA DEPOIS
       const esc0 = Math.max(W / vw, H / vh) * z;
       const dw = vw * esc0, dh = vh * esc0, x0 = (W - dw) / 2 + (tr.x + tc.x) * W, y0 = (H - dh) * 0.42 + tr.y * H;
       const cel = (st.visuais || []).find((x) => x.tipo === "celular" && t >= x.t && t < x.t + (x.dur || 3));
-      if (cel) desenharCelular(v, vw, vh, t, cel, W, H); else c2d.drawImage(v, x0, y0, dw, dh);
+      const mold = !cel && molduraEm(t);
+      if (cel) desenharCelular(v, vw, vh, t, cel, W, H); else if (mold) desenharMoldura(v, x0, y0, dw, dh, t, mold, W, H); else c2d.drawImage(v, x0, y0, dw, dh);
       // rastro do deslize (dá a sensação de movimento rápido)
       if (tc.x > 0.01) { c2d.save(); c2d.globalAlpha = 0.35; c2d.drawImage(v, x0 - tc.x * W * 0.6, y0, dw, dh); c2d.restore(); }
     }
@@ -4198,7 +4347,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
         ${sel.tipo === "zoom" ? `<button type="button" class="btn rr-perigo" data-f="tirar-zoom">Tirar este zoom</button>` : ""}
         ${sel.tipo === "zpal" && (st.zoomsPal || [])[sel.i] ? `<span class="rr-sel">Zoom em "${esc(st.zoomsPal[sel.i].palavra)}"</span><button type="button" class="btn rr-perigo" data-f="tirar-zpal">Tirar este zoom</button>` : ""}
         ${sel.tipo === "flash" ? `<button type="button" class="btn rr-perigo" data-f="tirar-flash">Tirar este flash</button>` : ""}
-        ${sel.tipo === "visual" ? `<span class="rr-sel">${esc((VISUAIS.find(([k]) => k === (st.visuais[sel.i] || {}).tipo) || ["", "Efeito"])[1])}</span>${["checklist", "grafico", "orbita"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="editar-visual">${(st.visuais[sel.i] || {}).tipo === "orbita" ? "Editar texto" : "Editar itens"}</button>` : ""}${["celular", "checklist", "grafico", "rabiscos", "orbita"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="dur-visual">Duração</button>` : ""}<button type="button" class="btn rr-perigo" data-f="tirar-visual">Tirar este efeito</button>` : ""}
+        ${sel.tipo === "visual" ? `<span class="rr-sel">${esc((VISUAIS.find(([k]) => k === (st.visuais[sel.i] || {}).tipo) || ["", "Efeito"])[1])}</span>${["checklist", "grafico", "orbita"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="editar-visual">${(st.visuais[sel.i] || {}).tipo === "orbita" ? "Editar texto" : "Editar itens"}</button>` : ""}${["celular", "checklist", "grafico", "rabiscos", "orbita", "moldura"].includes((st.visuais[sel.i] || {}).tipo) ? `<button type="button" class="btn" data-f="dur-visual">Duração</button>` : ""}<button type="button" class="btn rr-perigo" data-f="tirar-visual">Tirar este efeito</button>` : ""}
         ${temDesfazer ? `<button type="button" class="btn" data-f="desfazer">Desfazer</button>` : ""}
       </div>
       ${sel.tipo === "plano" && st.segs[sel.i] ? trechoHtml(st.segs[sel.i], sel.i) : ""}
@@ -4618,6 +4767,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
           <small title="${esc(e.por_que)}">${esc(e.por_que)}</small><button class="icone-btn" type="button" data-apagar aria-label="Apagar">${ic.x}</button></div>`).join("") || `<p class="ed-obs">Nenhum efeito.</p>`}</div>
         <div class="ed-add-efeito"><select class="entrada" id="ed-novo-tipo" aria-label="Novo efeito">${Object.entries(EFEITOS).map(([k, t]) => `<option value="${k}">${t}</option>`).join("")}</select><button class="btn" type="button" id="ed-add-efeito">${ic.mais}Pôr aqui (${tempo(st.t)})</button></div>
       </section>
+      ${painelEtapasHtml(p)}
       ${(p.roteiro_check || []).length ? `<section class="ed-cartao"><div class="ed-titulo-linha"><h3 class="ed-titulo">Roteiro x gravação</h3><span class="ed-sub">${p.roteiro_check.filter((r) => r.status === "gravado").length} de ${p.roteiro_check.length} gravados</span></div>
         <ul class="ed-lista ed-check">${p.roteiro_check.map((r) => `<li class="ed-st-${esc(r.status)}"><span>${r.status === "gravado" ? "✓" : r.status === "faltou" ? "faltou" : "mudou"}</span><div><b>${esc(r.bloco)}</b>${r.obs ? `<small>${esc(r.obs)}</small>` : ""}</div></li>`).join("")}</ul></section>` : ""}
       ${(p.broll || []).length ? `<section class="ed-cartao"><h3 class="ed-titulo">B-roll para gravar</h3><ul class="ed-lista">${p.broll.map((b) => `<li><span>${b.t != null && paraFinalPerto(b.t) != null ? tempo(paraFinalPerto(b.t)) : ""}</span>${esc(b.ideia)}</li>`).join("")}</ul></section>` : ""}
