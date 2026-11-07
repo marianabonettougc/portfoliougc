@@ -1054,6 +1054,7 @@ button.menu-grupo:hover{color:var(--texto)}
 .pc-iphone summary{cursor:pointer;font-size:14px}
 .pc-iphone .lab-comando{display:flex;margin:6px 0}
 .pc-iphone code{word-break:break-all}
+.pc-agente .pc-linha{flex-wrap:wrap;align-items:flex-end}
 
 /* Notificações no celular (js/lembretes.js) */
 .lb-sino{width:auto;padding:0 8px;gap:4px;font-size:13px;color:var(--suave);margin-left:auto}

@@ -387,6 +387,7 @@
     seta: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
     lixo: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
     pasta: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>',
+    relogio: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
     sino: '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></svg>',
   };
   function opcoesMes() {
@@ -433,6 +434,7 @@
           </section>
           <section class="pc-cartao" id="pc-pastas"></section>
           <section class="pc-cartao pc-iphone" id="pc-iphone"></section>
+          <section class="pc-cartao pc-agente" id="pc-agente"></section>
         </div>
       </div>
     </div>`;
@@ -553,6 +555,7 @@
     pintarPerfil();
     pintarPastas();
     pintarIphone();
+    pintarAgente();
   }
 
   function pintarPastas() {
@@ -621,6 +624,45 @@
     const n = $("#pc-novo-topico", box); if (n) n.addEventListener("click", async () => { if (await painelDialogo.confirmar("Trocar o endereço? Depois você assina o novo no app ntfy.", { ok: "Trocar" })) ligarNotificacoes(); });
     copiar("#pc-copiar-topico", st.topico, "Copiado. Cole no app ntfy.");
     copiar("#pc-copiar-link", LINK_SALVAR, "Copiado. Cole na ação Abrir URLs.");
+  }
+
+  // ---------- Agente diário dos Salvos (nov/2026) ----------
+  // Uma tarefa agendada do Claude acorda de hora em hora (6h às 23h), confere estes campos em configuracoes
+  // e, no horário escolhido aqui, abre os Salvos do Instagram no Chrome dela, manda os posts novos das pastas
+  // para a função salvos-diarios (ideia com roteiro nesta grade + notificação). Chaves: salvos_horario (HH:MM),
+  // salvos_ativo ("sim"/"nao"), salvos_ultima_execucao (AAAA-MM-DD, a tarefa grava).
+  async function pintarAgente() {
+    const box = $("#pc-agente"); if (!box) return;
+    const { data, error } = await banco().from("configuracoes").select("chave,valor").in("chave", ["salvos_horario", "salvos_ativo", "salvos_ultima_execucao"]);
+    const cfg = Object.fromEntries(((data || [])).map((x) => [x.chave, x.valor]));
+    const horario = /^\d{2}:\d{2}$/.test(cfg.salvos_horario || "") ? cfg.salvos_horario : "08:00";
+    const ativo = cfg.salvos_ativo !== "nao";
+    const ult = cfg.salvos_ultima_execucao || "";
+    const ultTxt = ult ? `Última vez: ${ult.slice(8, 10)}/${ult.slice(5, 7)}.` : "Ainda não rodou.";
+    const horas = []; for (let h = 6; h <= 23; h++) horas.push(`${pad(h)}:00`);
+    if (!horas.includes(horario)) horas.push(horario);
+    box.innerHTML = `<h3 class="pc-h3">${ic.relogio}Agente diário dos Salvos</h3>
+      <p class="pc-ajuda">Todo dia, no horário que você escolher, o Claude abre seus Salvos no Instagram (pastas "Produzir videos assim" e "Gravar em..."), traz os posts novos para cá e cria a ideia com roteiro nesta grade, com notificação no celular. O computador precisa estar ligado com o app do Claude aberto. Se estiver desligado no horário, ele tenta de novo na hora seguinte.</p>
+      ${error ? `<p class="faixa faixa-erro">Não consegui ler os ajustes: ${esc(error.message)}</p>` : ""}
+      <div class="pc-linha">
+        <label class="campo"><span>Horário</span><select class="entrada" id="pc-agente-hora">${horas.sort().map((h) => `<option ${h === horario ? "selected" : ""}>${h}</option>`).join("")}</select></label>
+        <label class="pc-chk"><input type="checkbox" id="pc-agente-ativo" ${ativo ? "checked" : ""}>Ligado</label>
+        <button class="btn btn-principal" type="button" id="pc-agente-salvar">Salvar</button>
+      </div>
+      <p class="pc-ajuda" id="pc-agente-status">${ativo ? `Roda todo dia a partir das ${horario}.` : "Pausado: não vai rodar até você ligar de novo."} ${ultTxt}</p>`;
+    $("#pc-agente-salvar", box).addEventListener("click", async (e) => {
+      const bt = e.currentTarget; bt.disabled = true;
+      const agora = new Date().toISOString();
+      const h = $("#pc-agente-hora", box).value, liga = $("#pc-agente-ativo", box).checked;
+      const { error: err } = await banco().from("configuracoes").upsert([
+        { chave: "salvos_horario", valor: h, updated_at: agora },
+        { chave: "salvos_ativo", valor: liga ? "sim" : "nao", updated_at: agora },
+      ], { onConflict: "chave" });
+      bt.disabled = false;
+      if (err) { toast("Não consegui salvar: " + err.message, true); return; }
+      toast(liga ? `Pronto. O agente roda todo dia a partir das ${h}.` : "Pronto. Agente pausado.");
+      pintarAgente();
+    });
   }
 
   // ---------- janela do post ----------
