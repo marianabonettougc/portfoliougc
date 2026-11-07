@@ -103,6 +103,7 @@
   .main{ flex:1; min-width:0; }
   .so-uma .sidebar, .so-uma .topbar, .so-uma .scrim{ display:none !important; }
   .so-uma .content{ max-width:none; }
+  .so-uma .rot-cab{ display:none; } /* dentro do painel o título vem de Conteúdos > Meus roteiros */
   /* ===== DASHBOARD (board novo) =====
      Igual ao modelo da Mari, só com as cores do portfólio:
      creme #f6efe6, papel #fffdf9, bege #efe5d8, café #6b4a35, café claro #8a634b, texto #3d2b20, texto suave #6e5646, verde, vermelho.
@@ -8355,7 +8356,7 @@ function Roteiros({state, updateState, mudar, pendingAI, clearPendingAI}){
           </div>}
         </div>
       </div>
-      <div className="page-head">
+      <div className="page-head rot-cab">
         <div>
           <h1 className="page-title">Roteiros</h1>
           <p className="page-sub">Crie e organize seus roteiros de UGC</p>
