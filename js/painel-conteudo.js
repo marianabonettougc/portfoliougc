@@ -627,8 +627,8 @@
   }
 
   // ---------- Agente diário dos Salvos (nov/2026) ----------
-  // Uma tarefa agendada do Claude acorda de hora em hora (6h às 23h), confere estes campos em configuracoes
-  // e, no horário escolhido aqui, abre os Salvos do Instagram no Chrome dela, manda os posts novos das pastas
+  // Uma tarefa agendada do Claude roda 1x por dia (~14h), confere salvos_ativo em configuracoes
+  // e, se estiver ligado, abre os Salvos do Instagram no Chrome dela, manda os posts novos das pastas
   // para a função salvos-diarios (ideia com roteiro nesta grade + notificação). Chaves: salvos_horario (HH:MM),
   // salvos_ativo ("sim"/"nao"), salvos_ultima_execucao (AAAA-MM-DD, a tarefa grava).
   async function pintarAgente() {
@@ -642,25 +642,23 @@
     const horas = []; for (let h = 6; h <= 23; h++) horas.push(`${pad(h)}:00`);
     if (!horas.includes(horario)) horas.push(horario);
     box.innerHTML = `<h3 class="pc-h3">${ic.relogio}Agente diário dos Salvos</h3>
-      <p class="pc-ajuda">Todo dia, no horário que você escolher, o Claude abre seus Salvos no Instagram (pastas "Produzir videos assim" e "Gravar em..."), traz os posts novos para cá e cria a ideia com roteiro nesta grade, com notificação no celular. O computador precisa estar ligado com o app do Claude aberto. Se estiver desligado no horário, ele tenta de novo na hora seguinte.</p>
+      <p class="pc-ajuda">Uma vez por dia, por volta das 14h, o Claude abre seus Salvos no Instagram (pastas "Produzir videos assim" e "Gravar em..."), traz os posts novos para cá e cria a ideia com roteiro nesta grade, com notificação no celular. O computador precisa estar ligado com o app do Claude aberto nesse horário. Para mudar o horário, é só pedir ao Claude.</p>
       ${error ? `<p class="faixa faixa-erro">Não consegui ler os ajustes: ${esc(error.message)}</p>` : ""}
       <div class="pc-linha">
-        <label class="campo"><span>Horário</span><select class="entrada" id="pc-agente-hora">${horas.sort().map((h) => `<option ${h === horario ? "selected" : ""}>${h}</option>`).join("")}</select></label>
         <label class="pc-chk"><input type="checkbox" id="pc-agente-ativo" ${ativo ? "checked" : ""}>Ligado</label>
         <button class="btn btn-principal" type="button" id="pc-agente-salvar">Salvar</button>
       </div>
-      <p class="pc-ajuda" id="pc-agente-status">${ativo ? `Roda todo dia a partir das ${horario}.` : "Pausado: não vai rodar até você ligar de novo."} ${ultTxt}</p>`;
+      <p class="pc-ajuda" id="pc-agente-status">${ativo ? "Ligado: roda todo dia por volta das 14h." : "Pausado: não vai rodar até você ligar de novo."} ${ultTxt}</p>`;
     $("#pc-agente-salvar", box).addEventListener("click", async (e) => {
       const bt = e.currentTarget; bt.disabled = true;
       const agora = new Date().toISOString();
-      const h = $("#pc-agente-hora", box).value, liga = $("#pc-agente-ativo", box).checked;
+      const liga = $("#pc-agente-ativo", box).checked;
       const { error: err } = await banco().from("configuracoes").upsert([
-        { chave: "salvos_horario", valor: h, updated_at: agora },
         { chave: "salvos_ativo", valor: liga ? "sim" : "nao", updated_at: agora },
       ], { onConflict: "chave" });
       bt.disabled = false;
       if (err) { toast("Não consegui salvar: " + err.message, true); return; }
-      toast(liga ? `Pronto. O agente roda todo dia a partir das ${h}.` : "Pronto. Agente pausado.");
+      toast(liga ? "Pronto. O agente roda todo dia por volta das 14h." : "Pronto. Agente pausado.");
       pintarAgente();
     });
   }
