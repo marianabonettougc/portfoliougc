@@ -2,7 +2,8 @@
 // CONTEÚDO > CONTEÚDOS (hash #planejar), reestruturado em out/2026 com as referências estilo Trello dela:
 // quatro áreas sobre o MESMO registro de painel_conteudo (st.todos): Visão geral (indicadores, próximos,
 // planejamento do mês, fluxo e plano da semana), Quadro de produção (colunas = status, arrastar muda o status),
-// Calendário editorial (mensal e semanal, arrastar muda a data) e Banco de ideias (status Ideia + pastas do Instagram).
+// Calendário editorial (mensal e semanal, arrastar muda a data), Banco de ideias (status Ideia + pastas do Instagram)
+// e Planejamento anual (nov/2026: narrativa, calendário do ano, temas, ideias, ritmo e 2 meses à frente).
 // Ajustes e IA (perfil, gerar grade, pastas, iPhone) abre por botão. Status: STATUS (nomes antigos em STATUS_ANTIGO).
 // - Inspirações: posts do Laboratório (tabela laboratorio) que vieram das pastas do
 //   Instagram dela pelo programa ferramentas/salvos.py: "Gravar em <mês>" e
@@ -404,7 +405,7 @@
         <div class="pc2-cab-acoes"><button class="btn" type="button" id="pc-ajustes" aria-expanded="false">${ic.ajustes}Ajustes e IA</button><button class="btn btn-principal" type="button" id="pc-novo">${ic.mais}Novo conteúdo</button></div>
       </header>
       <nav class="sub-abas pc-abas" aria-label="Partes de Conteúdos">
-        <button type="button" class="sub-aba" data-pcaba="geral">Visão geral</button><button type="button" class="sub-aba" data-pcaba="quadro">Quadro de produção</button><button type="button" class="sub-aba" data-pcir="quadro">Meus roteiros</button><button type="button" class="sub-aba" data-pcaba="cal">Calendário editorial</button><button type="button" class="sub-aba" data-pcaba="ideias">Banco de ideias</button>
+        <button type="button" class="sub-aba" data-pcaba="geral">Visão geral</button><button type="button" class="sub-aba" data-pcaba="quadro">Quadro de produção</button><button type="button" class="sub-aba" data-pcir="quadro">Meus roteiros</button><button type="button" class="sub-aba" data-pcaba="cal">Calendário editorial</button><button type="button" class="sub-aba" data-pcaba="ideias">Banco de ideias</button><button type="button" class="sub-aba" data-pcaba="ano">Planejamento anual</button>
       </nav>
       <section data-pcpar="geral" id="pc-geral"></section>
       <section data-pcpar="quadro" id="pc-kanban"></section>
@@ -421,6 +422,7 @@
         <div class="pc-cal" id="pc-semanal" hidden></div>
       </section>
       <section data-pcpar="ideias" id="pc-ideias"></section>
+      <section data-pcpar="ano" id="pc-ano"></section>
       <div id="pc-config" data-pcpar="cfg" hidden>
         <div class="pc2-cfg-cab"><h3 class="pc2-h">Ajustes e <em>IA</em></h3><button class="btn" type="button" id="pc-cfg-fechar">${ic.x}Fechar</button></div>
         <section class="pc-cartao pc-perfil" id="pc-perfil"></section>
@@ -452,7 +454,7 @@
     // Meus roteiros é a página do aplicativo (#quadro), com este mesmo cabeçalho e abas em cima (js/admin.js)
     $$("[data-pcir]", sec).forEach((b) => b.addEventListener("click", () => { location.hash = "#" + b.dataset.pcir; }));
     let parte = "geral"; try { parte = localStorage.getItem("pc-parte2") || "geral"; } catch (e) { /* sem armazenamento */ }
-    mostrarParte(["geral", "quadro", "cal", "ideias"].includes(parte) ? parte : "geral");
+    mostrarParte(["geral", "quadro", "cal", "ideias", "ano"].includes(parte) ? parte : "geral");
     $$("[data-pcaba]", sec).forEach((b) => b.addEventListener("click", () => mostrarParte(b.dataset.pcaba)));
     $("#pc-ajustes", sec).addEventListener("click", () => mostrarParte($("#pc-config", sec).hidden ? "cfg" : anterior));
     $("#pc-cfg-fechar", sec).addEventListener("click", () => mostrarParte(anterior));
@@ -527,7 +529,7 @@
       const novo = await painelDialogo.texto("Tema desta semana (ex.: Black Friday para marcas). Deixe vazio para tirar.", atual);
       if (novo === null) return; await salvarTema(b.dataset.tema, novo.trim()); pintar();
     }));
-    pintarGeral(sec); pintarKanban(sec); pintarIdeias(sec);
+    pintarGeral(sec); pintarKanban(sec); pintarIdeias(sec); pintarAno(sec);
     const cal = $("[data-pcpar=cal]", sec);
     ligarCliques(cal);
     $$("[data-ir]", cal).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); location.hash = "#" + b.dataset.ir; }));
@@ -1165,14 +1167,279 @@
       st.ideias = st.ideias.filter((x) => x.id !== it.id); pintarIdeias(sec); toast("Ideia excluída.");
     }));
   }
+  // ---------- PLANEJAMENTO ANUAL (nov/2026, carrossel "planejamento de conteúdo para 2027 com IA" da @giubeckers) ----------
+  // Método em 6 passos: 1 narrativa, 2 calendário do ano (datas do público + quando as MARCAS fecham UGC), 3 temas macro
+  // do mês por pilar, 4 ideias por tema, 5 frequência (o ritmo do perfil_conteudo) e 6 trabalhar 2 meses à frente.
+  // Tudo em configuracoes chave "planejamento_anual" = {anos: {"2027": {narrativa {quem, paraQuem, vende}, campanha,
+  // meses {"1".."12": {foco, datas[], marcas, temas {pilar: tema}, ideias [{id, titulo, pilar, formato, funil, ideiaId}]}}}}}.
+  // "Mandar para o Banco de ideias" grava em ideias_organizadas (a mesma do Banco de ideias) e guarda ideiaId (não duplica).
+  const P1 = "Maternidade e autocuidado", P2 = "Beleza e cabelo", P3 = "Moda", P4 = "Bem-estar", P5 = "Achadinhos de casa e tech";
+  const idA = () => "pa" + Math.random().toString(36).slice(2, 9);
+  const ide = (titulo, pilar, formato, funil) => ({ id: idA(), titulo, pilar, formato, funil });
+  const NARRATIVA_PADRAO = {
+    quem: "Sou a Mari, mãe de duas meninas e criadora UGC. Me perdi na maternidade e estou me reencontrando: emagreci e voltei a cuidar de mim.",
+    paraQuem: "Mulheres e mães que querem voltar a se cuidar sem complicar, e as marcas que querem falar com elas com conteúdo real.",
+    vende: "Vídeos UGC e publis para marcas de beleza, cabelo, moda, bem-estar, casa e tech: falando para a câmera, com o produto em uso de verdade.",
+  };
+  const ANO_2027 = {
+    narrativa: NARRATIVA_PADRAO,
+    campanha: "Em semana de campanha ou data forte, sobe para 4 posts e o Stories fica diário.",
+    meses: {
+      1: { foco: "Recomeço: me reencontrando no ano novo", datas: ["Ano Novo (01/01)", "Férias escolares", "Verão"],
+        marcas: "Fecham Carnaval e volta às aulas. Hora de mandar portfólio para Dia da Mulher, Dia do Consumidor e Páscoa.",
+        temas: { [P1]: "Metas reais de mãe para 2027 (cuidar de mim sem culpa)", [P2]: "Pele e cabelo no verão: sol, piscina e mar", [P3]: "Looks frescos para as férias com as meninas", [P4]: "Rotina possível nas férias escolares", [P5]: "Organizar a casa para começar o ano" },
+        ideias: [ide("O que eu prometo pra mim em 2027 (e não é dieta)", P1, "Reels", "Meio"), ide("Eu esquecia de mim: 3 cuidados que voltaram para a minha rotina", P1, "Carrossel", "Meio"),
+          ide("Protetor solar que não deixa a pele branca nem melada", P2, "Reels", "Topo"), ide("Meu cabelo depois da piscina: o que eu passo para não ressecar", P2, "Reels", "Topo"),
+          ide("3 looks de férias que funcionam correndo atrás de criança", P3, "Carrossel", "Meio"), ide("A primeira foto de praia em que eu gostei de mim em anos", P1, "Foto", "Meio"),
+          ide("Férias com duas filhas em casa: a rotina que salva o meu dia", P4, "Reels", "Meio"), ide("Água, sono e 10 minutos só meus: o básico que eu voltei a fazer", P4, "Carrossel", "Meio"),
+          ide("Organizei a despensa para o ano: os potes que valeram a pena", P5, "Reels", "Topo"), ide("Os achadinhos de casa que eu mais usei em 2026", P5, "Carrossel", "Topo"),
+          ide("Minha bolsa de praia de mãe: o que nunca falta", P1, "Reels", "Topo"), ide("Bastidor: como eu gravo um vídeo UGC com as meninas de férias em casa", P1, "Reels", "Fundo")] },
+      2: { foco: "Volta às aulas e Carnaval", datas: ["Volta às aulas", "Carnaval (06 a 10/02)"],
+        marcas: "Fecham Páscoa, Dia da Mulher e Dia do Consumidor. Começam a falar de Dia das Mães: portfólio de beleza e maternidade em dia.",
+        temas: { [P1]: "Volta às aulas: a manhã de uma mãe de duas", [P2]: "Make e cabelo que aguentam calor e Carnaval", [P3]: "Looks de Carnaval sem fantasia completa", [P4]: "Voltar a treinar depois das férias", [P5]: "Material escolar e organização da rotina das meninas" },
+        ideias: [ide("A manhã da volta às aulas aqui em casa, do despertador ao portão", P1, "Reels", "Meio"), ide("Lancheira sem drama: o que eu mando para as meninas", P1, "Carrossel", "Meio"),
+          ide("Material escolar: o que eu comprei e o que eu não compro mais", P5, "Reels", "Topo"), ide("Organizei o cantinho de estudo das meninas", P5, "Carrossel", "Topo"),
+          ide("Make que aguenta o bloquinho: testei no calor", P2, "Reels", "Topo"), ide("Cabelo preso de Carnaval em 5 minutos", P2, "Reels", "Topo"),
+          ide("3 looks de Carnaval com peças que eu já tenho", P3, "Carrossel", "Meio"), ide("Voltei a treinar depois das férias: como eu encaixo na rotina", P4, "Reels", "Meio"),
+          ide("Pele depois do Carnaval: o que eu faço no dia seguinte", P2, "Carrossel", "Meio"), ide("Meu primeiro Carnaval me sentindo eu de novo", P1, "Foto", "Meio"),
+          ide("O que eu faço com a primeira hora sozinha depois que elas entram na escola", P4, "Reels", "Meio"), ide("Bastidor: briefing de Dia das Mães chegando, como eu me preparo", P1, "Reels", "Fundo")] },
+      3: { foco: "Mês da mulher e da autoestima. Portfólio forte: marcas fecham Dia das Mães", datas: ["Dia da Mulher (08/03)", "Dia do Consumidor (15/03)", "Outono (20/03)", "Páscoa (28/03)"],
+        marcas: "Alta temporada de Dia das Mães em beleza, moda e casa. Prospectar ativamente e postar mais prova de trabalho (fundo de funil).",
+        temas: { [P1]: "Mulher antes de mãe: o que eu voltei a fazer por mim", [P2]: "Pele na troca de estação", [P3]: "Peças de transição do verão para o outono", [P4]: "Hábitos que ajudaram a minha autoestima", [P5]: "Achados do Dia do Consumidor que valem o desconto" }, ideias: [] },
+      4: { foco: "Dia das Mães em produção", datas: ["Dia Mundial da Saúde (07/04)", "Outono"],
+        marcas: "Últimos fechamentos de Dia das Mães e começo de Dia dos Namorados. Mostrar as publis já feitas.",
+        temas: { [P1]: "O que eu queria ganhar de Dia das Mães de verdade", [P2]: "Kit de autocuidado que eu daria para uma mãe", [P3]: "Looks de outono para a rotina de mãe", [P4]: "Cuidados de saúde que eu vivia adiando", [P5]: "Presentes de casa e tech para o Dia das Mães" }, ideias: [] },
+      5: { foco: "Dia das Mães (09/05)", datas: ["Dia do Trabalhador (01/05)", "Dia das Mães (09/05)"],
+        marcas: "Fecham Dia dos Namorados, festa junina e inverno.",
+        temas: { [P1]: "Ser mãe de meninas e me reencontrar: a minha história", [P2]: "Make rápida para o almoço de Dia das Mães", [P3]: "Look para o Dia das Mães", [P4]: "Pedir ajuda também é autocuidado", [P5]: "Presentes de última hora que eu indicaria" }, ideias: [] },
+      6: { foco: "Inverno e Dia dos Namorados", datas: ["Dia dos Namorados (12/06)", "Festa junina", "Inverno (21/06)"],
+        marcas: "Fecham férias de julho, Dia dos Pais e inverno.",
+        temas: { [P1]: "Mãe também namora: tempo a dois", [P2]: "Pele e cabelo no frio", [P3]: "Looks de inverno quentinhos e práticos", [P4]: "Rotina de sono no frio", [P5]: "Achados para a casa no inverno" }, ideias: [] },
+      7: { foco: "Férias escolares", datas: ["Férias escolares", "Dia dos Avós (26/07)"],
+        marcas: "Fecham Dia dos Pais, volta às aulas do 2º semestre e Dia das Crianças.",
+        temas: { [P1]: "Férias com as meninas sem perder a cabeça", [P2]: "Cabelo no inverno: hidratação, secador e babyliss", [P3]: "Looks de férias de inverno", [P4]: "Movimentar o corpo nas férias", [P5]: "Tech e achados que salvam as férias" }, ideias: [] },
+      8: { foco: "Dia dos Pais e recomeço do 2º semestre", datas: ["Dia dos Pais (08/08)", "Volta às aulas do 2º semestre"],
+        marcas: "Fecham Dia das Crianças, 9.9 e Dia do Cliente. Começam a sondar a Black Friday.",
+        temas: { [P1]: "Dividir as tarefas da casa com o marido", [P2]: "Skincare de volta à rotina", [P3]: "Peças coringa para o 2º semestre", [P4]: "Recomeçar no meio do ano", [P5]: "Presentes de Dia dos Pais de casa e tech" }, ideias: [] },
+      9: { foco: "Primavera e portfólio pronto para a Black Friday", datas: ["9.9", "Dia do Cliente (15/09)", "Primavera (23/09)"],
+        marcas: "Começam a fechar Black Friday e 10.10: mês de prospectar com força e reforçar o fundo de funil.",
+        temas: { [P1]: "Um ano me reencontrando: o que mudou", [P2]: "Pele e cabelo na primavera", [P3]: "Cores e looks de primavera", [P4]: "Hábitos que eu mantive o ano inteiro", [P5]: "Achadinhos do 9.9 que eu uso de verdade" }, ideias: [] },
+      10: { foco: "Dia das Crianças e aquecimento da Black Friday", datas: ["10.10", "Dia das Crianças (12/10)"],
+        marcas: "Fecham Black Friday e 11.11. Começam as conversas de Natal.",
+        temas: { [P1]: "Dia das Crianças: o que elas pedem e o que eu dou", [P2]: "A minha lista de beleza para a Black Friday", [P3]: "Looks de meia-estação", [P4]: "Cuidar de mim no fim do ano", [P5]: "Presentes de Dia das Crianças de casa e tech" }, ideias: [] },
+      11: { foco: "Black Friday (26/11)", datas: ["11.11", "Black Friday (26/11)", "Cyber Monday (29/11)"],
+        marcas: "Fecham Natal, verão e ano novo. Muita publi no ar: equilibrar com conteúdo de meio de funil.",
+        temas: { [P1]: "O que eu compro e o que eu não compro na Black Friday sendo mãe", [P2]: "Beleza que vale a pena na Black Friday", [P3]: "Peças para as festas de fim de ano", [P4]: "Comprar menos e melhor", [P5]: "Achadinhos de casa e tech com desconto de verdade" }, ideias: [] },
+      12: { foco: "Natal e retrospectiva", datas: ["Natal (25/12)", "Réveillon (31/12)", "Férias escolares"],
+        marcas: "Fecham janeiro (verão e volta às aulas). Hora de atualizar o portfólio e planejar 2028.",
+        temas: { [P1]: "Retrospectiva: o meu ano me reencontrando", [P2]: "Make de festa que eu mesma faço", [P3]: "Looks de Natal e Réveillon", [P4]: "Descansar sem culpa nas festas", [P5]: "Presentes de Natal práticos que eu daria" }, ideias: [] },
+    },
+  };
+  const PASSOS_ANO = [["narrativa", "Narrativa"], ["frequencia", "Frequência"], ["janela", "2 meses à frente"], ["calendario", "Calendário do ano"], ["mes", "Temas e ideias do mês"]];
+  const MES_NICHO = (pilar) => (pilar === P1 ? "Maternidade" : NICHOS.includes(pilar) ? pilar : null);
+  const pa = { dados: null, ano: "2027", mes: null, salvando: false, gerando: null };
+  async function carregarAno() {
+    const { data } = await banco().from("configuracoes").select("valor").eq("chave", "planejamento_anual").maybeSingle();
+    let d = null; try { d = data && JSON.parse(data.valor); } catch (e) { d = null; }
+    pa.dados = d && d.anos ? d : { anos: { 2027: JSON.parse(JSON.stringify(ANO_2027)) } };
+    // primeira vez: grava o 2027 preenchido para os ids das ideias ficarem fixos
+    if (!(d && d.anos)) { try { await salvarAno(); } catch (e) { /* tenta de novo na próxima edição */ } }
+    if (!pa.dados.anos[pa.ano]) pa.ano = Object.keys(pa.dados.anos).sort()[0];
+  }
+  async function salvarAno() {
+    const { error } = await banco().from("configuracoes").upsert({ chave: "planejamento_anual", valor: JSON.stringify(pa.dados), updated_at: new Date().toISOString() }, { onConflict: "chave" });
+    if (error) throw new Error(error.message);
+    // confere que gravou de verdade
+    const { data } = await banco().from("configuracoes").select("valor").eq("chave", "planejamento_anual").maybeSingle();
+    if (!data || data.valor !== JSON.stringify(pa.dados)) throw new Error("o banco não confirmou o salvamento");
+  }
+  const anoAtual = () => pa.dados.anos[pa.ano];
+  const mesDoAno = (m) => { const a = anoAtual(); a.meses = a.meses || {}; a.meses[m] = a.meses[m] || { foco: "", datas: [], marcas: "", temas: {}, ideias: [] }; const x = a.meses[m]; x.temas = x.temas || {}; x.ideias = x.ideias || []; x.datas = x.datas || []; return x; };
+  // quantos posts o ritmo dela pede naquele mês (dias do ritmo, 0 = SEG)
+  function postsNoMes(ano, m) {
+    const dias = (st.perfil.ritmo || PERFIL_PADRAO.ritmo).dias || [];
+    let n = 0; const d = new Date(Number(ano), m - 1, 1);
+    while (d.getMonth() === m - 1) { if (dias.includes((d.getDay() + 6) % 7)) n++; d.setDate(d.getDate() + 1); }
+    return n;
+  }
+  // os 2 próximos meses deste ano de planejamento (a partir do mês que vem); antes do ano começar, janeiro e fevereiro
+  function janelaMeses() {
+    const ano = Number(pa.ano), out = [];
+    for (let k = 1; out.length < 2 && k <= 24; k++) { const d = new Date(hoje.getFullYear(), hoje.getMonth() + k, 1); if (d.getFullYear() === ano) out.push(d.getMonth() + 1); else if (d.getFullYear() > ano) break; }
+    if (!out.length && ano > hoje.getFullYear()) return [1, 2];
+    return out;
+  }
+  const naBanco = (i) => i.ideiaId && (st.ideias || []).some((x) => String(x.id) === String(i.ideiaId));
+  function progressoMes(m) {
+    const x = mesDoAno(m), pil = (st.perfil.pilares || []).map((p) => p.nome), chave = `${pa.ano}-${pad(m)}`;
+    const temas = pil.filter((p) => String(x.temas[p] || "").trim()).length;
+    const roteiros = st.todos.filter((p) => mesDe(p) === chave && normStatus(p.status) !== "Ideia").length;
+    return { meta: postsNoMes(pa.ano, m), temas, totalTemas: pil.length, ideias: x.ideias.length, banco: x.ideias.filter(naBanco).length, roteiros };
+  }
+  const barra = (v, t) => `<span class="pa-barra"><i style="width:${t ? Math.min(100, Math.round((v / t) * 100)) : 0}%"></i></span>`;
+  function pintarAno(sec) {
+    const box = $("#pc-ano", sec); if (!box) return;
+    if (!pa.dados) { box.innerHTML = `<p class="pc-ajuda">Carregando o planejamento…</p>`; return; }
+    const a = anoAtual(), n = a.narrativa || {}, r = st.perfil.ritmo || PERFIL_PADRAO.ritmo, jan = janelaMeses();
+    const fun = r.funil || {}, funTxt = FUNIS.filter((f) => fun[f]).map((f) => `${fun[f]} ${f.toLowerCase()}`).join(" + ");
+    const anos = [...new Set([...Object.keys(pa.dados.anos), pa.ano])].sort();
+    box.innerHTML = `<div class="pa">
+      <div class="pa-topo"><div><h3 class="pc2-h">Planejamento <em>${esc(pa.ano)}</em></h3><p class="pc-ajuda">Do ano para o mês: narrativa, datas, temas, ideias e o seu ritmo, sempre com 2 meses prontos à frente.</p></div>
+        <div class="pa-topo-acoes"><select class="entrada" id="pa-ano" aria-label="Ano">${anos.map((x) => `<option ${x === pa.ano ? "selected" : ""}>${x}</option>`).join("")}</select><button class="btn" type="button" id="pa-novo-ano">${ic.mais}Começar ${Number(anos[anos.length - 1]) + 1}</button></div></div>
+      <nav class="pa-passos" aria-label="Passos">${PASSOS_ANO.map(([k, t], i) => `<button type="button" data-pa-ir="${k}"><b>${i + 1}</b>${t}</button>`).join("")}</nav>
+      <div class="pa-duas">
+        <section class="pc-cartao" id="pa-narrativa"><div class="pa-cab"><h4 class="pa-h">1. Minha narrativa</h4><button class="btn btn-mini" type="button" id="pa-ed-narr">Editar</button></div>
+          <p class="pc-ajuda">É o contexto de tudo: quem você é, para quem fala e o que vende.</p>
+          <dl class="pa-narr"><dt>Quem eu sou</dt><dd>${esc(n.quem || "")}</dd><dt>Para quem</dt><dd>${esc(n.paraQuem || "")}</dd><dt>O que eu vendo</dt><dd>${esc(n.vende || "")}</dd></dl></section>
+        <section class="pc-cartao" id="pa-frequencia"><div class="pa-cab"><h4 class="pa-h">2. Frequência por semana</h4><button class="btn btn-mini" type="button" id="pa-ritmo">Mudar o ritmo</button></div>
+          <p class="pa-grande">${r.porSemana} posts por semana</p>
+          <div class="pa-semana">${DIAS.map((d, i) => `<span class="${(r.dias || []).includes(i) ? "on" : ""}">${d}</span>`).join("")}</div>
+          <p class="pc-ajuda">${esc((r.formatos || []).join(", "))}${funTxt ? " · " + esc(funTxt) : ""}${r.horario ? " · às " + esc(r.horario) : ""}</p>
+          <p class="pa-campanha"><b>Semana de campanha:</b> <span>${esc(a.campanha || "")}</span> <button type="button" class="pa-link" id="pa-ed-camp">editar</button></p></section>
+      </div>
+      <section class="pc-cartao" id="pa-janela"><div class="pa-cab"><h4 class="pa-h">3. Dois meses à frente</h4></div>
+        <p class="pc-ajuda">Quando um mês começa, o seguinte já está pensado. Assim sobra espaço para conteúdo no flow e para pauta quente.</p>
+        <div class="pa-jan">${jan.map((m) => { const p = progressoMes(m); return `<button type="button" class="pa-jan-mes" data-pa-mes="${m}"><b>${MESES[m - 1]}</b><small>${p.meta} posts no seu ritmo</small>
+          <span class="pa-linha"><span>Temas</span>${barra(p.temas, p.totalTemas)}<em>${p.temas}/${p.totalTemas}</em></span>
+          <span class="pa-linha"><span>Ideias</span>${barra(p.ideias, p.meta)}<em>${p.ideias}/${p.meta}</em></span>
+          <span class="pa-linha"><span>Roteiros</span>${barra(p.roteiros, p.meta)}<em>${p.roteiros}/${p.meta}</em></span></button>`; }).join("") || `<p class="pc-ajuda">Este ano já passou da janela. Escolha outro ano.</p>`}</div></section>
+      <section class="pc-cartao" id="pa-calendario"><div class="pa-cab"><h4 class="pa-h">4. Calendário de ${esc(pa.ano)}</h4></div>
+        <p class="pc-ajuda">Em cada mês: as datas do seu público e quando as <b>marcas</b> fecham UGC (elas contratam de 1 a 2 meses antes da data). Toque num mês para ver temas e ideias.</p>
+        <div class="pa-meses">${MESES.map((nome, i) => { const m = i + 1, x = mesDoAno(m), p = progressoMes(m); return `<button type="button" class="pa-mes${pa.mes === m ? " ativo" : ""}${jan.includes(m) ? " janela" : ""}" data-pa-mes="${m}">
+          <span class="pa-mes-cab"><b>${nome}</b>${jan.includes(m) ? `<small class="pa-tag">agora</small>` : ""}</span>
+          ${x.foco ? `<span class="pa-foco">${esc(x.foco)}</span>` : ""}
+          <span class="pa-datas">${x.datas.map((d) => `<i>${esc(d)}</i>`).join("")}</span>
+          ${x.marcas ? `<span class="pa-marcas"><b>Marcas:</b> ${esc(x.marcas)}</span>` : ""}
+          <span class="pa-cont">${p.temas}/${p.totalTemas} temas · ${p.ideias} ideias</span></button>`; }).join("")}</div></section>
+      <section id="pa-mes">${pa.mes ? detalheMes(pa.mes) : ""}</section>
+    </div>`;
+    ligarAno(sec, box);
+  }
+  function detalheMes(m) {
+    const x = mesDoAno(m), pil = (st.perfil.pilares || []).map((p) => p.nome), p = progressoMes(m);
+    const cont = FUNIS.map((f) => `${x.ideias.filter((i) => i.funil === f).length} ${f.toLowerCase()}`).join(" · ");
+    const porPilar = [...pil, ...new Set(x.ideias.map((i) => i.pilar).filter((q) => q && !pil.includes(q)))];
+    return `<div class="pc-cartao pa-det">
+      <div class="pa-cab"><h4 class="pa-h">5. ${MESES[m - 1]} de ${esc(pa.ano)}</h4><div class="pa-topo-acoes"><button class="btn btn-mini" type="button" id="pa-ed-mes">Editar foco, datas e marcas</button><button class="icone-btn" type="button" id="pa-fechar" aria-label="Fechar o mês">${ic.x}</button></div></div>
+      <div class="pa-det-info"><p><b>Foco:</b> ${esc(x.foco || "sem foco ainda")}</p><p><b>Datas:</b> ${x.datas.length ? x.datas.map(esc).join(", ") : "nenhuma"}</p><p><b>Marcas:</b> ${esc(x.marcas || "")}</p></div>
+      <h5 class="pa-sub">Temas macro do mês, um por pilar</h5>
+      <div class="pa-temas">${pil.map((pi, k) => `<label class="pa-tema pa-c${k % 6}"><span>${esc(pi)}</span><input class="entrada" data-pa-tema="${esc(pi)}" value="${esc(x.temas[pi] || "")}" placeholder="Tema deste pilar no mês"></label>`).join("")}</div>
+      <div class="pa-cab pa-cab-ideias"><h5 class="pa-sub">Ideias do mês <small>${x.ideias.length} de ${p.meta} posts · ${cont}</small></h5>
+        <div class="pa-topo-acoes">${x.ideias.some((i) => !naBanco(i)) ? `<button class="btn btn-mini btn-principal" type="button" id="pa-todas">Mandar todas para o Banco de ideias</button>` : x.ideias.length ? `<span class="pa-ok">Todas no Banco de ideias</span>` : ""}</div></div>
+      ${porPilar.map((pi) => { const lista = x.ideias.filter((i) => (i.pilar || "") === pi); const tema = x.temas[pi];
+        return `<div class="pa-grupo"><div class="pa-grupo-cab"><b>${esc(pi)}</b>${tema ? `<small>${esc(tema)}</small>` : ""}${tema ? `<button type="button" class="btn btn-mini" data-pa-ia="${esc(pi)}" ${pa.gerando ? "disabled" : ""}>${pa.gerando === pi ? "Pedindo à IA…" : ic.brilho + "3 ideias com IA"}</button>` : ""}</div>
+          ${lista.length ? `<ul class="pa-ideias">${lista.map((i) => `<li><span class="pa-ideia-t">${esc(i.titulo)}</span><span class="pa-ideia-m">${esc(i.formato || "")} · ${esc(i.funil || "")}</span>
+            ${naBanco(i) ? `<span class="pa-ok">no banco</span>` : `<button type="button" class="btn btn-mini" data-pa-banco="${i.id}">Mandar para o banco</button>`}<button type="button" class="pa-x" data-pa-tirar="${i.id}" aria-label="Tirar a ideia">${ic.x}</button></li>`).join("")}</ul>` : `<p class="pc-ajuda pa-vazio">Nenhuma ideia neste pilar ainda.</p>`}</div>`; }).join("")}
+      <form class="pc3-rapida pa-nova" id="pa-nova"><input class="entrada" name="titulo" required placeholder="Nova ideia para ${MESES[m - 1]}"><select class="entrada" name="pilar" aria-label="Pilar">${pil.map((q) => `<option>${esc(q)}</option>`).join("")}</select><select class="entrada" name="formato" aria-label="Formato">${FORMATOS.map((f) => `<option>${f}</option>`).join("")}</select><select class="entrada" name="funil" aria-label="Funil">${FUNIS.map((f) => `<option ${f === "Meio" ? "selected" : ""}>${f}</option>`).join("")}</select><button class="btn btn-principal" type="submit">${ic.mais}Adicionar</button></form>
+    </div>`;
+  }
+  async function gravarAno(msg) {
+    try { await salvarAno(); if (msg) toast(msg); } catch (er) { toast("Não salvou: " + er.message, true); }
+  }
+  async function ideiaParaBanco(m, i) {
+    if (naBanco(i)) return;
+    const x = mesDoAno(m), tema = x.temas[i.pilar];
+    const novo = await salvarIdeia({ titulo: i.titulo, texto: i.titulo, pilar: i.pilar || null, categoria: MES_NICHO(i.pilar), formato: i.formato || null, funil: i.funil || null, finalidade: "Conteúdos", situacao: "minha",
+      notas: `Planejamento ${pa.ano} · ${MESES[m - 1]}${tema ? " · tema: " + tema : ""}` });
+    i.ideiaId = novo.id;
+  }
+  function ligarAno(sec, box) {
+    const repintar = () => { pintarAno(sec); };
+    $$("[data-pa-ir]", box).forEach((b) => b.addEventListener("click", () => {
+      const k = b.dataset.paIr;
+      if (k === "mes" && !pa.mes) { pa.mes = janelaMeses()[0] || 1; repintar(); }
+      const alvo = $("#pa-" + k, sec); if (alvo) alvo.scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+    $("#pa-ano", box).addEventListener("change", (e) => { pa.ano = e.target.value; pa.mes = null; repintar(); });
+    $("#pa-novo-ano", box).addEventListener("click", async () => {
+      const novo = String(Math.max(...Object.keys(pa.dados.anos).map(Number)) + 1);
+      if (!(await painelDialogo.confirmar(`Começar o planejamento de ${novo}? A narrativa e o texto de campanha vêm de ${pa.ano}; os meses começam vazios.`, { ok: "Começar" }))) return;
+      const base = anoAtual();
+      pa.dados.anos[novo] = { narrativa: { ...(base.narrativa || NARRATIVA_PADRAO) }, campanha: base.campanha || "", meses: {} };
+      pa.ano = novo; pa.mes = null; await gravarAno(`Planejamento de ${novo} criado.`); repintar();
+    });
+    $("#pa-ed-narr", box).addEventListener("click", async () => {
+      const n = anoAtual().narrativa || {};
+      const v = await janelaIdeia("Minha narrativa", `<p class="pc-ajuda">Escreva o que você faz, para quem e o que vende. É o ponto de partida dos temas e das ideias.</p>
+        <label class="campo"><span>Quem eu sou</span><textarea name="quem" rows="3">${esc(n.quem || "")}</textarea></label>
+        <label class="campo"><span>Para quem eu falo</span><textarea name="paraQuem" rows="3">${esc(n.paraQuem || "")}</textarea></label>
+        <label class="campo"><span>O que eu vendo</span><textarea name="vende" rows="3">${esc(n.vende || "")}</textarea></label>`, "Salvar");
+      if (!v) return;
+      anoAtual().narrativa = { quem: v.quem.trim(), paraQuem: v.paraQuem.trim(), vende: v.vende.trim() };
+      await gravarAno("Narrativa salva."); repintar();
+    });
+    $("#pa-ritmo", box).addEventListener("click", () => { if (st.mostrarParte) st.mostrarParte("cfg"); const pf = $("#pc-perfil", sec); if (pf) pf.scrollIntoView({ behavior: "smooth", block: "start" }); });
+    $("#pa-ed-camp", box).addEventListener("click", async () => {
+      const t = await painelDialogo.texto("O que muda em semana de campanha ou data forte?", anoAtual().campanha || "", { linhas: 3 });
+      if (t === null) return; anoAtual().campanha = t.trim(); await gravarAno("Salvo."); repintar();
+    });
+    $$("[data-pa-mes]", box).forEach((b) => b.addEventListener("click", () => {
+      pa.mes = Number(b.dataset.paMes); repintar();
+      const d = $("#pa-mes", sec); if (d) d.scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+    if (!pa.mes) return;
+    const m = pa.mes, x = mesDoAno(m);
+    $("#pa-fechar", box).addEventListener("click", () => { pa.mes = null; repintar(); });
+    $("#pa-ed-mes", box).addEventListener("click", async () => {
+      const v = await janelaIdeia(`${MESES[m - 1]}: foco, datas e marcas`, `<label class="campo"><span>Foco do mês</span><input name="foco" value="${esc(x.foco || "")}"></label>
+        <label class="campo"><span>Datas do seu público (uma por linha)</span><textarea name="datas" rows="4">${esc(x.datas.join("\n"))}</textarea></label>
+        <label class="campo"><span>Calendário das marcas (o que elas fecham neste mês)</span><textarea name="marcas" rows="3">${esc(x.marcas || "")}</textarea></label>`, "Salvar");
+      if (!v) return;
+      x.foco = v.foco.trim(); x.datas = v.datas.split("\n").map((s) => s.trim()).filter(Boolean); x.marcas = v.marcas.trim();
+      await gravarAno(`${MESES[m - 1]} salvo.`); repintar();
+    });
+    $$("[data-pa-tema]", box).forEach((inp) => inp.addEventListener("change", async () => {
+      const pi = inp.dataset.paTema, t = inp.value.trim();
+      if (t) x.temas[pi] = t; else delete x.temas[pi];
+      await gravarAno("Tema salvo."); repintar();
+    }));
+    $("#pa-nova", box).addEventListener("submit", async (e) => {
+      e.preventDefault(); const fd = new FormData(e.target), v = (k) => String(fd.get(k) || "").trim();
+      x.ideias.push(ide(v("titulo"), v("pilar"), v("formato"), v("funil")));
+      await gravarAno("Ideia adicionada."); repintar();
+      const f = $("#pa-nova [name=titulo]", sec); if (f) f.focus();
+    });
+    $$("[data-pa-tirar]", box).forEach((b) => b.addEventListener("click", async () => {
+      const i = x.ideias.find((q) => q.id === b.dataset.paTirar); if (!i) return;
+      if (!(await painelDialogo.confirmar(`Tirar "${i.titulo}" do planejamento?${naBanco(i) ? " A cópia no Banco de ideias continua lá." : ""}`, { ok: "Tirar", perigo: true }))) return;
+      x.ideias = x.ideias.filter((q) => q.id !== i.id); await gravarAno("Ideia tirada."); repintar();
+    }));
+    $$("[data-pa-banco]", box).forEach((b) => b.addEventListener("click", async () => {
+      const i = x.ideias.find((q) => q.id === b.dataset.paBanco); if (!i) return;
+      b.disabled = true;
+      try { await ideiaParaBanco(m, i); await salvarAno(); toast("Ideia no Banco de ideias."); } catch (er) { toast("Não mandou: " + er.message, true); }
+      repintar();
+    }));
+    const todas = $("#pa-todas", box);
+    if (todas) todas.addEventListener("click", async () => {
+      todas.disabled = true; let n = 0;
+      try { for (const i of x.ideias) { if (!naBanco(i)) { await ideiaParaBanco(m, i); n++; } } await salvarAno(); toast(`${n} ideia${n === 1 ? "" : "s"} no Banco de ideias.`); }
+      catch (er) { try { await salvarAno(); } catch (e2) { /* segue */ } toast(`Mandei ${n}, depois deu erro: ${er.message}`, true); }
+      repintar();
+    });
+    $$("[data-pa-ia]", box).forEach((b) => b.addEventListener("click", async () => {
+      const pi = b.dataset.paIa, tema = x.temas[pi]; if (!tema || pa.gerando) return;
+      const n = anoAtual().narrativa || {};
+      pa.gerando = pi; repintar();
+      try {
+        const lista = await chamarIdeias({ acao: "ideias", rotulo: `${MESES[m - 1]} de ${pa.ano}`, quantidade: 3,
+          notas: `PLANEJAMENTO ANUAL. Tema macro do mês para o pilar "${pi}": "${tema}". Foco do mês: ${x.foco || ""}. Datas: ${x.datas.join(", ")}. Quem eu sou: ${n.quem || ""} Para quem: ${n.paraQuem || ""} Quero 3 ideias diferentes dentro desse tema.`,
+          evitar: x.ideias.map((i) => i.titulo), slots: ["Topo", "Meio", "Meio"].map((f, k) => ({ pilar: pi, funil: f, formato: ["Reels", "Carrossel", "Reels"][k] })) });
+        lista.forEach((q, k) => { if (q && q.tema) x.ideias.push(ide(q.tema, pi, q.formato || ["Reels", "Carrossel", "Reels"][k], q.funil || ["Topo", "Meio", "Meio"][k])); });
+        await salvarAno(); toast(lista.length ? `${lista.length} ideias novas em ${pi}.` : "A IA não devolveu ideias agora.", !lista.length);
+      } catch (er) { toast("A IA não respondeu: " + er.message, true); }
+      pa.gerando = null; repintar();
+    }));
+  }
+
   // os cartões de cada área abrem o mesmo formulário do conteúdo
   function ligarCliques(raiz) { $$("[data-id]", raiz).forEach((b) => b.addEventListener("click", () => abrir(st.todos.find((p) => String(p.id) === b.dataset.id)))); }
 
   async function abrirAba() {
     const sec = document.getElementById("aba-" + ABA);
     if (!sec) return;
-    if (!st.pronto) { montar(sec); st.pronto = true; await Promise.all([carregar(), carregarIdeias()]); ajustarSemana(); }
-    else await Promise.all([carregar(), carregarIdeias()]);
+    if (!st.pronto) { montar(sec); st.pronto = true; await Promise.all([carregar(), carregarIdeias(), carregarAno().catch(() => { pa.dados = { anos: { 2027: JSON.parse(JSON.stringify(ANO_2027)) } }; })]); ajustarSemana(); }
+    else await Promise.all([carregar(), carregarIdeias(), carregarAno().catch(() => {})]);
     pintar();
     try { await carregarPlano(); } catch (er) { pl.lista = []; pl.atual = null; }
     pintarPlano();
