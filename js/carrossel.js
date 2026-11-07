@@ -24,7 +24,7 @@ const palettes=[
 {name:"Preto & manteiga",colors:["#171614","#F7E9A8","#F7E9A8","#D2B94E","#FFFFFF"],bg:"#171614",fg:"#F7E9A8",accent:"#D2B94E"},
 {name:"Minimal clean",colors:["#F4F4F1","#FFFFFF","#252525","#8D8D86","#D8D8D2"],bg:"#F4F4F1",fg:"#252525",accent:"#8D8D86"}];
 const fonts=[
-["Bootzy · impacto","Anton,Impact,sans-serif"],["Poppins · clean","Poppins,sans-serif"],["DM Serif · editorial","'DM Serif Display',Georgia,serif"],["Montserrat · moderna","Montserrat,sans-serif"],["Instrument Serif · delicada","'Instrument Serif',Georgia,serif"],["Arimo · forte","Arimo,Arial,sans-serif"],["Nunito · arredondada","Nunito,sans-serif"]];
+["Bootzy · minha fonte","MinhaFonte,Arimo,Arial,sans-serif"],["Poppins · clean","Poppins,sans-serif"],["DM Serif · editorial","'DM Serif Display',Georgia,serif"],["Montserrat · moderna","Montserrat,sans-serif"],["Instrument Serif · delicada","'Instrument Serif',Georgia,serif"],["Arimo · forte","Arimo,Arial,sans-serif"],["Nunito · arredondada","Nunito,sans-serif"]];
 const fresh=()=>({refs:refs.map(x=>({name:x[0],url:x[1]})),palette:0,kind:"Carrossel",titleFont:0,bodyFont:1,subFont:2,format:"4/5",insertAt:0,feed:[],slides:[{id:uid(),title:"Um título que faz parar o scroll",subtitle:"Um subtítulo que complementa a ideia",body:"Escreva aqui o conteúdo do seu post.",image:""}],active:0});
 let st=fresh(),shell;
 function style(){if($("#mbc-css"))return;const s=document.createElement("style");s.id="mbc-css";s.textContent=
