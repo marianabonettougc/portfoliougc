@@ -2461,3 +2461,8 @@ a.pc2-tag:hover{color:var(--texto)}
 #aba-portfolio .dispositivos-acesso li{grid-template-columns:minmax(105px,1fr) 28px minmax(70px,1.4fr) 38px;align-items:center;gap:8px 10px}
 #aba-portfolio .dispositivos-acesso li small{font-size:10px;color:#987f6e;text-align:right}
 @media(max-width:600px){#aba-portfolio .dispositivos-acesso li{grid-template-columns:minmax(85px,1fr) 24px minmax(55px,1.2fr) 34px}}
+
+/* Meus roteiros dentro de Conteúdos (nov/2026): cabeçalho e abas de Conteúdos em cima da página do aplicativo */
+.cab-conteudos[hidden]{display:none}
+.cab-conteudos .pc2 .pc-abas{margin-bottom:8px}
+body.aba-quadro .so-planner .gestao-app{height:calc(100vh - 225px);min-height:480px}
