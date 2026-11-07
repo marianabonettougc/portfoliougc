@@ -2646,3 +2646,4 @@ body.aba-quadro .so-planner .gestao-app{height:calc(100vh - 225px);min-height:48
 @media (max-width:1100px){.pa-meses{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:820px){.pa-duas{grid-template-columns:1fr}.pa-meses{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:480px){.pa-meses{grid-template-columns:1fr}.pa-narr{grid-template-columns:1fr}}
+.pa-tema textarea.entrada{resize:vertical;min-height:52px;line-height:1.4;font-size:13.5px}
