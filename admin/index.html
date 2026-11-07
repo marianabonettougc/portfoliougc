@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 // Atualiza sozinho: se existir uma versão mais nova do painel publicada, recarrega a página nova
-window.VERSAO_PAINEL = "202611071530";
+window.VERSAO_PAINEL = "202611071900";
 fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).then((j) => {
   if (j.versao && j.versao !== window.VERSAO_PAINEL) {
     const u = new URL(location.href);
@@ -27,7 +27,7 @@ fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/painel.css?v=202611040650">
+<link rel="stylesheet" href="../css/painel.css?v=202611071900">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/banco.js?v=202611040650"></script>
 <script src="../js/dialogos.js?v=202611040650"></script>
@@ -71,8 +71,6 @@ window.sessaoPronta = (async function () {
       <div class="menu-secao-itens">
     <button class="menu-item" data-aba="planejar" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M9 9.5v11M14.5 9.5v11M8 3v3M16 3v3"/></svg>Conteúdos</button>
-    <button class="menu-item" data-aba="quadro" type="button">
-      <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="16.5" y="4" width="4" height="7" rx="1.5"/></svg>Meus roteiros</button>
     <button class="menu-item" data-aba="central" type="button">
       <svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M10 9.5v5l4-2.5z"/></svg>Referências</button>
       </div>
@@ -140,6 +138,7 @@ window.sessaoPronta = (async function () {
     </div>
     <div id="avisos" aria-live="polite"></div>
     <nav class="sub-abas" id="sub-abas" aria-label="Partes desta área" hidden></nav>
+    <div class="cab-conteudos" id="cab-conteudos" hidden></div>
 
     <section class="aba" id="aba-portfolio"></section>
     <section class="aba" id="aba-marcas" hidden></section>
@@ -176,12 +175,12 @@ window.sessaoPronta = (async function () {
 <script src="../js/lembretes.js?v=202611040650"></script>
 <script src="../js/biblioteca.js?v=202611040650"></script>
 <script src="../js/referencias.js?v=202611040650"></script>
-<script src="../js/admin.js?v=202611042114"></script>
+<script src="../js/admin.js?v=202611071900"></script>
 <script src="../js/roteiros-supadata.js?v=202611040650"></script>
 <script src="../js/laboratorio.js?v=202611040650"></script>
 <script src="../js/editorial.js?v=202611040650"></script>
 <script src="../js/edicao.js?v=202611040650"></script>
-<script src="../js/painel-conteudo.js?v=202611070200"></script>
+<script src="../js/painel-conteudo.js?v=202611071900"></script>
 <script src="../js/ferramentas.js?v=202611040650"></script>
 <script src="../js/propostas.js?v=202611050130"></script>
 <script src="../js/corretor.js?v=202611040650"></script>
