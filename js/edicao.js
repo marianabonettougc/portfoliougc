@@ -3192,6 +3192,7 @@ IDEIA PARA DEPOIS
   function mostrarProgresso(k, txt) {
     st.progresso = k;
     const b = $("#ed-exportar"); if (b) b.textContent = txt || `Gerando o vídeo… ${Math.round(k * 100)}% (deixe esta aba aberta)`;
+    const tp = $("#ed-ir-exportar"); if (tp) tp.textContent = `Gerando… ${Math.round(k * 100)}%`;
   }
   async function exportar() {
     if (!st.segs.length || st.exportando) return;
@@ -3316,7 +3317,7 @@ IDEIA PARA DEPOIS
     if (!document.getElementById("ed-studio-css")) {
       const css = document.createElement("style"); css.id = "ed-studio-css";
       css.textContent = `
-        .ed-studio{margin:14px 0 20px}.ed-studio .ed-cartao{margin-bottom:10px}
+        .ed-studio{margin:0}.ed-studio .ed-cartao{margin-bottom:10px}
         .ed-studio .es-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
         .ed-studio .es-kpis>div{background:var(--sand);border-radius:12px;padding:11px 13px;display:flex;flex-direction:column}
         .ed-studio .es-kpis b{font-size:20px;font-weight:700}.ed-studio .es-kpis small{color:var(--graphite-soft);font-size:11px}
@@ -3335,23 +3336,18 @@ IDEIA PARA DEPOIS
         @media(max-width:700px){.ed-studio .es-grid,.ed-studio .es-resumo{grid-template-columns:1fr}.ed-studio .es-kpis{gap:5px}.ed-studio .es-kpis>div{padding:9px}.ed-studio .es-kpis b{font-size:17px}}
       `; document.head.appendChild(css);
     }
-    sec.innerHTML = `<div class="cr-pagina cr-pagina-larga ed rr">
-      <header class="rr-cabeca"><div><h2 class="rr-h1">estúdio ugc</h2><p class="rr-lede">Organize jobs, roteiros, arquivos, gravações e entregas. A edição continua com todas as ferramentas que você já usa.</p></div>
-        <div class="cr-acoes-topo"><button class="btn" type="button" id="ed-ver-padrao">Meu padrão de edição</button></div></header>
-      <div class="ed-projeto" id="ed-projeto"></div>
-      <div class="ed-studio" id="ed-studio"></div>
-      <ol class="ed-passos" id="ed-passos" aria-label="Passos da edição"></ol>
-      <div class="rr-wrap">
-        <aside class="rr-lado">
-          <div class="ed-tela rr-player"><canvas id="ed-canvas" width="1080" height="1920"></canvas><div class="ed-vazio" id="ed-vazio">${ic.filme}<span>A prévia aparece aqui</span></div><span class="rr-relogio" id="ed-relogio">0:00,0</span><div class="ed-trab" id="ed-trab" hidden></div></div>
-          <div class="ed-controles" id="ed-controles"></div>
-          <p class="rr-modo" id="ed-modo"></p>
-          <section class="ed-cartao rr-ajustar" id="ed-ajustar" hidden></section>
-          <div id="ed-final"></div>
-        </aside>
-        <div class="rr-principal">
-          <section class="rr-linha rr-linha-topo" id="ed-linha" hidden aria-label="Linha do tempo"></section>
-          <nav class="rr-abas" role="tablist" aria-label="Etapas da edição" id="ed-abas"></nav>
+    sec.innerHTML = `<div class="cr-pagina cr-pagina-larga ed rr ed-cc">
+      <header class="ed-cc-topo">
+        <div class="ed-cc-nome"><h2 class="rr-h1">edição de vídeos</h2><div class="ed-projeto" id="ed-projeto"></div></div>
+        <ol class="ed-passos" id="ed-passos" aria-label="Passos da edição"></ol>
+        <div class="ed-cc-topo-acoes"><button class="btn" type="button" id="ed-ver-padrao">Meu padrão de edição</button><button class="btn btn-principal" type="button" id="ed-ir-exportar">${ic.baixar}Exportar</button></div>
+      </header>
+      <div class="ed-cc-grade">
+        <nav class="ed-trilho" id="ed-trilho" role="tablist" aria-label="Ferramentas da edição"></nav>
+        <section class="ed-gaveta" aria-label="Ferramenta escolhida">
+          <div class="ed-gaveta-cab"><h3 class="ed-gaveta-tit" id="ed-gaveta-tit">Mídia</h3><nav class="rr-abas" role="tablist" aria-label="Partes da ferramenta" id="ed-abas"></nav></div>
+          <div class="ed-gaveta-corpo">
+          <div class="rr-painel" data-painel="projeto" hidden><div class="ed-studio" id="ed-studio"></div></div>
           <div class="rr-painel" data-painel="video">
             <section class="ed-cartao">
               <label class="ed-soltar" id="ed-soltar">${ic.filme}<b>Enviar vídeo bruto</b><small>Pode mandar vários clipes, eles entram na ordem. MP4 ou MOV.</small><input type="file" id="ed-arquivo" accept="video/*,.mov,.mp4,.m4v,.webm" multiple hidden></label>
@@ -3389,8 +3385,22 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
           <div class="rr-painel" data-painel="storyboard" hidden><section class="ed-cartao" id="ed-storyboard"></section></div>
           <div class="rr-painel" data-painel="variacoes" hidden><section class="ed-cartao" id="ed-variacoes"></section></div>
           <div class="rr-painel" data-painel="carrossel" hidden><section class="ed-cartao" id="ed-carrossel"></section></div>
-        </div>
+          </div>
+        </section>
+        <section class="ed-palco" aria-label="Prévia do vídeo">
+          <div class="ed-tela rr-player"><canvas id="ed-canvas" width="1080" height="1920"></canvas><div class="ed-vazio" id="ed-vazio">${ic.filme}<span>A prévia aparece aqui</span></div><span class="rr-relogio" id="ed-relogio">0:00,0</span><div class="ed-trab" id="ed-trab" hidden></div></div>
+          <div class="ed-controles" id="ed-controles"></div>
+          <p class="rr-modo" id="ed-modo"></p>
+        </section>
+        <aside class="ed-assist" aria-label="Assistente de IA">
+          <div class="ed-assist-cab">${ic.brilho}<b>Assistente de IA</b></div>
+          <section class="ed-cartao rr-ajustar" id="ed-ajustar" hidden></section>
+          <div class="ed-assist-vazio"><p>Depois que eu editar, é aqui que você me pede ajustes do jeito que falaria com uma editora.</p><p>Comece por <b>Mídia</b>: envie o vídeo bruto e toque em <b>Editar automático</b>.</p></div>
+          <div class="ed-assist-final" id="ed-final"></div>
+        </aside>
       </div>
+      <section class="rr-linha ed-cc-linha" id="ed-linha" hidden aria-label="Linha do tempo"></section>
+      <div class="ed-cc-linha-vazia">${ic.filme}<span>A linha do tempo aparece aqui depois que eu editar o vídeo</span></div>
       <div id="ed-videos" class="ed-videos" aria-hidden="true"></div>
     </div>`;
     $("#ed-fotos", sec).addEventListener("change", (e) => { const fs = [...e.target.files]; e.target.value = ""; adicionarFotos(fs); });
@@ -3421,24 +3431,58 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     });
     carregarPosts();
     $("#ed-ver-padrao", sec).addEventListener("click", abrirPadrao);
+    $("#ed-ir-exportar", sec).addEventListener("click", () => {
+      if (!st.segs.length) { toast("Primeiro edite o vídeo: envie o bruto em Mídia e toque em Editar automático.", true); irAba("video"); return; }
+      if (!st.exportando && !st.trabalhando) exportar();
+    });
     prepararCanvas();
   }
 
-  // ---------- abas (visual reel review) ----------
-  const ABAS = [["video", "Vídeo"], ["referencia", "Referência"], ["estilos", "Estilos"], ["storyboard", "Storyboard"], ["cortes", "Cortes"], ["textos", "Textos"], ["legendas", "Legendas"], ["visual", "Visual"], ["sons", "Sons e dicas"], ["efeitos", "Efeitos"], ["capa", "Capa"], ["variacoes", "Variações"], ["carrossel", "Carrossel"]];
-  const ABAS_SEMPRE = ["video", "referencia", "estilos", "efeitos"]; // abrem antes de editar (escolher o estilo e conhecer os efeitos)
+  // ---------- abas: trilho de ferramentas à esquerda (como CapCut) e partes de cada ferramenta em pílulas ----------
+  const ABAS = [["projeto", "Projeto e job"], ["video", "Vídeo"], ["referencia", "Referência"], ["estilos", "Estilos"], ["visual", "Ajustes"], ["cortes", "Cortes"], ["storyboard", "Storyboard"], ["textos", "Textos na tela"], ["legendas", "Legendas"], ["efeitos", "Efeitos"], ["sons", "Sons e dicas"], ["capa", "Capa"], ["variacoes", "Variações"], ["carrossel", "Carrossel"]];
+  const ABAS_SEMPRE = ["projeto", "video", "referencia", "estilos", "efeitos"]; // abrem antes de editar (escolher o estilo e conhecer os efeitos)
+  const svgT = (d) => `<svg class="traco" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+  const GRUPOS = [
+    { k: "midia", t: "Mídia", abas: ["video", "referencia"], ic: svgT('<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M10 9.5v5l4-2.5z"/>') },
+    { k: "estilo", t: "Estilo", abas: ["estilos", "visual"], ic: svgT('<circle cx="12" cy="12" r="8.5"/><circle cx="8.5" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="15.5" cy="10" r="1.2"/><path d="M12 20.5a2.5 2.5 0 0 1 0-5h2"/>') },
+    { k: "cortes", t: "Cortes", abas: ["cortes", "storyboard"], ic: svgT('<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5L20 16M8 15.5L20 8"/>') },
+    { k: "texto", t: "Texto", abas: ["textos", "legendas"], ic: svgT('<path d="M4 6.5V5h11v1.5M9.5 5v14M7.5 19h4"/><path d="M14 12v-1h6v1M17 11v8M16 19h2"/>') },
+    { k: "efeitos", t: "Efeitos", abas: ["efeitos", "sons"], ic: svgT('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>') },
+    { k: "capa", t: "Capa e mais", abas: ["capa", "variacoes", "carrossel"], ic: svgT('<rect x="4" y="3.5" width="12" height="15" rx="2"/><path d="M8 21h10a2 2 0 0 0 2-2V8"/><path d="M4 14l3.5-3.5 3 3 2-2 3.5 3.5"/>') },
+    { k: "projeto", t: "Projeto", abas: ["projeto"], ic: svgT('<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>') },
+  ];
+  const grupoDe = (aba) => GRUPOS.find((g) => g.abas.includes(aba)) || GRUPOS[0];
   function pintarAbas() {
     const nav = $("#ed-abas"); if (!nav) return;
     const pronto = st.segs.length > 0;
     if (!pronto && !ABAS_SEMPRE.includes(st.aba)) st.aba = "video";
     const conta = { textos: st.camadas.length, cortes: palavrasRevisao().filter((w) => cortada(w) || tiradaPelaIA(w)).length, legendas: st.legendas.length, sons: st.efeitos.length };
-    nav.innerHTML = ABAS.map(([k, t]) => `<button type="button" role="tab" class="rr-aba" data-aba="${k}" aria-selected="${st.aba === k}" ${!ABAS_SEMPRE.includes(k) && !pronto ? "disabled" : ""}>${t}${pronto && conta[k] ? `<span class="rr-n">${conta[k]}</span>` : ""}</button>`).join("");
+    const g = grupoDe(st.aba), nome = (k) => (ABAS.find(([x]) => x === k) || [k, k])[1];
+    const trilho = $("#ed-trilho");
+    if (trilho) {
+      trilho.innerHTML = GRUPOS.map((x) => {
+        const livre = pronto || x.abas.some((k) => ABAS_SEMPRE.includes(k));
+        const n = pronto ? x.abas.reduce((a, k) => a + (conta[k] || 0), 0) : 0;
+        return `<button type="button" role="tab" class="ed-trilho-bt${x === g ? " on" : ""}" data-grupo="${x.k}" aria-selected="${x === g}" ${livre ? "" : "disabled"} title="${livre ? x.t : x.t + " (depois que eu editar o vídeo)"}">${x.ic}<span>${x.t}</span>${n ? `<i class="ed-trilho-n">${n > 99 ? "99+" : n}</i>` : ""}</button>`;
+      }).join("");
+      $$("[data-grupo]", trilho).forEach((b) => b.addEventListener("click", () => {
+        const x = GRUPOS.find((y) => y.k === b.dataset.grupo); if (!x || x === grupoDe(st.aba)) return;
+        const lembrada = st.abaDoGrupo && st.abaDoGrupo[x.k];
+        const pode = (k) => pronto || ABAS_SEMPRE.includes(k);
+        irAba(lembrada && pode(lembrada) ? lembrada : x.abas.find(pode) || x.abas[0]);
+      }));
+    }
+    const tit = $("#ed-gaveta-tit"); if (tit) tit.textContent = g.t;
+    nav.hidden = g.abas.length < 2;
+    nav.innerHTML = g.abas.map((k) => `<button type="button" role="tab" class="rr-aba" data-aba="${k}" aria-selected="${st.aba === k}" ${!ABAS_SEMPRE.includes(k) && !pronto ? "disabled" : ""}>${nome(k)}${pronto && conta[k] ? `<span class="rr-n">${conta[k]}</span>` : ""}</button>`).join("");
     $$("[data-aba]", nav).forEach((b) => b.addEventListener("click", () => irAba(b.dataset.aba)));
     $$(".rr-painel").forEach((pn) => { pn.hidden = pn.dataset.painel !== st.aba; });
   }
   function irAba(k) {
     if (k !== "variacoes" && st.variBase) voltarOriginal();
-    st.aba = k; pintarAbas(); pintarPassos();
+    st.aba = k; st.abaDoGrupo = Object.assign(st.abaDoGrupo || {}, { [grupoDe(k).k]: k }); pintarAbas(); pintarPassos();
+    const corpo = document.querySelector(".ed-gaveta-corpo"); if (corpo) corpo.scrollTop = 0;
+    if (k === "projeto") pintarStudio();
     if (k === "textos") pintarCamadas();
     if (k === "capa") desenharCapa();
     if (k === "estilos") pintarEstilos();
@@ -3462,7 +3506,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const atual = !st.clipes.length ? 1 : !pronto ? (st.aba === "estilos" ? 2 : st.estiloAtivo ? 1 : 2) : 3;
     ol.innerHTML = passos.map((p) => `<li><button type="button" class="ed-passo${p.feito ? " feito" : ""}${p.n === atual ? " agora" : ""}" data-passo-aba="${p.aba || ""}" ${p.baixar ? 'data-passo-baixar="1"' : ""} ${!p.aba && !p.baixar ? "disabled" : ""}><span class="ed-passo-n">${p.feito ? "✓" : p.n}</span><span><b>${p.t}</b><small>${esc(p.sub)}</small></span></button></li>`).join("");
     $$("[data-passo-aba]", ol).forEach((b) => b.addEventListener("click", () => {
-      if (b.dataset.passoBaixar) { const f = $("#ed-final"); if (f) f.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+      if (b.dataset.passoBaixar) { const f = $("#ed-final"); if (f) { f.scrollIntoView({ behavior: "smooth", block: "center" }); f.classList.remove("piscar"); void f.offsetWidth; f.classList.add("piscar"); } return; }
       if (b.dataset.passoAba) irAba(b.dataset.passoAba);
     }));
   }
@@ -5016,6 +5060,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   }
   function pintarFinal() {
     const box = $("#ed-final"); if (!box) return;
+    const topo = $("#ed-ir-exportar"); if (topo) { topo.disabled = st.exportando || st.trabalhando; topo.innerHTML = st.exportando ? (st.progresso != null ? `Gerando… ${Math.round(st.progresso * 100)}%` : "Gerando…") : ic.baixar + "Exportar"; }
     if (!st.segs.length) { box.innerHTML = ""; return; }
     const f = st.arquivoFinal;
     box.innerHTML = `<div class="ed-exportar">
