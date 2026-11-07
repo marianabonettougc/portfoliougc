@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Gestão UGC | Painel Mari Bonetto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Instrument+Serif:ital@0;1&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -206,9 +206,7 @@
   @media (max-width:700px){ .dz .dn-ola{flex-direction:column;align-items:flex-start;gap:2px} .dz .dn-data{order:-1} .dz .dn-ola h1{font-size:27px} .dz > .dn-cards{gap:10px} .dz .dn-card{padding:12px 14px;gap:10px} .dz .dn-card .dn-ico{width:34px;height:34px} .dz .dn-card-txt b{font-size:18px} }
 
   /* Dashboard (nov/2026, referência que a Mari gostou): serifada fina nos títulos, rótulos pequenos em caixa alta, Instagram, Para fazer e propostas */
-  .dz{--dz-serif:"Instrument Serif","DM Serif Display",Georgia,serif}
-  .dz .dn-ola h1{font-family:var(--dz-serif);font-size:42px;letter-spacing:-.2px}
-  .dz .dn-bt h2,.dz .dz-ig-cab h2{font-family:Poppins,sans-serif;font-weight:500;font-size:15.5px;letter-spacing:0}
+  .dz .dz-ig-cab h2{font-family:var(--db-serif);font-weight:400;font-size:19px;margin:0}
   .dz .dn-ola .dn-data{display:none}
   .dz-sobre{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--db-suave);margin-bottom:6px}
   .dz-sobre::before{content:"";width:22px;height:1px;background:var(--db-linha2)}
@@ -265,7 +263,7 @@
   .dz-prop-lista li span{color:var(--db-suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .dz-prop-lista li small{font-size:12px;color:var(--db-suave)}
   .dz-prop-lista li.nova b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#a87058;margin-right:7px;vertical-align:1px}
-  @media (max-width:700px){ .dz .dn-ola h1{font-size:32px} .dn-site span{display:none} .dn-site{width:40px;padding:0;justify-content:center} .dz-ig-num > b{font-size:36px} .dz-nums .dn-card{padding:12px 13px} .dz-nums .dn-card-txt small{letter-spacing:.6px !important;font-size:10px !important} .dz-nums .dn-card-txt b{font-size:18px} .dz-nums .dn-card-txt em{white-space:normal !important;font-size:11.5px} .dz-prop-lista li{grid-template-columns:minmax(0,1fr) auto} .dz-prop-lista li span{display:none} }
+  @media (max-width:700px){ .dn-site span{display:none} .dn-site{width:40px;padding:0;justify-content:center} .dz-ig-num > b{font-size:36px} .dz-nums .dn-card{padding:12px 13px} .dz-nums .dn-card-txt small{letter-spacing:.6px !important;font-size:10px !important} .dz-nums .dn-card-txt b{font-size:18px} .dz-nums .dn-card-txt em{white-space:normal !important;font-size:11.5px} .dz-prop-lista li{grid-template-columns:minmax(0,1fr) auto} .dz-prop-lista li span{display:none} }
 
   .dn-min{ display:inline-grid; place-items:center; width:30px; height:30px; border:1px solid var(--db-linha); border-radius:999px; background:var(--db-papel); color:var(--db-texto); cursor:pointer; padding:0; flex-shrink:0; }
   .db-bloco.fechado > *:not(.dn-bt):not(.db-bloco-topo){ display:none !important; }
