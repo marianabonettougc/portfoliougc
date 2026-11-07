@@ -1323,7 +1323,7 @@
       <div class="pa-cab"><h4 class="pa-h">5. ${MESES[m - 1]} de ${esc(pa.ano)}</h4><div class="pa-topo-acoes"><button class="btn btn-mini" type="button" id="pa-ed-mes">Editar foco, datas e marcas</button><button class="icone-btn" type="button" id="pa-fechar" aria-label="Fechar o mês">${ic.x}</button></div></div>
       <div class="pa-det-info"><p><b>Foco:</b> ${esc(x.foco || "sem foco ainda")}</p><p><b>Datas:</b> ${x.datas.length ? x.datas.map(esc).join(", ") : "nenhuma"}</p><p><b>Marcas:</b> ${esc(x.marcas || "")}</p></div>
       <h5 class="pa-sub">Temas macro do mês, um por pilar</h5>
-      <div class="pa-temas">${pil.map((pi, k) => `<label class="pa-tema pa-c${k % 6}"><span>${esc(pi)}</span><input class="entrada" data-pa-tema="${esc(pi)}" value="${esc(x.temas[pi] || "")}" placeholder="Tema deste pilar no mês"></label>`).join("")}</div>
+      <div class="pa-temas">${pil.map((pi, k) => `<label class="pa-tema pa-c${k % 6}"><span>${esc(pi)}</span><textarea class="entrada" rows="2" data-pa-tema="${esc(pi)}" placeholder="Tema deste pilar no mês">${esc(x.temas[pi] || "")}</textarea></label>`).join("")}</div>
       <div class="pa-cab pa-cab-ideias"><h5 class="pa-sub">Ideias do mês <small>${x.ideias.length} de ${p.meta} posts · ${cont}</small></h5>
         <div class="pa-topo-acoes">${x.ideias.some((i) => !naBanco(i)) ? `<button class="btn btn-mini btn-principal" type="button" id="pa-todas">Mandar todas para o Banco de ideias</button>` : x.ideias.length ? `<span class="pa-ok">Todas no Banco de ideias</span>` : ""}</div></div>
       ${porPilar.map((pi) => { const lista = x.ideias.filter((i) => (i.pilar || "") === pi); const tema = x.temas[pi];
