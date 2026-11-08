@@ -3022,20 +3022,12 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const faturamentoAnt = somaDe(receitas.filter(t=>String(t.data||"").startsWith(mesAntIso)));
   const variacao = faturamentoAnt>0 ? Math.round((faturamentoMes/faturamentoAnt-1)*100) : null;
   const recebidoMes = somaDe(receitas.filter(t=>t.status==="Confirmado" && String(t.data||"").startsWith(mesIso)));
-  const atrasadoLista = receitas.filter(t=>t.status!=="Confirmado" && t.data && t.data<hoje);
+  const atrasadoLista = aReceberLista.filter(t=>t.data && t.data<hoje);
   const atrasadoValor = somaDe(atrasadoLista);
   const meses6 = Array.from({length:6}, (_,i)=>{ const d = new Date(hojeD.getFullYear(), hojeD.getMonth()-5+i, 1); const k = isoLocal(d).slice(0,7);
     return {k, rotulo:MESES_EXT[d.getMonth()].slice(0,3).replace(/^./, c=>c.toUpperCase()), valor:somaDe(receitas.filter(t=>t.status==="Confirmado" && String(t.data||"").startsWith(k)))}; });
   const maxMes = Math.max(1, ...meses6.map(m=>m.valor));
-  const metaMes = Number((state.metas||{})[mesIso]?.financeiro||0);
-  const radar = [];
-  const aguardandoMarca = ativos.filter(j=>["Aguardando Aprovação","Aprovação do Conteúdo","Aprovação de Roteiro","Aprovação de conteúdo","Aprovação de roteiro"].includes(j.status));
-  aguardandoMarca.slice(0,4).forEach(j=>radar.push({id:"marca-"+j.id,nivel:"atencao",titulo:j.marca||"Marca",detalhe:"Aguardando retorno da marca",pagina:"jobs"}));
-  ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)>=0 && diasAte(j.prazoEntrega)<=3 && !aguardandoMarca.some(a=>a.id===j.id)).slice(0,4).forEach(j=>radar.push({id:"entrega-"+j.id,nivel:"prazo",titulo:j.marca||"Campanha",detalhe:"Entrega próxima · "+(diasAte(j.prazoEntrega)===0?"hoje":"em "+diasAte(j.prazoEntrega)+" dias"),pagina:"jobs"}));
-  atrasadoLista.slice(0,4).forEach(t=>radar.push({id:"pag-"+t.id,nivel:"atraso",titulo:t.descricao||"Pagamento",detalhe:"Pagamento atrasado · "+dnMoeda(t.valor),pagina:"financeiro"}));
-  (dnExtras.propostas||[]).filter(p=>p.recebido_em && Date.now()-new Date(p.recebido_em).getTime()>3*86400000).slice(0,4).forEach(p=>radar.push({id:"prop-"+p.id,nivel:"atencao",titulo:p.marca||p.de_nome||"Nova proposta",detalhe:"Proposta sem acompanhamento há mais de 3 dias",pagina:"propostas"}));
-  if(metaMes>0 && faturamentoMes<metaMes) radar.push({id:"meta-"+mesIso,nivel:"meta",titulo:"Meta de faturamento",detalhe:dnMoeda(faturamentoMes)+" de "+dnMoeda(metaMes)+" confirmados neste mês",pagina:"financeiro"});
-  const radarItens = radar.slice(0,8);
+
 
   // Dados auxiliares do Dashboard: visitas e propostas pendentes alimentam apenas indicadores e o Radar.
   const [dnExtras,setDnExtras] = useState({conteudos:null, visitas:null, propostas:[]});
@@ -3056,6 +3048,15 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     });
     return ()=>{ vivo = false; };
   },[mesIso]);
+  const metaMes = Number((state.metas||{})[mesIso]?.financeiro||0);
+  const radar = [];
+  const aguardandoMarca = ativos.filter(j=>["Aguardando Aprovação","Aprovação do Conteúdo","Aprovação de Roteiro","Aprovação de conteúdo","Aprovação de roteiro"].includes(j.status));
+  aguardandoMarca.slice(0,4).forEach(j=>radar.push({id:"marca-"+j.id,nivel:"atencao",titulo:j.marca||"Marca",detalhe:"Aguardando retorno da marca",pagina:"jobs"}));
+  ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)>=0 && diasAte(j.prazoEntrega)<=3 && !aguardandoMarca.some(a=>a.id===j.id)).slice(0,4).forEach(j=>radar.push({id:"entrega-"+j.id,nivel:"prazo",titulo:j.marca||"Campanha",detalhe:"Entrega próxima · "+(diasAte(j.prazoEntrega)===0?"hoje":"em "+diasAte(j.prazoEntrega)+" dias"),pagina:"jobs"}));
+  atrasadoLista.slice(0,4).forEach(t=>radar.push({id:"pag-"+t.id,nivel:"atraso",titulo:t.descricao||"Pagamento",detalhe:"Pagamento atrasado · "+dnMoeda(t.valor),pagina:"financeiro"}));
+  (dnExtras.propostas||[]).filter(p=>p.recebido_em && Date.now()-new Date(p.recebido_em).getTime()>3*86400000).slice(0,4).forEach(p=>radar.push({id:"prop-"+p.id,nivel:"atencao",titulo:p.marca||p.de_nome||"Nova proposta",detalhe:"Proposta sem acompanhamento há mais de 3 dias",pagina:"propostas"}));
+  if(metaMes>0 && faturamentoMes<metaMes) radar.push({id:"meta-"+mesIso,nivel:"meta",titulo:"Meta de faturamento",detalhe:dnMoeda(faturamentoMes)+" de "+dnMoeda(metaMes)+" confirmados neste mês",pagina:"financeiro"});
+  const radarItens = radar.slice(0,8);
   // Instagram (nov/2026): números do perfil pela API oficial da Meta (Edge Function "instagram", só leitura, token só no banco)
   const [igDias,setIgDias] = useState(()=>{ try{ return Number(localStorage.getItem("igDias"))||7; }catch(e){ return 7; } });
   const [ig,setIg] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("igDash")||"null") || {carregando:true}; }catch(e){ return {carregando:true}; } });
