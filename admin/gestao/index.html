@@ -4871,6 +4871,7 @@ function EscopoJob({f, setF}){
         entregaveis:{...e, videos:muda(e.videos,"videos"), fotos:muda(e.fotos,"fotos"), stories:muda(e.stories,"stories")}};
     });
   }
+  const temItens = itensDoJobTodos(f).length > 0;
   const sem = valorComum(f, "semAprovacao").v;
   const campoData = (campo, rotulo) => { const {v, misto} = valorComum(f, campo); return (
     <label className="esc-prazo" key={campo}>{rotulo}
