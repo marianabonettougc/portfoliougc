@@ -3398,7 +3398,7 @@ IDEIA PARA DEPOIS
               <label class="ed-soltar ed-soltar-fotos" id="ed-soltar-fotos">${ic.brilho}<b>Enviar fotos para inserir</b><small>Até 30 fotos. Cada uma entra em tela cheia (com uma aproximação lenta) ou por cima do vídeo, no lugar, tamanho e inclinação que você escolher. Eu espalho sozinha e você ajusta.</small><input type="file" id="ed-fotos" accept="image/*" multiple hidden></label>
               <div id="ed-fotos-lista" class="ed-fotos-lista"></div>
               <input class="entrada" id="ed-tema" placeholder="Tema ou marca do vídeo (opcional, ajuda no título)">
-              <details class="ed-roteiro" id="ed-roteiro-box"${st.roteiro ? " open" : ""}><summary><b>Seu roteiro</b> <small>(opcional, deixa a edição bem mais certeira)</small></summary>
+              <details class="ed-roteiro" id="ed-roteiro-box" open><summary><b>Seu roteiro</b> <small>(opcional, deixa a edição bem mais certeira)</small></summary>
                 <select class="entrada" id="ed-puxar" aria-label="Puxar roteiro do Painel de conteúdo"><option value="">Puxar de um post do Painel de conteúdo…</option></select>
                 <textarea class="entrada" id="ed-roteiro" rows="9" placeholder="Cole aqui o que você idealizou: as falas, as cenas, o voice-over e o texto na tela. Ex.:
 GANCHO: Motivos plausíveis para trocar de shampoo [close no frasco na mão]
