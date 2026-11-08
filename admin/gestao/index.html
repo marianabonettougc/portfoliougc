@@ -4044,7 +4044,6 @@ function PlannerModal({onClose, onSave, initial, defaultDate}){
       </div>
       <Field label="Marca (opcional)"><input value={f.marca} onChange={e=>set("marca",e.target.value)} placeholder="Nome da marca"/></Field>
       <Field label="Notas (opcional)"><textarea rows="3" value={f.notas} onChange={e=>set("notas",e.target.value)} placeholder="Observações, ideias, referências..."/></Field>
-      
       <button className="btn btn-primary" style={{width:"100%", justifyContent:"center"}} onClick={()=>{ if(!f.titulo){alert("Dê um título ao conteúdo.");return;} onSave({...f, id: f.id || uid()}); }}>Agendar</button>
     </Modal>
   );
