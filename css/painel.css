@@ -2741,4 +2741,12 @@ dialog.janela.larga:has(.pc-editor-compacto) .janela-rodape .btn{min-height:36px
  dialog.janela.larga:has(.pc-editor-compacto) .janela-rodape{justify-content:space-between}
  dialog.janela.larga:has(.pc-editor-compacto) .janela-rodape>span{display:none}
  dialog.janela.larga:has(.pc-editor-compacto) .janela-rodape .btn{flex:1;min-width:0;white-space:normal}
-}
+}/* nov/2026: gancho adaptado pela IA */
+.pg-auto{width:100%;justify-content:center;margin:2px 0 4px}
+.pg-auto svg,.pg-auto-btn svg{width:14px;height:14px}
+.pg-auto-btn{border-color:var(--terracota);color:var(--terracota)}
+.pg-escolher.ocupado .pg-opcao:not(.carregando){opacity:.45;pointer-events:none}
+.pg-opcao.carregando{border-color:var(--terracota);background:#fdf6f0}
+.pg-opcao.carregando i{color:var(--terracota);font-weight:600}
+.pg-porque{margin:4px 0 0;font-size:12.5px;background:#fdf6f0;border-radius:10px;padding:8px 10px}
+.pg-porque b{font-weight:600}
