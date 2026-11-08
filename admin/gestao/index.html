@@ -670,26 +670,6 @@
   .db-btn-mini:disabled{ opacity:.6; cursor:default; }
   .db-novo{ position:absolute; z-index:1; top:8px; left:8px; background:var(--db-papel); color:var(--db-texto); font-size:11px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:999px; }
   a.db-insp-capa{ display:block; }
-  .db-novo.db-x{ left:auto; right:8px; background:var(--db-cafe); color:#fffdf9; text-transform:none; letter-spacing:0; }
-  /* Bombou acima do normal (nov/2026) */
-  .db-bombou{ margin:4px 0 18px; }
-  .db-bombou-tit{ margin:0 0 10px; font-size:14px; font-weight:600; color:var(--db-texto); }
-  .db-bombou-tit span{ font-weight:400; color:var(--db-suave); font-size:13px; margin-left:6px; }
-  .db-bombou-lista{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
-  .db-bombou-card{ display:grid; grid-template-columns:96px minmax(0,1fr); gap:12px; padding:10px; border:1px solid var(--db-linha2); border-radius:14px; background:var(--db-papel); min-width:0; }
-  .db-bombou-capa{ position:relative; display:block; aspect-ratio:9/16; border-radius:10px; overflow:hidden; background:linear-gradient(150deg,#efe5d8,#d9c4ae); align-self:start; }
-  .db-bombou-capa img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-  .db-bombou-x{ position:absolute; top:6px; left:6px; background:var(--db-cafe); color:#fffdf9; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; }
-  .db-bombou-corpo{ display:flex; flex-direction:column; gap:6px; min-width:0; font-size:13px; line-height:1.45; }
-  .db-bombou-corpo p{ margin:0; }
-  .db-bombou-corpo b{ font-weight:600; }
-  .db-bombou-meta{ font-size:12px; color:var(--db-suave); }
-  .db-bombou-gancho{ font-size:14px !important; font-weight:500; }
-  .db-bombou-espera{ color:var(--db-suave); font-style:italic; }
-  .db-bombou-corpo .db-insp-rodape{ margin-top:auto; padding-top:4px; }
-  .db-btn-mini-escuro{ background:var(--db-escuro); border-color:var(--db-escuro); color:#fffdf9 !important; }
-  @media (max-width:1100px){ .db-bombou-lista{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
-  @media (max-width:700px){ .db-bombou-lista{ grid-template-columns:minmax(0,1fr); } .db-bombou-card{ grid-template-columns:80px minmax(0,1fr); } }
   a.db-insp-txt{ color:inherit; text-decoration:none; }
   .db-logo{ width:38px; height:38px; border-radius:50%; background:#fff; border:1px solid var(--db-linha); display:inline-flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; box-shadow:0 1px 4px rgba(61,43,32,.08); }
   .db-logo img{ width:100%; height:100%; object-fit:cover; }
@@ -1201,6 +1181,124 @@
     pre, code{ white-space:pre-wrap; word-break:break-word; }
     input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea{ font-size:16px !important; }
     table{ display:block; max-width:100%; overflow-x:auto; }
+  }
+
+  /* ===== Dashboard central de gestão (08/11/2026): mesma paleta, fontes e cantos do painel ===== */
+  .dz-vis{cursor:pointer}
+  .dz-per{display:inline-flex;gap:2px;margin-left:6px;vertical-align:1px;background:var(--db-bege2);border-radius:999px;padding:2px}
+  .dz-per button{border:0;background:transparent;border-radius:999px;padding:1px 7px;font:500 10.5px Poppins,sans-serif;color:var(--db-suave);cursor:pointer;letter-spacing:0;text-transform:none}
+  .dz-per button.on{background:var(--db-papel);color:var(--db-texto);box-shadow:0 1px 2px rgba(107,74,53,.12)}
+  .dz-nums .dn-card-txt small{overflow:visible}
+  .dz-dupla{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:start}
+  .dz-dupla > .db-bloco{margin:0 !important;min-width:0}
+  .dz-cal2 .dn-bt,.dz-tarefas .dn-bt,.dz-radar2 .dn-bt,.dz-camp .dn-bt{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .dz-mes2{background:linear-gradient(160deg,var(--db-bege2),#f4e8cf);border-radius:16px;padding:12px 14px}
+  .dz-mes2-cab{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .dz-mes2-cab b{font-size:15px;font-weight:600}
+  .dz-mes2-grade{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center}
+  .dz-mes2-grade small{font-size:11px;color:var(--db-suave);padding:3px 0}
+  .dz-mes2-grade button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:0;background:transparent;border-radius:10px;height:42px;font:500 13.5px Poppins,sans-serif;color:var(--db-texto);cursor:pointer;transition:background .15s}
+  .dz-mes2-grade button:hover{background:var(--db-papel)}
+  .dz-mes2-grade button.passado span{opacity:.6}
+  .dz-mes2-grade button em{display:flex;gap:2px;height:5px}
+  .dz-mes2-grade button em i{width:5px;height:5px;border-radius:50%}
+  .dz-mes2-grade button.hoje{box-shadow:inset 0 0 0 1.5px #a87058;font-weight:600}
+  .dz-mes2-grade button.atr::after{content:"";position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--db-vermelho)}
+  .dz-mes2-grade button.sel{background:var(--db-cafe);color:#fff}.dz-mes2-grade button.sel span{opacity:1}
+  .dz-mes2-grade button.sel em i{box-shadow:0 0 0 1px rgba(255,255,255,.7)}
+  .c-grav{background:#a87058}.c-ent{background:#6b4a35}.c-post{background:#c9a24f}.c-apr{background:#8f9c7a}.c-reu{background:#7d8fa6}.c-outro{background:#c2b2a2}.c-atr{background:var(--db-vermelho)}
+  .dz-leg2{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px;font-size:11.5px;color:var(--db-suave)}
+  .dz-leg2 span{display:inline-flex;align-items:center;gap:5px}.dz-leg2 i{width:7px;height:7px;border-radius:50%}
+  .dz-dia{margin-top:14px}
+  .dz-dia-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+  .dz-dia-cab b{font-size:14px;font-weight:600}
+  .dz-dia-lista,.dz-tlista{list-style:none;margin:0;padding:0}
+  .dz-dia-lista li{display:grid;grid-template-columns:8px 44px minmax(0,1fr);gap:10px;align-items:center;padding:9px 4px;border-top:1px solid var(--db-linha);border-radius:8px;transition:background .15s}
+  .dz-dia-lista li:first-child{border-top:0}
+  .dz-dia-lista li.clica{cursor:pointer}.dz-dia-lista li.clica:hover{background:rgba(243,235,224,.7)}
+  .dz-dia-lista li > i{width:8px;height:8px;border-radius:50%}
+  .dz-dia-hora{font-size:12px;color:var(--db-suave);font-variant-numeric:tabular-nums}
+  .dz-dia-txt{min-width:0}.dz-dia-txt b,.dz-dia-txt small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dz-dia-txt b{font-size:13.5px;font-weight:500}.dz-dia-txt small{font-size:11.5px;color:var(--db-suave)}
+  .dz-dia-lista li.ok .dz-dia-txt b{text-decoration:line-through;color:var(--db-suave)}
+  .dz-dia-lista li.atr .dz-dia-txt b{color:var(--db-vermelho)}
+  .dz-vazio-li{display:block !important;padding:12px 2px !important;color:var(--db-suave);font-size:13.5px;border-top:0 !important}
+  .dz-rodape{display:inline-flex;align-items:center;gap:4px;margin-top:10px}
+  .dz-rodape-l{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .dz-rodape-l .dz-rodape{margin-left:auto}
+  .dz-tarefas .dz-tabs{margin:2px 0 6px}
+  .dz-tabs button.tem-atr span{color:var(--db-vermelho);opacity:1;font-weight:600}
+  .dz-tlista li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 2px;border-top:1px solid var(--db-linha);animation:dzEntra .25s ease both}
+  .dz-tlista li:first-child{border-top:0}
+  .dz-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--db-linha2);background:var(--db-papel);display:grid;place-items:center;color:#fff;cursor:pointer;padding:0;transition:background .15s,border-color .15s}
+  .dz-check:hover{border-color:var(--db-cafe)}
+  .dz-check.fixo{border:0;background:transparent;color:var(--db-suave);cursor:default}
+  .dz-tlista li.ok .dz-check{background:var(--db-verde);border-color:var(--db-verde)}
+  .dz-ttxt{min-width:0;border:0;background:transparent;text-align:left;padding:0;font:inherit;color:inherit;cursor:pointer}
+  .dz-ttxt b,.dz-ttxt small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dz-ttxt b{font-size:14px;font-weight:500}.dz-ttxt small{font-size:11.5px;color:var(--db-suave);margin-top:1px}
+  .dz-ttxt:hover b{text-decoration:underline;text-decoration-color:var(--db-linha2)}
+  .dz-tlista li.ok .dz-ttxt b{text-decoration:line-through;color:var(--db-suave)}
+  .dz-tlista li.atr{background:linear-gradient(90deg,rgba(197,83,63,.07),transparent 70%);border-radius:10px}
+  .dz-tlista li.atr .dz-check{border-color:rgba(197,83,63,.55)}
+  .dz-pri{font-style:normal;font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:#a87058;background:rgba(168,112,88,.12);border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
+  .dz-prazo{font-size:12px;color:var(--db-suave);white-space:nowrap}
+  .dz-prazo.atr{color:var(--db-vermelho);font-weight:600}.dz-prazo.hj{color:#a87058;font-weight:600}
+  .dz-nova{grid-template-columns:1fr !important;margin:6px 0 10px !important}
+  .dz-nova input,.dz-nova select{height:38px;border-radius:10px;border:1px solid var(--db-linha2);padding:0 10px;font:inherit;font-size:14px;background:var(--db-papel);color:var(--db-texto);min-width:0}
+  .dz-nova .dz-nova-linha{display:grid !important;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1.2fr);gap:8px;justify-content:stretch !important}
+  .dz-radar2{margin-bottom:14px}
+  .dz-radar-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+  .dz-rg{border:1px solid var(--db-linha);border-radius:14px;padding:12px 12px 10px;background:var(--db-papel);min-width:0;position:relative}
+  .dz-rg::before{content:"";position:absolute;left:12px;right:12px;top:0;height:2px;border-radius:0 0 2px 2px;background:var(--db-verde);opacity:.55}
+  .dz-rg.at::before{background:#c9a24f;opacity:.9}.dz-rg.atr::before{background:var(--db-vermelho);opacity:.9}
+  .dz-rg-cab{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .dz-rg-cab span{font-size:11px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--db-suave)}
+  .dz-rg-cab b{font-family:var(--db-serif);font-weight:400;font-size:22px;line-height:1;color:var(--db-cafe)}
+  .dz-rg.atr .dz-rg-cab b{color:var(--db-vermelho)}
+  .dz-rg ul{list-style:none;margin:0;padding:0}
+  .dz-rg li{display:grid;grid-template-columns:8px minmax(0,1fr);gap:9px;align-items:start;padding:7px 4px;border-top:1px solid var(--db-linha);cursor:pointer;border-radius:8px;transition:background .15s}
+  .dz-rg li:first-child{border-top:0}.dz-rg li:hover{background:var(--db-bege2)}
+  .dz-rg li > i{width:8px;height:8px;border-radius:50%;margin-top:6px;background:#c9a24f}.dz-rg li > i.atraso{background:var(--db-vermelho)}
+  .dz-rg li span{min-width:0}
+  .dz-rg li b,.dz-rg li small,.dz-rg li em{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dz-rg li b{font-size:13px;font-weight:500}.dz-rg li small{font-size:12px;color:var(--db-texto);opacity:.8}
+  .dz-rg li em{font-style:normal;font-size:11px;color:var(--db-suave);margin-top:1px}
+  .dz-rg-vazio{display:flex;gap:6px;align-items:flex-start;margin:4px 0 2px;font-size:13px;line-height:1.45;color:var(--db-suave)}
+  .dz-rg-vazio svg{flex:none;margin-top:2px;color:var(--db-verde)}
+  .dz-meta-vazio{display:block}.dz-meta-vazio .db-link{display:block;margin-top:6px}
+  .dz-meta-editar{position:absolute;right:12px;bottom:10px;font-size:12px}
+  .dz-meta-barra{height:7px;border-radius:999px;background:var(--db-bege);overflow:hidden;margin:6px 0 10px}
+  .dz-meta-barra i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#c08a5f,var(--db-cafe));transition:width .5s ease}
+  .dz-meta-dl{margin:0 0 18px;display:grid;gap:4px}
+  .dz-meta-dl div{display:flex;justify-content:space-between;gap:8px;font-size:12.5px}
+  .dz-meta-dl dt{color:var(--db-suave)}.dz-meta-dl dd{margin:0;font-weight:500;white-space:nowrap}
+  .dz-camp{margin-bottom:14px}
+  .dz-camp .dn-prazo small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dz-camp .dn-prazo small.atr{color:var(--db-vermelho);font-weight:600}.dz-camp .dn-prazo small.hj{color:#a87058;font-weight:600}
+  .dz-bib{font-size:inherit;padding:0;vertical-align:baseline}
+  .dz-igfim{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px;margin-top:14px}
+  .dz-igfim.sem-ig{grid-template-columns:minmax(0,1fr)}
+  .dz-igfim > .db-bloco{margin:0 !important;min-width:0}
+  .dz-fat-det ul{list-style:none;margin:0 0 12px;padding:0}
+  .dz-fat-det li{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--db-linha,rgba(107,74,53,.12))}
+  .dz-fat-det li:first-child{border-top:0}
+  .dz-fat-det li span{min-width:0}.dz-fat-det li b{display:block;font-weight:500;font-size:14px}.dz-fat-det li small{display:block;font-size:12px;color:#6e5646}
+  .dz-fat-det li em{font-style:normal;font-weight:600;white-space:nowrap}
+  .dz-fat-tot{display:flex;justify-content:space-between;padding:12px 0;border-top:1.5px solid rgba(107,74,53,.22);margin-bottom:8px}
+  .dz-fat-det .db-btn-escuro{margin-top:10px}
+  @keyframes dzEntra{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.dz-tlista li{animation:none}.dz-meta-barra i{transition:none}}
+  @media (max-width:1000px){ .dz-dupla{grid-template-columns:minmax(0,1fr)} .dz-igfim{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:700px){
+    .dz-radar-grade{grid-template-columns:minmax(0,1fr)}
+    .dz-mes2{padding:10px 8px}.dz-mes2-grade button{height:40px;font-size:13px}
+    .dz-tlista li{grid-template-columns:22px minmax(0,1fr);row-gap:2px}
+    .dz-tlista .dz-prazo{grid-column:2;font-size:11.5px}
+    .dz-nova .dz-nova-linha{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.dz-nova .dz-nova-linha select{grid-column:1/-1}
+    .dz-cal2 .dn-bt,.dz-tarefas .dn-bt{flex-wrap:wrap}
+    .dz-dia-lista li{grid-template-columns:8px 38px minmax(0,1fr)}
+    .dz-check{width:26px;height:26px}.dz-tlista li{grid-template-columns:28px minmax(0,1fr)}
   }
 </style>
 </head>
@@ -2724,15 +2822,16 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     (state.roteiros||[]).filter(r=>prontoParaPostar(r) && r.dataPublicacao===iso && !planner.some(p=>p.roteiroId===r.id)).forEach(r=>lista.push({id:"rp-"+r.id, hora:"", texto:`Postar: ${r.titulo}`, sub:[r.cliente, r.plataforma].filter(Boolean).join(" · "), pagina:"roteiros"}));
     // posts prontos com a data já passada: sobem para hoje como atrasados
     if(iso===hoje) (state.roteiros||[]).filter(r=>prontoParaPostar(r) && r.dataPublicacao && r.dataPublicacao<iso).forEach(r=>lista.push({id:"ra-"+r.id, hora:"", atrasado:true, texto:`Postar: ${r.titulo}`, sub:`Atrasado desde ${dataBR(r.dataPublicacao).slice(0,5)}${r.cliente ? " · "+r.cliente : ""}`, pagina:"roteiros"}));
-    ativos.filter(j=>j.prazoEntrega===iso).forEach(j=>lista.push({id:"e-"+j.id, hora:"", texto:`Entregar ${j.marca}`, sub:descricaoJob(j), pagina:"jobs"}));
+    ativos.filter(j=>j.prazoEntrega===iso).forEach(j=>lista.push({id:"e-"+j.id, hora:"", texto:`Entregar ${j.marca}`, sub:descricaoJob(j), pagina:"jobs", job:j}));
     // datas de cada conteúdo do job (roteiro, conteúdo e postagem da Publi)
     ativos.forEach(j=>{
       const e = j.entregaveis || {};
       ["videos","fotos","stories"].forEach(t=>(e[t]||[]).forEach(it=>{
-        if(it.prazoRoteiro===iso) lista.push({id:"r-"+it.id, hora:"", texto:`Entregar roteiro: ${it.label}`, sub:j.marca, pagina:"jobs"});
-        if(!it.semAprovacao && it.prazoConteudo===iso) lista.push({id:"c-"+it.id, hora:"", texto:`Enviar para aprovação: ${it.label}`, sub:j.marca, pagina:"jobs"});
-        if(j.categoria!=="Publi" && it.dataEntrega===iso) lista.push({id:"d-"+it.id, hora:"", texto:`Entregar conteúdo: ${it.label}`, sub:j.marca+" · UGC", pagina:"jobs"});
-        if(j.categoria==="Publi" && it.prazoPostagem===iso) lista.push({id:"o-"+it.id, hora:"", texto:`Postar: ${it.label}`, sub:j.marca+" · Publi", pagina:"jobs"});
+        const ref = {job:j, item:it, tipoItem:t}; // nov/2026: o Dashboard conclui a tarefa no conteúdo do job
+        if(it.prazoRoteiro===iso) lista.push({id:"r-"+it.id, hora:"", texto:`Entregar roteiro: ${it.label}`, sub:j.marca, pagina:"jobs", ...ref});
+        if(!it.semAprovacao && it.prazoConteudo===iso) lista.push({id:"c-"+it.id, hora:"", texto:`Enviar para aprovação: ${it.label}`, sub:j.marca, pagina:"jobs", ...ref});
+        if(j.categoria!=="Publi" && it.dataEntrega===iso) lista.push({id:"d-"+it.id, hora:"", texto:`Entregar conteúdo: ${it.label}`, sub:j.marca+" · UGC", pagina:"jobs", ...ref});
+        if(j.categoria==="Publi" && it.prazoPostagem===iso) lista.push({id:"o-"+it.id, hora:"", texto:`Postar: ${it.label}`, sub:j.marca+" · Publi", pagina:"jobs", ...ref});
       }));
     });
     jobs.filter(j=>j.dataPagamento===iso && j.status!=="Cancelado" && (!j.pagamento || j.pagamento.status!=="Pago")).forEach(j=>lista.push({id:"g-"+j.id, hora:"", texto:`Conferir pagamento ${j.marca}`, sub:"Financeiro", pagina:"financeiro"}));
@@ -2851,21 +2950,13 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   }, [refs.map(r=>r.link).join("|")]);
 
   const [novos,setNovos] = useState([]);
-  const [bombou,setBombou] = useState([]);
-  const releitura = useRef(null);
   const [buscaInfo,setBuscaInfo] = useState(null);
   async function carregarNovos(forcar){
     const lista = perfis;
     if(!lista.length){ setNovos([]); setBuscaInfo(null); return; }
     try{
       const { data, error } = await supabaseClient.functions.invoke("inspiracoes", {body:{perfis:lista, forcar:!!forcar}});
-      if(!error && data && !data.erro){
-        setNovos((data.itens||[]).filter(x=>!x.transcrito).sort((x,y)=>String(y.publicado_em||"").localeCompare(String(x.publicado_em||""))));
-        setBombou(data.bombou||[]); setBuscaInfo(data);
-        // nov/2026: o "por que bombou" é feito no servidor depois da resposta; pergunta de novo uma vez em 1 min
-        clearTimeout(releitura.current);
-        if(data.analisando && !forcar) releitura.current = setTimeout(()=>carregarNovos(false), 60000);
-      }
+      if(!error && data && !data.erro){ setNovos((data.itens||[]).filter(x=>!x.transcrito).sort((x,y)=>String(y.publicado_em||"").localeCompare(String(x.publicado_em||"")))); setBuscaInfo(data); }
     }catch(e){}
   }
   useEffect(()=>{ carregarNovos(false); }, [perfis.map(p=>p.rede+p.usuario).join("|")]);
@@ -2889,15 +2980,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     (!filtroPerfil || chaveMarca(r.perfil)===chaveMarca(filtroPerfil)) &&
     (!soSalvos || salvos[r.id]) && !ocultas[r.id] &&
     (!filtroPasta || refPasta[r.id]===filtroPasta));
-  const passaFiltro = (n) => (!rede || n.rede===rede) && (nicho==="Todos" || PALAVRAS_NICHO[nicho].test(n.legenda||""));
-  const bombouFiltrados = (filtroPerfil || soSalvos || filtroPasta) ? [] : bombou.filter(passaFiltro);
-  const idsBombou = new Set(bombouFiltrados.map(b=>b.id));
-  function quererTestar(b){
-    const r = b.radar || {};
-    setRoteiroNovo({referencia:{fonte:"inspiracoes", id:b.id, link:b.link, titulo:r.tema || String(b.legenda||"").split("\n")[0].slice(0,80), gancho:r.gancho || "", perfil:b.perfil, transcricao:b.transcricao || ""},
-      ideia:[r.testeTitulo, r.porque ? "O que fez bombar: "+r.porque : "", r.testeGancho ? "Gancho para testar: "+r.testeGancho : ""].filter(Boolean).join("\n")});
-  }
-  const novosFiltrados = novos.filter(n=>!idsBombou.has(n.id) &&
+  const novosFiltrados = novos.filter(n=>
     (!rede || n.rede===rede) &&
     (nicho==="Todos" || PALAVRAS_NICHO[nicho].test(n.legenda||"")) &&
     (!filtroPerfil || chaveMarca(n.perfil)===chaveMarca(filtroPerfil)) &&
@@ -2912,7 +2995,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   function alternarSalvo(id){ mudar(s=>({...s, inspSalvas:{...(s.inspSalvas||{}), [id]:!(s.inspSalvas||{})[id]}})); }
   // ocultar um vídeo: ele some e o próximo entra no lugar
   async function ocultarNovo(n){
-    setNovos(l=>l.filter(x=>x.id!==n.id)); setBombou(l=>l.filter(x=>x.id!==n.id));
+    setNovos(l=>l.filter(x=>x.id!==n.id));
     try{ await supabaseClient.from("inspiracoes").update({oculto:true}).eq("id", n.id); }catch(e){}
   }
   function ocultarRef(r){ mudar(s=>({...s, inspOcultas:{...(s.inspOcultas||{}), [r.id]:true}})); }
@@ -3191,6 +3274,161 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const linhaTodos = diasDaSemana.flatMap(d=>{ const iso = isoLocal(d); return itensDoDia(iso).map(it=>({iso, it, ok:feitoEm(iso, it)})); });
   const linhaItens = { prox: linhaTodos.filter(x=>!x.ok && x.iso>=hoje), feitas: linhaTodos.filter(x=>x.ok), atr: linhaTodos.filter(x=>!x.ok && x.iso<hoje) };
   const linhaPct = linhaTodos.length ? Math.round(linhaItens.feitas.length/linhaTodos.length*100) : 0;
+  // ===================== Dashboard central de gestão (08/11/2026, pedido da Mari) =====================
+  // Camada só de leitura em cima do que já existe: jobs, transacoes, tarefasDia, followups, prospeccoes,
+  // candidaturas, metas (app_state), visitas e propostas_email. Nada é criado em paralelo.
+  const primeiroNome = (nome.split(/\s+/)[0] || "Mari");
+  const horaSP = (()=>{ try{ return Number(new Intl.DateTimeFormat("pt-BR",{hour:"2-digit", hourCycle:"h23", timeZone:"America/Sao_Paulo"}).format(new Date(agora))); }catch(e){ return new Date(agora).getHours(); } })();
+  const saudacaoSP = horaSP>=5 && horaSP<12 ? "Bom dia" : horaSP>=12 && horaSP<18 ? "Boa tarde" : "Boa noite";
+  const fmtDia = (iso) => iso ? dataBR(iso).slice(0,5) : "";
+  const relDias = (iso) => { const d = diasAte(iso); return d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : d===1 ? "amanhã" : `em ${d} dias`; };
+
+  // ----- financeiro (mesma base da aba CNPJ geral: transacoes; Confirmado = dinheiro que caiu, na data em que caiu) -----
+  const jobPorId = {}; jobs.forEach(j=>{ jobPorId[j.id] = j; });
+  const semDuplicar = (l) => { const vistos = new Set(); return l.filter(t=>{ const k = t.id ? "id:"+t.id : ""; const k2 = t.jobId ? `job:${t.jobId}|${t.data||""}|${Number(t.valor||0)}` : "";
+    if((k && vistos.has(k)) || (k2 && vistos.has(k2))) return false; if(k) vistos.add(k); if(k2) vistos.add(k2); return true; }); };
+  const receitasDash = semDuplicar((state.transacoes||[]).filter(t=>t.tipo==="receita" && (t.moeda||"BRL")==="BRL" && t.status!=="Cancelado" && !(t.jobId && jobPorId[t.jobId] && jobPorId[t.jobId].status==="Cancelado")));
+  const recebida = (t) => t.status==="Confirmado";
+  const faturadoLista = receitasDash.filter(t=>recebida(t) && String(t.data||"").startsWith(mesIso)).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+  const faturadoMes = somaDe(faturadoLista);
+  const faturadoAnt = somaDe(receitasDash.filter(t=>recebida(t) && String(t.data||"").startsWith(mesAntIso)));
+  const varFat = faturadoAnt>0 ? Math.round((faturadoMes/faturadoAnt-1)*100) : null;
+  // a receber: lançamento pendente cujo job ainda não foi marcado como pago
+  const pendentesLista = receitasDash.filter(t=>!recebida(t) && !(t.jobId && jobPago(jobPorId[t.jobId])));
+  const vencidosLista = pendentesLista.filter(t=>t.data && t.data<hoje).sort((a,b)=>a.data.localeCompare(b.data));
+  const paraReceber = somaDe(pendentesLista), vencidoValor = somaDe(vencidosLista), aVencerValor = paraReceber - vencidoValor;
+  const metaBruta = String(((state.metas||{})[mesIso]||{}).financeiro||"").trim();
+  const metaMesValor = Number(metaBruta.includes(",") ? metaBruta.replace(/\./g,"").replace(",", ".") : metaBruta)||0;
+  const [detalheFat,setDetalheFat] = useState(false);
+
+  // ----- jobs em produção: tudo que não está finalizado, pago ou cancelado -----
+  const STATUS_COM_MARCA = ["Aprovação de Roteiro","Aprovação do Conteúdo","Conteúdo Entregue","Aguardando Aprovação"];
+  const comMarcaN = ativos.filter(j=>STATUS_COM_MARCA.includes(j.status)).length;
+
+  // ----- visitas no site (tabela visitas, mesma da aba Portfólio; períodos 7, 14 e 30 dias) -----
+  const [visPer,setVisPer] = useState(()=>{ try{ return Number(localStorage.getItem("dzVisPer"))||7; }catch(e){ return 7; } });
+  const [vis,setVis] = useState({carregando:true});
+  const [extrasRadar,setExtrasRadar] = useState({propostas:[], carregado:false});
+  const [tique,setTique] = useState(0);
+  useEffect(()=>{ // relê visitas e propostas a cada 5 min e quando a janela volta ao foco
+    const f = () => { if(document.visibilityState!=="hidden") setTique(t=>t+1); };
+    const t = setInterval(f, 300000); window.addEventListener("focus", f); document.addEventListener("visibilitychange", f);
+    return ()=>{ clearInterval(t); window.removeEventListener("focus", f); document.removeEventListener("visibilitychange", f); };
+  },[]);
+  useEffect(()=>{
+    let vivo = true;
+    try{ localStorage.setItem("dzVisPer", String(visPer)); }catch(e){}
+    const ini = new Date(); ini.setHours(0,0,0,0); ini.setDate(ini.getDate()-(visPer-1));
+    setVis(v=>({...v, carregando:true}));
+    supabaseClient.from("visitas").select("data,visitante_id").gte("data", ini.toISOString()).limit(10000)
+      .then(({data, error})=>{ if(!vivo) return; if(error) throw error;
+        const l = data||[];
+        setVis({total:l.length, hoje:l.filter(x=>isoLocal(new Date(x.data))===isoLocal(new Date())).length, unicos:new Set(l.map(x=>x.visitante_id).filter(Boolean)).size}); })
+      .catch(()=>{ if(vivo) setVis({erro:true}); });
+    return ()=>{ vivo = false; };
+  },[visPer, tique]);
+  useEffect(()=>{
+    let vivo = true;
+    supabaseClient.from("propostas_email").select("id,de_nome,marca,assunto,recebido_em").eq("tipo","proposta").eq("status","nova").order("recebido_em",{ascending:true}).limit(20)
+      .then(({data, error})=>{ if(vivo) setExtrasRadar({propostas: error ? [] : (data||[]), carregado:true, erro:!!error}); })
+      .catch(()=>{ if(vivo) setExtrasRadar({propostas:[], carregado:true, erro:true}); });
+    return ()=>{ vivo = false; };
+  },[tique]);
+
+  // ----- tarefas: os mesmos itens da agenda (tarefas, follow-ups, plano da semana, prazos dos jobs e posts) -----
+  // concluído = o que o registro de origem diz (nada fica marcado só no Dashboard)
+  const ETAPA_FEITO = {r:3, c:5, d:5, o:8};
+  const PROX_STATUS = {r:"Aprovação de roteiro", c:"Aprovação do conteúdo", d:"Conteúdo entregue", o:"Finalizado"};
+  const tipoJobItem = (it) => it.item && /^[rcdo]-/.test(it.id) ? it.id[0] : null;
+  const itemConcluido = (it) => {
+    if(it.tarefa) return !!it.tarefa.feito;
+    if(it.followup) return it.followup.status==="Feito";
+    const k = tipoJobItem(it);
+    if(k){ if(it.item.concluido) return true; const e = ROTEIRO_STATUS_OPTIONS.indexOf(statusDoItem(it.item, it.tipoItem)); return e>=ETAPA_FEITO[k] && e!==7; }
+    if(it.id.startsWith("e-") && it.job){ const at = etapaDoJob(it.job, state.roteiros); return at>=5 && at!==7; }
+    return false;
+  };
+  const podeConcluir = (it) => !!(it.tarefa || it.followup || (tipoJobItem(it) && it.tipoItem!=="fotos"));
+  async function concluirItem(it){
+    if(it.tarefa || it.followup){ marcar(it); return; }
+    const k = tipoJobItem(it);
+    if(!k) return;
+    const novo = PROX_STATUS[k];
+    if(!await painelDialogo.confirmar(`Marcar "${it.texto}" como feito? O conteúdo passa para "${novo}" no job ${it.job.marca} (UGC's & Publis).`, { ok:"Marcar como feito" })) return;
+    mudarItem(it.job.id, it.item.id, novo);
+  }
+  const listaDia = (iso) => itensDoDia(iso).filter(it=>!it.apple);
+  const janelaTarefas = Array.from({length:45}, (_,i)=>{ const d = new Date(hojeD); d.setDate(d.getDate()-30+i); return isoLocal(d); });
+  const tarefasTodas = (()=>{ const vistos = new Set(), out = [];
+    janelaTarefas.forEach(iso=>listaDia(iso).forEach(it=>{
+      if(vistos.has(it.id)) return;
+      if(iso<hoje && /^(p|rp)-/.test(it.id)) return; // planner sem "feito" e post pronto (já vem como atrasado em hoje)
+      vistos.add(it.id);
+      let quando = iso;
+      if(it.followup && it.followup.status==="Pendente" && it.followup.dataEntrega) quando = it.followup.dataEntrega;
+      if(it.id.startsWith("ra-")){ const r = (state.roteiros||[]).find(r=>"ra-"+r.id===it.id); if(r && r.dataPublicacao) quando = r.dataPublicacao; }
+      out.push({iso:quando, it, ok:itemConcluido(it), alta: !!(it.tarefa && it.tarefa.prioridade==="alta")}); }));
+    return out; })();
+  const ordemTarefa = (a,b) => (b.alta - a.alta) || a.iso.localeCompare(b.iso) || (a.it.hora||"99").localeCompare(b.it.hora||"99");
+  const tarefasAtrasadas = tarefasTodas.filter(x=>!x.ok && x.iso<hoje).sort(ordemTarefa);
+  const tarefasHoje = tarefasTodas.filter(x=>x.iso===hoje).sort((a,b)=>(a.ok-b.ok) || ordemTarefa(a,b));
+  const tarefasProx = tarefasTodas.filter(x=>!x.ok && x.iso>hoje).sort(ordemTarefa);
+  const pendentesN = tarefasAtrasadas.length + tarefasHoje.filter(x=>!x.ok).length;
+  const [abaTarefas,setAbaTarefas] = useState(null);
+  const abaT = abaTarefas || (tarefasAtrasadas.length ? "atr" : "hoje");
+  const listaTarefas = abaT==="atr" ? tarefasAtrasadas : abaT==="prox" ? tarefasProx : tarefasHoje;
+  const [verTodasT,setVerTodasT] = useState(false);
+  function abrirItem(it){ if(it.job){ abrirJob(it.job.id); return; } if(it.followup){ go("followups"); return; } if(it.tarefa){ setDiaSel(it.tarefa.data||hoje); return; } if(it.pagina) go(it.pagina); }
+  const origemItem = (it) => it.tarefa ? "Minha tarefa" : it.followup ? "Follow-up" : it.job ? "UGC's & Publis" : /^p-/.test(it.id) ? "Calendário" : /^ps-/.test(it.id) ? "Plano da semana" : /^r[ap]-/.test(it.id) ? "Quadro de roteiros" : it.pagina==="financeiro" ? "Financeiro" : "Agenda";
+
+  // ----- calendário (mesmos itens, por categoria) -----
+  const catEv = (it) => it.apple && /reuni|call|meet|zoom/i.test(it.texto) ? "reu" : /grav/i.test(it.texto) ? "grav" : /^postar|post/i.test(it.texto) ? "post" : /aprova/i.test(it.texto) ? "apr" : /reuni|call|meet/i.test(it.texto) ? "reu" : /entreg|enviar/i.test(it.texto) ? "ent" : "outro";
+  const NOME_CAT = {grav:"Gravação", ent:"Entrega", post:"Publicação", reu:"Reunião", apr:"Aprovação", outro:"Outro"};
+  const diasMesCal = (()=>{ const a = mesCal.getFullYear(), m = mesCal.getMonth(), ini = (new Date(a, m, 1).getDay()+6)%7, n = new Date(a, m+1, 0).getDate();
+    return [...Array(ini).fill(null), ...Array.from({length:n}, (_,i)=>{ const iso = isoLocal(new Date(a, m, i+1)); const its = itensDoDia(iso);
+      return {dia:i+1, iso, cats:[...new Set(its.map(catEv))].slice(0,3), n:its.length, atr: iso<hoje && its.some(it=>!it.apple && podeConcluir(it) && !itemConcluido(it))}; })]; })();
+  const eventosSel = itensDoDia(diaSel);
+
+  // prazos ainda em aberto de um job (conteúdo por conteúdo + entrega final), o mais próximo primeiro
+  const prazosDoJob = (j) => {
+    const at = etapaDoJob(j, state.roteiros), datas = [];
+    itensDoJob(j).forEach(([it,t])=>{ if(it.concluido) return; const e = ROTEIRO_STATUS_OPTIONS.indexOf(statusDoItem(it,t));
+      if(it.prazoRoteiro && e<3) datas.push([it.prazoRoteiro, `Roteiro ${it.label||""}`.trim()]);
+      if(!it.semAprovacao && it.prazoConteudo && e<5) datas.push([it.prazoConteudo, `Enviar ${it.label||"conteúdo"} para aprovação`]);
+      if(j.categoria!=="Publi" && it.dataEntrega && e<5) datas.push([it.dataEntrega, `Entregar ${it.label||"conteúdo"}`]);
+      if(j.categoria==="Publi" && it.prazoPostagem && e<8) datas.push([it.prazoPostagem, `Postar ${it.label||"conteúdo"}`]); });
+    if(j.prazoEntrega && !comAMarca(at) && at<5) datas.push([j.prazoEntrega, "Entrega final"]);
+    return datas.sort((a,b)=>a[0].localeCompare(b[0]));
+  };
+  const entregasProx7 = ativos.reduce((n,j)=>n+prazosDoJob(j).filter(([d])=>diasAte(d)>=0 && diasAte(d)<=7).length, 0);
+  const entregasVencidas = ativos.reduce((n,j)=>n+prazosDoJob(j).filter(([d])=>diasAte(d)<0).length, 0);
+
+  // ----- Radar do meu negócio -----
+  const diasDesde = (iso) => iso ? -diasAte(iso) : null;
+  const radar = [];
+  // 1. marcas sem resposta: prospecção "Contatado" há 5 dias ou mais (data = último contato)
+  (state.prospeccoes||[]).filter(p=>p.status==="Contatado" && p.data && diasDesde(p.data)>=5).sort((a,b)=>a.data.localeCompare(b.data))
+    .forEach(p=>radar.push({id:"pr-"+p.id, grupo:"marcas", nivel:"atencao", titulo:`${p.marca||"Marca"} sem resposta`, detalhe:`Último contato há ${diasDesde(p.data)} dias${p.contato ? " · "+p.contato : ""}`, data:p.data, origem:"Prospecção", ir:()=>go("prospeccao")}));
+  // 2. entregas: vencidas, de hoje e dos próximos 3 dias (o que está com a marca não conta como atraso dela)
+  const entregasRadar = [];
+  ativos.forEach(j=>{
+    const datas = prazosDoJob(j).filter(([d])=>diasAte(d)<=3);
+    datas.slice(0,1).forEach(([d,o])=>entregasRadar.push({id:"en-"+j.id, grupo:"entregas", nivel: diasAte(d)<0 ? "atraso" : "atencao", titulo:`${j.marca}: ${o}`, detalhe: diasAte(d)<0 ? `Venceu em ${fmtDia(d)} (${relDias(d)})` : `Prazo ${fmtDia(d)} · ${relDias(d)}`, data:d, origem:"UGC's & Publis", ir:()=>abrirJob(j.id)}));
+  });
+  entregasRadar.sort((a,b)=>a.data.localeCompare(b.data)).forEach(x=>radar.push(x));
+  // 3. pagamentos atrasados (lançamentos pendentes vencidos, sem repetir)
+  vencidosLista.forEach(t=>radar.push({id:"pg-"+t.id, grupo:"pagamentos", nivel:"atraso", titulo:`Pagamento atrasado: ${String(t.descricao||"Recebimento").split(" - ")[0]}`, detalhe:`${dnMoeda(t.valor)} · venceu em ${fmtDia(t.data)}`, data:t.data, origem:"CNPJ geral", ir:()=>go("financeiro")}));
+  // 4. propostas sem acompanhamento: candidaturas enviadas/em análise há 7+ dias e propostas do e-mail ainda sem resposta há 3+ dias
+  (state.candidaturas||[]).filter(c=>["Enviada","Em análise"].includes(c.status) && c.data && diasDesde(c.data)>=7)
+    .forEach(c=>radar.push({id:"ca-"+c.id, grupo:"propostas", nivel:"atencao", titulo:`Candidatura sem retorno: ${c.marca||"marca"}`, detalhe:`${c.status} há ${diasDesde(c.data)} dias${c.plataforma ? " · "+c.plataforma : ""}`, data:c.data, origem:"Candidaturas", ir:()=>go("candidaturas")}));
+  (extrasRadar.propostas||[]).filter(p=>p.recebido_em && Date.now()-new Date(p.recebido_em).getTime() >= 3*86400000)
+    .forEach(p=>{ const d = isoLocal(new Date(p.recebido_em)); radar.push({id:"pe-"+p.id, grupo:"propostas", nivel:"atencao", titulo:`Proposta sem resposta: ${p.marca||p.de_nome||"marca"}`, detalhe:`Recebida em ${dataBR(d)}${p.assunto ? " · "+p.assunto : ""}`, data:d, origem:"Propostas do e-mail", ir:()=>abrirAba ? abrirAba("propostas") : go("prospeccao")}); });
+  const radarPend = radar;
+  const GRUPOS_RADAR = [["marcas","Marcas sem resposta"],["entregas","Entregas próximas"],["pagamentos","Pagamentos atrasados"],["propostas","Propostas sem acompanhamento"]];
+  const [radarAberto,setRadarAberto] = useState(null);
+  const [metaAberta,setMetaAberta] = useState(false);
+  const pctMeta = metaMesValor>0 ? Math.round(faturadoMes/metaMesValor*100) : null;
+
   return (
     <div className="db dn dz">
       {/* topo: busca, olho, alertas e nova tarefa */}
@@ -3217,201 +3455,166 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         <button className="dn-btn" onClick={novaTarefaHoje}><DbIcone tipo="mais" tam={17}/><span>Nova tarefa</span></button>
       </div>
 
-      {/* saudação com o resumo do dia */}
+      {/* 1. saudação e resumo do dia (horário de São Paulo) */}
       <div className="dn-ola">
         <div>
           <span className="dz-sobre">Painel · {hojeD.toLocaleDateString("pt-BR",{weekday:"long", day:"numeric", month:"long"})}</span>
-          <h1>{saudacao}, {nome}</h1>
-          <p>{partesResumo.length ? <>Hoje: {partesResumo.map((p,i)=><React.Fragment key={i}>{i>0 && (i===partesResumo.length-1 ? " e " : ", ")}<b>{p}</b></React.Fragment>)}.</> : "Hoje não tem gravação, entrega nem post marcado."}
-            {jobsAtrasados>0 && ` ${jobsAtrasados===1 ? "Um job está atrasado." : jobsAtrasados+" jobs estão atrasados."}`}</p>
+          <h1>{saudacaoSP}, {primeiroNome}!</h1>
+          <p>{pendentesN ? <>Você tem <b>{plural(pendentesN,"tarefa pendente","tarefas pendentes")}</b>{tarefasAtrasadas.length ? <> ({tarefasAtrasadas.length} atrasada{tarefasAtrasadas.length===1?"":"s"})</> : null}</> : <>Nenhuma tarefa pendente para hoje</>}
+            {", "}<b>{entregasProx7 ? plural(entregasProx7,"entrega","entregas")+" nos próximos 7 dias" : "nenhuma entrega nos próximos 7 dias"}</b>
+            {" e "}<b>{plural(ativos.length,"campanha em andamento","campanhas em andamento")}</b>.</p>
         </div>
         <span className="dn-data">{dataExtenso}</span>
       </div>
-      {/* quatro números (nov/2026, referência da Mari): faturado, a receber, em produção e visitas no site */}
+
+      {/* 2. visão geral: faturado, a receber, em produção e visitas no site */}
       <div className="dn-cards dz-nums">
-        <button className="dn-card" onClick={()=>go("financeiro")}>
-          <span className="dn-card-txt"><small>Faturado em {MESES_EXT[hojeD.getMonth()]}</small><b>{dnMoeda(faturamentoMes)}</b><em className={variacao>0?"bom":""}>{variacao===null ? "sem mês anterior para comparar" : `${variacao>0?"+":""}${variacao}% sobre ${MESES_EXT[(hojeD.getMonth()+11)%12]}`}</em></span></button>
-        <button className="dn-card" onClick={()=>go("financeiro")}>
-          <span className="dn-card-txt"><small>Para receber</small><b>{dnMoeda(aReceber)}</b><em className={atrasadoLista.length?"ruim":""}>{atrasadoLista.length ? plural(atrasadoLista.length,"pagamento vencido","pagamentos vencidos") : "nada vencido"}</em></span></button>
-        <button className="dn-card" onClick={()=>go("jobs")}>
-          <span className="dn-card-txt"><small>Em produção</small><b>{plural(campanhas.length,"campanha","campanhas")}</b><em>{entregas7 ? plural(entregas7,"entrega","entregas")+" nos próximos 7 dias" : "nenhuma entrega nos próximos 7 dias"}</em></span></button>
-        <a className="dn-card" href="https://marianabonetto.com.br/" target="_blank" rel="noopener">
-          <span className="dn-card-txt"><small>Visitas no site</small><b>{dnExtras.visitas ? `${dnExtras.visitas.hoje} hoje` : "..."}</b><em>{dnExtras.visitas ? `${dnExtras.visitas.semana} nos últimos 7 dias` : "carregando"}</em></span></a>
+        <button className="dn-card" onClick={()=>setDetalheFat(true)} title="Ver os recebimentos do mês">
+          <span className="dn-card-txt"><small>Faturado em {MESES_EXT[hojeD.getMonth()]}</small><b>{dnMoeda(faturadoMes)}</b>
+            <em className={varFat>0?"bom":""}>{faturadoLista.length ? `${plural(faturadoLista.length,"recebimento","recebimentos")}${varFat!==null ? ` · ${varFat>0?"+":""}${varFat}% sobre ${MESES_EXT[(hojeD.getMonth()+11)%12]}` : ""}` : "nenhum recebimento confirmado no mês"}</em></span></button>
+        <button className="dn-card" onClick={()=>go("financeiro")} title="Abrir o financeiro">
+          <span className="dn-card-txt"><small>Para receber</small><b>{dnMoeda(paraReceber)}</b>
+            <em className={vencidosLista.length?"ruim":""}>{!pendentesLista.length ? "nada pendente" : vencidosLista.length ? `${dnMoeda(vencidoValor)} vencido · ${dnMoeda(aVencerValor)} a vencer` : `${plural(pendentesLista.length,"lançamento","lançamentos")} a vencer`}</em></span></button>
+        <button className="dn-card" onClick={()=>go("jobs")} title="Abrir UGC's & Publis">
+          <span className="dn-card-txt"><small>Em produção</small><b>{plural(ativos.length,"job","jobs")}</b>
+            <em className={entregasVencidas?"ruim":""}>{ativos.length ? `${comMarcaN} com a marca · ${entregasVencidas ? plural(entregasVencidas,"prazo vencido","prazos vencidos") : plural(entregasProx7,"entrega","entregas")+" em 7 dias"}` : "nenhum job ativo"}</em></span></button>
+        <div className="dn-card dz-vis" role="button" tabIndex={0} onClick={()=>abrirAba ? abrirAba("portfolio") : null} onKeyDown={e=>{ if(e.key==="Enter" && abrirAba) abrirAba("portfolio"); }} title="Abrir as métricas do portfólio">
+          <span className="dn-card-txt"><small>Visitas no site <span className="dz-per" onClick={e=>e.stopPropagation()}>{[7,14,30].map(n=><button key={n} className={visPer===n?"on":""} onClick={()=>setVisPer(n)} aria-label={`Últimos ${n} dias`}>{n}d</button>)}</span></small>
+            <b>{vis.erro ? "–" : vis.total==null ? "..." : plural(vis.total,"visita","visitas")}</b>
+            <em className={vis.erro?"ruim":""}>{vis.erro ? "não consegui carregar agora" : vis.total==null ? "carregando" : `${plural(vis.unicos,"visitante único","visitantes únicos")} · ${vis.hoje} hoje`}</em></span></div>
       </div>
-      <div className={"dz-grade"+(ig.conectado ? "" : " sem-ig")}>
 
-        {/* Instagram: seguidores e alcance (API oficial da Meta) */}
-        {ig.conectado ? <>
-          <section className="db-bloco dz-ig-seg">
-            <div className="dz-ig-cab"><h2>Seguidores</h2>{igSeg}</div>
-            {ig.error ? <p className="dz-ig-erro">{ig.error}</p> : <>
-            <div className="dz-ig-num"><b>{igNum(ig.seguidores)}</b>{ig.novos!=null && <span className="dz-ig-novos"><b>+{igNum(ig.novos)}</b><small>novos em {igDias} dias</small></span>}</div>
-            <small className="dz-ig-rot">total hoje · @{ig.username}</small>
-            {ig.deixaram!=null && <div className="dz-ig-menos"><b>-{igNum(ig.deixaram)}</b><small>deixaram de seguir em {igDias} dias</small></div>}
-            <div className="dz-ig-barras" aria-label="Novos seguidores por dia">{igBarras.map(x=><i key={x.data} title={dataBR(x.data).slice(0,5)+": +"+x.valor} style={{height:Math.max(4, x.valor/igMaxBar*100)+"%"}}/>)}</div>
-            <small className="dz-ig-rot dz-ig-pe">Novos seguidores por dia</small></>}
-          </section>
-          <section className="db-bloco dz-ig-alc">
-            <div className="dz-ig-cab"><h2>Alcance</h2>{igSeg}</div>
-            <div className="dz-ig-tres">
-              <div><b>{igNum(ig.alcance)}</b><small>contas alcançadas</small>{igVar(ig.alcanceVar)}</div>
-              <div><b>{ig.engajamento==null ? "–" : String(ig.engajamento).replace(".",",")+"%"}</b><small>engajamento</small>{igVar(ig.engajamentoVar, true)}</div>
-              <div><b>{igNum(ig.interacoes)}</b><small>interações</small>{igVar(ig.interacoesVar)}</div>
+      {/* 3. calendário + minhas tarefas */}
+      <div className="dz-dupla">
+        <section className="db-bloco dz-cal2">
+          <div className="dn-bt"><div><h2>Calendário</h2><small className="dz-sub">Gravações, entregas, publicações e compromissos</small></div>
+            <span className="dn-bt-dir">
+              <div className="db-iphone-caixa">
+                <button className={"db-iphone"+(apple.erro?" erro":apple.conectado?" ok":"")} onClick={()=>setPopIphone(p=>!p)}><i/>{apple.conectado ? "iPhone" : apple.conectado===false ? "Conectar iPhone" : "iPhone..."}</button>
+                {popIphone && <div className="db-pop db-pop-iphone">
+                  {apple.conectado ? <><b>Calendário do iPhone conectado{apple.nome ? ` (${apple.nome})` : ""}</b><p>O que você marcar no calendário do iPhone aparece aqui. O painel confere sozinho a cada 10 minutos.{horaAtualizada ? ` Última conferência: ${horaAtualizada}.` : ""}</p></>
+                    : <><b>Conectar o calendário do iPhone</b><p>No iPhone: Calendário, toque em Calendários, no (i) do calendário, ligue "Calendário Público" e compartilhe o link. Cole aqui:</p>
+                      <input value={linkIphone} onChange={e=>setLinkIphone(e.target.value)} placeholder="webcal://p..-caldav.icloud.com/published/..." aria-label="Link do calendário do iPhone"/></>}
+                  {apple.erro && <p className="db-erro">{apple.erro}</p>}
+                  <div className="db-pop-acoes">
+                    {apple.conectado
+                      ? <><button onClick={carregarApple}>Atualizar agora</button><button onClick={async ()=>{ if(await painelDialogo.confirmar("Desconectar o calendário do iPhone do painel?", { ok: "Desconectar", perigo: true })) conectarIphone(true); }}>Desconectar</button></>
+                      : <button disabled={salvandoIphone || !linkIphone.trim()} onClick={()=>conectarIphone(false)}>{salvandoIphone ? "Conectando..." : "Conectar"}</button>}
+                    <button onClick={()=>setPopIphone(false)}>Fechar</button>
+                  </div>
+                </div>}
+              </div>
+            </span></div>
+          <div className="dz-mes2">
+            <div className="dz-mes2-cab">
+              <button className="db-redondo db-redondo-p" onClick={()=>setMesCal(m=>new Date(m.getFullYear(), m.getMonth()-1, 1))} aria-label="Mês anterior"><DbIcone tipo="esq" tam={15}/></button>
+              <b>{MESES_EXT[mesCal.getMonth()].replace(/^./, c=>c.toUpperCase())} {mesCal.getFullYear()}</b>
+              <button className="db-redondo db-redondo-p" onClick={()=>setMesCal(m=>new Date(m.getFullYear(), m.getMonth()+1, 1))} aria-label="Próximo mês"><DbIcone tipo="dir" tam={15}/></button>
             </div>
-            <div className="dz-ig-views"><b>{igNum(ig.views)}</b><small>visualizações</small>{igVar(ig.viewsVar)}</div>
-            {igLinha && <svg className="dz-ig-linha" viewBox={`0 0 ${igLinha.w} ${igLinha.h}`} preserveAspectRatio="none" aria-label="Alcance por dia"><path d={igLinha.area} className="area"/><path d={igLinha.d} className="traco"/><circle cx={igLinha.fim[0]} cy={igLinha.fim[1]} r="3.5"/></svg>}
-            <small className="dz-ig-rot">{ig.de ? `${dataBR(ig.de).slice(0,5)} a ${dataBR(ig.ate).slice(0,5)}, comparado com os ${igDias} dias antes` : ""}</small>
-            <div className="dz-ig-acoes"><a className="db-link db-sublinhado" href={`https://www.instagram.com/${ig.username||""}/`} target="_blank" rel="noopener">Abrir o perfil</a>
-              <button className="db-link" onClick={()=>carregarIg(igDias, true)}>Atualizar</button>
-              <button className="db-link" onClick={async ()=>{ if(await painelDialogo.confirmar("Desconectar o Instagram do painel? Os números somem do Dashboard até conectar de novo.", { ok: "Desconectar", perigo: true })) conectarIg(true); }}>Desconectar</button></div>
-          </section>
-        </> : <section className="db-bloco dz-ig-con">
-            <div className="dz-ig-cab"><h2>Seu Instagram no painel</h2></div>
-            {ig.carregando ? <p className="db-vazio">Carregando...</p> : <>
-            <p>Seguidores, alcance, engajamento e visualizações aparecem aqui pela <b>API oficial da Meta</b>, só leitura. O painel não posta, não segue e não usa sua senha, então não tem risco para a conta.</p>
-            <div className="dz-ig-form"><input value={igToken} onChange={e=>setIgToken(e.target.value)} placeholder="Cole aqui o token do Instagram" aria-label="Token do Instagram"/>
-              <button className="db-btn-escuro" disabled={igConectando || igToken.trim().length<30} onClick={()=>conectarIg(false)}>{igConectando ? "Conectando..." : "Conectar"}</button></div>
-            {ig.erroConexao && <p className="db-erro">{ig.erroConexao}</p>}
-            <button className="db-link db-sublinhado" onClick={()=>setIgAjuda(a=>!a)}>{igAjuda ? "Esconder o passo a passo" : "Como gerar o token (uma vez só)"}</button>
-            {igAjuda && <ol className="dz-ig-passos">
-              <li>No app do Instagram: Configurações, Tipo de conta e ferramentas, e deixe a conta como <b>Criador de conteúdo</b> (ou Comercial).</li>
-              <li>No computador, entre em developers.facebook.com com o seu Facebook, clique em Meus apps, Criar app, escolha o caso de uso <b>Gerenciar mensagens e conteúdo no Instagram</b> (API do Instagram) e crie.</li>
-              <li>No app criado: Casos de uso, API do Instagram, <b>Configuração da API com login do Instagram</b>. Em Funções do app, adicione o seu @ como testador do Instagram e aceite o convite no Instagram (Configurações, Apps e sites, Convites de testador).</li>
-              <li>Volte em "Gerar tokens de acesso", clique em <b>Adicionar conta</b>, entre com o seu Instagram e depois em <b>Gerar token</b>. Copie e cole aqui.</li>
-              <li>O token vale 60 dias e o painel renova sozinho toda semana. O app pode ficar no modo de desenvolvimento: ele só lê a sua própria conta.</li>
-            </ol>}</>}
-          </section>}
-
-        {/* para fazer (nov/2026, no lugar de "Sua semana"): o que está atrasado primeiro e o que vem pela frente */}
-        <section className="db-bloco dz-fazer">
-          <div className="dn-bt"><h2>Para fazer</h2><span className="dn-bt-dir">{linhaItens.atr.length>0 && <span className="dn-tag dz-tag-atr">{linhaItens.atr.length} atrasado{linhaItens.atr.length===1?"":"s"}</span>}<button className="db-link" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}>Abrir</button></span></div>
-          <ul className="dz-fazer-lista">{[...linhaItens.atr, ...linhaItens.prox].slice(0,5).map(x=>{ const d = Math.round((new Date(x.iso+"T00:00:00")-hojeD)/86400000);
-            return <li key={x.iso+x.it.id} onClick={()=>setDiaSel(x.iso)}><span className="dz-circ"/><b>{x.it.texto}</b>
-              <small className={d<0?"atr":d===0?"hj":""}>{d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : d===1 ? "amanhã" : DIAS_NOME[new Date(x.iso+"T00:00:00").getDay()].slice(0,3).toLowerCase()+" "+dataBR(x.iso).slice(0,5)}</small></li>; })}
-            {!linhaItens.atr.length && !linhaItens.prox.length && <li className="dz-vazio">Nada pendente nesta semana. 🎉</li>}</ul>
-        </section>
-
-        {/* e-mails de propostas (nov/2026, no lugar de "Aguardando aprovação") */}
-        <section className="db-bloco dz-prop">
-          <div className="dn-bt"><div><h2>E-mails de propostas</h2><small className="dz-sub">{dnExtras.propostas ? (dnExtras.propostas.total ? `${plural(dnExtras.propostas.total,"proposta sem resposta","propostas sem resposta")}${dnExtras.propostas.velhas ? `, ${dnExtras.propostas.velhas} há mais de 7 dias` : ""}` : "Nenhuma proposta esperando resposta") : "Carregando..."}</small></div>
-            <button className="db-link" onClick={()=>abrirAba ? abrirAba("propostas") : go("jobs")}>Ver todas</button></div>
-          <ul className="dz-prop-lista">{(dnExtras.propLista||[]).map(p=><li key={p.id} className={p.lida?"":"nova"} onClick={()=>abrirAba ? abrirAba("propostas") : go("jobs")}>
-            <b>{p.marca || p.de_nome || "Proposta"}</b><span>{p.assunto || ""}</span><small>{p.recebido_em ? dataBR(isoLocal(new Date(p.recebido_em))).slice(0,5) : ""}</small></li>)}</ul>
-        </section>
-
-          {/* calendário: a lista do dia escolhido + o mês (ou a semana) */}
-          <section className="db-bloco dz-cal">
-            <div className="dn-bt"><div><h2>Calendário</h2><small className="dz-sub">Sua agenda de conteúdo e jobs</small></div>
-              <span className="dz-seg" role="group" aria-label="Visualização">{[["dia","Dia"],["semana","Semana"],["mes","Mês"]].map(([k,t])=><button key={k} className={calVista===k?"on":""} onClick={()=>setCalVista(k)}>{t}</button>)}</span></div>
-            <div className={"dz-cal-corpo v-"+calVista}>
-        {/* rotina do dia escolhido (hoje, ou o dia tocado na semana) */}
-        <section className={"dn-rotina dz-rotina"+(fechadoB("rotina")?" fechado":"")} ref={rotinaRef}>
-          <div className="dn-bt"><h2>{diaSel===hoje ? "Minha rotina de hoje" : `Rotina de ${DIAS_NOME[diaSelD.getDay()].toLowerCase()}, ${dataBR(diaSel).slice(0,5)}`}</h2>
-            <span className="dn-bt-dir">{agenda.length>0 && <span className="dn-tag">{feitosDia} de {agenda.length}</span>}<button className="dn-mais" onClick={()=>setNovaTarefa({hora:"", titulo:"", sub:""})} aria-label="Adicionar tarefa"><DbIcone tipo="mais" tam={16}/></button>{minB("rotina")}</span></div>
-          {diaSel!==hoje && <button className="db-link dn-voltar" onClick={()=>{ setDiaSel(hoje); setSemanaDesloc(0); }}>Voltar para hoje</button>}
-          <div className="dn-iphone-linha">
-            {diaDeGravacao && <span className="db-chip-dia"><DbIcone tipo="camera" tam={15}/>Dia de gravação</span>}
-            <div className="db-iphone-caixa">
-              <button className={"db-iphone"+(apple.erro?" erro":apple.conectado?" ok":"")} onClick={()=>setPopIphone(p=>!p)}><i/>{apple.conectado ? "Calendário do iPhone" : apple.conectado===false ? "Conectar iPhone" : "iPhone..."}</button>
-              {popIphone && <div className="db-pop db-pop-iphone">
-                {apple.conectado ? <><b>Calendário do iPhone conectado{apple.nome ? ` (${apple.nome})` : ""}</b><p>O que você marcar no calendário do iPhone aparece aqui. O painel confere sozinho a cada 10 minutos.{horaAtualizada ? ` Última conferência: ${horaAtualizada}.` : ""}</p></>
-                  : <><b>Conectar o calendário do iPhone</b><p>No iPhone: Calendário, toque em Calendários, no (i) do calendário, ligue "Calendário Público" e compartilhe o link. Cole aqui:</p>
-                    <input value={linkIphone} onChange={e=>setLinkIphone(e.target.value)} placeholder="webcal://p..-caldav.icloud.com/published/..." aria-label="Link do calendário do iPhone"/></>}
-                {apple.erro && <p className="db-erro">{apple.erro}</p>}
-                <div className="db-pop-acoes">
-                  {apple.conectado
-                    ? <><button onClick={carregarApple}>Atualizar agora</button><button onClick={async ()=>{ if(await painelDialogo.confirmar("Desconectar o calendário do iPhone do painel?", { ok: "Desconectar", perigo: true })) conectarIphone(true); }}>Desconectar</button></>
-                    : <button disabled={salvandoIphone || !linkIphone.trim()} onClick={()=>conectarIphone(false)}>{salvandoIphone ? "Conectando..." : "Conectar"}</button>}
-                  <button onClick={()=>setPopIphone(false)}>Fechar</button>
-                </div>
-              </div>}
-            </div>
+            <div className="dz-mes2-grade">{["S","T","Q","Q","S","S","D"].map((d,i)=><small key={"c"+i}>{d}</small>)}
+              {diasMesCal.map((d,i)=>d ? <button key={i} className={(d.iso===hoje?"hoje ":"")+(d.iso===diaSel?"sel ":"")+(d.atr?"atr ":"")+(d.iso<hoje?"passado":"")} onClick={()=>setDiaSel(d.iso)} aria-label={dataBR(d.iso)+(d.n?`, ${d.n} compromisso${d.n===1?"":"s"}`:"")+(d.atr?", com pendência atrasada":"")}>
+                <span>{d.dia}</span>{d.n>0 && <em>{d.cats.map(c=><i key={c} className={"c-"+c}/>)}</em>}</button> : <span key={i}/>)}</div>
+            <div className="dz-leg2">{["grav","ent","post","apr","reu"].map(c=><span key={c}><i className={"c-"+c}/>{NOME_CAT[c]}</span>)}<span><i className="c-atr"/>Atrasado</span></div>
           </div>
-          <ul className="dn-lista">
-            {agenda.length ? (agendaToda ? agenda : agenda.slice(0,6)).map(it=>{ const ok = estaFeito(it);
-              return <li key={it.id} className={(ok?"feito":"")+(it.atrasado?" atrasado":"")}>
-                <label className="dn-circ"><input type="checkbox" checked={ok} onChange={()=>marcar(it)} aria-label={ok?"Desmarcar":"Marcar como feito"}/><span/></label>
-                <span className="dn-hora">{it.hora || ""}</span>
-                <span className="dn-ic-item"><DbIcone tipo={iconeItem(it)} tam={18}/></span>
-                <span className={"dn-txt"+(it.pagina && !it.tarefa && !it.apple ? " dn-clica" : "")} onClick={()=>{ if(it.pagina && !it.tarefa && !it.apple) go(it.pagina); }}><b>{it.texto}</b>{it.sub && <small>{it.sub}</small>}</span>
-                <div className="db-menu-caixa">
-                  <button className="db-seta" onClick={()=>setMenuItem(menuItem===it.id?null:it.id)} aria-label="Opções"><DbIcone tipo="pontos" tam={18}/></button>
-                  {menuItem===it.id && <div className="db-pop db-pop-menu">
-                    {it.tarefa ? <button onClick={()=>{ setMenuItem(null); mudar(s=>({...s, tarefasDia:(s.tarefasDia||[]).filter(t=>t.id!==it.tarefa.id)})); }}><b>Excluir tarefa</b></button>
-                      : it.apple ? <button onClick={()=>{ setMenuItem(null); carregarApple(); }}><b>Atualizar do iPhone</b><small>Para mudar, edite no calendário do iPhone</small></button>
-                      : <button onClick={()=>{ setMenuItem(null); go(it.pagina); }}><b>Abrir</b></button>}
-                  </div>}
-                </div>
-              </li>; }) : <li className="dn-vazio-li"><p className="db-vazio">Nada marcado para este dia.</p></li>}
-          </ul>
-          {agenda.length>6 && <button className="db-link db-ver-mais" onClick={()=>setAgendaToda(a=>!a)}>{agendaToda ? "Ver menos" : `Ver mais ${agenda.length-6}`}</button>}
-          {novaTarefa && <form className="db-nova-tarefa" onSubmit={salvarTarefa}>
-            <input type="time" value={novaTarefa.hora} onChange={e=>setNovaTarefa({...novaTarefa, hora:e.target.value})} aria-label="Horário"/>
+          <div className="dz-dia">
+            <div className="dz-dia-cab"><b>{diaSel===hoje ? "Hoje" : `${DIAS_NOME[diaSelD.getDay()]}, ${fmtDia(diaSel)}`}</b>
+              {diaSel!==hoje && <button className="db-link" onClick={()=>{ setDiaSel(hoje); setMesCal(new Date(hojeD.getFullYear(), hojeD.getMonth(), 1)); }}>Voltar para hoje</button>}</div>
+            <ul className="dz-dia-lista">
+              {eventosSel.length ? eventosSel.slice(0,6).map(it=>{ const ok = !it.apple && itemConcluido(it), atr = !ok && !it.apple && diaSel<hoje && podeConcluir(it);
+                return <li key={it.id} className={(ok?"ok ":"")+(atr||it.atrasado?"atr ":"")+(it.apple?"":"clica")} onClick={()=>{ if(!it.apple) abrirItem(it); }}>
+                  <i className={"c-"+catEv(it)}/><span className="dz-dia-hora">{it.hora || "–"}</span>
+                  <span className="dz-dia-txt"><b>{it.texto}</b><small>{NOME_CAT[catEv(it)]}{it.sub ? " · "+it.sub : ""}</small></span></li>; })
+                : <li className="dz-vazio-li">Nada marcado para este dia.</li>}
+            </ul>
+            {eventosSel.length>6 && <button className="db-link" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}>Ver mais {eventosSel.length-6} no calendário</button>}
+          </div>
+          <button className="db-link dz-rodape" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}>Abrir calendário completo<DbIcone tipo="seta" tam={14}/></button>
+        </section>
+
+        <section className="db-bloco dz-tarefas" ref={rotinaRef}>
+          <div className="dn-bt"><div><h2>Minhas tarefas</h2><small className="dz-sub">{pendentesN ? `${plural(pendentesN,"pendente","pendentes")} para hoje` : "Tudo feito por hoje"}</small></div>
+            <span className="dn-bt-dir"><button className="dn-mais" onClick={()=>setNovaTarefa({data:hoje, hora:"", titulo:"", sub:"", prioridade:""})} aria-label="Nova tarefa" title="Nova tarefa"><DbIcone tipo="mais" tam={16}/></button></span></div>
+          <div className="dz-tabs" role="tablist">
+            {[["atr","Atrasadas",tarefasAtrasadas.length],["hoje","Hoje",tarefasHoje.filter(x=>!x.ok).length],["prox","Próximas",tarefasProx.length]].map(([k,t,n])=>
+              <button key={k} role="tab" aria-selected={abaT===k} className={(abaT===k?"on ":"")+(k==="atr"&&n?"tem-atr":"")} onClick={()=>{ setAbaTarefas(k); setVerTodasT(false); }}>{t}<span>{n}</span></button>)}
+          </div>
+          {novaTarefa && <form className="db-nova-tarefa dz-nova" onSubmit={e=>{ e.preventDefault(); const t = novaTarefa; if(!String(t.titulo||"").trim()) return;
+              mudar(s=>({...s, tarefasDia:[...(s.tarefasDia||[]), {id:uid(), data:t.data||hoje, hora:t.hora||"", titulo:t.titulo.trim(), sub:String(t.sub||"").trim(), feito:false, ...(t.prioridade ? {prioridade:t.prioridade} : {})}]}));
+              setNovaTarefa(null); }}>
             <input value={novaTarefa.titulo} onChange={e=>setNovaTarefa({...novaTarefa, titulo:e.target.value})} placeholder="O que fazer" aria-label="Tarefa" autoFocus/>
+            <div className="dz-nova-linha">
+              <input type="date" value={novaTarefa.data||hoje} onChange={e=>setNovaTarefa({...novaTarefa, data:e.target.value})} aria-label="Data"/>
+              <input type="time" value={novaTarefa.hora} onChange={e=>setNovaTarefa({...novaTarefa, hora:e.target.value})} aria-label="Horário"/>
+              <select value={novaTarefa.prioridade||""} onChange={e=>setNovaTarefa({...novaTarefa, prioridade:e.target.value})} aria-label="Prioridade"><option value="">Prioridade normal</option><option value="alta">Prioridade alta</option></select>
+            </div>
             <input value={novaTarefa.sub} onChange={e=>setNovaTarefa({...novaTarefa, sub:e.target.value})} placeholder="Detalhe (opcional)" aria-label="Detalhe"/>
             <div><button type="button" className="db-link" onClick={()=>setNovaTarefa(null)}>Cancelar</button><button className="db-btn-escuro" type="submit">Salvar</button></div>
           </form>}
-        </section>
-              {calVista==="mes" && <div className="dz-mes">
-                <div className="dz-mes-cab"><button className="db-redondo db-redondo-p" onClick={()=>setMesCal(m=>new Date(m.getFullYear(), m.getMonth()-1, 1))} aria-label="Mês anterior"><DbIcone tipo="esq" tam={15}/></button>
-                  <b>{MESES_EXT[mesCal.getMonth()].replace(/^./, c=>c.toUpperCase())} {mesCal.getFullYear()}</b>
-                  <button className="db-redondo db-redondo-p" onClick={()=>setMesCal(m=>new Date(m.getFullYear(), m.getMonth()+1, 1))} aria-label="Próximo mês"><DbIcone tipo="dir" tam={15}/></button></div>
-                <div className="dz-mes-grade">{["S","T","Q","Q","S","S","D"].map((d,i)=><small key={"c"+i}>{d}</small>)}
-                  {diasMes.map((d,i)=>d ? <button key={i} className={(d.iso===hoje?"hoje ":"")+(d.iso===diaSel?"sel ":"")+(d.n?"tem":"")} onClick={()=>setDiaSel(d.iso)} aria-label={dataBR(d.iso)+(d.n?`, ${d.n} item${d.n===1?"":"s"}`:"")}>{d.dia}{d.n>0 && <i/>}</button> : <span key={i}/>)}</div>
-              </div>}
-              {calVista==="semana" && <>
-        {/* semana */}
-        <section className={"dn-semana-bloco dz-semana"+(fechadoB("semana")?" fechado":"")}>
-          <div className="dn-bt"><h2 className="dn-clica" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")} title="Abrir o calendário">Minha semana</h2>
-            <span className="dn-bt-dir"><button className="db-redondo db-redondo-p" onClick={()=>setSemanaDesloc(s=>s-1)} aria-label="Semana anterior"><DbIcone tipo="esq" tam={15}/></button>
-              <span className="dn-sel">{diasVistos[0].getDate()} {MESES_EXT[diasVistos[0].getMonth()].slice(0,3)} a {diasVistos[6].getDate()} {MESES_EXT[diasVistos[6].getMonth()].slice(0,3)}</span>
-              <button className="db-redondo db-redondo-p" onClick={()=>setSemanaDesloc(s=>s+1)} aria-label="Próxima semana"><DbIcone tipo="dir" tam={15}/></button>{minB("semana")}</span></div>
-          <div className="dn-sem">
-            {diasVistos.map((d,i)=>{ const iso = isoLocal(d); const its = itensDoDia(iso);
-              return <button key={iso} className={"dn-dia"+(iso===hoje?" hoje":"")+(iso===diaSel?" sel":"")} onClick={()=>{ setDiaSel(iso); if(window.innerWidth<1000) setTimeout(()=>{ if(rotinaRef.current) rotinaRef.current.scrollIntoView({behavior:"smooth", block:"start"}); }, 60); }}>
-                <small>{DIAS_SEMANA[i]}</small><b>{String(d.getDate()).padStart(2,"0")}</b>
-                <span className="dn-evs">{its.slice(0,3).map(it=><span key={it.id} className={"dn-ev "+tipoItem(it)} onClick={(e)=>{ if(it.pagina){ e.stopPropagation(); go(it.pagina); } }}><small>{ROTULO_TIPO[tipoItem(it)]}</small>{nomeEv(it)}</span>)}
-                  {its.length>3 && <span className="dn-ev-mais">+{its.length-3}</span>}</span>
-              </button>; })}
+          <ul className="dz-tlista">
+            {listaTarefas.length ? (verTodasT ? listaTarefas : listaTarefas.slice(0,6)).map(({iso, it, ok, alta})=>{ const atr = !ok && iso<hoje, pode = podeConcluir(it) && !(ok && !it.tarefa && !it.followup);
+              return <li key={it.id} className={(ok?"ok ":"")+(atr?"atr ":"")}>
+                {pode ? <button className="dz-check" onClick={()=>concluirItem(it)} aria-pressed={ok} aria-label={ok?"Desmarcar":"Marcar como feita"} title={ok?"Desmarcar":"Marcar como feita"}>{ok && <DbIcone tipo="check" tam={12}/>}</button>
+                  : <span className="dz-check fixo" title="Conclua na área de origem"><DbIcone tipo={iconeItem(it)} tam={13}/></span>}
+                <button className="dz-ttxt" onClick={()=>abrirItem(it)} title="Abrir na área de origem"><b>{alta && <i className="dz-pri">Alta</i>}{it.texto}</b><small>{origemItem(it)}{it.sub ? " · "+it.sub : ""}</small></button>
+                <span className={"dz-prazo"+(atr?" atr":iso===hoje?" hj":"")}>{ok ? "feita" : iso===hoje ? (it.hora || "hoje") : `${fmtDia(iso)} · ${relDias(iso)}`}</span>
+              </li>; })
+              : <li className="dz-vazio-li">{abaT==="atr" ? "Nenhuma tarefa atrasada." : abaT==="hoje" ? "Nada marcado para hoje." : "Nada programado para os próximos dias."}</li>}
+          </ul>
+          <div className="dz-rodape-l">
+            {listaTarefas.length>6 && <button className="db-link" onClick={()=>setVerTodasT(v=>!v)}>{verTodasT ? "Ver menos" : `Ver mais ${listaTarefas.length-6}`}</button>}
+            <button className="db-link dz-rodape" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}>Ver todas as tarefas<DbIcone tipo="seta" tam={14}/></button>
           </div>
-          <div className="dn-leg"><span className="grav">Gravar</span><span className="post">Postar</span><span className="ent">Entregar</span><button className="db-link dn-abrir-cal" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}>Abrir calendário<DbIcone tipo="seta" tam={14}/></button></div>
-        </section>
-
-              </>}
-            </div>
-          </section>
-        {/* campanhas em andamento */}
-        <section className={"db-bloco dn-campanhas"+(fechadoB("campanhas")?" fechado":"")}>
-          <div className="dn-bt"><h2>Campanhas em andamento</h2><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("campanhas")}</span></div>
-          {campanhas.length ? <div className="dn-tabela">
-            <div className="dn-linha dn-cab"><span>Marca</span><span>Entregas</span><span>Etapa</span><span>Prazo</span></div>
-            {campanhas.slice(0,6).map(j=>{ const p = progressoJob(j), at = etapaDoJob(j, state.roteiros), d = j.prazoEntrega ? diasAte(j.prazoEntrega) : null;
-              const abrir = ()=>abrirJob(j.id), marca = comAMarca(at);
-              return <div className="dn-linha dn-clica" key={j.id} onClick={abrir}>
-                <button className="dn-marca" onClick={abrir}><DbLogo marca={j.marca} logos={logos}/><span><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></button>
-                <span className="dn-prog">{p.total ? <><small>{p.feitos} de {p.total}</small><i><b style={{width:Math.max(3,p.pct)+"%"}}/></i></> : <small>sem entregáveis</small>}</span>
-                <span><button className={"dn-chip c-"+classeEtapa(at)} title={at>=ETAPAS_JOB.length-1 ? ETAPAS_JOB[at] : `${ETAPAS_JOB[at]} · toque para passar para "${ETAPAS_JOB[at+1]}"`} onClick={e=>{ e.stopPropagation(); avancarJob(j); }}>{nomeEtapa(at)}</button></span>
-                <span className="dn-prazo">{j.prazoEntrega ? <><b>{dataBR(j.prazoEntrega).slice(0,5)}</b><small className={marca ? "" : d<0?"atr":d===0?"hj":""}>{marca && d<=0 ? (at===5 ? "entregue" : "com a marca") : d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : `em ${d} dia${d===1?"":"s"}`}</small></> : <small>sem prazo</small>}</span>
-              </div>; })}
-          </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
-        </section>
-
-        {/* financeiro */}
-        <section className={"db-bloco dn-fin"+(fechadoB("fin")?" fechado":"")}>
-          <div className="dn-bt"><h2>Financeiro</h2><span className="dn-bt-dir"><span className="dn-sel">{MESES_EXT[hojeD.getMonth()].replace(/^./, c=>c.toUpperCase())}</span>{minB("fin")}</span></div>
-          <div className="dn-fin-2"><button onClick={()=>go("financeiro")}><b>{dnMoeda(recebidoMes)}</b><small>Recebido no mês</small></button>
-            <button className={atrasadoValor>0?"at":""} onClick={()=>go("financeiro")}><b>{dnMoeda(atrasadoValor)}</b><small>{atrasadoValor>0 ? `Atrasado (${atrasadoLista.length})` : "Nada atrasado"}</small></button></div>
-          <div className="dn-graf dn-clica" onClick={()=>go("financeiro")} aria-label="Recebido nos últimos 6 meses">{meses6.map((m,i)=><div key={m.k} title={m.rotulo+": "+dnMoeda(m.valor)}><i className={i===5?"at":""} style={{height:Math.max(4, m.valor/maxMes*100)+"%"}}/><small>{m.rotulo}</small></div>)}</div>
         </section>
       </div>
+
+      {/* 4. radar do meu negócio */}
+      <section className="db-bloco dz-radar2">
+        <div className="dn-bt"><div><h2>Radar do meu negócio</h2><small className="dz-sub">{radar.length ? `${plural(radar.length,"ponto pedindo","pontos pedindo")} sua atenção` : "Tudo em dia por aqui"}</small></div></div>
+        <div className="dz-radar-grade">
+          {GRUPOS_RADAR.map(([g,t])=>{ const its = radar.filter(r=>r.grupo===g); const aberto = radarAberto===g;
+            const vazio = {marcas:"Nenhuma marca esperando retorno.", entregas:"Nenhuma entrega vencida ou nos próximos 3 dias.", pagamentos:"Nenhum pagamento atrasado.", propostas: extrasRadar.carregado ? "Nenhuma proposta parada." : "Conferindo..."}[g];
+            return <div key={g} className={"dz-rg"+(its.some(i=>i.nivel==="atraso")?" atr":its.length?" at":" ok")}>
+              <div className="dz-rg-cab"><span>{t}</span><b>{its.length}</b></div>
+              {its.length ? <ul>{(aberto ? its : its.slice(0,3)).map(r=><li key={r.id} onClick={r.ir} title={`Abrir em ${r.origem}`}><i className={r.nivel}/><span><b>{r.titulo}</b><small>{r.detalhe}</small><em>{r.origem}{r.data ? " · "+dataBR(r.data) : ""}</em></span></li>)}</ul>
+                : <p className="dz-rg-vazio"><DbIcone tipo="check" tam={14}/>{vazio}</p>}
+              {its.length>3 && <button className="db-link" onClick={()=>setRadarAberto(aberto?null:g)}>{aberto ? "Ver menos" : `Ver mais ${its.length-3}`}</button>}
+            </div>; })}
+          <div className={"dz-rg dz-meta"+(metaMesValor>0 ? (pctMeta>=100?" ok":"") : " at")}>
+            <div className="dz-rg-cab"><span>Meta de faturamento</span>{metaMesValor>0 && <b>{pctMeta}%</b>}</div>
+            {metaMesValor>0 && <button className="db-link dz-meta-editar" onClick={()=>setMetaAberta(true)}>Editar meta</button>}
+            {metaMesValor>0 ? <>
+              <div className="dz-meta-barra"><i style={{width:Math.min(100, Math.max(2,pctMeta))+"%"}}/></div>
+              <dl className="dz-meta-dl"><div><dt>Meta de {MESES_EXT[hojeD.getMonth()]}</dt><dd>{dnMoeda(metaMesValor)}</dd></div><div><dt>Faturado</dt><dd>{dnMoeda(faturadoMes)}</dd></div>
+                <div><dt>Falta</dt><dd>{faturadoMes>=metaMesValor ? "meta batida!" : dnMoeda(metaMesValor-faturadoMes)}</dd></div></dl>
+            </> : <p className="dz-rg-vazio dz-meta-vazio">Nenhuma meta cadastrada para {MESES_EXT[hojeD.getMonth()]}. Cadastre a meta do mês para acompanhar aqui.<button className="db-link" onClick={()=>setMetaAberta(true)}>Cadastrar meta</button></p>}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. campanhas em andamento */}
+      <section className={"db-bloco dn-campanhas dz-camp"+(fechadoB("campanhas")?" fechado":"")}>
+        <div className="dn-bt"><div><h2>Campanhas em andamento</h2><small className="dz-sub">{plural(campanhas.length,"campanha ativa","campanhas ativas")}</small></div><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("campanhas")}</span></div>
+        {campanhas.length ? <div className="dn-tabela">
+          <div className="dn-linha dn-cab"><span>Marca e campanha</span><span>Entregas</span><span>Status</span><span>Próximo prazo</span></div>
+          {[...campanhas].sort((a,b)=>((prazosDoJob(a)[0]||[a.prazoEntrega||"9999"])[0]||"9999").localeCompare((prazosDoJob(b)[0]||[b.prazoEntrega||"9999"])[0]||"9999")).slice(0,8).map(j=>{ const p = progressoJob(j), at = etapaDoJob(j, state.roteiros), prox = prazosDoJob(j)[0], marca = comAMarca(at);
+            const abrir = ()=>abrirJob(j.id);
+            return <div className="dn-linha dn-clica" key={j.id} onClick={abrir}>
+              <button className="dn-marca" onClick={abrir}><DbLogo marca={j.marca} logos={logos}/><span><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></button>
+              <span className="dn-prog">{p.total ? <><small>{p.feitos} de {p.total} concluída{p.total===1?"":"s"}</small><i><b style={{width:Math.max(3,p.pct)+"%"}}/></i></> : <small>sem entregáveis</small>}</span>
+              <span><button className={"dn-chip c-"+classeEtapa(at)} title={at>=ETAPAS_JOB.length-1 ? ETAPAS_JOB[at] : `${ETAPAS_JOB[at]} · toque para passar para "${ETAPAS_JOB[at+1]}"`} onClick={e=>{ e.stopPropagation(); avancarJob(j); }}>{nomeEtapa(at)}</button></span>
+              <span className="dn-prazo">{prox ? <><b>{fmtDia(prox[0])}</b><small className={diasAte(prox[0])<0?"atr":diasAte(prox[0])===0?"hj":""}>{prox[1]} · {relDias(prox[0])}</small></> : <small>{marca ? "com a marca" : "sem prazo"}</small>}</span>
+            </div>; })}
+        </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
+        {campanhas.length>8 && <button className="db-link dz-rodape" onClick={()=>go("jobs")}>Ver as outras {campanhas.length-8}<DbIcone tipo="seta" tam={14}/></button>}
+      </section>
 
       {/* inspirações | ferramentas */}
       <div className="db-baixo">
         <section className={"db-bloco db-insp"+(fechadoB("insp")?" fechado":"")}>
           <div className="db-bloco-topo db-insp-topo">
             <div>
-              <h2>Inspirações de conteúdo</h2>
-              <p className="db-sub">Conteúdos em alta no Instagram e TikTok para você se inspirar</p>
+              <h2>Inspiração de conteúdo</h2>
+              <p className="db-sub">Suas referências salvas e conteúdos em alta no Instagram e TikTok · <button className="db-link dz-bib" onClick={()=>abrirAba ? abrirAba("central") : go("roteiros")}>Abrir biblioteca completa</button></p>
             </div>
             <div className="db-insp-direita">
               {minAtras!==null && <span className="db-atualizado"><i/>{buscaInfo && buscaInfo.rodando ? "Buscando vídeos novos..." : "Atualizado "+tempoAtras}</span>}
@@ -3443,39 +3646,6 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
               </div>
             </div>
             {msgTrans && transcrevendoId===null && msgTrans.erro && <p className="db-dica db-dica-erro">{msgTrans.texto}</p>}
-            {bombouFiltrados.length>0 && <div className="db-bombou">
-              <p className="db-bombou-tit">Bombou acima do normal <span>comparado com a média de cada perfil, últimos 14 dias</span></p>
-              <div className="db-bombou-lista">
-                {bombouFiltrados.map(b=>{
-                  const r = b.radar;
-                  const dias = b.publicado_em ? Math.max(0, Math.round((Date.now()-new Date(b.publicado_em).getTime())/86400000)) : null;
-                  const numero = b.video ? (b.visualizacoes ? fmtNum(b.visualizacoes)+" views" : "") : (b.curtidas ? fmtNum(b.curtidas)+" curtidas" : "");
-                  return (
-                    <article key={"b"+b.id} className="db-bombou-card">
-                      <a className="db-bombou-capa" href={b.link} target="_blank" rel="noopener" aria-label="Assistir o vídeo">
-                        {b.capa ? <img src={b.capa} alt="" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.style.display="none";}}/> : null}
-                        <span className="db-bombou-x">{String(b.multiplicador).replace(".",",")}x</span>
-                      </a>
-                      <div className="db-bombou-corpo">
-                        <span className="db-bombou-meta">{[b.video?"Reels":"Post", dias===null?"":dias===0?"hoje":dias===1?"ontem":"há "+dias+" dias", numero].filter(Boolean).join(" · ")}</span>
-                        {r ? <>
-                          {r.gancho && <p className="db-bombou-gancho">“{r.gancho}”</p>}
-                          <p><b>Por que funcionou:</b> {r.porque}</p>
-                          {(r.testeTitulo || r.testeGancho) && <p><b>Para testar:</b> {r.testeTitulo}{r.testeGancho ? <><br/><i>“{r.testeGancho}”</i></> : null}</p>}
-                        </> : <p className="db-bombou-espera">Lendo o gancho e o porquê... aparece aqui em instantes.</p>}
-                        <div className="db-insp-rodape">
-                          <span><button className="db-btn-mini db-btn-mini-escuro" onClick={()=>quererTestar(b)} disabled={!r}>Quero testar</button></span>
-                          <span className="db-card-icones">
-                            <button className="db-salvar" onClick={()=>ocultarNovo(b)} aria-label="Ocultar este vídeo" title="Ocultar este vídeo"><DbIcone tipo="olhoFechado" tam={17}/></button>
-                            <button className={"db-salvar"+(salvos["n"+b.id]?" ok":"")} onClick={()=>alternarSalvo("n"+b.id)} aria-pressed={!!salvos["n"+b.id]} aria-label="Salvar" title="Salvar"><DbIcone tipo="marcador" tam={17}/></button>
-                          </span>
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </div>}
             {novosFiltrados.length || refsFiltradas.length ? (
               <><div className="db-trilho" ref={trilho}>
                 {novosFiltrados.map(n=>{
@@ -3486,7 +3656,6 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                       <a className="db-insp-capa" href={n.link} target="_blank" rel="noopener" aria-label="Assistir o vídeo">
                         {n.capa ? <img src={n.capa} alt="" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.style.display="none";}}/> : null}
                         {recente && <span className="db-novo">novo</span>}
-                        {Number(n.multiplicador)>=2 && <span className="db-novo db-x" title="Vezes a média do perfil">{String(n.multiplicador).replace(".",",")}x</span>}
                         <span className="db-insp-rede"><DbIcone tipo={n.rede==="tiktok"?"tiktok":"instagram"} tam={17}/></span>
                         <span className="db-insp-play"><DbIcone tipo="play" tam={13}/>{n.visualizacoes ? fmtNum(n.visualizacoes) : "assistir"}</span>
                       </a>
@@ -3607,7 +3776,63 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         {/* Transcrições saíram do Dashboard (out/2026): ficam só em Conteúdo > Referências > Transcrever vídeo */}
       </div>
 
+      {/* 7. Instagram (seguidores e alcance) — mantido no fim, a pedido da Mari */}
+      <div className={"dz-igfim"+(ig.conectado ? "" : " sem-ig")}>
+        {/* Instagram: seguidores e alcance (API oficial da Meta) */}
+        {ig.conectado ? <>
+          <section className="db-bloco dz-ig-seg">
+            <div className="dz-ig-cab"><h2>Seguidores</h2>{igSeg}</div>
+            {ig.error ? <p className="dz-ig-erro">{ig.error}</p> : <>
+            <div className="dz-ig-num"><b>{igNum(ig.seguidores)}</b>{ig.novos!=null && <span className="dz-ig-novos"><b>+{igNum(ig.novos)}</b><small>novos em {igDias} dias</small></span>}</div>
+            <small className="dz-ig-rot">total hoje · @{ig.username}</small>
+            {ig.deixaram!=null && <div className="dz-ig-menos"><b>-{igNum(ig.deixaram)}</b><small>deixaram de seguir em {igDias} dias</small></div>}
+            <div className="dz-ig-barras" aria-label="Novos seguidores por dia">{igBarras.map(x=><i key={x.data} title={dataBR(x.data).slice(0,5)+": +"+x.valor} style={{height:Math.max(4, x.valor/igMaxBar*100)+"%"}}/>)}</div>
+            <small className="dz-ig-rot dz-ig-pe">Novos seguidores por dia</small></>}
+          </section>
+          <section className="db-bloco dz-ig-alc">
+            <div className="dz-ig-cab"><h2>Alcance</h2>{igSeg}</div>
+            <div className="dz-ig-tres">
+              <div><b>{igNum(ig.alcance)}</b><small>contas alcançadas</small>{igVar(ig.alcanceVar)}</div>
+              <div><b>{ig.engajamento==null ? "–" : String(ig.engajamento).replace(".",",")+"%"}</b><small>engajamento</small>{igVar(ig.engajamentoVar, true)}</div>
+              <div><b>{igNum(ig.interacoes)}</b><small>interações</small>{igVar(ig.interacoesVar)}</div>
+            </div>
+            <div className="dz-ig-views"><b>{igNum(ig.views)}</b><small>visualizações</small>{igVar(ig.viewsVar)}</div>
+            {igLinha && <svg className="dz-ig-linha" viewBox={`0 0 ${igLinha.w} ${igLinha.h}`} preserveAspectRatio="none" aria-label="Alcance por dia"><path d={igLinha.area} className="area"/><path d={igLinha.d} className="traco"/><circle cx={igLinha.fim[0]} cy={igLinha.fim[1]} r="3.5"/></svg>}
+            <small className="dz-ig-rot">{ig.de ? `${dataBR(ig.de).slice(0,5)} a ${dataBR(ig.ate).slice(0,5)}, comparado com os ${igDias} dias antes` : ""}</small>
+            <div className="dz-ig-acoes"><a className="db-link db-sublinhado" href={`https://www.instagram.com/${ig.username||""}/`} target="_blank" rel="noopener">Abrir o perfil</a>
+              <button className="db-link" onClick={()=>carregarIg(igDias, true)}>Atualizar</button>
+              <button className="db-link" onClick={async ()=>{ if(await painelDialogo.confirmar("Desconectar o Instagram do painel? Os números somem do Dashboard até conectar de novo.", { ok: "Desconectar", perigo: true })) conectarIg(true); }}>Desconectar</button></div>
+          </section>
+        </> : <section className="db-bloco dz-ig-con">
+            <div className="dz-ig-cab"><h2>Seu Instagram no painel</h2></div>
+            {ig.carregando ? <p className="db-vazio">Carregando...</p> : <>
+            <p>Seguidores, alcance, engajamento e visualizações aparecem aqui pela <b>API oficial da Meta</b>, só leitura. O painel não posta, não segue e não usa sua senha, então não tem risco para a conta.</p>
+            <div className="dz-ig-form"><input value={igToken} onChange={e=>setIgToken(e.target.value)} placeholder="Cole aqui o token do Instagram" aria-label="Token do Instagram"/>
+              <button className="db-btn-escuro" disabled={igConectando || igToken.trim().length<30} onClick={()=>conectarIg(false)}>{igConectando ? "Conectando..." : "Conectar"}</button></div>
+            {ig.erroConexao && <p className="db-erro">{ig.erroConexao}</p>}
+            <button className="db-link db-sublinhado" onClick={()=>setIgAjuda(a=>!a)}>{igAjuda ? "Esconder o passo a passo" : "Como gerar o token (uma vez só)"}</button>
+            {igAjuda && <ol className="dz-ig-passos">
+              <li>No app do Instagram: Configurações, Tipo de conta e ferramentas, e deixe a conta como <b>Criador de conteúdo</b> (ou Comercial).</li>
+              <li>No computador, entre em developers.facebook.com com o seu Facebook, clique em Meus apps, Criar app, escolha o caso de uso <b>Gerenciar mensagens e conteúdo no Instagram</b> (API do Instagram) e crie.</li>
+              <li>No app criado: Casos de uso, API do Instagram, <b>Configuração da API com login do Instagram</b>. Em Funções do app, adicione o seu @ como testador do Instagram e aceite o convite no Instagram (Configurações, Apps e sites, Convites de testador).</li>
+              <li>Volte em "Gerar tokens de acesso", clique em <b>Adicionar conta</b>, entre com o seu Instagram e depois em <b>Gerar token</b>. Copie e cole aqui.</li>
+              <li>O token vale 60 dias e o painel renova sozinho toda semana. O app pode ficar no modo de desenvolvimento: ele só lê a sua própria conta.</li>
+            </ol>}</>}
+          </section>}
+
+      </div>
+
       {/* janelas */}
+      {detalheFat && <Modal title={`Faturado em ${MESES_EXT[hojeD.getMonth()]}`} onClose={()=>setDetalheFat(false)}>
+        <div className="dz-fat-det">
+          {faturadoLista.length ? <ul>{faturadoLista.map(t=><li key={t.id}><span><b>{t.descricao||"Recebimento"}</b><small>Recebido em {dataBR(t.data)}{t.origem==="job" ? " · job" : t.categoria ? " · "+t.categoria : ""}</small></span><em>{dnMoeda(t.valor)}</em></li>)}</ul>
+            : <p className="db-vazio">Nenhum recebimento confirmado em {MESES_EXT[hojeD.getMonth()]} até agora.</p>}
+          <div className="dz-fat-tot"><span>Total recebido no mês</span><b>{dnMoeda(faturadoMes)}</b></div>
+          {pendentesLista.length>0 && <p className="dz-sub">Ainda a receber: {dnMoeda(paraReceber)} em {plural(pendentesLista.length,"lançamento","lançamentos")} (não entram no faturado).</p>}
+          <button className="db-btn-escuro" onClick={()=>{ setDetalheFat(false); go("financeiro"); }}>Abrir o financeiro</button>
+        </div>
+      </Modal>}
+      {metaAberta && <MetasModal state={state} updateState={updateState} ano={hojeD.getFullYear()} mes={hojeD.getMonth()} onClose={()=>setMetaAberta(false)}/>}
       {refAberta && <Modal title="Análise do vídeo" onClose={()=>setRefAberta(null)}>
         <div className="db-ideia-detalhe">
           {refAberta.titulo && <p>{refAberta.titulo}</p>}
