@@ -5193,20 +5193,6 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
         <section className="job-form-section job-form-identificacao">
           <div className="job-form-section-heading"><span className="job-form-index">01</span><div><strong>Identificação</strong><small>Marca, modalidade e classificação do trabalho</small></div></div>
           <Field label="Marca"><input value={f.marca} onChange={e=>set("marca",e.target.value)} placeholder="Nome da marca"/></Field>
-          <div className="field-row">
-            <Field label="CNPJ do cliente">
-              <div style={{display:"flex", gap:6}}>
-                <input value={fmtDocFiscal(tomadorJob.documento||"")} onChange={e=>setTomadorJob("documento",soDigitos(e.target.value).slice(0,14))} placeholder="00.000.000/0000-00"/>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={consultarCnpjJob} disabled={buscandoCnpj}>{buscandoCnpj?"Consultando...":"Consultar"}</button>
-              </div>
-            </Field>
-            <Field label="Razão social"><input value={tomadorJob.razaoSocial||""} onChange={e=>setTomadorJob("razaoSocial",e.target.value)} placeholder="Nome cadastrado da empresa"/></Field>
-          </div>
-          <div className="field-row">
-            <Field label="E-mail fiscal (opcional)"><input type="email" value={tomadorJob.email||""} onChange={e=>setTomadorJob("email",e.target.value)}/></Field>
-            <Field label="Município/UF"><input value={tomadorJob.municipio||""} onChange={e=>setTomadorJob("municipio",e.target.value)} placeholder="Cidade/UF"/></Field>
-          </div>
-          {avisoCnpj && <p style={{fontSize:12.5, color:"var(--danger, #b8473a)", margin:"-4px 0 10px"}}>{avisoCnpj}</p>}
           <Field label="UGC ou Publi">
         <div style={{display:"flex", gap:8}}>
           {["UGC","Publi"].map(c=>(
@@ -5361,7 +5347,23 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
           <strong style={{fontSize:15}}>Precisa emitir nota fiscal?</strong>
           <Toggle on={f.nf.precisa} onClick={()=>setNested("nf","precisa",!f.nf.precisa)}/>
         </div>
-        {f.nf.precisa && <NotaFiscalJob nf={f.nf} pasta={`jobs/${f.id||"novos"}`} setNf={(campos)=>setF(p=>({...p, nf:{...p.nf, ...campos, ...(campos.status==="Emitida" ? {precisa:true} : {})}, ...(campos.valor && Number(campos.valor)>0 ? {valor:String(campos.valor)} : {})}))}/>}
+        {f.nf.precisa && <>
+          <div className="field-row">
+                      <Field label="CNPJ do cliente">
+                        <div style={{display:"flex", gap:6}}>
+                          <input value={fmtDocFiscal(tomadorJob.documento||"")} onChange={e=>setTomadorJob("documento",soDigitos(e.target.value).slice(0,14))} placeholder="00.000.000/0000-00"/>
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={consultarCnpjJob} disabled={buscandoCnpj}>{buscandoCnpj?"Consultando...":"Consultar"}</button>
+                        </div>
+                      </Field>
+                      <Field label="Razão social"><input value={tomadorJob.razaoSocial||""} onChange={e=>setTomadorJob("razaoSocial",e.target.value)} placeholder="Nome cadastrado da empresa"/></Field>
+                    </div>
+                    <div className="field-row">
+                      <Field label="E-mail fiscal (opcional)"><input type="email" value={tomadorJob.email||""} onChange={e=>setTomadorJob("email",e.target.value)}/></Field>
+                      <Field label="Município/UF"><input value={tomadorJob.municipio||""} onChange={e=>setTomadorJob("municipio",e.target.value)} placeholder="Cidade/UF"/></Field>
+                    </div>
+                    {avisoCnpj && <p style={{fontSize:12.5, color:"var(--danger, #b8473a)", margin:"-4px 0 10px"}}>{avisoCnpj}</p>}
+          <NotaFiscalJob nf={f.nf} pasta={`jobs/${f.id||"novos"}`} setNf={(campos)=>setF(p=>({...p, nf:{...p.nf, ...campos, ...(campos.status==="Emitida" ? {precisa:true} : {})}, ...(campos.valor && Number(campos.valor)>0 ? {valor:String(campos.valor)} : {})}))}/>
+        </>}
         <Field label="Data prevista de pagamento (vem do prazo de pagamento; pode mudar aqui)"><input type="date" value={f.dataPagamento||""} onChange={e=>{ const v=e.target.value; setF(p=>({...p, dataPagamento:v, pagamento:{...(p.pagamento||{}), dataPrevista:v}})); }}/></Field>
         <div className="row-item" style={{marginBottom:12}}>
           <strong style={{fontSize:15}}>Pagamento recebido?</strong>
