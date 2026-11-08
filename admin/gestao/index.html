@@ -2654,7 +2654,8 @@ function useCalApple(de, ate, chaveCache){
 function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateState, go, openRoteirosAI}){
   const hojeD = new Date(); hojeD.setHours(0,0,0,0);
   const hoje = isoLocal(hojeD);
-  const hora = new Date().getHours();
+  const agoraLocal = new Date(new Date().toLocaleString("en-US",{timeZone:"America/Sao_Paulo"}));
+  const hora = agoraLocal.getHours();
   const saudacao = hora<5 ? "Boa noite" : hora<12 ? "Bom dia" : hora<18 ? "Boa tarde" : "Boa noite";
   const iconeHora = hora<5 || hora>=18 ? "lua" : hora<12 ? "sol" : hora<17 ? "sol" : "entardecer";
   const nome = String(state.profile.name||"").trim() || "Mari";
@@ -2673,7 +2674,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   // ----- números -----
   const precisaAtencao = ativos.filter(j=>!j.prazoEntrega || diasAte(j.prazoEntrega)<=3 || (j.dataPagamento && diasAte(j.dataPagamento)<0 && (!j.pagamento || j.pagamento.status!=="Pago"))).length;
   const entregasSemana = ativos.filter(j=>j.prazoEntrega && j.prazoEntrega>=inicioSemanaIso && j.prazoEntrega<=fimSemanaIso);
-  const aReceberLista = (state.transacoes||[]).filter(t=>t.tipo==="receita" && t.status!=="Confirmado" && (t.moeda||"BRL")==="BRL");
+  const aReceberLista = (state.transacoes||[]).filter(t=>t.tipo==="receita" && !["Confirmado","Cancelado"].includes(t.status) && (t.moeda||"BRL")==="BRL");
   const aReceber = aReceberLista.reduce((a,t)=>a+Number(t.valor||0),0);
   const proximos = ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)>=0).sort((a,b)=>a.prazoEntrega.localeCompare(b.prazoEntrega));
 
@@ -3006,8 +3007,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const dnMoeda = (v) => "R$ " + (window.OCULTAR_VALORES ? VALOR_OCULTO : Math.round(Number(v)||0).toLocaleString("pt-BR"));
   const receitas = (state.transacoes||[]).filter(t=>t.tipo==="receita" && (t.moeda||"BRL")==="BRL" && t.status!=="Cancelado");
   const somaDe = (l) => l.reduce((a,t)=>a+Number(t.valor||0),0);
-  const faturamentoMes = somaDe(receitas.filter(t=>String(t.data||"").startsWith(mesIso)));
-  const faturamentoAnt = somaDe(receitas.filter(t=>String(t.data||"").startsWith(mesAntIso)));
+  const faturamentoMes = somaDe(receitas.filter(t=>String(t.data||"").startsWith(mesIso) && t.status==="Confirmado"));
+  const faturamentoAnt = somaDe(receitas.filter(t=>String(t.data||"").startsWith(mesAntIso) && t.status==="Confirmado"));
   const variacao = faturamentoAnt>0 ? Math.round((faturamentoMes/faturamentoAnt-1)*100) : null;
   const recebidoMes = somaDe(receitas.filter(t=>t.status==="Confirmado" && String(t.data||"").startsWith(mesIso)));
   const atrasadoLista = receitas.filter(t=>t.status!=="Confirmado" && t.data && t.data<hoje);
@@ -3078,7 +3079,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const progressoJob = (j) => { const its = itensDoJob(j); const total = its.reduce((a,[i])=>a+qtdItem(i),0);
     const feitos = its.filter(([i,t])=>i.concluido || ["Finalizado","Conteúdo entregue","Entregue"].includes(statusDoItem(i,t))).reduce((a,[i])=>a+qtdItem(i),0);
     return {total, feitos, pct: total ? Math.round(feitos/total*100) : 0}; };
-  const campanhas = [...ativos].sort((a,b)=>(a.prazoEntrega||"9999").localeCompare(b.prazoEntrega||"9999"));
+  const campanhas = [...andamento].sort((a,b)=>(a.prazoEntrega||"9999").localeCompare(b.prazoEntrega||"9999"));
   const classeEtapa = (i) => i>=8 ? "ok" : i===7 ? "edi" : i===6 || i===3 ? "apr" : i>=4 ? "grav" : i===2 ? "rot" : "plan";
   const nomeEtapa = (i) => ({0:"Briefing",1:"Produto",2:"Roteiro",3:"Aprovação do roteiro",4:"Produção",5:"Entregue",6:"Aprovação",7:"Refação",8:"Finalizado"})[i] || ETAPAS_JOB[i];
   async function avancarJob(j){
@@ -3153,6 +3154,9 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const [linhaAba,setLinhaAba] = useState("prox");
   const feitoEm = (iso, it) => it.tarefa ? !!it.tarefa.feito : it.followup ? it.followup.status==="Feito" : !!feitos[iso+"|"+it.id];
   const linhaTodos = diasDaSemana.flatMap(d=>{ const iso = isoLocal(d); return itensDoDia(iso).map(it=>({iso, it, ok:feitoEm(iso, it)})); });
+  const tarefasDiaResumo = tarefas.filter(t=>!t.feito && t.data===hoje).length;
+  const entregasProximasResumo = ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)>=0 && diasAte(j.prazoEntrega)<=3).length;
+  const resumoCampanhas = andamento.length;
   const linhaItens = { prox: linhaTodos.filter(x=>!x.ok && x.iso>=hoje), feitas: linhaTodos.filter(x=>x.ok), atr: linhaTodos.filter(x=>!x.ok && x.iso<hoje) };
   const linhaPct = linhaTodos.length ? Math.round(linhaItens.feitas.length/linhaTodos.length*100) : 0;
   return (
@@ -3186,8 +3190,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         <div>
           <span className="dz-sobre">Painel · {hojeD.toLocaleDateString("pt-BR",{weekday:"long", day:"numeric", month:"long"})}</span>
           <h1>{saudacao}, {nome}</h1>
-          <p>{partesResumo.length ? <>Hoje: {partesResumo.map((p,i)=><React.Fragment key={i}>{i>0 && (i===partesResumo.length-1 ? " e " : ", ")}<b>{p}</b></React.Fragment>)}.</> : "Hoje não tem gravação, entrega nem post marcado."}
-            {jobsAtrasados>0 && ` ${jobsAtrasados===1 ? "Um job está atrasado." : jobsAtrasados+" jobs estão atrasados."}`}</p>
+          <p>{tarefasDiaResumo+linhaItens.atr.length} tarefas pendentes · {entregasProximasResumo} entregas nos próximos 3 dias · {resumoCampanhas} campanhas em andamento</p>
         </div>
         <span className="dn-data">{dataExtenso}</span>
       </div>
@@ -3199,70 +3202,10 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           <span className="dn-card-txt"><small>Para receber</small><b>{dnMoeda(aReceber)}</b><em className={atrasadoLista.length?"ruim":""}>{atrasadoLista.length ? plural(atrasadoLista.length,"pagamento vencido","pagamentos vencidos") : "nada vencido"}</em></span></button>
         <button className="dn-card" onClick={()=>go("jobs")}>
           <span className="dn-card-txt"><small>Em produção</small><b>{plural(campanhas.length,"campanha","campanhas")}</b><em>{entregas7 ? plural(entregas7,"entrega","entregas")+" nos próximos 7 dias" : "nenhuma entrega nos próximos 7 dias"}</em></span></button>
-        <a className="dn-card" href="https://marianabonetto.com.br/" target="_blank" rel="noopener">
-          <span className="dn-card-txt"><small>Visitas no site</small><b>{dnExtras.visitas ? `${dnExtras.visitas.hoje} hoje` : "..."}</b><em>{dnExtras.visitas ? `${dnExtras.visitas.semana} nos últimos 7 dias` : "carregando"}</em></span></a>
+        <button className="dn-card" onClick={()=>go("portfolio")}>
+          <span className="dn-card-txt"><small>Visitas no site</small><b>{dnExtras.visitas ? `${dnExtras.visitas.hoje} hoje` : "..."}</b><em>{dnExtras.visitas ? `${dnExtras.visitas.semana} nos últimos 7 dias` : "carregando"}</em></span></button>
       </div>
-      <div className={"dz-grade"+(ig.conectado ? "" : " sem-ig")}>
-
-        {/* Instagram: seguidores e alcance (API oficial da Meta) */}
-        {ig.conectado ? <>
-          <section className="db-bloco dz-ig-seg">
-            <div className="dz-ig-cab"><h2>Seguidores</h2>{igSeg}</div>
-            {ig.error ? <p className="dz-ig-erro">{ig.error}</p> : <>
-            <div className="dz-ig-num"><b>{igNum(ig.seguidores)}</b>{ig.novos!=null && <span className="dz-ig-novos"><b>+{igNum(ig.novos)}</b><small>novos em {igDias} dias</small></span>}</div>
-            <small className="dz-ig-rot">total hoje · @{ig.username}</small>
-            {ig.deixaram!=null && <div className="dz-ig-menos"><b>-{igNum(ig.deixaram)}</b><small>deixaram de seguir em {igDias} dias</small></div>}
-            <div className="dz-ig-barras" aria-label="Novos seguidores por dia">{igBarras.map(x=><i key={x.data} title={dataBR(x.data).slice(0,5)+": +"+x.valor} style={{height:Math.max(4, x.valor/igMaxBar*100)+"%"}}/>)}</div>
-            <small className="dz-ig-rot dz-ig-pe">Novos seguidores por dia</small></>}
-          </section>
-          <section className="db-bloco dz-ig-alc">
-            <div className="dz-ig-cab"><h2>Alcance</h2>{igSeg}</div>
-            <div className="dz-ig-tres">
-              <div><b>{igNum(ig.alcance)}</b><small>contas alcançadas</small>{igVar(ig.alcanceVar)}</div>
-              <div><b>{ig.engajamento==null ? "–" : String(ig.engajamento).replace(".",",")+"%"}</b><small>engajamento</small>{igVar(ig.engajamentoVar, true)}</div>
-              <div><b>{igNum(ig.interacoes)}</b><small>interações</small>{igVar(ig.interacoesVar)}</div>
-            </div>
-            <div className="dz-ig-views"><b>{igNum(ig.views)}</b><small>visualizações</small>{igVar(ig.viewsVar)}</div>
-            {igLinha && <svg className="dz-ig-linha" viewBox={`0 0 ${igLinha.w} ${igLinha.h}`} preserveAspectRatio="none" aria-label="Alcance por dia"><path d={igLinha.area} className="area"/><path d={igLinha.d} className="traco"/><circle cx={igLinha.fim[0]} cy={igLinha.fim[1]} r="3.5"/></svg>}
-            <small className="dz-ig-rot">{ig.de ? `${dataBR(ig.de).slice(0,5)} a ${dataBR(ig.ate).slice(0,5)}, comparado com os ${igDias} dias antes` : ""}</small>
-            <div className="dz-ig-acoes"><a className="db-link db-sublinhado" href={`https://www.instagram.com/${ig.username||""}/`} target="_blank" rel="noopener">Abrir o perfil</a>
-              <button className="db-link" onClick={()=>carregarIg(igDias, true)}>Atualizar</button>
-              <button className="db-link" onClick={async ()=>{ if(await painelDialogo.confirmar("Desconectar o Instagram do painel? Os números somem do Dashboard até conectar de novo.", { ok: "Desconectar", perigo: true })) conectarIg(true); }}>Desconectar</button></div>
-          </section>
-        </> : <section className="db-bloco dz-ig-con">
-            <div className="dz-ig-cab"><h2>Seu Instagram no painel</h2></div>
-            {ig.carregando ? <p className="db-vazio">Carregando...</p> : <>
-            <p>Seguidores, alcance, engajamento e visualizações aparecem aqui pela <b>API oficial da Meta</b>, só leitura. O painel não posta, não segue e não usa sua senha, então não tem risco para a conta.</p>
-            <div className="dz-ig-form"><input value={igToken} onChange={e=>setIgToken(e.target.value)} placeholder="Cole aqui o token do Instagram" aria-label="Token do Instagram"/>
-              <button className="db-btn-escuro" disabled={igConectando || igToken.trim().length<30} onClick={()=>conectarIg(false)}>{igConectando ? "Conectando..." : "Conectar"}</button></div>
-            {ig.erroConexao && <p className="db-erro">{ig.erroConexao}</p>}
-            <button className="db-link db-sublinhado" onClick={()=>setIgAjuda(a=>!a)}>{igAjuda ? "Esconder o passo a passo" : "Como gerar o token (uma vez só)"}</button>
-            {igAjuda && <ol className="dz-ig-passos">
-              <li>No app do Instagram: Configurações, Tipo de conta e ferramentas, e deixe a conta como <b>Criador de conteúdo</b> (ou Comercial).</li>
-              <li>No computador, entre em developers.facebook.com com o seu Facebook, clique em Meus apps, Criar app, escolha o caso de uso <b>Gerenciar mensagens e conteúdo no Instagram</b> (API do Instagram) e crie.</li>
-              <li>No app criado: Casos de uso, API do Instagram, <b>Configuração da API com login do Instagram</b>. Em Funções do app, adicione o seu @ como testador do Instagram e aceite o convite no Instagram (Configurações, Apps e sites, Convites de testador).</li>
-              <li>Volte em "Gerar tokens de acesso", clique em <b>Adicionar conta</b>, entre com o seu Instagram e depois em <b>Gerar token</b>. Copie e cole aqui.</li>
-              <li>O token vale 60 dias e o painel renova sozinho toda semana. O app pode ficar no modo de desenvolvimento: ele só lê a sua própria conta.</li>
-            </ol>}</>}
-          </section>}
-
-        {/* para fazer (nov/2026, no lugar de "Sua semana"): o que está atrasado primeiro e o que vem pela frente */}
-        <section className="db-bloco dz-fazer">
-          <div className="dn-bt"><h2>Para fazer</h2><span className="dn-bt-dir">{linhaItens.atr.length>0 && <span className="dn-tag dz-tag-atr">{linhaItens.atr.length} atrasado{linhaItens.atr.length===1?"":"s"}</span>}<button className="db-link" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}>Abrir</button></span></div>
-          <ul className="dz-fazer-lista">{[...linhaItens.atr, ...linhaItens.prox].slice(0,5).map(x=>{ const d = Math.round((new Date(x.iso+"T00:00:00")-hojeD)/86400000);
-            return <li key={x.iso+x.it.id} onClick={()=>setDiaSel(x.iso)}><span className="dz-circ"/><b>{x.it.texto}</b>
-              <small className={d<0?"atr":d===0?"hj":""}>{d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : d===1 ? "amanhã" : DIAS_NOME[new Date(x.iso+"T00:00:00").getDay()].slice(0,3).toLowerCase()+" "+dataBR(x.iso).slice(0,5)}</small></li>; })}
-            {!linhaItens.atr.length && !linhaItens.prox.length && <li className="dz-vazio">Nada pendente nesta semana. 🎉</li>}</ul>
-        </section>
-
-        {/* e-mails de propostas (nov/2026, no lugar de "Aguardando aprovação") */}
-        <section className="db-bloco dz-prop">
-          <div className="dn-bt"><div><h2>E-mails de propostas</h2><small className="dz-sub">{dnExtras.propostas ? (dnExtras.propostas.total ? `${plural(dnExtras.propostas.total,"proposta sem resposta","propostas sem resposta")}${dnExtras.propostas.velhas ? `, ${dnExtras.propostas.velhas} há mais de 7 dias` : ""}` : "Nenhuma proposta esperando resposta") : "Carregando..."}</small></div>
-            <button className="db-link" onClick={()=>abrirAba ? abrirAba("propostas") : go("jobs")}>Ver todas</button></div>
-          <ul className="dz-prop-lista">{(dnExtras.propLista||[]).map(p=><li key={p.id} className={p.lida?"":"nova"} onClick={()=>abrirAba ? abrirAba("propostas") : go("jobs")}>
-            <b>{p.marca || p.de_nome || "Proposta"}</b><span>{p.assunto || ""}</span><small>{p.recebido_em ? dataBR(isoLocal(new Date(p.recebido_em))).slice(0,5) : ""}</small></li>)}</ul>
-        </section>
-
+      <div className="dn-operacao">
           {/* calendário: a lista do dia escolhido + o mês (ou a semana) */}
           <section className="db-bloco dz-cal">
             <div className="dn-bt"><div><h2>Calendário</h2><small className="dz-sub">Sua agenda de conteúdo e jobs</small></div>
@@ -3360,14 +3303,242 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
         </section>
 
-        {/* financeiro */}
-        <section className={"db-bloco dn-fin"+(fechadoB("fin")?" fechado":"")}>
-          <div className="dn-bt"><h2>Financeiro</h2><span className="dn-bt-dir"><span className="dn-sel">{MESES_EXT[hojeD.getMonth()].replace(/^./, c=>c.toUpperCase())}</span>{minB("fin")}</span></div>
-          <div className="dn-fin-2"><button onClick={()=>go("financeiro")}><b>{dnMoeda(recebidoMes)}</b><small>Recebido no mês</small></button>
-            <button className={atrasadoValor>0?"at":""} onClick={()=>go("financeiro")}><b>{dnMoeda(atrasadoValor)}</b><small>{atrasadoValor>0 ? `Atrasado (${atrasadoLista.length})` : "Nada atrasado"}</small></button></div>
-          <div className="dn-graf dn-clica" onClick={()=>go("financeiro")} aria-label="Recebido nos últimos 6 meses">{meses6.map((m,i)=><div key={m.k} title={m.rotulo+": "+dnMoeda(m.valor)}><i className={i===5?"at":""} style={{height:Math.max(4, m.valor/maxMes*100)+"%"}}/><small>{m.rotulo}</small></div>)}</div>
+
+
+      {/* inspirações | ferramentas */}
+      <div className="db-baixo">
+        <section className={"db-bloco db-insp"+(fechadoB("insp")?" fechado":"")}>
+          <div className="db-bloco-topo db-insp-topo">
+            <div>
+              <h2>Inspiração de conteúdo</h2>
+              <p className="db-sub">Conteúdos em alta no Instagram e TikTok para você se inspirar</p>
+            </div>
+            <div className="db-insp-direita">
+              {minAtras!==null && <span className="db-atualizado"><i/>{buscaInfo && buscaInfo.rodando ? "Buscando vídeos novos..." : "Atualizado "+tempoAtras}</span>}
+              {abaInsp==="inspiracoes" && <><button className="db-redondo db-redondo-p" onClick={()=>rolar(-1)} aria-label="Anteriores"><DbIcone tipo="esq" tam={16}/></button><button className="db-redondo db-redondo-p" onClick={()=>rolar(1)} aria-label="Próximas"><DbIcone tipo="dir" tam={16}/></button></>}
+              {minB("insp")}
+            </div>
+          </div>
+          <div className="db-abas db-abas-largas">
+            {[["inspiracoes","Inspirações"],["transcrever","Transcrever"],["analise","Análise de conteúdo"],["ideia","Ideia de roteiro"]].map(([k,t])=>
+              <button key={k} className={abaInsp===k?"ativa":""} onClick={()=>k==="transcrever" ? transcrever(null, "") : setAbaInsp(k)}>{t}</button>)}
+          </div>
+
+          {abaInsp==="inspiracoes" && <>
+            <div className="db-filtros">
+              <button className={"db-filtro-rede"+(rede==="instagram"?" ativo":"")} onClick={()=>setRede(rede==="instagram"?"":"instagram")}><DbIcone tipo="instagram" tam={16}/>Instagram</button>
+              <button className={"db-filtro-rede"+(rede==="tiktok"?" ativo":"")} onClick={()=>setRede(rede==="tiktok"?"":"tiktok")}><DbIcone tipo="tiktok" tam={16}/>TikTok</button>
+              <span className="db-nichos">
+                {["Todos", ...NICHOS_INSP].map(n=><button key={n} className={nicho===n?"ativo":""} onClick={()=>setNicho(n)}>{n}</button>)}
+              </span>
+              <div className="db-menu-caixa">
+                <button className={"db-filtro-rede db-filtro-icone"+(filtroPerfil||soSalvos||filtroPasta?" ativo":"")} onClick={()=>setFiltrosAbertos(a=>!a)} aria-label="Filtros" title="Filtros"><DbIcone tipo="filtro" tam={17}/></button>
+                {filtrosAbertos && <div className="db-pop db-pop-filtros">
+                  <label className="db-check"><input type="checkbox" checked={soSalvos} onChange={e=>setSoSalvos(e.target.checked)}/><span className="db-caixinha"><Icon name="check" size={13}/></span>Só os salvos</label>
+                  {pastas.length>0 && <label>Pasta<select value={filtroPasta} onChange={e=>setFiltroPasta(e.target.value)}><option value="">Todas</option>{pastas.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>}
+                  <button className="db-link db-sublinhado" onClick={mostrarOcultos}>Mostrar os vídeos que ocultei</button>
+                  {perfis.length>0 && <button className="db-link db-sublinhado" onClick={()=>{ setFiltrosAbertos(false); carregarNovos(true); }}>Buscar vídeos novos agora</button>}
+                  <button className="db-link db-sublinhado" onClick={()=>setEditandoPerfis(true)}>Perfis que eu acompanho</button>
+                </div>}
+              </div>
+            </div>
+            {msgTrans && transcrevendoId===null && msgTrans.erro && <p className="db-dica db-dica-erro">{msgTrans.texto}</p>}
+            {novosFiltrados.length || refsFiltradas.length ? (
+              <><div className="db-trilho" ref={trilho}>
+                {novosFiltrados.map(n=>{
+                  const recente = n.publicado_em && (Date.now()-new Date(n.publicado_em).getTime()) < 3*86400000;
+                  const legenda = String(n.legenda||"").split("\n")[0].trim();
+                  return (
+                    <article key={"n"+n.id} className="db-insp-card">
+                      <a className="db-insp-capa" href={n.link} target="_blank" rel="noopener" aria-label="Assistir o vídeo">
+                        {n.capa ? <img src={n.capa} alt="" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.style.display="none";}}/> : null}
+                        {recente && <span className="db-novo">novo</span>}
+                        <span className="db-insp-rede"><DbIcone tipo={n.rede==="tiktok"?"tiktok":"instagram"} tam={17}/></span>
+                        <span className="db-insp-play"><DbIcone tipo="play" tam={13}/>{n.visualizacoes ? fmtNum(n.visualizacoes) : "assistir"}</span>
+                      </a>
+                      <a className="db-insp-txt" href={n.link} target="_blank" rel="noopener"><b>“{(legenda || "Vídeo novo").slice(0,80)}”</b></a>
+                      <span className="db-insp-perfil">{n.publicado_em ? "Postado em "+new Date(n.publicado_em).toLocaleDateString("pt-BR") : "Vídeo novo"}</span>
+                      <div className="db-insp-rodape">
+                        <button className="db-btn-mini" onClick={()=>transcrever(null, n.link)}>Transcrever</button>
+                        <span className="db-card-icones">
+                          <button className="db-salvar" onClick={()=>ocultarNovo(n)} aria-label="Ocultar este vídeo" title="Ocultar este vídeo"><DbIcone tipo="olhoFechado" tam={17}/></button>
+                          <button className={"db-salvar"+(salvos["n"+n.id]?" ok":"")} onClick={()=>alternarSalvo("n"+n.id)} aria-pressed={!!salvos["n"+n.id]} aria-label="Salvar" title="Salvar"><DbIcone tipo="marcador" tam={17}/></button>
+                        </span>
+                      </div>
+                    </article>
+                  );
+                })}
+                {refsFiltradas.map(r=>{
+                  const capa = r.link && capas[r.link] && capas[r.link].imagem;
+                  return (
+                    <article key={r.id} className="db-insp-card">
+                      <button className="db-insp-capa" onClick={()=>setRefAberta(r)} aria-label={"Ver análise: "+(r.gancho||r.titulo)}>
+                        {capa ? <img src={capa} alt="" onError={e=>{e.currentTarget.style.display="none";}}/> : null}
+                        <span className="db-insp-rede"><DbIcone tipo={iconeRede(r.origem)} tam={17}/></span>
+                        <span className="db-insp-play"><DbIcone tipo="play" tam={13}/>{r.gancho_tipo || "ver"}</span>
+                      </button>
+                      <button className="db-insp-txt" onClick={()=>setRefAberta(r)}><b>“{(r.gancho || r.titulo || "").slice(0,80)}”</b></button>
+                      <span className="db-insp-perfil">{r.gancho_tipo ? "Gancho de "+r.gancho_tipo : "Transcrito"}</span>
+                      <div className="db-insp-rodape">
+                        <span>{etiquetas(r).map(t=><span key={t} className="db-tag">{t}</span>)}</span>
+                        <span className="db-card-icones">
+                          <button className="db-salvar" onClick={()=>ocultarRef(r)} aria-label="Ocultar este vídeo" title="Ocultar este vídeo"><DbIcone tipo="olhoFechado" tam={17}/></button>
+                          <button className={"db-salvar"+(salvos[r.id]?" ok":"")} onClick={()=>alternarSalvo(r.id)} aria-pressed={!!salvos[r.id]} aria-label="Salvar" title="Salvar"><DbIcone tipo="marcador" tam={17}/></button>
+                        </span>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+              <DbBarraRolagem alvo={trilho} deps={novosFiltrados.length+"-"+refsFiltradas.length}/>
+              </>
+            ) : (
+              // ainda sem vídeos: os quadradinhos ficam no lugar, esperando os vídeos dos perfis chegarem
+              <>
+                <div className="db-trilho db-trilho-vazio" aria-hidden="true">
+                  {[0,1,2,3,4].map(i=>(
+                    <article key={i} className="db-insp-card">
+                      <span className="db-insp-capa db-esqueleto"><span className="db-insp-rede"><DbIcone tipo={i%2?"tiktok":"instagram"} tam={17}/></span></span>
+                      <span className="db-linha-esq"/><span className="db-linha-esq curta"/>
+                    </article>
+                  ))}
+                </div>
+                <p className="db-dica db-dica-centro">{refs.length || novos.length ? "Nenhuma inspiração com esses filtros."
+                  : buscaInfo && buscaInfo.rodando ? "Buscando os vídeos novos dos perfis que você acompanha. Eles aparecem aqui em alguns minutos."
+                  : buscaInfo && buscaInfo.semToken ? "Os vídeos dos perfis que você acompanha aparecem aqui assim que a busca automática (Apify) for ligada no Supabase."
+                  : "Os vídeos novos dos perfis que você acompanha aparecem aqui."}</p>
+              </>
+            )}
+          </>}
+
+          {abaInsp==="transcrever" && (
+            <div className="db-painel-aba">
+              <p className="db-dica">Viu um vídeo bom ou salvou algum no seu Instagram? Copie o link (no Instagram: ⋯ e depois Copiar link), cole aqui e escolha a pasta. Eu transcrevo, separo gancho, estrutura e CTA, e ele vira inspiração.</p>
+              <form className="db-conc-form" onSubmit={transcrever}>
+                <input value={linkTrans} onChange={e=>setLinkTrans(e.target.value)} placeholder="Link do vídeo do Instagram, TikTok ou YouTube" aria-label="Link do vídeo" disabled={transcrevendo}/>
+                <select value={pastaTrans} onChange={e=>setPastaTrans(e.target.value)} aria-label="Pasta" disabled={transcrevendo}>
+                  <option value="">Sem pasta</option>
+                  {pastas.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}
+                  <option value="nova">+ Nova pasta</option>
+                </select>
+                {pastaTrans==="nova" && <input value={nomeNovaPasta} onChange={e=>setNomeNovaPasta(e.target.value)} placeholder="Nome da pasta (ex.: Ganchos, Skincare)" aria-label="Nome da nova pasta" disabled={transcrevendo} style={{flex:"0 1 220px", minWidth:160}}/>}
+                <button className="db-btn-escuro" type="submit" disabled={transcrevendo}>{transcrevendo ? "Transcrevendo..." : "Transcrever"}</button>
+              </form>
+              {msgTrans && <p className={"db-dica"+(msgTrans.erro?" db-dica-erro":"")}>{msgTrans.texto}</p>}
+            </div>
+          )}
+
+          {abaInsp==="analise" && (
+            <div className="db-painel-aba">
+              {planos.length>0 && <>
+                <h3 className="db-subtitulo">Meus vídeos inspirados</h3>
+                <div className="db-planos">
+                  {planos.map(p=>{
+                    const prox = proximaEtapa(p);
+                    return (
+                      <button key={p.id} className="db-plano-card" onClick={()=>setPlanoAberto(p.id)}>
+                        <b>{p.versao.titulo}</b>
+                        <span className="db-plano-passos">{ETAPAS_PLANO.map(([k,nome])=><i key={k} className={p.feitos && p.feitos[k]?"ok":""} title={nome+(p.datas[k]?" · "+dataBR(p.datas[k]):"")}/>)}</span>
+                        <small>{prox ? `Próximo: ${prox[1]}${p.datas[prox[0]] ? " · "+dataBR(p.datas[prox[0]]) : ""}` : p.resultado && p.resultado.veredito ? "Resultado: "+p.resultado.veredito : "Tudo feito"}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+                <h3 className="db-subtitulo">Vídeos analisados</h3>
+              </>}
+              {refs.length ? refs.slice(0,6).map(r=>(
+                <button key={r.id} className="db-analise" onClick={()=>setRefAberta(r)}>
+                  <span className="db-analise-topo"><DbIcone tipo={iconeRede(r.origem)} tam={15}/>{r.origem==="tiktok" ? "TikTok" : r.origem==="youtube" ? "YouTube" : "Instagram"}{r.gancho_tipo && <span className="db-tag">gancho de {r.gancho_tipo}</span>}</span>
+                  <b>“{r.gancho || r.titulo}”</b>
+                  {r.por_que && <small>{r.por_que}</small>}
+                </button>
+              )) : <p className="db-vazio">Quando você transcrever vídeos, a análise de cada um aparece aqui.</p>}
+            </div>
+          )}
+
+          {abaInsp==="ideia" && (
+            <div className="db-painel-aba">
+              <div className="db-ideia-topo">
+                <p className="db-dica" style={{margin:0}}>Ideias para você gravar, criadas a partir dos perfis que você acompanha e dos vídeos que você transcreveu.</p>
+                <button className="db-btn-claro" onClick={gerarIdeias} disabled={gerandoIdeias}>{gerandoIdeias ? "Criando..." : ideias.length ? "Novas ideias" : "Criar ideias"}</button>
+              </div>
+              {erroIdeias && <p className="db-dica db-dica-erro">{erroIdeias}</p>}
+              <div className="db-ideias-lista">
+                {ideias.map((i,n)=><button key={i.titulo+n} onClick={()=>setIdeiaAberta(i)}><b>{i.titulo}</b><small>{i.descricao}</small>{i.inspirado_em && <em>inspirado em {i.inspirado_em}</em>}</button>)}
+              </div>
+            </div>
+          )}
         </section>
+
+        {/* Transcrições saíram do Dashboard (out/2026): ficam só em Conteúdo > Referências > Transcrever vídeo */}
       </div>
+
+      {/* janelas */}
+      {refAberta && <Modal title="Análise do vídeo" onClose={()=>setRefAberta(null)}>
+        <div className="db-ideia-detalhe">
+          {refAberta.titulo && <p>{refAberta.titulo}</p>}
+          {refAberta.gancho && <><small>Gancho{refAberta.gancho_tipo ? " · "+refAberta.gancho_tipo : ""}</small><p className="db-gancho">“{refAberta.gancho}”</p></>}
+          {refAberta.desenvolvimento && <><small>Estrutura</small><ol>{String(refAberta.desenvolvimento).split("\n").filter(Boolean).map((p,k)=><li key={k}>{p}</li>)}</ol></>}
+          {refAberta.cta && <><small>CTA</small><p>{refAberta.cta}</p></>}
+          {refAberta.por_que && <><small>Por que prende</small><p>{refAberta.por_que}</p></>}
+          {refAberta.link && <p style={{marginTop:12}}><a href={refAberta.link} target="_blank" rel="noopener">Ver o vídeo original</a></p>}
+          {refAberta.id && <label className="db-pasta-campo">Pasta
+            <select value={refPasta[refAberta.id]||""} onChange={async e=>{ let id = e.target.value; if(id==="nova"){ id = criarPasta((await painelDialogo.texto("Nome da nova pasta:", ""))||""); } moverParaPasta(refAberta.id, id); }}>
+              <option value="">Sem pasta</option>
+              {pastas.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}
+              <option value="nova">+ Nova pasta</option>
+            </select></label>}
+          <DbMinhaVersao key={refAberta.id} referencia={refAberta} plano={planos.find(p=>p.refId===refAberta.id)} nichos={[...new Set(jobs.map(j=>j.nicho).filter(Boolean))]}
+            onCriar={criarPlano} onAbrirPlano={()=>{ const p = planos.find(x=>x.refId===refAberta.id); setRefAberta(null); setAbaInsp("analise"); if(p) setPlanoAberto(p.id); }}/>
+          <button className="db-btn-claro" style={{marginTop:14}} onClick={()=>{ setRoteiroNovo({referencia:refAberta}); setRefAberta(null); }}>Criar roteiro parecido</button>
+        </div>
+      </Modal>}
+      {ideiaAberta && <Modal title={ideiaAberta.titulo} onClose={()=>setIdeiaAberta(null)}>
+        <div className="db-ideia-detalhe">
+          {ideiaAberta.descricao && <p>{ideiaAberta.descricao}</p>}
+          {ideiaAberta.gancho && <><small>Gancho</small><p className="db-gancho">“{ideiaAberta.gancho}”</p></>}
+          {ideiaAberta.formato && <><small>Formato</small><p>{ideiaAberta.formato}</p></>}
+          {ideiaAberta.passos && ideiaAberta.passos.length>0 && <><small>Como fazer</small><ol>{ideiaAberta.passos.map((p,k)=><li key={k}>{p}</li>)}</ol></>}
+          {ideiaAberta.inspirado_em && <><small>Inspiração</small><p>{ideiaAberta.inspirado_em}{ideiaAberta.link && <> · <a href={ideiaAberta.link} target="_blank" rel="noopener">ver o vídeo de referência</a></>}</p></>}
+          <button className="db-btn-escuro" onClick={()=>{ const i = ideiaAberta; setIdeiaAberta(null); setRoteiroNovo({ideia:[i.titulo, i.descricao, i.gancho ? "Gancho: "+i.gancho : "", i.passos && i.passos.length ? "Passos: "+i.passos.join("; ") : ""].filter(Boolean).join("\n")}); }}>Criar roteiro<DbIcone tipo="seta" tam={16}/></button>
+        </div>
+      </Modal>}
+      {roteiroNovo && <CriarRoteiroUGC referencia={roteiroNovo.referencia} ideiaInicial={roteiroNovo.ideia} nichos={[...new Set(jobs.map(j=>j.nicho).filter(Boolean))]}
+        onClose={()=>setRoteiroNovo(null)} onSalvar={salvarRoteiroCriado} onVerQuadro={()=>{ setRoteiroNovo(null); go("roteiros"); }}/>}
+      {planoAtual && <DbPlano plano={planoAtual} onMudar={mudarPlano} onTirar={()=>tirarPlano(planoAtual)} onFechar={()=>setPlanoAberto(null)} irRoteiros={()=>{ setPlanoAberto(null); go("roteiros"); }}/>}
+      {editandoPerfis && <DbPerfis lista={perfis} onSalvar={salvarPerfis} onFechar={()=>setEditandoPerfis(false)}/>}
+    </div>
+  );
+}
+        <section className="db-bloco dn-radar">
+          <div className="dn-bt"><h2>Radar do meu negócio</h2><span className="dz-sub">Pontos que merecem sua atenção</span></div>
+          <div className="dn-radar-grid">
+            <button onClick={()=>go("followups")}><b>{(state.followups||[]).filter(f=>f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje).length}</b><small>Marcas aguardando retorno</small></button>
+            <button onClick={()=>go("jobs")}><b>{ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)<=3).length}</b><small>Entregas vencidas ou próximas</small></button>
+            <button onClick={()=>go("financeiro")}><b>{atrasadoLista.length}</b><small>Pagamentos atrasados</small></button>
+            <button onClick={()=>go("prospeccao")}><b>{(state.prospeccoes||[]).filter(p=>/enviad|proposta/i.test(p.status||"") && p.proximoContato && p.proximoContato<=hoje).length}</b><small>Propostas sem acompanhamento</small></button>
+          </div>
+        </section>
+        {/* campanhas em andamento */}
+        <section className={"db-bloco dn-campanhas"+(fechadoB("campanhas")?" fechado":"")}>
+          <div className="dn-bt"><h2>Campanhas em andamento</h2><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("campanhas")}</span></div>
+          {campanhas.length ? <div className="dn-tabela">
+            <div className="dn-linha dn-cab"><span>Marca</span><span>Entregas</span><span>Etapa</span><span>Prazo</span></div>
+            {campanhas.slice(0,6).map(j=>{ const p = progressoJob(j), at = etapaDoJob(j, state.roteiros), d = j.prazoEntrega ? diasAte(j.prazoEntrega) : null;
+              const abrir = ()=>abrirJob(j.id), marca = comAMarca(at);
+              return <div className="dn-linha dn-clica" key={j.id} onClick={abrir}>
+                <button className="dn-marca" onClick={abrir}><DbLogo marca={j.marca} logos={logos}/><span><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></button>
+                <span className="dn-prog">{p.total ? <><small>{p.feitos} de {p.total}</small><i><b style={{width:Math.max(3,p.pct)+"%"}}/></i></> : <small>sem entregáveis</small>}</span>
+                <span><button className={"dn-chip c-"+classeEtapa(at)} title={at>=ETAPAS_JOB.length-1 ? ETAPAS_JOB[at] : `${ETAPAS_JOB[at]} · toque para passar para "${ETAPAS_JOB[at+1]}"`} onClick={e=>{ e.stopPropagation(); avancarJob(j); }}>{nomeEtapa(at)}</button></span>
+                <span className="dn-prazo">{j.prazoEntrega ? <><b>{dataBR(j.prazoEntrega).slice(0,5)}</b><small className={marca ? "" : d<0?"atr":d===0?"hj":""}>{marca && d<=0 ? (at===5 ? "entregue" : "com a marca") : d<0 ? `${-d} dia${d===-1?"":"s"} atrasado` : d===0 ? "hoje" : `em ${d} dia${d===1?"":"s"}`}</small></> : <small>sem prazo</small>}</span>
+              </div>; })}
+          </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
+        </section>
+
+
+      </div>
+
+      {/* Inspiração permanece conectada à biblioteca atual */}
 
       {/* inspirações | ferramentas */}
       <div className="db-baixo">
