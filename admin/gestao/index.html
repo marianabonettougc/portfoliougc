@@ -4871,7 +4871,6 @@ function EscopoJob({f, setF}){
         entregaveis:{...e, videos:muda(e.videos,"videos"), fotos:muda(e.fotos,"fotos"), stories:muda(e.stories,"stories")}};
     });
   }
-  const temItens = itensDoJobTodos(f).length > 0;
   const sem = valorComum(f, "semAprovacao").v;
   const campoData = (campo, rotulo) => { const {v, misto} = valorComum(f, campo); return (
     <label className="esc-prazo" key={campo}>{rotulo}
@@ -5490,7 +5489,9 @@ function OrgCard({j, onEdit, onDelete, onMarkPaid, onDuplicate, onDragStart}){
   const nv = qtdItens(e.videos), nf = qtdItens(e.fotos), ns = qtdItens(e.stories);
   const pct = total ? Math.round(feitos/total*100) : 0;
   const pago = jobPago(j), permuta = j.tipoJob==="Permuta";
-  const prazo = j.categoria==="Publi" ? postagemDoJob(j) : (entregasDoJob(j).slice(-1)[0] || j.prazoEntrega || "");
+  const entregaFinal = entregasDoJob(j).slice(-1)[0] || "";
+  const publicacao = j.categoria==="Publi" ? postagemDoJob(j) : "";
+  const prazo = publicacao || entregaFinal || j.prazoEntrega || "";
   const atrasado = prazo && diasAte(prazo)<0 && !ehFinalizado(j.status);
   const unidade = nv && !nf && !ns ? (total>1?"vídeos":"vídeo") : (total>1?"entregas":"entrega");
   return (
@@ -5523,7 +5524,9 @@ function OrgCard({j, onEdit, onDelete, onMarkPaid, onDuplicate, onDragStart}){
         <span className={"org-valor"+(permuta?" permuta":"")}><Icon name={permuta?"redeem":"payments"} size={14}/>{permuta ? "Permuta" : fmtMoneyCur(j.valor, j.moeda)}</span>
         {!permuta && <span className={"org-selo"+(pago?" pago":"")}><Icon name={pago?"check_circle":"schedule"} size={12}/>{pago?"Pago":"A receber"}</span>}
       </div>
-      {prazo ? <div className={"org-data"+(atrasado?" atraso":"")}><Icon name="event" size={13}/>{j.categoria==="Publi"?"Postagem":"Entrega"} {dataBR(prazo)}</div> : null}
+      {entregaFinal ? <div className={"org-data"+(diasAte(entregaFinal)<0 && !ehFinalizado(j.status)?" atraso":"")}><Icon name="event" size={13}/>Entrega final {dataBR(entregaFinal)}</div> : null}
+      {publicacao ? <div className={"org-data"+(diasAte(publicacao)<0 && !ehFinalizado(j.status)?" atraso":"")}><Icon name="event" size={13}/>Publicação {dataBR(publicacao)}</div> : null}
+      {!entregaFinal && !publicacao && prazo ? <div className={"org-data"+(atrasado?" atraso":"")}><Icon name="event" size={13}/>Prazo {dataBR(prazo)}</div> : null}
     </div>
   );
 }
