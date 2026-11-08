@@ -306,7 +306,7 @@ DESIGN ATUAL (JSON): ${JSON.stringify(corpo.design || {}).slice(0, 60000)}`;
 async function importar(supa: any, uid: string, corpo: any) {
   const url = String(corpo.url || "").trim();
   if (!/^https:\/\//i.test(url)) throw new ErroIA("Link inválido.", 400);
-  const UA = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
+  const UA = "PainelMariBonetto/1.0 (pre-visualizacao de link; marianabonetto.com.br)";
   let img = url, titulo = "";
   let r = await fetch(url, { headers: { "User-Agent": UA, Accept: "text/html,image/*" }, redirect: "follow" });
   let tipo = r.headers.get("content-type") || "";
@@ -314,7 +314,7 @@ async function importar(supa: any, uid: string, corpo: any) {
     const html = (await r.text()).slice(0, 400000);
     const meta = (p: string) => (html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${p}["'][^>]+content=["']([^"']+)`, "i")) || html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${p}["']`, "i")) || [])[1];
     img = (meta("og:image") || meta("twitter:image") || "").replace(/&amp;/g, "&");
-    titulo = (meta("og:title") || "").replace(/&amp;/g, "&").replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))).slice(0, 120);
+    titulo = (meta("og:title") || "").replace(/&amp;/g, "&").replace(/&quot;/g, "\"").replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))).slice(0, 120);
     if (!img) throw new ErroIA("Esse site não deixou ler a imagem pelo link (o Instagram costuma bloquear). Envie um print da referência.", 422);
     r = await fetch(img, { headers: { "User-Agent": UA } });
     tipo = r.headers.get("content-type") || "";
