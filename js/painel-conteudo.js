@@ -715,7 +715,7 @@
         ${p.roteiro_id ? `<p class="pc-ajuda pc-ligado">Este conteúdo está ligado a um roteiro em Meus roteiros. Edite o roteiro por lá (botão Abrir roteiro).</p>` : ""}
         <label class="campo pc-largo"><span>Objetivo</span><input name="proposito" value="${esc(p.proposito)}" placeholder="Para que serve esse conteúdo no seu perfil"></label>
         <label class="campo pc-largo"><span>Hook</span><textarea name="hook" rows="2">${esc(p.hook)}</textarea></label>
-        <div class="pg-usar-linha"><button type="button" class="btn btn-mini" data-usar-gancho>${ic.brilho}Usar um gancho magnético</button>${(st.ganchos || []).filter((g) => p.id && g.post_id === p.id).map((g) => `<span class="pg-testando">testando: ${esc(semAspas(g.texto).slice(0, 60))}</span>`).join("")}</div>
+        <div class="pg-usar-linha"><button type="button" class="btn btn-mini" data-usar-gancho>${ic.brilho}Usar um gancho magnético</button><button type="button" class="btn btn-mini pg-auto-btn" data-gancho-auto title="A IA escolhe o gancho que mais combina com este produto e já preenche">${ic.brilho}Escolher o melhor pra mim</button>${(st.ganchos || []).filter((g) => p.id && g.post_id === p.id).map((g) => `<span class="pg-testando">testando: ${esc(semAspas(g.texto).slice(0, 60))}</span>`).join("")}</div>
         ${ganchos.length ? `<details class="pc-editor-extra pc-editor-ganchos"><summary>Outras opções de gancho (${ganchos.length})</summary><div class="pc-ganchos">${ganchos.map((g) => `<button type="button" class="cr-chip" data-gancho>${esc(g)}</button>`).join("")}</div></details>` : ""}
         </div></details>
         <details class="pc-editor-secao"><summary><strong>Roteiro e publicação</strong><span>Desenvolvimento, CTA, legenda e notas</span></summary><div class="pc-editor-conteudo">
@@ -736,6 +736,11 @@
     delete dlg.dataset.ganchoTeste; if (p.ganchoTeste) dlg.dataset.ganchoTeste = String(p.ganchoTeste);
     const ug = $("[data-usar-gancho]", dlg);
     if (ug) ug.addEventListener("click", () => escolherGancho(dlg, p));
+    const ga = $("[data-gancho-auto]", dlg);
+    if (ga) ga.addEventListener("click", async () => {
+      const antes = ga.innerHTML; ga.disabled = true; ga.textContent = "Escolhendo o melhor gancho…";
+      try { await ganchoComIA(dlg, p, null); } finally { ga.disabled = false; ga.innerHTML = antes; }
+    });
     $("[data-salvar]", dlg).addEventListener("click", async () => {
       try { const o = ler(); if (o.data && !o.data.startsWith(st.mes)) { o.mes = o.data.slice(0, 7); } const salvo = await salvar(o); const gt = dlg.dataset.ganchoTeste && (st.ganchos || []).find((g) => String(g.id) === dlg.dataset.ganchoTeste); if (gt && salvo && salvo.id) { try { await marcarTeste(gt, salvo.id); } catch (e2) { /* o conteúdo já salvou */ } } dlg.close(); if (o.data) st.semana = semanaDe(o.data); pintar(); toast("Conteúdo salvo."); }
       catch (e) { toast("Não consegui salvar: " + e.message, true); }
@@ -1297,12 +1302,55 @@
   }
   // onde cada tipo entra no conteúdo: verbal vira a 1ª fala, textual vira o texto na tela, visual vira a cena de abertura,
   // microgancho entra no meio do desenvolvimento
-  function aplicarGancho(o, g) {
+  function aplicarGancho(o, g, adaptado) {
     const t = semAspas(g.texto), ex = g.exemplo && !/skill proíbe|cuidado/i.test(g.exemplo) ? g.exemplo : "";
-    if (g.tipo === "Verbal") return { hook: ex || t };
-    if (g.tipo === "Textual") return { hook: [o.hook, "TEXTO NA TELA: " + (ex || t)].filter(Boolean).join("\n") };
-    if (g.tipo === "Visual") return { hook: ["[ABERTURA: " + (ex || t) + "]", o.hook].filter(Boolean).join("\n") };
-    return { desenvolvimento: [o.desenvolvimento, "MICROGANCHO NO MEIO: " + (ex && !/^(Em |No |Na |Antes |Depois |Com )/.test(ex) ? ex : t)].filter(Boolean).join("\n") };
+    const a = adaptado ? String(adaptado).replace(/^\[ABERTURA:\s*/i, "").replace(/^TEXTO NA TELA:\s*/i, "").replace(/^MICROGANCHO NO MEIO:\s*/i, "").replace(/\]$/, "").trim() : "";
+    const tira = (txt, re) => String(txt || "").split("\n").filter((l) => !re.test(l.trim())).join("\n").trim();
+    if (g.tipo === "Verbal") return { hook: a || ex || t };
+    if (g.tipo === "Textual") return { hook: [tira(o.hook, /^TEXTO NA TELA:/i), "TEXTO NA TELA: " + (a || ex || t)].filter(Boolean).join("\n") };
+    if (g.tipo === "Visual") return { hook: ["[ABERTURA: " + (a || ex || t) + "]", tira(o.hook, /^\[ABERTURA:/i)].filter(Boolean).join("\n") };
+    return { desenvolvimento: [tira(o.desenvolvimento, /^MICROGANCHO NO MEIO:/i), "MICROGANCHO NO MEIO: " + (a || (ex && !/^(Em |No |Na |Antes |Depois |Com )/.test(ex) ? ex : t))].filter(Boolean).join("\n") };
+  }
+  // nov/2026: a IA (função gancho-ia) adapta o gancho ao produto do conteúdo; g = null escolhe o melhor da lista sozinha
+  function lerConteudoDaJanela(dlgPost, p) {
+    const v = (n) => { const el = $(`[name=${n}]`, dlgPost); return el ? el.value.trim() : ""; };
+    const insp = p.inspiracao || {};
+    return { tema: v("tema"), marca: v("marca"), nicho: v("nicho"), formato: v("formato"), tipo_roteiro: v("tipo_roteiro"), tipo_ugc: v("tipo_ugc"), funil: v("funil"),
+      proposito: v("proposito"), hook: v("hook"), desenvolvimento: v("desenvolvimento"), cta: v("cta"), notas: v("notas"), referencia: [insp.perfil, insp.legenda].filter(Boolean).join(": ") };
+  }
+  async function ganchoComIA(dlgPost, p, g) {
+    const todos = st.ganchos || [];
+    if (!todos.length) { toast("Nenhum gancho na lista ainda.", true); return false; }
+    const candidatos = g ? [g] : todos.filter((x) => x.status !== "Não funcionou").sort((a, b) => (b.favorito - a.favorito) || (ORDEM_ESC[a.status] - ORDEM_ESC[b.status]) || a.id - b.id).slice(0, 90);
+    const conteudo = lerConteudoDaJanela(dlgPost, p);
+    let r = null;
+    try {
+      const { data, error } = await banco().functions.invoke("gancho-ia", { body: { conteudo, auto: !g, ganchos: candidatos.map((x) => ({ id: x.id, texto: x.texto, tipo: x.tipo, exemplo: x.exemplo, status: x.status, favorito: x.favorito })) } });
+      if (error) { let m = error.message; try { const j = await error.context.json(); m = j.error || m; } catch (e2) { /* sem corpo */ } throw new Error(m); }
+      if (data && data.error) throw new Error(data.error);
+      r = data;
+    } catch (er) {
+      if (!g) { toast("Não consegui escolher agora: " + er.message, true); return false; }
+      toast("A IA não respondeu (" + er.message + "). Coloquei o gancho no modelo original.", true);
+    }
+    const usado = (r && todos.find((x) => String(x.id) === String(r.id))) || g;
+    const atual = { hook: $("[name=hook]", dlgPost).value.trim(), desenvolvimento: $("[name=desenvolvimento]", dlgPost).value.trim() };
+    const novo = aplicarGancho(usado.tipo === "Verbal" ? {} : atual, usado, r && r.texto);
+    if (novo.hook != null) $("[name=hook]", dlgPost).value = novo.hook;
+    if (novo.desenvolvimento != null) {
+      $("[name=desenvolvimento]", dlgPost).value = novo.desenvolvimento;
+      const sec = $("[name=desenvolvimento]", dlgPost).closest("details"); if (sec) sec.open = true;
+    }
+    const linha = $(".pg-usar-linha", dlgPost);
+    if (linha) {
+      let nota = $(".pg-porque", dlgPost);
+      if (!nota) { nota = document.createElement("p"); nota.className = "pc-ajuda pg-porque"; linha.after(nota); }
+      nota.innerHTML = `<b>${esc(usado.tipo)} · ${esc(semAspas(usado.texto).slice(0, 70))}</b>${r && r.porque ? "<br>" + esc(r.porque) : ""}`;
+    }
+    const onde = usado.tipo === "Microgancho" ? "no meio do roteiro" : usado.tipo === "Textual" ? "como texto na tela" : usado.tipo === "Visual" ? "como cena de abertura" : "no Hook";
+    if (p.id) { try { await marcarTeste(usado, p.id); toast(`Gancho ${r ? "adaptado ao produto e " : ""}colocado ${onde}. Ficou "Testando" neste conteúdo. Lembre de salvar.`); } catch (er) { toast("Apliquei, mas não marquei o teste: " + er.message, true); } }
+    else { dlgPost.dataset.ganchoTeste = String(usado.id); toast(`Gancho ${r ? "adaptado ao produto e " : ""}colocado ${onde}. Ao salvar, ele fica marcado como testando.`); }
+    return true;
   }
   async function marcarTeste(g, postId) {
     const campos = { post_id: postId, usos: (g.usos || 0) + 1 };
@@ -1318,18 +1366,15 @@
       $(".pg-lista", d).innerHTML = lista.length ? lista.map((g) => `<button type="button" class="pg-opcao" data-g="${g.id}"><span class="pc3-chip c-${COR_G[g.tipo] || "x"}">${esc(g.tipo)}</span><b>${esc(semAspas(g.texto))}</b>${g.exemplo ? `<small>${esc(g.exemplo)}</small>` : ""}<i>${esc(g.status)}${g.favorito ? " · ★" : ""}</i></button>`).join("")
         : `<p class="pc-ajuda">${(st.ganchos || []).length ? "Nada com esse filtro." : "Nenhum gancho na lista ainda."}</p>`;
       $$(".pg-opcao", d).forEach((b) => b.addEventListener("click", async () => {
-        const g = st.ganchos.find((x) => String(x.id) === b.dataset.g); if (!g) return;
-        const atual = { hook: $("[name=hook]", dlgPost).value.trim(), desenvolvimento: $("[name=desenvolvimento]", dlgPost).value.trim() };
-        const novo = aplicarGancho(g.tipo === "Verbal" ? {} : atual, g);
-        if (novo.hook != null) $("[name=hook]", dlgPost).value = novo.hook;
-        if (novo.desenvolvimento != null) $("[name=desenvolvimento]", dlgPost).value = novo.desenvolvimento;
+        const g = st.ganchos.find((x) => String(x.id) === b.dataset.g); if (!g || d.classList.contains("ocupado")) return;
+        d.classList.add("ocupado"); b.classList.add("carregando"); const i = $("i", b); if (i) i.textContent = "Adaptando ao seu produto…";
+        await ganchoComIA(dlgPost, p, g);
         d.close();
-        if (p.id) { try { await marcarTeste(g, p.id); toast(`Gancho aplicado. Ele ficou "Testando" neste conteúdo. Lembre de salvar.`); } catch (er) { toast("Apliquei, mas não marquei o teste: " + er.message, true); } }
-        else { dlgPost.dataset.ganchoTeste = String(g.id); toast("Gancho aplicado. Ao salvar, ele fica marcado como testando neste conteúdo."); }
       }));
     };
     d.innerHTML = `<div class="janela-cabeca"><h2>Ganchos <em>magnéticos</em></h2><button class="icone-btn" type="button" data-x aria-label="Fechar">${ic.x}</button></div>
-      <div class="janela-corpo"><p class="pc-ajuda">Verbal vira a primeira fala. Textual entra como texto na tela. Visual vira a cena de abertura. Microgancho vai para o meio do roteiro.</p>
+      <div class="janela-corpo"><p class="pc-ajuda">Clique num gancho e eu adapto ao produto deste conteúdo, já preenchido. Verbal vira a primeira fala, Textual o texto na tela, Visual a cena de abertura e Microgancho vai para o meio do roteiro.</p>
+        <button type="button" class="btn btn-principal pg-auto" data-auto>${ic.brilho}Escolher o melhor gancho pra este produto</button>
         <div class="pg-escolher-filtros"><nav class="pc2-seg" aria-label="Tipo"><button type="button" data-t="" class="ativa">Todos</button>${TIPOS_G.map(([t]) => `<button type="button" data-t="${t}">${t === "Microgancho" ? "Micro" : t}</button>`).join("")}</nav><input class="entrada" type="search" placeholder="Pesquisar" data-q></div>
         <div class="pg-lista"></div></div>`;
     document.body.appendChild(d);
@@ -1338,6 +1383,12 @@
     d.addEventListener("close", () => d.remove());
     $$("[data-t]", d).forEach((b) => b.addEventListener("click", () => { tipo = b.dataset.t; $$("[data-t]", d).forEach((x) => x.classList.toggle("ativa", x === b)); desenhar(); }));
     $("[data-q]", d).addEventListener("input", (e) => { q = e.target.value; desenhar(); });
+    $("[data-auto]", d).addEventListener("click", async (e) => {
+      const b = e.currentTarget; if (d.classList.contains("ocupado")) return;
+      d.classList.add("ocupado"); b.textContent = "Analisando o produto e escolhendo…";
+      const ok = await ganchoComIA(dlgPost, p, null);
+      if (ok) d.close(); else { d.classList.remove("ocupado"); b.innerHTML = `${ic.brilho}Escolher o melhor gancho pra este produto`; }
+    });
     desenhar(); d.showModal();
   }
   // ---------- PLANEJAMENTO ANUAL (nov/2026, carrossel "planejamento de conteúdo para 2027 com IA" da @giubeckers) ----------
