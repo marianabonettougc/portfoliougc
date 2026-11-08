@@ -1323,6 +1323,62 @@
     .dz-vis .dn-card-txt small{white-space:normal !important;overflow:visible}
     .dz-vis .dz-per{display:flex;width:max-content;margin:6px 0 0}
   }
+
+  /* Redesign do cadastro UGC / Publis — nov/2026. Camada visual isolada; lógica e dados preservados. */
+  .modal.job-form-modal{width:min(1180px,96vw);max-width:1180px;max-height:94vh;padding:28px 32px 22px;border:1px solid rgba(107,74,53,.12);border-radius:24px;background:#fffdf9;box-shadow:0 24px 80px rgba(61,43,32,.20);}
+  .modal-overlay:has(.job-form-modal){padding:16px;background:rgba(44,33,26,.38);backdrop-filter:blur(5px);}
+  .job-form-modal .modal-head{position:sticky;top:-28px;z-index:12;margin:-28px -32px 22px;padding:22px 32px 18px;background:rgba(255,253,249,.96);backdrop-filter:blur(12px);border-bottom:1px solid rgba(107,74,53,.10);}
+  .job-form-modal .modal-head h3{font-size:23px;font-weight:700;letter-spacing:-.035em;color:#38271e;}
+  .job-form-modal .modal-close{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:11px;background:#f7f0e8;color:#674a38;}
+  .job-form-modal .modal-close:hover{background:#eee1d4;}
+  .job-form-body{display:flex;flex-direction:column;gap:16px;padding-bottom:8px;}
+  .job-form-section{min-width:0;padding:20px 22px 18px;border:1px solid rgba(107,74,53,.12);border-radius:18px;background:#fff;box-shadow:0 3px 14px rgba(61,43,32,.035);}
+  .job-form-section-heading{display:flex;align-items:center;gap:12px;margin:0 0 18px;}
+  .job-form-section-heading>div{display:flex;flex-direction:column;gap:2px;}
+  .job-form-section-heading strong{font-size:16px;line-height:1.25;font-weight:700;color:#3d2b20;}
+  .job-form-section-heading small{font-size:12.5px;color:#887363;line-height:1.4;}
+  .job-form-index{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#f5e9de;color:#8e5d43;font-size:11px;font-weight:700;letter-spacing:.04em;flex-shrink:0;}
+  .job-form-identificacao>.field:first-of-type{max-width:100%;}
+  .job-form-identificacao .field{margin-bottom:13px;}
+  .job-form-identificacao .field>label,.job-form-modal .field>label{display:block;margin-bottom:6px;color:#755d4d;font-size:12.5px;font-weight:600;}
+  .job-form-identificacao input,.job-form-identificacao select,.job-form-modal .field input,.job-form-modal .field select,.job-form-modal .esc-prazo input{min-height:42px;border:1px solid #e7dbcf;border-radius:11px;background:#fcfaf7;padding:9px 12px;color:#49372b;font:inherit;font-size:13.5px;}
+  .job-form-identificacao input:focus,.job-form-identificacao select:focus,.job-form-modal .field input:focus,.job-form-modal .field select:focus,.job-form-modal .esc-prazo input:focus{outline:none;border-color:#b78365;box-shadow:0 0 0 3px rgba(183,131,101,.13);}
+  .job-form-identificacao .job-linha3{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr);gap:14px;margin-top:2px;}
+  .job-form-identificacao .job-linha3 .field{margin-bottom:0;}
+  .job-form-identificacao .job-linha3 .icon-btn{width:42px;height:42px;border:1px solid #e7dbcf;border-radius:11px;background:#fcfaf7;}
+  .job-form-identificacao .field:nth-of-type(3)>div{display:flex;gap:10px;}
+  .job-form-identificacao .field:nth-of-type(3)>div button{flex:1;min-height:42px;border-radius:11px!important;font-size:13.5px!important;}
+  .job-form-identificacao .field:nth-of-type(2)>div button[style*=\"background: rgb(168, 112, 88)\"]{box-shadow:0 3px 8px rgba(107,74,53,.12);}
+  .job-form-escopo .esc-caixa{margin:0;padding:0;border:0;background:transparent;}
+  .job-form-escopo .esc-titulo{margin:0 0 13px;padding:0 0 12px;border-bottom:1px solid #eee5dc;font-size:14px;}
+  .job-form-escopo .esc-grade{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+  .job-form-escopo .esc-item{min-height:48px;padding:8px 10px;border:1px solid #e9dfd5;border-radius:12px;background:#fcfaf7;}
+  .job-form-escopo .esc-item.on{border-color:#c79d83;background:#fbf3ec;}
+  .job-form-escopo .esc-nome{font-size:13px;font-weight:500;}
+  .job-form-escopo .ent-qtd{display:flex;align-items:center;border:1px solid #e9dfd5;border-radius:999px;background:#fff;padding:2px 5px;}
+  .job-form-escopo .ent-qtd button{width:24px;height:27px;border:0;background:transparent;color:#795b47;}
+  .job-form-escopo .ent-qtd input{width:24px!important;height:27px;min-height:27px;padding:0;border:0;background:transparent;text-align:center;font-size:13px;}
+  .job-form-escopo .esc-prazos{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px;padding:15px;border-radius:14px;background:#f8f3ed;}
+  .job-form-escopo .esc-prazo{gap:6px;font-size:12px;color:#755d4d;}
+  .job-form-escopo .esc-prazo input{width:100%;}
+  .job-form-escopo .ent-check-linha{display:flex;align-items:center;gap:6px;font-weight:400;}
+  .job-form-escopo .ent-check-linha input{width:auto;min-height:0;}
+  .job-form-escopo .esc-texto-topo{margin-top:14px;padding:13px 2px 8px;border-top:1px solid #eee5dc;font-size:13px;}
+  .job-form-escopo .escopo-texto{width:100%;min-height:110px;border:1px solid #e9dfd5;border-radius:12px;background:#fcfaf7;padding:12px 14px;font:inherit;font-size:13.5px;}
+  .job-form-sections{display:flex;flex-direction:column;gap:12px;}
+  .job-form-modal .job-secao{margin:0!important;padding:17px 20px!important;border:1px solid rgba(107,74,53,.13)!important;border-radius:16px!important;background:#fff!important;box-shadow:0 2px 10px rgba(61,43,32,.025);}
+  .job-form-modal .job-secao-topo{gap:8px;}
+  .job-form-modal .job-secao-titulo{font-size:14px;gap:9px;}
+  .job-form-modal .job-secao-titulo .material-symbols-outlined{color:#a16f52;}
+  .job-form-modal .job-secao-topo>.icon-btn{opacity:.45;transition:opacity .15s;}
+  .job-form-modal .job-secao:hover .job-secao-topo>.icon-btn{opacity:1;}
+  .job-form-modal .job-sub{border-color:#eee5dc;}
+  .job-form-modal .row-item{border:1px solid #eee5dc;border-radius:12px;background:#fcfaf7;box-shadow:none;padding:12px 14px;}
+  .job-form-modal .brief-texto,.job-form-modal .obs-texto{min-height:130px;border-color:#e9dfd5;background:#fcfaf7;font-size:13.5px;}
+  .job-form-footer{position:sticky;bottom:-22px;z-index:10;margin:18px -32px -22px;padding:16px 32px 20px;background:rgba(255,253,249,.96);backdrop-filter:blur(12px);border-top:1px solid rgba(107,74,53,.12);}
+  .job-form-footer .btn{min-height:46px;border-radius:12px;font-weight:600;}
+  @media(max-width:900px){.job-form-modal .modal-head{top:-22px;margin:-22px -22px 18px;padding:18px 22px 14px}.modal.job-form-modal{padding:22px}.job-form-footer{bottom:-22px;margin:16px -22px -22px;padding:14px 22px 18px}.job-form-escopo .esc-grade{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(max-width:640px){.modal-overlay:has(.job-form-modal){padding:0}.modal.job-form-modal{width:100%;max-width:none;max-height:100dvh;height:100dvh;border-radius:0;padding:18px 16px 16px}.job-form-modal .modal-head{top:-18px;margin:-18px -16px 16px;padding:16px;border-radius:0}.job-form-section{padding:16px 14px}.job-form-identificacao .job-linha3{grid-template-columns:1fr}.job-form-escopo .esc-grade{grid-template-columns:1fr 1fr}.job-form-escopo .esc-prazos{grid-template-columns:1fr;}.job-form-footer{bottom:-16px;margin:14px -16px -16px;padding:12px 16px 14px}}
 </style>
 </head>
 <body>
@@ -1519,7 +1575,7 @@ function MessageModal({title, text, onClose}){
   );
 }
 
-function Modal({title, onClose, children, largo, lembrete}){
+function Modal({title, onClose, children, largo, lembrete, classe}){
   const ref = useRef();
   // "Importante, notificar": abre o aviso no painel (js/lembretes.js, mesmo site)
   const podeNotificar = (()=>{ try{ return !!(window.parent !== window && window.parent.painelLembretes); }catch(e){ return false; } })();
@@ -1536,7 +1592,7 @@ function Modal({title, onClose, children, largo, lembrete}){
   },[]);
   return (
     <div className="modal-overlay" onMouseDown={(e)=>{ if(e.target===e.currentTarget) onClose(); }}>
-      <div className={"modal"+(largo?" modal-largo":"")} ref={ref} onMouseDown={(e)=>e.stopPropagation()}>
+      <div className={"modal"+(largo?" modal-largo":"")+(classe?" "+classe:"")} ref={ref} onMouseDown={(e)=>e.stopPropagation()}>
         <div className="modal-head">
           <h3>{title}</h3>
           <span style={{display:"flex", alignItems:"center", gap:4}}>
@@ -5106,10 +5162,12 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
   }
 
   return (
-    <Modal title={<span style={{display:"flex", alignItems:"center", gap:10}}>{initial? "Editar UGC / Publi" : "Novo UGC / Publi"}{savedTick && <span style={{fontSize:12.5, fontWeight:600, color:"var(--moss)", display:"flex", alignItems:"center", gap:3}}><Icon name="cloud_done" size={14}/>Salvo</span>}</span>} onClose={onClose} lembrete={f.id ? {tipo:"job", id:String(f.id), titulo:[f.marca, f.categoria].filter(Boolean).join(" · ") || "UGC / Publi"} : null}>
-      <Field label="Marca"><input value={f.marca} onChange={e=>set("marca",e.target.value)} placeholder="Nome da marca"/></Field>
-      <EscopoJob f={f} setF={setF}/>
-      <Field label="UGC ou Publi">
+    <Modal title={<span style={{display:"flex", alignItems:"center", gap:10}}>{initial? "Editar UGC / Publi" : "Novo UGC / Publi"}{savedTick && <span style={{fontSize:12.5, fontWeight:600, color:"var(--moss)", display:"flex", alignItems:"center", gap:3}}><Icon name="cloud_done" size={14}/>Salvo</span>}</span>} onClose={onClose} largo classe="job-form-modal" lembrete={f.id ? {tipo:"job", id:String(f.id), titulo:[f.marca, f.categoria].filter(Boolean).join(" · ") || "UGC / Publi"} : null}>
+      <div className="job-form-body">
+        <section className="job-form-section job-form-identificacao">
+          <div className="job-form-section-heading"><span className="job-form-index">01</span><div><strong>Identificação</strong><small>Marca, modalidade e classificação do trabalho</small></div></div>
+          <Field label="Marca"><input value={f.marca} onChange={e=>set("marca",e.target.value)} placeholder="Nome da marca"/></Field>
+          <Field label="UGC ou Publi">
         <div style={{display:"flex", gap:8}}>
           {["UGC","Publi"].map(c=>(
             <button type="button" key={c} onClick={()=>set("categoria",c)}
@@ -5119,7 +5177,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
           ))}
         </div>
       </Field>
-      <div className="job-linha3">
+          <div className="job-linha3">
         <Field label="Tipo de job">
           <select value={f.tipoJob} onChange={e=>set("tipoJob",e.target.value)}>
             <option>Pago</option><option>Permuta</option>
@@ -5148,8 +5206,13 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
           </select>
         </Field>
       </div>
+        </section>
+        <section className="job-form-section job-form-escopo">
+          <div className="job-form-section-heading"><span className="job-form-index">02</span><div><strong>Escopo e cronograma</strong><small>Entregáveis contratados e prazos da campanha</small></div></div>
+          <EscopoJob f={f} setF={setF}/>
+        </section>
 
-      <div ref={arrSecoes.ref}>
+      <div ref={arrSecoes.ref} className="job-form-sections">
       {secoesVisiveis.map((id, pos)=>(
         <SecaoJob key={id} id={id} titulo={layout.nomes[id] || SECOES_JOB[id].titulo} icone={SECOES_JOB[id].icone} badge={badgeSecao(id)}
           aberta={!layout.fechadas.includes(id)} onAlternar={()=>mudarLayout(l=>({...l, fechadas: l.fechadas.includes(id) ? l.fechadas.filter(x=>x!==id) : [...l.fechadas, id]}))}
@@ -5360,10 +5423,13 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
         <button key={id} type="button" className="btn btn-ghost btn-sm" style={{marginLeft:6}} onClick={()=>mudarLayout(l=>({...l, ocultas:l.ocultas.filter(x=>x!==id)}))}><Icon name="visibility" size={14}/>{layout.nomes[id] || SECOES_JOB[id].titulo}</button>
       ))}</p>}
 
+      <div className="job-form-footer">
       <button className="btn btn-primary" style={{width:"100%", justifyContent:"center"}} onClick={()=>{
         if(!f.marca){ alert("Informe a marca."); return; }
         onSave(comPrazoDosItens({...f, id: f.id || uid(), criadoEm: f.criadoEm || todayISO()}));
       }}>{initial ? "Salvar alterações" : "Criar UGC / Publi"}</button>
+      </div>
+      </div>
 
       {nichoModal && <NichoModal state={state} updateState={updateState} onClose={()=>setNichoModal(false)}/>}
     </Modal>
