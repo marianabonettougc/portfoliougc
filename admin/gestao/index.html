@@ -165,11 +165,23 @@
   .dz .dn-card-txt small{font-size:13px}.dz .dn-card-txt b{font-size:22px}.dz .dn-card-txt em{font-size:12px}
   .dz .dn-card-txt small,.dz .dn-card-txt em{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dz .dn-seta{display:none}
-  .dz-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(280px,1fr);grid-template-areas:"seg alc fazer" "cal cal prop" "camp camp fin";gap:14px;align-items:stretch}
-  .dz-grade.sem-ig{grid-template-areas:"seg seg fazer" "cal cal prop" "camp camp fin"}
+  .dz-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(280px,1fr);grid-template-areas:"seg alc fazer" "cal cal radar" "camp camp camp";gap:14px;align-items:stretch}
+  .dz-grade.sem-ig{grid-template-areas:"seg seg fazer" "cal cal radar" "camp camp camp"}
   .dz-grade > *{min-width:0;margin:0 !important}
-  .dz-ig-seg,.dz-ig-con{grid-area:seg}.dz-ig-alc{grid-area:alc}.dz-fazer{grid-area:fazer}.dz-prop{grid-area:prop}.dz-cal{grid-area:cal}.dz-grade > .dn-campanhas{grid-area:camp}.dz-grade > .dn-fin{grid-area:fin}
+  .dz-ig-seg,.dz-ig-con{grid-area:seg}.dz-ig-alc{grid-area:alc}.dz-fazer{grid-area:fazer}.dz-radar{grid-area:radar}.dz-cal{grid-area:cal}.dz-grade > .dn-campanhas{grid-area:camp}
   .dz-sub{display:block;font-size:13px;color:var(--db-suave);margin-top:2px}
+  .dz-radar-lista{list-style:none;margin:0;padding:0}
+  .dz-radar-lista li{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--db-linha);cursor:pointer}
+  .dz-radar-lista li:first-child{border-top:0}
+  .dz-radar-lista li>i{width:8px;height:8px;border-radius:50%;background:#c18a54;flex:none}
+  .dz-radar-lista li.radar-atraso>i{background:#c5533f}
+  .dz-radar-lista li.radar-meta>i{background:#8a634b}
+  .dz-radar-lista li span{min-width:0;flex:1}
+  .dz-radar-lista li b,.dz-radar-lista li small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dz-radar-lista li b{font-size:13px;font-weight:600}
+  .dz-radar-lista li small{font-size:11.5px;color:var(--db-suave);margin-top:2px}
+  .dz-radar-lista li>svg{flex:none;color:var(--db-suave)}
+  .dz-radar-vazio{cursor:default !important;color:var(--db-suave);font-size:13px}
   .dz-prog{position:relative;height:6px;border-radius:999px;background:var(--db-bege);margin:30px 2px 14px}
   .dz-prog i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:linear-gradient(90deg,#c08a5f,var(--db-cafe))}
   .dz-prog b{position:absolute;top:-24px;font-size:11.5px;font-weight:600;background:var(--db-cafe);color:#fff;border-radius:6px;padding:1px 6px}
@@ -203,7 +215,7 @@
   .dz-mes-grade button i{position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--db-cafe)}
   .dz-mes-grade button.hoje{box-shadow:inset 0 0 0 1.5px #a87058}
   .dz-mes-grade button.sel{background:var(--db-cafe);color:#fff}.dz-mes-grade button.sel i{background:#fff}
-  @media (max-width:1100px){ .dz > .dn-cards{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-grade,.dz-grade.sem-ig{grid-template-columns:minmax(0,1fr);grid-template-areas:"seg" "alc" "fazer" "cal" "prop" "camp" "fin"} .dz-cal-corpo{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:1100px){ .dz > .dn-cards{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-grade,.dz-grade.sem-ig{grid-template-columns:minmax(0,1fr);grid-template-areas:"seg" "alc" "fazer" "cal" "radar" "camp"} .dz-cal-corpo{grid-template-columns:minmax(0,1fr)} }
   @media (max-width:700px){ .dz .dn-ola{flex-direction:column;align-items:flex-start;gap:2px} .dz .dn-data{order:-1} .dz .dn-ola h1{font-size:27px} .dz > .dn-cards{gap:10px} .dz .dn-card{padding:12px 14px;gap:10px} .dz .dn-card .dn-ico{width:34px;height:34px} .dz .dn-card-txt b{font-size:18px} }
 
   /* Dashboard (nov/2026, referência que a Mari gostou): serifada fina nos títulos, rótulos pequenos em caixa alta, Instagram, Para fazer e propostas */
@@ -2673,7 +2685,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   // ----- números -----
   const precisaAtencao = ativos.filter(j=>!j.prazoEntrega || diasAte(j.prazoEntrega)<=3 || (j.dataPagamento && diasAte(j.dataPagamento)<0 && (!j.pagamento || j.pagamento.status!=="Pago"))).length;
   const entregasSemana = ativos.filter(j=>j.prazoEntrega && j.prazoEntrega>=inicioSemanaIso && j.prazoEntrega<=fimSemanaIso);
-  const aReceberLista = (state.transacoes||[]).filter(t=>t.tipo==="receita" && t.status!=="Confirmado" && (t.moeda||"BRL")==="BRL");
+  const aReceberLista = (state.transacoes||[]).filter(t=>t.tipo==="receita" && !["Confirmado","Cancelado"].includes(t.status) && (t.moeda||"BRL")==="BRL");
   const aReceber = aReceberLista.reduce((a,t)=>a+Number(t.valor||0),0);
   const proximos = ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)>=0).sort((a,b)=>a.prazoEntrega.localeCompare(b.prazoEntrega));
 
@@ -3004,7 +3016,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const mesIso = hoje.slice(0,7);
   const mesAntIso = isoLocal(new Date(hojeD.getFullYear(), hojeD.getMonth()-1, 1)).slice(0,7);
   const dnMoeda = (v) => "R$ " + (window.OCULTAR_VALORES ? VALOR_OCULTO : Math.round(Number(v)||0).toLocaleString("pt-BR"));
-  const receitas = (state.transacoes||[]).filter(t=>t.tipo==="receita" && (t.moeda||"BRL")==="BRL" && t.status!=="Cancelado");
+  const receitas = (state.transacoes||[]).filter(t=>t.tipo==="receita" && (t.moeda||"BRL")==="BRL" && t.status==="Confirmado");
   const somaDe = (l) => l.reduce((a,t)=>a+Number(t.valor||0),0);
   const faturamentoMes = somaDe(receitas.filter(t=>String(t.data||"").startsWith(mesIso)));
   const faturamentoAnt = somaDe(receitas.filter(t=>String(t.data||"").startsWith(mesAntIso)));
@@ -3015,21 +3027,32 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const meses6 = Array.from({length:6}, (_,i)=>{ const d = new Date(hojeD.getFullYear(), hojeD.getMonth()-5+i, 1); const k = isoLocal(d).slice(0,7);
     return {k, rotulo:MESES_EXT[d.getMonth()].slice(0,3).replace(/^./, c=>c.toUpperCase()), valor:somaDe(receitas.filter(t=>t.status==="Confirmado" && String(t.data||"").startsWith(k)))}; });
   const maxMes = Math.max(1, ...meses6.map(m=>m.valor));
-  // conteúdos do mês (Conteúdos do painel) e propostas do e-mail sem resposta
-  const [dnExtras,setDnExtras] = useState({conteudos:null, propostas:null, visitas:null, propLista:[]});
+  const metaMes = Number((state.metas||{})[mesIso]?.financeiro||0);
+  const radar = [];
+  const aguardandoMarca = ativos.filter(j=>["Aguardando Aprovação","Aprovação do Conteúdo","Aprovação de Roteiro","Aprovação de conteúdo","Aprovação de roteiro"].includes(j.status));
+  aguardandoMarca.slice(0,4).forEach(j=>radar.push({id:"marca-"+j.id,nivel:"atencao",titulo:j.marca||"Marca",detalhe:"Aguardando retorno da marca",pagina:"jobs"}));
+  ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)>=0 && diasAte(j.prazoEntrega)<=3 && !aguardandoMarca.some(a=>a.id===j.id)).slice(0,4).forEach(j=>radar.push({id:"entrega-"+j.id,nivel:"prazo",titulo:j.marca||"Campanha",detalhe:"Entrega próxima · "+(diasAte(j.prazoEntrega)===0?"hoje":"em "+diasAte(j.prazoEntrega)+" dias"),pagina:"jobs"}));
+  atrasadoLista.slice(0,4).forEach(t=>radar.push({id:"pag-"+t.id,nivel:"atraso",titulo:t.descricao||"Pagamento",detalhe:"Pagamento atrasado · "+dnMoeda(t.valor),pagina:"financeiro"}));
+  (dnExtras.propostas||[]).filter(p=>p.recebido_em && Date.now()-new Date(p.recebido_em).getTime()>3*86400000).slice(0,4).forEach(p=>radar.push({id:"prop-"+p.id,nivel:"atencao",titulo:p.marca||p.de_nome||"Nova proposta",detalhe:"Proposta sem acompanhamento há mais de 3 dias",pagina:"propostas"}));
+  if(metaMes>0 && faturamentoMes<metaMes) radar.push({id:"meta-"+mesIso,nivel:"meta",titulo:"Meta de faturamento",detalhe:dnMoeda(faturamentoMes)+" de "+dnMoeda(metaMes)+" confirmados neste mês",pagina:"financeiro"});
+  const radarItens = radar.slice(0,8);
+
+  // Dados auxiliares do Dashboard: visitas e propostas pendentes alimentam apenas indicadores e o Radar.
+  const [dnExtras,setDnExtras] = useState({conteudos:null, visitas:null, propostas:[]});
   useEffect(()=>{
     let vivo = true;
     Promise.all([
       supabaseClient.from("painel_conteudo").select("status,data,mes").eq("mes", mesIso).then(r=>r.data||[]).catch(()=>null),
-      supabaseClient.from("propostas_email").select("id,de_nome,marca,assunto,recebido_em,lida,status,tipo").eq("status","nova").order("recebido_em",{ascending:false}).then(r=>r.data||[]).catch(()=>null),
       supabaseClient.from("visitas").select("data,visitante_id").gte("data", new Date(Date.now()-7*86400000).toISOString()).limit(5000).then(r=>r.data||[]).catch(()=>null),
-    ]).then(([c,p,v])=>{ if(!vivo) return;
-      const sete = Date.now()-7*86400000;
+      supabaseClient.from("propostas_email").select("id,de_nome,marca,assunto,recebido_em,lida,status,tipo").eq("status","nova").order("recebido_em",{ascending:false}).limit(30).then(r=>r.data||[]).catch(()=>null),
+    ]).then(([c,v,p])=>{ if(!vivo) return;
+      const hojeIso = isoLocal(new Date());
+      const ids = new Set((v||[]).map(x=>x.visitante_id).filter(Boolean));
       setDnExtras({
         conteudos: c ? {total:c.length, publicados:c.filter(x=>x.status==="Publicado"||x.status==="Postado").length} : null,
-        propostas: p ? {total:p.length, velhas:p.filter(x=>x.recebido_em && new Date(x.recebido_em).getTime()<sete).length, naoLidas:p.filter(x=>!x.lida).length} : null,
-        propLista: (p||[]).slice(0,4),
-        visitas: v ? {hoje:v.filter(x=>isoLocal(new Date(x.data))===isoLocal(new Date())).length, semana:v.length} : null });
+        propostas: p || [],
+        visitas: v ? {hoje:v.filter(x=>isoLocal(new Date(x.data))===hojeIso).length, semana:v.length, unicas:ids.size} : null
+      });
     });
     return ()=>{ vivo = false; };
   },[mesIso]);
@@ -3200,7 +3223,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         <button className="dn-card" onClick={()=>go("jobs")}>
           <span className="dn-card-txt"><small>Em produção</small><b>{plural(campanhas.length,"campanha","campanhas")}</b><em>{entregas7 ? plural(entregas7,"entrega","entregas")+" nos próximos 7 dias" : "nenhuma entrega nos próximos 7 dias"}</em></span></button>
         <a className="dn-card" href="https://marianabonetto.com.br/" target="_blank" rel="noopener">
-          <span className="dn-card-txt"><small>Visitas no site</small><b>{dnExtras.visitas ? `${dnExtras.visitas.hoje} hoje` : "..."}</b><em>{dnExtras.visitas ? `${dnExtras.visitas.semana} nos últimos 7 dias` : "carregando"}</em></span></a>
+          <span className="dn-card-txt"><small>Visitas no site</small><b>{dnExtras.visitas ? `${dnExtras.visitas.hoje} hoje` : "..."}</b><em>{dnExtras.visitas ? `${dnExtras.visitas.semana} nos últimos 7 dias · ${dnExtras.visitas.unicas} visitantes únicos` : "carregando"}</em></span></a>
       </div>
       <div className={"dz-grade"+(ig.conectado ? "" : " sem-ig")}>
 
@@ -3255,12 +3278,13 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             {!linhaItens.atr.length && !linhaItens.prox.length && <li className="dz-vazio">Nada pendente nesta semana. 🎉</li>}</ul>
         </section>
 
-        {/* e-mails de propostas (nov/2026, no lugar de "Aguardando aprovação") */}
-        <section className="db-bloco dz-prop">
-          <div className="dn-bt"><div><h2>E-mails de propostas</h2><small className="dz-sub">{dnExtras.propostas ? (dnExtras.propostas.total ? `${plural(dnExtras.propostas.total,"proposta sem resposta","propostas sem resposta")}${dnExtras.propostas.velhas ? `, ${dnExtras.propostas.velhas} há mais de 7 dias` : ""}` : "Nenhuma proposta esperando resposta") : "Carregando..."}</small></div>
-            <button className="db-link" onClick={()=>abrirAba ? abrirAba("propostas") : go("jobs")}>Ver todas</button></div>
-          <ul className="dz-prop-lista">{(dnExtras.propLista||[]).map(p=><li key={p.id} className={p.lida?"":"nova"} onClick={()=>abrirAba ? abrirAba("propostas") : go("jobs")}>
-            <b>{p.marca || p.de_nome || "Proposta"}</b><span>{p.assunto || ""}</span><small>{p.recebido_em ? dataBR(isoLocal(new Date(p.recebido_em))).slice(0,5) : ""}</small></li>)}</ul>
+        {/* Radar do meu negócio: alertas acionáveis conectados às áreas existentes */}
+        <section className="db-bloco dz-radar">
+          <div className="dn-bt"><div><h2>Radar do meu negócio</h2><small className="dz-sub">O que merece sua atenção agora</small></div><span className="dn-bt-dir"><span className="dn-tag">{radarItens.length} alertas</span></span></div>
+          <ul className="dz-radar-lista">
+            {radarItens.map(item=><li key={item.id} className={"radar-"+item.nivel} onClick={()=>item.pagina==="propostas" ? (abrirAba ? abrirAba("propostas") : go("jobs")) : go(item.pagina)}><i/><span><b>{item.titulo}</b><small>{item.detalhe}</small></span><DbIcone tipo="seta" tam={15}/></li>)}
+            {!radarItens.length && <li className="dz-radar-vazio">Tudo em dia por aqui. Nenhum alerta importante no momento.</li>}
+          </ul>
         </section>
 
           {/* calendário: a lista do dia escolhido + o mês (ou a semana) */}
@@ -3360,13 +3384,6 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
         </section>
 
-        {/* financeiro */}
-        <section className={"db-bloco dn-fin"+(fechadoB("fin")?" fechado":"")}>
-          <div className="dn-bt"><h2>Financeiro</h2><span className="dn-bt-dir"><span className="dn-sel">{MESES_EXT[hojeD.getMonth()].replace(/^./, c=>c.toUpperCase())}</span>{minB("fin")}</span></div>
-          <div className="dn-fin-2"><button onClick={()=>go("financeiro")}><b>{dnMoeda(recebidoMes)}</b><small>Recebido no mês</small></button>
-            <button className={atrasadoValor>0?"at":""} onClick={()=>go("financeiro")}><b>{dnMoeda(atrasadoValor)}</b><small>{atrasadoValor>0 ? `Atrasado (${atrasadoLista.length})` : "Nada atrasado"}</small></button></div>
-          <div className="dn-graf dn-clica" onClick={()=>go("financeiro")} aria-label="Recebido nos últimos 6 meses">{meses6.map((m,i)=><div key={m.k} title={m.rotulo+": "+dnMoeda(m.valor)}><i className={i===5?"at":""} style={{height:Math.max(4, m.valor/maxMes*100)+"%"}}/><small>{m.rotulo}</small></div>)}</div>
-        </section>
       </div>
 
       {/* inspirações | ferramentas */}
