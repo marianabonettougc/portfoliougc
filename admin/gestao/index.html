@@ -8600,6 +8600,36 @@ function sincronizarJobsRoteiros(antes, depois){
   return {...depois, jobs:mudouJobs?jobs:depois.jobs, roteiros};
 }
 
+function vincularRoteirosLegados(state){
+  const jobsOriginais = state.jobs || [];
+  let roteiros = [...(state.roteiros || [])], mudou = false;
+  const jobs = jobsOriginais.map(job=>{
+    const ids = Array.isArray(job.roteirosIds) ? job.roteirosIds.filter(Boolean) : (job.roteiroId ? [job.roteiroId] : []);
+    if(ids.length || !String(job.roteiroConteudo||"").trim()) return job;
+    let roteiro = roteiros.find(r=>String(r.jobId)===String(job.id));
+    if(!roteiro){
+      const id = "job-"+String(job.id)+"-roteiro";
+      roteiro = roteiros.find(r=>String(r.id)===id);
+    }
+    if(roteiro){
+      const novo = {...roteiro, jobId:job.id, cliente:roteiro.cliente||job.marca||"", finalidade:roteiro.finalidade||job.categoria||"UGC",
+        titulo:roteiro.titulo||job.roteiroTitulo||("Roteiro · "+(job.marca||"Job")), conteudo:roteiro.conteudo||String(job.roteiroConteudo||"")};
+      roteiros = roteiros.map(r=>r.id===roteiro.id?novo:r);
+      mudou=true;
+      return {...job, roteiroId:roteiro.id, roteirosIds:[roteiro.id], roteiroConteudo:novo.conteudo, roteiroTitulo:novo.titulo,
+        roteiroStatus:job.roteiroStatus==="Em criação"?"Pronto":(job.roteiroStatus||"Pronto")};
+    }
+    const id = "job-"+String(job.id)+"-roteiro";
+    roteiro = {id, titulo:job.roteiroTitulo||("Roteiro · "+(job.marca||"Job")), cliente:job.marca||"", jobId:job.id,
+      plataforma:"Instagram", status:"Em aberto", finalidade:job.categoria||"UGC", etapa:"Roteirização", dataPublicacao:"",
+      conteudo:String(job.roteiroConteudo||""), quadroId:"principal"};
+    roteiros.unshift(roteiro);
+    mudou=true;
+    return {...job, roteiroId:id, roteirosIds:[id], roteiroStatus:job.roteiroStatus==="Em criação"?"Pronto":(job.roteiroStatus||"Pronto")};
+  });
+  return mudou ? {...state, jobs, roteiros} : state;
+}
+
 // roteiro pronto para postar: precisa da data de postagem (aparece como alerta no Dashboard)
 const prontoParaPostar = (r) => (ETAPA_ANTIGA[r.etapa] || r.etapa) === ETAPA_POSTAR;
 
@@ -11176,6 +11206,8 @@ function App({session}){
       merged = processRecurringJobs(merged);
       merged = syncAllJobTransacoes(merged);
       merged = normalizarStatusJobs(merged);
+      // vincula roteiros antigos já preenchidos no job, sem duplicar registros nem apagar conteúdo
+      merged = vincularRoteirosLegados(merged);
       // correção única (out/2026): o recebimento da Koin (R$ 400 em 25/09) tinha voltado para pendente
       if(!(merged.correcoes||{}).koin2509){
         merged = {...merged, correcoes:{...(merged.correcoes||{}), koin2509:true}, jobs:(merged.jobs||[]).map(j=>j.id==="muzyunr5af7aqd" && !(j.pagamento && j.pagamento.status==="Pago") ? {...j, pagamento:{...(j.pagamento||{}), status:"Pago", dataPagamento:"2026-09-25"}} : j)};
