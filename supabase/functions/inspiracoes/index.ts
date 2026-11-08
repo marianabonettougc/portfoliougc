@@ -9,6 +9,11 @@
 // desde a última busca, ela pede ao Apify uma busca nova; na próxima vez que o
 // Dashboard abrir (ou no botão Buscar agora), ela recolhe o resultado.
 // Capas: cada capa é copiada para o Storage (bucket público "capas", pasta insp/) porque o link do Instagram expira.
+// Bombou (nov/2026): cada post ganha "multiplicador" = visualizações (vídeo) ou curtidas (foto/carrossel)
+// divididas pela mediana dos OUTROS posts do mesmo perfil (precisa de 5 para comparar). Os até 3 que mais
+// passaram de 2x nos últimos 14 dias são os destaques; cada um ganha "radar" {gancho, porque, teste, ...}
+// em segundo plano: transcreve 1 por vez pela Supadata (chave em configuracoes, só se sobrar crédito) e
+// pede a ideia à função referencias acao "laboratorio" (a mesma dos Salvos, sem repetir o pedido à IA).
 // Só a dona do painel pode usar.
 // =========================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -40,12 +45,14 @@ function linhaInstagram(x: any) {
   const id = x.shortCode || x.id;
   if (!id || !x.url) return null;
   return { rede: "instagram", perfil: limpar(x.ownerUsername), post_id: String(id), link: x.url, legenda: x.caption || null, capa: x.displayUrl || null,
-    video: x.type === "Video" || !!x.videoUrl, visualizacoes: x.videoPlayCount || x.videoViewCount || null, publicado_em: x.timestamp || null };
+    video: x.type === "Video" || !!x.videoUrl, visualizacoes: x.videoPlayCount || x.videoViewCount || null, publicado_em: x.timestamp || null,
+    curtidas: x.likesCount >= 0 ? x.likesCount : null, comentarios: x.commentsCount >= 0 ? x.commentsCount : null };
 }
 function linhaTiktok(x: any) {
   if (!x.id || !x.webVideoUrl) return null;
   return { rede: "tiktok", perfil: limpar(x.authorMeta?.name || x["authorMeta.name"]), post_id: String(x.id), link: x.webVideoUrl, legenda: x.text || null,
-    capa: x.videoMeta?.coverUrl || x.covers?.[0] || null, video: true, visualizacoes: x.playCount || null, publicado_em: x.createTimeISO || null };
+    capa: x.videoMeta?.coverUrl || x.covers?.[0] || null, video: true, visualizacoes: x.playCount || null, publicado_em: x.createTimeISO || null,
+    curtidas: x.diggCount ?? null, comentarios: x.commentCount ?? null };
 }
 
 async function recolher(token: string, estado: any, perfis: Set<string>) {
@@ -102,6 +109,86 @@ async function guardarCapas(limite = 40) {
   for (let i = 0; i < fila.length; i += 8) await Promise.all(fila.slice(i, i + 8).map(um));
 }
 
+
+// ---------- Bombou: multiplicador sobre a mediana do perfil + análise dos destaques ----------
+const DIAS_DESTAQUE = 14, MIN_COMPARAR = 5, CORTE = 2, DESTAQUES = 3;
+const mediana = (l: number[]) => { const o = [...l].sort((a, b) => a - b), m = Math.floor(o.length / 2); return o.length % 2 ? o[m] : (o[m - 1] + o[m]) / 2; };
+const metrica = (x: any) => x.video ? Number(x.visualizacoes) || 0 : Number(x.curtidas) || 0;
+async function calcularMultiplicadores(perfis: string[]) {
+  const db = admin();
+  const { data } = await db.from("inspiracoes").select("id,rede,perfil,video,visualizacoes,curtidas,multiplicador").in("perfil", perfis.length ? perfis : ["-"]);
+  const grupos: Record<string, any[]> = {};
+  for (const x of data || []) (grupos[`${x.rede}|${x.perfil}|${x.video ? "v" : "f"}`] ||= []).push(x);
+  const mudar: { id: number; multiplicador: number | null }[] = [];
+  for (const lista of Object.values(grupos)) {
+    const comNumero = lista.filter((x) => metrica(x) > 0);
+    for (const x of lista) {
+      const outros = comNumero.filter((o) => o.id !== x.id).map(metrica);
+      const base = outros.length >= MIN_COMPARAR ? mediana(outros) : 0;
+      const m = base > 0 && metrica(x) > 0 ? Math.round((metrica(x) / base) * 10) / 10 : null;
+      if (m !== (x.multiplicador === null ? null : Number(x.multiplicador))) mudar.push({ id: x.id, multiplicador: m });
+    }
+  }
+  for (const u of mudar) await db.from("inspiracoes").update({ multiplicador: u.multiplicador }).eq("id", u.id);
+}
+async function destaques(perfis: string[]) {
+  const desde = new Date(Date.now() - DIAS_DESTAQUE * 86400000).toISOString();
+  const { data } = await admin().from("inspiracoes").select("*").in("perfil", perfis.length ? perfis : ["-"]).eq("oculto", false)
+    .gte("publicado_em", desde).gte("multiplicador", CORTE).order("multiplicador", { ascending: false }).limit(DESTAQUES);
+  return data || [];
+}
+async function chaveSupadata() {
+  const { data } = await admin().from("configuracoes").select("valor").eq("chave", "supadata_api_key").maybeSingle();
+  return String(data?.valor || "").trim();
+}
+async function transcreverSupadata(chave: string, link: string) {
+  const api = "https://api.supadata.ai/v1", h = { "x-api-key": chave };
+  try {
+    const me = await (await fetch(`${api}/me`, { headers: h })).json();
+    if ((Number(me.maxCredits) || 0) - (Number(me.usedCredits) || 0) < 15) return ""; // guarda crédito para o que ela transcreve à mão
+    const q = new URLSearchParams({ url: link, mode: "auto", text: "true", lang: "pt" });
+    let r = await fetch(`${api}/transcript?${q}`, { headers: h }), j = await r.json().catch(() => ({}));
+    if (r.status === 202 && j.jobId) {
+      for (let i = 0; i < 18; i++) { // até 90 s
+        await new Promise((ok) => setTimeout(ok, 5000));
+        j = await (await fetch(`${api}/transcript/${encodeURIComponent(j.jobId)}`, { headers: h })).json().catch(() => ({}));
+        const st = String(j.status || "").toLowerCase();
+        if (st === "completed") break; if (st === "failed") return "";
+      }
+    } else if (!r.ok) return "";
+    if (String(j.lang || "").toLowerCase() === "none") return "";
+    const c = j.content;
+    return (Array.isArray(c) ? c.map((s: any) => s.text).join(" ") : String(c || "")).replace(/\s+/g, " ").trim();
+  } catch { return ""; }
+}
+const precisaRadar = (x: any) => !x.radar || (x.video && !x.radar.comFala && !x.radar.tentouFala);
+async function analisarDestaques(lista: any[], auth: string) {
+  const db = admin();
+  let transcreveu = false;
+  for (const x of lista) {
+    if (!precisaRadar(x)) continue;
+    let transcricao = x.transcricao || "", tentouFala = !!transcricao;
+    if (x.video && !transcricao && !transcreveu) {
+      transcreveu = tentouFala = true; // 1 transcrição por vez, para não gastar os créditos da Supadata
+      const chave = await chaveSupadata();
+      if (chave) { transcricao = await transcreverSupadata(chave, x.link); if (transcricao) await db.from("inspiracoes").update({ transcricao }).eq("id", x.id); }
+    }
+    if (x.radar && !transcricao) { // já tem a análise pela legenda; vídeo sem fala (ou sem crédito): não tenta de novo
+      if (tentouFala) await db.from("inspiracoes").update({ radar: { ...x.radar, tentouFala: true } }).eq("id", x.id);
+      continue;
+    }
+    const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/referencias`, {
+      method: "POST", headers: { Authorization: auth, apikey: Deno.env.get("SUPABASE_ANON_KEY")!, "Content-Type": "application/json" },
+      body: JSON.stringify({ acao: "laboratorio", post: { tipo: x.video ? "Reel" : "Post", perfil: x.perfil, legenda: x.legenda, transcricao } }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error || !j.por_que_funciona) { console.error("radar:", j.error || r.status); break; } // limite da IA: tenta na próxima abertura
+    const radar = { gancho: j.gancho_original || "", porque: j.por_que_funciona, formato: j.formato || "", tema: j.tema || "",
+      teste: j.ideia?.descricao || "", testeTitulo: j.ideia?.titulo || "", testeGancho: j.ideia?.gancho || "", comFala: !!transcricao, tentouFala, em: new Date().toISOString() };
+    await db.from("inspiracoes").update({ radar }).eq("id", x.id);
+  }
+}
+
 async function iniciar(token: string, ig: string[], tt: string[]) {
   const runs: { id: string; rede: string }[] = [];
   let erro = "";
@@ -147,9 +234,17 @@ Deno.serve(async (req) => {
     }
 
     try { await guardarCapas(corpo.capas ? 80 : 40); } catch (e) { console.error("capas:", e); }
+    let bombou: any[] = [];
+    try {
+      await calcularMultiplicadores([...todos]);
+      bombou = await destaques([...todos]);
+      const falta = bombou.filter(precisaRadar);
+      // a análise roda depois da resposta (o Dashboard não espera e pergunta de novo em 1 min se ainda faltar)
+      if (falta.length) (globalThis as any).EdgeRuntime?.waitUntil(analisarDestaques(falta, auth).catch((e) => console.error("radar:", e)));
+    } catch (e) { console.error("bombou:", e); }
     const { data: itens } = await supa.from("inspiracoes").select("*").in("perfil", [...todos].length ? [...todos] : ["-"]).eq("oculto", false)
       .order("publicado_em", { ascending: false, nullsFirst: false }).limit(80);
-    return resposta({ itens: itens || [], semToken: !token, rodando, ultimaBusca: estado.iniciadoEm || null, aviso: aviso || estado.erro || "" });
+    return resposta({ itens: itens || [], bombou, analisando: bombou.some((x) => !x.radar), semToken: !token, rodando, ultimaBusca: estado.iniciadoEm || null, aviso: aviso || estado.erro || "" });
   } catch (e) {
     console.error(e);
     return resposta({ erro: "Algo deu errado ao buscar as inspirações." }, 500);
