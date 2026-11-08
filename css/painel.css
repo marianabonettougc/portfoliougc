@@ -2689,3 +2689,17 @@ body.aba-quadro .so-planner .gestao-app{height:calc(100vh - 225px);min-height:48
 .pg-opcao small{font-size:12.5px;color:var(--suave)}
 .pg-opcao i{font-style:normal;font-size:11.5px;color:var(--suave)}
 @media (max-width:760px){.pg-tipos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Conteúdos reorganizado (nov/2026): 6 abas que cabem numa linha, sub-abas de Ideias e ganchos, ritmo e IA dentro de Planejamento */
+.pc2 .pc-abas{gap:3px}
+.pc2 .pc-abas .sub-aba{padding:8px 13px}
+.pc2-subideias{margin:0 0 16px}
+#pc-config{margin-top:26px;padding-top:22px;border-top:1px solid var(--linha)}
+.pc2-automacao{margin-top:16px;border:1px solid var(--linha);border-radius:var(--raio);background:var(--cartao);padding:14px 18px}
+.pc2-automacao>summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.pc2-automacao>summary::-webkit-details-marker{display:none}
+.pc2-automacao>summary::after{content:"+";margin-left:auto;color:var(--suave);font-size:18px}
+.pc2-automacao[open]>summary::after{content:"−"}
+.pc2-automacao>summary small{color:var(--suave);font-size:13px}
+.pc2-automacao>summary .pc2-h{margin:0}
+.pc2-automacao .pc-baixo{margin-top:14px}
