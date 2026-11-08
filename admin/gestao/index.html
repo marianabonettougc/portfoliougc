@@ -670,6 +670,26 @@
   .db-btn-mini:disabled{ opacity:.6; cursor:default; }
   .db-novo{ position:absolute; z-index:1; top:8px; left:8px; background:var(--db-papel); color:var(--db-texto); font-size:11px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:999px; }
   a.db-insp-capa{ display:block; }
+  .db-novo.db-x{ left:auto; right:8px; background:var(--db-cafe); color:#fffdf9; text-transform:none; letter-spacing:0; }
+  /* Bombou acima do normal (nov/2026) */
+  .db-bombou{ margin:4px 0 18px; }
+  .db-bombou-tit{ margin:0 0 10px; font-size:14px; font-weight:600; color:var(--db-texto); }
+  .db-bombou-tit span{ font-weight:400; color:var(--db-suave); font-size:13px; margin-left:6px; }
+  .db-bombou-lista{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+  .db-bombou-card{ display:grid; grid-template-columns:96px minmax(0,1fr); gap:12px; padding:10px; border:1px solid var(--db-linha2); border-radius:14px; background:var(--db-papel); min-width:0; }
+  .db-bombou-capa{ position:relative; display:block; aspect-ratio:9/16; border-radius:10px; overflow:hidden; background:linear-gradient(150deg,#efe5d8,#d9c4ae); align-self:start; }
+  .db-bombou-capa img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .db-bombou-x{ position:absolute; top:6px; left:6px; background:var(--db-cafe); color:#fffdf9; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; }
+  .db-bombou-corpo{ display:flex; flex-direction:column; gap:6px; min-width:0; font-size:13px; line-height:1.45; }
+  .db-bombou-corpo p{ margin:0; }
+  .db-bombou-corpo b{ font-weight:600; }
+  .db-bombou-meta{ font-size:12px; color:var(--db-suave); }
+  .db-bombou-gancho{ font-size:14px !important; font-weight:500; }
+  .db-bombou-espera{ color:var(--db-suave); font-style:italic; }
+  .db-bombou-corpo .db-insp-rodape{ margin-top:auto; padding-top:4px; }
+  .db-btn-mini-escuro{ background:var(--db-escuro); border-color:var(--db-escuro); color:#fffdf9 !important; }
+  @media (max-width:1100px){ .db-bombou-lista{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  @media (max-width:700px){ .db-bombou-lista{ grid-template-columns:minmax(0,1fr); } .db-bombou-card{ grid-template-columns:80px minmax(0,1fr); } }
   a.db-insp-txt{ color:inherit; text-decoration:none; }
   .db-logo{ width:38px; height:38px; border-radius:50%; background:#fff; border:1px solid var(--db-linha); display:inline-flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; box-shadow:0 1px 4px rgba(61,43,32,.08); }
   .db-logo img{ width:100%; height:100%; object-fit:cover; }
@@ -2950,13 +2970,21 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   }, [refs.map(r=>r.link).join("|")]);
 
   const [novos,setNovos] = useState([]);
+  const [bombou,setBombou] = useState([]);
+  const releitura = useRef(null);
   const [buscaInfo,setBuscaInfo] = useState(null);
   async function carregarNovos(forcar){
     const lista = perfis;
     if(!lista.length){ setNovos([]); setBuscaInfo(null); return; }
     try{
       const { data, error } = await supabaseClient.functions.invoke("inspiracoes", {body:{perfis:lista, forcar:!!forcar}});
-      if(!error && data && !data.erro){ setNovos((data.itens||[]).filter(x=>!x.transcrito).sort((x,y)=>String(y.publicado_em||"").localeCompare(String(x.publicado_em||"")))); setBuscaInfo(data); }
+      if(!error && data && !data.erro){
+        setNovos((data.itens||[]).filter(x=>!x.transcrito).sort((x,y)=>String(y.publicado_em||"").localeCompare(String(x.publicado_em||""))));
+        setBombou(data.bombou||[]); setBuscaInfo(data);
+        // nov/2026: o "por que bombou" é feito no servidor depois da resposta; pergunta de novo uma vez em 1 min
+        clearTimeout(releitura.current);
+        if(data.analisando && !forcar) releitura.current = setTimeout(()=>carregarNovos(false), 60000);
+      }
     }catch(e){}
   }
   useEffect(()=>{ carregarNovos(false); }, [perfis.map(p=>p.rede+p.usuario).join("|")]);
@@ -2980,7 +3008,15 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     (!filtroPerfil || chaveMarca(r.perfil)===chaveMarca(filtroPerfil)) &&
     (!soSalvos || salvos[r.id]) && !ocultas[r.id] &&
     (!filtroPasta || refPasta[r.id]===filtroPasta));
-  const novosFiltrados = novos.filter(n=>
+  const passaFiltro = (n) => (!rede || n.rede===rede) && (nicho==="Todos" || PALAVRAS_NICHO[nicho].test(n.legenda||""));
+  const bombouFiltrados = (filtroPerfil || soSalvos || filtroPasta) ? [] : bombou.filter(passaFiltro);
+  const idsBombou = new Set(bombouFiltrados.map(b=>b.id));
+  function quererTestar(b){
+    const r = b.radar || {};
+    setRoteiroNovo({referencia:{fonte:"inspiracoes", id:b.id, link:b.link, titulo:r.tema || String(b.legenda||"").split("\n")[0].slice(0,80), gancho:r.gancho || "", perfil:b.perfil, transcricao:b.transcricao || ""},
+      ideia:[r.testeTitulo, r.porque ? "O que fez bombar: "+r.porque : "", r.testeGancho ? "Gancho para testar: "+r.testeGancho : ""].filter(Boolean).join("\n")});
+  }
+  const novosFiltrados = novos.filter(n=>!idsBombou.has(n.id) &&
     (!rede || n.rede===rede) &&
     (nicho==="Todos" || PALAVRAS_NICHO[nicho].test(n.legenda||"")) &&
     (!filtroPerfil || chaveMarca(n.perfil)===chaveMarca(filtroPerfil)) &&
@@ -2995,7 +3031,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   function alternarSalvo(id){ mudar(s=>({...s, inspSalvas:{...(s.inspSalvas||{}), [id]:!(s.inspSalvas||{})[id]}})); }
   // ocultar um vídeo: ele some e o próximo entra no lugar
   async function ocultarNovo(n){
-    setNovos(l=>l.filter(x=>x.id!==n.id));
+    setNovos(l=>l.filter(x=>x.id!==n.id)); setBombou(l=>l.filter(x=>x.id!==n.id));
     try{ await supabaseClient.from("inspiracoes").update({oculto:true}).eq("id", n.id); }catch(e){}
   }
   function ocultarRef(r){ mudar(s=>({...s, inspOcultas:{...(s.inspOcultas||{}), [r.id]:true}})); }
@@ -3646,6 +3682,39 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
               </div>
             </div>
             {msgTrans && transcrevendoId===null && msgTrans.erro && <p className="db-dica db-dica-erro">{msgTrans.texto}</p>}
+            {bombouFiltrados.length>0 && <div className="db-bombou">
+              <p className="db-bombou-tit">Bombou acima do normal <span>comparado com a média de cada perfil, últimos 14 dias</span></p>
+              <div className="db-bombou-lista">
+                {bombouFiltrados.map(b=>{
+                  const r = b.radar;
+                  const dias = b.publicado_em ? Math.max(0, Math.round((Date.now()-new Date(b.publicado_em).getTime())/86400000)) : null;
+                  const numero = b.video ? (b.visualizacoes ? fmtNum(b.visualizacoes)+" views" : "") : (b.curtidas ? fmtNum(b.curtidas)+" curtidas" : "");
+                  return (
+                    <article key={"b"+b.id} className="db-bombou-card">
+                      <a className="db-bombou-capa" href={b.link} target="_blank" rel="noopener" aria-label="Assistir o vídeo">
+                        {b.capa ? <img src={b.capa} alt="" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.style.display="none";}}/> : null}
+                        <span className="db-bombou-x">{String(b.multiplicador).replace(".",",")}x</span>
+                      </a>
+                      <div className="db-bombou-corpo">
+                        <span className="db-bombou-meta">{[b.video?"Reels":"Post", dias===null?"":dias===0?"hoje":dias===1?"ontem":"há "+dias+" dias", numero].filter(Boolean).join(" · ")}</span>
+                        {r ? <>
+                          {r.gancho && <p className="db-bombou-gancho">“{r.gancho}”</p>}
+                          <p><b>Por que funcionou:</b> {r.porque}</p>
+                          {(r.testeTitulo || r.testeGancho) && <p><b>Para testar:</b> {r.testeTitulo}{r.testeGancho ? <><br/><i>“{r.testeGancho}”</i></> : null}</p>}
+                        </> : <p className="db-bombou-espera">Lendo o gancho e o porquê... aparece aqui em instantes.</p>}
+                        <div className="db-insp-rodape">
+                          <span><button className="db-btn-mini db-btn-mini-escuro" onClick={()=>quererTestar(b)} disabled={!r}>Quero testar</button></span>
+                          <span className="db-card-icones">
+                            <button className="db-salvar" onClick={()=>ocultarNovo(b)} aria-label="Ocultar este vídeo" title="Ocultar este vídeo"><DbIcone tipo="olhoFechado" tam={17}/></button>
+                            <button className={"db-salvar"+(salvos["n"+b.id]?" ok":"")} onClick={()=>alternarSalvo("n"+b.id)} aria-pressed={!!salvos["n"+b.id]} aria-label="Salvar" title="Salvar"><DbIcone tipo="marcador" tam={17}/></button>
+                          </span>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>}
             {novosFiltrados.length || refsFiltradas.length ? (
               <><div className="db-trilho" ref={trilho}>
                 {novosFiltrados.map(n=>{
@@ -3656,6 +3725,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                       <a className="db-insp-capa" href={n.link} target="_blank" rel="noopener" aria-label="Assistir o vídeo">
                         {n.capa ? <img src={n.capa} alt="" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.style.display="none";}}/> : null}
                         {recente && <span className="db-novo">novo</span>}
+                        {Number(n.multiplicador)>=2 && <span className="db-novo db-x" title="Vezes a média do perfil">{String(n.multiplicador).replace(".",",")}x</span>}
                         <span className="db-insp-rede"><DbIcone tipo={n.rede==="tiktok"?"tiktok":"instagram"} tam={17}/></span>
                         <span className="db-insp-play"><DbIcone tipo="play" tam={13}/>{n.visualizacoes ? fmtNum(n.visualizacoes) : "assistir"}</span>
                       </a>
