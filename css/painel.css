@@ -2703,3 +2703,42 @@ body.aba-quadro .so-planner .gestao-app{height:calc(100vh - 225px);min-height:48
 .pc2-automacao>summary small{color:var(--suave);font-size:13px}
 .pc2-automacao>summary .pc2-h{margin:0}
 .pc2-automacao .pc-baixo{margin-top:14px}
+
+/* Editor de conteúdo: menos rolagem, hierarquia clara e áreas recolhíveis */
+dialog.janela.larga:has(.pc-editor-compacto){width:min(860px,calc(100vw - 28px));max-height:min(92dvh,900px)}
+.pc-editor-compacto{padding:14px 18px 18px;display:flex;flex-direction:column;gap:10px}
+.pc-editor-compacto>.campo{margin-bottom:2px}
+.pc-editor-compacto .pc-grade4,.pc-editor-compacto .pc-grade3,.pc-editor-compacto .pc-grade2{gap:8px 10px}
+.pc-editor-compacto .campo{margin-bottom:5px;gap:4px}
+.pc-editor-compacto .campo>span{font-size:12.5px;color:var(--suave)}
+.pc-editor-compacto .campo input,.pc-editor-compacto .campo select{height:36px}
+.pc-editor-compacto .pc-editor-secao{border:1px solid var(--linha);border-radius:13px;background:#fffdf9;overflow:hidden}
+.pc-editor-compacto .pc-editor-secao>summary,.pc-editor-compacto .pc-editor-extra>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:44px}
+.pc-editor-compacto .pc-editor-secao>summary::-webkit-details-marker,.pc-editor-compacto .pc-editor-extra>summary::-webkit-details-marker{display:none}
+.pc-editor-compacto .pc-editor-secao>summary:after,.pc-editor-compacto .pc-editor-extra>summary:after{content:"＋";margin-left:auto;color:var(--suave);font-size:16px}
+.pc-editor-compacto .pc-editor-secao[open]>summary:after,.pc-editor-compacto .pc-editor-extra[open]>summary:after{content:"−"}
+.pc-editor-compacto .pc-editor-secao>summary strong{font-size:13.5px;font-weight:600}
+.pc-editor-compacto .pc-editor-secao>summary span{font-size:12px;color:var(--suave)}
+.pc-editor-compacto .pc-editor-conteudo{padding:2px 14px 12px;display:flex;flex-direction:column;gap:8px}
+.pc-editor-compacto .pc-editor-conteudo>.campo{margin-bottom:0}
+.pc-editor-compacto .pc-editor-conteudo textarea[name="desenvolvimento"]{min-height:180px;max-height:340px}
+.pc-editor-compacto .pc-editor-conteudo textarea[name="legenda"]{min-height:86px}
+.pc-editor-compacto .pc-editor-extra{border:1px solid #eadfd2;border-radius:10px;background:#faf5ee}
+.pc-editor-compacto .pc-editor-extra>summary{padding:9px 11px;font-size:12.5px;color:var(--suave)}
+.pc-editor-compacto .pc-editor-extra p{margin:0;padding:0 11px 10px;font-size:13px;line-height:1.5}
+.pc-editor-compacto .pc-editor-ganchos .pc-ganchos{padding:0 10px 10px}
+.pc-editor-compacto .pc-porque{margin:0}
+.pc-editor-compacto .pg-usar-linha{margin:0}
+dialog.janela.larga:has(.pc-editor-compacto) .janela-rodape{gap:7px;padding:9px 14px;flex-wrap:wrap}
+dialog.janela.larga:has(.pc-editor-compacto) .janela-rodape .btn{min-height:36px;padding:7px 11px;font-size:12.5px}
+@media(max-width:640px){
+ dialog.janela.larga:has(.pc-editor-compacto){width:calc(100vw - 12px);max-height:calc(100dvh - 12px);border-radius:14px}
+ .pc-editor-compacto{padding:10px 11px 14px;gap:8px}
+ .pc-editor-compacto .pc-grade4,.pc-editor-compacto .pc-grade5{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .pc-editor-compacto .pc-grade3{grid-template-columns:1fr 1fr}
+ .pc-editor-compacto .pc-grade2{grid-template-columns:1fr}
+ .pc-editor-compacto .pc-editor-secao>summary{align-items:flex-start;flex-direction:column;gap:2px}
+ dialog.janela.larga:has(.pc-editor-compacto) .janela-rodape{justify-content:space-between}
+ dialog.janela.larga:has(.pc-editor-compacto) .janela-rodape>span{display:none}
+ dialog.janela.larga:has(.pc-editor-compacto) .janela-rodape .btn{flex:1;min-width:0;white-space:normal}
+}
