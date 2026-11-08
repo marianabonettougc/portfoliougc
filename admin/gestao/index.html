@@ -7233,12 +7233,17 @@ function fmtDocFiscal(s){
 }
 const chaveMarcaNF = (m) => String(m||"").trim().toLowerCase().replace(/\s*·.*$/,"").replace(/\s+/g," ");
 const fmtDataBR = (iso) => iso ? String(iso).slice(0,10).split("-").reverse().join("/") : "";
-function nfEmitida(j){ const nf = j.nf||{}; return !!(nf.numero || nf.caminho || nf.arquivo || nf.status==="Emitida"); }
+// só conta o job em que ela ligou "Precisa emitir nota fiscal?" (nf.precisa) no próprio job
+function nfEmitida(j){ const nf = j.nf||{}; return !!(nf.precisa && (nf.numero || nf.caminho || nf.arquivo || nf.status==="Emitida")); }
 function jobPrecisaNota(j){
   const nf = j.nf||{};
-  if(nfEmitida(j) || nf.dispensada) return false;
-  if(j.tipoJob==="Permuta" || j.status==="Cancelado") return false;
-  return Number(j.valor)>0;
+  if(!nf.precisa || nfEmitida(j)) return false;
+  return j.status!=="Cancelado";
+}
+// jobs pagos com valor em que o campo de nota está desligado (para ela ligar daqui se quiser)
+function jobSemNotaMarcada(j){
+  const nf = j.nf||{};
+  return !nf.precisa && j.tipoJob!=="Permuta" && j.status!=="Cancelado" && Number(j.valor)>0;
 }
 function descricaoNotaPadrao(j, cfg){
   const base = (cfg && cfg.descricaoPadrao) || "Prestação de serviço de criação de conteúdo digital (UGC/publicidade)";
@@ -7254,7 +7259,7 @@ function NotasFiscaisCard({state, updateState}){
   const jobs = state.jobs || [];
   const aEmitir = jobs.filter(jobPrecisaNota).sort((a,b)=>String(b.criadoEm||"").localeCompare(String(a.criadoEm||"")));
   const emitidas = jobs.filter(nfEmitida).sort((a,b)=>String((b.nf||{}).dataEmissao||"").localeCompare(String((a.nf||{}).dataEmissao||"")));
-  const dispensadas = jobs.filter(j=>(j.nf||{}).dispensada && !nfEmitida(j));
+  const dispensadas = jobs.filter(jobSemNotaMarcada);
   const totalAEmitir = aEmitir.reduce((s,j)=>s+Number(j.valor||0),0);
   const anoAtual = new Date().getFullYear();
   const emitidoAno = emitidas.filter(j=>String((j.nf||{}).dataEmissao||"").startsWith(String(anoAtual))).reduce((s,j)=>s+Number((j.nf||{}).valor||j.valor||0),0);
@@ -7292,7 +7297,7 @@ function NotasFiscaisCard({state, updateState}){
         {[["A emitir",aEmitir.length],["Emitidas",emitidas.length],["Sem nota",dispensadas.length]].map(([t,n])=><div key={t} className={"tab "+(aba===t?"active":"")} onClick={()=>setAba(t)}>{t} ({n})</div>)}
       </div>
       {lista.length===0 ? (
-        <EmptyState icon="receipt_long" title={aba==="A emitir" ? "Nenhuma nota para emitir" : aba==="Emitidas" ? "Nenhuma nota emitida ainda" : "Nenhum job marcado sem nota"} sub={aba==="A emitir" ? "Todo job pago com valor aparece aqui até a nota ser anexada." : ""}/>
+        <EmptyState icon="receipt_long" title={aba==="A emitir" ? "Nenhuma nota para emitir" : aba==="Emitidas" ? "Nenhuma nota emitida ainda" : "Nenhum job pago sem nota"} sub={aba==="A emitir" ? "Aparece aqui o job em que você ligou \"Precisa emitir nota fiscal?\"." : aba==="Sem nota" ? "Jobs pagos com o campo de nota desligado. Ligue aqui se algum precisar de nota." : ""}/>
       ) : lista.map(j=>{
         const nf = j.nf||{};
         return (
@@ -7307,7 +7312,7 @@ function NotasFiscaisCard({state, updateState}){
             <strong style={{color:"var(--moss)", whiteSpace:"nowrap"}}>{fmtMoney(aba==="Emitidas" ? (nf.valor||j.valor) : j.valor)}</strong>
             {aba==="A emitir" && (nf.tomador && nf.tomador.documento ? <Badge tone="green">Pronta</Badge> : <Badge tone="yellow">Falta tomador</Badge>)}
             {aba==="Emitidas" && nf.caminho && <button className="btn btn-ghost btn-sm" onClick={()=>abrirAnexo(nf.caminho)}>Abrir</button>}
-            {aba==="Sem nota" ? <button className="btn btn-ghost btn-sm" onClick={()=>salvarJob(j.id,{dispensada:false})}>Voltar para A emitir</button>
+            {aba==="Sem nota" ? <button className="btn btn-ghost btn-sm" onClick={()=>salvarJob(j.id,{precisa:true, dispensada:false})}>Precisa de nota</button>
               : <button className={"btn btn-sm "+(aba==="A emitir"?"btn-primary":"btn-ghost")} onClick={()=>setAberta(j.id)}>{aba==="A emitir" ? "Emitir" : "Ver"}</button>}
           </div>
         );
@@ -7385,7 +7390,7 @@ function EmitirNotaModal({job, state, cfg, onClose, onSalvar}){
   const pronta = soDigitos(t.documento).length>=11 && t.razaoSocial && Number(s.valor)>0;
 
   return (
-    <Modal title={`Nota fiscal · ${String(job.marca||"").trim()}`} onClose={()=>{ salvar(false); onClose(); }} largo>
+    <Modal title={`Nota fiscal · ${String(job.marca||"").trim()}`} onClose={onClose} largo>
       <div id="nf-emitir" data-job={job.id}>
         <h4 style={{margin:"0 0 8px"}}>1. Tomador (quem paga)</h4>
         <div className="field-row">
@@ -7426,7 +7431,7 @@ function EmitirNotaModal({job, state, cfg, onClose, onSalvar}){
         {emitida && <div style={{fontSize:13, color:"var(--moss)", marginTop:4}}>Nota emitida{nf.numero?" nº "+nf.numero:""}. Ela já aparece em Emitidas e em Documentos.</div>}
 
         <div style={{display:"flex", justifyContent:"space-between", gap:8, marginTop:16, flexWrap:"wrap"}}>
-          {!emitida ? <button className="btn btn-ghost" onClick={()=>{ onSalvar(job.id, {dispensada:true}); onClose(); }}>Este job não precisa de nota</button> : <span/>}
+          {!emitida ? <button className="btn btn-ghost" onClick={()=>{ onSalvar(job.id, {precisa:false}); onClose(); }}>Este job não precisa de nota</button> : <span/>}
           <button className="btn btn-primary" onClick={()=>salvar(true)}>Salvar</button>
         </div>
       </div>
