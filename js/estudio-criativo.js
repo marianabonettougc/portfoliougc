@@ -1191,6 +1191,7 @@
       <div class="ec-g2"><label class="ec-solta" id="er-solta">${ic("foto")} Enviar prints ou imagens<input type="file" id="er-arq" multiple accept="image/*" hidden></label>
       <div><div class="ec-linha"><input type="url" id="er-link" placeholder="Link do Instagram, Pinterest ou imagem"><button class="ec-btn peq" id="er-add">Adicionar link</button></div>
       <label class="ec-campo"><span>Tipo dos prints enviados</span><select id="er-tipo">${Object.entries(TIPOS_REF).map(([k, t]) => `<option value="${k}" ${k === "capa" ? "selected" : ""}>${t}</option>`).join("")}</select></label></div></div>
+      ${st.refs.some((r) => !r.storage_path && r.source_url) ? `<div class="ec-aviso">${st.refs.filter((r) => !r.storage_path && r.source_url).length} referência(s) só com link. <button class="ec-btn peq" id="er-buscar">Buscar as imagens dos links</button> O Instagram costuma liberar a capa do post; o Pinterest não libera, então nele vale mandar o print.</div>` : ""}
       <div class="ec-chips" style="margin-top:6px"><button class="ec-chip ${!filtro ? "on" : ""}" data-f="">Todas (${st.refs.length})</button>${Object.entries(TIPOS_REF).map(([k, t]) => { const n = st.refs.filter((r) => r.reference_type === k).length; return n ? `<button class="ec-chip ${filtro === k ? "on" : ""}" data-f="${k}">${t} (${n})</button>` : ""; }).join("")}</div></div>
       <div class="ec-ref-grade">${lista.map((r) => `<article class="ec-ref" data-id="${r.id}"><div class="img">${r.storage_path ? `<img data-path="${esc(r.storage_path)}" alt="">` : `<div style="padding:12px;text-align:center">Sem imagem<br><label class="ec-btn peq" style="margin-top:8px">Enviar print<input type="file" accept="image/*" data-print="${r.id}" hidden></label></div>`}<span class="tag">${esc(TIPOS_REF[r.reference_type] || r.reference_type)}</span></div>
         <div class="corpo"><input type="text" data-campo="title" value="${esc(r.title)}"><select data-campo="reference_type">${Object.entries(TIPOS_REF).map(([k, t]) => `<option value="${k}" ${r.reference_type === k ? "selected" : ""}>${t}</option>`).join("")}</select>
@@ -1207,6 +1208,20 @@
     };
     solta.addEventListener("drop", (e) => { e.preventDefault(); enviar(e.dataTransfer.files); });
     $("#er-arq").onchange = (e) => enviar(e.target.files);
+    if ($("#er-buscar")) $("#er-buscar").onclick = async (e) => {
+      const b = e.currentTarget, lista = st.refs.filter((r) => !r.storage_path && r.source_url); let ok = 0;
+      b.disabled = true;
+      for (const [i, r] of lista.entries()) {
+        b.textContent = `Buscando ${i + 1} de ${lista.length}…`;
+        try {
+          const j = await ia({ acao: "importar", url: r.source_url });
+          const { error } = await banco().from("creative_references").update({ storage_path: j.storage_path }).eq("id", r.id);
+          if (!error) { r.storage_path = j.storage_path; ok++; }
+        } catch (err) { /* site bloqueou: fica só com o link */ }
+      }
+      toast(`${ok} de ${lista.length} referências ganharam imagem.${ok < lista.length ? " As outras precisam de print." : ""}`, ok < lista.length);
+      telaReferencias();
+    };
     $("#er-add").onclick = async () => { const u = $("#er-link").value.trim(); if (u && await adicionarLink(u)) telaReferencias(); };
     $$("[data-campo]", c).forEach((el) => el.onchange = async () => {
       const id = el.closest(".ec-ref").dataset.id, campo = el.dataset.campo, v = el.value;
