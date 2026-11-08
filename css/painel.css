@@ -2750,3 +2750,56 @@ dialog.janela.larga:has(.pc-editor-compacto) .janela-rodape .btn{min-height:36px
 .pg-opcao.carregando i{color:var(--terracota);font-weight:600}
 .pg-porque{margin:4px 0 0;font-size:12.5px;background:#fdf6f0;border-radius:10px;padding:8px 10px}
 .pg-porque b{font-weight:600}
+
+
+/* Estúdio de edição — área de escrita ampla e confortável */
+#aba-edicao .ed-roteiro{
+  gap:12px;
+  padding:16px;
+  border:1px solid var(--linha);
+  border-radius:14px;
+  background:var(--cartao);
+}
+#aba-edicao .ed-roteiro summary{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:8px;
+  margin:0 0 4px;
+  font-size:15px;
+  color:var(--texto);
+}
+#aba-edicao .ed-roteiro summary b{font-size:16px}
+#aba-edicao .ed-roteiro textarea,
+#aba-edicao #ed-pedidos,
+#aba-edicao #ed-ajustar-txt{
+  display:block;
+  width:100%;
+  min-height:260px;
+  height:auto;
+  padding:16px 18px;
+  border:1px solid var(--linha-forte);
+  border-radius:12px;
+  background:#fff;
+  color:var(--texto);
+  font-size:15px;
+  line-height:1.75;
+  resize:vertical;
+}
+#aba-edicao #ed-pedidos{min-height:170px}
+#aba-edicao #ed-ajustar-txt{min-height:180px}
+#aba-edicao .ed-roteiro select{min-height:42px}
+#aba-edicao .ed-rotulo{font-size:14px;color:var(--texto);margin:4px 0 0}
+#aba-edicao .ed-obs{font-size:13px;line-height:1.65}
+@media(max-width:900px){
+  #aba-edicao .ed-roteiro{padding:13px}
+  #aba-edicao .ed-roteiro textarea{min-height:230px}
+  #aba-edicao #ed-pedidos{min-height:160px}
+  #aba-edicao #ed-ajustar-txt{min-height:160px}
+}
+@media(max-width:560px){
+  #aba-edicao .ed-roteiro{padding:12px;gap:10px}
+  #aba-edicao .ed-roteiro textarea{min-height:220px;padding:14px;font-size:15px}
+  #aba-edicao #ed-pedidos{min-height:160px;padding:14px;font-size:15px}
+  #aba-edicao #ed-ajustar-txt{min-height:150px;padding:14px;font-size:15px}
+}
