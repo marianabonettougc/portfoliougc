@@ -3328,9 +3328,12 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     if((k && vistos.has(k)) || (k2 && vistos.has(k2))) return false; if(k) vistos.add(k); if(k2) vistos.add(k2); return true; }); };
   const receitasDash = semDuplicar((state.transacoes||[]).filter(t=>t.tipo==="receita" && (t.moeda||"BRL")==="BRL" && t.status!=="Cancelado" && !(t.jobId && jobPorId[t.jobId] && jobPorId[t.jobId].status==="Cancelado")));
   const recebida = (t) => t.status==="Confirmado";
-  const faturadoLista = receitasDash.filter(t=>recebida(t) && String(t.data||"").startsWith(mesIso)).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+  // 08/11/2026 (pedido da Mari): "Faturado no mês" = TODAS as receitas com data no mês (recebidas + a receber), com o recebido separado embaixo
+  const jaRecebida = (t) => recebida(t) || !!(t.jobId && jobPago(jobPorId[t.jobId]));
+  const faturadoLista = receitasDash.filter(t=>String(t.data||"").startsWith(mesIso)).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
   const faturadoMes = somaDe(faturadoLista);
-  const faturadoAnt = somaDe(receitasDash.filter(t=>recebida(t) && String(t.data||"").startsWith(mesAntIso)));
+  const fatRecebido = somaDe(faturadoLista.filter(jaRecebida)), aReceberMes = faturadoMes - fatRecebido;
+  const faturadoAnt = somaDe(receitasDash.filter(t=>String(t.data||"").startsWith(mesAntIso)));
   const varFat = faturadoAnt>0 ? Math.round((faturadoMes/faturadoAnt-1)*100) : null;
   // a receber: lançamento pendente cujo job ainda não foi marcado como pago
   const pendentesLista = receitasDash.filter(t=>!recebida(t) && !(t.jobId && jobPago(jobPorId[t.jobId])));
@@ -3508,9 +3511,9 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
 
       {/* 2. visão geral: faturado, a receber, em produção e visitas no site */}
       <div className="dn-cards dz-nums">
-        <button className="dn-card" onClick={()=>setDetalheFat(true)} title="Ver os recebimentos do mês">
+        <button className="dn-card" onClick={()=>setDetalheFat(true)} title="Ver as receitas do mês">
           <span className="dn-card-txt"><small>Faturado em {MESES_EXT[hojeD.getMonth()]}</small><b>{dnMoeda(faturadoMes)}</b>
-            <em className={varFat>0?"bom":""}>{faturadoLista.length ? `${plural(faturadoLista.length,"recebimento","recebimentos")}${varFat!==null ? ` · ${varFat>0?"+":""}${varFat}% sobre ${MESES_EXT[(hojeD.getMonth()+11)%12]}` : ""}` : "nenhum recebimento confirmado no mês"}</em></span></button>
+            <em className={varFat>0?"bom":""}>{faturadoLista.length ? `${dnMoeda(fatRecebido)} recebido · ${dnMoeda(aReceberMes)} a receber${varFat!==null ? ` · ${varFat>0?"+":""}${varFat}% sobre ${MESES_EXT[(hojeD.getMonth()+11)%12]}` : ""}` : "nenhuma receita lançada no mês"}</em></span></button>
         <button className="dn-card" onClick={()=>go("financeiro")} title="Abrir o financeiro">
           <span className="dn-card-txt"><small>Para receber</small><b>{dnMoeda(paraReceber)}</b>
             <em className={vencidosLista.length?"ruim":""}>{!pendentesLista.length ? "nada pendente" : vencidosLista.length ? `${dnMoeda(vencidoValor)} vencido · ${dnMoeda(aVencerValor)} a vencer` : `${plural(pendentesLista.length,"lançamento","lançamentos")} a vencer`}</em></span></button>
@@ -3898,10 +3901,10 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
       {/* janelas */}
       {detalheFat && <Modal title={`Faturado em ${MESES_EXT[hojeD.getMonth()]}`} onClose={()=>setDetalheFat(false)}>
         <div className="dz-fat-det">
-          {faturadoLista.length ? <ul>{faturadoLista.map(t=><li key={t.id}><span><b>{t.descricao||"Recebimento"}</b><small>Recebido em {dataBR(t.data)}{t.origem==="job" ? " · job" : t.categoria ? " · "+t.categoria : ""}</small></span><em>{dnMoeda(t.valor)}</em></li>)}</ul>
-            : <p className="db-vazio">Nenhum recebimento confirmado em {MESES_EXT[hojeD.getMonth()]} até agora.</p>}
-          <div className="dz-fat-tot"><span>Total recebido no mês</span><b>{dnMoeda(faturadoMes)}</b></div>
-          {pendentesLista.length>0 && <p className="dz-sub">Ainda a receber: {dnMoeda(paraReceber)} em {plural(pendentesLista.length,"lançamento","lançamentos")} (não entram no faturado).</p>}
+          {faturadoLista.length ? <ul>{faturadoLista.map(t=><li key={t.id}><span><b>{t.descricao||"Recebimento"}</b><small>{jaRecebida(t) ? "Recebido em" : "A receber em"} {dataBR(t.data)}{t.origem==="job" ? " · job" : t.categoria ? " · "+t.categoria : ""}</small></span><em>{dnMoeda(t.valor)}</em></li>)}</ul>
+            : <p className="db-vazio">Nenhuma receita lançada em {MESES_EXT[hojeD.getMonth()]} até agora.</p>}
+          <div className="dz-fat-tot"><span>Total do mês</span><b>{dnMoeda(faturadoMes)}</b></div>
+          <p className="dz-sub">Recebido: {dnMoeda(fatRecebido)} · A receber: {dnMoeda(aReceberMes)}</p>
           <button className="db-btn-escuro" onClick={()=>{ setDetalheFat(false); go("financeiro"); }}>Abrir o financeiro</button>
         </div>
       </Modal>}
