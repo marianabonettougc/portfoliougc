@@ -3303,14 +3303,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
         </section>
 
-        {/* financeiro */}
-        <section className={"db-bloco dn-fin"+(fechadoB("fin")?" fechado":"")}>
-          <div className="dn-bt"><h2>Financeiro</h2><span className="dn-bt-dir"><span className="dn-sel">{MESES_EXT[hojeD.getMonth()].replace(/^./, c=>c.toUpperCase())}</span>{minB("fin")}</span></div>
-          <div className="dn-fin-2"><button onClick={()=>go("financeiro")}><b>{dnMoeda(recebidoMes)}</b><small>Recebido no mês</small></button>
-            <button className={atrasadoValor>0?"at":""} onClick={()=>go("financeiro")}><b>{dnMoeda(atrasadoValor)}</b><small>{atrasadoValor>0 ? `Atrasado (${atrasadoLista.length})` : "Nada atrasado"}</small></button></div>
-          <div className="dn-graf dn-clica" onClick={()=>go("financeiro")} aria-label="Recebido nos últimos 6 meses">{meses6.map((m,i)=><div key={m.k} title={m.rotulo+": "+dnMoeda(m.valor)}><i className={i===5?"at":""} style={{height:Math.max(4, m.valor/maxMes*100)+"%"}}/><small>{m.rotulo}</small></div>)}</div>
-        </section>
-      </div>
+
 
       {/* inspirações | ferramentas */}
       <div className="db-baixo">
