@@ -1300,6 +1300,7 @@
   .dz-igfim{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px;margin-top:14px}
   .dz-igfim.sem-ig{grid-template-columns:minmax(0,1fr)}
   .dz-igfim > .db-bloco{margin:0 !important;min-width:0}
+  .dz-igfim > *{grid-area:auto !important}
   .dz-fat-det ul{list-style:none;margin:0 0 12px;padding:0}
   .dz-fat-det li{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--db-linha,rgba(107,74,53,.12))}
   .dz-fat-det li:first-child{border-top:0}
@@ -1319,6 +1320,8 @@
     .dz-cal2 .dn-bt,.dz-tarefas .dn-bt{flex-wrap:wrap}
     .dz-dia-lista li{grid-template-columns:8px 38px minmax(0,1fr)}
     .dz-check{width:26px;height:26px}.dz-tlista li{grid-template-columns:28px minmax(0,1fr)}
+    .dz-vis .dn-card-txt small{white-space:normal !important;overflow:visible}
+    .dz-vis .dz-per{display:flex;width:max-content;margin:6px 0 0}
   }
 </style>
 </head>
@@ -3394,7 +3397,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     mudarItem(it.job.id, it.item.id, novo);
   }
   const listaDia = (iso) => itensDoDia(iso).filter(it=>!it.apple);
-  const janelaTarefas = Array.from({length:45}, (_,i)=>{ const d = new Date(hojeD); d.setDate(d.getDate()-30+i); return isoLocal(d); });
+  const janelaTarefas = Array.from({length:75}, (_,i)=>{ const d = new Date(hojeD); d.setDate(d.getDate()-60+i); return isoLocal(d); });
   const tarefasTodas = (()=>{ const vistos = new Set(), out = [];
     janelaTarefas.forEach(iso=>listaDia(iso).forEach(it=>{
       if(vistos.has(it.id)) return;
@@ -3568,7 +3571,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         </section>
 
         <section className="db-bloco dz-tarefas" ref={rotinaRef}>
-          <div className="dn-bt"><div><h2>Minhas tarefas</h2><small className="dz-sub">{pendentesN ? `${plural(pendentesN,"pendente","pendentes")} para hoje` : "Tudo feito por hoje"}</small></div>
+          <div className="dn-bt"><div><h2>Minhas tarefas</h2><small className="dz-sub">{[tarefasAtrasadas.length && plural(tarefasAtrasadas.length,"atrasada","atrasadas"), tarefasHoje.filter(x=>!x.ok).length ? plural(tarefasHoje.filter(x=>!x.ok).length,"para hoje","para hoje") : "nada pendente para hoje"].filter(Boolean).join(" · ")}</small></div>
             <span className="dn-bt-dir"><button className="dn-mais" onClick={()=>setNovaTarefa({data:hoje, hora:"", titulo:"", sub:"", prioridade:""})} aria-label="Nova tarefa" title="Nova tarefa"><DbIcone tipo="mais" tam={16}/></button></span></div>
           <div className="dz-tabs" role="tablist">
             {[["atr","Atrasadas",tarefasAtrasadas.length],["hoje","Hoje",tarefasHoje.filter(x=>!x.ok).length],["prox","Próximas",tarefasProx.length]].map(([k,t,n])=>
@@ -3591,7 +3594,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
               return <li key={it.id} className={(ok?"ok ":"")+(atr?"atr ":"")}>
                 {pode ? <button className="dz-check" onClick={()=>concluirItem(it)} aria-pressed={ok} aria-label={ok?"Desmarcar":"Marcar como feita"} title={ok?"Desmarcar":"Marcar como feita"}>{ok && <DbIcone tipo="check" tam={12}/>}</button>
                   : <span className="dz-check fixo" title="Conclua na área de origem"><DbIcone tipo={iconeItem(it)} tam={13}/></span>}
-                <button className="dz-ttxt" onClick={()=>abrirItem(it)} title="Abrir na área de origem"><b>{alta && <i className="dz-pri">Alta</i>}{it.texto}</b><small>{origemItem(it)}{it.sub ? " · "+it.sub : ""}</small></button>
+                <button className="dz-ttxt" onClick={()=>abrirItem(it)} title="Abrir na área de origem"><b>{alta && <i className="dz-pri">Alta</i>}{it.texto}</b><small>{origemItem(it)}{it.sub && it.sub!==origemItem(it) ? " · "+it.sub : ""}</small></button>
                 <span className={"dz-prazo"+(atr?" atr":iso===hoje?" hj":"")}>{ok ? "feita" : iso===hoje ? (it.hora || "hoje") : `${fmtDia(iso)} · ${relDias(iso)}`}</span>
               </li>; })
               : <li className="dz-vazio-li">{abaT==="atr" ? "Nenhuma tarefa atrasada." : abaT==="hoje" ? "Nada marcado para hoje." : "Nada programado para os próximos dias."}</li>}
@@ -6881,7 +6884,6 @@ function Financeiro({state, updateState, go, pessoal, semTopo}){
 
         return (
           <div>
-            <NotasFiscaisCard state={state} updateState={updateState}/>
             <div className="grid grid-3" style={{marginBottom:18}}>
               <div className="card" style={{display:"flex", alignItems:"center", gap:12}}>
                 <span className="stat-icon" style={{background:"var(--sand)", width:38, height:38}}><Icon name="storefront" size={19}/></span>
@@ -7210,221 +7212,6 @@ function LinksTab({state, updateState}){
       ))}
       {modal && <LinkModal onClose={()=>setModal(false)} onSave={addLink}/>}
     </div>
-  );
-}
-
-/* ================= NOTAS FISCAIS (nov/2026, pedido da Mari) =================
-   MEI sem certificado digital: o painel monta a nota (tomador, serviço, valor) e a Mari emite
-   no Emissor Nacional (gov.br) com o Claude no Chrome preenchendo. Depois ela anexa o PDF/XML
-   e a nota vira "Emitida" (número, valor e data lidos do arquivo pelo NotaFiscalJob). */
-const EMISSOR_NACIONAL_URL = "https://www.nfse.gov.br/EmissorNacional";
-const soDigitos = (s) => String(s||"").replace(/\D/g,"");
-function fmtDocFiscal(s){
-  const d = soDigitos(s);
-  if(d.length===14) return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,"$1.$2.$3/$4-$5");
-  if(d.length===11) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/,"$1.$2.$3-$4");
-  return s||"";
-}
-const chaveMarcaNF = (m) => String(m||"").trim().toLowerCase().replace(/\s*·.*$/,"").replace(/\s+/g," ");
-const fmtDataBR = (iso) => iso ? String(iso).slice(0,10).split("-").reverse().join("/") : "";
-function nfEmitida(j){ const nf = j.nf||{}; return !!(nf.numero || nf.caminho || nf.arquivo || nf.status==="Emitida"); }
-function jobPrecisaNota(j){
-  const nf = j.nf||{};
-  if(nfEmitida(j) || nf.dispensada) return false;
-  if(j.tipoJob==="Permuta" || j.status==="Cancelado") return false;
-  return Number(j.valor)>0;
-}
-function descricaoNotaPadrao(j, cfg){
-  const base = (cfg && cfg.descricaoPadrao) || "Prestação de serviço de criação de conteúdo digital (UGC/publicidade)";
-  const resumo = resumoEntregas(j);
-  return `${base} para ${String(j.marca||"").trim()}${resumo ? ": "+resumo : ""}.`;
-}
-
-function NotasFiscaisCard({state, updateState}){
-  const [aba,setAba] = useState("A emitir");
-  const [aberta,setAberta] = useState(null);
-  const [config,setConfig] = useState(false);
-  const cfg = (state.contabilidade && state.contabilidade.nfse) || {};
-  const jobs = state.jobs || [];
-  const aEmitir = jobs.filter(jobPrecisaNota).sort((a,b)=>String(b.criadoEm||"").localeCompare(String(a.criadoEm||"")));
-  const emitidas = jobs.filter(nfEmitida).sort((a,b)=>String((b.nf||{}).dataEmissao||"").localeCompare(String((a.nf||{}).dataEmissao||"")));
-  const dispensadas = jobs.filter(j=>(j.nf||{}).dispensada && !nfEmitida(j));
-  const totalAEmitir = aEmitir.reduce((s,j)=>s+Number(j.valor||0),0);
-  const anoAtual = new Date().getFullYear();
-  const emitidoAno = emitidas.filter(j=>String((j.nf||{}).dataEmissao||"").startsWith(String(anoAtual))).reduce((s,j)=>s+Number((j.nf||{}).valor||j.valor||0),0);
-  const lista = aba==="A emitir" ? aEmitir : aba==="Emitidas" ? emitidas : dispensadas;
-
-  function salvarJob(id, campos, extra){
-    let novoJob = null;
-    const novos = jobs.map(j=>{
-      if(j.id!==id) return j;
-      novoJob = {...j, nf:{...(j.nf||{}), ...campos}};
-      if(campos.valor && Number(campos.valor)>0 && campos.lidaDoArquivo) novoJob.valor = String(campos.valor);
-      return novoJob;
-    });
-    let ns = {...state, jobs:novos, ...(extra||{})};
-    if(novoJob) ns.transacoes = syncTransacaoFromJob(ns.transacoes, novoJob);
-    updateState(ns);
-  }
-  const job = aberta && jobs.find(j=>j.id===aberta);
-
-  return (
-    <div className="card" style={{marginBottom:18}}>
-      <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, flexWrap:"wrap", marginBottom:12}}>
-        <h3 style={{margin:0, display:"flex", alignItems:"center", gap:8}}><Icon name="receipt_long"/>Notas fiscais</h3>
-        <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
-          <a className="btn btn-ghost btn-sm" href={EMISSOR_NACIONAL_URL} target="_blank" rel="noopener"><Icon name="open_in_new" size={15}/>Emissor Nacional</a>
-          <button className="btn btn-ghost btn-sm" onClick={()=>setConfig(true)}><Icon name="tune" size={15}/>Dados da nota</button>
-        </div>
-      </div>
-      <div className="grid grid-3" style={{gap:10, marginBottom:14}}>
-        <div style={{background:"var(--sand)", borderRadius:12, padding:"10px 12px"}}><div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>A emitir</div><strong style={{fontSize:15}}>{aEmitir.length} nota(s) · {fmtMoney(totalAEmitir)}</strong></div>
-        <div style={{background:"var(--sand)", borderRadius:12, padding:"10px 12px"}}><div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Emitido em {anoAtual}</div><strong style={{fontSize:15}}>{fmtMoney(emitidoAno)}</strong></div>
-        <div style={{background:"var(--sand)", borderRadius:12, padding:"10px 12px"}}><div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Código do serviço</div><strong style={{fontSize:15}}>{cfg.codigoServico || <span style={{color:"var(--wine)"}}>preencher em Dados da nota</span>}</strong></div>
-      </div>
-      <div className="tabs" style={{marginBottom:12}}>
-        {[["A emitir",aEmitir.length],["Emitidas",emitidas.length],["Sem nota",dispensadas.length]].map(([t,n])=><div key={t} className={"tab "+(aba===t?"active":"")} onClick={()=>setAba(t)}>{t} ({n})</div>)}
-      </div>
-      {lista.length===0 ? (
-        <EmptyState icon="receipt_long" title={aba==="A emitir" ? "Nenhuma nota para emitir" : aba==="Emitidas" ? "Nenhuma nota emitida ainda" : "Nenhum job marcado sem nota"} sub={aba==="A emitir" ? "Todo job pago com valor aparece aqui até a nota ser anexada." : ""}/>
-      ) : lista.map(j=>{
-        const nf = j.nf||{};
-        return (
-          <div className="row-item" key={j.id} data-nf-job={j.id}>
-            <div style={{flex:1, minWidth:0}}>
-              <strong>{String(j.marca||"").trim()}</strong>
-              <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>
-                {aba==="Emitidas" ? `NF${nf.numero?" nº "+nf.numero:""}${nf.dataEmissao?" · "+fmtDataBR(nf.dataEmissao):""}` : (resumoEntregas(j) || j.status)}
-                {nf.tomador && nf.tomador.documento ? " · "+fmtDocFiscal(nf.tomador.documento) : ""}
-              </div>
-            </div>
-            <strong style={{color:"var(--moss)", whiteSpace:"nowrap"}}>{fmtMoney(aba==="Emitidas" ? (nf.valor||j.valor) : j.valor)}</strong>
-            {aba==="A emitir" && (nf.tomador && nf.tomador.documento ? <Badge tone="green">Pronta</Badge> : <Badge tone="yellow">Falta tomador</Badge>)}
-            {aba==="Emitidas" && nf.caminho && <button className="btn btn-ghost btn-sm" onClick={()=>abrirAnexo(nf.caminho)}>Abrir</button>}
-            {aba==="Sem nota" ? <button className="btn btn-ghost btn-sm" onClick={()=>salvarJob(j.id,{dispensada:false})}>Voltar para A emitir</button>
-              : <button className={"btn btn-sm "+(aba==="A emitir"?"btn-primary":"btn-ghost")} onClick={()=>setAberta(j.id)}>{aba==="A emitir" ? "Emitir" : "Ver"}</button>}
-          </div>
-        );
-      })}
-      {job && <EmitirNotaModal job={job} state={state} cfg={cfg} onClose={()=>setAberta(null)} onSalvar={salvarJob}/>}
-      {config && <DadosNotaModal cfg={cfg} onClose={()=>setConfig(false)} onSave={(c)=>{ updateState({...state, contabilidade:{...(state.contabilidade||{}), nfse:c}}); setConfig(false); }}/>}
-    </div>
-  );
-}
-
-function DadosNotaModal({cfg, onClose, onSave}){
-  const [f,setF] = useState({descricaoPadrao:"Prestação de serviço de criação de conteúdo digital (UGC/publicidade)", codigoServico:"", observacao:"", ...cfg});
-  const set = (k,v)=>setF(p=>({...p,[k]:v}));
-  return (
-    <Modal title="Dados padrão da nota" onClose={onClose}>
-      <Field label="Descrição padrão do serviço"><textarea rows={3} value={f.descricaoPadrao||""} onChange={e=>set("descricaoPadrao",e.target.value)}/></Field>
-      <Field label="Código de tributação nacional (o mesmo que você usa no Emissor)"><input value={f.codigoServico||""} placeholder="ex.: 13.03.01" onChange={e=>set("codigoServico",e.target.value)}/></Field>
-      <Field label="Observação fixa (opcional)"><textarea rows={2} value={f.observacao||""} onChange={e=>set("observacao",e.target.value)}/></Field>
-      <p style={{fontSize:13, color:"var(--graphite-soft)"}}>Se não souber o código, deixe em branco: na primeira nota pelo Emissor eu confiro qual você já usa e preencho aqui.</p>
-      <div style={{display:"flex", justifyContent:"flex-end", gap:8}}>
-        <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-primary" onClick={()=>onSave(f)}>Salvar</button>
-      </div>
-    </Modal>
-  );
-}
-
-function EmitirNotaModal({job, state, cfg, onClose, onSalvar}){
-  const nf = job.nf || {};
-  const salvo = (state.tomadores||{})[chaveMarcaNF(job.marca)] || {};
-  const [t,setT] = useState({documento:"", razaoSocial:"", email:"", ...salvo, ...(nf.tomador||{})});
-  const [s,setS] = useState({
-    descricao: nf.descricao || descricaoNotaPadrao(job, cfg),
-    codigoServico: nf.codigoServico || cfg.codigoServico || "",
-    valor: nf.valorEmitir || job.valor || "",
-    competencia: nf.competencia || todayISO(),
-  });
-  const [buscando,setBuscando] = useState(false);
-  const [aviso,setAviso] = useState("");
-  const [copiado,setCopiado] = useState(false);
-  const emitida = nfEmitida(job);
-
-  async function buscarCnpj(){
-    const d = soDigitos(t.documento);
-    if(d.length!==14){ setAviso("Digite os 14 números do CNPJ para buscar."); return; }
-    setBuscando(true); setAviso("");
-    try{
-      const r = await fetch("https://brasilapi.com.br/api/cnpj/v1/"+d);
-      if(!r.ok) throw new Error("CNPJ não encontrado.");
-      const j = await r.json();
-      setT(p=>({...p, razaoSocial: j.razao_social || p.razaoSocial, email: p.email || (j.email||"").toLowerCase(), municipio: j.municipio ? `${j.municipio}/${j.uf}` : p.municipio}));
-    }catch(e){ setAviso(String(e.message||e)); }
-    setBuscando(false);
-  }
-  function dados(){
-    return {tomador:{...t, documento:soDigitos(t.documento)}, descricao:s.descricao, codigoServico:s.codigoServico, valorEmitir:s.valor, competencia:s.competencia, precisa:true, dispensada:false};
-  }
-  function salvar(fechar){
-    const tom = {...(state.tomadores||{}), [chaveMarcaNF(job.marca)]: {documento:soDigitos(t.documento), razaoSocial:t.razaoSocial, email:t.email, municipio:t.municipio}};
-    onSalvar(job.id, dados(), {tomadores:tom});
-    if(fechar) onClose();
-  }
-  async function copiar(){
-    const txt = [
-      `Tomador: ${t.razaoSocial||""} (${fmtDocFiscal(t.documento)})`,
-      t.email ? `E-mail: ${t.email}` : "",
-      `Competência: ${fmtDataBR(s.competencia)}`,
-      `Código de tributação nacional: ${s.codigoServico||"(ver no Emissor)"}`,
-      `Descrição: ${s.descricao}`,
-      `Valor: R$ ${(Number(s.valor)||0).toLocaleString("pt-BR",{minimumFractionDigits:2})}`,
-      cfg.observacao ? `Observação: ${cfg.observacao}` : ""
-    ].filter(Boolean).join("\n");
-    await copyToClipboard(txt); setCopiado(true); setTimeout(()=>setCopiado(false),2000);
-  }
-  const pronta = soDigitos(t.documento).length>=11 && t.razaoSocial && Number(s.valor)>0;
-
-  return (
-    <Modal title={`Nota fiscal · ${String(job.marca||"").trim()}`} onClose={()=>{ salvar(false); onClose(); }} largo>
-      <div id="nf-emitir" data-job={job.id}>
-        <h4 style={{margin:"0 0 8px"}}>1. Tomador (quem paga)</h4>
-        <div className="field-row">
-          <Field label="CNPJ ou CPF">
-            <div style={{display:"flex", gap:6}}>
-              <input name="nf-documento" value={fmtDocFiscal(t.documento)} onChange={e=>setT(p=>({...p, documento:soDigitos(e.target.value).slice(0,14)}))} placeholder="00.000.000/0000-00"/>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={buscarCnpj}>{buscando?"Buscando...":"Buscar"}</button>
-            </div>
-          </Field>
-          <Field label="Razão social / nome"><input name="nf-razao" value={t.razaoSocial||""} onChange={e=>setT(p=>({...p, razaoSocial:e.target.value}))}/></Field>
-        </div>
-        <div className="field-row">
-          <Field label="E-mail para enviar a nota (opcional)"><input name="nf-email" value={t.email||""} onChange={e=>setT(p=>({...p, email:e.target.value}))}/></Field>
-          <Field label="Município"><input name="nf-municipio" value={t.municipio||""} onChange={e=>setT(p=>({...p, municipio:e.target.value}))}/></Field>
-        </div>
-        {aviso && <div style={{fontSize:13, color:"var(--danger, #b8473a)", marginBottom:10}}>{aviso}</div>}
-
-        <h4 style={{margin:"10px 0 8px"}}>2. Serviço</h4>
-        <Field label="Descrição do serviço"><textarea name="nf-descricao" rows={3} value={s.descricao} onChange={e=>setS(p=>({...p, descricao:e.target.value}))}/></Field>
-        <div className="field-row">
-          <Field label="Código de tributação nacional"><input name="nf-codigo" value={s.codigoServico} placeholder="ex.: 13.03.01" onChange={e=>setS(p=>({...p, codigoServico:e.target.value}))}/></Field>
-          <Field label="Valor (R$)"><input name="nf-valor" type="number" value={s.valor} onChange={e=>setS(p=>({...p, valor:e.target.value}))}/></Field>
-          <Field label="Competência"><input name="nf-competencia" type="date" value={s.competencia} onChange={e=>setS(p=>({...p, competencia:e.target.value}))}/></Field>
-        </div>
-
-        <h4 style={{margin:"10px 0 8px"}}>3. Emitir no Emissor Nacional</h4>
-        <div style={{background:"var(--sand)", borderRadius:10, padding:"10px 12px", fontSize:13.5, marginBottom:12, lineHeight:1.5}}>
-          Abra o Emissor Nacional, entre com o seu gov.br e chame o Claude no Chrome: <strong>"emite a nota da {String(job.marca||"").trim()}"</strong>. Ele preenche com estes dados e te mostra o resumo antes de emitir.
-        </div>
-        <div style={{display:"flex", gap:8, flexWrap:"wrap", marginBottom:16}}>
-          <button className="btn btn-primary" disabled={!pronta} onClick={()=>{ salvar(false); window.open(EMISSOR_NACIONAL_URL, "_blank", "noopener"); }}><Icon name="open_in_new" size={15}/>Salvar e abrir o Emissor</button>
-          <button className="btn btn-ghost" onClick={copiar}><Icon name="content_copy" size={15}/>{copiado?"Copiado!":"Copiar dados"}</button>
-          {!pronta && <span style={{fontSize:12.5, color:"var(--graphite-soft)", alignSelf:"center"}}>Falta CNPJ/CPF, razão social ou valor.</span>}
-        </div>
-
-        <h4 style={{margin:"10px 0 8px"}}>4. Depois de emitir, anexe a nota</h4>
-        <NotaFiscalJob nf={nf} pasta={`jobs/${job.id}`} setNf={(campos)=>onSalvar(job.id, {...dados(), ...campos}, {tomadores:{...(state.tomadores||{}), [chaveMarcaNF(job.marca)]:{documento:soDigitos(t.documento), razaoSocial:t.razaoSocial, email:t.email, municipio:t.municipio}}})}/>
-        {emitida && <div style={{fontSize:13, color:"var(--moss)", marginTop:4}}>Nota emitida{nf.numero?" nº "+nf.numero:""}. Ela já aparece em Emitidas e em Documentos.</div>}
-
-        <div style={{display:"flex", justifyContent:"space-between", gap:8, marginTop:16, flexWrap:"wrap"}}>
-          {!emitida ? <button className="btn btn-ghost" onClick={()=>{ onSalvar(job.id, {dispensada:true}); onClose(); }}>Este job não precisa de nota</button> : <span/>}
-          <button className="btn btn-primary" onClick={()=>salvar(true)}>Salvar</button>
-        </div>
-      </div>
-    </Modal>
   );
 }
 
