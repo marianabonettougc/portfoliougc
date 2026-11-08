@@ -191,6 +191,20 @@
   .dz-seg button.on{background:var(--db-papel);color:var(--db-texto);box-shadow:0 1px 3px rgba(107,74,53,.12)}
   .dz-cal-corpo{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,320px);gap:18px;align-items:start}
   .dz-cal-corpo.v-dia,.dz-cal-corpo.v-semana{grid-template-columns:minmax(0,1fr)}
+  /* Central de gestão: calendário e radar lado a lado; campanhas ocupam a linha seguinte */
+  .dn-operacao{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.85fr);grid-template-areas:"cal radar" "camp camp";gap:14px;align-items:start}
+  .dn-operacao>.dz-cal{grid-area:cal;min-width:0;margin:0!important}
+  .dn-operacao>.dn-radar{grid-area:radar;min-width:0;margin:0!important}
+  .dn-operacao>.dn-campanhas{grid-area:camp;min-width:0;margin:0!important}
+  .dn-radar-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .dn-radar-grid button{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;min-width:0;min-height:78px;padding:13px;border:1px solid var(--db-linha);border-radius:12px;background:var(--db-bege2);cursor:pointer;font:inherit;color:var(--db-texto)}
+  .dn-radar-grid button:hover{border-color:var(--db-linha2);background:#fffaf2}
+  .dn-radar-grid b{font-family:var(--db-serif);font-size:22px;font-weight:400;line-height:1.1;color:var(--db-cafe)}
+  .dn-radar-grid small{font-size:11.5px;line-height:1.35;color:var(--db-suave)}
+  .dn-secao-titulo{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:2px 2px 9px}
+  .dn-secao-titulo h2{margin:0;font:400 18px "DM Serif Display",Georgia,serif;color:var(--db-texto)}
+  .dn-secao-titulo span{font-size:11.5px;color:var(--db-suave)}
+
   .dz-rotina,.dz-semana{background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 !important}
   .dz-rotina > .dn-bt h2{font-size:16px}
   .dz-mes{background:linear-gradient(160deg,var(--db-bege2),#f4e8cf);border-radius:16px;padding:12px 14px}
@@ -203,7 +217,7 @@
   .dz-mes-grade button i{position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--db-cafe)}
   .dz-mes-grade button.hoje{box-shadow:inset 0 0 0 1.5px #a87058}
   .dz-mes-grade button.sel{background:var(--db-cafe);color:#fff}.dz-mes-grade button.sel i{background:#fff}
-  @media (max-width:1100px){ .dz > .dn-cards{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-grade,.dz-grade.sem-ig{grid-template-columns:minmax(0,1fr);grid-template-areas:"seg" "alc" "fazer" "cal" "prop" "camp" "fin"} .dz-cal-corpo{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:1100px){ .dz > .dn-cards{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-grade,.dz-grade.sem-ig{grid-template-columns:minmax(0,1fr);grid-template-areas:"seg" "alc" "fazer" "cal" "prop" "camp" "fin"} .dz-cal-corpo{grid-template-columns:minmax(0,1fr)} .dn-operacao{grid-template-columns:minmax(0,1fr);grid-template-areas:"cal" "radar" "camp"} }
   @media (max-width:700px){ .dz .dn-ola{flex-direction:column;align-items:flex-start;gap:2px} .dz .dn-data{order:-1} .dz .dn-ola h1{font-size:27px} .dz > .dn-cards{gap:10px} .dz .dn-card{padding:12px 14px;gap:10px} .dz .dn-card .dn-ico{width:34px;height:34px} .dz .dn-card-txt b{font-size:18px} }
 
   /* Dashboard (nov/2026, referência que a Mari gostou): serifada fina nos títulos, rótulos pequenos em caixa alta, Instagram, Para fazer e propostas */
