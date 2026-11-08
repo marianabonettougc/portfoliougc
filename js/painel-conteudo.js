@@ -686,7 +686,7 @@
     const ganchos = Array.isArray(p.ganchos) ? p.ganchos : [];
     const insp = p.inspiracao || {};
     dlg.innerHTML = `<div class="janela-cabeca"><div><small class="janela-sobretitulo">Conteúdos · ${esc(p.status || "Ideia")}</small><h2>${p.id ? esc(p.tema || "Conteúdo") : "Novo conteúdo"}</h2></div><button class="icone-btn" type="button" data-fechar aria-label="Fechar">${ic.x}</button></div>
-      <div class="janela-corpo pc-form">
+      <div class="janela-corpo pc-form pc-editor-compacto">
         ${insp.link ? `<div class="pc-ref"><small>Referência</small><a href="${esc(insp.link)}" target="_blank" rel="noopener">${esc(insp.perfil || "Abrir o post")} · abrir no Instagram</a>${insp.legenda ? `<span>${esc(insp.legenda)}</span>` : ""}${insp.colecao ? `<em>pasta ${esc(insp.colecao)}</em>` : ""}</div>` : ""}
         <label class="campo pc-largo"><span>Título</span><input name="tema" value="${esc(p.tema)}"></label>
         <div class="pc-grade4 pc-grade5">
@@ -705,22 +705,26 @@
           <label class="campo"><span>Pilar</span><select name="pilar"><option value=""></option>${opt([...new Set([...(st.perfil.pilares || []).map((x) => x.nome), ...(p.pilar ? [p.pilar] : [])])], p.pilar)}</select></label>
           ${p.id ? `<div class="campo"><span>Não gostou? Refazer com ajuste</span><div class="pc-linha"><input class="entrada" id="pc-ajuste" placeholder="Ex.: mais leve, troca por produto de casa"><button class="btn" type="button" data-refazer>Refazer</button></div></div>` : ""}
         </div>
+        <details class="pc-editor-secao" open><summary><strong>Estratégia</strong><span>Direção criativa, objetivo e gancho</span></summary><div class="pc-editor-conteudo">
         <div class="pc-grade3">
           <label class="campo"><span>Tipo de roteiro</span><select name="tipo_roteiro"><option value=""></option>${opt(ROTEIROS, p.tipo_roteiro)}</select></label>
           <label class="campo"><span>Tipo de UGC</span><select name="tipo_ugc"><option value=""></option>${opt(tipos, p.tipo_ugc)}</select></label>
           <label class="campo"><span>Funil</span><select name="funil">${opt(FUNIS, p.funil)}</select></label>
         </div>
-        ${p.porque ? `<div class="pc-porque"><small>Por que atrai marca</small>${esc(p.porque)}</div>` : ""}
+        ${p.porque ? `<details class="pc-editor-extra"><summary>Por que atrai marca</summary><p>${esc(p.porque)}</p></details>` : ""}
         ${p.roteiro_id ? `<p class="pc-ajuda pc-ligado">Este conteúdo está ligado a um roteiro em Meus roteiros. Edite o roteiro por lá (botão Abrir roteiro).</p>` : ""}
         <label class="campo pc-largo"><span>Objetivo</span><input name="proposito" value="${esc(p.proposito)}" placeholder="Para que serve esse conteúdo no seu perfil"></label>
         <label class="campo pc-largo"><span>Hook</span><textarea name="hook" rows="2">${esc(p.hook)}</textarea></label>
         <div class="pg-usar-linha"><button type="button" class="btn btn-mini" data-usar-gancho>${ic.brilho}Usar um gancho magnético</button>${(st.ganchos || []).filter((g) => p.id && g.post_id === p.id).map((g) => `<span class="pg-testando">testando: ${esc(semAspas(g.texto).slice(0, 60))}</span>`).join("")}</div>
-        ${ganchos.length ? `<div class="pc-ganchos"><small>Outras opções de gancho (toque para usar)</small>${ganchos.map((g) => `<button type="button" class="cr-chip" data-gancho>${esc(g)}</button>`).join("")}</div>` : ""}
+        ${ganchos.length ? `<details class="pc-editor-extra pc-editor-ganchos"><summary>Outras opções de gancho (${ganchos.length})</summary><div class="pc-ganchos">${ganchos.map((g) => `<button type="button" class="cr-chip" data-gancho>${esc(g)}</button>`).join("")}</div></details>` : ""}
+        </div></details>
+        <details class="pc-editor-secao"><summary><strong>Roteiro e publicação</strong><span>Desenvolvimento, CTA, legenda e notas</span></summary><div class="pc-editor-conteudo">
         <label class="campo pc-largo"><span>Desenvolvimento do roteiro</span><textarea name="desenvolvimento" rows="9">${esc(p.desenvolvimento)}</textarea></label>
         <label class="campo pc-largo"><span>CTA</span><input name="cta" value="${esc(p.cta)}"></label>
         <label class="campo pc-largo"><span>Legenda e hashtags</span><textarea name="legenda" rows="4">${esc(p.legenda)}</textarea></label>
         <label class="campo pc-largo"><span>Notas</span><textarea name="notas" rows="2">${esc(p.notas)}</textarea></label>
         ${insp.duracao_seg || (!insp.link && insp.perfil) ? `<p class="pc-ajuda">${!insp.link && insp.perfil ? `Inspirado em ${esc(insp.perfil)}. ` : ""}${insp.duracao_seg ? `Duração estimada: ${insp.duracao_seg}s.` : ""}</p>` : ""}
+        </div></details>
       </div>
       <div class="janela-rodape">${p.id ? `<button class="btn btn-perigo" type="button" data-excluir>Excluir</button>` : ""}<span style="flex:1"></span>
         ${p.id && p.roteiro_id ? `<button class="btn" type="button" data-abrir-roteiro>Abrir roteiro</button>` : ""}
