@@ -402,10 +402,10 @@
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga pc pc2">
       <header class="pc2-cab">
         <div><small class="pc2-sobre">Conteúdos</small><h2 class="pc2-titulo">Meus <em>conteúdos</em></h2></div>
-        <div class="pc2-cab-acoes"><button class="btn" type="button" id="pc-ajustes" aria-expanded="false">${ic.ajustes}Ajustes e IA</button><button class="btn btn-principal" type="button" id="pc-novo">${ic.mais}Novo conteúdo</button></div>
+        <div class="pc2-cab-acoes"><button class="btn btn-principal" type="button" id="pc-novo">${ic.mais}Novo conteúdo</button></div>
       </header>
       <nav class="sub-abas pc-abas" aria-label="Partes de Conteúdos">
-        <button type="button" class="sub-aba" data-pcaba="geral">Visão geral</button><button type="button" class="sub-aba" data-pcaba="quadro">Quadro de produção</button><button type="button" class="sub-aba" data-pcir="quadro">Meus roteiros</button><button type="button" class="sub-aba" data-pcaba="cal">Calendário editorial</button><button type="button" class="sub-aba" data-pcaba="ideias">Banco de ideias</button><button type="button" class="sub-aba" data-pcaba="ganchos">Ganchos magnéticos</button><button type="button" class="sub-aba" data-pcaba="ano">Planejamento anual</button>
+        <button type="button" class="sub-aba" data-pcaba="geral">Visão geral</button><button type="button" class="sub-aba" data-pcaba="quadro">Quadro de produção</button><button type="button" class="sub-aba" data-pcir="quadro">Meus roteiros</button><button type="button" class="sub-aba" data-pcaba="cal">Calendário editorial</button><button type="button" class="sub-aba" data-pcaba="ideias">Ideias e ganchos</button><button type="button" class="sub-aba" data-pcaba="ano">Planejamento</button>
       </nav>
       <section data-pcpar="geral" id="pc-geral"></section>
       <section data-pcpar="quadro" id="pc-kanban"></section>
@@ -421,11 +421,12 @@
         <div class="pc-cal" id="pc-quadro"></div>
         <div class="pc-cal" id="pc-semanal" hidden></div>
       </section>
+      <nav class="pc2-seg pc2-subideias" data-pcpar="ideias ganchos" role="group" aria-label="Ideias e ganchos"><button type="button" data-pcsub="ideias">Banco de ideias</button><button type="button" data-pcsub="ganchos">Ganchos magnéticos</button></nav>
       <section data-pcpar="ideias" id="pc-ideias"></section>
       <section data-pcpar="ganchos" id="pc-ganchos"></section>
       <section data-pcpar="ano" id="pc-ano"></section>
-      <div id="pc-config" data-pcpar="cfg" hidden>
-        <div class="pc2-cfg-cab"><h3 class="pc2-h">Ajustes e <em>IA</em></h3><button class="btn" type="button" id="pc-cfg-fechar">${ic.x}Fechar</button></div>
+      <div id="pc-config" data-pcpar="ano">
+        <div class="pc2-cfg-cab"><h3 class="pc2-h">Meu ritmo e <em>IA</em></h3></div>
         <section class="pc-cartao pc-perfil" id="pc-perfil"></section>
         <div class="pc-baixo">
           <section class="pc-cartao pc-gerar">
@@ -436,19 +437,25 @@
               <button class="btn btn-principal" type="button" id="pc-gerar"></button></div>
           </section>
           <section class="pc-cartao" id="pc-pastas"></section>
-          <section class="pc-cartao pc-iphone" id="pc-iphone"></section>
-          <section class="pc-cartao pc-agente" id="pc-agente"></section>
         </div>
+        <details class="pc2-automacao"><summary><h3 class="pc2-h">Salvos do Instagram <em>no automático</em></h3><small>atalho do iPhone e agente diário</small></summary>
+          <div class="pc-baixo">
+            <section class="pc-cartao pc-iphone" id="pc-iphone"></section>
+            <section class="pc-cartao pc-agente" id="pc-agente"></section>
+          </div>
+        </details>
       </div>
     </div>`;
-    // quatro áreas em abas; Ajustes e IA abre por botão (perfil, gerar grade, pastas, iPhone). A escolha fica guardada.
-    let anterior = "geral";
+    // Abas (nov/2026, reorganização pedida pela Mari): Banco de ideias e Ganchos dividem a aba "Ideias e ganchos";
+    // os antigos Ajustes e IA (ritmo, gerar a grade, pastas, iPhone, agente) ficam dentro de Planejamento. A escolha fica guardada.
+    const ABA_DA_PARTE = { ganchos: "ideias", cfg: "ano" };
     const mostrarParte = (k) => {
-      if (k !== "cfg") anterior = k;
-      $$("[data-pcaba]", sec).forEach((b) => { b.classList.toggle("ativa", b.dataset.pcaba === k); b.setAttribute("aria-current", b.dataset.pcaba === k ? "page" : "false"); });
-      $$("[data-pcpar]", sec).forEach((p) => { p.hidden = p.dataset.pcpar !== k; });
-      $("#pc-ajustes", sec).setAttribute("aria-expanded", String(k === "cfg"));
-      try { localStorage.setItem("pc-parte2", k === "cfg" ? anterior : k); } catch (e) { /* sem armazenamento */ }
+      if (k === "cfg") k = "ano";
+      const aba = ABA_DA_PARTE[k] || k;
+      $$("[data-pcaba]", sec).forEach((b) => { b.classList.toggle("ativa", b.dataset.pcaba === aba); b.setAttribute("aria-current", b.dataset.pcaba === aba ? "page" : "false"); });
+      $$("[data-pcpar]", sec).forEach((p) => { p.hidden = !p.dataset.pcpar.split(" ").includes(k); });
+      $$("[data-pcsub]", sec).forEach((b) => b.classList.toggle("ativa", b.dataset.pcsub === k));
+      try { localStorage.setItem("pc-parte2", k); } catch (e) { /* sem armazenamento */ }
     };
     st.mostrarParte = mostrarParte;
     window.painelConteudos = { parte: (k) => mostrarParte(k) };
@@ -456,9 +463,12 @@
     $$("[data-pcir]", sec).forEach((b) => b.addEventListener("click", () => { location.hash = "#" + b.dataset.pcir; }));
     let parte = "geral"; try { parte = localStorage.getItem("pc-parte2") || "geral"; } catch (e) { /* sem armazenamento */ }
     mostrarParte(["geral", "quadro", "cal", "ideias", "ganchos", "ano"].includes(parte) ? parte : "geral");
-    $$("[data-pcaba]", sec).forEach((b) => b.addEventListener("click", () => mostrarParte(b.dataset.pcaba)));
-    $("#pc-ajustes", sec).addEventListener("click", () => mostrarParte($("#pc-config", sec).hidden ? "cfg" : anterior));
-    $("#pc-cfg-fechar", sec).addEventListener("click", () => mostrarParte(anterior));
+    $$("[data-pcaba]", sec).forEach((b) => b.addEventListener("click", () => {
+      let k = b.dataset.pcaba;
+      if (k === "ideias") { try { if (localStorage.getItem("pc-sub-ideias") === "ganchos") k = "ganchos"; } catch (e) { /* sem armazenamento */ } }
+      mostrarParte(k);
+    }));
+    $$("[data-pcsub]", sec).forEach((b) => b.addEventListener("click", () => { try { localStorage.setItem("pc-sub-ideias", b.dataset.pcsub); } catch (e) { /* sem armazenamento */ } mostrarParte(b.dataset.pcsub); }));
     $("#pc-novo", sec).addEventListener("click", () => abrir(novoConteudo({})));
     $$("[data-calvista]", sec).forEach((b) => b.addEventListener("click", () => { st.cal = b.dataset.calvista; try { localStorage.setItem("pc-calvista", st.cal); } catch (e) { /* sem armazenamento */ } if (st.cal === "semana" && !st.semIni) st.semIni = segundaDe(iso(hoje)); pintar(); }));
     const sel = $("#pc-mes", sec);
@@ -957,10 +967,6 @@
           <dl class="pc3-stats"><div><dt>Planejados</dt><dd>${doMes.length}</dd></div><div><dt>Em andamento</dt><dd>${contar(doMes, ANDAMENTO)}</dd></div><div><dt>Agendados</dt><dd>${agend}</dd></div><div><dt>Publicados</dt><dd>${pub}</dd></div></dl>
           ${pend ? `<button type="button" class="pc3-pend" data-ir-parte="quadro">${pend} ${pend === 1 ? "conteúdo passou" : "conteúdos passaram"} da data sem publicar</button>` : ""}
         </section>
-        <section class="pc3-bloco">
-          <div class="pc3-bloco-cab"><h3 class="pc2-h">Produção</h3><button type="button" class="pc2-link" data-ir-parte="quadro">quadro ${ic.seta}</button></div>
-          <ul class="pc3-fluxo">${STATUS.map((x) => `<li><button type="button" data-ir-parte="quadro"><span>${esc(x === "Ideia" ? "Sem roteiro" : x)}</span><b>${contar(T, [x])}</b></button></li>`).join("")}</ul>
-        </section>
       </aside></div>`;
     $$("[data-ir-parte]", box).forEach((b) => b.addEventListener("click", () => st.mostrarParte(b.dataset.irParte)));
     ligarCliques(box);
@@ -1001,7 +1007,7 @@
         if (col === "Publicado") cards = cards.sort((a, b) => String(b.data || "").localeCompare(String(a.data || ""))).slice(0, 30);
         else cards = cards.sort((a, b) => String(a.data || "9").localeCompare(String(b.data || "9")));
         const cor = COR_STATUS[col] || "#a87058";
-        return `<section class="pc2-col pc3-col" data-col="${esc(col)}" style="border-top-color:${cor}"><div class="pc2-col-cab"><i class="pc3-ponto" style="background:${cor}"></i><b>${esc(col === "Ideia" ? "Ideias" : col)}</b><span>${total}</span><button type="button" class="pc2-mais" data-criar="${esc(col)}" aria-label="Adicionar em ${esc(col)}">${ic.mais}</button></div>
+        return `<section class="pc2-col pc3-col" data-col="${esc(col)}" style="border-top-color:${cor}"><div class="pc2-col-cab"><i class="pc3-ponto" style="background:${cor}"></i><b>${esc(col === "Ideia" ? "Sem roteiro" : col)}</b><span>${total}</span><button type="button" class="pc2-mais" data-criar="${esc(col)}" aria-label="Adicionar em ${esc(col)}">${ic.mais}</button></div>
           <div class="pc2-col-lista">${cards.map(cartaoKanban).join("") || `<p class="pc2-vazio pc3-vazio">Arraste para cá</p>`}</div></section>`;
       }).join("")}</div></div>`;
     ligarCliques(box);
@@ -1036,7 +1042,7 @@
     if (!p) return;
     document.querySelectorAll(".pc3-pop").forEach((x) => x.remove());
     const pop = document.createElement("div"); pop.className = "pc3-pop";
-    pop.innerHTML = `<button type="button" data-a="abrir">Abrir e editar</button>${STATUS.filter((x) => x !== p.status).map((x) => `<button type="button" data-a="mover" data-v="${esc(x)}">Mover para ${esc(x === "Ideia" ? "Ideias" : x)}</button>`).join("")}<button type="button" data-a="excluir" class="perigo">Excluir</button>`;
+    pop.innerHTML = `<button type="button" data-a="abrir">Abrir e editar</button>${STATUS.filter((x) => x !== p.status).map((x) => `<button type="button" data-a="mover" data-v="${esc(x)}">Mover para ${esc(x === "Ideia" ? "Sem roteiro" : x)}</button>`).join("")}<button type="button" data-a="excluir" class="perigo">Excluir</button>`;
     document.body.appendChild(pop);
     const r = bt.getBoundingClientRect();
     pop.style.top = Math.min(window.innerHeight - pop.offsetHeight - 8, r.bottom + 4) + "px";
@@ -1095,7 +1101,7 @@
     if (ja) { toast("Essa ideia já virou conteúdo. Abrindo."); abrir(ja); return; }
     if (transformando.has(it.id)) return;
     const v = await janelaIdeia("Transformar em conteúdo", `<p class="pc-ajuda">"${esc(it.titulo || it.texto || "")}" entra no Quadro de produção. A ideia continua guardada e ligada a ele.</p>
-      <label class="campo"><span>Começa em</span><select name="status"><option value="Ideia">Ideias (sem roteiro)</option><option value="Roteirizado">Roteirizado (a Skill UGC escreve o roteiro em Meus roteiros)</option><option value="Para gravar">Para gravar</option></select></label>
+      <label class="campo"><span>Começa em</span><select name="status"><option value="Ideia">Sem roteiro</option><option value="Roteirizado">Roteirizado (a Skill UGC escreve o roteiro em Meus roteiros)</option><option value="Para gravar">Para gravar</option></select></label>
       <div class="pc-grade2"><label class="campo"><span>Gravação (opcional)</span><input type="date" name="data_gravacao"></label><label class="campo"><span>Publicação (opcional)</span><input type="date" name="data"></label></div>
       <div class="pc-grade2"><label class="campo"><span>Formato</span><select name="formato">${FORMATOS.map((f) => `<option ${f === (it.formato || "Reels") ? "selected" : ""}>${f}</option>`).join("")}</select></label><label class="campo"><span>Funil</span><select name="funil">${FUNIS.map((f) => `<option ${f === (it.funil || "Topo") ? "selected" : ""}>${f}</option>`).join("")}</select></label></div>`, "Transformar");
     if (!v) return;
@@ -1111,7 +1117,7 @@
         // a Skill UGC é o motor único de roteiro: abre Meus roteiros com a ideia; ao salvar lá, o conteúdo fica ligado e vira Roteirizado
         toast("Conteúdo criado. Abrindo a Skill UGC em Meus roteiros…");
         if (window.painelSkill) window.painelSkill.criarRoteiro({ conteudoId: novo.id, ideia: ideiaDoConteudo(novo, novo.inspiracao), inicial: { formato: /tiktok/i.test(novo.formato || "") ? "TikTok" : /stor/i.test(novo.formato || "") ? "Stories" : /carross/i.test(novo.formato || "") ? "Carrossel" : "Reels" } });
-      } else toast(`Conteúdo criado em ${v.status === "Ideia" ? "Ideias" : v.status} no quadro.`);
+      } else toast(`Conteúdo criado em ${v.status === "Ideia" ? "Sem roteiro" : v.status} no quadro.`);
     } catch (er) { toast("Não consegui transformar: " + er.message, true); }
     transformando.delete(it.id); pintar();
   }

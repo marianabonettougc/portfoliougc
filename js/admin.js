@@ -293,7 +293,7 @@
   // Meus roteiros virou uma aba de Conteúdos (nov/2026, pedido da Mari): Visão geral | Quadro de produção | Meus roteiros |
   // Calendário editorial | Banco de ideias. O roteiro continua sendo a página do aplicativo (#quadro); aqui só entra o
   // mesmo cabeçalho e as mesmas abas de Conteúdos em cima dele. As outras abas voltam para #planejar na parte certa.
-  const PARTES_CONTEUDOS = [["geral", "Visão geral"], ["quadro", "Quadro de produção"], ["roteiros", "Meus roteiros"], ["cal", "Calendário editorial"], ["ideias", "Banco de ideias"], ["ganchos", "Ganchos magnéticos"], ["ano", "Planejamento anual"]];
+  const PARTES_CONTEUDOS = [["geral", "Visão geral"], ["quadro", "Quadro de produção"], ["roteiros", "Meus roteiros"], ["cal", "Calendário editorial"], ["ideias", "Ideias e ganchos"], ["ano", "Planejamento"]];
   function pintarCabConteudos(nome) {
     const cab = $("#cab-conteudos");
     if (!cab) return;
