@@ -4538,7 +4538,8 @@ function Collapsible({title, icon, defaultOpen, badge, children}){
 }
 
 function vincularIdRoteiroJob(job){
-  const ids = Array.isArray(job.roteirosIds) ? job.roteirosIds.filter(Boolean) : (job.roteiroId ? [job.roteiroId] : []);
+  const listaIds = Array.isArray(job.roteirosIds) ? job.roteirosIds.filter(Boolean) : [];
+  const ids = listaIds.length ? listaIds : (job.roteiroId ? [job.roteiroId] : []);
   if(ids.length) return {...job, roteiroId:ids.length===1 && !job.roteiroBase ? ids[0] : "", roteirosIds:ids};
   const id = uid();
   return {...job, roteiroId:id, roteirosIds:[id]};
@@ -8505,7 +8506,7 @@ function sincronizarRoteirosJobs(antes, depois){
   const roteiros = depois.roteiros;
   let jobs = depois.jobs || [];
   let mudouJob = false, mudouRot = false;
-  const idsDo = (j) => Array.isArray(j.roteirosIds) ? j.roteirosIds : (j.roteiroId ? [j.roteiroId] : []);
+  const idsDo = (j) => { const lista = Array.isArray(j.roteirosIds) ? j.roteirosIds.filter(Boolean) : []; return lista.length ? lista : (j.roteiroId ? [j.roteiroId] : []); };
   const refazer = (j, ids) => { mudouJob = true; return {...j, roteirosIds:ids, roteiroId: ids.length===1 && !j.roteiroBase ? ids[0] : "", ...textoDoJobComRoteiros(j, ids, roteiros), roteiroStatus: (ids.length || j.roteiroBase) ? (j.roteiroStatus==="Em criação" ? "Pronto" : (j.roteiroStatus||"Pronto")) : "Em criação"}; };
   // roteiro apagado: sai do job
   const vivos = new Set(roteiros.map(r=>r.id));
@@ -8542,7 +8543,7 @@ function sincronizarJobsRoteiros(antes, depois){
   if(!antes || !depois || antes.jobs===depois.jobs || !Array.isArray(depois.jobs)) return depois;
   const antigos = new Map((antes.jobs||[]).map(j=>[j.id,j]));
   let roteiros = [...(depois.roteiros||[])], mudou = false, mudouJobs = false;
-  const idsDo = (j) => Array.isArray(j && j.roteirosIds) ? j.roteirosIds.filter(Boolean) : (j && j.roteiroId ? [j.roteiroId] : []);
+  const idsDo = (j) => { const lista = Array.isArray(j && j.roteirosIds) ? j.roteirosIds.filter(Boolean) : []; return lista.length ? lista : (j && j.roteiroId ? [j.roteiroId] : []); };
   let jobs = (depois.jobs||[]).map(job=>{
     const velho = antigos.get(job.id);
     const idsNovos = idsDo(job), idsAntigos = idsDo(velho||{});
@@ -8604,7 +8605,8 @@ function vincularRoteirosLegados(state){
   const jobsOriginais = state.jobs || [];
   let roteiros = [...(state.roteiros || [])], mudou = false;
   const jobs = jobsOriginais.map(job=>{
-    const ids = Array.isArray(job.roteirosIds) ? job.roteirosIds.filter(Boolean) : (job.roteiroId ? [job.roteiroId] : []);
+    const listaIds = Array.isArray(job.roteirosIds) ? job.roteirosIds.filter(Boolean) : [];
+  const ids = listaIds.length ? listaIds : (job.roteiroId ? [job.roteiroId] : []);
     if(ids.length || !String(job.roteiroConteudo||"").trim()) return job;
     let roteiro = roteiros.find(r=>String(r.jobId)===String(job.id));
     if(!roteiro){
