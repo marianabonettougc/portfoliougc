@@ -288,6 +288,13 @@ details.secao summary .conta .progresso{margin-top:4px}
 dialog.janela{border:0;border-radius:var(--raio);padding:0;width:min(520px,calc(100vw - 24px));max-height:calc(100vh - 40px);background:var(--cartao);color:var(--texto);box-shadow:0 20px 60px rgba(30,20,14,.3)}
 dialog.janela::backdrop{background:rgba(30,20,14,.45)}
 dialog.janela.larga{width:min(720px,calc(100vw - 24px))}
+/* celular: a janela nunca anda para o lado (iPhone estica campo de data e o toque arrastava a janela) */
+dialog.janela{overflow-x:hidden;overscroll-behavior:contain;max-height:calc(100dvh - 40px)}
+.janela-corpo input,.janela-corpo select,.janela-corpo textarea{min-width:0;max-width:100%}
+.janela-corpo [class*="grade"] > *{min-width:0}
+.campo input[type=date],.campo input[type=time]{-webkit-appearance:none;appearance:none;display:block;min-width:0}
+.campo input[type=date]::-webkit-date-and-time-value,.campo input[type=time]::-webkit-date-and-time-value{text-align:left}
+@media (max-width:640px){.pc-form .pc-grade2{grid-template-columns:1fr}.pc-form .pc-linha .entrada{flex:1;min-width:0}}
 .janela-cabeca{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--linha);position:sticky;top:0;background:var(--cartao);z-index:1}
 .janela-cabeca h2{font-size:14px}
 .janela-corpo{padding:16px 18px}
