@@ -1469,6 +1469,19 @@
     .job-form-body{max-width:100%;}
     .job-form-modal .field-row{gap:9px 12px;}
   }
+  /* Cabeçalho do formulário: título e ações nunca se sobrepõem nem são cortados */
+  .job-form-modal .modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;}
+  .job-form-modal .modal-head>h3{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;}
+  .job-form-modal .modal-head>span{display:flex!important;align-items:center;justify-content:flex-end;gap:6px;flex:0 0 auto;min-width:max-content;}
+  .job-form-modal .modal-head .modal-sino{width:auto;min-width:0;max-width:none;flex:0 0 auto;white-space:nowrap;padding:7px 9px;gap:5px;}
+  .job-form-modal .modal-head .modal-close:not(.modal-sino){width:36px;min-width:36px;flex:0 0 36px;}
+  @media(max-width:640px){
+    .job-form-modal .modal-head{gap:8px;}
+    .job-form-modal .modal-head>h3{font-size:17px;line-height:1.2;overflow-wrap:normal;}
+    .job-form-modal .modal-head>span{gap:4px;}
+    .job-form-modal .modal-head .modal-sino{padding:7px 6px;font-size:11px;}
+    .job-form-modal .modal-head .modal-close:not(.modal-sino){width:32px;min-width:32px;flex-basis:32px;height:34px;}
+  }
   @media(max-width:640px){
     .modal-overlay:has(.job-form-modal){padding:0;}
     .modal.job-form-modal{width:100%;max-width:none;max-height:100dvh;height:100dvh;padding:14px 12px 12px;border-radius:0;}
