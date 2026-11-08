@@ -3334,6 +3334,49 @@ IDEIA PARA DEPOIS
         .ed-studio .es-item>div{min-width:0;display:flex;flex-direction:column;gap:3px}.ed-studio .es-item small{font-size:11px;color:var(--graphite-soft)}
         .ed-studio .es-item .entrada{max-width:175px}
         @media(max-width:700px){.ed-studio .es-grid,.ed-studio .es-resumo{grid-template-columns:1fr}.ed-studio .es-kpis{gap:5px}.ed-studio .es-kpis>div{padding:9px}.ed-studio .es-kpis b{font-size:17px}}
+        /* Reorganização visual: menos ruído, áreas bem definidas e preview como protagonista */
+        .ed-cc{border:1px solid var(--rr-linha);border-radius:18px;overflow:hidden;background:var(--rr-bg);box-shadow:0 8px 28px rgba(61,43,32,.06)}
+        .ed-cc-topo{gap:14px;padding:16px 20px;background:var(--rr-sup);border-bottom:1px solid var(--rr-linha)}
+        .ed-cc .rr-h1{font-size:25px;letter-spacing:-.035em;color:var(--rr-tinta)}
+        .ed-cc-grade{grid-template-columns:72px minmax(270px,340px) minmax(360px,1fr) 250px;height:clamp(560px,calc(100vh - 300px),860px)}
+        .ed-trilho{gap:6px;padding:12px 7px;background:var(--rr-bg)}
+        .ed-trilho-bt{min-height:62px;padding:9px 3px;font-size:10.5px;border-radius:11px}
+        .ed-trilho-bt svg{width:21px;height:21px}
+        .ed-trilho-bt.on{background:var(--rr-rosa-claro);box-shadow:inset 0 0 0 1px var(--rr-linha)}
+        .ed-gaveta{background:var(--rr-sup)}
+        .ed-gaveta-cab{padding:13px 15px 9px}
+        .ed-gaveta-tit{font:600 17px "Poppins",sans-serif;font-style:normal;letter-spacing:-.02em;color:var(--rr-tinta)}
+        .ed-gaveta-corpo{padding:14px 15px 20px}
+        .ed-gaveta .ed-cartao{padding:12px;border-radius:12px;box-shadow:none}
+        .ed-gaveta .ed-obs{font-size:12px;line-height:1.45;color:var(--rr-suave)}
+        .ed-palco{background:var(--rr-bg);padding:16px 12px 12px}
+        .ed-cc .ed-palco .rr-player{border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+        .ed-assist{background:var(--rr-sup);padding:12px;border-left:1px solid var(--rr-linha)}
+        .ed-assist-cab{font-size:12.5px;background:var(--rr-bg)}
+        .ed-cc .ed-cc-linha{border-top:1px solid var(--rr-linha);background:var(--rr-sup)}
+        .ed-cc-linha-vazia{background:var(--rr-sup)}
+        @media(max-width:1280px){.ed-cc-grade{grid-template-columns:66px minmax(250px,310px) minmax(300px,1fr) 230px}}
+        @media(max-width:1100px){.ed-cc-grade{grid-template-columns:66px minmax(270px,1fr) minmax(250px,1fr);grid-template-rows:auto auto;height:auto}}
+        @media(max-width:900px){
+          .ed-cc{border-radius:14px}
+          .ed-cc-topo{padding:12px}
+          .ed-cc-grade{display:contents}
+          .ed-palco{order:2;min-height:420px}
+          .ed-trilho{order:3;position:sticky;top:0;z-index:8;background:var(--rr-sup);box-shadow:0 3px 10px rgba(61,43,32,.05)}
+          .ed-gaveta{order:4;min-height:0;height:auto;border-right:0}
+          .ed-gaveta-corpo{max-height:none;overflow:visible}
+          .ed-assist{order:5;border-left:0;border-top:1px solid var(--rr-linha)}
+          .ed-cc .rr-linha.ed-cc-linha{order:6}
+          .ed-cc-linha-vazia{order:6}
+          .ed-trilho-bt{min-width:72px;min-height:54px}
+        }
+        @media(max-width:560px){
+          .ed-cc .rr-h1{font-size:21px}
+          .ed-cc-topo-acoes{width:100%;display:flex;gap:8px}
+          .ed-cc-topo-acoes .btn{flex:1;min-width:0}
+          .ed-palco{min-height:360px}
+          .ed-cc .ed-palco .rr-player{width:min(220px,100%)}
+        }
       `; document.head.appendChild(css);
     }
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga ed rr ed-cc">
@@ -3443,13 +3486,13 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   const ABAS_SEMPRE = ["projeto", "video", "referencia", "estilos", "efeitos"]; // abrem antes de editar (escolher o estilo e conhecer os efeitos)
   const svgT = (d) => `<svg class="traco" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
   const GRUPOS = [
-    { k: "midia", t: "Mídia", abas: ["video", "referencia"], ic: svgT('<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M10 9.5v5l4-2.5z"/>') },
-    { k: "estilo", t: "Estilo", abas: ["estilos", "visual"], ic: svgT('<circle cx="12" cy="12" r="8.5"/><circle cx="8.5" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="15.5" cy="10" r="1.2"/><path d="M12 20.5a2.5 2.5 0 0 1 0-5h2"/>') },
+    { k: "midia", t: "Editor", abas: ["video"], ic: svgT('<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M10 9.5v5l4-2.5z"/>') },
+    { k: "estilo", t: "Meus estilos", abas: ["estilos", "visual"], ic: svgT('<circle cx="12" cy="12" r="8.5"/><circle cx="8.5" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="15.5" cy="10" r="1.2"/><path d="M12 20.5a2.5 2.5 0 0 1 0-5h2"/>') },
     { k: "cortes", t: "Cortes", abas: ["cortes", "storyboard"], ic: svgT('<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5L20 16M8 15.5L20 8"/>') },
     { k: "texto", t: "Texto", abas: ["textos", "legendas"], ic: svgT('<path d="M4 6.5V5h11v1.5M9.5 5v14M7.5 19h4"/><path d="M14 12v-1h6v1M17 11v8M16 19h2"/>') },
-    { k: "efeitos", t: "Efeitos", abas: ["efeitos", "sons"], ic: svgT('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>') },
+    { k: "biblioteca", t: "Biblioteca", abas: ["referencia", "efeitos", "sons"], ic: svgT('<path d="M4 5.5h16v13H4z"/><path d="M8 5.5v13M12 5.5v13M16 5.5v13"/>') },
     { k: "capa", t: "Capa e mais", abas: ["capa", "variacoes", "carrossel"], ic: svgT('<rect x="4" y="3.5" width="12" height="15" rx="2"/><path d="M8 21h10a2 2 0 0 0 2-2V8"/><path d="M4 14l3.5-3.5 3 3 2-2 3.5 3.5"/>') },
-    { k: "projeto", t: "Projeto", abas: ["projeto"], ic: svgT('<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>') },
+    { k: "projeto", t: "Projetos", abas: ["projeto"], ic: svgT('<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>') },
   ];
   const grupoDe = (aba) => GRUPOS.find((g) => g.abas.includes(aba)) || GRUPOS[0];
   function pintarAbas() {
