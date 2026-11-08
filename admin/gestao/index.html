@@ -1746,7 +1746,7 @@ const ROTEIRO_BANK = [
   }
 ];
 const TRAFEGO_PLATAFORMAS = ["Facebook Ads","Instagram Ads","Google Ads","TikTok Ads","YouTube Ads"];
-const TRAFEGO_PERIODOS = [{key:"3m",label:"3 meses",dias:90},{key:"6m",label:"6 meses",dias:180},{key:"12m",label:"12 meses",dias:365},{key:"perm",label:"Permanente",dias:null}];
+const TRAFEGO_PERIODOS = [{key:"3m",label:"3 meses",dias:90},{key:"6m",label:"6 meses",dias:180},{key:"12m",label:"12 meses",dias:365},{key:"perm",label:"Vitalício",dias:null}];
 // períodos com outro número de meses (ex.: "18m") que a Mari digita
 const mesesDoPeriodo = (key) => { const m = String(key||"").match(/^(\d+)m$/); return m ? Number(m[1]) : 0; };
 const periodoPersonalizado = (key) => !!mesesDoPeriodo(key) && !TRAFEGO_PERIODOS.some(p=>p.key===key);
@@ -1794,7 +1794,7 @@ function contarEscopo(j){
 function resumoEntregas(j){
   const c = contarEscopo(j);
   const partes = FORMATOS_ESCOPO.filter(x=>c[x.k]).map(x=>`${c[x.k]} ${c[x.k]>1?x.varios:x.um}`);
-  if(partes.length && j && j.repostTiktok && c.reels) partes.push("repost TikTok");
+  if(partes.length && j && j.categoria==="Publi" && j.repostTiktok && c.reels) partes.push("repost TikTok");
   return partes.join(" · ") || (j && j.tipo) || "";
 }
 function novoEntregavelItem(tipo, idx){
@@ -1914,13 +1914,13 @@ function entregasDoJob(j){
   return [...new Set([...(e.videos||[]), ...(e.fotos||[]), ...(e.stories||[])].map(i=>i.dataEntrega).filter(Boolean))].sort();
 }
 function DatasJob({j, compacto}){
-  const fech = dataFechamentoJob(j), ugc = j.categoria!=="Publi", posts = ugc ? entregasDoJob(j) : postagensDoJob(j);
-  const rotulo = ugc ? (posts.length>1 ? "Entregas" : "Entrega") : (posts.length>1 ? "Postagens" : "Postagem");
+  const fech = dataFechamentoJob(j), entregas = entregasDoJob(j), publicacoes = j.categoria==="Publi" ? postagensDoJob(j) : [];
   const br = (iso) => iso ? iso.split("-").reverse().join("/") : "";
   return (
     <div className={"job-datas"+(compacto?" compacto":"")}>
       <span><small>Fechamento</small>{fech ? br(fech) : "sem data"}</span>
-      {posts.length>0 && <span><small>{rotulo}</small>{posts.map(d=><span key={d} className="job-datas-dia">{br(d)}</span>)}</span>}
+      {entregas.length>0 && <span><small>Entrega final</small>{entregas.map(d=><span key={d} className="job-datas-dia">{br(d)}</span>)}</span>}
+      {publicacoes.length>0 && <span><small>Publicação</small>{publicacoes.map(d=><span key={d} className="job-datas-dia">{br(d)}</span>)}</span>}
     </div>
   );
 }
@@ -2909,8 +2909,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         const ref = {job:j, item:it, tipoItem:t}; // nov/2026: o Dashboard conclui a tarefa no conteúdo do job
         if(it.prazoRoteiro===iso) lista.push({id:"r-"+it.id, hora:"", texto:`Entregar roteiro: ${it.label}`, sub:j.marca, pagina:"jobs", ...ref});
         if(!it.semAprovacao && it.prazoConteudo===iso) lista.push({id:"c-"+it.id, hora:"", texto:`Enviar para aprovação: ${it.label}`, sub:j.marca, pagina:"jobs", ...ref});
-        if(j.categoria!=="Publi" && it.dataEntrega===iso) lista.push({id:"d-"+it.id, hora:"", texto:`Entregar conteúdo: ${it.label}`, sub:j.marca+" · UGC", pagina:"jobs", ...ref});
-        if(j.categoria==="Publi" && it.prazoPostagem===iso) lista.push({id:"o-"+it.id, hora:"", texto:`Postar: ${it.label}`, sub:j.marca+" · Publi", pagina:"jobs", ...ref});
+        if(it.dataEntrega===iso) lista.push({id:"d-"+it.id, hora:"", texto:`Entregar conteúdo final: ${it.label}`, sub:j.marca+" · "+(j.categoria||"UGC"), pagina:"jobs", ...ref});
+        if(j.categoria==="Publi" && it.prazoPostagem===iso) lista.push({id:"o-"+it.id, hora:"", texto:`Publicar: ${it.label}`, sub:j.marca+" · Publi", pagina:"jobs", ...ref});
       }));
     });
     jobs.filter(j=>j.dataPagamento===iso && j.status!=="Cancelado" && (!j.pagamento || j.pagamento.status!=="Pago")).forEach(j=>lista.push({id:"g-"+j.id, hora:"", texto:`Conferir pagamento ${j.marca}`, sub:"Financeiro", pagina:"financeiro"}));
@@ -3493,8 +3493,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     itensDoJob(j).forEach(([it,t])=>{ if(it.concluido) return; const e = ROTEIRO_STATUS_OPTIONS.indexOf(statusDoItem(it,t));
       if(it.prazoRoteiro && e<3) datas.push([it.prazoRoteiro, `Roteiro ${it.label||""}`.trim()]);
       if(!it.semAprovacao && it.prazoConteudo && e<5) datas.push([it.prazoConteudo, `Enviar ${it.label||"conteúdo"} para aprovação`]);
-      if(j.categoria!=="Publi" && it.dataEntrega && e<5) datas.push([it.dataEntrega, `Entregar ${it.label||"conteúdo"}`]);
-      if(j.categoria==="Publi" && it.prazoPostagem && e<8) datas.push([it.prazoPostagem, `Postar ${it.label||"conteúdo"}`]); });
+      if(it.dataEntrega && e<5) datas.push([it.dataEntrega, `Entregar conteúdo final · ${it.label||"conteúdo"}`]);
+      if(j.categoria==="Publi" && it.prazoPostagem && e<8) datas.push([it.prazoPostagem, `Publicar · ${it.label||"conteúdo"}`]); });
     if(j.prazoEntrega && !comAMarca(at) && at<5) datas.push([j.prazoEntrega, "Entrega final"]);
     return datas.sort((a,b)=>a[0].localeCompare(b[0]));
   };
@@ -4500,7 +4500,7 @@ function defaultJobObj(){
     recorrencia:{ frequencia:"Mensal (30d)", intervaloDias:30, proximaCriacao:"", encerrarEm:"", gerarReceita:true },
     status:"Aguardando Briefing",
     roteiroConteudo:"", roteiroStatus:"Em criação", roteiroTemplate:"",
-    nf:{ precisa:false, status:"Pendente", numero:"", dataEmissao:"", valor:"", arquivo:"" },
+    nf:{ precisa:false, status:"Pendente", numero:"", dataEmissao:"", valor:"", arquivo:"", tomador:{documento:"", razaoSocial:"", email:"", municipio:""} },
     pagamento:{ status:"Em aberto", forma:"PIX", dataPrevista:"", dataPagamento:"", comprovante:"" },
     trafegoPago:{ ativo:false, periodo:"6m", dataInicio:todayISO(), dataFim:calcDataFim(todayISO(),"6m"), valorAdicional:"", plataformas:[], contrato:"Nenhum", precos:{"3m":"","6m":"","12m":""}, perdido:false, perdidoEm:"" },
     observacoes:""
@@ -4515,7 +4515,7 @@ function mergeJobWithDefaults(initial){
     dataFechamento: initial.dataFechamento || initial.criadoEm || "",
     entregaveis: { videos:[], fotos:[], stories:[], ...(initial.entregaveis||{}) },
     recorrencia: { ...d.recorrencia, ...(initial.recorrencia||{}) },
-    nf: { ...d.nf, ...(initial.nf||{}) },
+    nf: { ...d.nf, ...(initial.nf||{}), tomador:{...d.nf.tomador, ...((initial.nf && initial.nf.tomador) || {})} },
     pagamento: { ...d.pagamento, ...(initial.pagamento||{}) },
     trafegoPago: { ...d.trafegoPago, ...(initial.trafegoPago||{}), plataformas: (initial.trafegoPago && initial.trafegoPago.plataformas) || [], precos: {...d.trafegoPago.precos, ...((initial.trafegoPago && initial.trafegoPago.precos) || {})} },
     parcelasPersonalizadas: initial.parcelasPersonalizadas || []
@@ -4537,6 +4537,13 @@ function Collapsible({title, icon, defaultOpen, badge, children}){
   );
 }
 
+function vincularIdRoteiroJob(job){
+  const ids = Array.isArray(job.roteirosIds) ? job.roteirosIds.filter(Boolean) : (job.roteiroId ? [job.roteiroId] : []);
+  if(ids.length) return {...job, roteiroId:ids.length===1 && !job.roteiroBase ? ids[0] : "", roteirosIds:ids};
+  const id = uid();
+  return {...job, roteiroId:id, roteirosIds:[id]};
+}
+
 // ---------- Roteiro do conteúdo do job: só importar (do Google Docs ou da aba Roteiros) ----------
 function ImportarRoteiroJob({f, setF, state}){
   const [modo,setModo] = useState(""); // "docs" | "aba"
@@ -4545,7 +4552,13 @@ function ImportarRoteiroJob({f, setF, state}){
   const [lendo,setLendo] = useState(false);
   const [erro,setErro] = useState("");
   const [busca,setBusca] = useState("");
-  const usar = (titulo, texto, extra) => { setF(p=>({...p, roteiroTitulo:titulo||"", roteiroConteudo:texto||"", roteiroStatus:"Pronto", roteiroTemplate:"", ...(extra||{})})); setModo(""); setAchados([]); setLink(""); };
+  const usar = (titulo, texto, extra) => { setF(p=>{
+    const temIds = extra && Array.isArray(extra.roteirosIds);
+    const idsExtra = temIds ? extra.roteirosIds.filter(Boolean) : (extra && extra.roteiroId ? [extra.roteiroId] : null);
+    const idsBase = idsExtra!==null ? idsExtra : (Array.isArray(p.roteirosIds) ? p.roteirosIds.filter(Boolean) : (p.roteiroId ? [p.roteiroId] : []));
+    const ids = idsBase.length ? idsBase : [uid()];
+    return {...p, roteiroTitulo:titulo||"", roteiroConteudo:texto||"", roteiroStatus:"Pronto", roteiroTemplate:"", ...(extra||{}), roteiroId:ids.length===1 && !(extra && extra.roteiroBase) ? ids[0] : "", roteirosIds:ids};
+  }); setModo(""); setAchados([]); setLink(""); };
   async function lerDocs(){
     setErro(""); setAchados([]);
     if(!/docs\.google\.com\/document\/d\//.test(link)){ setErro("Cole o link de um documento do Google Docs (docs.google.com/document/d/...)."); return; }
@@ -4577,7 +4590,7 @@ function ImportarRoteiroJob({f, setF, state}){
           <button type="button" className="btn btn-ghost btn-sm" onClick={async ()=>{ if(await painelDialogo.confirmar("Tirar o roteiro deste job? Se ele veio de Meus roteiros ou do Google Docs, continua salvo lá.", { ok: "Tirar" })) setF(p=>({...p, roteiroConteudo:"", roteiroTitulo:"", roteiroId:"", roteirosIds:[], roteiroBase:"", roteiroDoc:"", roteiroStatus:"Em criação"})); }}>Remover</button>
         </div>
       ) : null}
-      <textarea className="brief-texto" value={f.roteiroConteudo||""} onChange={e=>{ const v=e.target.value; setF(p=>({...p, roteiroConteudo:v, roteiroStatus: v.trim() ? (p.roteiroStatus==="Em criação" ? "Pronto" : p.roteiroStatus) : "Em criação"})); }} placeholder="Escreva ou cole o roteiro aqui, ou importe do Google Docs ou de Meus roteiros..."/>
+      <textarea className="brief-texto" value={f.roteiroConteudo||""} onChange={e=>{ const v=e.target.value; setF(p=>({...vincularIdRoteiroJob(p), roteiroConteudo:v, roteiroStatus: v.trim() ? (p.roteiroStatus==="Em criação" ? "Pronto" : p.roteiroStatus) : "Em criação"})); }} placeholder="Escreva ou cole o roteiro aqui, ou importe do Google Docs ou de Meus roteiros..."/>
       <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
         <button type="button" className={"btn btn-sm "+(modo==="docs"?"btn-primary":"btn-ghost")} onClick={()=>{ setModo(modo==="docs"?"":"docs"); setErro(""); }}><Icon name="upload_file" size={15}/>{f.roteiroConteudo?"Trocar: ":""}Importar do Google Docs</button>
         <button type="button" className={"btn btn-sm "+(modo==="aba"?"btn-primary":"btn-ghost")} onClick={()=>{ setModo(modo==="aba"?"":"aba"); setErro(""); }}><Icon name="description" size={15}/>{f.roteiroConteudo?"Trocar: ":""}Importar da aba Roteiros</button>
@@ -4838,7 +4851,6 @@ function definirQtdFormato(f, k, n){
 function EscopoJob({f, setF}){
   const c = contarEscopo(f);
   const publi = f.categoria==="Publi";
-  const [textoAberto,setTextoAberto] = useState(!!(f.escopo && f.escopo.trim()) || !itensDoJobTodos(f).length);
   // minimizar o Escopo (nov/2026): job novo abre aberto; job com entregas abre como ela deixou da última vez (padrão: minimizado)
   const [escFechado,setEscFechado] = useState(()=>{ if(!itensDoJobTodos(f).length) return false; try{ return localStorage.getItem("escopoFechado")!=="0"; }catch(e){ return true; } });
   const alternarEsc = () => setEscFechado(v=>{ try{ localStorage.setItem("escopoFechado", v ? "0" : "1"); }catch(e){} return !v; });
@@ -4880,23 +4892,19 @@ function EscopoJob({f, setF}){
               <input type="number" min="0" value={c[fm.k]} onChange={e=>mudarQtd(fm.k, Number(e.target.value)||0)}/>
               <button type="button" onClick={()=>mudarQtd(fm.k, c[fm.k]+1)} aria-label="Mais">+</button>
             </div>
-            {fm.k==="reels" && c.reels>0 && <label className="esc-repost"><input type="checkbox" checked={!!f.repostTiktok} onChange={e=>setF(p=>({...p, repostTiktok:e.target.checked}))}/>Repost no TikTok</label>}
+            {publi && fm.k==="reels" && c.reels>0 && <label className="esc-repost"><input type="checkbox" checked={!!f.repostTiktok} onChange={e=>setF(p=>({...p, repostTiktok:e.target.checked}))}/>Repost no TikTok</label>}
           </div>
         ))}
       </div>
-      {temItens && <div className="esc-prazos">
-        {campoData("prazoRoteiro", "Prazo do roteiro")}
-        <label className="esc-prazo">Enviar para aprovação
+      <div className="esc-prazos">
+        {campoData("prazoRoteiro", "Prazo para envio do roteiro")}
+        <label className="esc-prazo">Prazo para envio do conteúdo para aprovação
           {sem ? <span className="ent-sem-aprov">Sem aprovação</span> : <input type="date" value={valorComum(f,"prazoConteudo").v||""} onChange={e=>mudarPrazo("prazoConteudo", e.target.value)}/>}
           <span className="ent-check-linha"><input type="checkbox" checked={!!sem} onChange={e=>mudarPrazo("semAprovacao", e.target.checked)}/>Não tem aprovação</span>
         </label>
-        {publi ? campoData("prazoPostagem", "Postagem") : campoData("dataEntrega", "Entrega do conteúdo")}
-      </div>}
-      <button type="button" className="esc-texto-topo" onClick={()=>setTextoAberto(a=>!a)} aria-expanded={textoAberto}>
-        <span>Texto do escopo enviado pela marca{f.escopo && f.escopo.trim() ? <Badge tone="gray" style={{marginLeft:6}}>colado</Badge> : null}</span>
-        <Icon name={textoAberto?"expand_less":"expand_more"} size={18}/>
-      </button>
-      {textoAberto && <textarea className="escopo-texto" rows="5" value={f.escopo||""} onChange={e=>setF(p=>({...p, escopo:e.target.value}))} placeholder="Cole aqui o escopo que a marca mandou..."/>}
+        {campoData("dataEntrega", "Prazo para entrega do conteúdo final")}
+        {publi && campoData("prazoPostagem", "Data prevista para publicação")}
+      </div>
       </>}
     </div>
   );
@@ -5016,8 +5024,9 @@ function ItemEntregavel({it, tipo, publi, opcoes, final, onMudar, onNovoStatus, 
 function comPrazoDosItens(job){
   const e = job.entregaveis || {};
   const itens = [...(e.videos||[]), ...(e.fotos||[]), ...(e.stories||[])];
-  const entregas = job.categoria!=="Publi" ? itens.map(i=>i.dataEntrega).filter(Boolean).sort() : [];
-  const datas = entregas.length ? entregas : itens.map(i=>i.prazoConteudo).filter(Boolean).sort();
+  const entregasFinais = itens.map(i=>i.dataEntrega).filter(Boolean).sort();
+  // Para jobs antigos sem data de entrega final, mantém o prazo de aprovação como referência legada.
+  const datas = entregasFinais.length ? entregasFinais : itens.map(i=>i.prazoConteudo).filter(Boolean).sort();
   return datas.length ? {...job, prazoEntrega: datas[datas.length-1]} : job;
 }
 // status do job e status de cada Reels/story andam juntos (a lista é a mesma; só muda maiúscula)
@@ -5074,8 +5083,24 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
   const [nichoModal,setNichoModal] = useState(false);
   const [savedTick,setSavedTick] = useState(false);
   const [briefGrande,setBriefGrande] = useState(false);
+  const [buscandoCnpj,setBuscandoCnpj] = useState(false);
+  const [avisoCnpj,setAvisoCnpj] = useState("");
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
   const setNested=(group,k,v)=>setF(p=>({...p, [group]:{...p[group], [k]:v}}));
+  const tomadorJob = {...((state.tomadores||{})[chaveMarcaNF(f.marca)]||{}), ...((f.nf||{}).tomador||{})};
+  const setTomadorJob=(k,v)=>setF(p=>({...p, nf:{...(p.nf||{}), tomador:{...((p.nf||{}).tomador||{}), [k]:v}}}));
+  async function consultarCnpjJob(){
+    const documento = soDigitos(tomadorJob.documento).slice(0,14);
+    if(documento.length!==14){ setAvisoCnpj("Digite os 14 números do CNPJ para consultar."); return; }
+    setBuscandoCnpj(true); setAvisoCnpj("");
+    try{
+      const resposta = await fetch("https://brasilapi.com.br/api/cnpj/v1/"+documento);
+      if(!resposta.ok) throw new Error("CNPJ não encontrado. Confira os números e tente novamente.");
+      const empresa = await resposta.json();
+      setF(p=>({...p, nf:{...(p.nf||{}), tomador:{...((p.nf||{}).tomador||{}), documento, razaoSocial:empresa.razao_social||((p.nf||{}).tomador||{}).razaoSocial||"", email:(((p.nf||{}).tomador||{}).email || empresa.email || "").toLowerCase(), municipio:empresa.municipio ? (empresa.municipio+"/"+(empresa.uf||"")) : (((p.nf||{}).tomador||{}).municipio||"")}}}));
+    }catch(e){ setAvisoCnpj(String(e.message||e)); }
+    setBuscandoCnpj(false);
+  }
 
   useEffect(()=>{
     if(!onAutosave) return;
@@ -5167,6 +5192,20 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
         <section className="job-form-section job-form-identificacao">
           <div className="job-form-section-heading"><span className="job-form-index">01</span><div><strong>Identificação</strong><small>Marca, modalidade e classificação do trabalho</small></div></div>
           <Field label="Marca"><input value={f.marca} onChange={e=>set("marca",e.target.value)} placeholder="Nome da marca"/></Field>
+          <div className="field-row">
+            <Field label="CNPJ do cliente">
+              <div style={{display:"flex", gap:6}}>
+                <input value={fmtDocFiscal(tomadorJob.documento||"")} onChange={e=>setTomadorJob("documento",soDigitos(e.target.value).slice(0,14))} placeholder="00.000.000/0000-00"/>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={consultarCnpjJob} disabled={buscandoCnpj}>{buscandoCnpj?"Consultando...":"Consultar"}</button>
+              </div>
+            </Field>
+            <Field label="Razão social"><input value={tomadorJob.razaoSocial||""} onChange={e=>setTomadorJob("razaoSocial",e.target.value)} placeholder="Nome cadastrado da empresa"/></Field>
+          </div>
+          <div className="field-row">
+            <Field label="E-mail fiscal (opcional)"><input type="email" value={tomadorJob.email||""} onChange={e=>setTomadorJob("email",e.target.value)}/></Field>
+            <Field label="Município/UF"><input value={tomadorJob.municipio||""} onChange={e=>setTomadorJob("municipio",e.target.value)} placeholder="Cidade/UF"/></Field>
+          </div>
+          {avisoCnpj && <p style={{fontSize:12.5, color:"var(--danger, #b8473a)", margin:"-4px 0 10px"}}>{avisoCnpj}</p>}
           <Field label="UGC ou Publi">
         <div style={{display:"flex", gap:8}}>
           {["UGC","Publi"].map(c=>(
@@ -5236,6 +5275,12 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
                 {PAYMENT_METHODS.map(p=><option key={p}>{p}</option>)}
               </select>
             </Field>
+            <SubSecaoJob titulo="Roteiro do conteúdo" aberta={!!f.roteiroConteudo}>
+              <Field label="Roteiro">
+                <textarea className="brief-texto" value={f.roteiroConteudo||""} onChange={e=>{ const v=e.target.value; setF(p=>({...vincularIdRoteiroJob(p), roteiroConteudo:v, roteiroStatus:v.trim() ? (p.roteiroStatus==="Em criação" ? "Pronto" : p.roteiroStatus) : "Em criação"})); }} placeholder="Escreva ou cole o roteiro. Ele ficará sincronizado com a aba Roteiros."/>
+              </Field>
+              <p style={{fontSize:12.5, color:"var(--graphite-soft)", margin:"-4px 0 0"}}>Este campo e a aba Roteiros atualizam o mesmo registro, sem criar cópias independentes.</p>
+            </SubSecaoJob>
             <SubSecaoJob titulo="Tipo de pagamento" aberta={false}>
 
           {[["unico","Pagamento único"],["parcelado","Parcelado"]].map(([val,label])=>(
@@ -5315,7 +5360,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
           <strong style={{fontSize:15}}>Precisa emitir nota fiscal?</strong>
           <Toggle on={f.nf.precisa} onClick={()=>setNested("nf","precisa",!f.nf.precisa)}/>
         </div>
-        {f.nf.precisa && <NotaFiscalJob nf={f.nf} pasta={`jobs/${f.id||"novos"}`} setNf={(campos)=>setF(p=>({...p, nf:{...p.nf, ...campos}, ...(campos.valor && Number(campos.valor)>0 ? {valor:String(campos.valor)} : {})}))}/>}
+        {f.nf.precisa && <NotaFiscalJob nf={f.nf} pasta={`jobs/${f.id||"novos"}`} setNf={(campos)=>setF(p=>({...p, nf:{...p.nf, ...campos, ...(campos.status==="Emitida" ? {precisa:true} : {})}, ...(campos.valor && Number(campos.valor)>0 ? {valor:String(campos.valor)} : {})}))}/>}
         <Field label="Data prevista de pagamento (vem do prazo de pagamento; pode mudar aqui)"><input type="date" value={f.dataPagamento||""} onChange={e=>{ const v=e.target.value; setF(p=>({...p, dataPagamento:v, pagamento:{...(p.pagamento||{}), dataPrevista:v}})); }}/></Field>
         <div className="row-item" style={{marginBottom:12}}>
           <strong style={{fontSize:15}}>Pagamento recebido?</strong>
@@ -7369,7 +7414,8 @@ function NotasFiscaisCard({state, updateState}){
         return (
           <div className="row-item" key={j.id} data-nf-job={j.id}>
             <div style={{flex:1, minWidth:0}}>
-              <strong>{String(j.marca||"").trim()}</strong>
+              <strong>{String((nf.tomador||{}).razaoSocial || j.marca || "").trim()}</strong>
+              {(nf.tomador||{}).razaoSocial && String(nf.tomador.razaoSocial).trim()!==String(j.marca||"").trim() && <div style={{fontSize:12, color:"var(--graphite-soft)"}}>Job: {String(j.marca||"").trim()}</div>}
               <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>
                 {aba==="Emitidas" ? `NF${nf.numero?" nº "+nf.numero:""}${nf.dataEmissao?" · "+fmtDataBR(nf.dataEmissao):""}` : (resumoEntregas(j) || j.status)}
                 {nf.tomador && nf.tomador.documento ? " · "+fmtDocFiscal(nf.tomador.documento) : ""}
@@ -8488,6 +8534,68 @@ function sincronizarRoteirosJobs(antes, depois){
   if(!mudouJob && !mudouRot) return depois;
   return {...depois, jobs: mudouJob ? jobs : depois.jobs, roteiros: mudouRot ? novosRot : roteiros};
 }
+function sincronizarJobsRoteiros(antes, depois){
+  if(!antes || !depois || antes.jobs===depois.jobs || !Array.isArray(depois.jobs)) return depois;
+  const antigos = new Map((antes.jobs||[]).map(j=>[j.id,j]));
+  let roteiros = [...(depois.roteiros||[])], mudou = false, mudouJobs = false;
+  const idsDo = (j) => Array.isArray(j && j.roteirosIds) ? j.roteirosIds.filter(Boolean) : (j && j.roteiroId ? [j.roteiroId] : []);
+  let jobs = (depois.jobs||[]).map(job=>{
+    const velho = antigos.get(job.id);
+    const idsNovos = idsDo(job), idsAntigos = idsDo(velho||{});
+    const textoMudou = !velho || String(velho.roteiroConteudo||"")!==String(job.roteiroConteudo||"") || String(velho.roteiroTitulo||"")!==String(job.roteiroTitulo||"");
+    idsAntigos.filter(id=>!idsNovos.includes(id)).forEach(id=>{
+      const ix = roteiros.findIndex(r=>String(r.id)===String(id));
+      if(ix>=0 && String(roteiros[ix].jobId)===String(job.id)){ roteiros[ix]={...roteiros[ix], jobId:"-"}; mudou=true; }
+    });
+    if(idsNovos.length===1 && !job.roteiroBase){
+      const ix = roteiros.findIndex(r=>String(r.id)===String(idsNovos[0]));
+      if(ix>=0){
+        const atual = roteiros[ix];
+        const proximo = {...atual, jobId:job.id, cliente:job.marca||atual.cliente||"", finalidade:job.categoria||atual.finalidade,
+          titulo:job.roteiroTitulo||atual.titulo||("Roteiro · "+(job.marca||"Job")),
+          conteudo:textoMudou ? String(job.roteiroConteudo||"") : String(atual.conteudo||"")};
+        if(JSON.stringify(proximo)!==JSON.stringify(atual)){ roteiros[ix]=proximo; mudou=true; }
+      } else if(String(job.roteiroConteudo||"").trim()){
+        roteiros.unshift({id:idsNovos[0], titulo:job.roteiroTitulo||("Roteiro · "+(job.marca||"Job")), cliente:job.marca||"", jobId:job.id,
+          plataforma:"Instagram", status:"Em aberto", finalidade:job.categoria||"UGC", etapa:"Ideias", dataPublicacao:"",
+          conteudo:String(job.roteiroConteudo||""), quadroId:"principal"});
+        mudou=true;
+      }
+    } else if(idsNovos.length===0 && textoMudou && String(job.roteiroConteudo||"").trim()){
+      let ix = roteiros.findIndex(r=>String(r.jobId)===String(job.id));
+      if(ix>=0){
+        const atual=roteiros[ix];
+        roteiros[ix]={...atual, titulo:job.roteiroTitulo||atual.titulo||("Roteiro · "+(job.marca||"Job")), cliente:job.marca||atual.cliente||"",
+          finalidade:job.categoria||atual.finalidade, conteudo:String(job.roteiroConteudo||""), jobId:job.id};
+        mudou=true; mudouJobs=true;
+        return {...job, roteiroId:atual.id, roteirosIds:[atual.id], roteiroStatus:job.roteiroStatus==="Em criação"?"Pronto":(job.roteiroStatus||"Pronto")};
+      }
+      const id=uid();
+      roteiros.unshift({id, titulo:job.roteiroTitulo||("Roteiro · "+(job.marca||"Job")), cliente:job.marca||"", jobId:job.id,
+        plataforma:"Instagram", status:"Em aberto", finalidade:job.categoria||"UGC", etapa:"Ideias", dataPublicacao:"",
+        conteudo:String(job.roteiroConteudo||""), quadroId:"principal"});
+      mudou=true; mudouJobs=true;
+      return {...job, roteiroId:id, roteirosIds:[id], roteiroStatus:job.roteiroStatus==="Em criação"?"Pronto":(job.roteiroStatus||"Pronto")};
+    }
+    return job;
+  });
+  jobs = jobs.map(job=>{
+    const ids=idsDo(job);
+    const validos=ids.filter(id=>{
+      const r=roteiros.find(x=>String(x.id)===String(id));
+      return !r || !r.jobId || String(r.jobId)===String(job.id);
+    });
+    if(validos.length===ids.length) return job;
+    mudouJobs=true;
+    const base=String(job.roteiroBase||"").trim();
+    const texto=textoDoJobComRoteiros(job, validos, roteiros);
+    return {...job, roteirosIds:validos, roteiroId:validos.length===1 && !base ? validos[0] : "", ...texto,
+      roteiroStatus:(validos.length||base) ? (job.roteiroStatus==="Em criação"?"Pronto":(job.roteiroStatus||"Pronto")) : "Em criação"};
+  });
+  if(!mudou) return depois;
+  return {...depois, jobs:mudouJobs?jobs:depois.jobs, roteiros};
+}
+
 // roteiro pronto para postar: precisa da data de postagem (aparece como alerta no Dashboard)
 const prontoParaPostar = (r) => (ETAPA_ANTIGA[r.etapa] || r.etapa) === ETAPA_POSTAR;
 
@@ -11087,6 +11195,7 @@ function App({session}){
     }
     // roteiro de marca novo/alterado entra no job dela em UGC's & Publis
     try{ next = sincronizarRoteirosJobs(atual, next); }catch(e){ console.warn("sincronizar roteiro/job", e); }
+    try{ next = sincronizarJobsRoteiros(atual, next); }catch(e){ console.warn("sincronizar job/roteiro", e); }
     if(atual) Object.keys(atual).forEach(k=>{ const v = atual[k]; if(v && typeof v==="object" && next[k]!==v){ (velhosRef.current[k] = velhosRef.current[k] || new WeakSet()).add(v); } });
     stateRef.current = next;
     setState(next);
