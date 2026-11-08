@@ -1346,5 +1346,7 @@
     pintar();
   }
   document.addEventListener("painel:aba", (e) => { if (e.detail === "estudio") setTimeout(iniciar, 0); else if (st.vista === "editor" && st.sujo) salvar(); });
+  // painel aberto direto em #estudio: o evento da aba sai antes deste arquivo carregar
+  if (location.hash.replace("#", "") === "estudio") setTimeout(() => { if (!st.pronto && !$(".ec")) iniciar(); }, 700);
   window.estudioCriativo = { abrir: () => iniciar(), estado: () => st, validar: () => ({ paginas: st.proj ? pags().length : 0 }) };
 })();
