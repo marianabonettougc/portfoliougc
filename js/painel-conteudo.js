@@ -405,7 +405,7 @@
         <div class="pc2-cab-acoes"><button class="btn" type="button" id="pc-ajustes" aria-expanded="false">${ic.ajustes}Ajustes e IA</button><button class="btn btn-principal" type="button" id="pc-novo">${ic.mais}Novo conteúdo</button></div>
       </header>
       <nav class="sub-abas pc-abas" aria-label="Partes de Conteúdos">
-        <button type="button" class="sub-aba" data-pcaba="geral">Visão geral</button><button type="button" class="sub-aba" data-pcaba="quadro">Quadro de produção</button><button type="button" class="sub-aba" data-pcir="quadro">Meus roteiros</button><button type="button" class="sub-aba" data-pcaba="cal">Calendário editorial</button><button type="button" class="sub-aba" data-pcaba="ideias">Banco de ideias</button><button type="button" class="sub-aba" data-pcaba="ano">Planejamento anual</button>
+        <button type="button" class="sub-aba" data-pcaba="geral">Visão geral</button><button type="button" class="sub-aba" data-pcaba="quadro">Quadro de produção</button><button type="button" class="sub-aba" data-pcir="quadro">Meus roteiros</button><button type="button" class="sub-aba" data-pcaba="cal">Calendário editorial</button><button type="button" class="sub-aba" data-pcaba="ideias">Banco de ideias</button><button type="button" class="sub-aba" data-pcaba="ganchos">Ganchos magnéticos</button><button type="button" class="sub-aba" data-pcaba="ano">Planejamento anual</button>
       </nav>
       <section data-pcpar="geral" id="pc-geral"></section>
       <section data-pcpar="quadro" id="pc-kanban"></section>
@@ -422,6 +422,7 @@
         <div class="pc-cal" id="pc-semanal" hidden></div>
       </section>
       <section data-pcpar="ideias" id="pc-ideias"></section>
+      <section data-pcpar="ganchos" id="pc-ganchos"></section>
       <section data-pcpar="ano" id="pc-ano"></section>
       <div id="pc-config" data-pcpar="cfg" hidden>
         <div class="pc2-cfg-cab"><h3 class="pc2-h">Ajustes e <em>IA</em></h3><button class="btn" type="button" id="pc-cfg-fechar">${ic.x}Fechar</button></div>
@@ -454,7 +455,7 @@
     // Meus roteiros é a página do aplicativo (#quadro), com este mesmo cabeçalho e abas em cima (js/admin.js)
     $$("[data-pcir]", sec).forEach((b) => b.addEventListener("click", () => { location.hash = "#" + b.dataset.pcir; }));
     let parte = "geral"; try { parte = localStorage.getItem("pc-parte2") || "geral"; } catch (e) { /* sem armazenamento */ }
-    mostrarParte(["geral", "quadro", "cal", "ideias", "ano"].includes(parte) ? parte : "geral");
+    mostrarParte(["geral", "quadro", "cal", "ideias", "ganchos", "ano"].includes(parte) ? parte : "geral");
     $$("[data-pcaba]", sec).forEach((b) => b.addEventListener("click", () => mostrarParte(b.dataset.pcaba)));
     $("#pc-ajustes", sec).addEventListener("click", () => mostrarParte($("#pc-config", sec).hidden ? "cfg" : anterior));
     $("#pc-cfg-fechar", sec).addEventListener("click", () => mostrarParte(anterior));
@@ -529,7 +530,7 @@
       const novo = await painelDialogo.texto("Tema desta semana (ex.: Black Friday para marcas). Deixe vazio para tirar.", atual);
       if (novo === null) return; await salvarTema(b.dataset.tema, novo.trim()); pintar();
     }));
-    pintarGeral(sec); pintarKanban(sec); pintarIdeias(sec); pintarAno(sec);
+    pintarGeral(sec); pintarKanban(sec); pintarIdeias(sec); pintarGanchos(sec); pintarAno(sec);
     const cal = $("[data-pcpar=cal]", sec);
     ligarCliques(cal);
     $$("[data-ir]", cal).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); location.hash = "#" + b.dataset.ir; }));
@@ -703,6 +704,7 @@
         ${p.roteiro_id ? `<p class="pc-ajuda pc-ligado">Este conteúdo está ligado a um roteiro em Meus roteiros. Edite o roteiro por lá (botão Abrir roteiro).</p>` : ""}
         <label class="campo pc-largo"><span>Objetivo</span><input name="proposito" value="${esc(p.proposito)}" placeholder="Para que serve esse conteúdo no seu perfil"></label>
         <label class="campo pc-largo"><span>Hook</span><textarea name="hook" rows="2">${esc(p.hook)}</textarea></label>
+        <div class="pg-usar-linha"><button type="button" class="btn btn-mini" data-usar-gancho>${ic.brilho}Usar um gancho magnético</button>${(st.ganchos || []).filter((g) => p.id && g.post_id === p.id).map((g) => `<span class="pg-testando">testando: ${esc(semAspas(g.texto).slice(0, 60))}</span>`).join("")}</div>
         ${ganchos.length ? `<div class="pc-ganchos"><small>Outras opções de gancho (toque para usar)</small>${ganchos.map((g) => `<button type="button" class="cr-chip" data-gancho>${esc(g)}</button>`).join("")}</div>` : ""}
         <label class="campo pc-largo"><span>Desenvolvimento do roteiro</span><textarea name="desenvolvimento" rows="9">${esc(p.desenvolvimento)}</textarea></label>
         <label class="campo pc-largo"><span>CTA</span><input name="cta" value="${esc(p.cta)}"></label>
@@ -714,11 +716,14 @@
         ${p.id && p.roteiro_id ? `<button class="btn" type="button" data-abrir-roteiro>Abrir roteiro</button>` : ""}
         ${p.id && !p.roteiro_id ? `<button class="btn" type="button" data-quadro title="Copia o que está aqui para Meus roteiros e liga os dois">Mandar para Meus roteiros</button><button class="btn" type="button" data-skill>Criar roteiro com a Skill</button>` : ""}
         <button class="btn btn-principal" type="button" data-salvar>Salvar</button></div>`;
-    const ler = () => { const o = { ...p }; $$("[name]", dlg).forEach((el) => { o[el.name] = el.value.trim() || null; }); o.status = o.status || "Ideia"; return o; };
+    const ler = () => { const o = { ...p }; delete o.ganchoTeste; $$("[name]", dlg).forEach((el) => { o[el.name] = el.value.trim() || null; }); o.status = o.status || "Ideia"; return o; };
     $("[data-fechar]", dlg).addEventListener("click", () => dlg.close());
     $$("[data-gancho]", dlg).forEach((b) => b.addEventListener("click", () => { const h = $("[name=hook]", dlg); const antigo = h.value; h.value = b.textContent; b.textContent = antigo; }));
+    delete dlg.dataset.ganchoTeste; if (p.ganchoTeste) dlg.dataset.ganchoTeste = String(p.ganchoTeste);
+    const ug = $("[data-usar-gancho]", dlg);
+    if (ug) ug.addEventListener("click", () => escolherGancho(dlg, p));
     $("[data-salvar]", dlg).addEventListener("click", async () => {
-      try { const o = ler(); if (o.data && !o.data.startsWith(st.mes)) { o.mes = o.data.slice(0, 7); } await salvar(o); dlg.close(); if (o.data) st.semana = semanaDe(o.data); pintar(); toast("Conteúdo salvo."); }
+      try { const o = ler(); if (o.data && !o.data.startsWith(st.mes)) { o.mes = o.data.slice(0, 7); } const salvo = await salvar(o); const gt = dlg.dataset.ganchoTeste && (st.ganchos || []).find((g) => String(g.id) === dlg.dataset.ganchoTeste); if (gt && salvo && salvo.id) { try { await marcarTeste(gt, salvo.id); } catch (e2) { /* o conteúdo já salvou */ } } dlg.close(); if (o.data) st.semana = semanaDe(o.data); pintar(); toast("Conteúdo salvo."); }
       catch (e) { toast("Não consegui salvar: " + e.message, true); }
     });
     const rf = $("[data-refazer]", dlg);
@@ -1167,6 +1172,164 @@
       st.ideias = st.ideias.filter((x) => x.id !== it.id); pintarIdeias(sec); toast("Ideia excluída.");
     }));
   }
+  // ---------- GANCHOS MAGNÉTICOS (nov/2026, carrossel "40 ideias de ganchos" da @giubeckers) ----------
+  // Tabela ganchos (só a dona): texto (modelo com [campos]), tipo Verbal | Textual | Visual | Microgancho, exemplo (na voz dela),
+  // origem (@giubeckers, Agente diário, Minha), referencia (link), lote (dia em que chegou), status Para testar | Testando |
+  // Funcionou | Não funcionou, favorito, post_id (conteúdo em que está sendo testado), resultado, usos.
+  // A tarefa diária dos Salvos (Claude, 14h) acrescenta ganchos novos com origem "Agente diário" e lote = o dia.
+  // Na janela do conteúdo, "Usar um gancho magnético" põe o gancho no Hook e marca o teste naquele conteúdo.
+  const TIPOS_G = [["Verbal", "o que você fala nos primeiros segundos"], ["Textual", "a head que aparece na tela"], ["Visual", "o que a pessoa vê antes de processar sua fala"], ["Microgancho", "para continuar assistindo até o final"]];
+  const STATUS_G = ["Para testar", "Testando", "Funcionou", "Não funcionou"];
+  const ORDEM_ESC = { Funcionou: 0, "Para testar": 1, Testando: 2, "Não funcionou": 3 };
+  const COR_G = { Verbal: "0", Textual: "1", Visual: "2", Microgancho: "3" };
+  const hojeIso = () => iso(new Date());
+  async function carregarGanchos() {
+    const { data, error } = await banco().from("ganchos").select("*").order("criado_em", { ascending: false }).order("id").limit(2000);
+    if (error) { st.ganchos = []; st.ganchosErro = /does not exist|relation|schema cache/i.test(error.message) ? "tabela" : error.message; return; }
+    st.ganchosErro = null; st.ganchos = data || [];
+  }
+  async function salvarGancho(campos, id) {
+    const dados = { ...campos, atualizado_em: new Date().toISOString() };
+    if (id) {
+      const { error } = await banco().from("ganchos").update(dados).eq("id", id); if (error) throw new Error(error.message);
+      const g = (st.ganchos || []).find((x) => x.id === id); if (g) Object.assign(g, dados); return g;
+    }
+    const { data, error } = await banco().from("ganchos").insert(dados).select().maybeSingle();
+    if (error) throw new Error(/duplicate|unique/i.test(error.message) ? "Esse gancho já está na lista." : error.message);
+    st.ganchos = [data, ...(st.ganchos || [])]; return data;
+  }
+  const semAspas = (t) => String(t || "").trim().replace(/^["“]+|["”]+$/g, "");
+  function camposGancho(g) {
+    return `<label class="campo"><span>Gancho (modelo, use [colchetes] no que muda)</span><textarea name="texto" rows="2" required>${esc(g.texto || "")}</textarea></label>
+      <div class="pc-grade2"><label class="campo"><span>Tipo</span><select name="tipo">${TIPOS_G.map(([t]) => `<option ${t === (g.tipo || "Verbal") ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+      <label class="campo"><span>Status</span><select name="status">${STATUS_G.map((t) => `<option ${t === (g.status || "Para testar") ? "selected" : ""}>${t}</option>`).join("")}</select></label></div>
+      <label class="campo"><span>Na minha voz (exemplo)</span><textarea name="exemplo" rows="2">${esc(g.exemplo || "")}</textarea></label>
+      <label class="campo"><span>Resultado do teste</span><textarea name="resultado" rows="2" placeholder="Ex.: Reels de [data], retenção nos 3 s, visualizações, comentários">${esc(g.resultado || "")}</textarea></label>
+      <label class="campo"><span>Link de referência</span><input name="referencia" type="url" placeholder="https://" value="${esc(g.referencia || "")}"></label>`;
+  }
+  function pintarGanchos(sec) {
+    const box = $("#pc-ganchos", sec); if (!box) return;
+    if (!st.ganchos) { box.innerHTML = `<p class="pc-ajuda">Carregando ganchos…</p>`; return; }
+    if (st.ganchosErro) { box.innerHTML = `<p class="pc-ajuda pc3-vazio">${st.ganchosErro === "tabela" ? "A lista de ganchos ainda não foi criada no banco." : "Não consegui carregar os ganchos: " + esc(st.ganchosErro)}</p>`; return; }
+    const todos = st.ganchos, tipo = st.gTipo || "", stt = st.gStatus || "", ori = st.gOrigem || "", q = semAcento(st.gBusca || "");
+    const lista = todos.filter((g) => (!tipo || g.tipo === tipo) && (!stt || g.status === stt) && (!ori || g.origem === ori || (ori === "Outras" && !["@giubeckers", "Agente diário", "Minha"].includes(g.origem))) && (!st.gFav || g.favorito)
+      && (!q || semAcento([g.texto, g.exemplo, g.resultado].join(" ")).includes(q)))
+      .sort((a, b) => (b.favorito - a.favorito) || String(b.lote || "").localeCompare(String(a.lote || "")) || a.id - b.id);
+    const conta = (f) => todos.filter(f).length;
+    const novosHoje = todos.filter((g) => g.origem === "Agente diário" && g.lote === hojeIso());
+    const origens = [...new Set(todos.map((g) => g.origem).filter(Boolean))];
+    const foco = document.activeElement && document.activeElement.id === "pc-g-busca";
+    box.innerHTML = `<div class="pc3-painel pg">
+      <div class="pg-tipos">${TIPOS_G.map(([t, d]) => `<div class="pg-tipo c-${COR_G[t]}"><b>${t === "Microgancho" ? "Microganchos" : t}</b><span>${d}</span></div>`).join("")}</div>
+      <div class="pg-nums"><div><b>${todos.length}</b><span>ganchos</span></div><div><b>${conta((g) => g.status === "Para testar")}</b><span>para testar</span></div><div><b>${conta((g) => g.status === "Testando")}</b><span>testando</span></div><div><b>${conta((g) => g.status === "Funcionou")}</b><span>funcionaram</span></div><div><b>${conta((g) => g.origem === "Agente diário")}</b><span>do agente diário</span></div></div>
+      ${novosHoje.length ? `<div class="pg-hoje"><b>${novosHoje.length} ${novosHoje.length === 1 ? "gancho novo chegou" : "ganchos novos chegaram"} hoje</b> pela busca diária dos seus salvos. <button type="button" class="btn btn-mini" data-g-hoje>Ver os de hoje</button></div>` : ""}
+      <form class="pc3-rapida" id="pc-g-rapido"><input class="entrada" name="texto" required placeholder="Escreva um gancho seu e aperte Enter (use [colchetes] no que muda)"><select class="entrada" name="tipo" aria-label="Tipo">${TIPOS_G.map(([t]) => `<option>${t}</option>`).join("")}</select><button class="btn btn-principal" type="submit">${ic.mais}Guardar</button></form>
+      <div class="pc3-ideias-cab"><nav class="pc2-seg" aria-label="Tipo de gancho"><button type="button" data-g-tipo="" class="${!tipo ? "ativa" : ""}">Todos <small>${todos.length}</small></button>${TIPOS_G.map(([t]) => `<button type="button" data-g-tipo="${t}" class="${tipo === t ? "ativa" : ""}">${t === "Microgancho" ? "Microganchos" : t} <small>${conta((g) => g.tipo === t)}</small></button>`).join("")}</nav>
+        <div class="pc2-filtros"><input class="entrada" type="search" id="pc-g-busca" placeholder="Pesquisar ganchos" value="${esc(st.gBusca || "")}">
+          <select class="entrada" id="pc-g-status" aria-label="Status"><option value="">Todos os status</option>${STATUS_G.map((t) => `<option ${stt === t ? "selected" : ""}>${t}</option>`).join("")}</select>
+          <select class="entrada" id="pc-g-origem" aria-label="De onde veio"><option value="">Todas as origens</option>${origens.map((o) => `<option ${ori === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>
+          <button type="button" class="btn ${st.gFav ? "btn-principal" : ""}" id="pc-g-fav" aria-pressed="${st.gFav ? "true" : "false"}">★ Favoritos</button></div></div>
+      ${lista.length ? `<div class="pc3-ideias">${lista.map((g) => { const post = g.post_id && st.todos.find((p) => p.id === g.post_id); return `<article class="pc3-ideia pg-card ${g.favorito ? "fav" : ""}">
+          <div class="pc3-card-top"><span class="pc3-chip c-${COR_G[g.tipo] || "x"}">${esc(g.tipo)}</span><small>${esc(g.origem || "")}${g.lote ? " · " + dataCurta(String(g.lote).slice(0, 10)) : ""}</small></div>
+          <b>${esc(semAspas(g.texto))}</b>
+          ${g.exemplo ? `<p><em>Na sua voz:</em> ${esc(g.exemplo)}</p>` : ""}
+          ${g.resultado ? `<p class="pg-res"><em>Resultado:</em> ${esc(g.resultado)}</p>` : ""}
+          ${post ? `<button type="button" class="pg-post" data-g-post="${post.id}">testando em: ${esc(post.tema || "conteúdo")}</button>` : ""}
+          ${g.referencia ? `<a class="pc3-link" href="${esc(g.referencia)}" target="_blank" rel="noopener">referência</a>` : ""}
+          <div class="pg-status"><select class="entrada" data-g-st="${g.id}" aria-label="Status do teste">${STATUS_G.map((t) => `<option ${t === g.status ? "selected" : ""}>${t}</option>`).join("")}</select>
+            <button type="button" class="icone-btn pg-estrela ${g.favorito ? "ligada" : ""}" data-g-favoritar="${g.id}" aria-label="${g.favorito ? "Tirar dos favoritos" : "Favoritar"}" aria-pressed="${g.favorito ? "true" : "false"}">★</button></div>
+          <div class="pc3-ideia-acoes"><button type="button" class="btn btn-mini btn-principal" data-g-usar="${g.id}">Criar conteúdo com ele</button><button type="button" class="btn btn-mini" data-g-copiar="${g.id}">Copiar</button>
+            <button type="button" class="btn btn-mini" data-g-editar="${g.id}">Editar</button><button type="button" class="btn btn-mini btn-perigo" data-g-apagar="${g.id}" aria-label="Excluir gancho">${ic.lixo}</button></div>
+        </article>`; }).join("")}</div>`
+        : `<p class="pc-ajuda pc3-vazio">${todos.length ? "Nenhum gancho com esse filtro." : "Nenhum gancho ainda."}</p>`}
+    </div>`;
+    const acha = (id) => st.ganchos.find((x) => String(x.id) === String(id));
+    const repinta = () => pintarGanchos(sec);
+    $("#pc-g-rapido", box).addEventListener("submit", async (e) => {
+      e.preventDefault(); const fd = new FormData(e.target);
+      try { await salvarGancho({ texto: String(fd.get("texto") || "").trim(), tipo: fd.get("tipo"), origem: "Minha", lote: hojeIso() }); repinta(); toast("Gancho guardado."); const i = $("#pc-g-rapido [name=texto]", sec); if (i) i.focus(); }
+      catch (er) { toast("Não guardei: " + er.message, true); }
+    });
+    $$("[data-g-tipo]", box).forEach((b) => b.addEventListener("click", () => { st.gTipo = b.dataset.gTipo; repinta(); }));
+    const bu = $("#pc-g-busca", box); bu.addEventListener("input", () => { st.gBusca = bu.value; repinta(); });
+    if (foco) { const b = $("#pc-g-busca", box); b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
+    $("#pc-g-status", box).addEventListener("change", (e) => { st.gStatus = e.target.value; repinta(); });
+    $("#pc-g-origem", box).addEventListener("change", (e) => { st.gOrigem = e.target.value; repinta(); });
+    $("#pc-g-fav", box).addEventListener("click", () => { st.gFav = !st.gFav; repinta(); });
+    const hj = $("[data-g-hoje]", box); if (hj) hj.addEventListener("click", () => { st.gOrigem = "Agente diário"; st.gTipo = ""; st.gStatus = ""; st.gBusca = ""; repinta(); });
+    $$("[data-g-st]", box).forEach((s) => s.addEventListener("change", async () => {
+      try { await salvarGancho({ status: s.value }, acha(s.dataset.gSt).id); repinta(); toast("Status salvo."); } catch (er) { toast("Não salvou: " + er.message, true); }
+    }));
+    $$("[data-g-favoritar]", box).forEach((b) => b.addEventListener("click", async () => {
+      const g = acha(b.dataset.gFavoritar); try { await salvarGancho({ favorito: !g.favorito }, g.id); repinta(); } catch (er) { toast("Não salvou: " + er.message, true); }
+    }));
+    $$("[data-g-copiar]", box).forEach((b) => b.addEventListener("click", async () => {
+      const g = acha(b.dataset.gCopiar); try { await navigator.clipboard.writeText(semAspas(g.texto)); toast("Gancho copiado."); } catch (er) { toast("Não consegui copiar neste navegador.", true); }
+    }));
+    $$("[data-g-post]", box).forEach((b) => b.addEventListener("click", () => abrir(st.todos.find((p) => String(p.id) === b.dataset.gPost))));
+    $$("[data-g-usar]", box).forEach((b) => b.addEventListener("click", () => {
+      const g = acha(b.dataset.gUsar); const campos = aplicarGancho({}, g);
+      abrir(novoConteudo({ ...campos, notas: "Teste do gancho magnético: " + semAspas(g.texto), ganchoTeste: g.id }));
+    }));
+    $$("[data-g-editar]", box).forEach((b) => b.addEventListener("click", async () => {
+      const g = acha(b.dataset.gEditar); if (!g) return;
+      const v = await janelaIdeia("Editar gancho", camposGancho(g), "Salvar"); if (!v) return;
+      try { await salvarGancho({ texto: v.texto.trim(), tipo: v.tipo, status: v.status, exemplo: v.exemplo.trim() || null, resultado: v.resultado.trim() || null, referencia: v.referencia.trim() || null }, g.id); repinta(); toast("Gancho salvo."); }
+      catch (er) { toast("Não salvou: " + er.message, true); }
+    }));
+    $$("[data-g-apagar]", box).forEach((b) => b.addEventListener("click", async () => {
+      const g = acha(b.dataset.gApagar); if (!g) return;
+      if (!(await painelDialogo.confirmar(`Excluir o gancho "${semAspas(g.texto).slice(0, 80)}"?`, { ok: "Excluir", perigo: true }))) return;
+      const { error } = await banco().from("ganchos").delete().eq("id", g.id);
+      if (error) { toast(error.message, true); return; }
+      st.ganchos = st.ganchos.filter((x) => x.id !== g.id); repinta(); toast("Gancho excluído.");
+    }));
+  }
+  // onde cada tipo entra no conteúdo: verbal vira a 1ª fala, textual vira o texto na tela, visual vira a cena de abertura,
+  // microgancho entra no meio do desenvolvimento
+  function aplicarGancho(o, g) {
+    const t = semAspas(g.texto), ex = g.exemplo && !/skill proíbe|cuidado/i.test(g.exemplo) ? g.exemplo : "";
+    if (g.tipo === "Verbal") return { hook: ex || t };
+    if (g.tipo === "Textual") return { hook: [o.hook, "TEXTO NA TELA: " + (ex || t)].filter(Boolean).join("\n") };
+    if (g.tipo === "Visual") return { hook: ["[ABERTURA: " + (ex || t) + "]", o.hook].filter(Boolean).join("\n") };
+    return { desenvolvimento: [o.desenvolvimento, "MICROGANCHO NO MEIO: " + (ex && !/^(Em |No |Na |Antes |Depois |Com )/.test(ex) ? ex : t)].filter(Boolean).join("\n") };
+  }
+  async function marcarTeste(g, postId) {
+    const campos = { post_id: postId, usos: (g.usos || 0) + 1 };
+    if (g.status === "Para testar") campos.status = "Testando";
+    await salvarGancho(campos, g.id);
+  }
+  function escolherGancho(dlgPost, p) {
+    const d = document.createElement("dialog"); d.className = "janela pc3-janela pg-escolher";
+    let tipo = "", q = "";
+    const desenhar = () => {
+      const lista = (st.ganchos || []).filter((g) => (!tipo || g.tipo === tipo) && (!q || semAcento([g.texto, g.exemplo].join(" ")).includes(semAcento(q))))
+        .sort((a, b) => (b.favorito - a.favorito) || (ORDEM_ESC[a.status] - ORDEM_ESC[b.status]) || a.id - b.id);
+      $(".pg-lista", d).innerHTML = lista.length ? lista.map((g) => `<button type="button" class="pg-opcao" data-g="${g.id}"><span class="pc3-chip c-${COR_G[g.tipo] || "x"}">${esc(g.tipo)}</span><b>${esc(semAspas(g.texto))}</b>${g.exemplo ? `<small>${esc(g.exemplo)}</small>` : ""}<i>${esc(g.status)}${g.favorito ? " · ★" : ""}</i></button>`).join("")
+        : `<p class="pc-ajuda">${(st.ganchos || []).length ? "Nada com esse filtro." : "Nenhum gancho na lista ainda."}</p>`;
+      $$(".pg-opcao", d).forEach((b) => b.addEventListener("click", async () => {
+        const g = st.ganchos.find((x) => String(x.id) === b.dataset.g); if (!g) return;
+        const atual = { hook: $("[name=hook]", dlgPost).value.trim(), desenvolvimento: $("[name=desenvolvimento]", dlgPost).value.trim() };
+        const novo = aplicarGancho(g.tipo === "Verbal" ? {} : atual, g);
+        if (novo.hook != null) $("[name=hook]", dlgPost).value = novo.hook;
+        if (novo.desenvolvimento != null) $("[name=desenvolvimento]", dlgPost).value = novo.desenvolvimento;
+        d.close();
+        if (p.id) { try { await marcarTeste(g, p.id); toast(`Gancho aplicado. Ele ficou "Testando" neste conteúdo. Lembre de salvar.`); } catch (er) { toast("Apliquei, mas não marquei o teste: " + er.message, true); } }
+        else { dlgPost.dataset.ganchoTeste = String(g.id); toast("Gancho aplicado. Ao salvar, ele fica marcado como testando neste conteúdo."); }
+      }));
+    };
+    d.innerHTML = `<div class="janela-cabeca"><h2>Ganchos <em>magnéticos</em></h2><button class="icone-btn" type="button" data-x aria-label="Fechar">${ic.x}</button></div>
+      <div class="janela-corpo"><p class="pc-ajuda">Verbal vira a primeira fala. Textual entra como texto na tela. Visual vira a cena de abertura. Microgancho vai para o meio do roteiro.</p>
+        <div class="pg-escolher-filtros"><nav class="pc2-seg" aria-label="Tipo"><button type="button" data-t="" class="ativa">Todos</button>${TIPOS_G.map(([t]) => `<button type="button" data-t="${t}">${t === "Microgancho" ? "Micro" : t}</button>`).join("")}</nav><input class="entrada" type="search" placeholder="Pesquisar" data-q></div>
+        <div class="pg-lista"></div></div>`;
+    document.body.appendChild(d);
+    $("[data-x]", d).addEventListener("click", () => d.close());
+    d.addEventListener("click", (e) => { if (e.target === d) d.close(); });
+    d.addEventListener("close", () => d.remove());
+    $$("[data-t]", d).forEach((b) => b.addEventListener("click", () => { tipo = b.dataset.t; $$("[data-t]", d).forEach((x) => x.classList.toggle("ativa", x === b)); desenhar(); }));
+    $("[data-q]", d).addEventListener("input", (e) => { q = e.target.value; desenhar(); });
+    desenhar(); d.showModal();
+  }
   // ---------- PLANEJAMENTO ANUAL (nov/2026, carrossel "planejamento de conteúdo para 2027 com IA" da @giubeckers) ----------
   // Método em 6 passos: 1 narrativa, 2 calendário do ano (datas do público + quando as MARCAS fecham UGC), 3 temas macro
   // do mês por pilar, 4 ideias por tema, 5 frequência (o ritmo do perfil_conteudo) e 6 trabalhar 2 meses à frente.
@@ -1438,8 +1601,8 @@
   async function abrirAba() {
     const sec = document.getElementById("aba-" + ABA);
     if (!sec) return;
-    if (!st.pronto) { montar(sec); st.pronto = true; await Promise.all([carregar(), carregarIdeias(), carregarAno().catch(() => { pa.dados = { anos: { 2027: JSON.parse(JSON.stringify(ANO_2027)) } }; })]); ajustarSemana(); }
-    else await Promise.all([carregar(), carregarIdeias(), carregarAno().catch(() => {})]);
+    if (!st.pronto) { montar(sec); st.pronto = true; await Promise.all([carregar(), carregarIdeias(), carregarGanchos(), carregarAno().catch(() => { pa.dados = { anos: { 2027: JSON.parse(JSON.stringify(ANO_2027)) } }; })]); ajustarSemana(); }
+    else await Promise.all([carregar(), carregarIdeias(), carregarGanchos(), carregarAno().catch(() => {})]);
     pintar();
     try { await carregarPlano(); } catch (er) { pl.lista = []; pl.atual = null; }
     pintarPlano();
