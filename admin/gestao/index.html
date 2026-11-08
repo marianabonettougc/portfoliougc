@@ -199,6 +199,8 @@
   .dn-radar-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
   .dn-radar-grid button{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;min-width:0;min-height:78px;padding:13px;border:1px solid var(--db-linha);border-radius:12px;background:var(--db-bege2);cursor:pointer;font:inherit;color:var(--db-texto)}
   .dn-radar-grid button:hover{border-color:var(--db-linha2);background:#fffaf2}
+  .dn-radar-grid button.alerta{border-color:rgba(155,70,55,.28);background:#fff5f1}
+  .dn-radar-grid button.alerta b{color:var(--db-vermelho)}
   .dn-radar-grid b{font-family:var(--db-serif);font-size:22px;font-weight:400;line-height:1.1;color:var(--db-cafe)}
   .dn-radar-grid small{font-size:11.5px;line-height:1.35;color:var(--db-suave)}
   .dn-secao-titulo{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:2px 2px 9px}
@@ -3522,11 +3524,11 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         <section className="db-bloco dn-radar">
           <div className="dn-bt"><h2>Radar do meu negócio</h2><span className="dz-sub">Pontos que merecem sua atenção</span></div>
           <div className="dn-radar-grid">
-            <button onClick={()=>go("followups")}><b>{(state.followups||[]).filter(f=>f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje).length}</b><small>Marcas sem resposta</small></button>
-            <button onClick={()=>go("jobs")}><b>{ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)<=3).length}</b><small>Entregas vencidas ou próximas</small></button>
-            <button onClick={()=>go("financeiro")}><b>{atrasadoLista.length}</b><small>Pagamentos atrasados</small></button>
-            <button onClick={()=>go("prospeccao")}><b>{(state.prospeccoes||[]).filter(p=>/enviad|proposta/i.test(p.status||"") && p.proximoContato && p.proximoContato<=hoje).length}</b><small>Propostas sem acompanhamento</small></button>
-            <button onClick={()=>go("performance")}><b>{metaFinanceiraMes ? (mesAbaixoMeta ? dnMoeda(metaFinanceiraMes-faturamentoMes) : "Meta ok") : "—"}</b><small>{metaFinanceiraMes ? (mesAbaixoMeta ? "Mês abaixo da meta" : "Meta mensal atingida") : "Defina a meta do mês"}</small></button>
+            <button className={(state.followups||[]).filter(f=>f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje).length?"alerta":""} onClick={()=>go("followups")}><b>{(state.followups||[]).filter(f=>f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje).length}</b><small>Marcas sem resposta</small></button>
+            <button className={ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)<=3).length?"alerta":""} onClick={()=>go("jobs")}><b>{ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)<=3).length}</b><small>Entregas vencidas ou próximas</small></button>
+            <button className={atrasadoLista.length?"alerta":""} onClick={()=>go("financeiro")}><b>{atrasadoLista.length}</b><small>Pagamentos atrasados</small></button>
+            <button className={(state.prospeccoes||[]).filter(p=>/enviad|proposta/i.test(p.status||"") && p.proximoContato && p.proximoContato<=hoje).length?"alerta":""} onClick={()=>go("prospeccao")}><b>{(state.prospeccoes||[]).filter(p=>/enviad|proposta/i.test(p.status||"") && p.proximoContato && p.proximoContato<=hoje).length}</b><small>Propostas sem acompanhamento</small></button>
+            <button className={mesAbaixoMeta?"alerta":""} onClick={()=>go("performance")}><b>{metaFinanceiraMes ? (mesAbaixoMeta ? dnMoeda(metaFinanceiraMes-faturamentoMes) : "Meta ok") : "—"}</b><small>{metaFinanceiraMes ? (mesAbaixoMeta ? "Mês abaixo da meta" : "Meta mensal atingida") : "Defina a meta do mês"}</small></button>
           </div>
         </section>
         {/* campanhas em andamento */}
