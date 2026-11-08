@@ -153,24 +153,19 @@ async function claude(chave: string, sistema: string, texto: string, imgs: Img[]
   return { texto: out, modelo, cortado: j.stop_reason === "max_tokens" };
 }
 
-let visaoGroq: string | null | undefined;
+let visaoGroq: string | null = null;
 async function groqModelos(chave: string) {
   const r = await fetch(`${GROQ}/models`, { headers: { Authorization: `Bearer ${chave}` } });
   const j = await r.json().catch(() => ({}));
   return (j.data || []).filter((m: any) => m.active !== false).map((m: any) => String(m.id)) as string[];
 }
+// mesmo jeito das outras funções do painel (gerar-roteiro, ler-briefing): escolhe pelo nome
 async function groqVisao(chave: string) {
-  if (visaoGroq !== undefined) return visaoGroq;
-  visaoGroq = null;
+  if (visaoGroq) return visaoGroq;
   const ids = await groqModelos(chave);
-  const pref = [/llama-4-maverick/i, /llama-4-scout/i, /llama-4/i, /vision/i, /qwen.*vl|(^|[-_/])vl([-_]|$)/i, /qwen3\.[5-9]|qwen-?[4-9]/i, /gemma-3|pixtral/i];
-  const px = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
-  for (const p of pref) for (const id of ids.filter((x) => p.test(x))) {
-    const t = await fetch(`${GROQ}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: id, max_tokens: 5, messages: [{ role: "user", content: [{ type: "text", text: "ok?" }, { type: "image_url", image_url: { url: px } }] }] }) });
-    if (t.ok) return (visaoGroq = id);
-  }
-  return visaoGroq;
+  const v = ["qwen/qwen3.8-27b", "meta-llama/llama-4-maverick-17b-128e-instruct", "meta-llama/llama-4-scout-17b-16e-instruct"].find((p) => ids.includes(p)) || ids.find((id) => /qwen3\.[5-9]|vision|llama-4|-vl/i.test(id)) || (ids.length ? null : "qwen/qwen3.8-27b");
+  if (v) visaoGroq = v;
+  return v;
 }
 async function groqChat(chave: string, modelo: string, msgs: any[], maxTok: number, json = true) {
   const corpo: any = { model: modelo, max_tokens: maxTok, temperature: 0.7, messages: msgs };
@@ -195,23 +190,24 @@ async function groqDesign(chave: string, sistema: string, texto: string, imgs: I
       const lote = imgs.slice(i, i + 5);
       const content: any[] = [{ type: "text", text: "Descreva cada imagem para uma diretora de arte, em português, em 2 a 4 linhas cada: o que aparece, onde está o rosto/produto (em % da largura e altura), cores dominantes, se é foto vertical ou horizontal, áreas vazias boas para texto. Se for print de post de referência, descreva composição, tipografia, hierarquia, cores e uso de espaço. Responda numerado com o rótulo de cada imagem." }];
       for (const im of lote) { content.push({ type: "text", text: im.rotulo }); content.push({ type: "image_url", image_url: { url: `data:${im.media};base64,${im.b64}` } }); }
-      partes.push(await groqChat(chave, vis, [{ role: "user", content }], 1400, false));
+      partes.push((await groqChat(chave, vis, [{ role: "user", content }], 2000, false)).replace(/<think>[\s\S]*?<\/think>/g, "").trim());
     }
     descricoes = "\nDESCRIÇÃO DAS IMAGENS (você não as vê; use estas descrições):\n" + partes.join("\n");
   }
   const ids = await groqModelos(chave);
-  const ordem = ["openai/gpt-oss-120b", "moonshotai/kimi-k2-instruct-0905", "moonshotai/kimi-k2-instruct", "meta-llama/llama-4-maverick-17b-128e-instruct", "openai/gpt-oss-20b"].filter((m) => ids.includes(m));
+  const ordem = ["openai/gpt-oss-120b", "moonshotai/kimi-k2-instruct-0905", "moonshotai/kimi-k2-instruct", "qwen/qwen3-32b", "meta-llama/llama-4-maverick-17b-128e-instruct", "openai/gpt-oss-20b"].filter((m) => ids.includes(m));
   if (!ordem.length) ordem.push(ids.find((i) => /gpt-oss|llama|qwen|kimi/i.test(i) && !/whisper|guard|tts/i.test(i)) || "openai/gpt-oss-120b");
   let ultimo: unknown;
   for (const m of ordem) {
-    try { return { texto: await groqChat(chave, m, [{ role: "system", content: sistema }, { role: "user", content: texto + descricoes }], 7000), modelo: "groq " + m, cortado: false }; }
-    catch (e) { ultimo = e; if ((e as ErroIA).status === 429) continue; }
+    // limite grátis do Groq: ~8000 tokens por minuto contando a resposta; o design cabe em ~4500
+    try { return { texto: await groqChat(chave, m, [{ role: "system", content: sistema }, { role: "user", content: texto + descricoes }], 4500), modelo: "groq " + m, cortado: false }; }
+    catch (e) { ultimo = e; console.error("groq", m, (e as Error).message); }
   }
   throw ultimo || new ErroIA("A IA não respondeu agora.");
 }
 
 function lerJson(t: string) {
-  const limpo = t.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  const limpo = t.replace(/<think>[\s\S]*?<\/think>/g, "").trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   try { return JSON.parse(limpo); } catch { /* segue */ }
   const a = limpo.indexOf("{"), b = limpo.lastIndexOf("}");
   if (a >= 0 && b > a) { try { return JSON.parse(limpo.slice(a, b + 1)); } catch { /* segue */ } }
