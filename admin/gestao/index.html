@@ -191,6 +191,22 @@
   .dz-seg button.on{background:var(--db-papel);color:var(--db-texto);box-shadow:0 1px 3px rgba(107,74,53,.12)}
   .dz-cal-corpo{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,320px);gap:18px;align-items:start}
   .dz-cal-corpo.v-dia,.dz-cal-corpo.v-semana{grid-template-columns:minmax(0,1fr)}
+  /* Central de gestão: calendário e radar lado a lado; campanhas ocupam a linha seguinte */
+  .dn-operacao{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.85fr);grid-template-areas:"cal radar" "camp camp";gap:14px;align-items:start}
+  .dn-operacao>.dz-cal{grid-area:cal;min-width:0;margin:0!important}
+  .dn-operacao>.dn-radar{grid-area:radar;min-width:0;margin:0!important}
+  .dn-operacao>.dn-campanhas{grid-area:camp;min-width:0;margin:0!important}
+  .dn-radar-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .dn-radar-grid button{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;min-width:0;min-height:78px;padding:13px;border:1px solid var(--db-linha);border-radius:12px;background:var(--db-bege2);cursor:pointer;font:inherit;color:var(--db-texto)}
+  .dn-radar-grid button:hover{border-color:var(--db-linha2);background:#fffaf2}
+  .dn-radar-grid button.alerta{border-color:rgba(155,70,55,.28);background:#fff5f1}
+  .dn-radar-grid button.alerta b{color:var(--db-vermelho)}
+  .dn-radar-grid b{font-family:var(--db-serif);font-size:22px;font-weight:400;line-height:1.1;color:var(--db-cafe)}
+  .dn-radar-grid small{font-size:11.5px;line-height:1.35;color:var(--db-suave)}
+  .dn-secao-titulo{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:2px 2px 9px}
+  .dn-secao-titulo h2{margin:0;font:400 18px "DM Serif Display",Georgia,serif;color:var(--db-texto)}
+  .dn-secao-titulo span{font-size:11.5px;color:var(--db-suave)}
+
   .dz-rotina,.dz-semana{background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 !important}
   .dz-rotina > .dn-bt h2{font-size:16px}
   .dz-mes{background:linear-gradient(160deg,var(--db-bege2),#f4e8cf);border-radius:16px;padding:12px 14px}
@@ -203,7 +219,7 @@
   .dz-mes-grade button i{position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--db-cafe)}
   .dz-mes-grade button.hoje{box-shadow:inset 0 0 0 1.5px #a87058}
   .dz-mes-grade button.sel{background:var(--db-cafe);color:#fff}.dz-mes-grade button.sel i{background:#fff}
-  @media (max-width:1100px){ .dz > .dn-cards{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-grade,.dz-grade.sem-ig{grid-template-columns:minmax(0,1fr);grid-template-areas:"seg" "alc" "fazer" "cal" "prop" "camp" "fin"} .dz-cal-corpo{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:1100px){ .dz > .dn-cards{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-grade,.dz-grade.sem-ig{grid-template-columns:minmax(0,1fr);grid-template-areas:"seg" "alc" "fazer" "cal" "prop" "camp" "fin"} .dz-cal-corpo{grid-template-columns:minmax(0,1fr)} .dn-operacao{grid-template-columns:minmax(0,1fr);grid-template-areas:"cal" "radar" "camp"} }
   @media (max-width:700px){ .dz .dn-ola{flex-direction:column;align-items:flex-start;gap:2px} .dz .dn-data{order:-1} .dz .dn-ola h1{font-size:27px} .dz > .dn-cards{gap:10px} .dz .dn-card{padding:12px 14px;gap:10px} .dz .dn-card .dn-ico{width:34px;height:34px} .dz .dn-card-txt b{font-size:18px} }
 
   /* Dashboard (nov/2026, referência que a Mari gostou): serifada fina nos títulos, rótulos pequenos em caixa alta, Instagram, Para fazer e propostas */
@@ -3017,23 +3033,15 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     return {k, rotulo:MESES_EXT[d.getMonth()].slice(0,3).replace(/^./, c=>c.toUpperCase()), valor:somaDe(receitas.filter(t=>t.status==="Confirmado" && String(t.data||"").startsWith(k)))}; });
   const maxMes = Math.max(1, ...meses6.map(m=>m.valor));
   // conteúdos do mês (Conteúdos do painel) e propostas do e-mail sem resposta
-  const [dnExtras,setDnExtras] = useState({conteudos:null, propostas:null, visitas:null, propLista:[]});
+  const [dnExtras,setDnExtras] = useState({visitas:null});
   useEffect(()=>{
     let vivo = true;
-    Promise.all([
-      supabaseClient.from("painel_conteudo").select("status,data,mes").eq("mes", mesIso).then(r=>r.data||[]).catch(()=>null),
-      supabaseClient.from("propostas_email").select("id,de_nome,marca,assunto,recebido_em,lida,status,tipo").eq("status","nova").order("recebido_em",{ascending:false}).then(r=>r.data||[]).catch(()=>null),
-      supabaseClient.from("visitas").select("data,visitante_id").gte("data", new Date(Date.now()-7*86400000).toISOString()).limit(5000).then(r=>r.data||[]).catch(()=>null),
-    ]).then(([c,p,v])=>{ if(!vivo) return;
-      const sete = Date.now()-7*86400000;
-      setDnExtras({
-        conteudos: c ? {total:c.length, publicados:c.filter(x=>x.status==="Publicado"||x.status==="Postado").length} : null,
-        propostas: p ? {total:p.length, velhas:p.filter(x=>x.recebido_em && new Date(x.recebido_em).getTime()<sete).length, naoLidas:p.filter(x=>!x.lida).length} : null,
-        propLista: (p||[]).slice(0,4),
-        visitas: v ? {hoje:v.filter(x=>isoLocal(new Date(x.data))===isoLocal(new Date())).length, semana:v.length} : null });
-    });
+    supabaseClient.from("visitas").select("data,visitante_id").gte("data", new Date(Date.now()-7*86400000).toISOString()).limit(5000)
+      .then(({data,error})=>{ if(!vivo) return; if(error) throw error; const v=data||[];
+        setDnExtras({visitas:{hoje:v.filter(x=>isoLocal(new Date(x.data))===hoje).length, semana:v.length}});
+      }).catch(()=>{ if(vivo) setDnExtras({visitas:null}); });
     return ()=>{ vivo = false; };
-  },[mesIso]);
+  },[]);
   // Instagram (nov/2026): números do perfil pela API oficial da Meta (Edge Function "instagram", só leitura, token só no banco)
   const [igDias,setIgDias] = useState(()=>{ try{ return Number(localStorage.getItem("igDias"))||7; }catch(e){ return 7; } });
   const [ig,setIg] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("igDash")||"null") || {carregando:true}; }catch(e){ return {carregando:true}; } });
@@ -3157,6 +3165,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const tarefasDiaResumo = tarefas.filter(t=>!t.feito && t.data===hoje).length;
   const entregasProximasResumo = ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)>=0 && diasAte(j.prazoEntrega)<=3).length;
   const resumoCampanhas = andamento.length;
+  const metaFinanceiraMes = Number((state.metas||{})[mesIso]?.financeiro || 0);
+  const mesAbaixoMeta = metaFinanceiraMes > 0 && faturamentoMes < metaFinanceiraMes;
   const linhaItens = { prox: linhaTodos.filter(x=>!x.ok && x.iso>=hoje), feitas: linhaTodos.filter(x=>x.ok), atr: linhaTodos.filter(x=>!x.ok && x.iso<hoje) };
   const linhaPct = linhaTodos.length ? Math.round(linhaItens.feitas.length/linhaTodos.length*100) : 0;
   return (
@@ -3194,7 +3204,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         </div>
         <span className="dn-data">{dataExtenso}</span>
       </div>
-      {/* quatro números (nov/2026, referência da Mari): faturado, a receber, em produção e visitas no site */}
+      <div className="dn-secao-titulo"><h2>Desempenho do negócio</h2><span>Faturamento mensal e indicadores</span></div>
+      {/* quatro números principais: faturado, a receber, em produção e visitas no site */}
       <div className="dn-cards dz-nums">
         <button className="dn-card" onClick={()=>go("financeiro")}>
           <span className="dn-card-txt"><small>Faturado em {MESES_EXT[hojeD.getMonth()]}</small><b>{dnMoeda(faturamentoMes)}</b><em className={variacao>0?"bom":""}>{variacao===null ? "sem mês anterior para comparar" : `${variacao>0?"+":""}${variacao}% sobre ${MESES_EXT[(hojeD.getMonth()+11)%12]}`}</em></span></button>
@@ -3513,10 +3524,11 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         <section className="db-bloco dn-radar">
           <div className="dn-bt"><h2>Radar do meu negócio</h2><span className="dz-sub">Pontos que merecem sua atenção</span></div>
           <div className="dn-radar-grid">
-            <button onClick={()=>go("followups")}><b>{(state.followups||[]).filter(f=>f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje).length}</b><small>Marcas aguardando retorno</small></button>
-            <button onClick={()=>go("jobs")}><b>{ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)<=3).length}</b><small>Entregas vencidas ou próximas</small></button>
-            <button onClick={()=>go("financeiro")}><b>{atrasadoLista.length}</b><small>Pagamentos atrasados</small></button>
-            <button onClick={()=>go("prospeccao")}><b>{(state.prospeccoes||[]).filter(p=>/enviad|proposta/i.test(p.status||"") && p.proximoContato && p.proximoContato<=hoje).length}</b><small>Propostas sem acompanhamento</small></button>
+            <button className={(state.followups||[]).filter(f=>f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje).length?"alerta":""} onClick={()=>go("followups")}><b>{(state.followups||[]).filter(f=>f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje).length}</b><small>Marcas sem resposta</small></button>
+            <button className={ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)<=3).length?"alerta":""} onClick={()=>go("jobs")}><b>{ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)<=3).length}</b><small>Entregas vencidas ou próximas</small></button>
+            <button className={atrasadoLista.length?"alerta":""} onClick={()=>go("financeiro")}><b>{atrasadoLista.length}</b><small>Pagamentos atrasados</small></button>
+            <button className={(state.prospeccoes||[]).filter(p=>/enviad|proposta/i.test(p.status||"") && p.proximoContato && p.proximoContato<=hoje).length?"alerta":""} onClick={()=>go("prospeccao")}><b>{(state.prospeccoes||[]).filter(p=>/enviad|proposta/i.test(p.status||"") && p.proximoContato && p.proximoContato<=hoje).length}</b><small>Propostas sem acompanhamento</small></button>
+            <button className={mesAbaixoMeta?"alerta":""} onClick={()=>go("performance")}><b>{metaFinanceiraMes ? (mesAbaixoMeta ? dnMoeda(metaFinanceiraMes-faturamentoMes) : "Meta ok") : "—"}</b><small>{metaFinanceiraMes ? (mesAbaixoMeta ? "Mês abaixo da meta" : "Meta mensal atingida") : "Defina a meta do mês"}</small></button>
           </div>
         </section>
         {/* campanhas em andamento */}
