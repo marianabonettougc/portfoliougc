@@ -289,3 +289,9 @@ Pedido da Mari: três áreas no menu Conteúdo (Conteúdos, Meus roteiros, Refer
 - O botão "Ajustes e IA" saiu: perfil/ritmo, Gerar a grade e Pastas do Instagram ficam no fim de Planejamento (#pc-config com data-pcpar "ano", título "Meu ritmo e IA"); atalho do iPhone e Agente diário dos Salvos ficam num bloco que abre e fecha (.pc2-automacao). mostrarParte("cfg") abre Planejamento ("Mudar o ritmo" rola até o perfil).
 - Visão geral: saiu o bloco "Produção" (repetia as contagens do Quadro de produção).
 - Quadro de produção: a coluna/status "Ideia" aparece como "Sem roteiro" (era "Ideias" e confundia com o Banco de ideias). O valor gravado no banco continua "Ideia".
+
+## Dashboard, ajuste (nov/2026, pedido da Mari)
+- Ordem: números, Instagram (Seguidores e Alcance lado a lado, mesma largura), Calendário e Minhas tarefas lado a lado do mesmo tamanho (colunas iguais, mesma altura), Campanhas em andamento, Inspirações.
+- "Radar do meu negócio" saiu (repetia os outros blocos). A meta do mês aparece como "x% da meta" no cartão Faturado (só se houver meta cadastrada).
+- Campanhas em andamento em cartões (.dz-cg/.dz-cc): logo, marca, entregas, etapa em pílula clara com bolinha colorida (toque avança), barra fina de progresso e prazo no rodapé (vermelho se atrasado).
+- DbLogo: favicon padrão do Google (globo de 16px) vira a inicial da marca.
