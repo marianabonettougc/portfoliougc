@@ -1226,7 +1226,8 @@
   .dz-per button{border:0;background:transparent;border-radius:999px;padding:1px 7px;font:500 10.5px Poppins,sans-serif;color:var(--db-suave);cursor:pointer;letter-spacing:0;text-transform:none}
   .dz-per button.on{background:var(--db-papel);color:var(--db-texto);box-shadow:0 1px 2px rgba(107,74,53,.12)}
   .dz-nums .dn-card-txt small{overflow:visible}
-  .dz-dupla{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:start}
+  .dz-dupla{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:stretch}
+  .dz-dupla > .dz-tarefas{display:flex;flex-direction:column}.dz-dupla > .dz-tarefas .dz-rodape-l{margin-top:auto;padding-top:6px}
   .dz-dupla > .db-bloco{margin:0 !important;min-width:0}
   .dz-cal2 .dn-bt,.dz-tarefas .dn-bt,.dz-radar2 .dn-bt,.dz-camp .dn-bt{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
   .dz-mes2{background:linear-gradient(160deg,var(--db-bege2),#f4e8cf);border-radius:16px;padding:12px 14px}
@@ -1313,8 +1314,31 @@
   .dz-camp{margin-bottom:14px}
   .dz-camp .dn-prazo small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dz-camp .dn-prazo small.atr{color:var(--db-vermelho);font-weight:600}.dz-camp .dn-prazo small.hj{color:#a87058;font-weight:600}
+  /* campanhas em cartões (nov/2026) */
+  .dz-cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:10px}
+  .dz-cc{display:flex;flex-direction:column;gap:10px;padding:13px 14px 12px;border:1px solid var(--db-linha);border-radius:14px;background:var(--db-papel);cursor:pointer;min-width:0;transition:border-color .15s,box-shadow .15s,transform .15s}
+  .dz-cc:hover{border-color:var(--db-linha2);box-shadow:0 4px 14px rgba(61,43,32,.07);transform:translateY(-1px)}
+  .dz-cc.atr{border-color:rgba(197,83,63,.35)}
+  .dz-cc-topo{display:flex;align-items:center;gap:10px;min-width:0}
+  .dz-cc-topo .db-logo{width:34px;height:34px;box-shadow:none}.dz-cc-topo .db-logo-vazio{font-size:16px}
+  .dz-cc-nome{display:flex;flex-direction:column;min-width:0}
+  .dz-cc-nome b,.dz-cc-nome small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dz-cc-nome b{font-size:14px;font-weight:500;color:var(--db-texto)}.dz-cc-nome small{font-size:11.5px;color:var(--db-suave)}
+  .dz-cc-etapa{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--db-linha);background:var(--db-bege2);border-radius:999px;padding:3px 10px 3px 8px;font:500 11.5px Poppins,sans-serif;color:var(--db-texto);cursor:pointer;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dz-cc-etapa:hover{border-color:var(--db-linha2)}
+  .dz-cc-etapa i{width:7px;height:7px;border-radius:50%;flex:none;background:#c2b2a2}
+  .dz-cc-etapa.e-rot i{background:#c9a24f}.dz-cc-etapa.e-grav i{background:#a87058}.dz-cc-etapa.e-edi i{background:#c5533f}.dz-cc-etapa.e-apr i{background:#8a634b}.dz-cc-etapa.e-ok i{background:var(--db-verde)}
+  .dz-cc-prog{display:flex;align-items:center;gap:8px}
+  .dz-cc-prog i{flex:1;height:4px;border-radius:9px;background:var(--db-bege);overflow:hidden}.dz-cc-prog i b{display:block;height:100%;border-radius:9px;background:var(--db-cafe)}
+  .dz-cc-prog small{font-size:11.5px;color:var(--db-suave);font-variant-numeric:tabular-nums}
+  .dz-cc-sem{font-style:italic}
+  .dz-cc-prazo{display:flex;align-items:center;gap:6px;padding-top:9px;border-top:1px solid var(--db-linha);font-size:12px;color:var(--db-suave);min-width:0}
+  .dz-cc-prazo svg{flex:none}.dz-cc-prazo span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dz-cc-prazo b{font-weight:600;color:var(--db-texto)}
+  .dz-cc-prazo.atr,.dz-cc-prazo.atr b{color:var(--db-vermelho)}.dz-cc-prazo.hj,.dz-cc-prazo.hj b{color:#a87058}
+  @media (max-width:700px){ .dz-cg{grid-template-columns:minmax(0,1fr)} }
   .dz-bib{font-size:inherit;padding:0;vertical-align:baseline}
-  .dz-igfim{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px;margin-top:14px}
+  .dz-igfim{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin:0 0 14px;align-items:stretch}
   .dz-igfim.sem-ig{grid-template-columns:minmax(0,1fr)}
   .dz-igfim > .db-bloco{margin:0 !important;min-width:0}
   .dz-igfim > *{grid-area:auto !important}
@@ -2174,7 +2198,7 @@ const chaveMarca = (m) => String(m||"").trim().toLowerCase();
 function DbLogo({marca, logos}){
   const info = logos[chaveMarca(marca)];
   const [falhou,setFalhou] = useState(false);
-  if(info && info.logo && !falhou) return <span className="db-logo"><img src={info.logo} alt={"Logo "+marca} onError={()=>setFalhou(true)}/></span>;
+  if(info && info.logo && !falhou) return <span className="db-logo"><img src={info.logo} alt={"Logo "+marca} onError={()=>setFalhou(true)} onLoad={e=>{ if(e.currentTarget.naturalWidth && e.currentTarget.naturalWidth<=16) setFalhou(true); }}/></span>;
   return <span className="db-logo db-logo-vazio">{String(marca||"?").trim().charAt(0).toUpperCase()}</span>;
 }
 const fmtNum = (n) => { n = Number(n)||0; return n>=1e6 ? (n/1e6).toFixed(1).replace(".",",").replace(",0","")+"M" : n>=1e3 ? Math.round(n/1e3)+"K" : String(n); };
@@ -3650,7 +3674,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
       <div className="dn-cards dz-nums">
         <button className="dn-card" onClick={()=>setDetalheFat(true)} title="Ver as receitas do mês">
           <span className="dn-card-txt"><small>Faturado em {MESES_EXT[hojeD.getMonth()]}</small><b>{dnMoeda(faturadoMes)}</b>
-            <em className={varFat>0?"bom":""}>{faturadoLista.length ? `${dnMoeda(fatRecebido)} recebido · ${dnMoeda(aReceberMes)} a receber${varFat!==null ? ` · ${varFat>0?"+":""}${varFat}% sobre ${MESES_EXT[(hojeD.getMonth()+11)%12]}` : ""}` : "nenhuma receita lançada no mês"}</em></span></button>
+            <em className={varFat>0?"bom":""}>{faturadoLista.length ? `${dnMoeda(fatRecebido)} recebido · ${dnMoeda(aReceberMes)} a receber${varFat!==null ? ` · ${varFat>0?"+":""}${varFat}% sobre ${MESES_EXT[(hojeD.getMonth()+11)%12]}` : ""}${metaMesValor>0 ? ` · ${pctMeta}% da meta` : ""}` : "nenhuma receita lançada no mês"}</em></span></button>
         <button className="dn-card" onClick={()=>go("financeiro")} title="Abrir o financeiro">
           <span className="dn-card-txt"><small>Para receber</small><b>{dnMoeda(paraReceber)}</b>
             <em className={vencidosLista.length?"ruim":""}>{!pendentesLista.length ? "nada pendente" : vencidosLista.length ? `${dnMoeda(vencidoValor)} vencido · ${dnMoeda(aVencerValor)} a vencer` : `${plural(pendentesLista.length,"lançamento","lançamentos")} a vencer`}</em></span></button>
@@ -3663,7 +3687,53 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             <em className={vis.erro?"ruim":""}>{vis.erro ? "não consegui carregar agora" : vis.total==null ? "carregando" : `${plural(vis.unicos,"visitante único","visitantes únicos")} · ${vis.hoje} hoje`}</em></span></div>
       </div>
 
-      {/* 3. calendário + minhas tarefas */}
+      {/* 3. Instagram (seguidores e alcance) lado a lado, acima do calendário (pedido da Mari, nov/2026) */}
+      <div className={"dz-igfim"+(ig.conectado ? "" : " sem-ig")}>
+        {/* Instagram: seguidores e alcance (API oficial da Meta) */}
+        {ig.conectado ? <>
+          <section className="db-bloco dz-ig-seg">
+            <div className="dz-ig-cab"><h2>Seguidores</h2>{igSeg}</div>
+            {ig.error ? <p className="dz-ig-erro">{ig.error}</p> : <>
+            <div className="dz-ig-num"><b>{igNum(ig.seguidores)}</b>{ig.novos!=null && <span className="dz-ig-novos"><b>+{igNum(ig.novos)}</b><small>novos em {igDias} dias</small></span>}</div>
+            <small className="dz-ig-rot">total hoje · @{ig.username}</small>
+            {ig.deixaram!=null && <div className="dz-ig-menos"><b>-{igNum(ig.deixaram)}</b><small>deixaram de seguir em {igDias} dias</small></div>}
+            <div className="dz-ig-barras" aria-label="Novos seguidores por dia">{igBarras.map(x=><i key={x.data} title={dataBR(x.data).slice(0,5)+": +"+x.valor} style={{height:Math.max(4, x.valor/igMaxBar*100)+"%"}}/>)}</div>
+            <small className="dz-ig-rot dz-ig-pe">Novos seguidores por dia</small></>}
+          </section>
+          <section className="db-bloco dz-ig-alc">
+            <div className="dz-ig-cab"><h2>Alcance</h2>{igSeg}</div>
+            <div className="dz-ig-tres">
+              <div><b>{igNum(ig.alcance)}</b><small>contas alcançadas</small>{igVar(ig.alcanceVar)}</div>
+              <div><b>{ig.engajamento==null ? "–" : String(ig.engajamento).replace(".",",")+"%"}</b><small>engajamento</small>{igVar(ig.engajamentoVar, true)}</div>
+              <div><b>{igNum(ig.interacoes)}</b><small>interações</small>{igVar(ig.interacoesVar)}</div>
+            </div>
+            <div className="dz-ig-views"><b>{igNum(ig.views)}</b><small>visualizações</small>{igVar(ig.viewsVar)}</div>
+            {igLinha && <svg className="dz-ig-linha" viewBox={`0 0 ${igLinha.w} ${igLinha.h}`} preserveAspectRatio="none" aria-label="Alcance por dia"><path d={igLinha.area} className="area"/><path d={igLinha.d} className="traco"/><circle cx={igLinha.fim[0]} cy={igLinha.fim[1]} r="3.5"/></svg>}
+            <small className="dz-ig-rot">{ig.de ? `${dataBR(ig.de).slice(0,5)} a ${dataBR(ig.ate).slice(0,5)}, comparado com os ${igDias} dias antes` : ""}</small>
+            <div className="dz-ig-acoes"><a className="db-link db-sublinhado" href={`https://www.instagram.com/${ig.username||""}/`} target="_blank" rel="noopener">Abrir o perfil</a>
+              <button className="db-link" onClick={()=>carregarIg(igDias, true)}>Atualizar</button>
+              <button className="db-link" onClick={async ()=>{ if(await painelDialogo.confirmar("Desconectar o Instagram do painel? Os números somem do Dashboard até conectar de novo.", { ok: "Desconectar", perigo: true })) conectarIg(true); }}>Desconectar</button></div>
+          </section>
+        </> : <section className="db-bloco dz-ig-con">
+            <div className="dz-ig-cab"><h2>Seu Instagram no painel</h2></div>
+            {ig.carregando ? <p className="db-vazio">Carregando...</p> : <>
+            <p>Seguidores, alcance, engajamento e visualizações aparecem aqui pela <b>API oficial da Meta</b>, só leitura. O painel não posta, não segue e não usa sua senha, então não tem risco para a conta.</p>
+            <div className="dz-ig-form"><input value={igToken} onChange={e=>setIgToken(e.target.value)} placeholder="Cole aqui o token do Instagram" aria-label="Token do Instagram"/>
+              <button className="db-btn-escuro" disabled={igConectando || igToken.trim().length<30} onClick={()=>conectarIg(false)}>{igConectando ? "Conectando..." : "Conectar"}</button></div>
+            {ig.erroConexao && <p className="db-erro">{ig.erroConexao}</p>}
+            <button className="db-link db-sublinhado" onClick={()=>setIgAjuda(a=>!a)}>{igAjuda ? "Esconder o passo a passo" : "Como gerar o token (uma vez só)"}</button>
+            {igAjuda && <ol className="dz-ig-passos">
+              <li>No app do Instagram: Configurações, Tipo de conta e ferramentas, e deixe a conta como <b>Criador de conteúdo</b> (ou Comercial).</li>
+              <li>No computador, entre em developers.facebook.com com o seu Facebook, clique em Meus apps, Criar app, escolha o caso de uso <b>Gerenciar mensagens e conteúdo no Instagram</b> (API do Instagram) e crie.</li>
+              <li>No app criado: Casos de uso, API do Instagram, <b>Configuração da API com login do Instagram</b>. Em Funções do app, adicione o seu @ como testador do Instagram e aceite o convite no Instagram (Configurações, Apps e sites, Convites de testador).</li>
+              <li>Volte em "Gerar tokens de acesso", clique em <b>Adicionar conta</b>, entre com o seu Instagram e depois em <b>Gerar token</b>. Copie e cole aqui.</li>
+              <li>O token vale 60 dias e o painel renova sozinho toda semana. O app pode ficar no modo de desenvolvimento: ele só lê a sua própria conta.</li>
+            </ol>}</>}
+          </section>}
+
+      </div>
+
+      {/* 4. calendário + minhas tarefas, mesmo tamanho */}
       <div className="dz-dupla">
         <section className="db-bloco dz-cal2">
           <div className="dn-bt"><div><h2>Calendário</h2><small className="dz-sub">Gravações, entregas, publicações e compromissos</small></div>
@@ -3746,42 +3816,20 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         </section>
       </div>
 
-      {/* 4. radar do meu negócio */}
-      <section className="db-bloco dz-radar2">
-        <div className="dn-bt"><div><h2>Radar do meu negócio</h2><small className="dz-sub">{radar.length ? `${plural(radar.length,"ponto pedindo","pontos pedindo")} sua atenção` : "Tudo em dia por aqui"}</small></div></div>
-        <div className="dz-radar-grade">
-          {GRUPOS_RADAR.map(([g,t])=>{ const its = radar.filter(r=>r.grupo===g); const aberto = radarAberto===g;
-            const vazio = {marcas:"Nenhuma marca esperando retorno.", entregas:"Nenhuma entrega vencida ou nos próximos 3 dias.", pagamentos:"Nenhum pagamento atrasado.", propostas: extrasRadar.carregado ? "Nenhuma proposta parada." : "Conferindo..."}[g];
-            return <div key={g} className={"dz-rg"+(its.some(i=>i.nivel==="atraso")?" atr":its.length?" at":" ok")}>
-              <div className="dz-rg-cab"><span>{t}</span><b>{its.length}</b></div>
-              {its.length ? <ul>{(aberto ? its : its.slice(0,3)).map(r=><li key={r.id} onClick={r.ir} title={`Abrir em ${r.origem}`}><i className={r.nivel}/><span><b>{r.titulo}</b><small>{r.detalhe}</small><em>{r.origem}{r.data ? " · "+dataBR(r.data) : ""}</em></span></li>)}</ul>
-                : <p className="dz-rg-vazio"><DbIcone tipo="check" tam={14}/>{vazio}</p>}
-              {its.length>3 && <button className="db-link" onClick={()=>setRadarAberto(aberto?null:g)}>{aberto ? "Ver menos" : `Ver mais ${its.length-3}`}</button>}
-            </div>; })}
-          <div className={"dz-rg dz-meta"+(metaMesValor>0 ? (pctMeta>=100?" ok":"") : " at")}>
-            <div className="dz-rg-cab"><span>Meta de faturamento</span>{metaMesValor>0 && <b>{pctMeta}%</b>}</div>
-            {metaMesValor>0 && <button className="db-link dz-meta-editar" onClick={()=>setMetaAberta(true)}>Editar meta</button>}
-            {metaMesValor>0 ? <>
-              <div className="dz-meta-barra"><i style={{width:Math.min(100, Math.max(2,pctMeta))+"%"}}/></div>
-              <dl className="dz-meta-dl"><div><dt>Meta de {MESES_EXT[hojeD.getMonth()]}</dt><dd>{dnMoeda(metaMesValor)}</dd></div><div><dt>Faturado</dt><dd>{dnMoeda(faturadoMes)}</dd></div>
-                <div><dt>Falta</dt><dd>{faturadoMes>=metaMesValor ? "meta batida!" : dnMoeda(metaMesValor-faturadoMes)}</dd></div></dl>
-            </> : <p className="dz-rg-vazio dz-meta-vazio">Nenhuma meta cadastrada para {MESES_EXT[hojeD.getMonth()]}. Cadastre a meta do mês para acompanhar aqui.<button className="db-link" onClick={()=>setMetaAberta(true)}>Cadastrar meta</button></p>}
-          </div>
-        </div>
-      </section>
-
       {/* 5. campanhas em andamento */}
       <section className={"db-bloco dn-campanhas dz-camp"+(fechadoB("campanhas")?" fechado":"")}>
         <div className="dn-bt"><div><h2>Campanhas em andamento</h2><small className="dz-sub">{plural(campanhas.length,"campanha ativa","campanhas ativas")}</small></div><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("campanhas")}</span></div>
-        {campanhas.length ? <div className="dn-tabela">
-          <div className="dn-linha dn-cab"><span>Marca e campanha</span><span>Entregas</span><span>Status</span><span>Próximo prazo</span></div>
+        {campanhas.length ? <div className="dz-cg">
           {[...campanhas].sort((a,b)=>((prazosDoJob(a)[0]||[a.prazoEntrega||"9999"])[0]||"9999").localeCompare((prazosDoJob(b)[0]||[b.prazoEntrega||"9999"])[0]||"9999")).slice(0,8).map(j=>{ const p = progressoJob(j), at = etapaDoJob(j, state.roteiros), prox = prazosDoJob(j)[0], marca = comAMarca(at);
             const abrir = ()=>abrirJob(j.id);
-            return <div className="dn-linha dn-clica" key={j.id} onClick={abrir}>
-              <button className="dn-marca" onClick={abrir}><DbLogo marca={j.marca} logos={logos}/><span><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></button>
-              <span className="dn-prog">{p.total ? <><small>{p.feitos} de {p.total} concluída{p.total===1?"":"s"}</small><i><b style={{width:Math.max(3,p.pct)+"%"}}/></i></> : <small>sem entregáveis</small>}</span>
-              <span><button className={"dn-chip c-"+classeEtapa(at)} title={at>=ETAPAS_JOB.length-1 ? ETAPAS_JOB[at] : `${ETAPAS_JOB[at]} · toque para passar para "${ETAPAS_JOB[at+1]}"`} onClick={e=>{ e.stopPropagation(); avancarJob(j); }}>{nomeEtapa(at)}</button></span>
-              <span className="dn-prazo">{prox ? <><b>{fmtDia(prox[0])}</b><small className={diasAte(prox[0])<0?"atr":diasAte(prox[0])===0?"hj":""}>{prox[1]} · {relDias(prox[0])}</small></> : <small>{marca ? "com a marca" : "sem prazo"}</small>}</span>
+            const atraso = prox && !marca && diasAte(prox[0])<0, hoje = prox && !marca && diasAte(prox[0])===0;
+            return <div className={"dz-cc"+(atraso?" atr":"")} key={j.id} role="button" tabIndex={0} onClick={abrir} onKeyDown={e=>{ if(e.key==="Enter") abrir(); }}>
+              <div className="dz-cc-topo"><DbLogo marca={j.marca} logos={logos}/>
+                <span className="dz-cc-nome"><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></div>
+              <button className={"dz-cc-etapa e-"+classeEtapa(at)} title={at>=ETAPAS_JOB.length-1 ? ETAPAS_JOB[at] : `${ETAPAS_JOB[at]} · toque para passar para "${ETAPAS_JOB[at+1]}"`} onClick={e=>{ e.stopPropagation(); avancarJob(j); }}><i/>{nomeEtapa(at)}</button>
+              <div className="dz-cc-prog">{p.total ? <><i><b style={{width:Math.max(2,p.pct)+"%"}}/></i><small>{p.feitos}/{p.total}</small></> : <small className="dz-cc-sem">sem entregáveis</small>}</div>
+              <div className={"dz-cc-prazo"+(atraso?" atr":hoje?" hj":"")}><DbIcone tipo="calendario" tam={13}/>
+                {prox && !marca ? <span><b>{fmtDia(prox[0])}</b> · {prox[1]} · {relDias(prox[0])}</span> : <span>{marca ? "com a marca" : prox ? `${fmtDia(prox[0])} · ${prox[1]}` : "sem prazo"}</span>}</div>
             </div>; })}
         </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
         {campanhas.length>8 && <button className="db-link dz-rodape" onClick={()=>go("jobs")}>Ver as outras {campanhas.length-8}<DbIcone tipo="seta" tam={14}/></button>}
@@ -3987,52 +4035,6 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         </section>
 
         {/* Transcrições saíram do Dashboard (out/2026): ficam só em Conteúdo > Referências > Transcrever vídeo */}
-      </div>
-
-      {/* 7. Instagram (seguidores e alcance) — mantido no fim, a pedido da Mari */}
-      <div className={"dz-igfim"+(ig.conectado ? "" : " sem-ig")}>
-        {/* Instagram: seguidores e alcance (API oficial da Meta) */}
-        {ig.conectado ? <>
-          <section className="db-bloco dz-ig-seg">
-            <div className="dz-ig-cab"><h2>Seguidores</h2>{igSeg}</div>
-            {ig.error ? <p className="dz-ig-erro">{ig.error}</p> : <>
-            <div className="dz-ig-num"><b>{igNum(ig.seguidores)}</b>{ig.novos!=null && <span className="dz-ig-novos"><b>+{igNum(ig.novos)}</b><small>novos em {igDias} dias</small></span>}</div>
-            <small className="dz-ig-rot">total hoje · @{ig.username}</small>
-            {ig.deixaram!=null && <div className="dz-ig-menos"><b>-{igNum(ig.deixaram)}</b><small>deixaram de seguir em {igDias} dias</small></div>}
-            <div className="dz-ig-barras" aria-label="Novos seguidores por dia">{igBarras.map(x=><i key={x.data} title={dataBR(x.data).slice(0,5)+": +"+x.valor} style={{height:Math.max(4, x.valor/igMaxBar*100)+"%"}}/>)}</div>
-            <small className="dz-ig-rot dz-ig-pe">Novos seguidores por dia</small></>}
-          </section>
-          <section className="db-bloco dz-ig-alc">
-            <div className="dz-ig-cab"><h2>Alcance</h2>{igSeg}</div>
-            <div className="dz-ig-tres">
-              <div><b>{igNum(ig.alcance)}</b><small>contas alcançadas</small>{igVar(ig.alcanceVar)}</div>
-              <div><b>{ig.engajamento==null ? "–" : String(ig.engajamento).replace(".",",")+"%"}</b><small>engajamento</small>{igVar(ig.engajamentoVar, true)}</div>
-              <div><b>{igNum(ig.interacoes)}</b><small>interações</small>{igVar(ig.interacoesVar)}</div>
-            </div>
-            <div className="dz-ig-views"><b>{igNum(ig.views)}</b><small>visualizações</small>{igVar(ig.viewsVar)}</div>
-            {igLinha && <svg className="dz-ig-linha" viewBox={`0 0 ${igLinha.w} ${igLinha.h}`} preserveAspectRatio="none" aria-label="Alcance por dia"><path d={igLinha.area} className="area"/><path d={igLinha.d} className="traco"/><circle cx={igLinha.fim[0]} cy={igLinha.fim[1]} r="3.5"/></svg>}
-            <small className="dz-ig-rot">{ig.de ? `${dataBR(ig.de).slice(0,5)} a ${dataBR(ig.ate).slice(0,5)}, comparado com os ${igDias} dias antes` : ""}</small>
-            <div className="dz-ig-acoes"><a className="db-link db-sublinhado" href={`https://www.instagram.com/${ig.username||""}/`} target="_blank" rel="noopener">Abrir o perfil</a>
-              <button className="db-link" onClick={()=>carregarIg(igDias, true)}>Atualizar</button>
-              <button className="db-link" onClick={async ()=>{ if(await painelDialogo.confirmar("Desconectar o Instagram do painel? Os números somem do Dashboard até conectar de novo.", { ok: "Desconectar", perigo: true })) conectarIg(true); }}>Desconectar</button></div>
-          </section>
-        </> : <section className="db-bloco dz-ig-con">
-            <div className="dz-ig-cab"><h2>Seu Instagram no painel</h2></div>
-            {ig.carregando ? <p className="db-vazio">Carregando...</p> : <>
-            <p>Seguidores, alcance, engajamento e visualizações aparecem aqui pela <b>API oficial da Meta</b>, só leitura. O painel não posta, não segue e não usa sua senha, então não tem risco para a conta.</p>
-            <div className="dz-ig-form"><input value={igToken} onChange={e=>setIgToken(e.target.value)} placeholder="Cole aqui o token do Instagram" aria-label="Token do Instagram"/>
-              <button className="db-btn-escuro" disabled={igConectando || igToken.trim().length<30} onClick={()=>conectarIg(false)}>{igConectando ? "Conectando..." : "Conectar"}</button></div>
-            {ig.erroConexao && <p className="db-erro">{ig.erroConexao}</p>}
-            <button className="db-link db-sublinhado" onClick={()=>setIgAjuda(a=>!a)}>{igAjuda ? "Esconder o passo a passo" : "Como gerar o token (uma vez só)"}</button>
-            {igAjuda && <ol className="dz-ig-passos">
-              <li>No app do Instagram: Configurações, Tipo de conta e ferramentas, e deixe a conta como <b>Criador de conteúdo</b> (ou Comercial).</li>
-              <li>No computador, entre em developers.facebook.com com o seu Facebook, clique em Meus apps, Criar app, escolha o caso de uso <b>Gerenciar mensagens e conteúdo no Instagram</b> (API do Instagram) e crie.</li>
-              <li>No app criado: Casos de uso, API do Instagram, <b>Configuração da API com login do Instagram</b>. Em Funções do app, adicione o seu @ como testador do Instagram e aceite o convite no Instagram (Configurações, Apps e sites, Convites de testador).</li>
-              <li>Volte em "Gerar tokens de acesso", clique em <b>Adicionar conta</b>, entre com o seu Instagram e depois em <b>Gerar token</b>. Copie e cole aqui.</li>
-              <li>O token vale 60 dias e o painel renova sozinho toda semana. O app pode ficar no modo de desenvolvimento: ele só lê a sua própria conta.</li>
-            </ol>}</>}
-          </section>}
-
       </div>
 
       {/* janelas */}
