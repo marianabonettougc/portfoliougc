@@ -1,7 +1,8 @@
 // =========================================================
 // ASSISTENTE UGC (Edge Function do Supabase)
 // Usada pelo Dashboard do aplicativo Gestão UGC:
-// - acao "logo": descobre o site oficial de uma marca pelo nome e devolve o ícone/logo dela
+// - acao "logo": descobre a marca, o site e o Instagram pelo nome do job, acha a logo mais nítida e guarda no Storage
+// - acao "logo_manual": guarda uma logo escolhida pela Mari (arquivo ou link)
 // - acao "miniaturas": pega a capa dos vídeos de referência (TikTok, YouTube e, quando dá, Instagram)
 // - acao "ideias": cria ideias de conteúdo a partir dos perfis concorrentes que a Mari cadastrou
 //   e das referências que ela já transcreveu na aba Roteiros (tabela roteiros)
@@ -71,26 +72,158 @@ async function abrir(url: string, ms = 7000) {
 }
 
 // ---------- logo da marca ----------
-async function logoDaMarca(chave: string, marca: string) {
-  const r = await perguntarGroq(chave, `Qual é o domínio do site oficial da marca ou empresa "${marca}"? Considere marcas do Brasil primeiro.
-Responda SOMENTE um JSON assim: {"dominio": "exemplo.com.br"}. Se não souber com segurança, responda {"dominio": null}.`);
-  const dominio = String(r.dominio || "").toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "").trim();
-  if (!dominio || !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(dominio)) return { dominio: null, logo: null };
-  // confere se o site existe e procura o ícone grande (apple-touch-icon) da página
-  let logo: string | null = null;
+// v3 (nov/2026): a Mari achou os cartões "crus" (só a inicial). Agora:
+// 1) a IA separa a marca de verdade do nome da campanha ("SBP · Outubro" -> SBP, "DOVE - Renova & Repara" -> Dove)
+//    e devolve o domínio e o @ do Instagram da marca;
+// 2) testa várias fontes e mede a imagem de verdade (ícones grandes do site, manifest, apple-touch-icon,
+//    foto do perfil do Instagram, ícone do Google em alta, DuckDuckGo) e fica com a melhor;
+// 3) guarda a imagem no Storage (bucket público "capas", pasta logos/) para não depender do site da marca.
+const sbAdmin = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+const slug = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "marca";
+
+// mede a imagem pelos bytes do começo do arquivo (png, jpg, gif, webp, ico); svg conta como grande
+function medir(b: Uint8Array, tipo: string): number {
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  try {
+    if (/svg/i.test(tipo) || new TextDecoder().decode(b.slice(0, 300)).includes("<svg")) return 512;
+    if (b[0] === 0x89 && b[1] === 0x50) return Math.min(dv.getUint32(16), dv.getUint32(20));
+    if (b[0] === 0x47 && b[1] === 0x49) return Math.min(dv.getUint16(6, true), dv.getUint16(8, true));
+    if (b[0] === 0x00 && b[1] === 0x00 && b[2] === 0x01) { // ico: maior imagem dentro
+      let m = 0; const n = dv.getUint16(4, true);
+      for (let i = 0; i < n; i++) { const w = b[6 + i * 16] || 256; if (w > m) m = w; }
+      return m;
+    }
+    if (b[0] === 0x52 && b[1] === 0x49 && b[8] === 0x57) { // webp
+      const f = new TextDecoder().decode(b.slice(12, 16));
+      if (f === "VP8X") return Math.min(1 + (b[24] | b[25] << 8 | b[26] << 16), 1 + (b[27] | b[28] << 8 | b[29] << 16));
+      if (f === "VP8 ") return Math.min(dv.getUint16(26, true) & 0x3fff, dv.getUint16(28, true) & 0x3fff);
+      if (f === "VP8L") { const v = dv.getUint32(21, true); return Math.min((v & 0x3fff) + 1, ((v >> 14) & 0x3fff) + 1); }
+    }
+    if (b[0] === 0xff && b[1] === 0xd8) { // jpg
+      let i = 2;
+      while (i < b.length - 9) {
+        if (b[i] !== 0xff) { i++; continue; }
+        const mk = b[i + 1];
+        if (mk >= 0xc0 && mk <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(mk)) return Math.min(dv.getUint16(i + 5), dv.getUint16(i + 7));
+        i += 2 + dv.getUint16(i + 2);
+      }
+    }
+  } catch { /* formato estranho */ }
+  return 0;
+}
+
+async function baixarImagem(url: string) {
+  try {
+    const r = await abrir(url, 6000);
+    if (!r.ok) return null;
+    const tipo = r.headers.get("content-type") || "";
+    if (/text\/html|json/i.test(tipo)) return null;
+    const b = new Uint8Array(await r.arrayBuffer());
+    if (b.length < 200 || b.length > 3_000_000) return null;
+    const tam = medir(b, tipo);
+    return tam ? { b, tipo: tipo.split(";")[0] || "image/png", tam, url } : null;
+  } catch { return null; }
+}
+
+async function iconesDoSite(dominio: string) {
+  const achados: { url: string; peso: number }[] = [];
   try {
     const pag = await abrir(`https://${dominio}`);
     const base = pag.url || `https://${dominio}`;
-    const html = (await pag.text()).slice(0, 300000);
-    const links = [...html.matchAll(/<link\b[^>]*>/gi)].map((m) => m[0]);
-    const achar = (re: RegExp) => links.find((l) => re.test(l));
-    const tag = achar(/rel=["'][^"']*apple-touch-icon/i) || achar(/rel=["'][^"']*icon[^"']*["'][^>]*sizes=["'](1[2-9]\d|[2-9]\d\d)/i);
-    const href = tag?.match(/href=["']([^"']+)["']/i)?.[1];
-    if (href) logo = new URL(href.replace(/&amp;/g, "&"), base).toString();
-  } catch {
-    // o site pode bloquear robôs; o ícone do Google ainda funciona
+    const html = (await pag.text()).slice(0, 400000);
+    for (const tag of [...html.matchAll(/<link\b[^>]*>/gi)].map((m) => m[0])) {
+      const rel = tag.match(/rel=["']([^"']+)["']/i)?.[1] || "";
+      const href = tag.match(/href=["']([^"']+)["']/i)?.[1];
+      if (!href) continue;
+      const abs = new URL(href.replace(/&amp;/g, "&"), base).toString();
+      if (/manifest/i.test(rel)) {
+        try {
+          const m = await (await abrir(abs, 5000)).json();
+          for (const ic of m.icons || []) achados.push({ url: new URL(ic.src, abs).toString(), peso: parseInt(String(ic.sizes || "0")) || 100 });
+        } catch { /* sem manifest */ }
+      } else if (/icon/i.test(rel)) {
+        const s = parseInt(tag.match(/sizes=["'](\d+)/i)?.[1] || "0");
+        achados.push({ url: abs, peso: /apple-touch/i.test(rel) ? Math.max(s, 180) : s || (/\.svg/i.test(abs) ? 300 : 16) });
+      }
+    }
+  } catch { /* site bloqueia robôs */ }
+  achados.push({ url: `https://${dominio}/apple-touch-icon.png`, peso: 150 });
+  return achados.sort((a, b) => b.peso - a.peso).slice(0, 5).map((a) => a.url);
+}
+
+// logo oficial cadastrada no Wikidata (propriedade P154), servida pelo Wikimedia Commons em PNG
+async function logoWikidata(nome: string) {
+  try {
+    const busca = await (await abrir(`https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&language=pt&uselang=pt&type=item&limit=5&search=${encodeURIComponent(nome)}`, 6000)).json();
+    const ids = (busca.search || []).map((x: any) => x.id).slice(0, 5);
+    if (!ids.length) return [];
+    const ent = await (await abrir(`https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=claims&ids=${ids.join("|")}`, 6000)).json();
+    const urls: string[] = [];
+    for (const id of ids) {
+      const arq = ent.entities?.[id]?.claims?.P154?.[0]?.mainsnak?.datavalue?.value;
+      if (arq) urls.push(`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(String(arq).replace(/ /g, "_"))}?width=256`);
+    }
+    return urls.slice(0, 2);
+  } catch { return []; }
+}
+
+async function guardarLogo(nome: string, img: { b: Uint8Array; tipo: string }) {
+  const ext = /svg/.test(img.tipo) ? "svg" : /jpe?g/.test(img.tipo) ? "jpg" : /webp/.test(img.tipo) ? "webp" : /icon|ico/.test(img.tipo) ? "ico" : /gif/.test(img.tipo) ? "gif" : "png";
+  const caminho = `logos/${slug(nome)}-${Date.now().toString(36)}.${ext}`;
+  const sb = sbAdmin();
+  const { error } = await sb.storage.from("capas").upload(caminho, img.b, { contentType: img.tipo, upsert: true, cacheControl: "31536000" });
+  if (error) throw error;
+  return sb.storage.from("capas").getPublicUrl(caminho).data.publicUrl;
+}
+
+async function logoDaMarca(chave: string, marca: string) {
+  const r = await perguntarGroq(chave, `O nome abaixo foi digitado por uma criadora UGC brasileira no cadastro de um job. Pode ter nome de campanha, mês, produto ou agência junto.
+Nome: "${marca}"
+Descubra a MARCA principal (ex.: "SBP · Outubro" -> SBP; "DOVE - Renova & Repara" -> Dove; "Promoção YPÊ" -> Ypê; "O Boticário - Floratta" -> O Boticário; "Aniversário Assaí Atacadista" -> Assaí Atacadista).
+Considere marcas do Brasil primeiro. Responda SOMENTE um JSON:
+{"marca": "nome da marca", "dominio": "site oficial no Brasil, ex.: dove.com.br", "instagram": "@ oficial da marca no Brasil sem o @, ex.: dovebrasil"}
+Dê o seu melhor palpite para o domínio e o Instagram oficiais (são marcas conhecidas); use null só se não fizer ideia.`);
+  const nomeMarca = semTravessao(r.marca || marca).slice(0, 60) || marca;
+  const limpar = (d: unknown) => String(d || "").toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "").trim();
+  let dominio: string | null = limpar(r.dominio);
+  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(dominio)) dominio = null;
+  const insta = String(r.instagram || "").replace(/^@/, "").replace(/[^A-Za-z0-9._]/g, "").slice(0, 40) || null;
+
+  // candidatas, da melhor para a pior; fica com a primeira que for nítida (>= 96px)
+  const listas: string[][] = [];
+  // sites de marca grande costumam bloquear servidor: tenta também o endereço com www.
+  if (dominio) listas.push(await iconesDoSite(dominio));
+  if (dominio && !dominio.startsWith("www.")) listas.push((await iconesDoSite("www." + dominio)).slice(0, 3));
+  listas.push(await logoWikidata(nomeMarca));
+  if (insta) listas.push([`https://unavatar.io/instagram/${insta}?fallback=false`]);
+  if (dominio) listas.push([`https://www.google.com/s2/favicons?domain=${dominio}&sz=256`, `https://icons.duckduckgo.com/ip3/${dominio}.ico`]);
+  let melhor: { b: Uint8Array; tipo: string; tam: number; url: string } | null = null;
+  for (const lista of listas) {
+    const imgs = (await Promise.all(lista.map(baixarImagem))).filter(Boolean) as NonNullable<typeof melhor>[];
+    for (const i of imgs) if (!melhor || i.tam > melhor.tam) melhor = i;
+    if (melhor && melhor.tam >= 96) break;
   }
-  return { dominio, logo: logo || `https://www.google.com/s2/favicons?domain=${dominio}&sz=128` };
+  if (!melhor || melhor.tam < 32) return { marca: nomeMarca, dominio, instagram: insta, logo: null };
+  let logo = melhor.url;
+  try { logo = await guardarLogo(nomeMarca, melhor); } catch (e) { console.error("guardar logo", e); }
+  return { marca: nomeMarca, dominio, instagram: insta, logo, tamanho: melhor.tam };
+}
+
+// logo escolhida à mão pela Mari (arquivo enviado em base64 ou link de imagem)
+async function logoManual(marca: string, corpo: any) {
+  let img: { b: Uint8Array; tipo: string } | null = null;
+  if (corpo.arquivo) {
+    const [cab, dados] = String(corpo.arquivo).split(",");
+    const tipo = cab.match(/data:([^;]+)/)?.[1] || "image/png";
+    if (!/^image\//.test(tipo)) throw new Error("Envie uma imagem.");
+    img = { b: Uint8Array.from(atob(dados), (c) => c.charCodeAt(0)), tipo };
+    if (img.b.length > 3_000_000) throw new Error("Imagem muito grande (máximo 3 MB).");
+  } else if (corpo.link) {
+    img = await baixarImagem(String(corpo.link));
+    if (!img) throw new Error("Não consegui abrir esse link como imagem.");
+  }
+  if (!img) throw new Error("Falta a imagem.");
+  return { logo: await guardarLogo(marca, img) };
 }
 
 // ---------- ideias de conteúdo ----------
@@ -231,6 +364,10 @@ Deno.serve(async (req) => {
       const marca = String(corpo.marca || "").trim().slice(0, 80);
       if (!marca) return resposta({ erro: "Falta o nome da marca." }, 400);
       return resposta(await logoDaMarca(chave, marca));
+    }
+    if (corpo.acao === "logo_manual") {
+      const marca = String(corpo.marca || "").trim().slice(0, 80) || "marca";
+      try { return resposta(await logoManual(marca, corpo)); } catch (e) { return resposta({ erro: (e as Error).message || "Não deu para salvar a logo." }, 400); }
     }
     if (corpo.acao === "ideias") return resposta(await ideias(chave, supa, corpo));
     if (corpo.acao === "adaptar") return resposta(await adaptar(chave, corpo));
