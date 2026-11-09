@@ -3397,6 +3397,78 @@ IDEIA PARA DEPOIS
           .ed-cc .ed-gaveta .ed-cartao{padding:12px}
           .ed-opcoes-extra summary{padding:10px 11px}
         }
+        /* Segunda etapa: timeline, estilos e biblioteca com hierarquia visual mais limpa */
+        .ed-cc .ed-cc-linha{padding:14px 18px 16px;background:var(--rr-sup);border-top:1px solid var(--rr-linha)}
+        .ed-cc .rr-ferramentas{gap:7px;padding:10px 11px;margin:0 0 12px;border:1px solid var(--rr-linha);border-radius:13px;background:var(--rr-bg)}
+        .ed-cc .rr-ferramentas .btn{height:31px;padding:0 10px;font-size:11.5px;border-radius:9px}
+        .ed-cc .rr-ferramentas select.entrada{height:31px;font-size:11.5px;border-radius:9px}
+        .ed-cc .rr-tempo-f{font-size:11px;font-weight:600;padding:0 5px}
+        .ed-cc .rr-liga{font-size:11px;font-weight:500;padding:0 5px}
+        .ed-cc .rr-linha-rolar{padding:8px 8px 12px;border:1px solid var(--rr-linha);border-radius:13px;background:var(--rr-bg);scrollbar-width:thin}
+        .ed-cc .rr-regua{height:19px;font-size:9px}
+        .ed-cc .rr-trilha{height:30px;margin-top:19px;border-radius:7px;background:rgba(168,112,88,.055)}
+        .ed-cc .rr-trilha:before{position:absolute;left:7px;top:-15px;font:600 9px "Poppins",sans-serif;letter-spacing:.08em;color:var(--rr-suave);pointer-events:none}
+        .ed-cc .rr-t-leg:before{content:"LEGENDAS"}
+        .ed-cc .rr-t-planos:before{content:"CENAS"}
+        .ed-cc .rr-t-fx:before{content:"EFEITOS VISUAIS"}
+        .ed-cc .rr-t-sons:before{content:"SONS"}
+        .ed-cc .rr-t-leg{height:30px;background:rgba(168,112,88,.07)}
+        .ed-cc .rr-chip{top:2px;height:25px;border-radius:6px;padding:0 6px;font-size:10px}
+        .ed-cc .rr-t-planos{height:56px;background:rgba(107,74,53,.07)}
+        .ed-cc .rr-plano-bl{height:54px;border-radius:7px;background:repeating-linear-gradient(90deg,#d9c6b2 0 34px,#c7ad94 34px 36px)}
+        .ed-cc .rr-plano-bl.par{background:repeating-linear-gradient(90deg,#e8d9c8 0 34px,#d7c2aa 34px 36px)}
+        .ed-cc .rr-plano-bl .rr-quadros img{height:100%;object-fit:cover}
+        .ed-cc .rr-plano-n{top:4px;left:5px;font-size:9px}
+        .ed-cc .rr-t-fx{height:25px;background:rgba(168,112,88,.045)}
+        .ed-cc .rr-t-sons{height:22px;background:rgba(79,122,84,.07)}
+        .ed-cc .rr-som{top:4px;width:13px;height:13px}
+        .ed-cc .rr-agulha{z-index:8}
+        .ed-cc .rr-musica{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border:1px solid var(--rr-linha);border-radius:12px;background:var(--rr-bg);font-size:11px}
+        .ed-cc .rr-legenda-linha{margin:9px 2px 0;font-size:10px;line-height:1.5}
+        .ed-cc .ed-est-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+        .ed-cc .ed-est{gap:6px;padding:7px;border:1px solid var(--rr-linha);border-radius:12px;background:var(--rr-bg)}
+        .ed-cc .ed-est.ativo{border:1.5px solid var(--rr-destaque);box-shadow:0 0 0 2px rgba(168,112,88,.10)}
+        .ed-cc .ed-est-escolher{gap:6px}
+        .ed-cc .ed-est-amostra{aspect-ratio:16/10;padding:8px 6px 10px;border-radius:8px}
+        .ed-cc .ed-est-tit{font-size:15px}
+        .ed-cc .ed-est-info b{font-size:12px}
+        .ed-cc .ed-est-info small{font-size:10px;line-height:1.3}
+        .ed-cc .ed-est-selo{font-size:8px;padding:2px 6px}
+        .ed-cc .ed-est-acoes .btn{height:29px;font-size:10px}
+        .ed-cc .ed-fx-cats{gap:5px;padding:4px 0 8px}
+        .ed-cc .ed-fx-chip{padding:5px 9px;font-size:10.5px}
+        .ed-cc .ed-fx-lista{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+        .ed-cc .ed-fx{gap:6px;padding:7px;border:1px solid var(--rr-linha);border-radius:11px;background:var(--rr-bg)}
+        .ed-cc .ed-fx-prev{height:66px;border-radius:8px}
+        .ed-cc .ed-fx-txt b{font-size:11.5px}
+        .ed-cc .ed-fx-txt small{font-size:10px;line-height:1.3}
+        .ed-cc .ed-fx-botoes{gap:5px}
+        .ed-cc .ed-fx-botoes .btn{height:28px;padding:0 6px;font-size:10px;border-radius:8px}
+        .ed-cc .ed-ref-topo{grid-template-columns:minmax(0,125px) minmax(0,1fr);gap:10px}
+        .ed-cc .ed-ref-soltar{min-height:190px;border-radius:11px}
+        .ed-cc .ed-ref-campos{gap:7px;min-width:0}
+        .ed-cc .ed-ref-campos .entrada{font-size:11px}
+        .ed-cc .ed-ref-campos .ed-rotulo{font-size:10px}
+        @media(max-width:900px){
+          .ed-cc .ed-cc-linha{padding:10px}
+          .ed-cc .rr-ferramentas{padding:8px;gap:5px}
+          .ed-cc .rr-ferramentas .btn{height:30px;font-size:10.5px}
+          .ed-cc .rr-trilha{margin-top:18px}
+          .ed-cc .rr-t-planos{height:50px}
+          .ed-cc .rr-plano-bl{height:48px}
+          .ed-cc .ed-est-grade,.ed-cc .ed-fx-lista{grid-template-columns:repeat(2,minmax(0,1fr))}
+          .ed-cc .ed-ref-topo{grid-template-columns:105px minmax(0,1fr)}
+        }
+        @media(max-width:560px){
+          .ed-cc .ed-cc-linha{padding:8px}
+          .ed-cc .rr-linha-rolar{padding:7px 5px 9px}
+          .ed-cc .rr-tempo-f{width:100%;padding:0 4px}
+          .ed-cc .ed-est-grade,.ed-cc .ed-fx-lista{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+          .ed-cc .ed-est{padding:6px}
+          .ed-cc .ed-est-amostra{aspect-ratio:4/3}
+          .ed-cc .ed-ref-topo{grid-template-columns:1fr}
+          .ed-cc .ed-ref-soltar{min-height:130px}
+        }
       `; document.head.appendChild(css);
     }
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga ed rr ed-cc">
