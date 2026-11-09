@@ -3338,7 +3338,23 @@ IDEIA PARA DEPOIS
         .ed-cc{border:1px solid var(--rr-linha);border-radius:18px;overflow:hidden;background:var(--rr-bg);box-shadow:0 8px 28px rgba(61,43,32,.06)}
         .ed-cc-topo{gap:14px;padding:16px 20px;background:var(--rr-sup);border-bottom:1px solid var(--rr-linha)}
         .ed-cc .rr-h1{font-size:25px;letter-spacing:-.035em;color:var(--rr-tinta)}
-        .ed-cc-grade{grid-template-columns:72px minmax(270px,340px) minmax(360px,1fr) 250px;height:clamp(560px,calc(100vh - 300px),860px)}
+        .ed-cc-grade{grid-template-columns:64px minmax(285px,320px) minmax(400px,1fr) 260px;height:clamp(600px,calc(100vh - 280px),900px);min-height:600px}
+        .ed-gaveta{min-width:0;min-height:0}
+        .ed-gaveta-corpo{min-height:0;overflow:auto;overscroll-behavior:contain}
+        .ed-palco{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+        .ed-cc .ed-palco .rr-player{width:min(100%,390px);max-height:calc(100vh - 390px);min-height:300px}
+        .ed-cc .ed-palco .rr-player canvas{max-height:calc(100vh - 390px);object-fit:contain}
+        .ed-opcoes-extra{margin:12px 0;border:1px solid var(--rr-linha);border-radius:12px;background:var(--rr-bg);overflow:hidden}
+        .ed-opcoes-extra summary{padding:11px 13px;cursor:pointer;font-size:12px;font-weight:600;color:var(--rr-tinta);list-style:none}
+        .ed-opcoes-extra summary::-webkit-details-marker{display:none}
+        .ed-opcoes-extra summary:after{content:"＋";float:right;color:var(--rr-suave)}
+        .ed-opcoes-extra[open] summary:after{content:"−"}
+        .ed-opcoes-extra .ed-opcoes-corpo{padding:0 12px 12px}
+        .ed-roteiro{margin:12px 0}
+        .ed-roteiro summary{padding:10px 0}
+        .ed-soltar{min-height:112px;padding:16px;gap:6px}
+        .ed-soltar b{font-size:13px}
+        .ed-soltar small{max-width:34ch;font-size:11px;line-height:1.4}
         .ed-trilho{gap:6px;padding:12px 7px;background:var(--rr-bg)}
         .ed-trilho-bt{min-height:62px;padding:9px 3px;font-size:10.5px;border-radius:11px}
         .ed-trilho-bt svg{width:21px;height:21px}
@@ -3355,27 +3371,31 @@ IDEIA PARA DEPOIS
         .ed-assist-cab{font-size:12.5px;background:var(--rr-bg)}
         .ed-cc .ed-cc-linha{border-top:1px solid var(--rr-linha);background:var(--rr-sup)}
         .ed-cc-linha-vazia{background:var(--rr-sup)}
-        @media(max-width:1280px){.ed-cc-grade{grid-template-columns:66px minmax(250px,310px) minmax(300px,1fr) 230px}}
-        @media(max-width:1100px){.ed-cc-grade{grid-template-columns:66px minmax(270px,1fr) minmax(250px,1fr);grid-template-rows:auto auto;height:auto}}
+        @media(max-width:1280px){.ed-cc-grade{grid-template-columns:60px minmax(270px,300px) minmax(340px,1fr) 240px}.ed-cc .ed-palco .rr-player{width:min(100%,350px)}}
+        @media(max-width:1100px){.ed-cc-grade{grid-template-columns:60px minmax(260px,.85fr) minmax(340px,1.15fr);grid-template-rows:minmax(560px,auto) auto;height:auto;min-height:0}.ed-assist{grid-column:2/4;grid-row:2;display:grid;grid-template-columns:180px minmax(0,1fr);align-items:start;gap:12px}.ed-assist-cab{grid-column:1/-1}.ed-assist .ed-cartao{grid-column:1/-1}.ed-assist-vazio{grid-column:1/-1}.ed-cc .ed-palco .rr-player{max-height:680px}}
         @media(max-width:900px){
           .ed-cc{border-radius:14px}
           .ed-cc-topo{padding:12px}
           .ed-cc-grade{display:contents}
-          .ed-palco{order:2;min-height:420px}
-          .ed-trilho{order:3;position:sticky;top:0;z-index:8;background:var(--rr-sup);box-shadow:0 3px 10px rgba(61,43,32,.05)}
-          .ed-gaveta{order:4;min-height:0;height:auto;border-right:0}
+          .ed-palco{order:1;min-height:380px;padding:14px 10px}
+          .ed-trilho{order:2;position:sticky;top:0;z-index:8;background:var(--rr-sup);box-shadow:0 3px 10px rgba(61,43,32,.05);padding:8px;overflow-x:auto}
+          .ed-gaveta{order:3;min-height:0;height:auto;border-right:0}
           .ed-gaveta-corpo{max-height:none;overflow:visible}
-          .ed-assist{order:5;border-left:0;border-top:1px solid var(--rr-linha)}
-          .ed-cc .rr-linha.ed-cc-linha{order:6}
-          .ed-cc-linha-vazia{order:6}
+          .ed-assist{order:4;display:block;border-left:0;border-top:1px solid var(--rr-linha)}
+          .ed-cc .rr-linha.ed-cc-linha{order:5}
+          .ed-cc-linha-vazia{order:5}
           .ed-trilho-bt{min-width:72px;min-height:54px}
         }
         @media(max-width:560px){
           .ed-cc .rr-h1{font-size:21px}
           .ed-cc-topo-acoes{width:100%;display:flex;gap:8px}
           .ed-cc-topo-acoes .btn{flex:1;min-width:0}
-          .ed-palco{min-height:360px}
-          .ed-cc .ed-palco .rr-player{width:min(220px,100%)}
+          .ed-palco{min-height:330px}
+          .ed-cc .ed-palco .rr-player{width:min(210px,100%);min-height:280px;max-height:420px}
+          .ed-cc .ed-palco .rr-player canvas{max-height:420px}
+          .ed-gaveta-corpo{padding:12px}
+          .ed-cc .ed-gaveta .ed-cartao{padding:12px}
+          .ed-opcoes-extra summary{padding:10px 11px}
         }
       `; document.head.appendChild(css);
     }
@@ -3398,7 +3418,7 @@ IDEIA PARA DEPOIS
               <label class="ed-soltar ed-soltar-fotos" id="ed-soltar-fotos">${ic.brilho}<b>Enviar fotos para inserir</b><small>Até 30 fotos. Cada uma entra em tela cheia (com uma aproximação lenta) ou por cima do vídeo, no lugar, tamanho e inclinação que você escolher. Eu espalho sozinha e você ajusta.</small><input type="file" id="ed-fotos" accept="image/*" multiple hidden></label>
               <div id="ed-fotos-lista" class="ed-fotos-lista"></div>
               <input class="entrada" id="ed-tema" placeholder="Tema ou marca do vídeo (opcional, ajuda no título)">
-              <details class="ed-roteiro" id="ed-roteiro-box" open><summary><b>Seu roteiro</b> <small>(opcional, deixa a edição bem mais certeira)</small></summary>
+              <details class="ed-roteiro" id="ed-roteiro-box"><summary><b>Seu roteiro</b> <small>(opcional, deixa a edição bem mais certeira)</small></summary>
                 <select class="entrada" id="ed-puxar" aria-label="Puxar roteiro do Painel de conteúdo"><option value="">Puxar de um post do Painel de conteúdo…</option></select>
                 <textarea class="entrada" id="ed-roteiro" rows="9" placeholder="Cole aqui o que você idealizou: as falas, as cenas, o voice-over e o texto na tela. Ex.:
 GANCHO: Motivos plausíveis para trocar de shampoo [close no frasco na mão]
@@ -3406,8 +3426,13 @@ CENA 2: aplicando no cabelo, voice-over: ...
 CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
                 <small class="ed-obs">Eu comparo com o que você gravou: fico com a tomada mais fiel ao roteiro, uso o seu gancho no título, transformo as direções de cena em b-roll e efeitos e te aviso se faltou gravar algum bloco.</small>
               </details>
-              <label class="ed-rotulo" for="ed-pedidos">O que você quer nesta edição</label>
-              <textarea class="entrada" id="ed-pedidos" rows="3" placeholder="Ex.: comece direto na fala do produto; legenda maior; muitos efeitos de brilho; zoom quando eu mostrar o frasco; corte o final depois do CTA.">${esc(st.pedidos)}</textarea>
+              <details class="ed-opcoes-extra">
+                <summary>Instruções extras para esta edição <small>(opcional)</small></summary>
+                <div class="ed-opcoes-corpo">
+                  <label class="ed-rotulo" for="ed-pedidos">O que você quer nesta edição</label>
+                  <textarea class="entrada" id="ed-pedidos" rows="3" placeholder="Ex.: comece direto na fala do produto; legenda maior; zoom quando eu mostrar o frasco; corte o final depois do CTA.">${esc(st.pedidos)}</textarea>
+                </div>
+              </details>
               <div class="ed-ref-rapido" id="ed-ref-rapido"></div>
               <div class="ed-formato-esc" role="group" aria-label="Formato do vídeo"><span class="ed-rotulo">Formato do vídeo</span><button type="button" class="ed-fmt" data-formato="vertical">▯ Vertical 9:16</button><button type="button" class="ed-fmt" data-formato="horizontal">▭ Horizontal 16:9</button></div>
               <button class="btn btn-principal ed-botao-grande" type="button" id="ed-editar">${ic.brilho}Editar automático</button>
