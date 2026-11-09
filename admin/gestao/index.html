@@ -1321,6 +1321,14 @@
   .dz-cc.atr{border-color:rgba(197,83,63,.35)}
   .dz-cc-topo{display:flex;align-items:center;gap:10px;min-width:0}
   .dz-cc-topo .db-logo{width:34px;height:34px;box-shadow:none}.dz-cc-topo .db-logo-vazio{font-size:16px}
+  .dz-cc:has(.db-logo-menu){position:relative;z-index:6}
+  .db-logo-tr{position:relative;display:inline-flex;flex-shrink:0}
+  .db-logo-bt{all:unset;cursor:pointer;display:inline-flex;border-radius:50%}
+  .db-logo-bt:hover .db-logo,.db-logo-bt:focus-visible .db-logo{outline:2px solid var(--db-bege);outline-offset:1px}
+  .dz-cc-topo .db-logo img{object-fit:contain;padding:3px;box-sizing:border-box}
+  .db-logo-menu{position:absolute;top:40px;left:0;z-index:30;background:#fffdf9;border:1px solid var(--db-linha);border-radius:10px;box-shadow:0 8px 24px rgba(61,43,32,.14);padding:4px;display:flex;flex-direction:column;min-width:200px}
+  .db-logo-menu button{all:unset;cursor:pointer;padding:8px 10px;border-radius:7px;font-size:13px;color:var(--db-cafe,#6b4a35)}
+  .db-logo-menu button:hover{background:var(--db-bege,#f6efe6)}
   .dz-cc-nome{display:flex;flex-direction:column;min-width:0}
   .dz-cc-nome b,.dz-cc-nome small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dz-cc-nome b{font-size:14px;font-weight:500;color:var(--db-texto)}.dz-cc-nome small{font-size:11.5px;color:var(--db-suave)}
@@ -2196,11 +2204,76 @@ const PALAVRAS_NICHO = {
 };
 const chaveMarca = (m) => String(m||"").trim().toLowerCase();
 // bolinha com a logo da marca (descoberta sozinha pelo nome); sem logo, a inicial
-function DbLogo({marca, logos}){
-  const info = logos[chaveMarca(marca)];
-  const [falhou,setFalhou] = useState(false);
-  if(info && info.logo && !falhou) return <span className="db-logo"><img src={info.logo} alt={"Logo "+marca} onError={()=>setFalhou(true)} onLoad={e=>{ if(e.currentTarget.naturalWidth && e.currentTarget.naturalWidth<=16) setFalhou(true); }}/></span>;
-  return <span className="db-logo db-logo-vazio">{String(marca||"?").trim().charAt(0).toUpperCase()}</span>;
+// marca de verdade, sem campanha/mês ("SBP · Outubro" -> SBP, "DOVE - Renova & Repara" -> DOVE, "Promoção YPÊ" -> YPÊ)
+const marcaBase = (m) => { let t = String(m||"").replace(/\(c[óo]pia\)/gi,"").trim();
+  t = t.split(/\s+[·|]\s+|\s+[-–]\s+/)[0];
+  t = t.replace(/^(promo[çc][ãa]o|anivers[áa]rio|campanha|a[çc][ãa]o|lan[çc]amento|black friday)\s+/i,"").replace(/\s+(black friday|natal|dia das m[ãa]es)$/i,"");
+  return t.trim() || String(m||"").trim(); };
+// logo de uma marca: a do cadastro (job com o mesmo nome ou outro job da mesma marca)
+function infoLogo(marca, logos){
+  const k = chaveMarca(marca), b = chaveMarca(marcaBase(marca));
+  const lista = [logos[k], logos[b], ...Object.entries(logos).filter(([c])=>c!==k && c!==b && chaveMarca(marcaBase(c))===b).map(([,v])=>v)].filter(Boolean);
+  return lista.find(i=>i.manual) || lista.find(i=>i.logo && !/google\.com\/s2/.test(i.logo)) || lista.find(i=>i.dominio) || lista[0] || null;
+}
+// endereços para tentar, do melhor para o pior (o primeiro nítido fica)
+function candidatosLogo(info){
+  if(!info) return [];
+  if(info.manual && info.logo) return [info.logo];
+  const c = [];
+  if(info.logo && !/google\.com\/s2/.test(info.logo)) c.push(info.logo);
+  const d = info.dominio;
+  if(d){
+    c.push(`https://www.google.com/s2/favicons?domain=${d}&sz=256`);
+    if(/\.com\.br$/.test(d)) c.push(`https://www.google.com/s2/favicons?domain=${d.replace(/\.br$/,"")}&sz=256`);
+    c.push(`https://unavatar.io/${d}?fallback=false`);
+  }
+  return [...new Set(c)];
+}
+// reduz a imagem escolhida para 160px e devolve em data URL (fica salva junto com o painel)
+function logoParaDataUrl(src){
+  return new Promise((ok,erro)=>{ const im = new Image(); im.crossOrigin = "anonymous";
+    im.onload = ()=>{ try{ const t = 160, c = document.createElement("canvas"); c.width = c.height = t; const x = c.getContext("2d");
+      x.fillStyle = "#fff"; x.fillRect(0,0,t,t); const e = Math.min(t/im.naturalWidth, t/im.naturalHeight);
+      const w = im.naturalWidth*e, h = im.naturalHeight*e; x.drawImage(im,(t-w)/2,(t-h)/2,w,h); ok(c.toDataURL("image/png")); }catch(e){ erro(e); } };
+    im.onerror = ()=>erro(new Error("imagem"));
+    im.src = src; });
+}
+function DbLogo({marca, logos, onTrocar}){
+  const info = infoLogo(marca, logos);
+  const cands = candidatosLogo(info);
+  const chave = cands.join("|");
+  const [i,setI] = useState(0);
+  const [menu,setMenu] = useState(false);
+  const arq = useRef(null);
+  useEffect(()=>{ setI(0); },[chave]);
+  const url = cands[i];
+  const proxima = ()=>setI(n=>n+1);
+  const corpo = url
+    ? <span className="db-logo"><img src={url} alt={"Logo "+marca} referrerPolicy="no-referrer" onError={proxima} onLoad={e=>{ const w = e.currentTarget.naturalWidth; if(!info.manual && w && w<32) proxima(); }}/></span>
+    : <span className="db-logo db-logo-vazio">{String(marcaBase(marca)||"?").trim().charAt(0).toUpperCase()}</span>;
+  if(!onTrocar) return corpo;
+  async function escolherArquivo(e){
+    const f = e.target.files && e.target.files[0]; e.target.value = ""; setMenu(false); if(!f) return;
+    const leitor = new FileReader();
+    leitor.onload = async ()=>{ try{ onTrocar({logo: await logoParaDataUrl(leitor.result), manual:true}); }catch(_){ painelDialogo.confirmar("Não consegui abrir essa imagem. Tente um PNG ou JPG.", {ok:"Ok"}); } };
+    leitor.readAsDataURL(f);
+  }
+  async function colarLink(){
+    setMenu(false);
+    const link = ((await painelDialogo.texto("Cole o link da imagem da logo (pode ser a foto do perfil da marca no Instagram: botão direito > Copiar endereço da imagem):", ""))||"").trim();
+    if(!/^https?:\/\//.test(link)) return;
+    let logo = link; try{ logo = await logoParaDataUrl(link); }catch(_){ /* site não deixa copiar: guarda o link mesmo */ }
+    onTrocar({logo, manual:true});
+  }
+  return <span className="db-logo-tr" onClick={e=>e.stopPropagation()} onKeyDown={e=>e.stopPropagation()}>
+    <button type="button" className="db-logo-bt" title="Trocar a logo" onClick={()=>setMenu(m=>!m)}>{corpo}</button>
+    {menu && <span className="db-logo-menu" role="menu">
+      <button type="button" onClick={()=>arq.current && arq.current.click()}>Enviar imagem da logo</button>
+      <button type="button" onClick={colarLink}>Colar link da imagem</button>
+      <button type="button" onClick={()=>{ setMenu(false); onTrocar(null); }}>Buscar de novo sozinho</button>
+    </span>}
+    <input ref={arq} type="file" accept="image/*" hidden onChange={escolherArquivo}/>
+  </span>;
 }
 const fmtNum = (n) => { n = Number(n)||0; return n>=1e6 ? (n/1e6).toFixed(1).replace(".",",").replace(",0","")+"M" : n>=1e3 ? Math.round(n/1e3)+"K" : String(n); };
 const linkPerfil = (c) => c.rede==="tiktok" ? `https://www.tiktok.com/@${c.usuario}` : `https://www.instagram.com/${c.usuario}/`;
@@ -3082,11 +3155,16 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   }
 
   // ----- logos das marcas (descobre sozinho pelo nome) -----
+  // v3 (nov/2026): busca pelo nome limpo da marca ("SBP · Outubro" procura SBP), tenta de novo o que ficou sem site
+  // e a logo pode ser trocada à mão no cartão (manual: true nunca é sobrescrita).
   const logos = state.logosMarcas || {};
   useEffect(()=>{
     const semanaAtras = Date.now() - 7*86400000;
-    const faltando = [...new Set(jobs.filter(j=>j.status!=="Cancelado" && j.marca).map(j=>chaveMarca(j.marca)))]
-      .filter(k=>{ const i = logos[k]; return !i || i.v!==2 || (!i.logo && (i.tentadoEm||0) < semanaAtras); }).slice(0,5);
+    const ativos = jobs.filter(j=>j.status!=="Cancelado" && j.marca);
+    const faltando = [...new Set(ativos.map(j=>chaveMarca(j.marca)))]
+      .filter(k=>{ const marca = (ativos.find(j=>chaveMarca(j.marca)===k)||{}).marca || k; const i = infoLogo(marca, logos);
+        if(!i) return true; if(i.manual || i.dominio) return false;
+        return (i.v||0) < 3 || (i.tentadoEm||0) < semanaAtras; }).slice(0,6);
     if(!faltando.length || !mudar) return;
     let parar = false;
     (async ()=>{
@@ -3094,13 +3172,20 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         if(parar) return;
         const marca = (jobs.find(j=>chaveMarca(j.marca)===k)||{}).marca || k;
         try{
-          const { data, error } = await supabaseClient.functions.invoke("assistente-ugc", {body:{acao:"logo", marca}});
-          if(!error && data && !data.erro) mudar(s=>({...s, logosMarcas:{...(s.logosMarcas||{}), [k]:{logo:data.logo||null, dominio:data.dominio||null, tentadoEm:Date.now(), v:2}}}));
+          const { data, error } = await supabaseClient.functions.invoke("assistente-ugc", {body:{acao:"logo", marca: marcaBase(marca)}});
+          if(!error && data && !data.erro) mudar(s=>({...s, logosMarcas:{...(s.logosMarcas||{}), [k]:{logo:data.logo||null, dominio:data.dominio||null, tentadoEm:Date.now(), v:3}}}));
         }catch(e){ /* tenta de novo na próxima vez */ }
       }
     })();
     return ()=>{ parar = true; };
   }, [jobs.map(j=>j.marca).join("|")]);
+  function trocarLogo(marca, novo){
+    const k = chaveMarca(marca), b = chaveMarca(marcaBase(marca));
+    mudar(s=>{ const l = {...(s.logosMarcas||{})};
+      if(novo){ l[k] = {...novo, dominio:(l[k]||{}).dominio||null, tentadoEm:Date.now(), v:3}; if(b!==k) l[b] = l[k]; }
+      else { delete l[k]; if(b!==k) delete l[b]; }
+      return {...s, logosMarcas:l}; });
+  }
 
   // ----- inspirações: vídeos de referência transcritos (aba Roteiros do painel) -----
   const perfis = state.concorrentes || [];
@@ -3825,7 +3910,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             const abrir = ()=>abrirJob(j.id);
             const atraso = prox && !marca && diasAte(prox[0])<0, hoje = prox && !marca && diasAte(prox[0])===0;
             return <div className={"dz-cc"+(atraso?" atr":"")} key={j.id} role="button" tabIndex={0} onClick={abrir} onKeyDown={e=>{ if(e.key==="Enter") abrir(); }}>
-              <div className="dz-cc-topo"><DbLogo marca={j.marca} logos={logos}/>
+              <div className="dz-cc-topo"><DbLogo marca={j.marca} logos={logos} onTrocar={novo=>trocarLogo(j.marca, novo)}/>
                 <span className="dz-cc-nome"><b>{j.marca}</b><small>{descricaoJob(j)}</small></span></div>
               <button className={"dz-cc-etapa e-"+classeEtapa(at)} title={at>=ETAPAS_JOB.length-1 ? ETAPAS_JOB[at] : `${ETAPAS_JOB[at]} · toque para passar para "${ETAPAS_JOB[at+1]}"`} onClick={e=>{ e.stopPropagation(); avancarJob(j); }}><i/>{nomeEtapa(at)}</button>
               <div className="dz-cc-prog">{p.total ? <><i><b style={{width:Math.max(2,p.pct)+"%"}}/></i><small>{p.feitos}/{p.total}</small></> : <small className="dz-cc-sem">sem entregáveis</small>}</div>
