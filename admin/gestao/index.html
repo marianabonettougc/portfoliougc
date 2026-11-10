@@ -3076,7 +3076,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   const saudacao = hora<5 ? "Boa noite" : hora<12 ? "Bom dia" : hora<18 ? "Boa tarde" : "Boa noite";
   const iconeHora = hora<5 || hora>=18 ? "lua" : hora<12 ? "sol" : hora<17 ? "sol" : "entardecer";
   const nome = String(state.profile.name||"").trim() || "Mari";
-  const jobs = state.jobs || [];
+  // nov/2026: o prazo de entrega é sempre recalculado pelas datas atuais dos conteúdos (o guardado no job podia ficar velho depois de trocar datas)
+  const jobs = (state.jobs || []).map(comPrazoDosItens);
   const planner = state.planner || [];
   const followups = state.followups || [];
   const tarefas = state.tarefasDia || [];
@@ -3658,7 +3659,10 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     if(it.tarefa) return !!it.tarefa.feito;
     if(it.followup) return it.followup.status==="Feito";
     const k = tipoJobItem(it);
-    if(k){ if(it.item.concluido) return true; const e = ROTEIRO_STATUS_OPTIONS.indexOf(statusDoItem(it.item, it.tipoItem)); return e>=ETAPA_FEITO[k] && e!==7; }
+    if(k){ if(it.item.concluido) return true; const e = ROTEIRO_STATUS_OPTIONS.indexOf(statusDoItem(it.item, it.tipoItem));
+      if(k==="c") return e>=5; // em refação o conteúdo já foi enviado para aprovação
+      if(k==="o" && it.item.semAprovacao && e>=5 && e!==7) return true; // sem aprovação: "Conteúdo entregue" já conta como publicado
+      return e>=ETAPA_FEITO[k] && e!==7; }
     if(it.id.startsWith("e-") && it.job){ const at = etapaDoJob(it.job, state.roteiros); return at>=5 && at!==7; }
     return false;
   };
@@ -5211,7 +5215,9 @@ function comPrazoDosItens(job){
   const itens = [...(e.videos||[]), ...(e.fotos||[]), ...(e.stories||[])];
   const entregasFinais = itens.map(i=>i.dataEntrega).filter(Boolean).sort();
   // Para jobs antigos sem data de entrega final, mantém o prazo de aprovação como referência legada.
-  const datas = entregasFinais.length ? entregasFinais : itens.map(i=>i.prazoConteudo).filter(Boolean).sort();
+  const aprov = itens.map(i=>i.prazoConteudo).filter(Boolean).sort();
+  // Publi sem data de entrega nem de aprovação: vale a data de postagem
+  const datas = entregasFinais.length ? entregasFinais : aprov.length ? aprov : job.categoria==="Publi" ? itens.map(i=>i.prazoPostagem).filter(Boolean).sort() : [];
   return datas.length ? {...job, prazoEntrega: datas[datas.length-1]} : job;
 }
 // status do job e status de cada Reels/story andam juntos (a lista é a mesma; só muda maiúscula)
