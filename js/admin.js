@@ -349,6 +349,7 @@
     $("#btn-olho").hidden = secao !== "gestao" || nome === "dashboard" || nome === "quadro"; // o Dashboard tem o próprio olho
     document.body.classList.toggle("aba-dashboard", nome === "dashboard");
     document.body.classList.toggle("aba-quadro", nome === "quadro");
+    pintarBarraApp(noMenu);
     // avisa as abas que moram em arquivo próprio (ex.: js/roteiros-supadata.js, aba Transcrever vídeo)
     document.dispatchEvent(new CustomEvent("painel:aba", { detail: nome }));
   }
@@ -478,6 +479,19 @@
   });
   window.addEventListener("hashchange", () => { const h = location.hash.replace("#", ""); if (h && h !== abaAtual) mostrarAba(h); });
   $("#btn-menu").addEventListener("click", () => $("#painel").classList.add("menu-aberto"));
+  // Celular: barra de baixo (Hoje, Conteúdos, Jobs, Edição, Mais). "Mais" abre o menu completo e fica aceso nas outras áreas.
+  function pintarBarraApp(noMenu) {
+    const fixos = ["dashboard", "planejar", "campanhas", "edicao"];
+    $$("#barra-app [data-ir]").forEach((b) => {
+      const on = b.dataset.ir === "mais" ? !fixos.includes(noMenu) : b.dataset.ir === noMenu;
+      b.classList.toggle("ativo", on); b.setAttribute("aria-current", on ? "page" : "false");
+    });
+  }
+  $$("#barra-app [data-ir]").forEach((b) => b.addEventListener("click", () => {
+    if (b.dataset.ir === "mais") { $("#painel").classList.toggle("menu-aberto"); return; }
+    if (abaAtual === b.dataset.ir) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    mostrarAba(b.dataset.ir);
+  }));
   $("#menu-fundo").addEventListener("click", () => $("#painel").classList.remove("menu-aberto"));
   $("#menu-email").textContent = sessao.user.email;
   $("#btn-sair").addEventListener("click", async () => { await banco.auth.signOut(); location.replace("../login/"); });
