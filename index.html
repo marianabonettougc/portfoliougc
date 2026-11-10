@@ -34,7 +34,7 @@
 <!-- Banco de dados (Supabase): o site lê os vídeos, salva os contatos e conta as visitas -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="js/banco.js?v=202610121913" defer></script>
-<script src="js/analytics-portfolio.js?v=202611042330" defer></script>
+<script src="js/analytics-portfolio.js?v=202611101200" defer></script>
 <style>
   /* =========================================================
      IDENTIDADE: CARTÃO DE CAFETERIA PREMIUM
@@ -1633,8 +1633,13 @@ function atualizarBotoes() {
   btnSom.setAttribute("aria-label", mudo ? "Ativar o som" : "Tirar o som");
   if (!mudo) avisoSom.hidden = true;
 }
+let ultimoTique = 0;
 function atualizarTempo() {
   if (!player || !player.getDuration) return;
+  // conta os segundos que o vídeo ficou tocando de verdade (para o painel)
+  const agoraMs = Date.now();
+  try { if (ultimoTique && player.getPlayerState() === 1 && window.MBAnalytics && window.MBAnalytics.videoTocou) window.MBAnalytics.videoTocou((agoraMs - ultimoTique) / 1000); } catch (e) {}
+  ultimoTique = agoraMs;
   const total = player.getDuration() || 0, agora = player.getCurrentTime() || 0;
   const pct = total ? (agora / total) * 100 : 0;
   barra.querySelector("i").style.width = pct + "%";
@@ -1679,6 +1684,8 @@ function playerSimples(id, d) {
 }
 function fecharPlayer() {
   janela.hidden = true;
+  ultimoTique = 0;
+  if (window.MBAnalytics && window.MBAnalytics.videoFim) window.MBAnalytics.videoFim();
   pausarPrevias(false);
   clearInterval(relogio);
   if (player && player.destroy) player.destroy();
@@ -2193,19 +2200,60 @@ async function carregarVideosDoPainel() {
   }
 }
 
-// 2) Visitas: grava data, página e de onde a pessoa veio. Nada sobre a pessoa.
+// 2) Visitas: grava data, página e de onde a pessoa veio (e o detalhe: bio, stories, post...). Nada sobre a pessoa.
+// Links com etiqueta: ?de=instagram-bio, ?de=instagram-stories, ?de=whatsapp, ?de=email... (o painel monta os links prontos)
+const ORIGENS_CONHECIDAS = [["instagram", "Instagram"], ["facebook", "Facebook"], ["fb.", "Facebook"], ["messenger", "Facebook"], ["google", "Google"], ["tiktok", "TikTok"], ["whatsapp", "WhatsApp"], ["wa.me", "WhatsApp"],
+  ["youtube", "YouTube"], ["youtu.be", "YouTube"], ["linkedin", "LinkedIn"], ["lnkd", "LinkedIn"], ["bing", "Bing"], ["t.co", "X (Twitter)"], ["twitter", "X (Twitter)"], ["x.com", "X (Twitter)"], ["linktr", "Linktree"], ["pinterest", "Pinterest"],
+  ["email", "E-mail"], ["e-mail", "E-mail"], ["gmail", "E-mail"], ["outlook", "E-mail"], ["mail.", "E-mail"]];
+const DETALHES_ETIQUETA = { bio: "Link da bio", stories: "Stories", story: "Stories", direct: "Direct (mensagem)", dm: "Direct (mensagem)", post: "Post", reels: "Reels", reel: "Reels",
+  destaque: "Destaques", destaques: "Destaques", perfil: "Perfil", grupo: "Grupo", status: "Status", mensagem: "Mensagem", assinatura: "Assinatura do e-mail", proposta: "Proposta", midiakit: "Mídia kit", comentario: "Comentário" };
+function nomeOrigem(texto) {
+  const t = String(texto || "").toLowerCase();
+  const achado = ORIGENS_CONHECIDAS.find(([pedaco]) => t.includes(pedaco));
+  return achado ? achado[1] : "";
+}
 function deOndeVeio() {
   const params = new URLSearchParams(location.search);
-  const utm = (params.get("utm_source") || params.get("ref") || "").toLowerCase().slice(0, 40);
-  let host = utm;
-  if (!host) {
-    try { host = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, "") : ""; } catch (e) {}
-    if (!host || host === location.hostname) return "Direto";
+  const agente = navigator.userAgent || "";
+  const appIg = /Instagram/i.test(agente), appFb = /FBAN|FBAV|FB_IAB|FBIOS|FB4A/i.test(agente);
+  const detalhes = [];
+  let origem = "";
+  // 1) etiqueta do link (?de=instagram-bio ou utm)
+  const de = (params.get("de") || "").toLowerCase().trim().slice(0, 60);
+  const utm = (params.get("utm_source") || params.get("ref") || "").toLowerCase().trim().slice(0, 40);
+  if (de) {
+    const partes = de.split(/[-_ ]+/).filter(Boolean);
+    origem = nomeOrigem(partes[0]) || (partes[0].charAt(0).toUpperCase() + partes[0].slice(1));
+    const resto = partes.slice(1).map((p) => DETALHES_ETIQUETA[p] || p).join(" ");
+    if (resto) detalhes.push(resto.charAt(0).toUpperCase() + resto.slice(1));
+  } else if (utm) {
+    origem = nomeOrigem(utm) || (utm.charAt(0).toUpperCase() + utm.slice(1));
   }
-  const conhecidos = [["instagram", "Instagram"], ["facebook", "Facebook"], ["fb.", "Facebook"], ["google", "Google"], ["tiktok", "TikTok"], ["whatsapp", "WhatsApp"], ["wa.me", "WhatsApp"],
-    ["youtube", "YouTube"], ["youtu.be", "YouTube"], ["linkedin", "LinkedIn"], ["lnkd", "LinkedIn"], ["bing", "Bing"], ["t.co", "X (Twitter)"], ["twitter", "X (Twitter)"], ["x.com", "X (Twitter)"], ["linktr", "Linktree"], ["pinterest", "Pinterest"]];
-  const achado = conhecidos.find(([pedaco]) => host.includes(pedaco));
-  return achado ? achado[1] : (utm ? utm.charAt(0).toUpperCase() + utm.slice(1) : host);
+  const meio = (params.get("utm_medium") || "").slice(0, 40), campanha = (params.get("utm_campaign") || "").slice(0, 60);
+  if (meio) detalhes.push(DETALHES_ETIQUETA[meio.toLowerCase()] || meio);
+  if (campanha) detalhes.push(campanha);
+  // 2) de qual site a pessoa veio
+  let host = "", caminho = "";
+  try { if (document.referrer) { const r = new URL(document.referrer); host = r.hostname.replace(/^www\./, ""); caminho = r.pathname; } } catch (e) {}
+  if (host === location.hostname) host = "";
+  if (!origem && host) origem = nomeOrigem(host) || host;
+  if (!origem && appIg) origem = "Instagram";
+  if (!origem && appFb) origem = "Facebook";
+  if (!origem) origem = "Direto";
+  // 3) o que dá para saber sem etiqueta
+  if (!de) {
+    if (appIg) detalhes.push("aberto dentro do app do Instagram");
+    else if (appFb) detalhes.push(/Messenger|FB_IAB\/MESSENGER/i.test(agente) || host.startsWith("lm.") ? "aberto dentro do Messenger" : "aberto dentro do app do Facebook");
+    if (host === "l.instagram.com") detalhes.push("link clicado no Instagram (bio, story ou direct)");
+    else if (host === "l.facebook.com" || host === "lm.facebook.com") detalhes.push(host.startsWith("lm.") ? "link clicado no Messenger" : "link clicado num post, perfil ou grupo do Facebook");
+    else if (host === "m.facebook.com" || host === "facebook.com") detalhes.push("pelo Facebook" + (caminho && caminho.length > 1 ? " (" + caminho.slice(0, 60) + ")" : ""));
+    else if (host && /google\./.test(host)) detalhes.push("busca no Google");
+    else if (host && !nomeOrigem(host)) detalhes.push(host + (caminho && caminho.length > 1 ? caminho.slice(0, 80) : ""));
+    else if (host && caminho && caminho.length > 1 && !/instagram|facebook/.test(host)) detalhes.push(host + caminho.slice(0, 80));
+    if (params.has("fbclid") && !detalhes.length) detalhes.push("link clicado no Facebook ou Instagram");
+    if ((params.has("igshid") || params.has("igsh")) && !detalhes.length) detalhes.push("link compartilhado pelo Instagram");
+  }
+  return { origem: origem.slice(0, 40), detalhe: [...new Set(detalhes)].join(" · ").slice(0, 200) || null };
 }
 async function registrarVisita(forcar) {
   if (location.protocol === "file:") return { ok: false, motivo: "página aberta como arquivo, sem internet" };
@@ -2220,7 +2268,8 @@ async function registrarVisita(forcar) {
     const dispositivo = /iPad|Tablet|PlayBook|Silk/i.test(agente) || (/Android/i.test(agente) && !/Mobile/i.test(agente)) || (/Macintosh/i.test(agente) && navigator.maxTouchPoints > 1)
       ? "Tablet"
       : /Mobi|Android|iPhone|iPod|Windows Phone/i.test(agente) ? "Celular" : "Computador";
-    const { error } = await banco.from("visitas").insert({ pagina: location.pathname || "/", origem: deOndeVeio(), dispositivo, visitante_id: window.MBAnalytics ? window.MBAnalytics.visitorId : null });
+    const veio = deOndeVeio();
+    const { error } = await banco.from("visitas").insert({ pagina: location.pathname || "/", origem: veio.origem, origem_detalhe: veio.detalhe, dispositivo, visitante_id: window.MBAnalytics ? window.MBAnalytics.visitorId : null });
     if (error) { console.warn("Visita não registrada:", error); return { ok: false, motivo: `${error.code || ""} ${error.message || ""}`.trim() }; }
     try { sessionStorage.setItem("mb_visita", "1"); } catch (e) {}   // só marca depois de gravar de verdade
     return { ok: true };

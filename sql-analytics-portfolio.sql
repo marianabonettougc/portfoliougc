@@ -73,3 +73,7 @@ begin
     alter publication supabase_realtime add table public.portfolio_eventos;
   end if;
 end $$;
+
+-- nov/2026: visitas só de pessoas de fora, tempo assistido, partes do site e origem com detalhe.
+-- Aplicado pela migração "visitas_de_fora_tempo_origem" (tabelas meus_aparelhos e analytics_sal,
+-- funções ip_hash_atual, visita_e_da_dona, marcar_visita_dona, registrar_meu_aparelho, marcar_visitante).

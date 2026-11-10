@@ -2854,3 +2854,30 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media (prefers-reduced-motion:reduce){dialog.janela{animation:none!important}}
 /* aberto pela Tela de Início (sem a barra do Safari) */
 @media (display-mode:standalone) and (max-width:900px){ .topo{padding-top:calc(10px + env(safe-area-inset-top))} }
+/* Portfólio (nov/2026): blocos que minimizam, origem com detalhe, links com etiqueta, últimas visitas */
+#aba-portfolio .pf-bloco .bloco-titulo{flex-wrap:nowrap}
+#aba-portfolio .pf-min{display:flex;align-items:center;gap:8px;background:none;border:0;padding:2px 0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left;min-width:0;flex:1}
+#aba-portfolio .pf-min h2{margin:0}
+#aba-portfolio .pf-min svg{width:16px;height:16px;flex:0 0 16px;color:#8a634b;transition:transform .2s}
+#aba-portfolio .pf-bloco.fechado .pf-min svg{transform:rotate(-90deg)}
+#aba-portfolio .pf-bloco.fechado .pf-corpo{display:none}
+#aba-portfolio .pf-bloco.fechado .bloco-titulo{margin-bottom:0}
+#aba-portfolio .pf-extra{display:flex;align-items:center;gap:8px;flex-shrink:0}
+#aba-portfolio .pf-largo{margin-top:12px}
+#aba-portfolio .pf-origens>li{flex-wrap:wrap}
+#aba-portfolio .pf-detalhes{grid-column:1/-1;list-style:none;margin:2px 0 4px 12px;padding:0 0 0 10px;border-left:2px solid #eee5db}
+#aba-portfolio .pf-detalhes li{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:10.5px;color:#806b5d}
+#aba-portfolio .pf-detalhes li b{font-size:10px;color:#78563f}
+#aba-portfolio .pf-links{list-style:none;margin:0;padding:0}
+#aba-portfolio .pf-links li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(107,74,53,.08)}
+#aba-portfolio .pf-links li span{display:flex;flex-direction:column;min-width:0;font-size:11px;color:#49382c}
+#aba-portfolio .pf-links li small{font-size:9.5px;color:#987f6e;overflow-wrap:anywhere}
+#aba-portfolio .pf-links .btn,#aba-portfolio .pf-fui{padding:4px 10px;font-size:11px;flex-shrink:0}
+#aba-portfolio .pf-link-novo{display:flex;gap:8px;margin-top:10px}
+#aba-portfolio .pf-link-novo input{flex:1;min-width:0}
+#aba-portfolio .pf-visita{justify-content:space-between}
+#aba-portfolio .pf-visita .analytics-detalhe b{white-space:normal}
+#aba-portfolio .pf-tempo{display:block;font-size:9.5px;color:#4f7a54;font-weight:500;margin-top:1px}
+#aba-portfolio .analytics-ranking li span .pf-tempo{color:#8a634b;font-weight:400}
+#aba-portfolio .pf-sub{font-size:11px;font-weight:600;color:#594333;margin:14px 0 6px}
+#aba-portfolio .pf-minhas{margin:2px 2px 10px}

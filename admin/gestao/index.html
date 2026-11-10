@@ -3469,7 +3469,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     Promise.all([
       supabaseClient.from("painel_conteudo").select("status,data,mes").eq("mes", mesIso).then(r=>r.data||[]).catch(()=>null),
       supabaseClient.from("propostas_email").select("id,de_nome,marca,assunto,recebido_em,lida,status,tipo").eq("status","nova").order("recebido_em",{ascending:false}).then(r=>r.data||[]).catch(()=>null),
-      supabaseClient.from("visitas").select("data,visitante_id").gte("data", new Date(Date.now()-7*86400000).toISOString()).limit(5000).then(r=>r.data||[]).catch(()=>null),
+      supabaseClient.from("visitas").select("data,visitante_id").eq("da_dona", false).gte("data", new Date(Date.now()-7*86400000).toISOString()).limit(5000).then(r=>r.data||[]).catch(()=>null),
     ]).then(([c,p,v])=>{ if(!vivo) return;
       const sete = Date.now()-7*86400000;
       setDnExtras({
