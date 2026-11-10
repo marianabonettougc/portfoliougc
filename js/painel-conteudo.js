@@ -63,7 +63,6 @@
     evitar: "Vícios de linguagem e gírias (eu não falo desse jeito). Esquetes, personagens, ceninhas e historinhas: quero UGC falando para a câmera com o produto em uso real.",
     ritmo: { porSemana: 3, dias: [0, 2, 4], horario: "12h", formatos: ["Reels", "Carrossel"], funil: { Topo: 1, Meio: 2, Fundo: 0 } },
   };
-  const CMD_WIN = 'irm https://marianabonetto.com.br/ferramentas/salvos.py -OutFile "$HOME\\salvos.py"; python "$HOME\\salvos.py"';
   const hoje = new Date();
   // todos: todos os conteúdos (um registro por conteúdo, o mesmo em todas as visões); posts: só os do mês do calendário
   const st = { pronto: false, mes: `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`, semana: 0, todos: [], lab: [], faltaTabela: false, gerando: false, transcrevendo: false, perfil: PERFIL_PADRAO,
@@ -581,13 +580,10 @@
       <div class="pc-pasta"><b>Gravar em ${esc(nomeMes)}</b><small>${gravar.length} post${gravar.length === 1 ? "" : "s"}</small></div>${lista(gravar)}
       <div class="pc-pasta"><b>Produzir vídeos assim</b><small>${assim.length} post${assim.length === 1 ? "" : "s"}</small></div>${lista(assim)}
       ${faltaReel ? `<button class="btn" type="button" id="pc-transcrever" ${st.transcrevendo ? "disabled" : ""}>${st.transcrevendo ? "Transcrevendo…" : `Transcrever ${faltaReel} Reel${faltaReel === 1 ? "" : "s"} (ideias melhores)`}</button>` : ""}
-      ${!gravar.length && !assim.length ? `<div class="pc-passos"><p class="pc-ajuda">Está em 0 porque o Instagram não deixa nenhum site ler suas pastas de salvos sozinho. Tem dois jeitos de trazer: pelo iPhone (cartão abaixo, cada post que você salvar) ou tudo de uma vez pelo computador.</p><p class="pc-ajuda"><b>Trazer as pastas inteiras (no Windows):</b></p>
-        <ol class="pc-ajuda"><li>Aperte a tecla <b>Windows</b>, digite <b>PowerShell</b> e abra.</li><li>Cole a linha abaixo e aperte <b>Enter</b>. Se abrir a Microsoft Store pedindo o Python, instale e rode a linha de novo.</li><li>Ele entra pelo Instagram que já está aberto no seu navegador (sem senha) e grava <b>salvos_instagram.json</b> na Área de Trabalho.</li><li>Envie esse arquivo no botão abaixo.</li></ol>
-        <div class="lab-comando"><code id="pc-cmd">${CMD_WIN}</code><button class="btn" type="button" id="pc-copiar">Copiar</button></div></div>` : ""}
+      ${!gravar.length && !assim.length ? `<p class="pc-ajuda">Está em 0. Por segurança da sua conta, nenhum programa entra mais no seu Instagram: traga os posts pelo iPhone (cartão abaixo, cada post que você salvar) ou colando o link em Referências &gt; Salvos do Instagram.</p>` : ""}
       <label class="btn pc-enviar">${ic.pasta}Enviar arquivo das pastas<input type="file" id="pc-arquivo" accept=".json" hidden></label>
       ${outras.length ? `<p class="pc-ajuda">Outras pastas que chegaram: ${outras.map(esc).join(", ")}.</p>` : ""}`;
     const t = $("#pc-transcrever", box); if (t) t.addEventListener("click", transcreverPastas);
-    const c = $("#pc-copiar", box); if (c) c.addEventListener("click", async () => { try { await navigator.clipboard.writeText(CMD_WIN); toast("Copiado. Cole no PowerShell."); } catch (e) { toast("Selecione a linha e copie com Ctrl+C.", true); } });
     $("#pc-arquivo", box).addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) importarArquivo(f); });
   }
 
@@ -644,36 +640,12 @@
   // e, se estiver ligado, abre os Salvos do Instagram no Chrome dela, manda os posts novos das pastas
   // para a função salvos-diarios (ideia com roteiro nesta grade + notificação). Chaves: salvos_horario (HH:MM),
   // salvos_ativo ("sim"/"nao"), salvos_ultima_execucao (AAAA-MM-DD, a tarefa grava).
+  // Desligado em 10/11/2026: ele abria o Instagram dela no Chrome todo dia (automação na conta logada).
+  // A Meta restringiu os anúncios da conta em 09/11/2026; a tarefa agendada foi pausada e salvos_ativo = "nao".
   async function pintarAgente() {
     const box = $("#pc-agente"); if (!box) return;
-    const { data, error } = await banco().from("configuracoes").select("chave,valor").in("chave", ["salvos_horario", "salvos_ativo", "salvos_ultima_execucao"]);
-    const cfg = Object.fromEntries(((data || [])).map((x) => [x.chave, x.valor]));
-    const horario = /^\d{2}:\d{2}$/.test(cfg.salvos_horario || "") ? cfg.salvos_horario : "08:00";
-    const ativo = cfg.salvos_ativo !== "nao";
-    const ult = cfg.salvos_ultima_execucao || "";
-    const ultTxt = ult ? `Última vez: ${ult.slice(8, 10)}/${ult.slice(5, 7)}.` : "Ainda não rodou.";
-    const horas = []; for (let h = 6; h <= 23; h++) horas.push(`${pad(h)}:00`);
-    if (!horas.includes(horario)) horas.push(horario);
     box.innerHTML = `<h3 class="pc-h3">${ic.relogio}Agente diário dos Salvos</h3>
-      <p class="pc-ajuda">Uma vez por dia, por volta das 14h, o Claude abre seus Salvos no Instagram (pastas "Produzir videos assim" e "Gravar em..."), traz os posts novos para cá e cria a ideia com roteiro nesta grade, com notificação no celular. O computador precisa estar ligado com o app do Claude aberto nesse horário. Para mudar o horário, é só pedir ao Claude.</p>
-      ${error ? `<p class="faixa faixa-erro">Não consegui ler os ajustes: ${esc(error.message)}</p>` : ""}
-      <div class="pc-linha">
-        <label class="pc-chk"><input type="checkbox" id="pc-agente-ativo" ${ativo ? "checked" : ""}>Ligado</label>
-        <button class="btn btn-principal" type="button" id="pc-agente-salvar">Salvar</button>
-      </div>
-      <p class="pc-ajuda" id="pc-agente-status">${ativo ? "Ligado: roda todo dia por volta das 14h." : "Pausado: não vai rodar até você ligar de novo."} ${ultTxt}</p>`;
-    $("#pc-agente-salvar", box).addEventListener("click", async (e) => {
-      const bt = e.currentTarget; bt.disabled = true;
-      const agora = new Date().toISOString();
-      const liga = $("#pc-agente-ativo", box).checked;
-      const { error: err } = await banco().from("configuracoes").upsert([
-        { chave: "salvos_ativo", valor: liga ? "sim" : "nao", updated_at: agora },
-      ], { onConflict: "chave" });
-      bt.disabled = false;
-      if (err) { toast("Não consegui salvar: " + err.message, true); return; }
-      toast(liga ? "Pronto. O agente roda todo dia por volta das 14h." : "Pronto. Agente pausado.");
-      pintarAgente();
-    });
+      <p class="pc-ajuda"><b>Desligado por segurança.</b> Ele abria o seu Instagram no navegador todos os dias, e esse tipo de acesso automático pode ser visto como suspeito pela Meta. Os posts continuam chegando pelo atalho do iPhone ou colando o link em Referências.</p>`;
   }
 
   // ---------- janela do post ----------

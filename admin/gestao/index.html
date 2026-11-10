@@ -16,9 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611102200"></script>
-<script src="../../js/dialogos.js?v=202611102200"></script>
-<script src="../../js/corretor.js?v=202611102200"></script>
+<script src="../../js/banco.js?v=202611102300"></script>
+<script src="../../js/dialogos.js?v=202611102300"></script>
+<script src="../../js/metricool-ig.js?v=202611102300"></script>
+<script src="../../js/corretor.js?v=202611102300"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -3479,37 +3480,20 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     });
     return ()=>{ vivo = false; };
   },[mesIso]);
-  // Instagram (nov/2026): números do perfil pela API oficial da Meta (Edge Function "instagram", só leitura, token só no banco)
+  // Instagram (desde 10/11/2026): números pelo METRICOOL, parceiro oficial da Meta (js/metricool-ig.js, configuracoes
+  // "metricool_instagram", gravado 1x por dia por uma tarefa do Claude). O painel não usa mais token nem a API da Meta:
+  // a Meta restringiu os anúncios da conta em 09/11/2026 e a Mari pediu para tirar tudo que pudesse parecer suspeito.
   const [igDias,setIgDias] = useState(()=>{ try{ return Number(localStorage.getItem("igDias"))||7; }catch(e){ return 7; } });
-  const [ig,setIg] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("igDash")||"null") || {carregando:true}; }catch(e){ return {carregando:true}; } });
-  const [igToken,setIgToken] = useState("");
-  const [igConectando,setIgConectando] = useState(false);
-  const [igAjuda,setIgAjuda] = useState(false);
-  async function carregarIg(dias, forcar){
-    try{
-      const { data, error } = await supabaseClient.functions.invoke("instagram", {body:{acao:"dados", dias, forcar:!!forcar}});
-      if(error) throw error;
-      setIg(data||{});
-      if(data && data.conectado && !data.error){ try{ localStorage.setItem("igDash", JSON.stringify(data)); }catch(e){} }
-      if(data && data.conectado===false){ try{ localStorage.removeItem("igDash"); }catch(e){} }
-    }catch(e){ setIg(x=>({...x, carregando:false, erroRede:"Não consegui ler o Instagram agora."})); }
-  }
-  useEffect(()=>{ try{ localStorage.setItem("igDias", String(igDias)); }catch(e){} carregarIg(igDias); }, [igDias]);
-  async function conectarIg(remover){
-    setIgConectando(true);
-    try{
-      const { data, error } = await supabaseClient.functions.invoke("instagram", {body: remover ? {acao:"remover"} : {acao:"salvar", token:igToken.trim()}});
-      if(error && !data) throw new Error("Não consegui conectar.");
-      if(data && data.error) throw new Error(data.error);
-      setIgToken("");
-      if(remover){ setIg({conectado:false}); try{ localStorage.removeItem("igDash"); }catch(e){} }
-      else await carregarIg(igDias, true);
-    }catch(e){ setIg(x=>({...x, erroConexao:String(e.message||e)})); }
-    setIgConectando(false);
-  }
+  const [igBruto,setIgBruto] = useState(undefined);
+  useEffect(()=>{ let vivo = true;
+    (async()=>{ try{ const d = window.metricoolIG ? await window.metricoolIG.ler(supabaseClient) : null; if(vivo) setIgBruto(d); }catch(e){ if(vivo) setIgBruto(null); } })();
+    try{ localStorage.removeItem("igDash"); }catch(e){}
+    return ()=>{ vivo = false; }; },[]);
+  useEffect(()=>{ try{ localStorage.setItem("igDias", String(igDias)); }catch(e){} }, [igDias]);
+  const ig = igBruto===undefined ? {carregando:true} : (igBruto && window.metricoolIG.periodo(igBruto, igDias)) || {conectado:false};
   const igNum = (n) => n==null ? "–" : n>=1e6 ? (n/1e6).toFixed(1).replace(".",",")+" mi" : n>=1e4 ? (n/1e3).toFixed(1).replace(".",",").replace(",0","")+" mil" : Number(n).toLocaleString("pt-BR");
   const igVar = (v, pp) => v==null ? null : <em className={v>0?"sobe":v<0?"desce":""}>{v>0?"▲":v<0?"▼":"="} {String(Math.abs(v)).replace(".",",")}{pp?" p.p.":"%"}</em>;
-  const igLinha = (() => { const pts = (ig.alcanceDia||[]).map(x=>x.valor); if(pts.length<2) return null;
+  const igLinha = (() => { const pts = (ig.viewsDia||[]).map(x=>x.valor); if(pts.length<2) return null;
     const max = Math.max(1, ...pts), w = 300, h = 90;
     const xy = pts.map((v,i)=>[i/(pts.length-1)*w, h-4-(v/max)*(h-12)]);
     const d = xy.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
@@ -3837,25 +3821,15 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             <div className="dz-ig-views"><b>{igNum(ig.views)}</b><small>visualizações</small>{igVar(ig.viewsVar)}</div>
             {igLinha && <svg className="dz-ig-linha" viewBox={`0 0 ${igLinha.w} ${igLinha.h}`} preserveAspectRatio="none" aria-label="Alcance por dia"><path d={igLinha.area} className="area"/><path d={igLinha.d} className="traco"/><circle cx={igLinha.fim[0]} cy={igLinha.fim[1]} r="3.5"/></svg>}
             <small className="dz-ig-rot">{ig.de ? `${dataBR(ig.de).slice(0,5)} a ${dataBR(ig.ate).slice(0,5)}, comparado com os ${igDias} dias antes` : ""}</small>
+            <small className="dz-ig-rot">Linha: visualizações por dia · números do Metricool, parceiro oficial da Meta</small>
             <div className="dz-ig-acoes"><a className="db-link db-sublinhado" href={`https://www.instagram.com/${ig.username||""}/`} target="_blank" rel="noopener">Abrir o perfil</a>
-              <button className="db-link" onClick={()=>carregarIg(igDias, true)}>Atualizar</button>
-              <button className="db-link" onClick={async ()=>{ if(await painelDialogo.confirmar("Desconectar o Instagram do painel? Os números somem do Dashboard até conectar de novo.", { ok: "Desconectar", perigo: true })) conectarIg(true); }}>Desconectar</button></div>
+              <a className="db-link" href="https://app.metricool.com/" target="_blank" rel="noopener">Abrir o Metricool</a></div>
           </section>
         </> : <section className="db-bloco dz-ig-con">
             <div className="dz-ig-cab"><h2>Seu Instagram no painel</h2></div>
             {ig.carregando ? <p className="db-vazio">Carregando...</p> : <>
-            <p>Seguidores, alcance, engajamento e visualizações aparecem aqui pela <b>API oficial da Meta</b>, só leitura. O painel não posta, não segue e não usa sua senha, então não tem risco para a conta.</p>
-            <div className="dz-ig-form"><input value={igToken} onChange={e=>setIgToken(e.target.value)} placeholder="Cole aqui o token do Instagram" aria-label="Token do Instagram"/>
-              <button className="db-btn-escuro" disabled={igConectando || igToken.trim().length<30} onClick={()=>conectarIg(false)}>{igConectando ? "Conectando..." : "Conectar"}</button></div>
-            {ig.erroConexao && <p className="db-erro">{ig.erroConexao}</p>}
-            <button className="db-link db-sublinhado" onClick={()=>setIgAjuda(a=>!a)}>{igAjuda ? "Esconder o passo a passo" : "Como gerar o token (uma vez só)"}</button>
-            {igAjuda && <ol className="dz-ig-passos">
-              <li>No app do Instagram: Configurações, Tipo de conta e ferramentas, e deixe a conta como <b>Criador de conteúdo</b> (ou Comercial).</li>
-              <li>No computador, entre em developers.facebook.com com o seu Facebook, clique em Meus apps, Criar app, escolha o caso de uso <b>Gerenciar mensagens e conteúdo no Instagram</b> (API do Instagram) e crie.</li>
-              <li>No app criado: Casos de uso, API do Instagram, <b>Configuração da API com login do Instagram</b>. Em Funções do app, adicione o seu @ como testador do Instagram e aceite o convite no Instagram (Configurações, Apps e sites, Convites de testador).</li>
-              <li>Volte em "Gerar tokens de acesso", clique em <b>Adicionar conta</b>, entre com o seu Instagram e depois em <b>Gerar token</b>. Copie e cole aqui.</li>
-              <li>O token vale 60 dias e o painel renova sozinho toda semana. O app pode ficar no modo de desenvolvimento: ele só lê a sua própria conta.</li>
-            </ol>}</>}
+            <p>Os números do Instagram chegam aqui pelo <b>Metricool</b>, parceiro oficial da Meta, uma vez por dia. O painel não usa token nem programa nenhum no seu Instagram.</p>
+            <p><a className="db-link db-sublinhado" href="https://app.metricool.com/" target="_blank" rel="noopener">Abrir o Metricool</a></p></>}
           </section>}
 
       </div>
