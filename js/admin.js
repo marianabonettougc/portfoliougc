@@ -838,7 +838,7 @@
   let SITUACOES = SITUACOES_PADRAO;
   const nomeSituacao = (s) => (SITUACOES.find((x) => x.v === s) || { t: s || "" }).t;
   const rotuloCol = (k) => cfgContatos.colunas[k] || COLUNAS_PADRAO[k];
-  const estadoMarcas = { busca: "", aba: "todos", origem: "", status: "", ordem: "recente", sel: new Set(), aberto: null, abaPerfil: "notas", cfgCarregada: false, menu: null };
+  const estadoMarcas = { busca: "", aba: "todos", origem: "", status: "", nicho: "", ordem: "recente", sel: new Set(), aberto: null, abaPerfil: "notas", cfgCarregada: false, menu: null };
   const DIA = 86400000;
   const diasDesde = (iso) => { const d = paraData(iso); return d ? Math.floor((Date.now() - d.getTime()) / DIA) : null; };
   const atrasado = (m) => ["lead", "conversando"].includes(m.situacao) && (diasDesde(m.ultimo_contato || m.criado_em) ?? 0) > 15;
@@ -877,8 +877,9 @@
       if (!naAba(m, estadoMarcas.aba)) return false;
       if (estadoMarcas.status && m.situacao !== estadoMarcas.status) return false;
       if (estadoMarcas.origem && (m.origem || "") !== estadoMarcas.origem) return false;
+      if (estadoMarcas.nicho && (m.nicho || "") !== estadoMarcas.nicho) return false;
       if (!b) return true;
-      return [m.nome, m.contato, arroba(m.instagram), m.email, m.responsavel, m.origem, m.telefone].some((c) => String(c || "").toLowerCase().includes(b));
+      return [m.nome, m.contato, arroba(m.instagram), m.email, m.responsavel, m.origem, m.telefone, m.nicho, m.site].some((c) => String(c || "").toLowerCase().includes(b));
     });
     const o = estadoMarcas.ordem;
     return lista.sort((a, z) => o === "az" ? String(a.contato || a.nome).localeCompare(String(z.contato || z.nome)) : o === "contato" ? String(z.ultimo_contato || "").localeCompare(String(a.ultimo_contato || "")) : String(z.criado_em || "").localeCompare(String(a.criado_em || "")));
@@ -909,23 +910,26 @@
     await carregarCfgContatos();
     if (!$("#ct-raiz")) {
       sec.innerHTML = `<div id="ct-raiz" class="ct">
-        <div class="ct-topo"><h2>Contatos <span id="ct-total"></span></h2><div class="ct-topo-acoes"><button class="btn" type="button" id="ct-perso">Personalizar</button><button class="btn" type="button" id="marcas-csv">${ICONE.baixar}Baixar CSV</button><button class="btn btn-principal" type="button" id="marcas-nova">${ICONE.mais}Adicionar contato</button></div></div>
+        <div class="ct-topo"><h2>Contatos <span id="ct-total"></span></h2><div class="ct-topo-acoes"><button class="btn" type="button" id="ct-perso">Personalizar</button><button class="btn" type="button" id="marcas-importar">Importar planilha</button><input type="file" id="marcas-arquivo" accept=".csv,text/csv" hidden><button class="btn" type="button" id="marcas-csv">${ICONE.baixar}Baixar CSV</button><button class="btn btn-principal" type="button" id="marcas-nova">${ICONE.mais}Adicionar contato</button></div></div>
         <div id="ct-kpis"></div>
         <nav class="ct-abas" id="ct-abas" role="tablist"></nav>
         <div class="ct-barra"><input class="entrada ct-busca" type="search" id="marcas-busca" placeholder="Buscar por nome, marca, @, e-mail..." aria-label="Buscar contatos">
-          <select class="entrada ct-sel" id="ct-f-status" aria-label="Filtrar por status"></select><select class="entrada ct-sel" id="ct-f-origem" aria-label="Filtrar por origem"></select>
+          <select class="entrada ct-sel" id="ct-f-status" aria-label="Filtrar por status"></select><select class="entrada ct-sel" id="ct-f-nicho" aria-label="Filtrar por nicho"></select><select class="entrada ct-sel" id="ct-f-origem" aria-label="Filtrar por origem"></select>
           <select class="entrada ct-sel" id="ct-ordem" aria-label="Ordenar"><option value="recente">Mais recentes</option><option value="contato">Último contato</option><option value="az">Nome (A a Z)</option></select></div>
         <div id="marcas-lista"></div><div id="ct-massa"></div><aside id="ct-perfil" class="ct-perfil" hidden></aside></div>`;
       $("#marcas-busca").addEventListener("input", (e) => { estadoMarcas.busca = e.target.value.trim(); desenharListaMarcas(); });
       $("#ct-f-status").addEventListener("change", (e) => { estadoMarcas.status = e.target.value; desenharListaMarcas(); });
       $("#ct-f-origem").addEventListener("change", (e) => { estadoMarcas.origem = e.target.value; desenharListaMarcas(); });
+      $("#ct-f-nicho").addEventListener("change", (e) => { estadoMarcas.nicho = e.target.value; desenharListaMarcas(); });
+      $("#marcas-importar").addEventListener("click", () => $("#marcas-arquivo").click());
+      $("#marcas-arquivo").addEventListener("change", async (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) await importarPlanilhaMarcas(f); });
       $("#ct-ordem").addEventListener("change", (e) => { estadoMarcas.ordem = e.target.value; desenharListaMarcas(); });
       $("#marcas-nova").addEventListener("click", () => formMarca());
       $("#ct-perso").addEventListener("click", personalizarContatos);
       $("#marcas-csv").addEventListener("click", () => {
         const lista = marcasFiltradas();
-        baixarCSV(`contatos-${hojeChave()}.csv`, [rotuloCol("contato"), rotuloCol("marca"), "Instagram", rotuloCol("email"), "Telefone", rotuloCol("status"), rotuloCol("responsavel"), rotuloCol("origem"), "Observação", rotuloCol("data")],
-          lista.map((m) => [m.contato, m.nome, m.instagram, m.email, m.telefone, nomeSituacao(m.situacao), m.responsavel, m.origem, m.obs, fmtData(m.ultimo_contato)]));
+        baixarCSV(`contatos-${hojeChave()}.csv`, [rotuloCol("contato"), rotuloCol("marca"), "Site", "Instagram", "Seguidores", rotuloCol("email"), "Telefone", "Nicho", rotuloCol("status"), rotuloCol("responsavel"), rotuloCol("origem"), "Observação", rotuloCol("data")],
+          lista.map((m) => [m.contato, m.nome, m.site, m.instagram, m.seguidores, m.email, m.telefone, m.nicho, nomeSituacao(m.situacao), m.responsavel, m.origem, m.obs, fmtData(m.ultimo_contato)]));
       });
       document.addEventListener("click", (e) => { if (estadoMarcas.menu && !e.target.closest(".ct-menu, [data-ct-menu]")) { estadoMarcas.menu = null; $$(".ct-menu").forEach((x) => x.remove()); } });
     }
@@ -940,6 +944,8 @@
     $$("[data-ct-aba]").forEach((b) => b.addEventListener("click", () => { estadoMarcas.aba = b.dataset.ctAba; desenharListaMarcas(); }));
     $("#ct-f-status").innerHTML = `<option value="">Todos os status</option>${SITUACOES.map((s) => `<option value="${esc(s.v)}" ${estadoMarcas.status === s.v ? "selected" : ""}>${esc(s.t)}</option>`).join("")}`;
     const origens = [...new Set([...ORIGENS_CT, ...dados.marcas.map((m) => m.origem).filter(Boolean)])];
+    const nichos = [...new Set(dados.marcas.map((m) => m.nicho).filter(Boolean))].sort((a, z) => a.localeCompare(z));
+    $("#ct-f-nicho").innerHTML = `<option value="">Todos os nichos</option>${nichos.map((o) => `<option ${estadoMarcas.nicho === o ? "selected" : ""}>${esc(o)}</option>`).join("")}`;
     $("#ct-f-origem").innerHTML = `<option value="">Todas as origens</option>${origens.map((o) => `<option ${estadoMarcas.origem === o ? "selected" : ""}>${esc(o)}</option>`).join("")}`;
     if (faltando.marcas) { caixa.innerHTML = `<p class="vazio">${esc(faltando.marcas)}</p>`; return; }
     const lista = marcasFiltradas();
@@ -952,7 +958,7 @@
           return `<tr class="clicavel${sel ? " sel" : ""}${String(estadoMarcas.aberto) === id ? " aberto" : ""}" data-id="${id}">
             <td class="ct-chk"><input type="checkbox" data-ct-sel="${id}" ${sel ? "checked" : ""} aria-label="Selecionar"></td>
             <td><div class="ct-pessoa"><span class="ct-av">${esc(iniciais(m.contato || m.nome))}</span><b>${esc(m.contato || m.nome)}</b>${m.favorito ? `<span class="ct-fav" title="Favorito">★</span>` : ""}${exemploTag(m)}</div></td>
-            <td>${esc(m.nome)}${ig ? `<small class="ct-ig">@${esc(ig)}</small>` : ""}</td>
+            <td>${esc(m.nome)}${ig ? `<small class="ct-ig">@${esc(ig)}${m.seguidores ? ` · ${esc(m.seguidores)}` : ""}</small>` : ""}${m.nicho ? `<small class="ct-ig">${esc(m.nicho)}</small>` : ""}</td>
             <td>${m.email ? `<a class="link-mini" href="mailto:${esc(m.email)}">${esc(m.email)}</a>` : ""}</td>
             <td><select class="ct-status s-${esc(m.situacao)}" data-ct-status="${id}" aria-label="Status">${SITUACOES.map((s) => `<option value="${esc(s.v)}" ${s.v === m.situacao ? "selected" : ""}>${esc(s.t)}</option>`).join("")}</select></td>
             <td><b class="ct-resp">${esc(m.responsavel || "")}</b></td>
@@ -1034,7 +1040,9 @@
       <div class="ct-p-id"><span class="ct-av grande">${esc(iniciais(m.contato || m.nome))}</span><div class="ct-p-dados"><b>${esc(m.contato || m.nome)}</b>
         <small>${IP.marca}${esc(m.nome)}</small>
         ${ig ? `<small>${IP.ig}<a class="link-mini" href="https://instagram.com/${encodeURIComponent(ig)}" target="_blank" rel="noopener">@${esc(ig)}</a></small>` : ""}
-        ${m.email ? `<small>${IP.mail}<a class="link-mini" href="mailto:${esc(m.email)}">${esc(m.email)}</a></small>` : ""}${m.telefone ? `<small>${IP.tel}${esc(m.telefone)}</small>` : ""}</div></div>
+        ${m.email ? `<small>${IP.mail}<a class="link-mini" href="mailto:${esc(m.email)}">${esc(m.email)}</a></small>` : ""}${m.telefone ? `<small>${IP.tel}${esc(m.telefone)}</small>` : ""}
+        ${m.site ? `<small>${IP.marca}<a class="link-mini" href="${esc(/^https?:/i.test(m.site) ? m.site : "https://" + m.site)}" target="_blank" rel="noopener">Site / produto</a></small>` : ""}
+        ${m.seguidores || m.nicho ? `<small>${esc([m.seguidores ? m.seguidores + " seguidores" : "", m.nicho].filter(Boolean).join(" · "))}</small>` : ""}</div></div>
       <div class="ct-p-acoes">${m.telefone ? `<a class="btn btn-principal" href="${linkWhats(m.telefone)}" target="_blank" rel="noopener">${ICONE.whats}Chamar no WhatsApp</a>` : m.email ? `<a class="btn btn-principal" href="mailto:${esc(m.email)}">Enviar e-mail</a>` : ""}<button type="button" class="btn" id="ct-p-editar">${ICONE.editar}Editar perfil</button></div>
       <nav class="ct-p-abas">${[["atividade", "Atividade"], ["notas", "Notas"], ["jobs", "Jobs"]].map(([k, t]) => `<button type="button" data-ct-p="${k}" class="${ab === k ? "on" : ""}">${t}${k === "notas" && notas.length ? ` (${notas.length})` : ""}</button>`).join("")}</nav>
       <div class="ct-p-corpo">${ab === "notas" ? `${notas.length ? notas.slice().reverse().map((n) => `<div class="ct-nota"><span class="ct-av mini">${esc(iniciais("Você"))}</span><div><b>Você</b> <small>${esc(tempoAtras(n.em))}</small><p>${esc(n.texto)}</p></div><button type="button" class="icone-btn" data-ct-nota-x="${esc(n.id)}" aria-label="Apagar nota">${ICONE.apagar}</button></div>`).join("") : `<p class="vazio">Nenhuma nota ainda.${m.obs ? "" : ""}</p>`}${m.obs ? `<div class="ct-nota obs"><div><b>Observação</b><p>${esc(m.obs)}</p></div></div>` : ""}
@@ -1080,6 +1088,67 @@
     });
   }
 
+  // Importar planilha CSV (do Excel ou do Google Planilhas). Lê ; ou , e reconhece as colunas pelo nome do título.
+  function lerCSV(texto) {
+    texto = texto.replace(/^\uFEFF/, "");
+    const prim = texto.split(/\r?\n/)[0] || "", sep = (prim.match(/;/g) || []).length >= (prim.match(/,/g) || []).length ? ";" : (prim.includes("\t") ? "\t" : ",");
+    const linhas = []; let lin = [], cel = "", aspas = false;
+    for (let i = 0; i < texto.length; i++) {
+      const c = texto[i];
+      if (aspas) { if (c === '"') { if (texto[i + 1] === '"') { cel += '"'; i++; } else aspas = false; } else cel += c; }
+      else if (c === '"') aspas = true;
+      else if (c === sep) { lin.push(cel); cel = ""; }
+      else if (c === "\n" || c === "\r") { if (c === "\r" && texto[i + 1] === "\n") i++; lin.push(cel); linhas.push(lin); lin = []; cel = ""; }
+      else cel += c;
+    }
+    if (cel || lin.length) { lin.push(cel); linhas.push(lin); }
+    return linhas.filter((l) => l.some((x) => x.trim()));
+  }
+  const semAcento = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  // título da coluna -> campo da tabela marcas (a primeira regra que bater ganha)
+  const COLUNAS_IMPORTAR = [
+    ["seguidores", /seguidor/], ["instagram", /instagram|^@|perfil/], ["email", /e-?mail/], ["telefone", /whats|telefone|celular|outro contato/],
+    ["site", /site|link|url/], ["contato", /pessoa|contato|responsavel pelo contato/], ["nicho", /nicho|segmento|categoria/],
+    ["origem", /origem|onde encontr/], ["situacao", /status|situa/], ["obs", /observ|nota/], ["ultimo_contato", /data/], ["nome", /nome|marca|empresa/],
+  ];
+  function dataDoCSV(t) {
+    t = String(t || "").trim(); let m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (m) return `${m[3].length === 2 ? "20" + m[3] : m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+    return /^\d{4}-\d{2}-\d{2}/.test(t) ? t.slice(0, 10) : null;
+  }
+  async function importarPlanilhaMarcas(arquivo) {
+    if (!/\.csv$/i.test(arquivo.name) && !/csv/.test(arquivo.type)) { avisar("Salve a planilha como CSV antes (no Excel: Salvar como > CSV).", true); return; }
+    const linhas = lerCSV(await arquivo.text());
+    if (linhas.length < 2) { avisar("A planilha está vazia ou só tem o título.", true); return; }
+    const mapa = linhas[0].map((t) => { const n = semAcento(t); const achou = COLUNAS_IMPORTAR.find(([, re]) => re.test(n)); return achou ? achou[0] : null; });
+    if (!mapa.includes("nome")) { avisar("Não achei a coluna com o nome da marca. O título da coluna precisa ter \"Nome\", \"Marca\" ou \"Empresa\".", true); return; }
+    const vazio = (v) => !v || /^(nao encontrado|n\/a|-)/.test(semAcento(v));
+    const ja = new Set(dados.marcas.map((m) => semAcento(m.nome)));
+    const novas = []; let repetidas = 0;
+    for (const l of linhas.slice(1)) {
+      const m = {}, extras = [];
+      mapa.forEach((k, i) => { const v = (l[i] || "").replace(/\s+[—–]\s+/g, " · ").trim(); if (!v) return; if (!k) { extras.push(`${linhas[0][i]}: ${v}`); return; } if (k === "obs" && m.obs) m.obs += "\n" + v; else if (!m[k]) m[k] = v; });
+      if (!m.nome || l.filter((x) => x.trim()).length < 2) continue; // linha de nota solta no fim da planilha
+      if (ja.has(semAcento(m.nome))) { repetidas++; continue; }
+      ["email", "telefone", "site", "instagram"].forEach((k) => { if (vazio(m[k])) delete m[k]; });
+      if (m.email) { const e = m.email.match(/[\w.+-]+@[\w-]+\.[\w.-]+/); if (e && e[0] !== m.email) extras.push("E-mail: " + m.email); m.email = e ? e[0] : null; }
+      if (m.telefone) { const tel = m.telefone.replace(/https?:\/\/\S+/g, "").match(/\(?\d[\d\s().-]{7,}\d/); if (tel) { extras.push("Contato: " + m.telefone); m.telefone = tel[0].replace(/\D/g, ""); } else { extras.push("Contato: " + m.telefone); delete m.telefone; } }
+      if (m.instagram) { const ig = m.instagram.match(/instagram\.com\/([\w.]+)/i); m.instagram = "@" + (ig ? ig[1] : m.instagram.replace(/^@/, "")); }
+      if (m.situacao) { const s = SITUACOES.find((x) => semAcento(x.t) === semAcento(m.situacao) || x.v === semAcento(m.situacao)); m.situacao = s ? s.v : m.situacao; }
+      else m.situacao = SITUACOES[0] ? SITUACOES[0].v : "lead";
+      if (m.ultimo_contato) m.ultimo_contato = dataDoCSV(m.ultimo_contato);
+      if (!m.origem) m.origem = "Planilha";
+      if (extras.length) m.obs = [m.obs, ...extras].filter(Boolean).join("\n");
+      ja.add(semAcento(m.nome)); novas.push(m);
+    }
+    if (!novas.length) { avisar(repetidas ? `Todas as ${repetidas} marcas já estavam na sua base.` : "Não achei marcas para importar.", true); return; }
+    if (!(await confirmar(`Importar ${plural(novas.length, "marca", "marcas")}?${repetidas ? ` (${repetidas} já estavam na base e vão ficar como estão.)` : ""}`, "Importar", "btn-principal"))) return;
+    const { error } = await banco.from("marcas").insert(novas);
+    if (error) { avisar("Não consegui importar: " + error.message, true); return; }
+    avisar(`${plural(novas.length, "marca importada", "marcas importadas")}`);
+    await recarregar("marcas");
+  }
+
   function formMarca(m) {
     const novo = !m;
     m = m || { situacao: SITUACOES[0] ? SITUACOES[0].v : "lead", ultimo_contato: hojeChave() };
@@ -1090,7 +1159,10 @@
         `<div class="linha-campos">` +
         campo({ nome: "contato", rotulo: rotuloCol("contato") + " (pessoa)", valor: m.contato, dica: "Quem fala com você na marca" }) +
         campo({ nome: "nome", rotulo: rotuloCol("marca"), valor: m.nome, obrigatorio: true }) +
+        campo({ nome: "site", rotulo: "Site", valor: m.site, dica: "Site ou link do produto" }) +
         campo({ nome: "instagram", rotulo: "Instagram", valor: m.instagram, dica: "Ex.: @marca" }) +
+        campo({ nome: "seguidores", rotulo: "Seguidores", valor: m.seguidores, dica: "Ex.: 73,7 mil" }) +
+        campo({ nome: "nicho", rotulo: "Nicho", valor: m.nicho, lista: [...new Set(dados.marcas.map((x) => x.nicho).filter(Boolean))] }) +
         campo({ nome: "email", rotulo: rotuloCol("email"), valor: m.email, tipo: "email" }) +
         campo({ nome: "telefone", rotulo: "Telefone / WhatsApp", valor: m.telefone, dica: "Com DDD. Ex.: 11999999999" }) +
         campo({ nome: "situacao", rotulo: rotuloCol("status"), tipo: "select", valor: m.situacao, opcoes: SITUACOES }) +
@@ -1109,7 +1181,7 @@
         { texto: "Salvar", classe: "btn-principal", acao: async () => {
           const f = lerFormulario();
           if (!f.nome) { avisar("Preencha o nome da marca.", true); return false; }
-          const linha = { nome: f.nome, contato: nulo(f.contato), instagram: nulo(f.instagram), email: nulo(f.email), telefone: nulo(f.telefone), situacao: f.situacao, responsavel: nulo(f.responsavel), origem: nulo(f.origem), ultimo_contato: nulo(f.ultimo_contato), obs: nulo(f.obs), favorito: Boolean(f.favorito) };
+          const linha = { nome: f.nome, contato: nulo(f.contato), site: nulo(f.site), seguidores: nulo(f.seguidores), nicho: nulo(f.nicho), instagram: nulo(f.instagram), email: nulo(f.email), telefone: nulo(f.telefone), situacao: f.situacao, responsavel: nulo(f.responsavel), origem: nulo(f.origem), ultimo_contato: nulo(f.ultimo_contato), obs: nulo(f.obs), favorito: Boolean(f.favorito) };
           if ("exemplo" in f) linha.exemplo = f.exemplo;
           if (!(await gravar("marcas", linha, novo ? null : m.id))) return false;
           avisar(novo ? "Contato adicionado" : "Contato salvo");

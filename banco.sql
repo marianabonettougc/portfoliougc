@@ -62,6 +62,8 @@ create table if not exists public.marcas (
   exemplo         boolean not null default false,
   criado_em       timestamptz not null default now()
 );
+-- nov/2026: campos da base de prospecção (site ou link do produto, seguidores e nicho)
+alter table public.marcas add column if not exists site text, add column if not exists seguidores text, add column if not exists nicho text;
 
 
 -- ---------------------------------------------------------------------
