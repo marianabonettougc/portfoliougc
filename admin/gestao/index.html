@@ -16,9 +16,9 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611031729"></script>
-<script src="../../js/dialogos.js?v=202611031729"></script>
-<script src="../../js/corretor.js?v=202611031729"></script>
+<script src="../../js/banco.js?v=202611102110"></script>
+<script src="../../js/dialogos.js?v=202611102110"></script>
+<script src="../../js/corretor.js?v=202611102110"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -1493,6 +1493,33 @@
     .job-form-footer .btn{min-height:42px;}
   }
 
+
+  /* ===== celular como aplicativo (nov/2026, pedido da Mari: "UGC's & Publis torto no celular") =====
+     O .content do "padrão do painel" vinha depois da regra de 860px e deixava 28px de margem no celular;
+     no cartão da lista, as posições da regra de 1100px (grid-column/grid-row) venciam o layout de 640px
+     e punham o status por cima do nome da marca. */
+  @media (max-width:700px){
+    .content{ padding:14px 12px 80px; }
+    .so-uma .page-head > div:first-child:has(> .page-title):not(:has(button, select, input)){ display:none; }
+    .page-head{ margin-bottom:12px; gap:10px; }
+    .page-title{ font-size:25px; }
+    .page-head > .btn-primary{ width:100%; justify-content:center; }
+    .search{ padding:8px 12px; border-radius:12px; }
+    .search input{ min-width:0; }
+    .jobs-abas{ flex-wrap:nowrap; overflow-x:auto; width:100%; scrollbar-width:none; -webkit-overflow-scrolling:touch; gap:6px; }
+    .jobs-abas::-webkit-scrollbar{ display:none; }
+    .jobs-aba{ flex:1 0 auto; justify-content:center; font-size:13.5px; padding:8px 11px; border-radius:11px; white-space:nowrap; }
+    .row-item.job-linha{ grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"nome valor" "datas datas" "status acoes"; gap:8px 10px; padding:12px; }
+    .row-item.job-linha > .job-linha-nome{ grid-area:nome; }
+    .row-item.job-linha > .job-datas{ grid-area:datas; }
+    .row-item.job-linha > .job-linha-valor{ grid-area:valor; align-self:start; font-size:13.5px; }
+    .row-item.job-linha > .job-linha-status{ grid-area:status; align-self:center; }
+    .row-item.job-linha > .job-linha-acoes{ grid-area:acoes; padding-top:0; border-top:0; gap:4px; }
+    .row-item.job-linha .job-datas{ display:flex; gap:4px 18px; }
+    .row-item.job-linha .job-datas > span{ min-width:0; }
+    .row-item.job-linha .job-linha-acoes .icon-btn{ width:32px; height:32px; flex-basis:32px; }
+    .row-item.job-linha .job-linha-status .badge{ font-size:10px; padding:3px 8px; }
+  }
 </style>
 </head>
 <body>
@@ -5858,7 +5885,7 @@ function Jobs({state, updateState}){
 
       <div className="search" style={{marginBottom:14}}>
         <Icon name="search"/>
-        <input placeholder="Buscar por marca, tipo de conteúdo, detalhes do job ou nicho..." value={query} onChange={e=>setQuery(e.target.value)}/>
+        <input placeholder="Buscar marca, conteúdo ou nicho" value={query} onChange={e=>setQuery(e.target.value)}/>
       </div>
 
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, flexWrap:"wrap", gap:10}}>

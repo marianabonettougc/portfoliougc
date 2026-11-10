@@ -426,6 +426,9 @@ details.rot-editar[open] summary{margin-bottom:10px}
 .olho-valores .olho-fechado,.olho-valores.oculto .olho-aberto{display:none}
 .olho-valores.oculto .olho-fechado{display:inline}
 .olho-valores[hidden]{display:none}
+.sub-abas[hidden]{display:none}
+/* celular: o olho fica só com o ícone, para o título caber numa linha */
+@media(max-width:700px){.olho-valores #olho-texto{display:none}.olho-valores{padding:8px 10px}}
 /* Títulos do menu que abrem e fecham */
 button.menu-grupo{display:flex;align-items:center;width:100%;border:0;background:transparent;cursor:pointer;text-align:left;font-family:inherit;border-radius:var(--raio-p)}
 button.menu-grupo:hover{color:var(--texto)}
