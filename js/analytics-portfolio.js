@@ -1,6 +1,6 @@
 /* Analytics do portfólio Mari Bonetto
  * Identificador aleatório por navegador; sem nome, e-mail ou IP.
- * Registra: vídeos iniciados, segundos assistidos, cliques e partes do site vistas.
+ * Registra: vídeos iniciados, segundos assistidos, tempo no site, cliques e partes do site vistas.
  * Navegador da Mari (marcado pelo painel ou pelo link ?sou-a-mari) não registra nada.
  */
 (function () {
@@ -77,6 +77,28 @@
   };
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") mandarTempo(true); });
   window.addEventListener("pagehide", () => mandarTempo(true));
+
+  // ---- tempo no site: segundos com a página aberta na tela e a pessoa mexendo (ou um vídeo tocando) ----
+  // uma linha "tempo_site" por visita (reproducao_id = id da visita); o painel usa o maior valor de cada visita
+  const visita = { rid: novoId(), seg: 0, enviado: 0, mexeu: Date.now() };
+  ["scroll", "pointerdown", "pointermove", "keydown", "touchstart", "wheel"].forEach((ev) =>
+    window.addEventListener(ev, () => { visita.mexeu = Date.now(); }, { passive: true, capture: true }));
+  function mandarTempoSite(saindo) {
+    const seg = Math.min(Math.round(visita.seg), 7200);
+    if (seg < 3 || seg === visita.enviado) return;
+    visita.enviado = seg;
+    const linha = { segundos: seg, reproducao_id: visita.rid, alvo: "Tempo no site" };
+    if (saindo) enviarSaindo("tempo_site", linha); else enviar("tempo_site", linha);
+  }
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    if (Date.now() - visita.mexeu > 120000 && !atual) return; // parada há 2 min e sem vídeo: não conta
+    visita.seg += 1;
+    const s = Math.round(visita.seg);
+    if (s === 15 || s === 60 || (s > 60 && s % 60 === 0)) mandarTempoSite(false);
+  }, 1000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") mandarTempoSite(true); else visita.mexeu = Date.now(); });
+  window.addEventListener("pagehide", () => mandarTempoSite(true));
 
   // ---- cliques em links e botões ----
   document.addEventListener("click", function (e) {
