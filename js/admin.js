@@ -2249,13 +2249,15 @@
   function blocoAnalise(caixa, r) {
     const a = r.analise;
     if (!a) {
-      caixa.innerHTML = `<h4>Análise do conteúdo</h4><div class="cr-carregando"><span class="cr-girando"></span><p data-passo>Preparando a análise: cenas, voz e fala...</p><p class="rot-status" id="cr-status-a" hidden></p></div>`;
+      caixa.innerHTML = `<h4>Análise do conteúdo</h4><div class="cr-carregando"><span class="cr-girando"></span><p data-passo>${window.painelAnaliseVideo && !window.painelAnaliseVideo.ligado() ? "Preparando a análise da fala..." : "Preparando a análise: cenas, voz e fala..."}</p><p class="rot-status" id="cr-status-a" hidden></p></div>`;
       const status = statusEm($("#cr-status-a", caixa));
       const passo = (t) => { const p = $("[data-passo]", caixa); if (p) p.textContent = t; };
       (async () => {
         const ref = resumoReferencia(r);
         let estudo = null;
-        const blob = await blobDoVideo(r, passo);
+        const av = window.painelAnaliseVideo;
+        const soFala = !!(av && !av.ligado()); // "Analisar cenas e voz" desligado
+        const blob = soFala ? null : await blobDoVideo(r, passo);
         if (blob && window.painelAnaliseVideo) {
           try { estudo = await window.painelAnaliseVideo.estudar(blob, { segmentos: r.segmentos, transcricao: r.transcricao, aoProgresso: passo }); }
           catch (e) { r._semVideo = e.message; }
@@ -2267,7 +2269,8 @@
           (res.cenas || []).forEach((c, i) => { const e = estudo.cenas[i]; if (e) { c.mini = e.mini; c.mesmaTomada = e.mesmaTomada; } });
           res.cortes = estudo.cortes;
           if (estudo.voz && estudo.voz.erro) res.vozErro = estudo.voz.erro;
-        } else res.semVideo = r._semVideo || (r.link ? "Esse link não deixa baixar o vídeo." : "O arquivo desse vídeo não está guardado no painel.");
+        } else if (soFala) res.soFala = true;
+        else res.semVideo = r._semVideo || (r.link ? "Esse link não deixa baixar o vídeo." : "O arquivo desse vídeo não está guardado no painel.");
         const campos = { analise: res };
         if (estudo && !r.duracao) campos.duracao = estudo.duracao;
         if (r.video_path) campos.video_path = r.video_path;
@@ -2298,7 +2301,8 @@
       ${v.ritmo ? `<p><b>Ritmo:</b> ${esc(v.ritmo)}</p>` : ""}${v.entonacao ? `<p><b>Tom:</b> ${esc(v.entonacao)}</p>` : ""}${v.pausas ? `<p><b>Pausas:</b> ${esc(v.pausas)}</p>` : ""}
       ${m && m.somDeFundo ? `<p><b>Fundo:</b> ${esc(m.somDeFundo)}</p>` : ""}
       ${v.dicas && v.dicas.length ? `<h5 class="cr-sub">Para usar a voz igual</h5>${itens(v.dicas)}` : ""}` : "";
-    const aviso = !cenas.length ? `<div class="cr-aviso-analise">${ic("info", 15)}<p>${a.viuCenas === undefined && !a.semVideo ? "Esta análise foi feita antes e olhou só a fala." : `Analisei só a fala: ${esc(a.semVideo || "não consegui pegar o vídeo.")}`} ${r.video_path || /instagram\.com|tiktok\.com/i.test(r.link || "") ? "" : "Escolha o arquivo do vídeo para eu ver as cenas e ouvir a voz."}</p>
+    const aviso = !cenas.length && a.soFala ? `<div class="cr-aviso-analise">${ic("info", 15)}<p>Análise só da fala: "Analisar cenas e voz" estava desligado.</p><div><button class="btn btn-mini" type="button" data-com-cenas>${ic("refazer", 14)}Analisar cenas e voz</button></div></div>`
+      : !cenas.length ? `<div class="cr-aviso-analise">${ic("info", 15)}<p>${a.viuCenas === undefined && !a.semVideo ? "Esta análise foi feita antes e olhou só a fala." : `Analisei só a fala: ${esc(a.semVideo || "não consegui pegar o vídeo.")}`} ${r.video_path || /instagram\.com|tiktok\.com/i.test(r.link || "") ? "" : "Escolha o arquivo do vídeo para eu ver as cenas e ouvir a voz."}</p>
       <div>${r.video_path || /instagram\.com|tiktok\.com/i.test(r.link || "") ? `<button class="btn btn-mini" type="button" data-refazer>${ic("refazer", 14)}Analisar cenas e voz</button>` : `<button class="btn btn-mini" type="button" data-anexar-analise>${ic("subir", 14)}Escolher o vídeo</button>`}</div></div>` : (a.vozErro ? `<p class="cr-nota">${ic("info", 14)}${esc(a.vozErro)} As cenas foram analisadas.</p>` : "");
     caixa.innerHTML = `<h4>Análise do conteúdo</h4>
       ${aviso}
@@ -2309,7 +2313,10 @@
       ${bloco("estrela", "Pontos fortes", itens(a.pontos_fortes))}
       ${bloco("lista", "Estrutura do vídeo", `<ol class="cr-partes">${(a.desenvolvimento || []).map((d, i) => `<li><span class="cr-num">${i + 1}</span><span class="cr-tempo">${esc(d.ini)}${d.fim ? " - " + esc(d.fim) : ""}</span><p><b>${esc(d.parte)}</b>${esc(d.texto)}</p></li>`).join("")}</ol>`)}
       ${bloco("brilho", "Aprendizados para aplicar", itens(a.melhorar))}
-      <button class="btn btn-mini cr-refazer" type="button" data-refazer>${ic("refazer", 14)}Refazer análise</button>`;
+      <div class="cr-refazer-linha">${window.painelAnaliseVideo ? window.painelAnaliseVideo.chaveHtml() : ""}<button class="btn btn-mini cr-refazer" type="button" data-refazer>${ic("refazer", 14)}Refazer análise</button></div>`;
+    if (window.painelAnaliseVideo) window.painelAnaliseVideo.ligarChave(caixa);
+    const comCenas = $("[data-com-cenas]", caixa);
+    if (comCenas) comCenas.addEventListener("click", async () => { if (window.painelAnaliseVideo) window.painelAnaliseVideo.ligar(true); await atualizarReferencia({ analise: null }); blocoAnalise(caixa, r); });
     $$("[data-refazer]", caixa).forEach((b) => b.addEventListener("click", async () => { await atualizarReferencia({ analise: null }); blocoAnalise(caixa, r); }));
     const anexar = $("[data-anexar-analise]", caixa);
     if (anexar && window.painelVideos) anexar.addEventListener("click", () => window.painelVideos.oferecerAnexar(r, (t, erro) => avisar(t, erro), async () => { await atualizarReferencia({ analise: null }); const sec = caixa.closest(".cr-pagina"); if (sec) paginaAnalise(sec.parentElement); else blocoAnalise(caixa, r); }));

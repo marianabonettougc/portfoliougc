@@ -8,7 +8,9 @@
 // - biblioteca: posts dos Perfis que acompanho que já têm transcrição
 // Cada referência abre uma janela com:
 // - Transcrever (função transcrever; a transcrição fica guardada nela mesma)
-// - Analisar com a Skill (função skill-ugc acao "analisar"): separa o que está
+// - Analisar com a Skill (função skill-ugc acao "analisar"); com "Analisar cenas e voz" ligado
+//   (js/analise-video.js, mesma escolha da página Análise de transcrição) também assiste o vídeo
+//   e ouve a voz, guardado em cenasVoz dentro da análise. Separa o que está
 //   no vídeo (observado) da leitura da IA (interpretação). Fica guardada em
 //   roteiros.analise_skill, laboratorio.analise, inspiracoes.analise ou
 //   biblioteca.analise.skill (a análise antiga dos perfis continua lá)
@@ -112,9 +114,18 @@
     await gravar(x, campos);
     if (d.duracao) x._duracao = d.duracao;
   }
-  async function analisar(x) {
+  async function analisar(x, aoProgresso) {
+    const av = window.painelAnaliseVideo;
+    const comCenas = !!(av && av.ligado());
+    aoProgresso && aoProgresso("Analisando com a Skill...");
     const d = await invocar("skill-ugc", { acao: "analisar", transcricao: x.transcricao || "", legenda: x.legenda || "", perfil: x.perfil || "", duracao_seg: x.duracao || x._duracao || 0 });
     const a = d.analise;
+    // "Analisar cenas e voz" ligado: assiste o vídeo e ouve a voz também (guardado junto, em cenasVoz)
+    if (a && comCenas) {
+      const antes = analiseSkill(x);
+      const cv = await av.cenasEVoz({ ...x, video_path: x.video_path || (antes && antes.cenasVoz && antes.cenasVoz.video_path) || "" }, aoProgresso);
+      a.cenasVoz = cv;
+    }
     if (x.fonte === "roteiros") await gravar(x, { analise_skill: a });
     else if (x.fonte === "biblioteca") await gravar(x, { analise: { ...(x.analise || {}), skill: a } });
     else await gravar(x, { analise: a });
@@ -138,6 +149,7 @@
       <section><h4>O que está no vídeo</h4><dl>${linha("Gancho", o.gancho)}${linha("Tipo de gancho", o.gancho_tipo)}${linha("Estrutura", o.estrutura)}${linha("Formato", o.formato)}${linha("Ritmo", o.ritmo)}${linha("Demonstração", o.demonstracao)}${(o.argumentos || []).length ? `<dt>Argumentos</dt><dd><ul>${lista(o.argumentos)}</ul></dd>` : ""}${linha("CTA", o.cta)}</dl></section>
       <section class="rf-ia"><h4>Leitura da IA <small>(hipótese)</small></h4><dl>${linha("Por que funciona", i.por_que_funciona)}${linha("Para quem", i.publico)}${linha("O que a pessoa sente", i.emocao)}${(i.pontos_fracos || []).length ? `<dt>O que a Skill reprovaria</dt><dd><ul>${lista(i.pontos_fracos)}</ul></dd>` : ""}${linha("Como você usa sem copiar", i.como_adaptar)}</dl></section>
       ${(a.ideias || []).length ? `<section class="rf-ideias"><h4>Ideias para você</h4><ul>${lista(a.ideias)}</ul></section>` : ""}
+      ${a.cenasVoz && window.painelAnaliseVideo ? window.painelAnaliseVideo.htmlCenasVoz(a.cenasVoz) : ""}
       ${a.skill ? `<p class="rf-versao">Analisado pela Skill ${esc(a.skill)}${a.em ? " em " + new Date(a.em).toLocaleDateString("pt-BR") : ""}</p>` : ""}
     </div>`;
   }
@@ -157,11 +169,13 @@
           <div><span class="rf-fonte">${esc(FONTES[x.fonte] || "")}</span><h3>${esc(x.titulo)}</h3>
             <p>${x.perfil ? "@" + esc(String(x.perfil).replace(/^@/, "")) : ""}${x.link ? ` · <a href="${esc(x.link)}" target="_blank" rel="noopener">abrir o vídeo</a>` : ""}${x.colecao ? " · pasta " + esc(x.colecao) : ""}</p></div>
         </header>
+        ${!x.video_path && a && a.cenasVoz && a.cenasVoz.video_path ? `<div class="rf-video"><video data-video-path="${esc(a.cenasVoz.video_path)}" controls playsinline preload="metadata"></video></div>` : ""}
         ${x.video_path ? `<div class="rf-video"><video data-video-path="${esc(x.video_path)}" controls playsinline preload="metadata"></video><button type="button" class="btn-texto" data-baixar-video>Baixar o vídeo guardado</button></div>` : ""}
         <div class="rf-acoes">
           <button type="button" class="btn btn-principal" data-criar>Criar roteiro com a Skill</button>
           <button type="button" class="btn" data-transcrever ${ocupado ? "disabled" : ""}>${ocupado === "transcrever" ? "Transcrevendo (até 1 minuto)..." : x.transcricao ? "Transcrever de novo" : "Transcrever"}</button>
           <button type="button" class="btn" data-analisar ${ocupado || !(x.transcricao || x.legenda) ? "disabled" : ""}>${ocupado === "analisar" ? "Analisando..." : a ? "Analisar de novo" : "Analisar com a Skill"}</button>
+          ${window.painelAnaliseVideo ? window.painelAnaliseVideo.chaveHtml() : ""}
           ${x.fonte === "roteiros" ? `<button type="button" class="btn-texto" data-antiga>Ver página completa da análise</button>` : ""}
         </div>
         ${x.legenda ? `<details class="rf-bloco"><summary>Legenda</summary><p>${esc(x.legenda)}</p></details>` : ""}
@@ -170,10 +184,17 @@
         <section class="rf-gerados"><h4>Roteiros criados a partir daqui</h4>${gerados == null ? `<p class="rf-vazio">Procurando...</p>` : gerados.length ? `<ul>${gerados.map((r) => `<li><button type="button" class="btn-texto" data-roteiro="${esc(r.id)}">${esc(r.titulo || "Roteiro")}</button> <span>${esc(r.etapa || "")}</span></li>`).join("")}</ul>` : `<p class="rf-vazio">Nenhum ainda.</p>`}</section>
       </div>`;
       $(".rf-fechar", j).addEventListener("click", fechar);
+      if (!x.video_path && window.painelVideos && $(".rf-video video", j)) window.painelVideos.tocarEm(j);
       if (x.video_path && window.painelVideos) { window.painelVideos.tocarEm(j); const bx = $("[data-baixar-video]", j); if (bx) bx.addEventListener("click", () => window.painelVideos.baixar(x.video_path)); }
       $("[data-criar]", j).addEventListener("click", () => criarRoteiro(x));
       $("[data-transcrever]", j).addEventListener("click", () => rodar("transcrever", transcrever, "Transcrição guardada nesta referência"));
-      $("[data-analisar]", j).addEventListener("click", () => rodar("analisar", analisar, "Análise da Skill guardada"));
+      $("[data-analisar]", j).addEventListener("click", () => rodar("analisar", (r) => analisar(r, (t) => { const bt = $("[data-analisar]", j); if (bt) bt.textContent = t; }), "Análise guardada"));
+      if (window.painelAnaliseVideo) window.painelAnaliseVideo.ligarChave(j);
+      // tocar numa cena leva o vídeo guardado até ela
+      $$(".cr-cenas li[data-ir]", j).forEach((li) => li.addEventListener("click", () => {
+        const v = $(".rf-video video", j); if (!v) return;
+        v.currentTime = Number(li.dataset.ir) || 0; v.play().catch(() => {}); v.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }));
       const antiga = $("[data-antiga]", j);
       if (antiga) antiga.addEventListener("click", () => { fechar(); if (window.painelRoteiros && window.painelRoteiros.abrir) window.painelRoteiros.abrir(x.id, "analise"); });
       $$("[data-roteiro]", j).forEach((b) => b.addEventListener("click", () => { fechar(); window.painelSkill.abrirRoteiro(b.dataset.roteiro); }));

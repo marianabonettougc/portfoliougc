@@ -216,5 +216,87 @@
     }
   }
 
-  window.painelAnaliseVideo = { estudar };
+  // ---------- escolha "Analisar cenas e voz" (nov/2026, pedido da Mari) ----------
+  // vale para a página Análise de transcrição e para a janela da Biblioteca de Referências
+  const CHAVE = "analisarCenas";
+  function ligado() { try { return localStorage.getItem(CHAVE) !== "nao"; } catch (e) { return true; } }
+  function ligar(sim) { try { localStorage.setItem(CHAVE, sim ? "sim" : "nao"); } catch (e) { /* segue */ } }
+  const escH = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  function chaveHtml() {
+    return `<label class="av-chave" title="Assistir as cenas e ouvir a voz do vídeo (demora mais: o vídeo é visto no navegador)"><input type="checkbox" data-av-chave${ligado() ? " checked" : ""}><span>Analisar cenas e voz</span></label>`;
+  }
+  function ligarChave(caixa) {
+    (caixa || document).querySelectorAll("[data-av-chave]").forEach((c) => c.addEventListener("change", () => {
+      ligar(c.checked);
+      document.querySelectorAll("[data-av-chave]").forEach((o) => { o.checked = c.checked; });
+    }));
+  }
+
+  async function invocar(nome, corpo) {
+    const { data, error } = await window.banco.functions.invoke(nome, { body: corpo });
+    let msg = data && (data.error || data.erro);
+    if (error) { try { const j = await error.context.json(); msg = j.error || j.erro; } catch (e) { /* sem corpo */ } msg = msg || "Não consegui agora. Tente de novo."; }
+    if (msg) throw new Error(msg);
+    return data || {};
+  }
+  // pega o arquivo do vídeo: o guardado no painel ou baixado do link (Instagram/TikTok, pela função referencias)
+  async function blobDe(x, aoProgresso) {
+    let path = x.video_path || "";
+    if (!path && x.link && /instagram\.com|tiktok\.com/i.test(x.link)) {
+      aoProgresso && aoProgresso("Baixando o vídeo do link... (até 1 minuto)");
+      const g = await invocar("referencias", { acao: "video", link: x.link, id: x.fonte === "roteiros" ? x.id : null });
+      path = g.path || "";
+      if (path && x.fonte === "roteiros") { x.video_path = g.path; x.video_tamanho = g.tamanho; }
+    }
+    if (!path) throw new Error(x.link ? "Esse link não deixa baixar o vídeo." : "O arquivo desse vídeo não está guardado no painel.");
+    const u = window.painelVideos ? await window.painelVideos.url(path) : "";
+    if (!u) throw new Error("Não consegui abrir o vídeo guardado.");
+    const r = await fetch(u);
+    if (!r.ok) throw new Error("Não consegui baixar o vídeo guardado.");
+    return { blob: await r.blob(), path };
+  }
+  // cenas + voz de qualquer referência (Biblioteca): devolve { cenas, visual, voz, cortes, video_path, em } ou { erro }
+  async function cenasEVoz(x, aoProgresso) {
+    try {
+      const { blob, path } = await blobDe(x, aoProgresso);
+      const e = await estudar(blob, { segmentos: x.segmentos, transcricao: x.transcricao, aoProgresso });
+      aoProgresso && aoProgresso(`Analisando as ${e.cenas.length} cenas e a voz... (uns 40 segundos)`);
+      const ref = { titulo: x.titulo || "", transcricao: String(x.transcricao || x.legenda || "").slice(0, 3500), segmentos: x.segmentos || null, duracao: x.duracao || e.duracao,
+        cenas: e.cenas.map((c) => ({ ini: c.ini, fim: c.fim })), folhas: e.folhas };
+      if (e.voz && !e.voz.erro) ref.voz = e.voz;
+      if (!ref.transcricao) ref.transcricao = "(vídeo sem fala transcrita)";
+      const res = await invocar("referencias", { acao: "analise", referencia: ref });
+      (res.cenas || []).forEach((c, i) => { if (e.cenas[i]) c.mini = e.cenas[i].mini; });
+      return { cenas: res.cenas || [], visual: res.visual || [], voz: res.voz || null, cortes: e.cortes, semVisao: !!res.semVisao,
+        vozErro: e.voz && e.voz.erro ? e.voz.erro : "", video_path: path, em: new Date().toISOString() };
+    } catch (err) { return { erro: String(err.message || err), em: new Date().toISOString() }; }
+  }
+
+  const mmssH = (s) => `${String(Math.floor((Number(s) || 0) / 60)).padStart(2, "0")}:${String(Math.round((Number(s) || 0) % 60)).padStart(2, "0")}`;
+  // html dos blocos Cenas e Voz (mesmo visual da página Análise de transcrição; classes cr-*)
+  function htmlCenasVoz(d) {
+    if (!d) return "";
+    if (d.erro) return `<p class="cr-nota">Cenas e voz: ${escH(d.erro)}</p>`;
+    const itens = (l) => `<ul>${(l || []).map((t) => `<li>${escH(t)}</li>`).join("")}</ul>`;
+    const cenas = d.cenas || [], v = d.voz || null, m = (v && v.medidas) || null;
+    const nivelTom = (x) => x == null ? "" : x <= 3 ? "voz mais reta" : x <= 7 ? "voz expressiva" : "voz bem animada";
+    const nivelRitmo = (x) => x == null ? "" : x < 2.3 ? "fala calma" : x < 3.2 ? "ritmo médio" : "fala rápida";
+    const chips = m ? [m.palavrasPorSeg != null ? `${String(m.palavrasPorSeg).replace(".", ",")} palavras/s · ${nivelRitmo(m.palavrasPorSeg)}` : "", m.variacaoTom != null ? nivelTom(m.variacaoTom) : "", m.pausas != null ? `${m.pausas} pausa${m.pausas === 1 ? "" : "s"}` : "", m.falaPct != null ? `voz em ${m.falaPct}% do vídeo` : "", m.primeiraFala != null ? `primeira fala em ${String(m.primeiraFala).replace(".", ",")} s` : ""].filter(Boolean) : [];
+    const htmlC = cenas.length ? `<section class="av-bloco"><h4>Cenas do vídeo (${cenas.length})</h4>
+      <ol class="cr-cenas">${cenas.map((c, i) => `<li data-ir="${c.ini}">
+        ${c.mini ? `<img src="${c.mini}" alt="Cena ${i + 1}" loading="lazy">` : `<span class="cr-cena-sem">${i + 1}</span>`}
+        <div><div class="cr-cena-topo"><span class="cr-tempo">${mmssH(c.ini)} - ${mmssH(c.fim)}</span>${c.funcao ? `<span class="cr-cena-funcao">${escH(c.funcao)}</span>` : ""}${c.enquadramento ? `<span class="cr-cena-enq">${escH(c.enquadramento)}</span>` : ""}</div>
+        ${c.visual ? `<p>${escH(c.visual)}</p>` : ""}${c.texto_tela ? `<p class="cr-cena-extra"><b>Texto na tela:</b> ${escH(c.texto_tela)}</p>` : ""}
+        ${c.fala ? `<p class="cr-cena-fala">"${escH(c.fala)}"</p>` : ""}${c.por_que ? `<p class="cr-cena-extra"><b>Por que funciona:</b> ${escH(c.por_que)}</p>` : ""}
+        ${c.dica ? `<p class="cr-cena-extra"><b>Para gravar a sua:</b> ${escH(c.dica)}</p>` : ""}</div></li>`).join("")}</ol>
+      ${(d.visual || []).length ? `<h5 class="cr-sub">O que a filmagem faz bem</h5>${itens(d.visual)}` : ""}
+      ${d.semVisao ? `<p class="cr-nota">A IA de visão não respondeu agora, então as cenas ficaram só com os tempos. Analise de novo daqui a pouco.</p>` : ""}</section>` : "";
+    const htmlV = v && (v.resumo || chips.length) ? `<section class="av-bloco"><h4>Voz e entrega</h4>
+      ${chips.length ? `<div class="cr-voz-chips">${chips.map((c) => `<span>${escH(c)}</span>`).join("")}</div>` : ""}
+      ${v.resumo ? `<p>${escH(v.resumo)}</p>` : ""}${v.ritmo ? `<p><b>Ritmo:</b> ${escH(v.ritmo)}</p>` : ""}${v.entonacao ? `<p><b>Tom:</b> ${escH(v.entonacao)}</p>` : ""}${v.pausas ? `<p><b>Pausas:</b> ${escH(v.pausas)}</p>` : ""}
+      ${m && m.somDeFundo ? `<p><b>Fundo:</b> ${escH(m.somDeFundo)}</p>` : ""}${(v.dicas || []).length ? `<h5 class="cr-sub">Para usar a voz igual</h5>${itens(v.dicas)}` : ""}</section>` : (d.vozErro ? `<p class="cr-nota">${escH(d.vozErro)}</p>` : "");
+    return htmlC + htmlV;
+  }
+
+  window.painelAnaliseVideo = { estudar, ligado, ligar, chaveHtml, ligarChave, cenasEVoz, htmlCenasVoz };
 })();
