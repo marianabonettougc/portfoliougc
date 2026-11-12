@@ -304,7 +304,7 @@
     if (!area) { nav.hidden = true; nav.innerHTML = ""; return; }
     const atual = (area.junto && area.junto[nome]) || nome;
     nav.hidden = false;
-    nav.innerHTML = area.partes.map(([k, t]) => `<button type="button" class="sub-aba${k === atual ? " ativa" : ""}" data-sub="${k}" aria-current="${k === atual ? "page" : "false"}">${esc(t)}</button>`).join("");
+    nav.innerHTML = area.partes.map(([k, t]) => `<button type="button" class="sub-aba${k === atual ? " ativa" : ""}" data-sub="${k}" title="${esc(DESCRICOES[k] || "")}" aria-current="${k === atual ? "page" : "false"}">${esc(t)}</button>`).join("");
     nav.querySelectorAll("[data-sub]").forEach((b) => b.addEventListener("click", () => mostrarAba(b.dataset.sub)));
   }
   // Meus roteiros virou uma aba de Conteúdos (nov/2026, pedido da Mari): Visão geral | Quadro de produção | Meus roteiros |
@@ -332,6 +332,38 @@
     }
     cab.hidden = false;
   }
+  // Para que serve cada aba (nov/2026, pedido da Mari: "me sinto perdida"). Aparece embaixo do título e ao passar o mouse no menu.
+  const DESCRICOES = {
+    dashboard: "Seu resumo do dia: campanhas em andamento, prazos da semana e o que já está pronto para postar.",
+    quadro: "Editor de roteiros: escreva e ajuste o roteiro deste conteúdo. Ele volta para o Quadro de produção quando você terminar.",
+    central: "Biblioteca: todos os vídeos e posts de referência que você guardou, para consultar e modelar nos seus roteiros.",
+    transcritos: "Cole o link de um vídeo para tirar a transcrição e analisar as cenas, a voz e por que ele funciona.",
+    laboratorio: "Seus Salvos do Instagram (pastas \u201cProduzir vídeos assim\u201d e \u201cGravar em…\u201d) já analisados, prontos para virar ideia de conteúdo.",
+    editorial: "Perfis de referência que você acompanha: mostra os posts que foram acima do normal e explica por que o gancho funcionou.",
+    metricas: "Os números do seu Instagram e TikTok (pelo Metricool): crescimento, alcance, melhores dias e horários e o que está indo bem ou mal.",
+    campanhas: "Todas as suas campanhas de UGC e publi, do briefing à entrega. Tudo o que você cadastra aqui entra sozinho no Financeiro.",
+    marcas: "Sua agenda de marcas: contatos e leads de cada marca, num lugar só.",
+    propostas: "Propostas de marcas que chegaram no seu e-mail, para você responder e transformar em campanha.",
+    prospeccao: "Marcas que você quer abordar e em que pé está a conversa com cada uma.",
+    followups: "Lembretes para voltar a falar com as marcas depois de cada entrega e manter o relacionamento (e os próximos jobs).",
+    candidaturas: "Campanhas e vagas em que você se candidatou (plataformas e agências) e o status de cada uma.",
+    trafego: "Direitos de uso dos seus vídeos nos anúncios das marcas: o que está valendo, o que vence e as chances de renovar.",
+    edicao: "Suba o vídeo gravado e edite aqui: cortes, legendas no seu padrão e efeitos sonoros, com a IA ajudando.",
+    estudio: "Estúdio criativo: monte carrosséis e posts de foto a partir das suas fotos, briefings e referências.",
+    ferarquivos: "Escolha a pasta das gravações brutas e o painel renomeia e organiza os vídeos para você. Funciona no Chrome do computador.",
+    fercapa: "Suba a capa do Reels ou do TikTok e receba uma nota: se o texto lê bem e se nada fica escondido pelos botões do app.",
+    ferideias: "Escreva uma ideia ou cole um print e o painel organiza por categoria e funil, pronta para virar roteiro.",
+    financeiro: "Entradas, saídas, notas fiscais e impostos do seu CNPJ (MEI). As campanhas de UGC's & Publis entram aqui sozinhas.",
+    tiktokshop: "Amostras recebidas, vídeos do TikTok Shop, prazos de postagem e comissões.",
+    portfolio: "O que aparece no seu site: vídeos, marcas e textos do portfólio.",
+    checklist: "O que ainda falta para deixar o seu portfólio completo.",
+    config: "Ajustes gerais do painel e do aplicativo.",
+    notificacoes: "Ative os avisos do painel no seu celular.",
+  };
+  // Conteúdos tem as próprias partes (js/painel-conteudo.js); a descrição de cada uma fica aqui também, para o menu
+  const DESCRICOES_CONTEUDOS = {
+    planejar: "Tudo o que você vai postar: o plano da semana, as etapas de produção, o calendário e o banco de ideias.",
+  };
   let abaAtual = "portfolio";
   function mostrarAba(nome) {
     if (nome === "gestao") nome = "dashboard"; // a antiga aba Gestão UGC virou várias abas
@@ -359,6 +391,8 @@
     if (botao) abrirSecao(botao.closest(".menu-secao"), true);
     abrirGrupo(botao && botao.dataset.pai ? botao.dataset.pai : (botao && botao.classList.contains("tem-sub") ? nome : ""));
     $("#titulo-aba").textContent = TITULOS[nome];
+    const descEl = $("#desc-aba");
+    if (descEl) { const d = nome === "planejar" ? "" : DESCRICOES[nome] || ""; descEl.textContent = d; descEl.hidden = !d; } // Conteúdos mostra a descrição de cada parte lá dentro
     document.title = TITULOS[nome] + " | Painel Mari Bonetto";
     if (location.hash !== "#" + nome) history.replaceState(null, "", "#" + nome);
     $("#painel").classList.remove("menu-aberto");
@@ -482,6 +516,9 @@
     $$(".menu-item.sub").forEach((b) => { b.hidden = b.dataset.pai !== pai; });
     $$(".menu-item.tem-sub").forEach((b) => { const aberto = b.dataset.aba === pai; b.classList.toggle("aberto", aberto); b.setAttribute("aria-expanded", aberto ? "true" : "false"); });
   }
+  // dica ao passar o mouse: para que serve cada item do menu
+  $$(".menu-item[data-aba]").forEach((b) => { const d = DESCRICOES[b.dataset.aba] || DESCRICOES_CONTEUDOS[b.dataset.aba]; if (d) b.title = d; });
+  { const fin = document.querySelector('.menu-item[href="/financeiro/"]'); if (fin) fin.title = "Seu financeiro pessoal (CPF). Abre em outra aba."; }
   $$(".menu-item[data-aba]").forEach((b) => b.addEventListener("click", () => {
     // clicar de novo no grupo que já está aberto fecha a lista
     if (b.classList.contains("tem-sub") && grupoAberto === b.dataset.aba) { abrirGrupo(""); return; }

@@ -465,6 +465,7 @@
       <nav class="sub-abas pc-abas" aria-label="Partes de Conteúdos">
         <button type="button" class="sub-aba" data-pcaba="geral">Esta semana</button><button type="button" class="sub-aba" data-pcaba="quadro">Quadro de produção</button><button type="button" class="sub-aba" data-pcaba="cal">Calendário</button><button type="button" class="sub-aba" data-pcaba="ideias">Ideias</button>
       </nav>
+      <p class="desc-aba" id="pc-desc"></p>
       <section data-pcpar="geral" id="pc-geral"></section>
       <section data-pcpar="quadro" id="pc-kanban"></section>
       <section data-pcpar="cal" class="pc2-cal">
@@ -507,12 +508,25 @@
     // Abas (nov/2026, reorganização pedida pela Mari): Banco de ideias e Ganchos dividem a aba "Ideias e ganchos";
     // os antigos Ajustes e IA (ritmo, gerar a grade, pastas, iPhone, agente) ficam dentro de Planejamento. A escolha fica guardada.
     const ABA_DA_PARTE = { ganchos: "ideias", cfg: "ano" };
+    // Para que serve cada parte (nov/2026, pedido da Mari)
+    const DESC_PARTE = {
+      geral: "Esta semana: o plano dos próximos dias. Arraste os conteúdos entre os dias, mude a data ou use o + para criar um novo naquele dia.",
+      quadro: "Quadro de produção: em que etapa cada conteúdo está, da ideia até postado. Abra um cartão para escrever o roteiro.",
+      cal: "Calendário: o mês inteiro com os seus posts e as datas das publis. Arraste um conteúdo para mudar o dia.",
+      ideias: "Banco de ideias: ideias guardadas para usar depois, incluindo as que chegam todo dia dos seus Salvos do Instagram.",
+      ganchos: "Ganchos magnéticos: frases de abertura para testar nos vídeos. Marque se funcionaram ou não para saber quais repetir.",
+      ano: "Planejar o ano: a narrativa, o seu ritmo de posts, os temas do ano e a grade gerada pela IA. Aqui também ficam os Salvos no automático.",
+    };
+    const tituloPartes = { geral: DESC_PARTE.geral, quadro: DESC_PARTE.quadro, cal: DESC_PARTE.cal, ideias: DESC_PARTE.ideias, ano: DESC_PARTE.ano };
+    $$("[data-pcaba]", sec).forEach((b) => { if (tituloPartes[b.dataset.pcaba]) b.title = tituloPartes[b.dataset.pcaba]; });
+    $$("[data-pcsub]", sec).forEach((b) => { if (DESC_PARTE[b.dataset.pcsub]) b.title = DESC_PARTE[b.dataset.pcsub]; });
     const mostrarParte = (k) => {
       if (k === "cfg") k = "ano";
       const aba = ABA_DA_PARTE[k] || k;
       $$("[data-pcaba]", sec).forEach((b) => { b.classList.toggle("ativa", b.dataset.pcaba === aba); b.setAttribute("aria-current", b.dataset.pcaba === aba ? "page" : "false"); });
       $$("[data-pcpar]", sec).forEach((p) => { p.hidden = !p.dataset.pcpar.split(" ").includes(k); });
       $$("[data-pcsub]", sec).forEach((b) => b.classList.toggle("ativa", b.dataset.pcsub === k));
+      const pd = $("#pc-desc", sec); if (pd) { pd.textContent = DESC_PARTE[k] || ""; pd.hidden = !DESC_PARTE[k]; }
       try { localStorage.setItem("pc-parte2", k); } catch (e) { /* sem armazenamento */ }
     };
     st.mostrarParte = mostrarParte;
