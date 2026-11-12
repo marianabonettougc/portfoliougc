@@ -1,0 +1,190 @@
+// Análise de vídeo: cenas e voz (nov/2026, pedido da Mari: "analisar todas as cenas do vídeo e a voz também")
+// Tudo no navegador, sem serviço pago:
+// - Cenas: passa pelo vídeo (até 240 quadros pequenos em cinza), acha os cortes pela diferença entre
+//   quadros e tira 1 quadro do meio de cada cena (288 px para a IA de visão + miniatura 96 px para guardar).
+// - Voz: decodifica o áudio, mede ritmo (palavras por segundo pelos tempos da transcrição), pausas,
+//   % do vídeo com voz, tom médio e variação de tom (autocorrelação), variação de volume e energia por cena.
+// window.painelAnaliseVideo.estudar(blob, { segmentos, transcricao, aoProgresso }) -> { cenas, voz, duracao }
+(function () {
+  const MAX_CENAS = 14;
+  const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+  const r1 = (n) => Math.round(n * 10) / 10;
+  const pct = (arr, p) => { if (!arr.length) return 0; const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.max(0, Math.floor(p * (s.length - 1))))]; };
+  const palavras = (t) => String(t || "").trim().split(/\s+/).filter(Boolean).length;
+
+  function buscar(v, t) {
+    return new Promise((ok) => {
+      let feito = false;
+      const fim = () => { if (feito) return; feito = true; v.removeEventListener("seeked", fim); ok(); };
+      v.addEventListener("seeked", fim);
+      setTimeout(fim, 2500);
+      try { v.currentTime = Math.max(0, Math.min(t, (v.duration || t) - 0.05)); } catch (e) { fim(); }
+    });
+  }
+
+  async function abrirVideo(url) {
+    const v = document.createElement("video");
+    v.muted = true; v.playsInline = true; v.preload = "auto"; v.crossOrigin = "anonymous"; v.src = url;
+    v.style.cssText = "position:fixed;left:0;top:0;width:2px;height:2px;opacity:0.01;pointer-events:none";
+    document.body.appendChild(v);
+    await new Promise((ok, erro) => {
+      v.onloadeddata = ok; v.onerror = () => erro(new Error("Não consegui abrir o vídeo para ver as cenas."));
+      setTimeout(() => erro(new Error("O vídeo demorou demais para abrir.")), 30000);
+    });
+    // Safari só tem quadro depois de tocar
+    try { await v.play(); v.pause(); } catch (e) { /* segue */ }
+    return v;
+  }
+
+  async function acharCenas(v, aoProgresso) {
+    const dur = v.duration || 0;
+    if (!dur || !isFinite(dur)) throw new Error("Não consegui ler a duração do vídeo.");
+    const passo = Math.max(0.25, dur / 240);
+    const c = document.createElement("canvas"); c.width = 36; c.height = 64;
+    const x = c.getContext("2d", { willReadFrequently: true });
+    let antes = null; const difs = [];
+    for (let t = 0, i = 0; t < dur; t += passo, i++) {
+      await buscar(v, t);
+      x.drawImage(v, 0, 0, 36, 64);
+      const d = x.getImageData(0, 0, 36, 64).data;
+      const cinza = new Float32Array(36 * 64);
+      for (let k = 0; k < cinza.length; k++) cinza[k] = d[k * 4] * 0.3 + d[k * 4 + 1] * 0.59 + d[k * 4 + 2] * 0.11;
+      if (antes) { let s = 0; for (let k = 0; k < cinza.length; k++) s += Math.abs(cinza[k] - antes[k]); difs.push({ t, d: s / cinza.length }); }
+      antes = cinza;
+      if (aoProgresso && i % 8 === 0) aoProgresso(`Assistindo o vídeo para achar as cenas... ${Math.min(99, Math.round((t / dur) * 100))}%`);
+    }
+    const mediana = pct(difs.map((z) => z.d), 0.5);
+    const limite = Math.max(14, mediana * 3.2);
+    const cortes = [0];
+    difs.forEach((z) => { if (z.d > limite && z.t - cortes[cortes.length - 1] >= 0.5) cortes.push(z.t - passo / 2); });
+    let cenas = cortes.map((ini, i) => ({ ini, fim: i + 1 < cortes.length ? cortes[i + 1] : dur }));
+    // cena final minúscula junta com a anterior
+    cenas = cenas.filter((s, i) => !(i > 0 && s.fim - s.ini < 0.35 && (cenas[i - 1].fim = s.fim)));
+    // tomada longa sem corte: divide em partes de até 7 s para ver o que muda (gesto, produto, close)
+    const div = [];
+    cenas.forEach((s) => {
+      const n = Math.ceil((s.fim - s.ini) / 7);
+      if (n <= 1) { div.push(s); return; }
+      const p = (s.fim - s.ini) / n;
+      for (let k = 0; k < n; k++) div.push({ ini: s.ini + k * p, fim: s.ini + (k + 1) * p, mesmaTomada: k > 0 });
+    });
+    cenas = div;
+    // muitas cenas: junta as vizinhas mais curtas até caber
+    while (cenas.length > MAX_CENAS) {
+      let m = 0, menor = Infinity;
+      for (let i = 0; i < cenas.length - 1; i++) { const d = cenas[i + 1].fim - cenas[i].ini; if (d < menor) { menor = d; m = i; } }
+      cenas.splice(m, 2, { ini: cenas[m].ini, fim: cenas[m + 1].fim, juntas: true });
+    }
+    return { cenas, dur, cortes: cortes.length - 1 };
+  }
+
+  async function quadrosDasCenas(v, cenas, aoProgresso) {
+    const W = v.videoWidth || 720, H = v.videoHeight || 1280;
+    const big = document.createElement("canvas"); big.width = 288; big.height = Math.round((288 * H) / W);
+    const mini = document.createElement("canvas"); mini.width = 96; mini.height = Math.round((96 * H) / W);
+    for (let i = 0; i < cenas.length; i++) {
+      const s = cenas[i];
+      await buscar(v, s.ini + Math.min(Math.max(0.15, (s.fim - s.ini) * 0.5), s.fim - s.ini));
+      big.getContext("2d").drawImage(v, 0, 0, big.width, big.height);
+      mini.getContext("2d").drawImage(v, 0, 0, mini.width, mini.height);
+      s.imagem = big.toDataURL("image/jpeg", 0.72);
+      s.mini = mini.toDataURL("image/jpeg", 0.6);
+      if (aoProgresso) aoProgresso(`Tirando um quadro de cada cena... ${i + 1} de ${cenas.length}`);
+    }
+  }
+
+  // ---------- voz ----------
+  function tomDoQuadro(sinal, ini, n, sr) {
+    // autocorrelação normalizada, 75 a 400 Hz
+    const minL = Math.floor(sr / 400), maxL = Math.floor(sr / 75);
+    let energia = 0; for (let k = 0; k < n; k++) energia += sinal[ini + k] * sinal[ini + k];
+    if (energia <= 1e-6) return 0;
+    let melhor = 0, lag = 0;
+    for (let L = minL; L <= maxL; L++) {
+      let s = 0; for (let k = 0; k + L < n; k++) s += sinal[ini + k] * sinal[ini + k + L];
+      const nrm = s / energia;
+      if (nrm > melhor) { melhor = nrm; lag = L; }
+    }
+    return melhor > 0.45 && lag ? sr / lag : 0;
+  }
+
+  async function medirVoz(blob, cenas, dur, segmentos, transcricao, aoProgresso) {
+    if (aoProgresso) aoProgresso("Ouvindo a voz do vídeo...");
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    const ac = new Ctx();
+    let buf;
+    try { buf = await ac.decodeAudioData(await blob.arrayBuffer()); }
+    catch (e) { ac.close().catch(() => {}); return { erro: "Não consegui ler o áudio desse vídeo neste navegador." }; }
+    ac.close().catch(() => {});
+    // mono, reduzido para ~8 kHz (média simples)
+    const fator = Math.max(1, Math.round(buf.sampleRate / 8000)), sr = buf.sampleRate / fator;
+    const n = Math.floor(buf.length / fator), sinal = new Float32Array(n);
+    const canais = Array.from({ length: buf.numberOfChannels }, (_, i) => buf.getChannelData(i));
+    for (let i = 0; i < n; i++) { let s = 0; for (const ch of canais) for (let k = 0; k < fator; k++) s += ch[i * fator + k] || 0; sinal[i] = s / (fator * canais.length); }
+    const Q = Math.round(sr * 0.05); // quadros de 50 ms
+    const db = [];
+    for (let i = 0; i + Q <= n; i += Q) { let s = 0; for (let k = 0; k < Q; k++) s += sinal[i + k] * sinal[i + k]; db.push(10 * Math.log10(s / Q + 1e-10)); }
+    if (!db.length) return null;
+    const piso = pct(db, 0.1), pico = pct(db, 0.97);
+    if (pico < -60) return { erro: "O vídeo não tem som." };
+    let lim = Math.max(piso + 9, pico - 28);
+    if (lim > pico - 6) lim = pico - 20; // som quase constante: o piso é a própria voz ou música
+    const fala = db.map((d) => d > lim);
+    // suaviza: buracos de até 150 ms dentro da fala contam como fala
+    for (let i = 1; i < fala.length - 3; i++) if (!fala[i] && fala[i - 1]) { let j = i; while (j < fala.length && !fala[j] && j - i < 3) j++; if (j < fala.length && fala[j] && j - i < 3) for (let k = i; k < j; k++) fala[k] = true; }
+    const primeiro = fala.indexOf(true), ultimo = fala.lastIndexOf(true);
+    let pausas = 0, maiorPausa = 0;
+    for (let i = primeiro, run = 0; i <= ultimo && i >= 0; i++) {
+      if (!fala[i]) run++; else { if (run * 0.05 >= 0.4) { pausas++; maiorPausa = Math.max(maiorPausa, run * 0.05); } run = 0; }
+    }
+    const dbFala = db.filter((_, i) => fala[i]);
+    const media = dbFala.reduce((a, b) => a + b, 0) / (dbFala.length || 1);
+    const desvio = Math.sqrt(dbFala.reduce((a, b) => a + (b - media) * (b - media), 0) / (dbFala.length || 1));
+    // tom (no máximo 500 quadros de fala espalhados)
+    if (aoProgresso) aoProgresso("Ouvindo o tom da voz...");
+    const idxFala = fala.map((f, i) => (f ? i : -1)).filter((i) => i >= 0);
+    const passo = Math.max(1, Math.floor(idxFala.length / 500));
+    const tons = [];
+    const N = Math.round(sr * 0.04);
+    for (let k = 0; k < idxFala.length; k += passo) { const ini = idxFala[k] * Q; if (ini + N < n) { const f = tomDoQuadro(sinal, ini, N, sr); if (f) tons.push(f); } if (k % 100 === 0) await esperar(0); }
+    const tomMed = pct(tons, 0.5), t10 = pct(tons, 0.1), t90 = pct(tons, 0.9);
+    // ritmo pelas palavras da transcrição
+    const segs = (Array.isArray(segmentos) ? segmentos : []).map((s, i, a) => ({ ini: Number(s.ini) || 0, fim: Number(a[i + 1] && a[i + 1].ini) || dur, n: palavras(s.texto) }));
+    const totalPal = segs.length ? segs.reduce((a, s) => a + s.n, 0) : palavras(transcricao);
+    const segFala = fala.filter(Boolean).length * 0.05;
+    const palNo = (a, b) => segs.reduce((acc, s) => { const o = Math.max(0, Math.min(b, s.fim) - Math.max(a, s.ini)); return acc + (s.fim > s.ini ? (s.n * o) / (s.fim - s.ini) : 0); }, 0);
+    const energiaEntre = (a, b) => { const i0 = Math.floor(a / 0.05), i1 = Math.max(i0 + 1, Math.floor(b / 0.05)); const fat = db.slice(i0, i1); if (!fat.length) return 0; const m = pct(fat, 0.6); return Math.max(0, Math.min(100, Math.round(((m - (pico - 40)) / 40) * 100))); };
+    const ruidoFora = pct(db.filter((_, i) => !fala[i]), 0.5);
+    return {
+      palavrasPorSeg: segFala > 1 && totalPal ? r1(totalPal / segFala) : null,
+      ritmoGancho: segs.length ? r1(palNo(0, 3) / 3) : null,
+      primeiraFala: primeiro >= 0 ? r1(primeiro * 0.05) : null,
+      falaPct: Math.round((segFala / (dur || 1)) * 100),
+      pausas, maiorPausa: r1(maiorPausa),
+      tomHz: tons.length > 20 ? Math.round(tomMed) : null,
+      variacaoTom: tons.length > 20 && t10 ? r1(12 * Math.log2(t90 / t10)) : null,
+      variacaoVolume: r1(desvio),
+      somDeFundo: ruidoFora > piso + 12 ? "som contínuo entre as falas (provavelmente música de fundo)" : "quase silêncio entre as falas",
+      trechos: cenas.map((s) => ({ ini: r1(s.ini), pps: segs.length && s.fim - s.ini > 0.3 ? r1(palNo(s.ini, s.fim) / (s.fim - s.ini)) : null, energia: energiaEntre(s.ini, s.fim) })),
+    };
+  }
+
+  async function estudar(blob, { segmentos, transcricao, aoProgresso } = {}) {
+    const url = URL.createObjectURL(blob);
+    let v = null;
+    try {
+      v = await abrirVideo(url);
+      const { cenas, dur, cortes } = await acharCenas(v, aoProgresso);
+      await quadrosDasCenas(v, cenas, aoProgresso);
+      let voz = null;
+      try { voz = await medirVoz(blob, cenas, dur, segmentos, transcricao, aoProgresso); } catch (e) { voz = { erro: "Não consegui ouvir o áudio." }; }
+      return { cenas: cenas.map((s) => ({ ini: r1(s.ini), fim: r1(s.fim), imagem: s.imagem, mini: s.mini, mesmaTomada: !!s.mesmaTomada })), voz, duracao: Math.round(dur), cortes };
+    } finally {
+      if (v) { try { v.pause(); } catch (e) { /* segue */ } v.remove(); }
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  window.painelAnaliseVideo = { estudar };
+})();

@@ -2179,11 +2179,11 @@
     }
     const emb = embedDoLink(r.link);
     const player = central.videoLocal ? `<video src="${central.videoLocal}" controls playsinline></video>`
-      : !emb && r.video_path ? `<video data-video-path="${esc(r.video_path)}" controls playsinline></video>`
+      : r.video_path ? `<video data-video-path="${esc(r.video_path)}" controls playsinline></video>`
       : emb ? `<iframe src="${emb}" title="Vídeo de referência" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen loading="lazy"></iframe>`
       : `<div class="cr-sem-video">${ic("play", 34)}<small>${r.link ? "Esse link não toca aqui dentro." : "O arquivo desse vídeo não ficou guardado"}</small>${r.link ? "" : `<button type="button" class="btn btn-mini" data-anexar-video>Escolher o vídeo para guardar</button>`}</div>`;
     if (!central.videoLocal && !emb && !r.link && !r.video_path) setTimeout(() => { const b = $("[data-anexar-video]", sec); if (b && window.painelVideos) b.addEventListener("click", () => window.painelVideos.oferecerAnexar(r, (t, erro) => avisar(t, erro), () => paginaAnalise(sec))); }, 0);
-    if (!central.videoLocal && !emb && r.video_path) setTimeout(() => window.painelVideos && window.painelVideos.tocarEm(sec), 0);
+    if (!central.videoLocal && r.video_path) setTimeout(() => window.painelVideos && window.painelVideos.tocarEm(sec), 0);
     const { lista, aproximado } = temposDaTranscricao(r);
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga">
       ${cabecalho("Análise de transcrição", "Veja os principais pontos, a estrutura e os aprendizados do conteúdo.", `<div class="cr-acoes-topo">${seletorReferencia(r)}<button class="btn btn-principal cr-btn" type="button" data-criar>Criar roteiro a partir desta referência${ic("seta", 16)}</button></div>`)}
@@ -2230,26 +2230,93 @@
     $("[data-criar]", sec).addEventListener("click", () => { central.abaCriar = "referencia"; mostrarAba("criar"); });
     blocoAnalise($("#cr-analise", sec), r);
   }
+  // arquivo do vídeo para ver as cenas: o que ela acabou de enviar, o guardado no painel ou baixado do link (Instagram/TikTok)
+  async function blobDoVideo(r, status) {
+    try {
+      if (central.ref === r && central.videoLocal) return await (await fetch(central.videoLocal)).blob();
+      if (!r.video_path && r.link && /instagram\.com|tiktok\.com/i.test(r.link)) {
+        status("Baixando o vídeo do link para assistir as cenas... (até 1 minuto)");
+        const g = await chamarReferencias({ acao: "video", link: r.link, id: r.id });
+        if (g && g.path) { r.video_path = g.path; r.video_tamanho = g.tamanho; }
+      }
+      if (r.video_path && window.painelVideos) {
+        const u = await window.painelVideos.url(r.video_path);
+        if (u) { const resp = await fetch(u); if (resp.ok) return await resp.blob(); }
+      }
+    } catch (e) { r._semVideo = e.message || "Não consegui pegar o vídeo."; }
+    return null;
+  }
   function blocoAnalise(caixa, r) {
     const a = r.analise;
     if (!a) {
-      caixa.innerHTML = `<h4>Análise do conteúdo</h4><div class="cr-carregando"><span class="cr-girando"></span><p>Analisando: o que chama atenção, os pontos fortes e cada parte com o tempo... (uns 20 segundos)</p><p class="rot-status" id="cr-status-a" hidden></p></div>`;
+      caixa.innerHTML = `<h4>Análise do conteúdo</h4><div class="cr-carregando"><span class="cr-girando"></span><p data-passo>Preparando a análise: cenas, voz e fala...</p><p class="rot-status" id="cr-status-a" hidden></p></div>`;
       const status = statusEm($("#cr-status-a", caixa));
-      chamarReferencias({ acao: "analise", referencia: resumoReferencia(r) })
-        .then(async (res) => { await atualizarReferencia({ analise: res }); if (central.ref === r && caixa.isConnected) blocoAnalise(caixa, r); })
-        .catch((e) => { status(e.message, true); const g = $(".cr-girando", caixa); if (g) g.remove(); $(".cr-carregando", caixa).insertAdjacentHTML("beforeend", `<button class="btn" type="button" data-tentar>${ic("refazer", 15)}Tentar de novo</button>`); $("[data-tentar]", caixa).addEventListener("click", () => blocoAnalise(caixa, r)); });
+      const passo = (t) => { const p = $("[data-passo]", caixa); if (p) p.textContent = t; };
+      (async () => {
+        const ref = resumoReferencia(r);
+        let estudo = null;
+        const blob = await blobDoVideo(r, passo);
+        if (blob && window.painelAnaliseVideo) {
+          try { estudo = await window.painelAnaliseVideo.estudar(blob, { segmentos: r.segmentos, transcricao: r.transcricao, aoProgresso: passo }); }
+          catch (e) { r._semVideo = e.message; }
+        }
+        if (estudo) { ref.cenas = estudo.cenas.map((c) => ({ ini: c.ini, fim: c.fim, imagem: c.imagem })); if (estudo.voz && !estudo.voz.erro) ref.voz = estudo.voz; if (!ref.duracao) ref.duracao = estudo.duracao; }
+        passo(estudo ? `Analisando as ${estudo.cenas.length} cenas, a voz e a fala... (uns 40 segundos)` : "Analisando a fala... (uns 20 segundos)");
+        const res = await chamarReferencias({ acao: "analise", referencia: ref });
+        if (estudo) {
+          (res.cenas || []).forEach((c, i) => { const e = estudo.cenas[i]; if (e) { c.mini = e.mini; c.mesmaTomada = e.mesmaTomada; } });
+          res.cortes = estudo.cortes;
+          if (estudo.voz && estudo.voz.erro) res.vozErro = estudo.voz.erro;
+        } else res.semVideo = r._semVideo || (r.link ? "Esse link não deixa baixar o vídeo." : "O arquivo desse vídeo não está guardado no painel.");
+        const campos = { analise: res };
+        if (estudo && !r.duracao) campos.duracao = estudo.duracao;
+        if (r.video_path) campos.video_path = r.video_path;
+        await atualizarReferencia(campos);
+        if (central.ref === r && caixa.isConnected) { blocoAnalise(caixa, r); const sec = caixa.closest(".cr-pagina"); if (sec && r.video_path && !$(".cr-player video, .cr-player iframe", sec)) paginaAnalise(sec.parentElement); }
+      })().catch((e) => { status(e.message, true); const g = $(".cr-girando", caixa); if (g) g.remove(); $(".cr-carregando", caixa).insertAdjacentHTML("beforeend", `<button class="btn" type="button" data-tentar>${ic("refazer", 15)}Tentar de novo</button>`); $("[data-tentar]", caixa).addEventListener("click", () => blocoAnalise(caixa, r)); });
       return;
     }
     const itens = (l) => `<ul>${(l || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
     const bloco = (icone, titulo, conteudo, aberto) => `<details class="cr-acordeao"${aberto ? " open" : ""}><summary><span class="cr-icone">${ic(icone, 18)}</span><b>${titulo}</b>${ic("chevron", 16)}</summary><div class="cr-acordeao-corpo">${conteudo}</div></details>`;
+    const cenas = Array.isArray(a.cenas) ? a.cenas : [];
+    const v = a.voz || null, m = (v && v.medidas) || null;
+    const nivelTom = (x) => x == null ? "" : x <= 3 ? "voz mais reta" : x <= 7 ? "voz expressiva" : "voz bem animada";
+    const nivelRitmo = (x) => x == null ? "" : x < 2.3 ? "fala calma" : x < 3.2 ? "ritmo médio" : "fala rápida";
+    const chips = m ? [m.palavrasPorSeg != null ? `${String(m.palavrasPorSeg).replace(".", ",")} palavras/s · ${nivelRitmo(m.palavrasPorSeg)}` : "", m.variacaoTom != null ? nivelTom(m.variacaoTom) : "", m.pausas != null ? `${m.pausas} pausa${m.pausas === 1 ? "" : "s"}` : "", m.falaPct != null ? `voz em ${m.falaPct}% do vídeo` : "", m.primeiraFala != null ? `primeira fala em ${String(m.primeiraFala).replace(".", ",")} s` : ""].filter(Boolean) : [];
+    const htmlCenas = cenas.length ? `<p class="cr-nota">${ic("info", 14)}${cenas.length} cenas${a.cortes != null ? ` (${a.cortes} corte${a.cortes === 1 ? "" : "s"} no vídeo; tomadas longas divididas em partes)` : ""}. Toque numa cena para ver no vídeo.</p>
+      <ol class="cr-cenas">${cenas.map((c, i) => `<li data-ir="${c.ini}">
+        ${c.mini ? `<img src="${c.mini}" alt="Cena ${i + 1}" loading="lazy">` : `<span class="cr-cena-sem">${i + 1}</span>`}
+        <div><div class="cr-cena-topo"><span class="cr-tempo">${mmss(c.ini)} - ${mmss(c.fim)}</span>${c.funcao ? `<span class="cr-cena-funcao">${esc(c.funcao)}</span>` : ""}${c.enquadramento ? `<span class="cr-cena-enq">${esc(c.enquadramento)}</span>` : ""}</div>
+        ${c.visual ? `<p>${esc(c.visual)}</p>` : ""}
+        ${c.texto_tela ? `<p class="cr-cena-extra"><b>Texto na tela:</b> ${esc(c.texto_tela)}</p>` : ""}
+        ${c.fala ? `<p class="cr-cena-fala">"${esc(c.fala)}"</p>` : ""}
+        ${c.por_que ? `<p class="cr-cena-extra"><b>Por que funciona:</b> ${esc(c.por_que)}</p>` : ""}
+        ${c.dica ? `<p class="cr-cena-extra"><b>Para gravar a sua:</b> ${esc(c.dica)}</p>` : ""}</div></li>`).join("")}</ol>
+      ${a.visual && a.visual.length ? `<h5 class="cr-sub">O que a filmagem faz bem</h5>${itens(a.visual)}` : ""}${a.semVisao ? `<p class="cr-nota">${ic("info", 14)}A IA de visão não respondeu agora, então as cenas ficaram só com os tempos. Refaça a análise daqui a pouco.</p>` : ""}` : "";
+    const htmlVoz = v && (v.resumo || chips.length) ? `${chips.length ? `<div class="cr-voz-chips">${chips.map((c) => `<span>${esc(c)}</span>`).join("")}</div>` : ""}
+      ${v.resumo ? `<p>${esc(v.resumo)}</p>` : ""}
+      ${v.ritmo ? `<p><b>Ritmo:</b> ${esc(v.ritmo)}</p>` : ""}${v.entonacao ? `<p><b>Tom:</b> ${esc(v.entonacao)}</p>` : ""}${v.pausas ? `<p><b>Pausas:</b> ${esc(v.pausas)}</p>` : ""}
+      ${m && m.somDeFundo ? `<p><b>Fundo:</b> ${esc(m.somDeFundo)}</p>` : ""}
+      ${v.dicas && v.dicas.length ? `<h5 class="cr-sub">Para usar a voz igual</h5>${itens(v.dicas)}` : ""}` : "";
+    const aviso = !cenas.length ? `<div class="cr-aviso-analise">${ic("info", 15)}<p>${a.viuCenas === undefined && !a.semVideo ? "Esta análise foi feita antes e olhou só a fala." : `Analisei só a fala: ${esc(a.semVideo || "não consegui pegar o vídeo.")}`} ${r.video_path || /instagram\.com|tiktok\.com/i.test(r.link || "") ? "" : "Escolha o arquivo do vídeo para eu ver as cenas e ouvir a voz."}</p>
+      <div>${r.video_path || /instagram\.com|tiktok\.com/i.test(r.link || "") ? `<button class="btn btn-mini" type="button" data-refazer>${ic("refazer", 14)}Analisar cenas e voz</button>` : `<button class="btn btn-mini" type="button" data-anexar-analise>${ic("subir", 14)}Escolher o vídeo</button>`}</div></div>` : (a.vozErro ? `<p class="cr-nota">${ic("info", 14)}${esc(a.vozErro)} As cenas foram analisadas.</p>` : "");
     caixa.innerHTML = `<h4>Análise do conteúdo</h4>
+      ${aviso}
       ${bloco("panorama", "Panorama geral", `<p>${esc(a.panorama || "")}</p>`, true)}
       ${bloco("lampada", "Motivo de chamar atenção", itens(a.motivos), true)}
+      ${htmlCenas ? bloco("imagem", `Cenas do vídeo (${cenas.length})`, htmlCenas, true) : ""}
+      ${htmlVoz ? bloco("mic", "Voz e entrega", htmlVoz, true) : ""}
       ${bloco("estrela", "Pontos fortes", itens(a.pontos_fortes))}
       ${bloco("lista", "Estrutura do vídeo", `<ol class="cr-partes">${(a.desenvolvimento || []).map((d, i) => `<li><span class="cr-num">${i + 1}</span><span class="cr-tempo">${esc(d.ini)}${d.fim ? " - " + esc(d.fim) : ""}</span><p><b>${esc(d.parte)}</b>${esc(d.texto)}</p></li>`).join("")}</ol>`)}
       ${bloco("brilho", "Aprendizados para aplicar", itens(a.melhorar))}
       <button class="btn btn-mini cr-refazer" type="button" data-refazer>${ic("refazer", 14)}Refazer análise</button>`;
-    $("[data-refazer]", caixa).addEventListener("click", async () => { await atualizarReferencia({ analise: null }); blocoAnalise(caixa, r); });
+    $$("[data-refazer]", caixa).forEach((b) => b.addEventListener("click", async () => { await atualizarReferencia({ analise: null }); blocoAnalise(caixa, r); }));
+    const anexar = $("[data-anexar-analise]", caixa);
+    if (anexar && window.painelVideos) anexar.addEventListener("click", () => window.painelVideos.oferecerAnexar(r, (t, erro) => avisar(t, erro), async () => { await atualizarReferencia({ analise: null }); const sec = caixa.closest(".cr-pagina"); if (sec) paginaAnalise(sec.parentElement); else blocoAnalise(caixa, r); }));
+    $$(".cr-cenas li[data-ir]", caixa).forEach((li) => li.addEventListener("click", () => {
+      const pag = caixa.closest(".cr-pagina"); const vid = pag && $(".cr-player video", pag);
+      if (vid) { vid.currentTime = Number(li.dataset.ir) || 0; vid.play().catch(() => {}); vid.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+    }));
   }
 
   // ---------- Criar roteiro a partir de referência (e com a Skill UGC sem referência) ----------
