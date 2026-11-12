@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611111200"></script>
-<script src="../../js/dialogos.js?v=202611111200"></script>
-<script src="../../js/metricool-ig.js?v=202611111200"></script>
-<script src="../../js/corretor.js?v=202611111200"></script>
+<script src="../../js/banco.js?v=202611122000"></script>
+<script src="../../js/dialogos.js?v=202611122000"></script>
+<script src="../../js/metricool-ig.js?v=202611122000"></script>
+<script src="../../js/corretor.js?v=202611122000"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -221,7 +221,8 @@
   .dz-nums .dn-card-txt b{display:block;font-size:22px;margin:4px 0 2px}
   .dz-nums .dn-card-txt em{font-style:normal;color:var(--db-suave)}
   .dz-nums .dn-card-txt em.ruim{color:var(--db-vermelho)} .dz-nums .dn-card-txt em.bom{color:var(--db-verde)}
-  .dz-nums .dn-card-txt em.dz-vis-tempo{white-space:normal;margin-top:3px;color:var(--db-cafe,#6b4a35)}
+  .dz-nums .dn-card-txt em.dz-vis-tempo{white-space:normal;margin-top:4px;color:var(--db-suave)}
+  .dz-vis-linha{display:block;line-height:1.45} .dz-vis-linha b{font-size:inherit !important;font-weight:600;color:var(--db-texto,#3d2b20)}
   .dz-ig-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
   .dz-ig-cab h2{margin:0}
   .dz-seg-p{padding:3px}.dz-seg-p button{padding:4px 10px;font-size:11.5px}
@@ -3812,8 +3813,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             <b>{vis.erro ? "–" : vis.total==null ? "..." : plural(vis.total,"visita","visitas")}</b>
             <em className={vis.erro?"ruim":""}>{vis.erro ? "não consegui carregar agora" : vis.total==null ? "carregando" : `${plural(vis.unicos,"visitante único","visitantes únicos")} · ${vis.hoje} hoje`}</em>
             {!vis.erro && vis.total!=null && <em className="dz-vis-tempo" title="Tempo com o site aberto na tela e a pessoa mexendo (parada há mais de 2 min não conta). Só visitas de fora, as suas ficam de fora.">
-              {vis.tempo && vis.tempo.siteMedio!=null ? `ficam ${fmtDuracao(vis.tempo.siteMedio)} no site em média` : "tempo no site: começa a contar agora"}
-              {vis.tempo && vis.tempo.videoN ? ` · ${fmtDuracao(vis.tempo.videoTotal)} de vídeos assistidos` : ""}</em>}</span></div>
+              <span className="dz-vis-linha">No site: <b>{vis.tempo && vis.tempo.siteMedio!=null ? `${fmtDuracao(vis.tempo.siteMedio)} por visita` : "ainda medindo"}</b></span>
+              <span className="dz-vis-linha">Vendo vídeos: <b>{vis.tempo && vis.tempo.videoN ? `${fmtDuracao(vis.tempo.videoTotal)} no total` : "nenhum ainda"}</b></span></em>}</span></div>
       </div>
 
       {/* 3. Instagram (seguidores e alcance) lado a lado, acima do calendário (pedido da Mari, nov/2026) */}

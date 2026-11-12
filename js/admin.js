@@ -579,7 +579,7 @@
       <div class="bloco-titulo"><button class="pf-min" type="button" data-min="${id}" aria-expanded="${!fechado}" title="${fechado ? "Abrir" : "Minimizar"}">${SETA_MIN}<h2>${titulo}</h2></button>${extra ? `<div class="pf-extra">${extra}</div>` : ""}</div>
       <div class="pf-corpo">${corpo}</div></div>`;
   }
-  const fmtSeg = (s) => { s = Math.round(numero(s)); if (s < 60) return `${s} s`; const m = Math.floor(s / 60), r = s % 60; return r ? `${m} min ${String(r).padStart(2, "0")} s` : `${m} min`; };
+  const fmtSeg = (s) => { s = Math.round(numero(s)); if (s < 60) return `${s} s`; const m = Math.floor(s / 60), r = s % 60; if (m >= 60) return `${Math.floor(m / 60)} h ${m % 60} min`; return r ? `${m} min ${String(r).padStart(2, "0")} s` : `${m} min`; };
   const NOME_PAGINA = (p) => { const t = String(p || "/").replace(/\/index\.html$/, "/"); if (t === "/" || t === "/portfoliougc/" || t === "") return "Página inicial (portfólio)"; if (/valores/.test(t)) return "Página de valores"; return t; };
   const LINKS_ETIQUETA = [
     ["instagram-bio", "Bio do Instagram"], ["instagram-stories", "Stories do Instagram"], ["instagram-direct", "Direct do Instagram"], ["instagram-destaques", "Destaques do Instagram"],
@@ -623,6 +623,23 @@
     const segDe = (e) => e.reproducao_id && tempoRid[e.reproducao_id] != null ? tempoRid[e.reproducao_id] : null;
     const comTempo = reproducoes.map(segDe).filter(s => s != null);
     const mediaSeg = comTempo.length ? comTempo.reduce((a, b) => a + b, 0) / comTempo.length : null;
+    // tempo no site: cada visita manda "tempo_site" de tempos em tempos (vale o maior de cada visita)
+    const siteRid = {};
+    eventos.filter(e => e.evento === "tempo_site" && e.reproducao_id).forEach(e => {
+      const o = siteRid[e.reproducao_id] || (siteRid[e.reproducao_id] = { seg: 0, vid: e.visitante_id, ini: new Date(e.criado_em) });
+      o.seg = Math.max(o.seg, numero(e.segundos)); const d = new Date(e.criado_em); if (d < o.ini) o.ini = d;
+    });
+    const sitesSeg = Object.values(siteRid).map(o => o.seg);
+    const siteMedio = sitesSeg.length ? sitesSeg.reduce((a, b) => a + b, 0) / sitesSeg.length : null;
+    const siteTotal = sitesSeg.reduce((a, b) => a + b, 0);
+    const videoTotal = Object.values(tempoRid).reduce((a, b) => a + b, 0);
+    const usadosSite = new Set();
+    const tempoDaVisita = (v) => { // a medição do mesmo navegador que começou até 3 h depois da visita
+      if (!v.visitante_id) return null; const t = new Date(v.data).getTime();
+      const achou = Object.entries(siteRid).filter(([rid, o]) => !usadosSite.has(rid) && o.vid === v.visitante_id && o.ini.getTime() >= t - 60000 && o.ini.getTime() <= t + 3 * 3600000)
+        .sort((a, b) => a[1].ini - b[1].ini)[0];
+      if (!achou) return null; usadosSite.add(achou[0]); return achou[1].seg;
+    };
     const porVideo = {};
     reproducoes.forEach(e => { const k = e.video_titulo || "Vídeo"; const o = porVideo[k] || (porVideo[k] = { nome: k, link: e.video_link, n: 0, seg: 0, nSeg: 0 }); o.n++; const s = segDe(e); if (s != null) { o.seg += s; o.nSeg++; } });
     const videosTop = Object.values(porVideo).sort((a, b) => b.n - a.n || b.seg - a.seg);
@@ -653,6 +670,8 @@
         <div class="numero"><small>Visitas</small><strong>${total}</strong><em>nos últimos ${diasPeriodo} dias${contar ? "" : ", só pessoas de fora"}</em></div>
         <div class="numero"><small>Pessoas diferentes</small><strong>${visitantes}</strong><em>contadas pelo navegador de cada uma</em></div>
         <div class="numero"><small>Visitas hoje</small><strong>${deHoje}</strong></div>
+        <div class="numero"><small>Tempo médio no site</small><strong>${siteMedio != null ? fmtSeg(siteMedio) : "-"}</strong><em>${sitesSeg.length ? plural(sitesSeg.length, "visita medida", "visitas medidas") + " · " + fmtSeg(siteTotal) + " no total" : "conta desde 11/11/2026"}</em></div>
+        <div class="numero"><small>Tempo vendo vídeos</small><strong>${videoTotal ? fmtSeg(videoTotal) : "-"}</strong><em>${siteTotal && videoTotal ? Math.min(100, Math.round(videoTotal / siteTotal * 100)) + "% do tempo no site" : "soma de todos os vídeos assistidos"}</em></div>
         <div class="numero"><small>Tempo médio por vídeo</small><strong>${mediaSeg != null ? fmtSeg(mediaSeg) : "-"}</strong><em>${comTempo.length ? plural(comTempo.length, "vídeo assistido", "vídeos assistidos") + " com tempo" : "aparece quando alguém assistir"}</em></div>
         <div class="numero"><small>Origem principal</small><strong>${topoOrigem ? esc(topoOrigem) : "-"}</strong><em>${topoOrigem ? Math.round((origens[0][1] / total) * 100) + "% das visitas" : "ainda sem visitas"}</em></div>
       </div>
@@ -674,7 +693,7 @@
           <ul class="pf-links">${LINKS_ETIQUETA.map(([de, nome]) => `<li><span><b>${esc(nome)}</b><small>${esc(baseSite)}?de=${esc(de)}</small></span><button class="btn" type="button" data-copiar="${esc(baseSite)}?de=${esc(de)}">Copiar</button></li>`).join("")}</ul>
           <div class="pf-link-novo"><input type="text" id="pf-link-onde" placeholder="Outro lugar, ex.: instagram post achadinhos" aria-label="Outro lugar para o link"><button class="btn" type="button" id="pf-link-criar">Criar e copiar</button></div>
           <p class="analytics-nota">No seu celular, abra uma vez <b>${esc(baseSite)}?sou-a-mari</b> dentro do navegador do Instagram e do Facebook: assim esses navegadores nunca contam como visita.</p>`)}
-        ${blocoPf("ultimas", "Últimas visitas", `<span class="analytics-contagem">${ultimas.length ? "toque em Fui eu se alguma for sua" : ""}</span>`, ultimas.length ? `<div class="analytics-lista">${ultimas.map(v => { const minha = ehMinha(v); return `<div class="analytics-linha pf-visita"><div class="analytics-detalhe"><b>${esc(v.origem || "Direto")}${v.origem_detalhe ? " · " + esc(v.origem_detalhe) : ""}</b><small>${esc(v.dispositivo || "aparelho não identificado")} · ${esc(NOME_PAGINA(v.pagina))} · ${fmtHora(v.data)}${minha ? " · sua" : ""}</small></div>${v.visitante_id ? `<button class="btn pf-fui" type="button" data-fui="${esc(v.visitante_id)}" data-meu="${minha ? "0" : "1"}">${minha ? "Não fui eu" : "Fui eu"}</button>` : ""}</div>`; }).join("")}</div>` : `<p class="vazio">As visitas de pessoas de fora aparecerão aqui.</p>`)}
+        ${blocoPf("ultimas", "Últimas visitas", `<span class="analytics-contagem">${ultimas.length ? "toque em Fui eu se alguma for sua" : ""}</span>`, ultimas.length ? `<div class="analytics-lista">${ultimas.map(v => { const minha = ehMinha(v); return `<div class="analytics-linha pf-visita"><div class="analytics-detalhe"><b>${esc(v.origem || "Direto")}${v.origem_detalhe ? " · " + esc(v.origem_detalhe) : ""}</b><small>${esc(v.dispositivo || "aparelho não identificado")} · ${esc(NOME_PAGINA(v.pagina))} · ${fmtHora(v.data)}${minha ? " · sua" : ""}</small>${(() => { const sg = tempoDaVisita(v); return sg != null ? `<small class="pf-tempo">Ficou ${fmtSeg(sg)} no site</small>` : ""; })()}</div>${v.visitante_id ? `<button class="btn pf-fui" type="button" data-fui="${esc(v.visitante_id)}" data-meu="${minha ? "0" : "1"}">${minha ? "Não fui eu" : "Fui eu"}</button>` : ""}</div>`; }).join("")}</div>` : `<p class="vazio">As visitas de pessoas de fora aparecerão aqui.</p>`)}
       </div>
       <div class="duas-colunas">
         ${blocoPf("dispositivos", "Dispositivos de acesso", `<span class="analytics-contagem">${total ? Math.round((visitas.filter(v => v.dispositivo).length / total) * 100) + "% identificados" : "0 acessos"}</span>`,
