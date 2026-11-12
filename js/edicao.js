@@ -2375,8 +2375,8 @@ IDEIA PARA DEPOIS
     if (st.guiasIG && !st.exportando && !horizontal()) guiasInstagram(u, W, H);
   }
   // ---------- textos na tela (camadas editáveis: mudar frase, tempo, tamanho e arrastar) ----------
-  // linha: { texto, tipo: "cap" (Poppins caixa-alta espaçada, branca) | "ser" (DM Serif itálica, creme) | "emo", tam (em 1080) }
-  const FONTE_CAMADA = { cap: (px) => `600 ${px}px Poppins, sans-serif`, ser: (px) => `italic 400 ${px}px "DM Serif Display", Georgia, serif`, emo: (px) => `${px}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`, pop: (px) => `700 ${px}px Poppins, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif` };
+  // linha: { texto, tipo: "cap" (Poppins caixa-alta espaçada, branca) | "ser" (DM Serif itálica, creme) | "emo" | "pop" | "man" (manuscrita Pinyon Script, a dos diferenciais da referência Weleda), tam (em 1080) }
+  const FONTE_CAMADA = { cap: (px) => `600 ${px}px Poppins, sans-serif`, ser: (px) => `italic 400 ${px}px "DM Serif Display", Georgia, serif`, emo: (px) => `${px}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`, pop: (px) => `700 ${px}px Poppins, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`, man: (px) => `400 ${px}px "Pinyon Script", "DM Serif Display", cursive` };
   const ALTURA_LINHA = { cap: 1.55, ser: 1.08, emo: 1.35, pop: 1.18 };
   // visual de cada texto (ela ajusta na aba Textos): cores, contorno, opacidade e sombra atrás
   const VISUAL_PADRAO = { cor: "#fff3b0", corPequena: "#ffffff", contorno: 0, contornoCor: "#1d1611", opacidade: 1, sombra: 0.72, sombraCor: "#160c08", alinh: "centro", fundo: "" };
@@ -2637,7 +2637,7 @@ IDEIA PARA DEPOIS
           ${ab ? `<div class="ed-cam-corpo">
             ${(c.linhas || []).map((l, i) => `<div class="ed-cam-linha">
               <input class="entrada" data-cam-txt="${i}" value="${esc(l.texto || "")}" aria-label="Texto da linha ${i + 1}">
-              <select class="entrada" data-cam-tipo="${i}" aria-label="Estilo da linha ${i + 1}"><option value="ser" ${l.tipo === "ser" ? "selected" : ""}>Grande (serifada)</option><option value="cap" ${l.tipo === "cap" ? "selected" : ""}>Pequena (caixa-alta)</option><option value="emo" ${l.tipo === "emo" ? "selected" : ""}>Emojis</option><option value="pop" ${l.tipo === "pop" ? "selected" : ""}>Negrito (Poppins)</option></select>
+              <select class="entrada" data-cam-tipo="${i}" aria-label="Estilo da linha ${i + 1}"><option value="ser" ${l.tipo === "ser" ? "selected" : ""}>Grande (serifada)</option><option value="cap" ${l.tipo === "cap" ? "selected" : ""}>Pequena (caixa-alta)</option><option value="emo" ${l.tipo === "emo" ? "selected" : ""}>Emojis</option><option value="pop" ${l.tipo === "pop" ? "selected" : ""}>Negrito (Poppins)</option><option value="man" ${l.tipo === "man" ? "selected" : ""}>Manuscrita (script)</option></select>
               <button class="icone-btn" type="button" data-cam-tiralinha="${i}" aria-label="Tirar linha">${ic.x}</button></div>`).join("")}
             <button class="btn btn-leve" type="button" data-cam-maislinha>${ic.mais}Linha</button>
             <div class="ed-cam-grade">
@@ -2683,7 +2683,7 @@ IDEIA PARA DEPOIS
     const c = camadaAtual(); if (!c) return;
     const corpo = box.querySelector(".ed-cam.aberta");
     $$("[data-cam-txt]", corpo).forEach((i) => i.addEventListener("input", () => { guardarCam("txt" + c.id + i.dataset.camTxt); c.linhas[+i.dataset.camTxt].texto = i.value; mexeu(); }));
-    $$("[data-cam-tipo]", corpo).forEach((i) => i.addEventListener("change", () => { guardarCam(); const l = c.linhas[+i.dataset.camTipo]; l.tipo = i.value; l.tam = i.value === "cap" ? 38 : i.value === "emo" ? 50 : i.value === "pop" ? 56 : 110; mexeu(); }));
+    $$("[data-cam-tipo]", corpo).forEach((i) => i.addEventListener("change", () => { guardarCam(); const l = c.linhas[+i.dataset.camTipo]; l.tipo = i.value; l.tam = i.value === "cap" ? 38 : i.value === "emo" ? 50 : i.value === "pop" ? 56 : i.value === "man" ? 150 : 110; mexeu(); }));
     $$("[data-cam-tiralinha]", corpo).forEach((b) => b.addEventListener("click", () => { guardarCam(); c.linhas.splice(+b.dataset.camTiralinha, 1); pintarCamadas(); mexeu(); }));
     $("[data-cam-maislinha]", corpo).addEventListener("click", () => { guardarCam(); c.linhas.push({ texto: "Nova linha", tipo: "cap", tam: 38 }); pintarCamadas(); mexeu(); });
     $("[data-cam-t0]", corpo).addEventListener("change", (e) => { guardarCam(); c.t0 = Math.max(0, +e.target.value || 0); if (c.t1 <= c.t0) c.t1 = c.t0 + 0.5; pintarCamadas(); mexeu(); });
@@ -5231,12 +5231,12 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     const sec = document.getElementById("aba-" + ABA);
     if (!sec) return;
     if (!st.pronto) {
-      if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;500;600;800&family=Montserrat:wght@700;800&family=Nunito:wght@800&family=Arimo:wght@700&family=Instrument+Serif:ital@1&family=Fredoka:wght@700&family=Caveat:wght@700&family=JetBrains+Mono:wght@500&display=swap"; document.head.appendChild(l); }
+      if (!document.getElementById("ed-fontes")) { const l = document.createElement("link"); l.id = "ed-fontes"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@300;500;600;800&family=Montserrat:wght@700;800&family=Nunito:wght@800&family=Arimo:wght@700&family=Instrument+Serif:ital@1&family=Fredoka:wght@700&family=Caveat:wght@700&family=JetBrains+Mono:wght@500&family=Pinyon+Script&display=swap"; document.head.appendChild(l); }
       montarTela(sec); st.pronto = true;
       carregarProjetos();
       carregarOpcoesStudio().then(()=>{if(st.projeto) return carregarStudio(); pintarStudio();});
       carregarPadrao(); carregarMinhaFonte(); carregarEstilos();
-      try { await Promise.all(["300 40px Poppins", "500 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"', "800 40px Montserrat", "700 40px Montserrat", "800 40px Nunito", "700 40px Arimo", 'italic 40px "Instrument Serif"', "700 40px Fredoka", "700 40px Caveat"].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
+      try { await Promise.all(["300 40px Poppins", "500 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"', "800 40px Montserrat", "700 40px Montserrat", "800 40px Nunito", "700 40px Arimo", 'italic 40px "Instrument Serif"', "700 40px Fredoka", "700 40px Caveat", '40px "Pinyon Script"'].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
     }
     pintar();
   }
