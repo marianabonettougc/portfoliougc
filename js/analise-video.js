@@ -4,7 +4,8 @@
 //   quadros e tira 1 quadro do meio de cada cena (288 px para a IA de visão + miniatura 96 px para guardar).
 // - Voz: decodifica o áudio, mede ritmo (palavras por segundo pelos tempos da transcrição), pausas,
 //   % do vídeo com voz, tom médio e variação de tom (autocorrelação), variação de volume e energia por cena.
-// window.painelAnaliseVideo.estudar(blob, { segmentos, transcricao, aoProgresso }) -> { cenas, voz, duracao }
+// window.painelAnaliseVideo.estudar(blob, { segmentos, transcricao, aoProgresso }) -> { cenas, folhas, voz, duracao }
+// folhas = até 8 cenas numeradas por imagem (a IA de visão do Groq grátis não aguenta 1 imagem por cena)
 (function () {
   const MAX_CENAS = 14;
   const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -92,6 +93,34 @@
       if (aoProgresso) aoProgresso(`Tirando um quadro de cada cena... ${i + 1} de ${cenas.length}`);
     }
   }
+  // folhas de contato: até 8 cenas numa imagem só (4 x 2), com o número de cada cena.
+  // O Groq grátis só aceita 3 imagens por pedido e uns 7 mil tokens de entrada por minuto,
+  // então mandar 1 imagem por cena não cabe; a folha deixa a IA ver todas as cenas.
+  async function folhasDeContato(cenas) {
+    const POR = 8, COL = 4, TW = 180, TH = 320;
+    const folhas = [];
+    for (let ini = 0; ini < cenas.length; ini += POR) {
+      const grupo = cenas.slice(ini, ini + POR);
+      const lin = Math.ceil(grupo.length / COL), col = Math.min(COL, grupo.length);
+      const c = document.createElement("canvas"); c.width = col * TW; c.height = lin * TH;
+      const x = c.getContext("2d"); x.fillStyle = "#000"; x.fillRect(0, 0, c.width, c.height);
+      for (let k = 0; k < grupo.length; k++) {
+        const img = new Image(); img.src = grupo[k].imagem;
+        await new Promise((ok) => { img.onload = ok; img.onerror = ok; });
+        const px = (k % COL) * TW, py = Math.floor(k / COL) * TH;
+        const esc = Math.max(TW / (img.width || TW), TH / (img.height || TH));
+        const w = (img.width || TW) * esc, h = (img.height || TH) * esc;
+        x.save(); x.beginPath(); x.rect(px, py, TW, TH); x.clip();
+        x.drawImage(img, px + (TW - w) / 2, py + (TH - h) / 2, w, h); x.restore();
+        x.strokeStyle = "#fff"; x.lineWidth = 2; x.strokeRect(px + 1, py + 1, TW - 2, TH - 2);
+        x.fillStyle = "#ffeb3b"; x.fillRect(px + 4, py + 4, 40, 30);
+        x.fillStyle = "#000"; x.font = "bold 22px Arial"; x.textAlign = "center"; x.textBaseline = "middle";
+        x.fillText(String(ini + k + 1), px + 24, py + 20);
+      }
+      folhas.push({ de: ini, ate: ini + grupo.length - 1, imagem: c.toDataURL("image/jpeg", 0.8) });
+    }
+    return folhas;
+  }
 
   // ---------- voz ----------
   function tomDoQuadro(sinal, ini, n, sr) {
@@ -177,9 +206,10 @@
       v = await abrirVideo(url);
       const { cenas, dur, cortes } = await acharCenas(v, aoProgresso);
       await quadrosDasCenas(v, cenas, aoProgresso);
+      const folhas = await folhasDeContato(cenas);
       let voz = null;
       try { voz = await medirVoz(blob, cenas, dur, segmentos, transcricao, aoProgresso); } catch (e) { voz = { erro: "Não consegui ouvir o áudio." }; }
-      return { cenas: cenas.map((s) => ({ ini: r1(s.ini), fim: r1(s.fim), imagem: s.imagem, mini: s.mini, mesmaTomada: !!s.mesmaTomada })), voz, duracao: Math.round(dur), cortes };
+      return { cenas: cenas.map((s) => ({ ini: r1(s.ini), fim: r1(s.fim), imagem: s.imagem, mini: s.mini, mesmaTomada: !!s.mesmaTomada })), folhas, voz, duracao: Math.round(dur), cortes };
     } finally {
       if (v) { try { v.pause(); } catch (e) { /* segue */ } v.remove(); }
       URL.revokeObjectURL(url);

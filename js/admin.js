@@ -2260,7 +2260,7 @@
           try { estudo = await window.painelAnaliseVideo.estudar(blob, { segmentos: r.segmentos, transcricao: r.transcricao, aoProgresso: passo }); }
           catch (e) { r._semVideo = e.message; }
         }
-        if (estudo) { ref.cenas = estudo.cenas.map((c) => ({ ini: c.ini, fim: c.fim, imagem: c.imagem })); if (estudo.voz && !estudo.voz.erro) ref.voz = estudo.voz; if (!ref.duracao) ref.duracao = estudo.duracao; }
+        if (estudo) { ref.cenas = estudo.cenas.map((c) => ({ ini: c.ini, fim: c.fim })); ref.folhas = estudo.folhas; if (estudo.voz && !estudo.voz.erro) ref.voz = estudo.voz; if (!ref.duracao) ref.duracao = estudo.duracao; }
         passo(estudo ? `Analisando as ${estudo.cenas.length} cenas, a voz e a fala... (uns 40 segundos)` : "Analisando a fala... (uns 20 segundos)");
         const res = await chamarReferencias({ acao: "analise", referencia: ref });
         if (estudo) {
