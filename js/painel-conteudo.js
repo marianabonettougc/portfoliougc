@@ -738,25 +738,29 @@
     dlg.innerHTML = `<div class="janela-cabeca"><div><small class="janela-sobretitulo">Conteúdos · ${esc(nomeStatus(p.status || "Ideia"))}</small><h2>${p.id ? esc(p.tema || "Conteúdo") : "Novo conteúdo"}</h2></div><button class="icone-btn" type="button" data-fechar aria-label="Fechar">${ic.x}</button></div>
       <div class="janela-corpo pc-form pc-editor-compacto">
         ${insp.link ? `<div class="pc-ref"><small>Referência</small><a href="${esc(insp.link)}" target="_blank" rel="noopener">${esc(insp.perfil || "Abrir o post")} · abrir no Instagram</a>${insp.legenda ? `<span>${esc(insp.legenda)}</span>` : ""}${insp.colecao ? `<em>pasta ${esc(insp.colecao)}</em>` : ""}</div>` : ""}
-        <label class="campo pc-largo"><span>Título</span><input name="tema" value="${esc(p.tema)}"></label>
-        <div class="pc-grade4 pc-grade5">
-          <label class="campo"><span>Publicação</span><input type="date" name="data" value="${esc(p.data || "")}"></label>
-          <label class="campo"><span>Gravação</span><input type="date" name="data_gravacao" value="${esc(p.data_gravacao || "")}"></label>
-          <label class="campo"><span>Horário</span><input name="horario" value="${esc(p.horario || "")}" placeholder="12h"></label>
-          <label class="campo"><span>Formato</span><select name="formato">${opt(FORMATOS, p.formato)}</select></label>
-          <label class="campo"><span>Etapa</span><select name="status">${COLUNAS.map((x) => `<option value="${esc(x)}" ${x === p.status ? "selected" : ""}>${esc(nomeStatus(x))}</option>`).join("")}</select></label>
-        </div>
-        <div class="pc-grade3">
-          <label class="campo"><span>Tipo</span><select name="tipo_conteudo"><option value=""></option>${opt(TIPOS_CONTEUDO, p.tipo_conteudo)}</select></label>
-          <label class="campo"><span>Nicho</span><select name="nicho"><option value=""></option>${opt([...new Set([...NICHOS, ...(p.nicho ? [p.nicho] : [])])], p.nicho)}</select></label>
-          <label class="campo"><span>Marca (publi)</span><input name="marca" value="${esc(p.marca || "")}" placeholder="só quando é publicidade"></label>
-        </div>
-        <div class="pc-grade2">
-          <label class="campo"><span>Pilar</span><select name="pilar"><option value=""></option>${opt([...new Set([...(st.perfil.pilares || []).map((x) => x.nome), ...(p.pilar ? [p.pilar] : [])])], p.pilar)}</select></label>
-          ${p.id ? `<div class="campo"><span>Não gostou? Refazer com ajuste</span><div class="pc-linha"><input class="entrada" id="pc-ajuste" placeholder="Ex.: mais leve, troca por produto de casa"><button class="btn" type="button" data-refazer>Refazer</button></div></div>` : ""}
-        </div>
+        <section class="pc-editor-bloco">
+          <div class="pc-editor-bloco-cab"><span class="pc-editor-numero">01</span><div><strong>Informações</strong><small>Quando e como este conteúdo será publicado</small></div></div>
+          <label class="campo pc-largo"><span>Título do conteúdo</span><input name="tema" value="${esc(p.tema)}"></label>
+          <div class="pc-editor-dados-grid">
+            <label class="campo"><span>Publicação</span><input type="date" name="data" value="${esc(p.data || "")}"></label>
+            <label class="campo"><span>Gravação</span><input type="date" name="data_gravacao" value="${esc(p.data_gravacao || "")}"></label>
+            <label class="campo"><span>Horário</span><input name="horario" value="${esc(p.horario || "")}" placeholder="12h"></label>
+            <label class="campo"><span>Formato</span><select name="formato">${opt(FORMATOS, p.formato)}</select></label>
+            <label class="campo"><span>Etapa de produção</span><select name="status">${COLUNAS.map((x) => `<option value="${esc(x)}" ${x === p.status ? "selected" : ""}>${esc(nomeStatus(x))}</option>`).join("")}</select></label>
+          </div>
+        </section>
+        <section class="pc-editor-bloco">
+          <div class="pc-editor-bloco-cab"><span class="pc-editor-numero">02</span><div><strong>Classificação</strong><small>Organize o conteúdo por tipo, nicho e pilar</small></div></div>
+          <div class="pc-editor-class-grid">
+            <label class="campo"><span>Tipo</span><select name="tipo_conteudo"><option value=""></option>${opt(TIPOS_CONTEUDO, p.tipo_conteudo)}</select></label>
+            <label class="campo"><span>Nicho</span><select name="nicho"><option value=""></option>${opt([...new Set([...NICHOS, ...(p.nicho ? [p.nicho] : [])])], p.nicho)}</select></label>
+            <label class="campo"><span>Pilar</span><select name="pilar"><option value=""></option>${opt([...new Set([...(st.perfil.pilares || []).map((x) => x.nome), ...(p.pilar ? [p.pilar] : [])])], p.pilar)}</select></label>
+            <label class="campo"><span>Marca <small>(somente para publicidade)</small></span><input name="marca" value="${esc(p.marca || "")}" placeholder="Nome da marca"></label>
+          </div>
+          ${p.id ? `<div class="pc-editor-refazer"><div><strong>Quer testar outra abordagem?</strong><small>Peça um ajuste e gere uma nova versão deste conteúdo.</small></div><div class="pc-linha"><input class="entrada" id="pc-ajuste" placeholder="Ex.: mais leve, trocar o produto ou o gancho"><button class="btn" type="button" data-refazer>Refazer</button></div></div>` : ""}
+        </section>
         ${blocoRoteiro}
-        <details class="pc-editor-secao"${p.roteiro_id ? "" : " open"}><summary><strong>Estratégia</strong><span>Direção criativa, objetivo e gancho</span></summary><div class="pc-editor-conteudo">
+        <details class="pc-editor-secao" open><summary><strong>03 · Estratégia</strong><span>Direção criativa, objetivo e gancho</span></summary><div class="pc-editor-conteudo">
         <div class="pc-grade3">
           <label class="campo"><span>Tipo de roteiro</span><select name="tipo_roteiro"><option value=""></option>${opt(ROTEIROS, p.tipo_roteiro)}</select></label>
           <label class="campo"><span>Tipo de UGC</span><select name="tipo_ugc"><option value=""></option>${opt(tipos, p.tipo_ugc)}</select></label>
@@ -768,7 +772,7 @@
         <div class="pg-usar-linha"><button type="button" class="btn btn-mini" data-usar-gancho>${ic.brilho}Usar um gancho magnético</button><button type="button" class="btn btn-mini pg-auto-btn" data-gancho-auto title="A IA escolhe o gancho que mais combina com este produto e já preenche">${ic.brilho}Escolher o melhor pra mim</button>${(st.ganchos || []).filter((g) => p.id && g.post_id === p.id).map((g) => `<span class="pg-testando">testando: ${esc(semAspas(g.texto).slice(0, 60))}</span>`).join("")}</div>
         ${ganchos.length ? `<details class="pc-editor-extra pc-editor-ganchos"><summary>Outras opções de gancho (${ganchos.length})</summary><div class="pc-ganchos">${ganchos.map((g) => `<button type="button" class="cr-chip" data-gancho>${esc(g)}</button>`).join("")}</div></details>` : ""}
         </div></details>
-        <details class="pc-editor-secao"><summary><strong>Roteiro e publicação</strong><span>Desenvolvimento, CTA, legenda e notas</span></summary><div class="pc-editor-conteudo">
+        <details class="pc-editor-secao"><summary><strong>04 · Roteiro e publicação</strong><span>Desenvolvimento, CTA, legenda e notas</span></summary><div class="pc-editor-conteudo">
         <label class="campo pc-largo"><span>Desenvolvimento do roteiro</span><textarea name="desenvolvimento" rows="9">${esc(p.desenvolvimento)}</textarea></label>
         <label class="campo pc-largo"><span>CTA</span><input name="cta" value="${esc(p.cta)}"></label>
         <label class="campo pc-largo"><span>Legenda e hashtags</span><textarea name="legenda" rows="4">${esc(p.legenda)}</textarea></label>
@@ -776,9 +780,9 @@
         ${insp.duracao_seg || (!insp.link && insp.perfil) ? `<p class="pc-ajuda">${!insp.link && insp.perfil ? `Inspirado em ${esc(insp.perfil)}. ` : ""}${insp.duracao_seg ? `Duração estimada: ${insp.duracao_seg}s.` : ""}</p>` : ""}
         </div></details>
       </div>
-      <div class="janela-rodape">${p.id ? `<button class="btn btn-perigo" type="button" data-excluir>Excluir</button>` : ""}<span style="flex:1"></span>
-        ${p.id && !p.roteiro_id ? `<button class="btn" type="button" data-quadro title="Copia o que está aqui para o editor de roteiros e liga os dois">Levar para o editor de roteiros</button><button class="btn" type="button" data-skill>Criar roteiro com a Skill</button>` : ""}
-        <button class="btn btn-principal" type="button" data-salvar>Salvar</button></div>`;
+      <div class="janela-rodape pc-editor-rodape">${p.id ? `<button class="btn btn-perigo" type="button" data-excluir>Excluir</button>` : ""}<span class="pc-editor-espaco"></span>
+        ${p.id && !p.roteiro_id ? `<details class="pc-editor-mais"><summary>Mais ações <span>⌄</span></summary><div class="pc-editor-mais-menu"><button class="btn" type="button" data-quadro title="Copia o que está aqui para o editor de roteiros e liga os dois">Levar para o editor de roteiros</button><button class="btn" type="button" data-skill>Criar roteiro com a Skill</button></div></details>` : ""}
+        <button class="btn btn-principal" type="button" data-salvar>Salvar alterações</button></div>`;
     const ler = () => { const o = { ...p }; delete o.ganchoTeste; $$("[name]", dlg).forEach((el) => { o[el.name] = el.value.trim() || null; }); o.status = o.status || "Ideia"; return o; };
     $("[data-fechar]", dlg).addEventListener("click", () => dlg.close());
     $$("[data-gancho]", dlg).forEach((b) => b.addEventListener("click", () => { const h = $("[name=hook]", dlg); const antigo = h.value; h.value = b.textContent; b.textContent = antigo; }));
