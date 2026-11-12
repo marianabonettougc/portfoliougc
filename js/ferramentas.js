@@ -541,12 +541,12 @@
     toast(r.data ? "Post criado no Painel de conteúdo." : "Post criado no Banco de ideias do Painel de conteúdo."); pintarIdeias();
   }
   async function criarRoteiro(it) {
-    if (!window.painelRoteiros || !window.painelRoteiros.salvarNoQuadro) { toast("Abra Meus roteiros uma vez e tente de novo.", true); return; }
+    if (!window.painelRoteiros || !window.painelRoteiros.salvarNoQuadro) { toast("Abra o editor de roteiros uma vez e tente de novo.", true); return; }
     const id = "ide" + it.id + "-" + Date.now().toString(36);
     const ok = await window.painelRoteiros.salvarNoQuadro({ id, titulo: it.titulo, cliente: it.marca || "", plataforma: "Instagram", status: "Em aberto", finalidade: it.finalidade || "Conteúdos", etapa: "Ideias", conteudo: [it.gancho ? "GANCHO: " + it.gancho : "", it.roteiro || "", it.resumo ? "\nIDEIA: " + it.resumo : ""].filter(Boolean).join("\n"), gancho: it.gancho || "", formato: it.formato || "Reels", dataPublicacao: "" });
     if (!ok) return;
     await banco().from("ideias_organizadas").update({ roteiro_id: id, atualizado_em: new Date().toISOString() }).eq("id", it.id); it.roteiro_id = id;
-    toast("Roteiro criado em Meus roteiros."); pintarIdeias();
+    toast("Roteiro criado. Ele aparece no Quadro de produção."); pintarIdeias();
   }
   function lerPrint(arq) {
     return new Promise((ok) => { lerImagem(arq).then((i) => ok(reduzir(i, 1400, 0.85))).catch(() => ok("")); });

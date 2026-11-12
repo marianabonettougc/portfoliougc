@@ -281,7 +281,7 @@
   // ---------------------------------------------------------
   // MENU E ABAS
   // ---------------------------------------------------------
-  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Meus roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
+  const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", roteiros: "Editor de roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
     prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Conteúdos", propostas: "Marcas: propostas do e-mail", central: "Referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar roteiro",
     meusroteiros: "Referências", modelos: "Modelos", biblioteca: "Referências",
     financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Referências: transcrever e analisar", laboratorio: "Referências: meus salvos", editorial: "Referências: perfis que eu acompanho", edicao: "Edição de vídeos", planejar: "Conteúdos", ferarquivos: "Edição: organizar gravações", fercapa: "Edição: checar capa", estudio: "Edição: criação de fotos", ferideias: "Conteúdos: organizar ideia ou print", notificacoes: "Configurações: notificações no celular", metricas: "Redes sociais" };
@@ -310,19 +310,20 @@
   // Meus roteiros virou uma aba de Conteúdos (nov/2026, pedido da Mari): Visão geral | Quadro de produção | Meus roteiros |
   // Calendário editorial | Banco de ideias. O roteiro continua sendo a página do aplicativo (#quadro); aqui só entra o
   // mesmo cabeçalho e as mesmas abas de Conteúdos em cima dele. As outras abas voltam para #planejar na parte certa.
-  const PARTES_CONTEUDOS = [["geral", "Visão geral"], ["quadro", "Quadro de produção"], ["roteiros", "Meus roteiros"], ["cal", "Calendário editorial"], ["ideias", "Ideias e ganchos"], ["ano", "Planejamento"]];
+  // nov/2026 (pedido da Mari: "pode juntar"): Meus roteiros entrou no Quadro de produção. Esta página (#quadro) virou só o
+  // editor de roteiros, aberto pelo cartão; as abas são as mesmas de Conteúdos, com o Quadro aceso e um Voltar.
+  const PARTES_CONTEUDOS = [["geral", "Esta semana"], ["quadro", "Quadro de produção"], ["cal", "Calendário"], ["ideias", "Ideias"]];
   function pintarCabConteudos(nome) {
     const cab = $("#cab-conteudos");
     if (!cab) return;
     if (nome !== "quadro") { cab.hidden = true; return; }
     if (!cab.dataset.pronto) {
       cab.innerHTML = `<div class="cr-pagina cr-pagina-larga pc pc2">
-        <header class="pc2-cab"><div><small class="pc2-sobre">Conteúdos</small><h2 class="pc2-titulo">Meus <em>roteiros</em></h2></div></header>
-        <nav class="sub-abas pc-abas" aria-label="Partes de Conteúdos">${PARTES_CONTEUDOS.map(([k, t]) => `<button type="button" class="sub-aba${k === "roteiros" ? " ativa" : ""}" data-cabpc="${k}" aria-current="${k === "roteiros" ? "page" : "false"}">${esc(t)}</button>`).join("")}</nav>
+        <header class="pc2-cab"><div><small class="pc2-sobre">Conteúdos · Quadro de produção</small><h2 class="pc2-titulo">Editor de <em>roteiros</em></h2></div><div class="pc2-cab-acoes"><button class="btn" type="button" data-cabpc="quadro">← Voltar ao quadro</button></div></header>
+        <nav class="sub-abas pc-abas" aria-label="Partes de Conteúdos">${PARTES_CONTEUDOS.map(([k, t]) => `<button type="button" class="sub-aba${k === "quadro" ? " ativa" : ""}" data-cabpc="${k}" aria-current="${k === "quadro" ? "page" : "false"}">${esc(t)}</button>`).join("")}</nav>
       </div>`;
       cab.querySelectorAll("[data-cabpc]").forEach((b) => b.addEventListener("click", () => {
         const k = b.dataset.cabpc;
-        if (k === "roteiros") return;
         try { localStorage.setItem("pc-parte2", k); } catch (e) { /* sem armazenamento */ }
         mostrarAba("planejar");
         if (window.painelConteudos) window.painelConteudos.parte(k);
@@ -2348,7 +2349,7 @@
     }
     const uidDona = sessao.user.id;
     const { data: a, error } = await banco.from("app_state").select("data").eq("user_id", uidDona).maybeSingle();
-    if (error || !a) { avisar("Não consegui abrir o Quadro de roteiros para salvar. Abra Meus roteiros uma vez e tente de novo.", true); return false; }
+    if (error || !a) { avisar("Não consegui abrir o Quadro de roteiros para salvar. Abra o editor de roteiros uma vez e tente de novo.", true); return false; }
     const estado = a.data || {};
     const { error: e2 } = await banco.from("app_state").update({ data: { ...estado, roteiros: [roteiro, ...(estado.roteiros || [])] }, updated_at: new Date().toISOString() }).eq("user_id", uidDona);
     if (e2) { avisar("Não consegui salvar no Quadro: " + e2.message, true); return false; }

@@ -35,7 +35,15 @@
   const STATUS_ANTIGO = { Gravado: "Em edição", Editado: "Pronto", Postado: "Publicado", "Para postar": "Pronto", Agendado: "Pronto" };
   // cor de cada coluna do Quadro de produção (mesma paleta das colunas de UGC's & Publis, nov/2026)
   const COR_STATUS = { Ideia: "#d9a46a", Roteirizado: "#b98a5e", "Para gravar": "#c98f7a", "Em edição": "#6b4a35", Pronto: "#c9a24a", Publicado: "#4f7a54" };
-  const normStatus = (s) => STATUS_ANTIGO[s] || (STATUS.includes(s) ? s : "Ideia");
+  // Arquivado (nov/2026, pedido da Mari): conteúdo que não vai mais sair. Fica numa coluna fechada no fim do quadro
+  // e some do calendário, da semana e dos números (st.todos só tem os ativos; os arquivados ficam em st.arquivados).
+  const ARQ = "Arquivado";
+  const COLUNAS = [...STATUS, ARQ];
+  COR_STATUS[ARQ] = "#b8a593";
+  const normStatus = (s) => s === ARQ ? ARQ : STATUS_ANTIGO[s] || (STATUS.includes(s) ? s : "Ideia");
+  const nomeStatus = (x) => (x === "Ideia" ? "Sem roteiro" : x);
+  // Meus roteiros dentro do Quadro (nov/2026): etapa do roteiro no aplicativo -> etapa do conteúdo
+  const ETAPA_ROT = { Ideias: "Ideia", "Roteirização": "Roteirizado", "Revisão": "Roteirizado", "Em Aprovação": "Roteirizado", "Gravação": "Para gravar", "Edição": "Em edição", "Pronto para postar": "Pronto", Finalizado: "Publicado" };
   const NICHOS = ["Maternidade", "Autocuidado", "Beleza e cabelo", "Moda", "Bem-estar", "Achadinhos de casa e tech"];
   const TIPOS_CONTEUDO = ["Orgânico", "UGC", "Publi"];
   const PRODUZIR = ["Ideia", "Roteirizado", "Para gravar"];
@@ -65,7 +73,7 @@
   };
   const hoje = new Date();
   // todos: todos os conteúdos (um registro por conteúdo, o mesmo em todas as visões); posts: só os do mês do calendário
-  const st = { pronto: false, mes: `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`, semana: 0, todos: [], lab: [], faltaTabela: false, gerando: false, transcrevendo: false, perfil: PERFIL_PADRAO,
+  const st = { pronto: false, arquivados: [], roteiros: [], rotVistos: [], mes: `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`, semana: 0, todos: [], lab: [], faltaTabela: false, gerando: false, transcrevendo: false, perfil: PERFIL_PADRAO,
     cal: (() => { try { return localStorage.getItem("pc-calvista") || "5sem"; } catch (e) { return "5sem"; } })(), semIni: null, ini5: null, filtro: { q: "", nicho: "", formato: "", funil: "", tipo: "" }, ideiaFiltro: "" };
   const mesDe = (p) => (p.data ? String(p.data).slice(0, 7) : p.mes);
   Object.defineProperty(st, "posts", { get: () => st.todos.filter((p) => mesDe(p) === st.mes) });
@@ -86,18 +94,63 @@
       banco().from("painel_conteudo").select("*").order("data", { ascending: true, nullsFirst: false }).order("id").limit(3000),
       banco().from("laboratorio").select("id,link,codigo,perfil,tipo,legenda,transcricao,colecao,capa").not("colecao", "is", null).limit(1000),
     ]);
-    if (a.error) { st.faltaTabela = true; st.todos = []; } else { st.faltaTabela = false; st.todos = (a.data || []).map((p) => ({ ...p, status: normStatus(p.status) })); }
+    if (a.error) { st.faltaTabela = true; st.todos = []; st.arquivados = []; } else {
+      st.faltaTabela = false;
+      const lista = (a.data || []).map((p) => ({ ...p, status: normStatus(p.status) }));
+      st.todos = lista.filter((p) => p.status !== ARQ); st.arquivados = lista.filter((p) => p.status === ARQ);
+    }
     st.lab = b.error ? [] : (b.data || []);
     try {
       const { data: ap } = await banco().from("app_state").select("data").limit(1).maybeSingle();
       st.agenda = montarAgenda((ap && ap.data) || {});
-    } catch (e) { st.agenda = []; }
-    const c = await banco().from("configuracoes").select("chave,valor").in("chave", ["ntfy_topico", "perfil_conteudo", "temas_semana"]);
+      st.roteiros = (ap && ap.data && Array.isArray(ap.data.roteiros)) ? ap.data.roteiros : [];
+    } catch (e) { st.agenda = []; st.roteiros = []; }
+    const c = await banco().from("configuracoes").select("chave,valor").in("chave", ["ntfy_topico", "perfil_conteudo", "temas_semana", "roteiros_no_quadro"]);
     const cfg = Object.fromEntries((c.data || []).map((x) => [x.chave, x.valor]));
     st.topico = cfg.ntfy_topico || "";
     try { st.temas = JSON.parse(cfg.temas_semana || "{}") || {}; } catch (e) { st.temas = {}; }
+    try { st.rotVistos = JSON.parse(cfg.roteiros_no_quadro || "[]") || []; } catch (e) { st.rotVistos = []; }
+    if (!st.faltaTabela) { try { await unirRoteiros(); } catch (e) { /* o quadro abre mesmo assim */ } }
     try { const p = JSON.parse(cfg.perfil_conteudo || ""); st.perfil = { ...PERFIL_PADRAO, ...p, ritmo: { ...PERFIL_PADRAO.ritmo, ...(p.ritmo || {}), funil: { ...PERFIL_PADRAO.ritmo.funil, ...((p.ritmo || {}).funil || {}) } } }; } catch (e) { st.perfil = PERFIL_PADRAO; }
   }
+  // ---------- Meus roteiros dentro do Quadro de produção (nov/2026, pedido da Mari: "pode juntar") ----------
+  // Os roteiros continuam guardados no aplicativo (app_state.roteiros, editor da Skill UGC), mas cada roteiro vira UM
+  // cartão no Quadro: liga ao conteúdo de mesmo título (ou ao conteúdo de origem) ou cria o conteúdo, ligado por roteiro_id.
+  // configuracoes "roteiros_no_quadro" guarda os ids já vistos: se ela excluir o cartão, o roteiro não volta sozinho.
+  const roteiroDe = (p) => (p && p.roteiro_id ? (st.roteiros || []).find((r) => String(r.id) === String(p.roteiro_id)) : null);
+  const acharConteudo = (id) => st.todos.find((x) => String(x.id) === String(id)) || (st.arquivados || []).find((x) => String(x.id) === String(id));
+  async function unirRoteiros() {
+    if (st.unindo) return; st.unindo = true;
+    try {
+      const rots = st.roteiros || [], todos = [...st.todos, ...(st.arquivados || [])];
+      const vistos = new Set((st.rotVistos || []).map(String)), antes = vistos.size;
+      todos.forEach((p) => { if (p.roteiro_id) vistos.add(String(p.roteiro_id)); });
+      const ligados = new Set(todos.map((p) => String(p.roteiro_id || "")).filter(Boolean));
+      for (const r of rots) {
+        const rid = String(r.id || ""); if (!rid || ligados.has(rid)) continue;
+        let alvo = null;
+        if (r.origem && r.origem.tipo === "conteudo") alvo = todos.find((p) => !p.roteiro_id && String(p.id) === String(r.origem.id));
+        const tit = semAcento(r.titulo).trim();
+        if (!alvo && tit) alvo = todos.find((p) => !p.roteiro_id && semAcento(p.tema).trim() === tit);
+        if (alvo) { await salvar({ id: alvo.id, roteiro_id: rid }); ligados.add(rid); vistos.add(rid); continue; }
+        if (vistos.has(rid)) continue;
+        const cli = String(r.cliente || "").trim(), t0 = String(r.titulo || "").trim();
+        const generico = !t0 || /^(marca\s*\/\s*cliente:?|roteiro( do google docs)?|\d+ roteiros( do google docs)?)$/i.test(t0);
+        const qtd = (t0.match(/^(\d+) roteiros/i) || [])[1];
+        const tema = generico ? `${cli ? "Roteiro " + cli : "Roteiro sem título"}${qtd ? ` (${qtd} roteiros)` : ""}` : t0;
+        const tipo = /publi/i.test(r.finalidade || "") ? "Publi" : /ugc/i.test(r.finalidade || "") ? "UGC" : cli ? "Publi" : "Orgânico";
+        const formato = /carross/i.test(r.formato || "") ? "Carrossel" : /stor/i.test(r.formato || "") && !/reel/i.test(r.formato || "") ? "Stories" : /foto/i.test(r.formato || "") ? "Foto" : "Reels";
+        const data = /^\d{4}-\d{2}-\d{2}/.test(r.dataPublicacao || "") ? String(r.dataPublicacao).slice(0, 10) : null;
+        await salvar({ tema, status: ETAPA_ROT[r.etapa] || "Roteirizado", data, formato, tipo_conteudo: tipo, marca: cli || null, roteiro_id: rid, funil: "Meio", hook: r.gancho || null, horario: (st.perfil.ritmo || {}).horario || "12h" });
+        ligados.add(rid); vistos.add(rid);
+      }
+      if (vistos.size !== antes) {
+        st.rotVistos = [...vistos];
+        await banco().from("configuracoes").upsert({ chave: "roteiros_no_quadro", valor: JSON.stringify(st.rotVistos), updated_at: new Date().toISOString() }, { onConflict: "chave" });
+      }
+    } finally { st.unindo = false; }
+  }
+
   // Planner unido ao Painel (out/2026): prazos das publis (UGC's & Publis) e itens do antigo Planner aparecem no calendário
   function montarAgenda(est) {
     const out = [], fim = /conclu|cancel|finaliz/i;
@@ -123,13 +176,18 @@
     if (post.id) {
       const { error } = await banco().from("painel_conteudo").update(campos).eq("id", post.id);
       if (error) throw new Error(error.message);
-      const atual = st.todos.find((x) => x.id === post.id); if (atual) Object.assign(atual, campos);
+      const atual = acharConteudo(post.id); if (atual) Object.assign(atual, campos);
+      // arquivar tira dos ativos (calendário, semana, números); desarquivar devolve
+      if (atual && "status" in campos) {
+        st.todos = st.todos.filter((x) => x !== atual); st.arquivados = (st.arquivados || []).filter((x) => x !== atual);
+        (atual.status === ARQ ? st.arquivados : st.todos).push(atual);
+      }
       return atual || { ...post, ...campos };
     }
     const { data, error } = await banco().from("painel_conteudo").insert({ ...campos, mes: campos.mes || st.mes }).select().maybeSingle();
     if (error) throw new Error(error.message);
     const novo = data ? { ...data, status: normStatus(data.status) } : { ...campos, mes: campos.mes || st.mes, id: Date.now() };
-    st.todos.push(novo);
+    (novo.status === ARQ ? (st.arquivados = st.arquivados || []) : st.todos).push(novo);
     return novo;
   }
 
@@ -397,14 +455,15 @@
     return lista;
   }
 
+  const icAno = '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M4 10h16M9 3.5v4M15 3.5v4M8 14h3M8 17h6"/></svg>';
   function montar(sec) {
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga pc pc2">
       <header class="pc2-cab">
         <div><small class="pc2-sobre">Conteúdos</small><h2 class="pc2-titulo">Meus <em>conteúdos</em></h2></div>
-        <div class="pc2-cab-acoes"><button class="btn btn-principal" type="button" id="pc-novo">${ic.mais}Novo conteúdo</button></div>
+        <div class="pc2-cab-acoes"><button class="btn pc2-btn-ano" type="button" data-pcaba="ano" title="Narrativa, ritmo, temas do ano e 2 meses à frente">${icAno}Planejar o ano</button><button class="btn btn-principal" type="button" id="pc-novo">${ic.mais}Novo conteúdo</button></div>
       </header>
       <nav class="sub-abas pc-abas" aria-label="Partes de Conteúdos">
-        <button type="button" class="sub-aba" data-pcaba="geral">Visão geral</button><button type="button" class="sub-aba" data-pcaba="quadro">Quadro de produção</button><button type="button" class="sub-aba" data-pcir="quadro">Meus roteiros</button><button type="button" class="sub-aba" data-pcaba="cal">Calendário editorial</button><button type="button" class="sub-aba" data-pcaba="ideias">Ideias e ganchos</button><button type="button" class="sub-aba" data-pcaba="ano">Planejamento</button>
+        <button type="button" class="sub-aba" data-pcaba="geral">Esta semana</button><button type="button" class="sub-aba" data-pcaba="quadro">Quadro de produção</button><button type="button" class="sub-aba" data-pcaba="cal">Calendário</button><button type="button" class="sub-aba" data-pcaba="ideias">Ideias</button>
       </nav>
       <section data-pcpar="geral" id="pc-geral"></section>
       <section data-pcpar="quadro" id="pc-kanban"></section>
@@ -657,7 +716,12 @@
     const tipos = TIPOS.includes(p.tipo_ugc) || !p.tipo_ugc ? TIPOS : [p.tipo_ugc, ...TIPOS];
     const ganchos = Array.isArray(p.ganchos) ? p.ganchos : [];
     const insp = p.inspiracao || {};
-    dlg.innerHTML = `<div class="janela-cabeca"><div><small class="janela-sobretitulo">Conteúdos · ${esc(p.status || "Ideia")}</small><h2>${p.id ? esc(p.tema || "Conteúdo") : "Novo conteúdo"}</h2></div><button class="icone-btn" type="button" data-fechar aria-label="Fechar">${ic.x}</button></div>
+    const rot = roteiroDe(p);
+    const blocoRoteiro = p.roteiro_id ? `<details class="pc-editor-secao pc-roteiro" open><summary><strong>Roteiro</strong><span>${rot ? esc([rot.cliente && String(rot.cliente).trim(), rot.etapa].filter(Boolean).join(" · ") || "guardado no editor de roteiros") : "guardado no editor de roteiros"}</span></summary><div class="pc-editor-conteudo">
+        ${rot && rot.conteudo ? `<div class="pc-rot-texto">${esc(rot.conteudo)}</div>` : `<p class="pc-ajuda">O texto deste roteiro fica no editor de roteiros. Toque em Editar roteiro para ver e mudar.</p>`}
+        <div class="pc-rot-acoes"><button class="btn" type="button" data-abrir-roteiro>${ic.brilho}Editar roteiro</button>${rot && rot.conteudo ? `<button class="btn" type="button" data-copiar-roteiro>Copiar roteiro</button>` : ""}</div>
+        </div></details>` : "";
+    dlg.innerHTML = `<div class="janela-cabeca"><div><small class="janela-sobretitulo">Conteúdos · ${esc(nomeStatus(p.status || "Ideia"))}</small><h2>${p.id ? esc(p.tema || "Conteúdo") : "Novo conteúdo"}</h2></div><button class="icone-btn" type="button" data-fechar aria-label="Fechar">${ic.x}</button></div>
       <div class="janela-corpo pc-form pc-editor-compacto">
         ${insp.link ? `<div class="pc-ref"><small>Referência</small><a href="${esc(insp.link)}" target="_blank" rel="noopener">${esc(insp.perfil || "Abrir o post")} · abrir no Instagram</a>${insp.legenda ? `<span>${esc(insp.legenda)}</span>` : ""}${insp.colecao ? `<em>pasta ${esc(insp.colecao)}</em>` : ""}</div>` : ""}
         <label class="campo pc-largo"><span>Título</span><input name="tema" value="${esc(p.tema)}"></label>
@@ -666,7 +730,7 @@
           <label class="campo"><span>Gravação</span><input type="date" name="data_gravacao" value="${esc(p.data_gravacao || "")}"></label>
           <label class="campo"><span>Horário</span><input name="horario" value="${esc(p.horario || "")}" placeholder="12h"></label>
           <label class="campo"><span>Formato</span><select name="formato">${opt(FORMATOS, p.formato)}</select></label>
-          <label class="campo"><span>Status</span><select name="status">${opt(STATUS, p.status)}</select></label>
+          <label class="campo"><span>Etapa</span><select name="status">${COLUNAS.map((x) => `<option value="${esc(x)}" ${x === p.status ? "selected" : ""}>${esc(nomeStatus(x))}</option>`).join("")}</select></label>
         </div>
         <div class="pc-grade3">
           <label class="campo"><span>Tipo</span><select name="tipo_conteudo"><option value=""></option>${opt(TIPOS_CONTEUDO, p.tipo_conteudo)}</select></label>
@@ -677,14 +741,14 @@
           <label class="campo"><span>Pilar</span><select name="pilar"><option value=""></option>${opt([...new Set([...(st.perfil.pilares || []).map((x) => x.nome), ...(p.pilar ? [p.pilar] : [])])], p.pilar)}</select></label>
           ${p.id ? `<div class="campo"><span>Não gostou? Refazer com ajuste</span><div class="pc-linha"><input class="entrada" id="pc-ajuste" placeholder="Ex.: mais leve, troca por produto de casa"><button class="btn" type="button" data-refazer>Refazer</button></div></div>` : ""}
         </div>
-        <details class="pc-editor-secao" open><summary><strong>Estratégia</strong><span>Direção criativa, objetivo e gancho</span></summary><div class="pc-editor-conteudo">
+        ${blocoRoteiro}
+        <details class="pc-editor-secao"${p.roteiro_id ? "" : " open"}><summary><strong>Estratégia</strong><span>Direção criativa, objetivo e gancho</span></summary><div class="pc-editor-conteudo">
         <div class="pc-grade3">
           <label class="campo"><span>Tipo de roteiro</span><select name="tipo_roteiro"><option value=""></option>${opt(ROTEIROS, p.tipo_roteiro)}</select></label>
           <label class="campo"><span>Tipo de UGC</span><select name="tipo_ugc"><option value=""></option>${opt(tipos, p.tipo_ugc)}</select></label>
           <label class="campo"><span>Funil</span><select name="funil">${opt(FUNIS, p.funil)}</select></label>
         </div>
         ${p.porque ? `<details class="pc-editor-extra"><summary>Por que atrai marca</summary><p>${esc(p.porque)}</p></details>` : ""}
-        ${p.roteiro_id ? `<p class="pc-ajuda pc-ligado">Este conteúdo está ligado a um roteiro em Meus roteiros. Edite o roteiro por lá (botão Abrir roteiro).</p>` : ""}
         <label class="campo pc-largo"><span>Objetivo</span><input name="proposito" value="${esc(p.proposito)}" placeholder="Para que serve esse conteúdo no seu perfil"></label>
         <label class="campo pc-largo"><span>Hook</span><textarea name="hook" rows="2">${esc(p.hook)}</textarea></label>
         <div class="pg-usar-linha"><button type="button" class="btn btn-mini" data-usar-gancho>${ic.brilho}Usar um gancho magnético</button><button type="button" class="btn btn-mini pg-auto-btn" data-gancho-auto title="A IA escolhe o gancho que mais combina com este produto e já preenche">${ic.brilho}Escolher o melhor pra mim</button>${(st.ganchos || []).filter((g) => p.id && g.post_id === p.id).map((g) => `<span class="pg-testando">testando: ${esc(semAspas(g.texto).slice(0, 60))}</span>`).join("")}</div>
@@ -699,8 +763,7 @@
         </div></details>
       </div>
       <div class="janela-rodape">${p.id ? `<button class="btn btn-perigo" type="button" data-excluir>Excluir</button>` : ""}<span style="flex:1"></span>
-        ${p.id && p.roteiro_id ? `<button class="btn" type="button" data-abrir-roteiro>Abrir roteiro</button>` : ""}
-        ${p.id && !p.roteiro_id ? `<button class="btn" type="button" data-quadro title="Copia o que está aqui para Meus roteiros e liga os dois">Mandar para Meus roteiros</button><button class="btn" type="button" data-skill>Criar roteiro com a Skill</button>` : ""}
+        ${p.id && !p.roteiro_id ? `<button class="btn" type="button" data-quadro title="Copia o que está aqui para o editor de roteiros e liga os dois">Levar para o editor de roteiros</button><button class="btn" type="button" data-skill>Criar roteiro com a Skill</button>` : ""}
         <button class="btn btn-principal" type="button" data-salvar>Salvar</button></div>`;
     const ler = () => { const o = { ...p }; delete o.ganchoTeste; $$("[name]", dlg).forEach((el) => { o[el.name] = el.value.trim() || null; }); o.status = o.status || "Ideia"; return o; };
     $("[data-fechar]", dlg).addEventListener("click", () => dlg.close());
@@ -725,24 +788,26 @@
     });
     const ex = $("[data-excluir]", dlg);
     if (ex) ex.addEventListener("click", async () => {
-      if (!(await painelDialogo.confirmar("Excluir este conteúdo? Ele sai do quadro, do calendário e da visão geral.", { ok: "Excluir", perigo: true }))) return;
+      if (!(await painelDialogo.confirmar(`Excluir este conteúdo? Ele sai do quadro, do calendário e da semana.${p.roteiro_id ? " O roteiro continua guardado no editor de roteiros." : ""}`, { ok: "Excluir", perigo: true }))) return;
       const { error } = await banco().from("painel_conteudo").delete().eq("id", p.id);
       if (error) { toast(error.message, true); return; }
-      st.todos = st.todos.filter((x) => x.id !== p.id); dlg.close(); pintar();
+      st.todos = st.todos.filter((x) => x.id !== p.id); st.arquivados = (st.arquivados || []).filter((x) => x.id !== p.id); dlg.close(); pintar();
     });
     const q = $("[data-quadro]", dlg);
     if (q) q.addEventListener("click", async () => {
-      if (!window.painelRoteiros || !window.painelRoteiros.salvarNoQuadro) { toast("Abra Meus roteiros uma vez e tente de novo.", true); return; }
+      if (!window.painelRoteiros || !window.painelRoteiros.salvarNoQuadro) { toast("Abra o editor de roteiros uma vez e tente de novo.", true); return; }
       const o = ler();
       const conteudo = [o.proposito && "PROPÓSITO:\n" + o.proposito, o.hook && "HOOK:\n" + o.hook, o.desenvolvimento && "DESENVOLVIMENTO:\n" + o.desenvolvimento, o.cta && "CTA:\n" + o.cta, o.legenda && "LEGENDA:\n" + o.legenda, p.porque && "POR QUE ATRAI MARCA:\n" + p.porque, insp.link && "REFERÊNCIA:\n" + insp.link].filter(Boolean).join("\n\n");
       const rid = "pc" + p.id + "-" + Date.now().toString(36);
       const ok = await window.painelRoteiros.salvarNoQuadro({ id: rid, titulo: o.tema || "Post do painel", plataforma: "Instagram", status: "Em aberto", finalidade: "Conteúdos", etapa: o.status === "Ideia" ? "Ideias" : "Roteirização", conteudo, gancho: o.hook || "", formato: o.formato || "", tipoUgc: o.tipo_ugc || "", funil: o.funil || "", referencia: insp.link || "", dataPublicacao: o.data || "",
         origem: { tipo: "conteudo", id: String(p.id) }, historico: [{ em: new Date().toISOString(), acao: "Veio de Conteúdos" }] });
       // os dois ficam ligados: o conteúdo guarda o id do roteiro (sem cópia solta)
-      if (ok) { await salvar({ ...o, id: p.id, roteiro_id: rid }); dlg.close(); pintar(); toast("Mandado para Meus roteiros e ligado a este conteúdo."); }
+      if (ok) { await salvar({ ...o, id: p.id, roteiro_id: rid }); st.rotVistos = [...new Set([...(st.rotVistos || []), rid])]; dlg.close(); pintar(); toast("Roteiro criado e ligado a este cartão."); }
     });
     const ar = $("[data-abrir-roteiro]", dlg);
     if (ar) ar.addEventListener("click", () => { dlg.close(); if (window.painelSkill) window.painelSkill.abrirRoteiro(p.roteiro_id); });
+    const cr = $("[data-copiar-roteiro]", dlg);
+    if (cr) cr.addEventListener("click", async () => { try { await navigator.clipboard.writeText(rot.conteudo); toast("Roteiro copiado."); } catch (e) { toast("Não consegui copiar.", true); } });
     const sk = $("[data-skill]", dlg);
     if (sk) sk.addEventListener("click", async () => {
       const o = ler();
@@ -853,7 +918,22 @@
     $$("[data-feito]", box).forEach((c) => c.addEventListener("change", async () => {
       const it = itensDe(c.dataset.onde).find((x) => x.id === c.dataset.feito); if (!it) return;
       it.feito = c.checked;
-      try { await salvarPlano({ plano: pl.atual.plano }); pintarPlano(); } catch (er) { it.feito = !c.checked; toast(er.message, true); pintarPlano(); }
+      try { await salvarPlano({ plano: pl.atual.plano }); } catch (er) { it.feito = !c.checked; toast(er.message, true); pintarPlano(); return; }
+      // nov/2026 (pedido da Mari): marcar feito já anda o cartão no Quadro de produção (não precisa atualizar duas vezes)
+      const post = it.post_id && acharConteudo(it.post_id);
+      if (post) {
+        const ordem = (x) => STATUS.indexOf(x);
+        let novo = null;
+        if (c.checked) novo = it.tipo === "gravar" ? (ordem(post.status) < ordem("Em edição") ? "Em edição" : null) : (post.status !== "Publicado" ? "Publicado" : null);
+        else novo = it.tipo === "postar" && post.status === "Publicado" ? "Pronto" : it.tipo === "gravar" && post.status === "Em edição" ? "Para gravar" : null;
+        if (novo) {
+          const antes = post.status;
+          try { await salvar({ id: post.id, status: novo }); pintar(); toast(`${post.tema || "Conteúdo"} foi para ${nomeStatus(novo)} no quadro.`); }
+          catch (er) { post.status = antes; toast("O plano salvou, mas o quadro não: " + er.message, true); }
+          return;
+        }
+      }
+      pintarPlano();
     }));
     $$("[data-tirar]", box).forEach((b) => b.addEventListener("click", async () => {
       const lista = itensDe(b.dataset.onde), i = lista.findIndex((x) => x.id === b.dataset.tirar); if (i < 0) return;
@@ -926,19 +1006,10 @@
     const mesAtual = `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}`, doMes = T.filter((p) => p.data && p.data.startsWith(mesAtual));
     const pub = contar(doMes, ["Publicado"]), pct = doMes.length ? Math.round((pub / doMes.length) * 100) : 0;
     const agend = doMes.filter((p) => p.status === "Pronto" && p.data >= hj).length, pend = T.filter(pendente).length;
-    const prox = T.filter((p) => p.status !== "Publicado" && ((p.data && p.data >= hj) || (p.data_gravacao && p.data_gravacao >= hj)))
-      .map((p) => ({ p, quando: [p.data_gravacao, p.data].filter((d) => d && d >= hj).sort()[0] })).sort((a, b) => a.quando.localeCompare(b.quando)).slice(0, 5);
     const anel = `<svg class="pc3-anel" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="50"/><circle cx="60" cy="60" r="50" style="stroke-dasharray:${(pct / 100) * 314.16} 314.16"/></svg>`;
     box.innerHTML = `<div class="pc3-geral">
       <div class="pc3-col-esq">
-        <section class="pc3-bloco">
-          <div class="pc3-bloco-cab"><h3 class="pc2-h">Próximos <em>conteúdos</em></h3><button type="button" class="pc2-link" data-ir-parte="cal">calendário ${ic.seta}</button></div>
-          ${prox.length ? `<ul class="pc3-prox">${prox.map(({ p, quando }) => `<li><button type="button" data-id="${p.id}">
-              <span class="pc2-data${quando === hj ? " hoje" : ""}">${quando === hj ? "hoje" : dataCurta(quando)}</span>
-              <span class="pc2-prox-txt"><b>${esc(p.tema || "Sem título")}</b><small>${esc([quando === p.data_gravacao && quando !== p.data ? "gravar" : "publicar", p.formato, p.nicho || p.pilar, tipoTxt(p)].filter(Boolean).join(" · "))}</small></span>
-              <span class="pc2-st st-${slugSt(p.status)}">${esc(p.status)}</span></button></li>`).join("")}</ul>`
-            : `<p class="pc-ajuda">Nada marcado de hoje em diante. Dê uma data aos conteúdos no quadro ou no calendário.</p>`}
-        </section>
+        <!-- Próximos conteúdos saiu (nov/2026, pedido da Mari): repetia o Plano da semana e o Calendário -->
         <section class="pc3-bloco" id="pc-plano-bloco"><div class="pc-plano" id="pc-plano"></div></section>
       </div>
       <aside class="pc3-col-dir">
@@ -946,7 +1017,7 @@
           <h3 class="pc2-h">${esc(MESES[hoje.getMonth()][0].toUpperCase() + MESES[hoje.getMonth()].slice(1))}</h3>
           <div class="pc3-anel-box">${anel}<b>${pct}%</b><small>publicado</small></div>
           <dl class="pc3-stats"><div><dt>Planejados</dt><dd>${doMes.length}</dd></div><div><dt>Em andamento</dt><dd>${contar(doMes, ANDAMENTO)}</dd></div><div><dt>Agendados</dt><dd>${agend}</dd></div><div><dt>Publicados</dt><dd>${pub}</dd></div></dl>
-          ${pend ? `<button type="button" class="pc3-pend" data-ir-parte="quadro">${pend} ${pend === 1 ? "conteúdo passou" : "conteúdos passaram"} da data sem publicar</button>` : ""}
+          ${pend ? `<button type="button" class="pc3-pend" data-ir-parte="quadro">${pend} ${pend === 1 ? "conteúdo passou" : "conteúdos passaram"} da data sem publicar · ver no quadro</button>` : ""}
         </section>
       </aside></div>`;
     $$("[data-ir-parte]", box).forEach((b) => b.addEventListener("click", () => st.mostrarParte(b.dataset.irParte)));
@@ -955,41 +1026,48 @@
   }
 
   // ---------- quadro de produção (colunas = status; arrastar muda o status do mesmo registro) ----------
-  function filtrados() {
+  function filtrados(base) {
     const f = st.filtro, q = semAcento(f.q);
-    return st.todos.filter((p) => (!q || semAcento(p.tema).includes(q)) && (!f.nicho || (p.nicho || p.pilar) === f.nicho) && (!f.formato || p.formato === f.formato) && (!f.funil || p.funil === f.funil)
+    return (base || st.todos).filter((p) => (!q || semAcento(p.tema).includes(q)) && (!f.nicho || (p.nicho || p.pilar) === f.nicho) && (!f.formato || p.formato === f.formato) && (!f.funil || p.funil === f.funil)
       && (!f.tipo || (f.tipo === "Publi" ? ehPubli(p) : !ehPubli(p) && p.tipo_conteudo === f.tipo)));
   }
   const corNicho = (n) => { const k = NICHOS.indexOf(n); return k < 0 ? "x" : String(k); };
   const icCal = '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M4 10h16M9 3.5v4M15 3.5v4"/></svg>';
   const icCam = '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="12.5" height="10" rx="2.5"/><path d="M15.5 10.5l5-3v9l-5-3z"/></svg>';
+  // cor do pilar (a mesma do calendário, paleta dela); nicho sem pilar usa a cor do nicho
+  const corDoCartao = (p) => { const k = indicePilar(p.pilar); if (k >= 0) return CORES_5S[k % CORES_5S.length]; const n = NICHOS.indexOf(p.nicho); return n >= 0 ? CORES_5S[n % CORES_5S.length] : ["#d8c8b6", "#3d2b20"]; };
+  const icRot = '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z"/><path d="M14 3.5V8h4M10 12h5M10 15.5h5"/></svg>';
   function cartaoKanban(p) {
-    const nicho = p.nicho || p.pilar;
-    return `<article class="pc3-card" draggable="true" data-id="${p.id}" tabindex="0">
-      <div class="pc3-card-top">${nicho ? `<span class="pc3-chip c-${corNicho(p.nicho)}">${esc(nicho)}</span>` : `<span class="pc3-chip c-x">sem nicho</span>`}<button type="button" class="pc3-menu" data-menu="${p.id}" aria-label="Opções">•••</button></div>
+    const nicho = p.nicho || p.pilar, [bg] = corDoCartao(p), atrasado = pendente(p) && p.status !== ARQ;
+    return `<article class="pc3-card qp-card${atrasado ? " atrasado" : ""}" draggable="true" data-id="${p.id}" tabindex="0" style="--pil:${bg}">
+      <div class="pc3-card-top"><span class="qp-tags">${nicho ? `<span class="qp-chip">${esc(nicho)}</span>` : `<span class="qp-chip qp-sem">sem nicho</span>`}${ehPubli(p) ? `<span class="qp-publi">Publi${p.marca ? " · " + esc(p.marca) : ""}</span>` : ""}</span><button type="button" class="pc3-menu" data-menu="${p.id}" aria-label="Opções">•••</button></div>
       <b>${esc(p.tema || "Sem título")}</b>
-      <small>${esc([p.formato, tipoTxt(p), p.roteiro_id ? "com roteiro" : ""].filter(Boolean).join(" · "))}</small>
-      <div class="pc3-card-rodape">${p.data ? `<span title="Publicação">${icCal}${dataCurta(p.data)}</span>` : `<span class="vazio">sem data</span>`}${p.data_gravacao && p.status !== "Publicado" ? `<span title="Gravação">${icCam}${dataCurta(p.data_gravacao)}</span>` : ""}<em class="st-${slugSt(p.status)}">${esc(p.status)}</em></div>
+      <div class="qp-meta"><span>${esc([p.formato, ehPubli(p) ? "" : p.tipo_conteudo].filter(Boolean).join(" · ") || "Reels")}</span>${p.roteiro_id ? `<span class="qp-rot" title="Tem roteiro: abre dentro do cartão">${icRot}roteiro</span>` : ""}</div>
+      <div class="pc3-card-rodape">${p.data ? `<span class="${atrasado ? "qp-atraso" : ""}" title="${atrasado ? "Passou da data de publicação" : "Publicação"}">${icCal}${dataCurta(p.data)}</span>` : `<span class="vazio">sem data</span>`}${p.data_gravacao && p.status !== "Publicado" ? `<span title="Gravação">${icCam}${dataCurta(p.data_gravacao)}</span>` : ""}</div>
     </article>`;
   }
   function pintarKanban(sec) {
     const box = $("#pc-kanban", sec); if (!box) return;
-    const f = st.filtro, lista = filtrados();
+    const f = st.filtro, lista = filtrados(), arq = filtrados(st.arquivados || []);
     const nichos = [...new Set([...NICHOS, ...st.todos.map((p) => p.nicho || p.pilar).filter(Boolean)])];
     const sel = (k, rot, ops) => `<select class="entrada" data-filtro="${k}" aria-label="${rot}"><option value="">${rot}</option>${ops.map((o) => `<option ${f[k] === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
     const foco = document.activeElement && document.activeElement.id === "pc-busca";
-    box.innerHTML = `<div class="pc3-painel">
+    const atrasados = st.todos.filter(pendente);
+    const comRot = st.todos.filter((p) => p.roteiro_id).length;
+    box.innerHTML = `<div class="pc3-painel qp">
+      <div class="qp-topo"><div><h3 class="pc2-h">Quadro de <em>produção</em></h3><p class="pc-ajuda">Cada cartão é um conteúdo, do roteiro ao publicado. O roteiro abre dentro do cartão${comRot ? ` (${comRot} ${comRot === 1 ? "cartão tem" : "cartões têm"} roteiro)` : ""}.</p></div>
+        <div class="qp-topo-acoes">${atrasados.length ? `<button type="button" class="btn qp-btn-arq" id="pc-arquivar">${atrasados.length} ${atrasados.length === 1 ? "atrasado" : "atrasados"}: arquivar</button>` : ""}<button type="button" class="btn" id="pc-novo-rot">${icRot}Novo roteiro</button></div></div>
       <div class="pc3-painel-cab"><div class="pc2-filtros"><input class="entrada" type="search" id="pc-busca" placeholder="Buscar pelo título" value="${esc(f.q)}">
         ${sel("nicho", "Nicho", nichos)}${sel("formato", "Formato", FORMATOS)}${sel("funil", "Funil", FUNIS)}${sel("tipo", "Tipo", ["Orgânico", "UGC", "Publi"])}
         ${f.q || f.nicho || f.formato || f.funil || f.tipo ? `<button type="button" class="pc2-link" id="pc-limpar">limpar</button>` : ""}</div></div>
-      <div class="pc2-kanban pc3-kanban">${STATUS.map((col) => {
-        let cards = lista.filter((p) => p.status === col);
+      <div class="pc2-kanban pc3-kanban">${COLUNAS.map((col) => {
+        let cards = col === ARQ ? arq : lista.filter((p) => p.status === col);
         const total = cards.length;
-        if (col === "Publicado") cards = cards.sort((a, b) => String(b.data || "").localeCompare(String(a.data || ""))).slice(0, 30);
+        if (col === "Publicado" || col === ARQ) cards = cards.sort((a, b) => String(b.data || "").localeCompare(String(a.data || ""))).slice(0, 30);
         else cards = cards.sort((a, b) => String(a.data || "9").localeCompare(String(b.data || "9")));
-        const cor = COR_STATUS[col] || "#a87058";
-        return `<section class="pc2-col pc3-col" data-col="${esc(col)}" style="border-top-color:${cor}"><div class="pc2-col-cab"><i class="pc3-ponto" style="background:${cor}"></i><b>${esc(col === "Ideia" ? "Sem roteiro" : col)}</b><span>${total}</span><button type="button" class="pc2-mais" data-criar="${esc(col)}" aria-label="Adicionar em ${esc(col)}">${ic.mais}</button></div>
-          <div class="pc2-col-lista">${cards.map(cartaoKanban).join("") || `<p class="pc2-vazio pc3-vazio">Arraste para cá</p>`}</div></section>`;
+        const cor = COR_STATUS[col] || "#a87058", fechada = col === ARQ && !st.verArq;
+        return `<section class="pc2-col pc3-col qp-col${col === ARQ ? " qp-arq" : ""}${fechada ? " fechada" : ""}" data-col="${esc(col)}" style="--cor:${cor}"><div class="pc2-col-cab"><i class="pc3-ponto"></i><b>${esc(nomeStatus(col))}</b><span>${total}</span>${col === ARQ ? `<button type="button" class="pc2-link qp-ver-arq" id="pc-ver-arq">${fechada ? "ver" : "fechar"}</button>` : `<button type="button" class="pc2-mais" data-criar="${esc(col)}" aria-label="Adicionar em ${esc(nomeStatus(col))}">${ic.mais}</button>`}</div>
+          <div class="pc2-col-lista">${fechada ? `<p class="pc2-vazio pc3-vazio">${total ? "Conteúdos que não vão sair. Arraste para cá ou toque em ver." : "Arraste para cá o que não vai mais sair"}</p>` : cards.map(cartaoKanban).join("") || `<p class="pc2-vazio pc3-vazio">Arraste para cá</p>`}</div></section>`;
       }).join("")}</div></div>`;
     ligarCliques(box);
     const busca = $("#pc-busca", box);
@@ -997,8 +1075,18 @@
     if (foco) { const b = $("#pc-busca", box); b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
     $$("[data-filtro]", box).forEach((x) => x.addEventListener("change", () => { st.filtro[x.dataset.filtro] = x.value; pintarKanban(sec); }));
     const lp = $("#pc-limpar", box); if (lp) lp.addEventListener("click", () => { st.filtro = { q: "", nicho: "", formato: "", funil: "", tipo: "" }; pintarKanban(sec); });
+    const va = $("#pc-ver-arq", box); if (va) va.addEventListener("click", () => { st.verArq = !st.verArq; pintarKanban(sec); });
+    const nr = $("#pc-novo-rot", box); if (nr) nr.addEventListener("click", () => { if (window.painelSkill) window.painelSkill.criarRoteiro({}); });
+    const ar = $("#pc-arquivar", box); if (ar) ar.addEventListener("click", async () => {
+      const lista2 = st.todos.filter(pendente);
+      const nomes = lista2.slice(0, 8).map((p) => `• ${p.tema || "Sem título"} (${dataCurta(p.data)})`).join("\n") + (lista2.length > 8 ? `\n• e mais ${lista2.length - 8}` : "");
+      if (!(await painelDialogo.confirmar(`Arquivar ${lista2.length} ${lista2.length === 1 ? "conteúdo que passou" : "conteúdos que passaram"} da data sem publicar?\n\n${nomes}\n\nEles saem do calendário e da semana, mas ficam na coluna Arquivado. Dá para trazer de volta arrastando.`, { ok: "Arquivar" }))) return;
+      ar.disabled = true; let n = 0;
+      for (const p of lista2) { try { await salvar({ id: p.id, status: ARQ }); n++; } catch (e) { /* segue com os outros */ } }
+      pintar(); toast(`${n} ${n === 1 ? "conteúdo arquivado" : "conteúdos arquivados"}.`);
+    });
     $$("[data-criar]", box).forEach((b) => b.addEventListener("click", () => abrir(novoConteudo({ status: b.dataset.criar }))));
-    $$("[data-menu]", box).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); menuCartao(b, st.todos.find((x) => String(x.id) === b.dataset.menu)); }));
+    $$("[data-menu]", box).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); menuCartao(b, acharConteudo(b.dataset.menu)); }));
     $$(".pc3-card", box).forEach((c) => { c.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/kanban", c.dataset.id); c.classList.add("arrastando"); }); c.addEventListener("dragend", () => c.classList.remove("arrastando")); c.addEventListener("keydown", (e) => { if (e.key === "Enter") c.click(); }); });
     $$(".pc2-col", box).forEach((col) => {
       col.addEventListener("dragover", (e) => { if ([...e.dataTransfer.types].includes("text/kanban")) { e.preventDefault(); col.classList.add("alvo"); } });
@@ -1007,14 +1095,14 @@
     });
   }
   async function moverStatus(id, status) {
-    const p = st.todos.find((x) => String(x.id) === String(id)); if (!p || !status || p.status === status) return;
-    try { await salvar({ id: p.id, status }); pintar(); toast(`${p.tema || "Conteúdo"}: ${status}.`); } catch (er) { toast(er.message, true); }
+    const p = acharConteudo(id); if (!p || !status || p.status === status) return;
+    try { await salvar({ id: p.id, status }); pintar(); toast(`${p.tema || "Conteúdo"}: ${nomeStatus(status)}.`); } catch (er) { toast(er.message, true); }
   }
   async function excluirConteudo(p) {
-    if (!(await painelDialogo.confirmar(`Excluir "${p.tema || "este conteúdo"}"? Ele sai do quadro, do calendário e da visão geral.`, { ok: "Excluir", perigo: true }))) return false;
+    if (!(await painelDialogo.confirmar(`Excluir "${p.tema || "este conteúdo"}"? Ele sai do quadro, do calendário e da semana.${p.roteiro_id ? " O roteiro continua guardado no editor de roteiros." : ""}`, { ok: "Excluir", perigo: true }))) return false;
     const { error } = await banco().from("painel_conteudo").delete().eq("id", p.id);
     if (error) { toast(error.message, true); return false; }
-    st.todos = st.todos.filter((x) => x.id !== p.id);
+    st.todos = st.todos.filter((x) => x.id !== p.id); st.arquivados = (st.arquivados || []).filter((x) => x.id !== p.id);
     if (st.ideias) st.ideias.forEach((it) => { if (it.post_id === p.id) it.post_id = null; });
     pintar(); toast("Conteúdo excluído."); return true;
   }
@@ -1023,7 +1111,7 @@
     if (!p) return;
     document.querySelectorAll(".pc3-pop").forEach((x) => x.remove());
     const pop = document.createElement("div"); pop.className = "pc3-pop";
-    pop.innerHTML = `<button type="button" data-a="abrir">Abrir e editar</button>${STATUS.filter((x) => x !== p.status).map((x) => `<button type="button" data-a="mover" data-v="${esc(x)}">Mover para ${esc(x === "Ideia" ? "Sem roteiro" : x)}</button>`).join("")}<button type="button" data-a="excluir" class="perigo">Excluir</button>`;
+    pop.innerHTML = `<button type="button" data-a="abrir">Abrir e editar</button>${p.roteiro_id ? `<button type="button" data-a="roteiro">Editar roteiro</button>` : ""}${COLUNAS.filter((x) => x !== p.status).map((x) => `<button type="button" data-a="mover" data-v="${esc(x)}">${x === ARQ ? "Arquivar" : "Mover para " + esc(nomeStatus(x))}</button>`).join("")}<button type="button" data-a="excluir" class="perigo">Excluir</button>`;
     document.body.appendChild(pop);
     const r = bt.getBoundingClientRect();
     pop.style.top = Math.min(window.innerHeight - pop.offsetHeight - 8, r.bottom + 4) + "px";
@@ -1033,6 +1121,7 @@
     setTimeout(() => document.addEventListener("click", fora, true), 0);
     pop.addEventListener("click", (e) => {
       const b = e.target.closest("[data-a]"); if (!b) return; fechar();
+      if (b.dataset.a === "roteiro") { if (window.painelSkill) window.painelSkill.abrirRoteiro(p.roteiro_id); return; }
       if (b.dataset.a === "abrir") abrir(p); else if (b.dataset.a === "mover") moverStatus(p.id, b.dataset.v); else excluirConteudo(p);
     });
   }
@@ -1096,7 +1185,7 @@
       await salvarIdeia({ post_id: novo.id }, it.id);
       if (v.status === "Roteirizado") {
         // a Skill UGC é o motor único de roteiro: abre Meus roteiros com a ideia; ao salvar lá, o conteúdo fica ligado e vira Roteirizado
-        toast("Conteúdo criado. Abrindo a Skill UGC em Meus roteiros…");
+        toast("Conteúdo criado. Abrindo a Skill UGC no editor de roteiros…");
         if (window.painelSkill) window.painelSkill.criarRoteiro({ conteudoId: novo.id, ideia: ideiaDoConteudo(novo, novo.inspiracao), inicial: { formato: /tiktok/i.test(novo.formato || "") ? "TikTok" : /stor/i.test(novo.formato || "") ? "Stories" : /carross/i.test(novo.formato || "") ? "Carrossel" : "Reels" } });
       } else toast(`Conteúdo criado em ${v.status === "Ideia" ? "Sem roteiro" : v.status} no quadro.`);
     } catch (er) { toast("Não consegui transformar: " + er.message, true); }
@@ -1629,7 +1718,7 @@
   }
 
   // os cartões de cada área abrem o mesmo formulário do conteúdo
-  function ligarCliques(raiz) { $$("[data-id]", raiz).forEach((b) => b.addEventListener("click", () => abrir(st.todos.find((p) => String(p.id) === b.dataset.id)))); }
+  function ligarCliques(raiz) { $$("[data-id]", raiz).forEach((b) => b.addEventListener("click", () => abrir(acharConteudo(b.dataset.id)))); }
 
   async function abrirAba() {
     const sec = document.getElementById("aba-" + ABA);

@@ -2912,3 +2912,57 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .av-bloco{margin-top:16px}
 .av-bloco h4{font-family:"DM Serif Display",serif;font-weight:400;font-size:18px;margin:0 0 8px;color:var(--texto,#3d2b20)}
 .av-bloco p{margin:4px 0;font-size:13.5px;line-height:1.5}
+
+/* =========================================================
+   QUADRO DE PRODUÇÃO NA ID VISUAL DA MARI (nov/2026, pedido dela: "o quadro todo com a minha ID")
+   Meus roteiros entrou no quadro (selo "roteiro" no cartão). Paleta do painel: creme, papel, café, terracota,
+   caramelo, manteiga; DM Serif Display nos títulos, Poppins no resto. Cor do pilar = a mesma do calendário.
+   ========================================================= */
+.pc2-btn-ano svg{width:15px;height:15px}
+.pc2-btn-ano.ativa{background:var(--principal);border-color:var(--principal);color:#fff}
+.qp-topo{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:2px 0 12px}
+.qp-topo .pc-ajuda{margin:2px 0 0}
+.qp-topo-acoes{display:flex;gap:8px;flex-wrap:wrap}
+.qp-topo-acoes .btn svg{width:15px;height:15px}
+.qp-btn-arq{color:var(--terracota);border-color:rgba(168,112,88,.45);background:#fbf1ea}
+.qp-btn-arq:hover{background:#f5e3d8}
+.qp .pc2-filtros{margin-bottom:12px}
+/* colunas: papel com borda fina, faixa de cima na cor da etapa, nome em DM Serif */
+.qp .qp-col{background:var(--cartao);border:1px solid var(--linha);border-top:3px solid var(--cor);border-radius:16px;padding:12px 10px 6px;box-shadow:0 1px 3px rgba(61,43,32,.05)}
+.qp .qp-col .pc2-col-cab{padding:0 4px 12px;border-bottom:1px solid var(--linha);margin-bottom:10px}
+.qp .qp-col .pc2-col-cab b{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:18px;letter-spacing:.1px;color:var(--texto)}
+.qp .qp-col .pc3-ponto{width:9px;height:9px;border-radius:50%;background:var(--cor);flex:0 0 auto}
+.qp .qp-col .pc2-col-cab span{min-width:22px;text-align:center;padding:1px 7px;border-radius:999px;background:var(--fundo);color:var(--principal);font-size:12px;font-weight:600}
+.qp .qp-col.alvo{background:#fbf5ec;box-shadow:inset 0 0 0 2px var(--manteiga-forte)}
+.qp .qp-arq{background:#faf6f1;border-style:dashed;border-top-style:solid}
+.qp .qp-arq.fechada{flex-basis:220px;width:220px}
+.qp .qp-arq .qp-card{opacity:.8}
+.qp-ver-arq{margin-left:auto;font-size:12.5px}
+/* cartão: branco, faixa do pilar à esquerda, etiquetas estilo Notion */
+.qp .qp-card{position:relative;background:#fff;border:1px solid var(--linha);border-radius:12px;padding:11px 12px 9px 15px;gap:7px;box-shadow:none;overflow:hidden}
+.qp .qp-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--pil)}
+.qp .qp-card:hover{border-color:rgba(168,112,88,.45);box-shadow:0 6px 16px rgba(61,43,32,.09)}
+.qp .qp-card b{font-size:13.5px;font-weight:600;line-height:1.35;color:var(--texto)}
+.qp-tags{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+.qp-chip{display:inline-flex;align-items:center;gap:5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:600;padding:2px 9px;border-radius:6px;background:var(--fundo);color:var(--principal)}
+.qp-chip::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--pil);flex:0 0 auto}
+.qp-chip.qp-sem{background:transparent;border:1px dashed var(--linha-forte);color:var(--suave);font-weight:500}
+.qp-chip.qp-sem::before{display:none}
+.qp-publi{font-size:11px;font-weight:600;padding:2px 9px;border-radius:6px;background:#FCEEA8;color:#6b4a35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.qp-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--suave)}
+.qp-rot{display:inline-flex;align-items:center;gap:4px;padding:1px 8px 1px 6px;border-radius:999px;background:rgba(168,112,88,.12);color:var(--terracota);font-weight:600;font-size:11px}
+.qp-rot svg{width:13px;height:13px}
+.qp .pc3-card-rodape{border-top:1px solid rgba(107,74,53,.08);padding-top:7px}
+.qp .qp-atraso{color:var(--terracota);font-weight:600}
+.qp .qp-card.atrasado{background:#fffaf6}
+.qp .pc3-menu{color:var(--suave)}
+/* roteiro dentro da janela do cartão */
+.pc-editor-compacto .pc-roteiro>summary strong{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:18px}
+.pc-rot-texto{white-space:pre-wrap;font-size:13.5px;line-height:1.6;color:var(--texto);background:var(--fundo);border:1px solid var(--linha);border-radius:12px;padding:14px 16px;max-height:340px;overflow:auto}
+.pc-rot-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pc-rot-acoes .btn svg{width:15px;height:15px}
+@media (max-width:700px){
+  .qp-topo{align-items:flex-start}
+  .qp .qp-col{flex:0 0 84%;width:84%;max-width:320px}
+  .qp .qp-arq.fechada{flex-basis:70%;width:70%}
+}

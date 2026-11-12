@@ -284,12 +284,12 @@
       toast("Post mandado para o Laboratório criativo.");
     });
     $("[data-quadro]", dlg).addEventListener("click", async () => {
-      if (!window.painelRoteiros || !window.painelRoteiros.salvarNoQuadro) { toast("Abra Meus roteiros uma vez e tente de novo.", true); return; }
+      if (!window.painelRoteiros || !window.painelRoteiros.salvarNoQuadro) { toast("Abra o editor de roteiros uma vez e tente de novo.", true); return; }
       const conteudo = [a.gancho && "GANCHO (referência):\n" + a.gancho, a.ideia && "IDEIA:\n" + a.ideia, a.angulo && "ÂNGULO:\n" + a.angulo,
         a.estrutura && a.estrutura.length && "ESTRUTURA:\n" + a.estrutura.map((e, k) => `${k + 1}. ${e.parte}: ${e.texto}`).join("\n"),
         a.composicao_visual && "VISUAL:\n" + a.composicao_visual, a.cta && "CTA:\n" + a.cta, a.como_usar && "COMO USAR:\n" + a.como_usar, "REFERÊNCIA:\n" + p.link].filter(Boolean).join("\n\n");
       const ok = await window.painelRoteiros.salvarNoQuadro({ id: "bib" + p.id + "-" + Date.now().toString(36), titulo: a.ideia || "Referência de @" + p.perfil, plataforma: p.rede === "tiktok" ? "TikTok" : "Instagram", status: "Em aberto", finalidade: "Conteúdos", etapa: "Ideias", conteudo, gancho: a.gancho || "", formato: p.tipo || "", referencia: p.link, dataPublicacao: "" });
-      if (ok) { dlg.close(); toast("Mandado para Meus roteiros (coluna Ideias)."); }
+      if (ok) { dlg.close(); toast("Roteiro criado. Ele aparece no Quadro de produção."); }
     });
     if (!dlg.open) dlg.showModal();
   }

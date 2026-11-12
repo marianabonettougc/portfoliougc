@@ -315,10 +315,10 @@
     });
     const q = $("[data-quadro]", dlg);
     if (q) q.addEventListener("click", async () => {
-      if (!window.painelRoteiros || !window.painelRoteiros.salvarNoQuadro) { toast("Abra Meus roteiros uma vez e tente de novo.", true); return; }
+      if (!window.painelRoteiros || !window.painelRoteiros.salvarNoQuadro) { toast("Abra o editor de roteiros uma vez e tente de novo.", true); return; }
       const conteudo = [id.gancho && "GANCHO:\n" + id.gancho, id.descricao && "IDEIA:\n" + id.descricao, i.por_que_funciona && "POR QUE FUNCIONA (referência):\n" + i.por_que_funciona, "REFERÊNCIA:\n" + r.link].filter(Boolean).join("\n\n");
       const ok = await window.painelRoteiros.salvarNoQuadro({ id: "lab" + r.id + "-" + Date.now().toString(36), titulo: id.titulo, plataforma: "Instagram", status: "Em aberto", finalidade: "Conteúdos", etapa: "Ideias", conteudo, gancho: id.gancho || "", formato: i.formato || "", referencia: r.link, dataPublicacao: "" });
-      if (ok) { await atualizar(r.id, { etapa: "Vou gravar" }); pintar(); dlg.close(); toast("Ideia mandada para Meus roteiros (coluna Ideias)."); }
+      if (ok) { await atualizar(r.id, { etapa: "Vou gravar" }); pintar(); dlg.close(); toast("Roteiro criado. Ele aparece no Quadro de produção."); }
     });
     if (!dlg.open) dlg.showModal();
   }

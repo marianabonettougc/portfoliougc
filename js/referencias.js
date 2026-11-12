@@ -44,7 +44,7 @@
   // ---------- pedidos para o aplicativo (Meus roteiros) ----------
   function enviarAoApp(pedido) {
     try { localStorage.setItem("skillPendente", JSON.stringify({ ...pedido, quando: Date.now() })); }
-    catch (e) { toast("O navegador não deixou abrir Meus roteiros. Tente de novo.", true); return false; }
+    catch (e) { toast("O navegador não deixou abrir o editor de roteiros. Tente de novo.", true); return false; }
     const botao = document.querySelector('.menu-item[data-aba="quadro"]');
     if (botao) botao.click(); else location.hash = "#quadro";
     [400, 1200, 2500, 4500].forEach((ms) => setTimeout(() => { const f = document.querySelector("#aba-gestao iframe"); if (f && f.contentWindow) f.contentWindow.postMessage({ skillPendente: true }, location.origin); }, ms));
