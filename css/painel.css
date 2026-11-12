@@ -2966,3 +2966,19 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .qp .qp-col{flex:0 0 84%;width:84%;max-width:320px}
   .qp .qp-arq.fechada{flex-basis:70%;width:70%}
 }
+
+/* PLANO DA SEMANA COMO TRELLO (nov/2026, pedido da Mari: editar e mudar de data arrastando) */
+.pq-dica{margin:0 0 10px}
+.pq-col.vazia{flex-basis:200px;width:200px}
+.pq-col.alvo{background:#fbf5ec;box-shadow:inset 0 0 0 2px var(--manteiga-forte, #e2c77f)}
+.pq-col .pq-add{margin-left:2px;opacity:.7}
+.pq-col .pq-add:hover{opacity:1}
+.pq-col .pq-add svg{width:15px;height:15px}
+.pq-card[draggable="true"]{cursor:grab}
+.pq-card.arrastando{opacity:.55;transform:rotate(2deg)}
+button.pq-titulo{display:block;width:100%;padding:0;border:0;background:none;text-align:left;font:inherit;font-size:14px;font-weight:600;color:var(--texto);line-height:1.35;margin-top:6px;cursor:pointer;overflow-wrap:anywhere}
+button.pq-titulo:hover{color:var(--terracota)}
+.pq-pop{max-height:min(60vh,380px);overflow:auto;max-width:300px}
+.pq-pop small{display:block;padding:6px 12px 4px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--suave)}
+.pq-pop button{white-space:normal;text-align:left}
+@media (hover:none){.pq-acoes{opacity:1}}

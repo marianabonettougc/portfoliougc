@@ -841,6 +841,7 @@
       ${r ? `<button class="btn" type="button" id="pc-plano-editar">Editar foco</button><button class="btn btn-perigo" type="button" id="pc-plano-excluir">Excluir</button>` : ""}</div></div>`;
     if (!r) { box.innerHTML = topo + `<p class="pc-ajuda">Ainda não tem plano. O primeiro chega no sábado de manhã, ou clique em Montar agora.</p>`; ligarPlano(box); return; }
     const p = r.plano || {}, c = p.contas || {};
+    sincronizarPlano(p);
     // visual de quadro (nov/2026, pedido da Mari: igual ao Organize de UGC's & Publis): um dia = uma coluna, uma tarefa = um cartão
     const SV = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
     const IC_PL = {
@@ -850,6 +851,7 @@
       ok: SV('<path d="m5 12 5 5 9-10"/>'),
       abrir: SV('<path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>'),
       tirar: SV('<path d="M6 6l12 12M18 6 6 18"/>'),
+      mover: SV('<path d="M8 7 4 12l4 5M16 7l4 5-4 5M4 12h16"/>'),
     };
     const separar = (it) => {
       let t = String(it.texto || "").replace(/^(Gravar|Postar)\s+/i, "").trim(), fmt = "", hora = "";
@@ -864,10 +866,13 @@
     const pct = todas.length ? Math.round(feitas / todas.length * 100) : 0;
     const cartao = (it, onde) => {
       const x = separar(it), tipo = it.tipo === "gravar" ? "gravar" : "postar";
-      return `<div class="pq-card pq-${tipo}${it.feito ? " feito" : ""}">
+      // o cartão mostra o conteúdo como ele está agora (título, formato e horário editados aparecem aqui)
+      const post = it.post_id && acharConteudo(it.post_id);
+      if (post) { x.titulo = post.tema || x.titulo; x.fmt = post.formato || x.fmt; if (tipo === "postar") x.hora = post.horario || x.hora; }
+      return `<div class="pq-card pq-${tipo}${it.feito ? " feito" : ""}" draggable="true" data-item="${esc(it.id)}" data-onde="${onde}">
         <div class="pq-card-topo"><span class="pq-ico">${IC_PL[tipo]}</span><span class="pq-tipo">${ROT_ITEM[tipo]}</span>
-          <span class="pq-acoes">${it.post_id ? `<button type="button" class="pq-btn" data-post="${it.post_id}" title="Abrir o post" aria-label="Abrir o post">${IC_PL.abrir}</button>` : ""}<button type="button" class="pq-btn" data-tirar="${esc(it.id)}" data-onde="${onde}" title="Tirar do plano" aria-label="Tirar do plano">${IC_PL.tirar}</button></span></div>
-        <div class="pq-titulo">${esc(x.titulo)}</div>
+          <span class="pq-acoes"><button type="button" class="pq-btn" data-mover="${esc(it.id)}" data-onde="${onde}" title="Mudar de dia" aria-label="Mudar de dia">${IC_PL.mover}</button>${it.post_id ? `<button type="button" class="pq-btn" data-post="${it.post_id}" title="Abrir e editar o conteúdo" aria-label="Abrir e editar o conteúdo">${IC_PL.abrir}</button>` : ""}<button type="button" class="pq-btn" data-tirar="${esc(it.id)}" data-onde="${onde}" title="Tirar do plano" aria-label="Tirar do plano">${IC_PL.tirar}</button></span></div>
+        <button type="button" class="pq-titulo" data-editar="${esc(it.id)}" data-onde="${onde}" title="Editar">${esc(x.titulo)}</button>
         ${x.fmt ? `<div class="pq-sub">${esc(x.fmt)}</div>` : ""}
         <div class="pq-rodape">${x.hora ? `<span class="pq-hora">${IC_PL.hora}${esc(x.hora)}</span>` : `<span></span>`}
           <label class="pq-feito"><input type="checkbox" data-feito="${esc(it.id)}" data-onde="${onde}" ${it.feito ? "checked" : ""}><span>${it.feito ? IC_PL.ok + "Feito" : "Marcar feito"}</span></label></div>
@@ -876,12 +881,13 @@
     const hj = iso(hoje);
     box.innerHTML = topo + `
       ${r.foco ? `<p class="pc-plano-foco"><b>Foco:</b> ${esc(r.foco)}</p>` : ""}
-      <div class="pq-resumo"><div class="pq-resumo-linha"><span>${plural(feitas, "tarefa feita", "tarefas feitas")} de ${todas.length} · ${plural(c.posts || 0, "post", "posts")}${p.novos ? ` (${plural(p.novos, "ideia nova", "ideias novas")} com roteiro)` : ""}</span><span>${pct}%</span></div><div class="pq-barra"><span style="width:${pct}%"></span></div>
+      <div class="pq-resumo"><div class="pq-resumo-linha"><span>${plural(feitas, "tarefa feita", "tarefas feitas")} de ${todas.length} · ${plural(todas.filter((it) => it.tipo === "postar").length, "post", "posts")}${p.novos ? ` (${plural(p.novos, "ideia nova", "ideias novas")} com roteiro)` : ""}</span><span>${pct}%</span></div><div class="pq-barra"><span style="width:${pct}%"></span></div>
         <div class="pq-legenda"><span class="pq-leg pq-gravar">${IC_PL.gravar}Gravar</span><span class="pq-leg pq-postar">${IC_PL.postar}Postar</span></div></div>
       ${p.aviso ? `<p class="faixa faixa-erro">${esc(p.aviso)}</p>` : ""}
-      <div class="pq-quadro">${(p.dias || []).map((d) => { const its = tarefas(d), passou = d.data < hj; return `<div class="pq-col${d.data === hj ? " hoje" : ""}${passou ? " passou" : ""}${its.length ? "" : " livre"}">
-        <div class="pq-col-topo"><span class="pq-ponto"></span><span class="pq-col-nome">${esc(d.nome)}${d.data === hj ? ` <em>hoje</em>` : ""}</span><span class="pq-col-data">${brCurta(d.data)}</span><span class="pq-col-n">${its.length}</span></div>
-        ${its.map((it) => cartao(it, d.data)).join("") || `<div class="pq-vazio">Dia livre</div>`}</div>`; }).join("")}</div>`;
+      <p class="pc-ajuda pq-dica">Arraste um cartão para outro dia (ou toque em ⇆) para mudar a data. Toque no título para editar. O + coloca um conteúdo naquele dia.</p>
+      <div class="pq-quadro">${(p.dias || []).map((d) => { const its = tarefas(d), passou = d.data < hj; return `<div class="pq-col${d.data === hj ? " hoje" : ""}${passou ? " passou" : ""}${its.length ? "" : " vazia"}" data-dia="${d.data}">
+        <div class="pq-col-topo"><span class="pq-ponto"></span><span class="pq-col-nome">${esc(d.nome)}${d.data === hj ? ` <em>hoje</em>` : ""}</span><span class="pq-col-data">${brCurta(d.data)}</span><span class="pq-col-n">${its.length}</span><button type="button" class="pq-btn pq-add" data-add-dia="${d.data}" title="Colocar um conteúdo neste dia" aria-label="Colocar um conteúdo neste dia">${ic.mais}</button></div>
+        ${its.map((it) => cartao(it, d.data)).join("") || `<div class="pq-vazio">Dia livre · arraste para cá</div>`}</div>`; }).join("")}</div>`;
     const qd = $(".pq-quadro", box), colHoje = $(".pq-col.hoje", box);
     if (qd && colHoje) qd.scrollLeft = Math.max(0, colHoje.offsetLeft - qd.offsetLeft - 8);
     ligarPlano(box);
@@ -938,7 +944,8 @@
     $$("[data-tirar]", box).forEach((b) => b.addEventListener("click", async () => {
       const lista = itensDe(b.dataset.onde), i = lista.findIndex((x) => x.id === b.dataset.tirar); if (i < 0) return;
       const [tirado] = lista.splice(i, 1);
-      try { await salvarPlano({ plano: pl.atual.plano }); pintarPlano(); } catch (er) { lista.splice(i, 0, tirado); toast(er.message, true); pintarPlano(); }
+      const pp = pl.atual.plano; if (tirado.post_id) pp.tirados = [...new Set([...(pp.tirados || []), `${tirado.tipo}:${tirado.post_id}`])];
+      try { await salvarPlano({ plano: pp }); pintarPlano(); } catch (er) { lista.splice(i, 0, tirado); toast(er.message, true); pintarPlano(); }
     }));
     $$("[data-post]", box).forEach((b) => b.addEventListener("click", async () => {
       let p = st.todos.find((x) => String(x.id) === b.dataset.post);
@@ -946,6 +953,106 @@
       if (p) abrir(p); else toast("Esse post não existe mais no calendário.", true);
     }));
     $$("[data-ir]", box).forEach((b) => b.addEventListener("click", () => { location.hash = "#" + b.dataset.ir; }));
+    // nov/2026 (pedido da Mari: "autonomia de editar e mudar de data arrastando, igual Trello")
+    $$(".pq-card[data-item]", box).forEach((c) => {
+      c.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/plano", c.dataset.item + "|" + c.dataset.onde); e.dataTransfer.effectAllowed = "move"; c.classList.add("arrastando"); });
+      c.addEventListener("dragend", () => c.classList.remove("arrastando"));
+    });
+    $$(".pq-col[data-dia]", box).forEach((col) => {
+      col.addEventListener("dragover", (e) => { if ([...e.dataTransfer.types].includes("text/plano")) { e.preventDefault(); col.classList.add("alvo"); } });
+      col.addEventListener("dragleave", (e) => { if (!col.contains(e.relatedTarget)) col.classList.remove("alvo"); });
+      col.addEventListener("drop", (e) => { e.preventDefault(); col.classList.remove("alvo"); const [id, de] = String(e.dataTransfer.getData("text/plano")).split("|"); moverItemPlano(id, de, col.dataset.dia); });
+    });
+    $$("[data-mover]", box).forEach((b) => b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const dias = (pl.atual.plano.dias || []).filter((d) => d.data !== b.dataset.onde);
+      popPlano(b, dias.map((d) => [`${d.nome} · ${brCurta(d.data)}`, () => moverItemPlano(b.dataset.mover, b.dataset.onde, d.data)]), "Mudar para");
+    }));
+    $$("[data-editar]", box).forEach((b) => b.addEventListener("click", async () => {
+      const it = itensDe(b.dataset.onde).find((x) => x.id === b.dataset.editar); if (!it) return;
+      const post = it.post_id && acharConteudo(it.post_id);
+      if (post) { abrir(post); return; }
+      const novo = await painelDialogo.texto("Editar a tarefa:", it.texto || "", { linhas: 2 });
+      if (novo == null || !novo.trim()) return;
+      const antes = it.texto; it.texto = novo.trim();
+      try { await salvarPlano({ plano: pl.atual.plano }); pintarPlano(); } catch (er) { it.texto = antes; toast(er.message, true); }
+    }));
+    $$("[data-add-dia]", box).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); adicionarNoDia(b, b.dataset.addDia); }));
+  }
+  // menu pequeno (mesmo visual do ••• do quadro)
+  function popPlano(bt, opcoes, titulo) {
+    document.querySelectorAll(".pc3-pop").forEach((x) => x.remove());
+    const pop = document.createElement("div"); pop.className = "pc3-pop pq-pop";
+    pop.innerHTML = (titulo ? `<small>${esc(titulo)}</small>` : "") + opcoes.map(([t], i) => `<button type="button" data-i="${i}">${esc(t)}</button>`).join("");
+    document.body.appendChild(pop);
+    const r = bt.getBoundingClientRect();
+    pop.style.top = Math.max(8, Math.min(window.innerHeight - pop.offsetHeight - 8, r.bottom + 4)) + "px";
+    pop.style.left = Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, r.right - pop.offsetWidth)) + "px";
+    const fechar = () => { pop.remove(); document.removeEventListener("click", fora, true); };
+    const fora = (e) => { if (!pop.contains(e.target)) fechar(); };
+    setTimeout(() => document.addEventListener("click", fora, true), 0);
+    pop.addEventListener("click", (e) => { const b = e.target.closest("[data-i]"); if (!b) return; fechar(); opcoes[Number(b.dataset.i)][1](); });
+  }
+  // mover um cartão de dia: muda o plano e a data do próprio conteúdo (postar = publicação, gravar = gravação)
+  async function moverItemPlano(id, de, para) {
+    if (!pl.atual || !id || de === para) return;
+    const plano = pl.atual.plano, origem = itensDe(de), i = origem.findIndex((x) => x.id === id);
+    const dia = (plano.dias || []).find((d) => d.data === para); if (i < 0 || !dia) return;
+    const [it] = origem.splice(i, 1); dia.itens = dia.itens || []; dia.itens.push(it);
+    try { await salvarPlano({ plano }); } catch (er) { dia.itens.pop(); origem.splice(i, 0, it); toast(er.message, true); pintarPlano(); return; }
+    const post = it.post_id && acharConteudo(it.post_id);
+    if (post) {
+      const campo = it.tipo === "gravar" ? "data_gravacao" : "data";
+      try { await salvar({ id: post.id, [campo]: para }); } catch (er) { toast("O plano mudou, mas a data do conteúdo não: " + er.message, true); }
+    }
+    pintar();
+    const d = (plano.dias || []).find((x) => x.data === para);
+    toast(`${it.tipo === "gravar" ? "Gravação" : "Publicação"} mudada para ${d ? d.nome.toLowerCase() : ""} ${brCurta(para)}.`);
+  }
+  // + do dia: escolher o que gravar ou postar naquele dia (um conteúdo que já existe ou um novo)
+  function adicionarNoDia(bt, dia) {
+    popPlano(bt, [
+      ["Postar neste dia", () => escolherConteudo(bt, dia, "postar")],
+      ["Gravar neste dia", () => escolherConteudo(bt, dia, "gravar")],
+    ], `${brCurta(dia)}: o que fazer?`);
+  }
+  function escolherConteudo(bt, dia, tipo) {
+    const campo = tipo === "gravar" ? "data_gravacao" : "data";
+    const lista = st.todos.filter((p) => p.status !== "Publicado" && p[campo] !== dia && !/stories/i.test(p.formato || ""))
+      .map((p) => ({ p, k: (p.data && p.data < iso(hoje) ? "1" : "0") + String(p.data || "9") })).sort((a, b) => a.k.localeCompare(b.k)).map((x) => x.p).slice(0, 15);
+    popPlano(bt, [
+      ["+ Novo conteúdo", () => abrir(novoConteudo(tipo === "gravar" ? { data_gravacao: dia, status: "Para gravar" } : { data: dia, status: "Roteirizado" }))],
+      ...lista.map((p) => [`${p.tema || "Sem título"}${p.data ? " · " + brCurta(p.data) : ""}`, async () => {
+        const pp = pl.atual && pl.atual.plano; if (pp && pp.tirados) pp.tirados = pp.tirados.filter((k) => k !== `${tipo}:${p.id}`);
+        try { await salvar({ id: p.id, [campo]: dia }); pintar(); toast(`${p.tema || "Conteúdo"}: ${tipo} em ${brCurta(dia)}.`); } catch (er) { toast(er.message, true); }
+      }]),
+    ], tipo === "gravar" ? "Gravar qual conteúdo?" : "Postar qual conteúdo?");
+  }
+  // o plano acompanha os conteúdos: data mudada no calendário ou na janela leva o cartão para o dia certo,
+  // e conteúdo com data nesta semana entra sozinho (menos o que ela tirou do plano)
+  function sincronizarPlano(p) {
+    const dias = p.dias || []; if (!dias.length || !pl.atual) return;
+    const datas = new Set(dias.map((d) => d.data)), tirados = new Set(p.tirados || []);
+    let mexeu = false;
+    const diaDe = (dt) => dias.find((d) => d.data === dt);
+    dias.forEach((d) => (d.itens || []).slice().forEach((it) => {
+      if (it.tipo !== "gravar" && it.tipo !== "postar") return;
+      const post = it.post_id && acharConteudo(it.post_id); if (!post) return;
+      const alvo = it.tipo === "gravar" ? post.data_gravacao : post.data;
+      if (alvo && alvo !== d.data && datas.has(alvo)) { d.itens.splice(d.itens.indexOf(it), 1); const nd = diaDe(alvo); nd.itens = [...(nd.itens || []), it]; mexeu = true; }
+    }));
+    const tem = new Set(dias.flatMap((d) => (d.itens || []).filter((it) => it.post_id).map((it) => `${it.tipo}:${it.post_id}`)));
+    st.todos.forEach((post) => {
+      [["postar", post.data], ["gravar", post.data_gravacao]].forEach(([tipo, dt]) => {
+        const k = `${tipo}:${post.id}`;
+        if (!dt || !datas.has(dt) || tem.has(k) || tirados.has(k) || /stories/i.test(post.formato || "")) return;
+        if (tipo === "gravar" && post.status !== "Ideia" && STATUS.indexOf(post.status) >= STATUS.indexOf("Em edição")) return;
+        const nd = diaDe(dt);
+        nd.itens = [...(nd.itens || []), { id: `m-${tipo}-${post.id}`, tipo, post_id: post.id, texto: `${tipo === "gravar" ? "Gravar" : "Postar"} ${post.formato || "Reels"}: ${post.tema || "Sem título"}${tipo === "postar" && post.horario ? " às " + post.horario : ""}`, feito: tipo === "postar" && post.status === "Publicado" }];
+        tem.add(k); mexeu = true;
+      });
+    });
+    if (mexeu) salvarPlano({ plano: p }).catch(() => { /* aparece certo na tela; salva na próxima mudança */ });
   }
 
   // ---------- calendário semanal (as mesmas pílulas e o mesmo arrastar do mensal) ----------
