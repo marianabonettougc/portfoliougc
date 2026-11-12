@@ -70,56 +70,62 @@ function transcricaoComTempo(ref: any) {
 // ---------- cenas e voz ----------
 const GROQ = "https://api.groq.com/openai/v1";
 let visaoCache: string | null | undefined;
+// escolhe pelo nome, igual à creative-studio (o teste com imagem de 1 pixel fazia o qwen recusar)
 async function modeloVisao(chave: string) {
   if (visaoCache !== undefined) return visaoCache;
   try {
     const j = await (await fetch(`${GROQ}/models`, { headers: { Authorization: `Bearer ${chave}` } })).json();
     const ids: string[] = (j.data || []).filter((m: any) => m.active !== false).map((m: any) => String(m.id));
-    const pref = [/qwen3\.[5-9]/i, /llama-4-maverick/i, /llama-4-scout/i, /llama-4/i, /vision/i, /(^|[-_/])vl([-_]|$)|qwen.*vl/i, /pixtral|gemma-3|kimi.*vl/i];
-    visaoCache = null;
-    const px = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
-    for (const p of pref) for (const id of ids.filter((x) => p.test(x))) {
-      const t = await fetch(`${GROQ}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" }, body: JSON.stringify({ model: id, max_tokens: 5, messages: [{ role: "user", content: [{ type: "text", text: "Cor?" }, { type: "image_url", image_url: { url: px } }] }] }) });
-      if (t.ok) { visaoCache = id; return visaoCache; }
-    }
-  } catch { visaoCache = null; }
+    visaoCache = ["qwen/qwen3.8-27b", "meta-llama/llama-4-maverick-17b-128e-instruct", "meta-llama/llama-4-scout-17b-16e-instruct"].find((p) => ids.includes(p))
+      || ids.find((id) => /qwen3\.[5-9]|vision|llama-4|-vl/i.test(id)) || (ids.length ? null : "qwen/qwen3.8-27b");
+  } catch { visaoCache = "qwen/qwen3.8-27b"; }
   return visaoCache;
 }
-const imagemOk = (i: unknown) => /^data:image\/(png|jpe?g|webp);base64,/.test(String(i || "")) && String(i).length < 400_000;
-// o modelo de visão descreve cada cena (lotes de 4 quadros)
-async function descreverCenas(chave: string, cenas: any[]) {
+const imagemOk = (i: unknown) => /^data:image\/(png|jpe?g|webp);base64,/.test(String(i || "")) && String(i).length < 900_000;
+// o modelo de visão descreve as cenas pelas "folhas de contato" que o navegador monta (até 8 quadros
+// numerados por imagem). O Groq grátis aceita 3 imagens por pedido e uns 7 mil tokens de entrada por
+// minuto (cada imagem gasta uns 2 mil), então vai 1 folha por pedido, uma depois da outra.
+async function descreverCenas(chave: string, cenas: any[], folhas: any[]) {
   const visao = await modeloVisao(chave);
   const saida: any[] = cenas.map(() => ({}));
-  if (!visao) return { lidas: saida, visao: false };
-  for (let i = 0; i < cenas.length; i += 4) {
-    const lote = cenas.slice(i, i + 4);
-    const pedido = `Estes são ${lote.length} quadros de cenas seguidas de um Reels de UGC (um quadro por cena, na ordem). Para cada quadro, descreva em português do Brasil, curto e concreto, o que se VÊ (nada de supor o que não aparece).
-Responda SOMENTE um JSON: {"cenas":[{"n":1,"enquadramento":"close no rosto | plano médio | detalhe do produto | mãos | tela do celular | ambiente","visual":"o que acontece: quem aparece, o que faz, produto, cenário, luz, expressão (1 frase)","texto_tela":"texto escrito na tela, se tiver, senão vazio"}]}
-${lote.map((c, k) => `Quadro ${k + 1}: cena de ${mmss(Number(c.ini) || 0)} a ${mmss(Number(c.fim) || 0)}`).join("\n")}`;
+  if (!visao || !folhas.length) return { lidas: saida, visao: false };
+  for (const f of folhas) {
+    const de = Number(f.de) || 0, ate = Math.min(cenas.length - 1, Number(f.ate) || 0);
+    const pedido = `Esta imagem é uma folha com ${ate - de + 1} quadros de um Reels de UGC, um quadro por cena, numerados de ${de + 1} a ${ate + 1} (número no quadradinho amarelo), na ordem: da esquerda para a direita e de cima para baixo. Para cada quadro, descreva em português do Brasil, curto e concreto, o que se VÊ (nada de supor o que não aparece).
+Responda SOMENTE um JSON: {"cenas":[{"n":${de + 1},"enquadramento":"close no rosto | plano médio | detalhe do produto | mãos | tela do celular | ambiente","visual":"o que acontece: quem aparece, o que faz, produto, cenário, luz, expressão (1 frase)","texto_tela":"texto escrito na tela, se tiver, senão vazio"}]}
+${Array.from({ length: ate - de + 1 }, (_, k) => `Quadro ${de + k + 1}: cena de ${mmss(Number(cenas[de + k]?.ini) || 0)} a ${mmss(Number(cenas[de + k]?.fim) || 0)}`).join("\n")}`;
     try {
+      let semRaciocinio = true;
       const pedir = () => fetch(`${GROQ}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: visao, temperature: 0.2, max_tokens: 900, messages: [{ role: "user", content: [{ type: "text", text: pedido }, ...lote.map((c) => ({ type: "image_url", image_url: { url: c.imagem } }))] }] }) });
-      let r = await pedir();
-      if (r.status === 429) { await esperar(8000); r = await pedir(); }
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) continue;
+        body: JSON.stringify({ model: visao, temperature: 0.2, max_tokens: 1800, ...(semRaciocinio && /qwen/i.test(visao) ? { reasoning_effort: "none" } : {}), messages: [{ role: "user", content: [{ type: "text", text: pedido }, { type: "image_url", image_url: { url: f.imagem } }] }] }) });
+      let r = await pedir(); let j = await r.json().catch(() => ({}));
+      if (r.status === 400 && /reasoning/i.test(String(j?.error?.message || ""))) { semRaciocinio = false; r = await pedir(); j = await r.json().catch(() => ({})); }
+      if (r.status === 429) {
+        const espera = Number(String(j?.error?.message || "").match(/try again in ([\d.]+)s/)?.[1] || 20);
+        if (espera <= 45) { await esperar(espera * 1000 + 500); r = await pedir(); j = await r.json().catch(() => ({})); }
+      }
+      if (!r.ok) { console.error("visão", r.status, JSON.stringify(j).slice(0, 300)); continue; }
       const lido = lerJson(String(j.choices?.[0]?.message?.content || "").replace(/<think>[\s\S]*?<\/think>/g, ""));
       (Array.isArray(lido.cenas) ? lido.cenas : []).forEach((d: any, k: number) => {
-        const idx = i + (Number(d.n) >= 1 && Number(d.n) <= lote.length ? Number(d.n) - 1 : k);
-        if (idx < saida.length) saida[idx] = { enquadramento: txt(d.enquadramento, 60), visual: txt(d.visual, 260), texto_tela: txt(d.texto_tela, 160) };
+        const n = Number(d.n);
+        const idx = n >= de + 1 && n <= ate + 1 ? n - 1 : de + k;
+        if (idx <= ate && idx < saida.length) saida[idx] = { enquadramento: txt(d.enquadramento, 60), visual: txt(d.visual, 260), texto_tela: txt(d.texto_tela, 160) };
       });
-    } catch { /* segue com as outras */ }
+    } catch (e) { console.error("visão", String(e)); }
   }
-  return { lidas: saida, visao: true };
+  return { lidas: saida, visao: saida.some((x) => x.visual) };
 }
 function falaEntre(ref: any, ini: number, fim: number) {
-  const segs = Array.isArray(ref.segmentos) ? ref.segmentos : [];
-  return segs.filter((s: any, i: number) => { const a = Number(s.ini) || 0; const b = Number(segs[i + 1]?.ini ?? a + 3); return a < fim && b > ini; }).map((s: any) => txt(s.texto, 200)).join(" ").slice(0, 260);
+  const segs = (Array.isArray(ref.segmentos) ? ref.segmentos : []).map((s: any, i: number, l: any[]) => ({ a: Number(s.ini) || 0, b: Number(l[i + 1]?.ini ?? (Number(s.ini) || 0) + 3), t: txt(s.texto, 200) }));
+  // frases que começam dentro da cena; se nenhuma começa, a frase que está sendo dita
+  let dentro = segs.filter((s: any) => s.a >= ini - 0.3 && s.a < fim);
+  if (!dentro.length) dentro = segs.filter((s: any) => s.a < fim && s.b > ini).slice(-1);
+  return dentro.map((s: any) => s.t).join(" ").slice(0, 260);
 }
 function textoVoz(v: any) {
   if (!v || typeof v !== "object") return "";
   const l: string[] = [];
-  if (v.palavrasPorSeg) l.push(`Ritmo médio: ${v.palavrasPorSeg} palavras por segundo (média de creator: 2,75; rápida: 3,7)`);
+  if (v.palavrasPorSeg) l.push(`Ritmo médio: ${v.palavrasPorSeg} palavras por segundo (abaixo de 2,3 = calma; 2,3 a 3,2 = média; acima de 3,2 = rápida; acima de 4 = bem acelerada)`);
   if (v.ritmoGancho) l.push(`Ritmo nos 3 primeiros segundos: ${v.ritmoGancho} palavras por segundo`);
   if (v.primeiraFala != null) l.push(`A primeira fala começa em ${v.primeiraFala} s`);
   if (v.pausas != null) l.push(`Pausas de mais de 0,4 s: ${v.pausas} (a maior com ${v.maiorPausa || 0} s); ${v.falaPct ?? "?"}% do vídeo com voz`);
@@ -132,8 +138,9 @@ function textoVoz(v: any) {
 
 async function analise(chave: string, ref: any) {
   const temTempo = Array.isArray(ref.segmentos) && ref.segmentos.length;
-  const cenasIn = (Array.isArray(ref.cenas) ? ref.cenas : []).filter((c: any) => imagemOk(c.imagem)).slice(0, 14);
-  const { lidas, visao } = cenasIn.length ? await descreverCenas(chave, cenasIn) : { lidas: [], visao: false };
+  const cenasIn = (Array.isArray(ref.cenas) ? ref.cenas : []).filter((c: any) => c && isFinite(Number(c.ini))).slice(0, 16);
+  const folhas = (Array.isArray(ref.folhas) ? ref.folhas : []).filter((f: any) => imagemOk(f.imagem)).slice(0, 2);
+  const { lidas, visao } = cenasIn.length ? await descreverCenas(chave, cenasIn, folhas) : { lidas: [], visao: false };
   const cenasTxt = cenasIn.map((c: any, i: number) => {
     const d = lidas[i] || {};
     return `Cena ${i + 1} [${mmss(Number(c.ini) || 0)} a ${mmss(Number(c.fim) || 0)}]${d.enquadramento ? " " + d.enquadramento + ":" : ""} ${d.visual || "(sem descrição)"}${d.texto_tela ? ` | texto na tela: "${d.texto_tela}"` : ""}${falaEntre(ref, Number(c.ini) || 0, Number(c.fim) || 0) ? ` | fala: "${falaEntre(ref, Number(c.ini) || 0, Number(c.fim) || 0)}"` : ""}`;
