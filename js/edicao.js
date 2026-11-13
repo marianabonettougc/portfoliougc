@@ -3482,6 +3482,74 @@ IDEIA PARA DEPOIS
           .ed-cc .ed-ref-topo{grid-template-columns:1fr}
           .ed-cc .ed-ref-soltar{min-height:130px}
         }
+        /* Redesign de usabilidade do editor — nov/2026 */
+        .cr-pagina-larga:has(.ed-cc),.ed-cc{width:100%;max-width:none}
+        .ed-cc{margin-left:0;margin-right:0}
+        .ed-cc-grade{grid-template-columns:58px minmax(270px,.88fr) minmax(420px,1.42fr) minmax(230px,.72fr);gap:0;height:clamp(650px,calc(100vh - 235px),980px);min-height:650px}
+        .ed-gaveta{min-width:0}
+        .ed-gaveta-cab{padding:16px 17px 12px}
+        .ed-gaveta-corpo{padding:16px 17px 22px}
+        .ed-gaveta .ed-obs{font-size:13.5px;line-height:1.55}
+        .ed-trilho{padding:14px 7px;gap:8px}
+        .ed-trilho-bt{min-height:68px;font-size:11.5px;gap:5px}
+        .ed-trilho-bt svg{width:23px;height:23px}
+        .ed-palco{padding:18px 16px;gap:14px}
+        .ed-cc .ed-palco .rr-player{width:min(100%,430px);height:auto;max-height:calc(100vh - 315px);min-height:390px;aspect-ratio:9/16}
+        .ed-cc .ed-palco .rr-player canvas{width:100%;height:100%;max-height:none;object-fit:contain}
+        .ed-controles{width:min(100%,560px);gap:12px}
+        .ed-controles .btn{height:38px;font-size:13px}
+        .ed-assist{padding:16px;min-width:0}
+        .ed-assist-cab{font-size:14px;padding:12px}
+        .ed-assist .ed-cartao{padding:14px}
+        .ed-assist textarea,.ed-assist .entrada{font-size:14px;line-height:1.55;min-height:132px}
+        .ed-assist-vazio{font-size:13.5px;line-height:1.55}
+        .ed-cc .ed-cc-linha{padding:16px 18px 20px}
+        .ed-cc .rr-ferramentas{gap:9px;padding:12px;margin-bottom:14px}
+        .ed-cc .rr-ferramentas .btn{height:36px;padding:0 12px;font-size:12.5px}
+        .ed-cc .rr-ferramentas select.entrada{height:36px;font-size:12.5px}
+        .ed-cc .rr-tempo-f,.ed-cc .rr-liga{font-size:12px}
+        .ed-cc .rr-linha-rolar{padding:12px 12px 16px;min-height:190px}
+        .ed-cc .rr-regua{height:22px;font-size:11px}
+        .ed-cc .rr-trilha{height:40px;margin-top:23px}
+        .ed-cc .rr-t-leg{height:42px}
+        .ed-cc .rr-t-planos{height:64px}
+        .ed-cc .rr-plano-bl{height:62px}
+        .ed-cc .rr-t-fx{height:32px}
+        .ed-cc .rr-t-sons{height:28px}
+        .ed-cc .rr-chip{height:34px;top:3px;font-size:12px;padding:0 8px;border-radius:7px}
+        .ed-cc .rr-trilha:before{font-size:10.5px;top:-17px}
+        .ed-cc .rr-legenda-linha{font-size:12px;line-height:1.55}
+        .ed-cc .ed-legs{max-height:none;gap:7px}
+        .ed-cc .ed-leg{gap:7px;grid-template-columns:auto minmax(0,1fr) auto auto auto auto}
+        .ed-cc .ed-leg input{height:42px;font-size:14.5px;padding:0 10px}
+        .ed-cc .ed-leg .icone-btn{width:34px;height:34px}
+        .ed-cc .ed-cartao .ed-titulo{font-size:14px}
+        .ed-cc .ed-cartao .ed-sub{font-size:13.5px}
+        @media(max-width:1450px) and (min-width:1101px){
+          .ed-cc-grade{grid-template-columns:54px minmax(245px,.82fr) minmax(370px,1.3fr) minmax(210px,.7fr)}
+          .ed-cc .ed-palco .rr-player{width:min(100%,390px)}
+        }
+        @media(max-width:1100px){
+          .cr-pagina-larga:has(.ed-cc),.ed-cc{width:100%;max-width:none}
+          .ed-cc-grade{grid-template-columns:54px minmax(250px,.9fr) minmax(360px,1.1fr);grid-template-rows:minmax(620px,auto) auto;height:auto;min-height:0}
+          .ed-assist{grid-column:2/4;grid-row:2;display:grid;grid-template-columns:1fr 2fr;gap:12px}
+          .ed-assist-cab{grid-column:1/-1}
+          .ed-assist .ed-cartao,.ed-assist-vazio{grid-column:auto}
+          .ed-cc .ed-palco .rr-player{max-height:680px;min-height:360px;width:min(100%,390px)}
+        }
+        @media(max-width:900px){
+          .ed-cc-grade{display:flex;flex-direction:column;height:auto}
+          .ed-palco{order:1;min-height:0}
+          .ed-trilho{order:2}
+          .ed-gaveta{order:3}
+          .ed-assist{order:4;display:block}
+          .ed-cc .ed-cc-linha{order:5}
+        }
+        @media(max-width:560px){
+          .ed-cc .ed-palco .rr-player{width:min(250px,100%);min-height:320px;max-height:480px}
+          .ed-cc .rr-ferramentas .btn{font-size:11.5px}
+          .ed-cc .rr-chip{font-size:11px}
+        }
       `; document.head.appendChild(css);
     }
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga ed rr ed-cc">
