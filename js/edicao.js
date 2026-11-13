@@ -670,6 +670,7 @@ IDEIA PARA DEPOIS
     if (st.camadas.length) st.aba = "textos";
     st.story = { ...novoStory(), ...(d.story || {}) }; st.vari = { ...novaVari(), ...(d.vari || {}), trab: false, gerando: null };
     if (d.opc && d.versao >= 3) Object.assign(st.opc, d.opc);
+    st.opc.coresPalavras = (d.opc && d.opc.coresPalavras) || {};
     if (!d.opc || !d.opc.zoomNivel) { st.opc.zoomNivel = "discreto"; st.opc.zoomCortes = false; }
     if (!d.opc || !d.opc.zoomPalavrasV1) migrarZoomPalavras(st.opc);
     if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
@@ -681,7 +682,7 @@ IDEIA PARA DEPOIS
     studio.aba = "visao"; await carregarStudio();
   }
   function novoProjeto() {
-    limparTudo(); st.projeto = null;
+    limparTudo(); st.projeto = null; st.opc.coresPalavras = {};
     studio.meta = { job_id:"", roteiro_id:"", conteudo_id:null, etapa:"planejamento", prazo:"", observacoes:"" };
     studio.arquivos=[]; studio.gravacoes=[]; studio.entregas=[]; studio.aba="visao"; studio.carregado=false;
     const sec = document.getElementById("aba-" + ABA);
@@ -2791,8 +2792,11 @@ IDEIA PARA DEPOIS
     c2d.fillStyle = st.opc.corLegenda || "#fff3b0";
     // palavra falada em destaque (karaokê): só quando o texto é o da fala, palavra por palavra
     const ws = (g.palavras || []), pal = texto.split(/\s+/).filter(Boolean);
-    if (st.opc.karaoke && ws.length === pal.length && ws.length > 1) {
-      let atual = -1; ws.forEach((w, i) => { if (st.t >= (w.o0 ?? g.o0) - 0.02) atual = i; });
+    // palavras em outra cor (opc.coresPalavras: {"lg": "#ed1c24"}), ex.: a marca sempre em vermelho
+    const cp = st.opc.coresPalavras || {}, corDa = (p) => cp[chaveCorPalavra(p)] || "";
+    const temCor = pal.some((p) => corDa(p)), kar = st.opc.karaoke && ws.length === pal.length && ws.length > 1;
+    if (kar || temCor) {
+      let atual = -1; if (kar) ws.forEach((w, i) => { if (st.t >= (w.o0 ?? g.o0) - 0.02) atual = i; });
       let n = 0; c2d.textAlign = "left";
       linhas.forEach((l, i) => {
         const ps = l.split(/\s+/).filter(Boolean), esp = c2d.measureText(" ").width, larg = ps.reduce((a, p) => a + c2d.measureText(p).width, 0) + esp * (ps.length - 1);
@@ -2800,12 +2804,15 @@ IDEIA PARA DEPOIS
         for (const p of ps) {
           const w = c2d.measureText(p).width, ativo = n === atual;
           c2d.save(); if (ativo) { c2d.translate(x + w / 2, yy); c2d.scale(1.1, 1.1); c2d.translate(-(x + w / 2), -yy); c2d.fillStyle = st.opc.cor || "#f2c14e"; }
+          if (corDa(p)) c2d.fillStyle = corDa(p);
           c2d.fillText(p, x, yy); c2d.restore(); x += w + esp; n++;
         }
       });
     } else linhas.forEach((l, i) => c2d.fillText(l, xc, y + (i - (linhas.length - 1) / 2) * tam * 1.12));
     c2d.restore();
   }
+  // chave de uma palavra para a lista de palavras coloridas: minúscula e sem pontuação nas pontas
+  function chaveCorPalavra(p) { return String(p || "").toLowerCase().replace(/^[^0-9a-zà-ÿ]+|[^0-9a-zà-ÿ]+$/g, ""); }
   // lado da legenda (centro, esquerda ou direita do rosto)
   function xLegenda(W) { return st.opc.ladoLeg === "esquerda" ? W * 0.31 : st.opc.ladoLeg === "direita" ? W * 0.69 : W / 2; }
   // palavra chamativa: frase pequena manuscrita em cima e a palavra forte grande, cor viva e sombra dura
@@ -3866,6 +3873,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <div class="ed-aj-bloco"><h4>Cores</h4>
         <span class="ed-rotulo">Cor da legenda</span><div class="ed-aj-cores">${CORES_LEG.map((c) => bola("data-aj-corleg", c, o.corLegenda === c, "Legenda " + c)).join("")}<input type="color" id="ed-aj-corleg" value="${o.corLegenda || "#fff3b0"}" aria-label="Outra cor da legenda"></div>
         <span class="ed-rotulo">Cor do título</span><div class="ed-aj-cores">${bola("data-aj-cortit", "", !o.corTitulo, "Igual à legenda")}${CORES_LEG.map((c) => bola("data-aj-cortit", c, o.corTitulo === c, "Título " + c)).join("")}<input type="color" id="ed-aj-cortit" value="${o.corTitulo || o.corLegenda || "#fff3b0"}" aria-label="Outra cor do título"></div>
+        <span class="ed-rotulo">Palavras em outra cor</span><div class="ed-aj-cores"><input type="text" id="ed-aj-palcor" value="${esc(Object.keys(o.coresPalavras || {}).join(", "))}" placeholder="ex.: LG, Black Friday" aria-label="Palavras que saem em outra cor" style="flex:1;min-width:0"><input type="color" id="ed-aj-palcor-cor" value="${Object.values(o.coresPalavras || {})[0] || "#ed1c24"}" aria-label="Cor dessas palavras"></div>
       </div>
       <div class="ed-aj-bloco"><h4>Fontes e tamanhos</h4>
         <span class="ed-rotulo">Fonte do título</span><div class="ed-aj-chips">${Object.entries(FONTES_TIT).map(([k, t]) => chip("data-aj-fontetit", k, (o.fonteTitulo || "dmserif") === k, esc(t), fonteTitulo(15, k))).join("")}</div>
@@ -3890,6 +3898,9 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     q("[data-aj-cortit]", (b) => mexerEstilo({ corTitulo: b.dataset.ajCortit }, b.dataset.ajCortit ? "Você mudou a cor do título" : "Título na mesma cor da legenda"));
     const cl = $("#ed-aj-corleg", box); if (cl) cl.addEventListener("change", () => mexerEstilo({ corLegenda: cl.value }, "Você mudou a cor da legenda"));
     const ct = $("#ed-aj-cortit", box); if (ct) ct.addEventListener("change", () => mexerEstilo({ corTitulo: ct.value }, "Você mudou a cor do título"));
+    const pc = $("#ed-aj-palcor", box), pcc = $("#ed-aj-palcor-cor", box);
+    const gravarPalCor = () => { const m = {}; String(pc.value || "").split(/[,;\s]+/).map(chaveCorPalavra).filter(Boolean).forEach((w) => { m[w] = pcc.value; }); mexerEstilo({ coresPalavras: m }, Object.keys(m).length ? "Essas palavras saem em outra cor na legenda" : "Tirei as palavras em outra cor"); };
+    if (pc && pcc) { pc.addEventListener("change", gravarPalCor); pcc.addEventListener("change", gravarPalCor); }
     q("[data-aj-fontetit]", (b) => mexerEstilo({ fonteTitulo: b.dataset.ajFontetit, estiloTitulo: "simples", titulo: true }, "Você mudou a fonte do título"));
     q("[data-aj-fonteleg]", (b) => mexerEstilo({ fonteLeg: b.dataset.ajFonteleg, estilo: "capcut" }, "Você mudou a fonte da legenda"));
     q("[data-aj-tam]", (b) => mexerEstilo({ tamLeg: Number(b.dataset.ajTam) }, "Você mudou o tamanho da legenda"));
