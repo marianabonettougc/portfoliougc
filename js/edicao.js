@@ -625,7 +625,7 @@ IDEIA PARA DEPOIS
     vari: { n: st.vari.n, mudar: st.vari.mudar, base: st.vari.base, lista: st.vari.lista.map(({ arquivo, ...v }) => v) }, editLeg: st.editLeg, marcas: st.marcas, capa: st.capa, correcoes: st.correcoes, ref: st.ref, refPedido: st.refPedido, carro: st.carro,
     efeitos: st.efeitos.filter((e) => !e.doTitulo && !e.daChamativa).map(({ id, ...e }) => e),
     camadas: st.camadas.map(({ _box, ...c }) => c), soCamadas: st.soCamadas || undefined,
-    fotos: (st.fotos || []).filter((f) => f.path || f.pedir).map(({ img, _box, ...f }) => f),
+    fotos: (st.fotos || []).filter((f) => f.path || f.pedir || f.url).map(({ img, _box, ...f }) => f),
     clipes: (st.clipes.length ? st.clipes : st.pendentes || []).map((c) => ({ nome: c.nome, dur: Math.round((c.dur || 0) * 100) / 100, palavras: c.palavras || null, mudo: c.mudo || undefined, visual: c.visual || undefined })),
     operacoes: st.opsLog || [],
   });
@@ -1382,7 +1382,8 @@ IDEIA PARA DEPOIS
       const img = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => erro(new Error("foto não abriu")); i.src = url; });
       const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight)), w = Math.round(img.naturalWidth * k), h = Math.round(img.naturalHeight * k);
       const cv = document.createElement("canvas"); cv.width = w; cv.height = h; cv.getContext("2d").drawImage(img, 0, 0, w, h);
-      return await new Promise((ok) => cv.toBlob(ok, "image/jpeg", 0.88));
+      const png = /png|webp/i.test(arq.type || "") || /\.(png|webp)$/i.test(arq.name || "");   // recorte com fundo transparente continua transparente
+      return await new Promise((ok) => cv.toBlob(ok, png ? "image/png" : "image/jpeg", 0.88));
     } finally { URL.revokeObjectURL(url); }
   }
   async function adicionarFotos(arquivos) {
@@ -1394,8 +1395,8 @@ IDEIA PARA DEPOIS
       try {
         const blob = await reduzirFoto(arq), id = uid(), img = new Image(); img.src = URL.createObjectURL(blob);
         const f = { id, nome: arq.name, t0: null, dur: DUR_FOTO, path: null, img, palavra: palavraDoNome(arq.name) }; st.fotos.push(f);
-        const caminho = `edicao/fotos/${id}.jpg`;
-        banco().storage.from("anexos").upload(caminho, blob, { contentType: "image/jpeg", upsert: true }).then(({ error }) => { if (!error) { f.path = caminho; salvarDepois(); } else toast("Não consegui guardar a foto " + arq.name + " (ela fica só nesta tela).", true); });
+        const caminho = `edicao/fotos/${id}.${blob.type === "image/png" ? "png" : "jpg"}`;
+        banco().storage.from("anexos").upload(caminho, blob, { contentType: blob.type || "image/jpeg", upsert: true }).then(({ error }) => { if (!error) { f.path = caminho; salvarDepois(); } else toast("Não consegui guardar a foto " + arq.name + " (ela fica só nesta tela).", true); });
       } catch (e) { toast("Não consegui abrir " + arq.name + ". Tente JPG ou PNG.", true); }
     }
     distribuirFotos(false); pintarFotos(); redesenhar(); salvarDepois();
@@ -1444,7 +1445,9 @@ IDEIA PARA DEPOIS
   }
   async function carregarImgsFotos() {
     for (const f of st.fotos || []) {
-      if (f.img || !f.path) continue;
+      if (f.img) continue;
+      if (!f.path && f.url) { const img = new Image(); img.onload = () => { redesenhar(); pintarFotos(); }; img.src = f.url; f.img = img; continue; }
+      if (!f.path) continue;
       try { const { data } = await banco().storage.from("anexos").createSignedUrl(f.path, 6 * 3600); if (!data) continue;
         const img = new Image(); img.crossOrigin = "anonymous"; img.onload = () => { redesenhar(); pintarFotos(); }; img.src = data.signedUrl; f.img = img; } catch (e) { /* tenta na próxima */ }
     }
@@ -1462,8 +1465,11 @@ IDEIA PARA DEPOIS
     const w = W * (f.larg ?? FOTO_CIMA.larg) * Math.max(0.05, pop), h = w * ih / iw, cx = W * (f.x ?? FOTO_CIMA.x), cy = H * (f.y ?? FOTO_CIMA.y), r = Math.min(w, h) * 0.075;
     c2d.save(); c2d.globalAlpha = a; c2d.translate(cx, cy); c2d.rotate(((f.rot ?? 0) * Math.PI) / 180);
     c2d.shadowColor = "rgba(0,0,0,.42)"; c2d.shadowBlur = 30 * W / 1080; c2d.shadowOffsetY = 10 * W / 1080;
-    arredondado(-w / 2, -h / 2, w, h, r); c2d.fillStyle = "#fff"; c2d.fill(); c2d.shadowColor = "transparent";
-    arredondado(-w / 2, -h / 2, w, h, r); c2d.clip(); c2d.drawImage(f.img, sx, sy, iw, ih, -w / 2, -h / 2, w, h);
+    if (f.recorte && !f.quad) c2d.drawImage(f.img, sx, sy, iw, ih, -w / 2, -h / 2, w, h);   // recorte transparente: sem cartão, a sombra acompanha o contorno
+    else {
+      arredondado(-w / 2, -h / 2, w, h, r); c2d.fillStyle = "#fff"; c2d.fill(); c2d.shadowColor = "transparent";
+      arredondado(-w / 2, -h / 2, w, h, r); c2d.clip(); c2d.drawImage(f.img, sx, sy, iw, ih, -w / 2, -h / 2, w, h);
+    }
     c2d.restore();
     const wf = W * (f.larg ?? FOTO_CIMA.larg), hf = wf * ih / iw; f._box = [cx - wf / 2, cy - hf / 2, cx + wf / 2, cy + hf / 2];
     if (st.fotoSel === f.id && !st.exportando) { c2d.save(); c2d.setLineDash([10, 8]); c2d.lineWidth = 3; c2d.strokeStyle = "rgba(255,243,176,.95)"; c2d.translate(cx, cy); c2d.rotate(((f.rot ?? 0) * Math.PI) / 180); c2d.strokeRect(-wf / 2 - 6, -hf / 2 - 6, wf + 12, hf + 12); c2d.restore(); }
@@ -1483,18 +1489,18 @@ IDEIA PARA DEPOIS
   function pintarFotos() {
     const box = $("#ed-fotos-lista"); if (!box) return;
     const fs = st.fotos || [];
-    const faltam = fs.filter((f) => !f.img && !f.path);
+    const faltam = fs.filter((f) => !f.img && !f.path && !f.url);
     box.innerHTML = !fs.length ? "" : `<div class="ed-fotos-topo"><b>${fs.length} foto${fs.length === 1 ? "" : "s"} na edição</b>${st.duracao ? `<button class="btn" type="button" id="ed-fotos-dist">Espalhar sozinho</button>` : `<small>Elas entram assim que eu editar o vídeo.</small>`}</div>
       ${faltam.length ? `<p class="ed-obs ed-fotos-falta">Escolha ${faltam.length === 1 ? "a foto marcada" : `as ${faltam.length} fotos marcadas`} do seu aparelho para ela${faltam.length === 1 ? "" : "s"} aparecer${faltam.length === 1 ? "" : "em"} no vídeo. Depois disso ela${faltam.length === 1 ? " fica guardada" : "s ficam guardadas"} no projeto.</p>` : ""}
-      <div class="ed-fotos-grade">${fs.map((f) => `<div class="ed-foto${st.fotoSel === f.id ? " sel" : ""}${!f.img && !f.path ? " falta" : ""}" data-foto="${f.id}">
+      <div class="ed-fotos-grade">${fs.map((f) => `<div class="ed-foto${st.fotoSel === f.id ? " sel" : ""}${!f.img && !f.path && !f.url ? " falta" : ""}" data-foto="${f.id}">
         <button type="button" class="ed-foto-img" data-foto-ver="${f.id}" aria-label="Ver no vídeo" ${f.t0 == null ? "disabled" : ""}>${f.img ? `<img src="${esc(f.img.src)}" alt="">` : `<span>${esc(f.nome || "foto")}</span>`}</button>
-        ${!f.img && !f.path ? `<label class="btn ed-foto-escolher">Escolher a foto<input type="file" accept="image/*" data-foto-arq="${f.id}" hidden></label>` : ""}
+        ${!f.img && !f.path && !f.url ? `<label class="btn ed-foto-escolher">Escolher a foto<input type="file" accept="image/*" data-foto-arq="${f.id}" hidden></label>` : ""}
         <label class="ed-foto-modo">Como entra <select class="entrada" data-foto-modo="${f.id}"><option value="cheia" ${f.modo !== "cima" ? "selected" : ""}>Tela cheia</option><option value="cima" ${f.modo === "cima" ? "selected" : ""}>Por cima</option></select></label>
         <label>Aparece quando eu falar <input class="entrada" type="text" value="${esc(f.palavra || "")}" data-foto-pal="${f.id}" placeholder="ex.: doce de leite"></label>
         ${f.palavra && f.porPalavra !== false && f.achou ? `<small class="ed-foto-dica">Entra quando você fala "${esc(f.achou)}" (${String(f.t0).replace(".", ",")} s).</small>` : f.palavra && f.porPalavra !== false && f.achou === "" ? `<small class="ed-foto-dica">Não ouvi "${esc(f.palavra)}" na fala. Troque a palavra ou escolha o tempo em "Entra em".</small>` : f.palavra && f.porPalavra === false ? `<small class="ed-foto-dica">Você escolheu o tempo à mão. <button type="button" class="ed-link" data-foto-volta="${f.id}">Voltar a entrar na palavra</button></small>` : ""}
         <label>Entra em <input class="entrada" type="number" min="0" step="0.1" value="${f.t0 == null ? "" : f.t0}" data-foto-t0="${f.id}" placeholder="auto" ${st.duracao ? "" : "disabled"}> s</label>
         <label>Dura <input class="entrada" type="number" min="0.3" max="10" step="0.1" value="${f.dur}" data-foto-dur="${f.id}"> s</label>
-        ${f.modo === "cima" ? `<label>Formato <select class="entrada" data-foto-quad="${f.id}"><option value="" ${f.quad ? "" : "selected"}>Original</option><option value="1" ${f.quad ? "selected" : ""}>Card quadrado</option></select></label>
+        ${f.modo === "cima" ? `<label>Formato <select class="entrada" data-foto-quad="${f.id}"><option value="" ${f.quad || f.recorte ? "" : "selected"}>Original</option><option value="1" ${f.quad ? "selected" : ""}>Card quadrado</option><option value="r" ${f.recorte && !f.quad ? "selected" : ""}>Recorte (sem moldura)</option></select></label>
         <label>Tamanho <input type="range" min="10" max="90" step="1" value="${Math.round((f.larg ?? FOTO_CIMA.larg) * 100)}" data-foto-larg="${f.id}"></label>
         <label>Inclinação <input type="range" min="-30" max="30" step="1" value="${Math.round(f.rot ?? 0)}" data-foto-rot="${f.id}"></label>
         <small class="ed-foto-dica">Na prévia: arraste a foto para mudar o lugar; puxe um cantinho (ou gire a rodinha do mouse em cima dela) para aumentar e diminuir.</small>` : ""}
@@ -1508,7 +1514,7 @@ IDEIA PARA DEPOIS
     $$("[data-foto-t0]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoT0); f.porPalavra = false; const v = parseFloat(String(i.value).replace(",", ".")); f.t0 = Number.isFinite(v) ? Math.max(0, Math.min(v, Math.max(0, (st.duracao || 0) - 0.3))) : null; salvarDepois(); if (f.t0 != null) irPara(f.t0 + Math.min(0.3, f.dur / 2)); pintarLinha(); }));
     $$("[data-foto-dur]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoDur); f.dur = Math.max(0.3, Math.min(10, parseFloat(String(i.value).replace(",", ".")) || DUR_FOTO)); salvarDepois(); redesenhar(); }));
     $$("[data-foto-modo]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoModo); f.modo = i.value; if (f.modo === "cima") { for (const k of Object.keys(FOTO_CIMA)) if (f[k] == null) f[k] = FOTO_CIMA[k]; st.fotoSel = f.id; } pintarFotos(); mudou(f, true); }));
-    $$("[data-foto-quad]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoQuad); f.quad = Boolean(i.value); st.fotoSel = f.id; mudou(f, true); }));
+    $$("[data-foto-quad]", box).forEach((i) => i.addEventListener("change", () => { const f = acha(i.dataset.fotoQuad); f.quad = i.value === "1"; f.recorte = i.value === "r"; st.fotoSel = f.id; mudou(f, true); }));
     $$("[data-foto-larg]", box).forEach((i) => i.addEventListener("input", () => { const f = acha(i.dataset.fotoLarg); f.larg = Number(i.value) / 100; st.fotoSel = f.id; mudou(f, true); }));
     $$("[data-foto-rot]", box).forEach((i) => i.addEventListener("input", () => { const f = acha(i.dataset.fotoRot); f.rot = Number(i.value); st.fotoSel = f.id; mudou(f, true); }));
     $$("[data-foto-arq]", box).forEach((i) => i.addEventListener("change", async () => { const f = acha(i.dataset.fotoArq), arq = i.files && i.files[0]; if (!f || !arq) return; await anexarFoto(f, arq); }));
@@ -1521,8 +1527,8 @@ IDEIA PARA DEPOIS
       const blob = await reduzirFoto(arq); const img = new Image();
       img.onload = () => { redesenhar(); pintarFotos(); }; img.src = URL.createObjectURL(blob);
       f.img = img; f.nome = f.nome || arq.name; pintarFotos();
-      const caminho = `edicao/fotos/${f.id}.jpg`;
-      const { error } = await banco().storage.from("anexos").upload(caminho, blob, { contentType: "image/jpeg", upsert: true });
+      const caminho = `edicao/fotos/${f.id}.${blob.type === "image/png" ? "png" : "jpg"}`;
+      const { error } = await banco().storage.from("anexos").upload(caminho, blob, { contentType: blob.type || "image/jpeg", upsert: true });
       if (error) toast("A foto entrou, mas não consegui guardar no projeto. Se fechar, escolha de novo.", true); else { f.path = caminho; delete f.pedir; salvarDepois(); }
     } catch (e) { toast("Não consegui abrir " + arq.name + ". Tente JPG ou PNG.", true); }
   }
