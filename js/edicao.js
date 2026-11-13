@@ -3550,6 +3550,90 @@ IDEIA PARA DEPOIS
           .ed-cc .rr-ferramentas .btn{font-size:11.5px}
           .ed-cc .rr-chip{font-size:11px}
         }
+
+        /* Layout principal do editor: mídia | prévia | ajustes, com timeline embaixo */
+        @media(min-width:1101px){
+          .ed-cc{
+            display:grid;
+            grid-template-columns:minmax(285px,330px) minmax(390px,1fr) minmax(265px,305px);
+            grid-template-rows:auto auto minmax(590px,calc(100vh - 300px)) auto auto;
+            gap:0;align-items:stretch;overflow:visible;min-width:0
+          }
+          .ed-cc-topo{grid-column:1/-1;grid-row:1;display:flex;align-items:center;flex-wrap:wrap}
+          .ed-cc-grade{display:contents}
+          .ed-trilho{
+            grid-column:1/-1;grid-row:2;display:flex;flex-direction:row;align-items:stretch;
+            position:static;overflow-x:auto;gap:8px;padding:12px 16px;
+            border-bottom:1px solid var(--rr-linha);background:var(--rr-sup)
+          }
+          .ed-trilho-bt{flex:1 0 110px;max-width:180px;min-height:58px;padding:9px 12px;font-size:12px}
+          .ed-gaveta{
+            grid-column:1;grid-row:3;min-height:0;height:100%;
+            border-right:1px solid var(--rr-linha);border-bottom:0
+          }
+          .ed-gaveta-cab{position:sticky;top:0;z-index:3;background:var(--rr-sup)}
+          .ed-gaveta-corpo{height:calc(100% - 64px);max-height:none;overflow:auto;padding:16px;overscroll-behavior:contain}
+          .ed-palco{
+            grid-column:2;grid-row:3;min-height:590px;height:100%;
+            border-right:1px solid var(--rr-linha);padding:18px 14px
+          }
+          .ed-cc .ed-palco .rr-player{width:min(100%,390px);height:min( min( calc(100vh - 390px), 690px), 100%);min-height:340px;max-height:690px;aspect-ratio:9/16}
+          .ed-cc .ed-palco .rr-player canvas{width:100%;height:100%;max-height:none;object-fit:contain}
+          .ed-controles{width:min(100%,500px)}
+          .ed-assist{
+            grid-column:3;grid-row:3;display:flex;flex-direction:column;align-items:stretch;
+            min-width:0;min-height:0;height:100%;overflow:auto;border-left:0;padding:16px;
+            border-bottom:0;overscroll-behavior:contain
+          }
+          .ed-assist-cab{position:sticky;top:-16px;z-index:2;padding:12px;background:var(--rr-sup)}
+          .ed-assist textarea,.ed-assist .entrada{font-size:14px;line-height:1.5}
+          .ed-cc .ed-cc-linha{grid-column:1/-1;grid-row:4;margin:0;border-top:1px solid var(--rr-linha)}
+          .ed-cc-linha-vazia{grid-column:1/-1;grid-row:4}
+          .ed-videos{display:none}
+        }
+        @media(min-width:1101px) and (max-width:1350px){
+          .ed-cc{grid-template-columns:minmax(260px,300px) minmax(340px,1fr) minmax(235px,270px)}
+          .ed-trilho-bt{flex-basis:96px;padding:8px 7px;font-size:11px}
+          .ed-cc .ed-palco .rr-player{width:min(100%,350px)}
+          .ed-gaveta-corpo,.ed-assist{padding-left:12px;padding-right:12px}
+        }
+        @media(min-width:901px) and (max-width:1100px){
+          .ed-cc{display:grid;grid-template-columns:minmax(270px,.82fr) minmax(360px,1.18fr);grid-template-rows:auto auto minmax(590px,auto) auto auto}
+          .ed-cc-topo{grid-column:1/-1;grid-row:1}
+          .ed-cc-grade{display:contents}
+          .ed-trilho{grid-column:1/-1;grid-row:2;display:flex;flex-direction:row;overflow-x:auto;position:static}
+          .ed-trilho-bt{flex:1 0 100px}
+          .ed-gaveta{grid-column:1;grid-row:3;min-height:590px;border-right:1px solid var(--rr-linha)}
+          .ed-gaveta-corpo{max-height:620px;overflow:auto}
+          .ed-palco{grid-column:2;grid-row:3;min-height:590px}
+          .ed-assist{grid-column:1/-1;grid-row:4;display:grid;grid-template-columns:1fr 2fr;gap:12px;border-top:1px solid var(--rr-linha)}
+          .ed-assist-cab{grid-column:1/-1}
+          .ed-cc .ed-cc-linha,.ed-cc-linha-vazia{grid-column:1/-1;grid-row:5}
+        }
+        @media(max-width:900px){
+          .ed-cc{display:block;overflow:hidden}
+          .ed-cc-grade{display:flex;flex-direction:column;height:auto;min-height:0}
+          .ed-trilho{order:1;display:flex;flex-direction:row;position:sticky;top:0;z-index:8;overflow-x:auto}
+          .ed-palco{order:2;min-height:0}
+          .ed-gaveta{order:3;height:auto;min-height:0;border:0}
+          .ed-gaveta-corpo{height:auto;max-height:none;overflow:visible}
+          .ed-assist{order:4;display:block;min-height:0;border:0;border-top:1px solid var(--rr-linha)}
+          .ed-cc .ed-cc-linha,.ed-cc-linha-vazia{order:5}
+        }
+        /* Leitura confortável: controles, descrições e campos sem texto miúdo */
+        .ed-cc .ed-rotulo,.ed-cc .ed-cartao label{font-size:13px;line-height:1.45}
+        .ed-cc .entrada,.ed-cc input:not([type="file"]):not([type="checkbox"]):not([type="range"]):not([type="color"]),.ed-cc select,.ed-cc textarea{font-size:14px;line-height:1.5}
+        .ed-cc .ed-soltar{border:1.5px dashed var(--rr-linha);border-radius:13px;background:var(--rr-bg);min-height:105px}
+        .ed-cc .ed-soltar small{font-size:12px;line-height:1.5;max-width:38ch}
+        .ed-cc .ed-clipe{gap:9px;padding:11px 0}
+        .ed-cc .ed-clipe b{font-size:12.5px;line-height:1.4;overflow-wrap:anywhere}
+        .ed-cc .ed-clipe small{font-size:11.5px;line-height:1.4}
+        .ed-cc .ed-opcoes-extra summary,.ed-cc .ed-roteiro summary{font-size:13px;line-height:1.45}
+        .ed-cc .ed-obs,.ed-cc .rr-vazio{font-size:12.5px;line-height:1.55}
+        .ed-cc .ed-botao-grande{min-height:46px;font-size:14px}
+        .ed-cc .ed-projeto .entrada{min-width:0;max-width:260px}
+        .ed-cc .ed-passos{gap:8px}
+        .ed-cc .ed-passo{font-size:12px}
       `; document.head.appendChild(css);
     }
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga ed rr ed-cc">
