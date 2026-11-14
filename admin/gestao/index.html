@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611141440"></script>
-<script src="../../js/dialogos.js?v=202611141440"></script>
-<script src="../../js/metricool-ig.js?v=202611141440"></script>
-<script src="../../js/corretor.js?v=202611141440"></script>
+<script src="../../js/banco.js?v=202611141450"></script>
+<script src="../../js/dialogos.js?v=202611141450"></script>
+<script src="../../js/metricool-ig.js?v=202611141450"></script>
+<script src="../../js/corretor.js?v=202611141450"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -1663,7 +1663,7 @@
   /* UGC's & Publis mais compacto (nov/2026, pedido da Mari: "aba muito espalhada"):
      sem o título repetido (o topo do painel já mostra), frase + Novo Job numa linha só,
      abas em cima e busca + Filtrar lado a lado, cada job numa faixa baixa com colunas alinhadas
-     (marca/status | datas | valor | ações) */
+     (marca/status | datas | valor | ações). As logos saíram da lista a pedido, então nada de recuo */
   .page-head.jb-head{ align-items:center; margin-bottom:12px; gap:16px; flex-wrap:nowrap; }
   .page-head.jb-head > div:first-child{ flex:1 1 0; min-width:0; }
   .page-head.jb-head .jb-sobre, .page-head.jb-head h1.page-title{ display:none; }
@@ -1686,7 +1686,7 @@
   .jb-linha .jb-nome-txt > div:last-child{ flex:1 1 0; font-size:13px; opacity:.75; }
   .jb-linha .db-logo-tr, .jb-linha .db-logo-bt, .jb-linha .jb-nome .db-logo, .jb-linha .db-logo img{ width:34px; height:34px; }
   .jb-linha .job-datas{ grid-area:datas; flex-wrap:nowrap; gap:12px; justify-self:start; justify-content:flex-start; }
-  .jb-linha .job-linha-status{ grid-area:status; min-width:0; justify-content:flex-start; padding-left:44px; }
+  .jb-linha .job-linha-status{ grid-area:status; min-width:0; justify-content:flex-start; }
   .jb-linha .job-linha-status .jb-status{ font-size:12px; padding-top:2px; padding-bottom:2px; }
   .jb-linha .job-linha-valor{ grid-area:valor; text-align:right; white-space:nowrap; }
   .jb-linha .job-linha-acoes{ grid-area:acoes; gap:3px; justify-content:flex-end; }
@@ -1695,7 +1695,6 @@
   @media (max-width:700px){
     .row-item.job-linha.jb-linha.jb-linha{ grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"nome acoes" "status valor" "datas datas"; }
     .row-item.job-linha.jb-linha.jb-linha .job-linha-acoes{ min-width:0; }
-    .jb-linha .job-datas{ padding-left:44px; }
   }
   @media (max-width:520px){
     div:has(> .page-head.jb-head) > .search{ flex-basis:100%; }
