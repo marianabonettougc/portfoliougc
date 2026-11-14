@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611122000"></script>
-<script src="../../js/dialogos.js?v=202611122000"></script>
-<script src="../../js/metricool-ig.js?v=202611122000"></script>
-<script src="../../js/corretor.js?v=202611122000"></script>
+<script src="../../js/banco.js?v=202611141300"></script>
+<script src="../../js/dialogos.js?v=202611141300"></script>
+<script src="../../js/metricool-ig.js?v=202611141300"></script>
+<script src="../../js/corretor.js?v=202611141300"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -1563,6 +1563,62 @@
     .icon-btn{ min-width:34px; min-height:34px; }
   }
   @keyframes subirModal{ from{ transform:translateY(40px); opacity:.4; } to{ transform:none; opacity:1; } }
+
+  /* ===== ID DO DASHBOARD EM TODAS AS PÁGINAS (nov/2026, pedido da Mari: "ajuste a cor de todo o painel igual à aba inicial do Dashboard") =====
+     Mesmo fundo em degradê (pêssego, manteiga e creme), cartões papel com cantos de 18px e sombra suave,
+     rótulos pequenos em caixa alta, botão principal café e abas em pílula como o seletor 7d/14d/30d. */
+  :root{ --line:rgba(107,74,53,.12); --shadow:0 6px 20px rgba(107,74,53,.06); }
+  /* o fundo em degradê vem do painel (o iframe fica transparente e mostra o mesmo fundo atrás) */
+  html, body{ background:transparent; }
+  .dz::before{ display:none; }
+  .card, .row-item, .search, .empty, .org-col{ border-color:rgba(107,74,53,.12); box-shadow:0 6px 20px rgba(107,74,53,.06); }
+  .card, .row-item, .empty{ border-radius:18px; background:#fffdf9; }
+  .search{ border-radius:999px; background:rgba(255,253,249,.92); }
+  .btn-primary{ background:#6b4a35; border-radius:999px; }
+  .btn-primary:hover{ background:#5a3d2b; }
+  .btn-ghost{ border-radius:999px; background:rgba(255,253,249,.85); }
+  .tabs{ background:rgba(239,229,216,.85); border-radius:999px; padding:3px; }
+  .tab{ border-radius:999px; font-size:13.5px; padding:6px 14px; }
+  .jobs-abas{ background:rgba(239,229,216,.85); border-radius:999px; padding:3px; gap:2px; }
+  .jobs-aba{ border:0; background:transparent; border-radius:999px; font-size:13.5px; font-weight:500; padding:7px 14px; }
+  .jobs-aba:hover{ background:rgba(255,253,249,.6); }
+  .jobs-aba.ativa{ background:#fffdf9; color:#3d2b20; font-weight:600; box-shadow:0 1px 4px rgba(61,43,32,.12); }
+  .org-col{ background:rgba(255,253,249,.72); border-radius:18px; }
+
+  /* UGC's & Publis: cabeçalho e números iguais aos do Dashboard */
+  .jb-sobre{ display:flex; align-items:center; gap:8px; font-size:11px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:#6e5646; margin-bottom:6px; }
+  .jb-sobre::before{ content:""; width:22px; height:1px; background:rgba(107,74,53,.22); }
+  .jb-head .page-title{ font-size:34px; margin-bottom:4px; }
+  .jb-frase{ font-size:14.5px !important; color:#6e5646; }
+  .jb-frase b{ color:#3d2b20; font-weight:500; }
+  .jb-nums{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:0 0 18px; }
+  .jb-num{ display:flex; flex-direction:column; align-items:flex-start; text-align:left; gap:2px; background:#fffdf9; border:1px solid rgba(107,74,53,.12); border-radius:18px; padding:15px 18px; font:inherit; color:#3d2b20; cursor:pointer; box-shadow:0 6px 20px rgba(107,74,53,.06); min-width:0; }
+  .jb-num:hover{ border-color:rgba(107,74,53,.22); }
+  .jb-num small{ font-size:10.5px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:#6e5646; }
+  .jb-num b{ font-size:22px; font-weight:600; margin:4px 0 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  .jb-num em{ font-style:normal; font-size:12px; color:#6e5646; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  .jb-linha{ cursor:pointer; transition:border-color .15s, transform .15s; }
+  .jb-linha:hover{ border-color:rgba(107,74,53,.24); transform:translateY(-1px); }
+  .jb-nome{ display:flex; align-items:center; gap:12px; }
+  .jb-nome-txt{ min-width:0; }
+  .jb-nome .db-logo{ width:40px; height:40px; }
+  .jb-nome .db-logo-vazio{ background:#efe5d8; color:#6b4a35; font-family:"DM Serif Display",Georgia,serif; font-size:18px; }
+  .jb-nome .db-logo-tr{ position:relative; }
+  .jb-nome .db-logo-bt{ border:0; background:none; padding:0; cursor:pointer; }
+  .jb-linha:has(.db-logo-menu){ position:relative; z-index:6; }
+  .jb-status{ display:inline-flex; align-items:center; gap:7px; max-width:100%; padding:5px 11px; border-radius:999px; background:#f3ebe0; color:#3d2b20; font-size:11.5px; font-weight:500; line-height:1.25; }
+  .jb-status i{ width:8px; height:8px; border-radius:50%; background:var(--cor); flex:none; }
+  @media (max-width:1100px){ .jb-nums{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  @media (max-width:700px){
+    .jb-nums{ gap:10px; margin-bottom:14px; }
+    .jb-num{ padding:12px 13px; }
+    .jb-num small{ font-size:10px; letter-spacing:.6px; }
+    .jb-num b{ font-size:18px; }
+    .jb-num em{ white-space:normal; font-size:11.5px; }
+    .so-uma .page-head.jb-head > div:first-child{ display:block !important; }
+    .jb-head .page-title{ display:none; }
+    .jb-nome .db-logo{ width:34px; height:34px; }
+  }
 </style>
 </head>
 <body>
@@ -6091,6 +6147,24 @@ function Jobs({state, updateState}){
 
   const ativosCount = state.jobs.filter(j=>j.status!=="Cancelado" && !isHistorico(j)).length;
   const historicoCount = state.jobs.filter(j=>isHistorico(j)).length;
+  // nov/2026 (pedido da Mari: "pouco visual"): resumo no topo com a mesma cara do Dashboard
+  const jobsAtivos = state.jobs.filter(j=>j.status!=="Cancelado" && !isHistorico(j));
+  const emAberto = (j) => j.tipoJob!=="Permuta" && !(j.pagamento && j.pagamento.status==="Pago") && (!j.moeda || j.moeda==="BRL");
+  const aReceber = jobsAtivos.filter(emAberto).reduce((a,j)=>a+(Number(j.valor)||0),0);
+  const emProducao = jobsAtivos.filter(j=>j.status!==FIN_AGUARDANDO);
+  const entregas7j = emProducao.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)>=0 && diasAte(j.prazoEntrega)<=7).length;
+  const aguardPag = jobsAtivos.filter(j=>j.status===FIN_AGUARDANDO);
+  const aguardValor = aguardPag.filter(emAberto).reduce((a,j)=>a+(Number(j.valor)||0),0);
+  const hojeJ = new Date();
+  const dataTopo = hojeJ.toLocaleDateString("pt-BR",{weekday:"long", day:"numeric", month:"long"});
+  const logos = state.logosMarcas || {};
+  function trocarLogo(marca, novo){
+    const k = chaveMarca(marca), b = chaveMarca(marcaBase(marca));
+    updateState(s=>{ const l = {...(s.logosMarcas||{})};
+      if(novo){ l[k] = {...novo, dominio:(l[k]||{}).dominio||null, tentadoEm:Date.now(), v:3}; if(b!==k) l[b] = l[k]; }
+      else { delete l[k]; if(b!==k) delete l[b]; }
+      return {...s, logosMarcas:l}; });
+  }
 
   function onDragStart(e, id){ e.dataTransfer.setData("text/plain", id); }
   function onDrop(e, status){
@@ -6102,12 +6176,28 @@ function Jobs({state, updateState}){
 
   return (
     <div>
-      <div className="page-head">
+      <div className="page-head jb-head">
         <div>
+          <div className="jb-sobre">Marcas e jobs · {dataTopo}</div>
           <h1 className="page-title">UGC's &amp; Publis</h1>
-          <p className="page-sub">Gerencie seus trabalhos com marcas</p>
+          <p className="page-sub jb-frase">Você tem <b>{emProducao.length} {emProducao.length===1?"job":"jobs"} em produção</b>, <b>{entregas7j} {entregas7j===1?"entrega":"entregas"}</b> nos próximos 7 dias e <b>{aguardPag.length}</b> {aguardPag.length===1?"job finalizado esperando":"jobs finalizados esperando"} pagamento.</p>
         </div>
         <button className="btn btn-primary" onClick={()=>setModal(true)}><Icon name="add" size={17}/>Novo Job</button>
+      </div>
+
+      <div className="jb-nums">
+        <button type="button" className="jb-num" onClick={()=>{ setTab("Ativos"); setFilterStatus("Todos"); }}>
+          <small>Em produção</small><b>{emProducao.length} {emProducao.length===1?"job":"jobs"}</b><em>{entregas7j} {entregas7j===1?"entrega":"entregas"} em 7 dias</em>
+        </button>
+        <button type="button" className="jb-num">
+          <small>A receber</small><b>{fmtMoneyCur(aReceber,"BRL")}</b><em>{jobsAtivos.filter(emAberto).length} jobs em aberto</em>
+        </button>
+        <button type="button" className="jb-num" onClick={()=>{ setTab("Ativos"); setShowFilter(true); setFilterStatus(FIN_AGUARDANDO); }}>
+          <small>Aguardando pagamento</small><b>{aguardPag.length} {aguardPag.length===1?"job":"jobs"}</b><em>{fmtMoneyCur(aguardValor,"BRL")} já entregues</em>
+        </button>
+        <button type="button" className="jb-num" onClick={()=>setTab("Histórico")}>
+          <small>Histórico</small><b>{historicoCount} {historicoCount===1?"job":"jobs"}</b><em>finalizados e pagos</em>
+        </button>
       </div>
 
       <div className="search" style={{marginBottom:14}}>
@@ -6172,18 +6262,21 @@ function Jobs({state, updateState}){
       ) : view==="Lista" ? (
         <div>
           {list.map(j=>(
-            <div className="row-item job-linha" key={j.id}>
-              <div className="job-linha-nome">
+            <div className="row-item job-linha jb-linha" key={j.id} onClick={()=>setEditing(j)}>
+              <div className="job-linha-nome jb-nome">
+                <DbLogo marca={j.marca} logos={logos} onTrocar={novo=>trocarLogo(j.marca, novo)}/>
+                <div className="jb-nome-txt">
                 <div style={{display:"flex", alignItems:"center", gap:6}}>
                   <strong>{j.marca}</strong>
                   {j.recorrente && <span title="Job recorrente" style={{display:"inline-flex"}}><Icon name="repeat" size={14} style={{color:"var(--wine)"}}/></span>}
                 </div>
                 <div style={{fontSize:14.5, color:"var(--graphite-soft)"}}>{[resumoEntregas(j), j.nicho].filter(Boolean).join(" · ")}</div>
+                </div>
               </div>
               <DatasJob j={j}/>
               <div className="job-linha-valor">{j.tipoJob==="Permuta" ? "Permuta" : fmtMoneyCur(j.valor, j.moeda)}</div>
-              <div className="job-linha-status"><Badge tone={jobStatusTone(j.status)}>{j.status}</Badge></div>
-              <div className="job-linha-acoes">
+              <div className="job-linha-status"><span className="jb-status" style={{"--cor":KANBAN_COLORS[j.status]||"#8a634b"}}><i></i>{j.status}</span></div>
+              <div className="job-linha-acoes" onClick={e=>e.stopPropagation()}>
                 {j.tipoJob!=="Permuta" ? (
                   (j.pagamento && j.pagamento.status==="Pago") ? (
                     <button className="icon-btn" title="Desmarcar pago" onClick={()=>markPaid(j.id)}><Icon name="cancel" size={17}/></button>
