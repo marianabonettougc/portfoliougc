@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611141320"></script>
-<script src="../../js/dialogos.js?v=202611141320"></script>
-<script src="../../js/metricool-ig.js?v=202611141320"></script>
-<script src="../../js/corretor.js?v=202611141320"></script>
+<script src="../../js/banco.js?v=202611141340"></script>
+<script src="../../js/dialogos.js?v=202611141340"></script>
+<script src="../../js/metricool-ig.js?v=202611141340"></script>
+<script src="../../js/corretor.js?v=202611141340"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -6154,7 +6154,7 @@ function Jobs({state, updateState}){
   const jobsAtivos = state.jobs.filter(j=>j.status!=="Cancelado" && !isHistorico(j));
   const emAberto = (j) => j.tipoJob!=="Permuta" && !(j.pagamento && j.pagamento.status==="Pago") && (!j.moeda || j.moeda==="BRL");
   const aReceber = jobsAtivos.filter(emAberto).reduce((a,j)=>a+(Number(j.valor)||0),0);
-  const emProducao = state.jobs.filter(j=>!JOB_FINISHED.includes(j.status));
+  const emProducao = state.jobs.filter(j=>!JOB_FINISHED.includes(j.status)).map(comPrazoDosItens);
   // mesma conta do Dashboard: cada prazo em aberto de cada conteúdo (roteiro, aprovação, entrega, postagem) + a entrega final
   const prazosAbertos = (j) => {
     const e0 = j.entregaveis || {}, at = etapaDoJob(j, state.roteiros), datas = [];
