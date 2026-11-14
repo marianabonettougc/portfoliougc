@@ -889,6 +889,17 @@
   .apv-hist q{ display:block; quotes:none; color:var(--graphite-soft); white-space:pre-wrap; }
   .apv-erro{ color:#b8473a; font-size:13.5px; }
   .org-apv{ margin-top:6px; }
+  .apv-resumo{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+  .apv-resumo div{ background:var(--card-bg); border:1px solid var(--line); border-top:3px solid var(--wine); border-radius:14px; padding:10px 14px; }
+  .apv-resumo strong{ display:block; font-family:"DM Serif Display",serif; font-weight:400; font-size:26px; line-height:1.1; color:var(--graphite); }
+  .apv-resumo span{ font-size:13px; color:var(--graphite-soft); }
+  .apv-card{ cursor:pointer; }
+  .apv-botoes a.btn{ text-decoration:none; }
+  .apv-card .apv-botoes{ margin-top:9px; }
+  .apv-linha{ font-size:12.5px; color:var(--graphite-soft); margin-top:6px; }
+  .apv-fala{ font-size:13px; background:#f6efe6; border-radius:9px; padding:7px 9px; margin-top:6px; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .apv-vazio{ font-size:13px; color:var(--graphite-soft); border:1px dashed var(--line); border-radius:10px; padding:14px 10px; text-align:center; margin-bottom:8px; }
+  @media (max-width:700px){ .apv-resumo{ grid-template-columns:1fr 1fr; } }
   .brief-texto.grande{ min-height:62vh; }
   .obs-texto{ min-height:120px; }
   /* Organize (nov/2026, referência UGControl nas cores dela) */
@@ -4799,6 +4810,87 @@ async function buscarRespostasAprovacao(updateState){
     await supabaseClient.from("aprovacao_eventos").update({aplicado:true}).in("id", data.map(e=>e.id));
   }catch(e){ console.warn("respostas de aprovação", e); }
 }
+// envia o roteiro do job para a marca: guarda a versão, cria/atualiza o link e devolve o job já em "Aprovação de Roteiro"
+// (null = ela desistiu na confirmação; erro com .aviso = mensagem para mostrar)
+async function apvEnviarRoteiro(job){
+  const aviso = (m) => { const e = new Error(m); e.aviso = true; return e; };
+  const conteudo = String(job.roteiroConteudo||"").trim();
+  if(!String(job.marca||"").trim()) throw aviso("Preencha a marca do job antes de enviar.");
+  if(!conteudo) throw aviso("Escreva ou importe o roteiro no job antes de enviar.");
+  const { data: ant, error: e0 } = await supabaseClient.from("aprovacao_envios").select("versao, situacao").eq("job_id", job.id).eq("tipo", "roteiro").order("versao", {ascending:true});
+  if(e0) throw e0;
+  const anteriores = ant || [], ult = anteriores.slice(-1)[0];
+  if(ult && ult.situacao==="enviado" && !(await painelDialogo.confirmar(`A marca ainda não respondeu a versão ${ult.versao}. Enviar uma versão nova mesmo assim? A anterior fica guardada no histórico.`, {ok:"Enviar versão nova"}))) return null;
+  if(ult && ult.situacao==="aprovado" && !(await painelDialogo.confirmar(`A versão ${ult.versao} já foi aprovada. Enviar uma versão nova para a marca aprovar de novo?`, {ok:"Enviar versão nova"}))) return null;
+  const ap = job.aprovacao || {}, token = ap.token || apvToken();
+  const l = await supabaseClient.from("aprovacao_links").upsert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true}, {onConflict:"job_id"});
+  if(l.error) throw l.error;
+  const versao = anteriores.reduce((m,e)=>Math.max(m, e.versao), 0) + 1, agora = new Date().toISOString();
+  const e = await supabaseClient.from("aprovacao_envios").insert({job_id:job.id, tipo:"roteiro", versao, titulo:String(job.roteiroTitulo||"").slice(0,200), conteudo, enviado_em:agora});
+  if(e.error) throw e.error;
+  return itensNoStatusDoJob({...job, status:"Aprovação de Roteiro", aprovacao:{...ap, token, roteiro:{situacao:"enviado", versao, em:agora, lido:true}}}, "Aprovação de Roteiro");
+}
+// CENTRAL DE APROVAÇÕES (aba de UGC's & Publis): os jobs em quatro colunas, pelo ponto em que a aprovação do roteiro está
+const APV_COLUNAS = [
+  {id:"enviar", nome:"Para enviar", cor:"#b98a5e", vazio:"Nenhum roteiro esperando envio."},
+  {id:"enviado", nome:"Aguardando a marca", cor:"#c9a24a", vazio:"Nenhum roteiro com a marca."},
+  {id:"ajustes", nome:"Ajustes pedidos", cor:"#c5533f", vazio:"Nenhum pedido de ajuste."},
+  {id:"aprovado", nome:"Aprovados", cor:"#4f7a54", vazio:"Nenhum roteiro aprovado ainda."}
+];
+const APV_ANTES_DA_APROVACAO = ["Aguardando Briefing","Aguardando Produto","Roteirização","Aprovação de Roteiro"];
+function apvColuna(j){
+  if(ehFinalizado(j.status) || j.status==="Cancelado") return "";
+  const r = j.aprovacao && j.aprovacao.roteiro;
+  if(!r) return APV_ANTES_DA_APROVACAO.includes(j.status) ? "enviar" : "";
+  return r.situacao==="refacao" ? "ajustes" : r.situacao;
+}
+const apvHa = (iso) => { const d = Math.floor((Date.now() - new Date(iso).getTime())/86400000); return d<=0 ? "hoje" : d===1 ? "ontem" : `há ${d} dias`; };
+function CentralAprovacoes({jobs, onAbrir, onSalvar}){
+  const [ocupado,setOcupado] = useState("");
+  const [msg,setMsg] = useState(null); // {id, texto}
+  async function enviar(j){
+    setMsg(null); setOcupado(j.id);
+    try{ const novo = await apvEnviarRoteiro(j); if(novo){ onSalvar(novo); setMsg({id:j.id, texto:"Enviado. Copie o link e mande para a marca."}); } }
+    catch(e){ console.warn(e); setMsg({id:j.id, texto: e && e.aviso ? e.message : "Não consegui enviar agora. Tente de novo."}); }
+    setOcupado("");
+  }
+  async function copiar(j){ try{ await navigator.clipboard.writeText(apvLink(j.aprovacao.token)); setMsg({id:j.id, texto:"Link copiado."}); }catch(e){ setMsg({id:j.id, texto:apvLink(j.aprovacao.token)}); } }
+  return (
+    <div>
+      <div className="apv-resumo">
+        {APV_COLUNAS.map(c=><div key={c.id} style={{borderTopColor:c.cor}}><strong>{jobs.filter(j=>apvColuna(j)===c.id).length}</strong><span>{c.nome}</span></div>)}
+      </div>
+      <div className="org-quadro">
+        {APV_COLUNAS.map(c=>{ const lista = jobs.filter(j=>apvColuna(j)===c.id); return (
+          <div key={c.id} className="org-col" style={{borderTopColor:c.cor}}>
+            <div className="org-col-topo"><span className="org-col-ponto" style={{background:c.cor}}></span><span className="org-col-nome">{c.nome}</span><span className="org-col-n">{lista.length}</span></div>
+            {lista.length===0 && <div className="apv-vazio">{c.vazio}</div>}
+            {lista.map(j=>{ const r = (j.aprovacao||{}).roteiro, temRoteiro = !!String(j.roteiroConteudo||"").trim(); return (
+              <div key={j.id} className="org-card apv-card" onClick={()=>onAbrir(j)}>
+                <div className="org-card-topo"><Icon name={j.categoria==="Publi"?"campaign":"videocam"} size={16} style={{color:"var(--butter)"}}/><span className="org-marca">{j.marca}</span></div>
+                <div className="org-sub">{[j.produto, resumoEntregas(j)].filter(Boolean).join(" · ")}</div>
+                {r && <div className="apv-linha">{r.situacao==="enviado" ? `Versão ${r.versao} enviada ${apvHa(r.em)}` : `${r.por||"A marca"} ${({aprovado:"aprovou",ajustes:"pediu ajustes",refacao:"pediu refação"})[r.situacao]} ${apvHa(r.em)} · versão ${r.versao}`}</div>}
+                {r && r.situacao==="refacao" && <span className="apv-selo refacao">Refação</span>}
+                {r && r.situacao!=="enviado" && (r.texto || r.gancho) && <div className="apv-fala">{[r.gancho?("Gancho escolhido: "+r.gancho):"", r.texto].filter(Boolean).join("\n")}</div>}
+                {!r && !temRoteiro && <div className="apv-linha">Ainda sem roteiro no job.</div>}
+                <div className="apv-botoes" onClick={ev=>ev.stopPropagation()}>
+                  {c.id==="enviar" && (temRoteiro
+                    ? <button type="button" className="btn btn-primary btn-sm" disabled={ocupado===j.id} onClick={()=>enviar(j)}><Icon name="send" size={15}/>{ocupado===j.id?"Enviando...":"Enviar para aprovação"}</button>
+                    : <button type="button" className="btn btn-ghost btn-sm" onClick={()=>onAbrir(j)}><Icon name="edit_note" size={15}/>Pôr o roteiro</button>)}
+                  {c.id==="ajustes" && <button type="button" className="btn btn-primary btn-sm" onClick={()=>onAbrir(j)}><Icon name="edit_note" size={15}/>Corrigir roteiro</button>}
+                  {c.id==="ajustes" && <button type="button" className="btn btn-ghost btn-sm" disabled={ocupado===j.id} onClick={()=>enviar(j)}><Icon name="send" size={15}/>{ocupado===j.id?"Enviando...":"Enviar nova versão"}</button>}
+                  {j.aprovacao && j.aprovacao.token && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>copiar(j)}><Icon name="content_copy" size={15}/>Copiar link</button>}
+                  {j.aprovacao && j.aprovacao.token && <a className="btn btn-ghost btn-sm" href={apvLink(j.aprovacao.token)+"&previa=1"} target="_blank" rel="noopener"><Icon name="visibility" size={15}/>Ver</a>}
+                </div>
+                {msg && msg.id===j.id && <div className="apv-linha" style={{overflowWrap:"anywhere"}}>{msg.texto}</div>}
+              </div>
+            ); })}
+          </div>
+        ); })}
+      </div>
+    </div>
+  );
+}
 function AprovacaoJob({f, setF}){
   const [envios,setEnvios] = useState([]);
   const [eventos,setEventos] = useState([]);
@@ -4827,26 +4919,11 @@ function AprovacaoJob({f, setF}){
   }
   useEffect(()=>{ carregar(); const t = setInterval(()=>{ if(document.visibilityState==="visible") carregar(); }, 30000); return ()=>clearInterval(t); },[f.id]);
   async function enviar(){
-    setErro("");
-    const conteudo = String(f.roteiroConteudo||"").trim();
-    if(!String(f.marca||"").trim()){ setErro("Preencha a marca do job antes de enviar."); return; }
-    if(!conteudo){ setErro("Escreva ou importe o roteiro antes de enviar."); return; }
-    const anteriores = envios.filter(e=>e.tipo==="roteiro"), ult = anteriores.slice(-1)[0];
-    if(ult && ult.situacao==="enviado" && !(await painelDialogo.confirmar(`A marca ainda não respondeu a versão ${ult.versao}. Enviar uma versão nova mesmo assim? A anterior fica guardada no histórico.`, {ok:"Enviar versão nova"}))) return;
-    if(ult && ult.situacao==="aprovado" && !(await painelDialogo.confirmar(`A versão ${ult.versao} já foi aprovada. Enviar uma versão nova para a marca aprovar de novo?`, {ok:"Enviar versão nova"}))) return;
-    setOcupado(true);
+    setErro(""); setOcupado(true);
     try{
-      const token = ap.token || apvToken();
-      const l = await supabaseClient.from("aprovacao_links").upsert({job_id:f.id, token_hash:await apvHash(token), marca:marcaBase(f.marca)||f.marca, produto:String(f.produto||"").trim(), ativo:true}, {onConflict:"job_id"});
-      if(l.error) throw l.error;
-      const versao = anteriores.reduce((m,e)=>Math.max(m, e.versao), 0) + 1;
-      const agora = new Date().toISOString();
-      const e = await supabaseClient.from("aprovacao_envios").insert({job_id:f.id, tipo:"roteiro", versao, titulo:String(f.roteiroTitulo||"").slice(0,200), conteudo, enviado_em:agora});
-      if(e.error) throw e.error;
-      setF(p=>itensNoStatusDoJob({...p, status:"Aprovação de Roteiro", aprovacao:{...(p.aprovacao||{}), token, roteiro:{situacao:"enviado", versao, em:agora, lido:true}}}, "Aprovação de Roteiro"));
-      setAtivo(true);
-      await carregar();
-    }catch(e){ console.warn(e); setErro("Não consegui enviar agora. Tente de novo."); }
+      const novo = await apvEnviarRoteiro(f);
+      if(novo){ setF(p=>({...p, status:novo.status, entregaveis:novo.entregaveis, aprovacao:novo.aprovacao})); setAtivo(true); await carregar(); }
+    }catch(e){ console.warn(e); setErro(e && e.aviso ? e.message : "Não consegui enviar agora. Tente de novo."); }
     setOcupado(false);
   }
   async function copiar(){ try{ await navigator.clipboard.writeText(apvLink(ap.token)); setCopiado(true); setTimeout(()=>setCopiado(false), 1800); }catch(e){ setErro("Selecione o link e copie."); } }
@@ -6042,6 +6119,7 @@ function Jobs({state, updateState}){
         <div className="jobs-abas">
           <button type="button" className={"jobs-aba"+(tab==="Ativos"?" ativa":"")} onClick={()=>setTab("Ativos")}><Icon name="inbox" size={17}/>Ativos ({ativosCount})</button>
           <button type="button" className={"jobs-aba"+(tab==="Organize"?" ativa":"")} onClick={()=>setTab("Organize")}><Icon name="view_kanban" size={17}/>Organize</button>
+          <button type="button" className={"jobs-aba"+(tab==="Aprovações"?" ativa":"")} onClick={()=>setTab("Aprovações")}><Icon name="fact_check" size={17}/>Aprovações{(()=>{ const n = (state.jobs||[]).filter(j=>["enviado","ajustes"].includes(apvColuna(j))).length; return n ? ` (${n})` : ""; })()}</button>
           <button type="button" className={"jobs-aba"+(tab==="Histórico"?" ativa":"")} onClick={()=>setTab("Histórico")}><Icon name="archive" size={17}/>Histórico ({historicoCount})</button>
         </div>
         {tab==="Ativos" && (
@@ -6051,7 +6129,7 @@ function Jobs({state, updateState}){
         )}
       </div>
 
-      {tab!=="Organize" && (
+      {tab!=="Organize" && tab!=="Aprovações" && (
         <div style={{marginBottom:16}}>
           <button className="btn btn-ghost btn-sm" onClick={()=>setShowFilter(v=>!v)}><Icon name="tune" size={15}/>Filtrar</button>
           {showFilter && (
@@ -6066,7 +6144,7 @@ function Jobs({state, updateState}){
         </div>
       )}
 
-      {tab==="Organize" ? (
+      {tab==="Aprovações" ? <CentralAprovacoes jobs={state.jobs||[]} onAbrir={(j)=>setEditing(j)} onSalvar={persistJob}/> : tab==="Organize" ? (
         <div className="org-quadro">
           {colunasStatus.filter(col=>col!==FIN_PAGO && col!=="Cancelado").map(col=>{
             const colJobs = state.jobs.filter(j=>j.status===col && !isHistorico(j) && (!query || (j.marca+(j.tipo||"")+(j.nicho||"")).toLowerCase().includes(query.toLowerCase())));
