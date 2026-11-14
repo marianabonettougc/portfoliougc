@@ -3146,3 +3146,34 @@ html,body{background:
   .mb-criar{width:100%}
   .mb-board{padding:6px}
 }
+
+/* ===== Marcas > Minhas marcas: abas por status e etiquetas novas (nov/2026, pedido da Mari: "as etiquetas de status estão feias";
+   ao trocar a etiqueta a marca vai para a aba com o mesmo nome). Cores de cada status em js/admin.js (CORES_STATUS). ===== */
+.ct-abas{gap:6px;border-bottom:0;margin:2px 0 14px;padding:4px 0 6px;align-items:center;scrollbar-width:thin}
+.ct-abas button{display:inline-flex;align-items:center;gap:7px;padding:7px 12px 7px 11px;border:1px solid var(--linha);border-radius:999px;background:rgba(255,253,249,.7);font-size:12.5px;font-weight:500;color:var(--suave);transition:background .15s,border-color .15s,color .15s}
+.ct-abas button:hover{background:#fffdf9;color:var(--texto)}
+.ct-abas button span{margin-left:0;font-size:11px;font-weight:600;background:rgba(107,74,53,.07);color:var(--suave);padding:1px 7px}
+.ct-abas button.st.on{background:var(--st-bg);border-color:color-mix(in srgb,var(--st-c) 45%,transparent);color:var(--st-tx);font-weight:600}
+.ct-abas button.st.on span{background:#fffdf9;color:var(--st-tx)}
+.ct-abas button.extra.on{background:#6b4a35;border-color:#6b4a35;color:#fffdf9;font-weight:600}
+.ct-abas button.extra.on span{background:rgba(255,255,255,.18);color:#fffdf9}
+.ct-abas button:focus-visible{outline:2px solid var(--terracota);outline-offset:2px}
+.ct-abas-sep{flex:0 0 1px;align-self:stretch;margin:4px 4px;background:var(--linha)}
+.ct-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--st-c);flex-shrink:0}
+/* etiqueta: pílula suave com bolinha de cor e setinha, texto normal (sem caixa alta) */
+.ct-pill{position:relative;display:inline-flex;align-items:center;gap:6px;padding:4px 24px 4px 10px;border-radius:999px;background:var(--st-bg);color:var(--st-tx);border:1px solid color-mix(in srgb,var(--st-c) 28%,transparent);cursor:pointer;white-space:nowrap;transition:box-shadow .15s}
+.ct-pill:hover{box-shadow:0 0 0 3px color-mix(in srgb,var(--st-c) 14%,transparent)}
+.ct-pill::after{content:"";position:absolute;right:9px;top:50%;width:5px;height:5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-70%) rotate(45deg);opacity:.6;pointer-events:none}
+.ct-pill .ct-status,.ct-pill .ct-status.s-lead,.ct-pill .ct-status.s-cliente,.ct-pill .ct-status.s-conversando,.ct-pill .ct-status.s-proposta,.ct-pill .ct-status.s-enviado,.ct-pill .ct-status.s-parada{all:unset;cursor:pointer;font:500 12px Poppins,sans-serif;color:inherit;letter-spacing:0;text-transform:none}
+.ct-pill:focus-within{outline:2px solid var(--terracota);outline-offset:2px}
+.ct-pill .ct-status option{color:#3d2b20;background:#fffdf9}
+/* a linha sai suavemente quando muda de status */
+.ct-tabela tr.ct-saindo td{opacity:.35;transition:opacity .25s}
+/* tabela mais limpa */
+.ct-tabela th{font-size:10.5px;letter-spacing:.08em;padding-top:12px;padding-bottom:12px}
+.ct-tabela td{padding-top:12px;padding-bottom:12px}
+.ct-tabela tbody tr{transition:background .12s}
+.ct-tabela tbody tr:hover td{background:rgba(239,229,216,.45)}
+.ct-tabela td .link-mini{display:inline-block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.ct-barra .ct-sel{min-width:0}
+@media (max-width:640px){.ct-abas{flex-wrap:nowrap}.ct-abas button{padding:6px 10px;font-size:12px}}

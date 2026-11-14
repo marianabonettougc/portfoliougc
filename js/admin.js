@@ -899,7 +899,7 @@
   let SITUACOES = SITUACOES_PADRAO;
   const nomeSituacao = (s) => (SITUACOES.find((x) => x.v === s) || { t: s || "" }).t;
   const rotuloCol = (k) => cfgContatos.colunas[k] || COLUNAS_PADRAO[k];
-  const estadoMarcas = { busca: "", aba: "todos", origem: "", status: "", nicho: "", ordem: "recente", sel: new Set(), aberto: null, abaPerfil: "notas", cfgCarregada: false, menu: null };
+  const estadoMarcas = { busca: "", aba: "", origem: "", status: "", nicho: "", ordem: "recente", sel: new Set(), aberto: null, abaPerfil: "notas", cfgCarregada: false, menu: null };
   const DIA = 86400000;
   const diasDesde = (iso) => { const d = paraData(iso); return d ? Math.floor((Date.now() - d.getTime()) / DIA) : null; };
   const atrasado = (m) => ["enviado", "conversando", "proposta"].includes(m.situacao) && (diasDesde(m.ultimo_contato || m.criado_em) ?? 0) > 15;
@@ -924,19 +924,28 @@
     if (error) avisar("Não consegui salvar a personalização: " + error.message, true);
   }
 
-  const ABAS_CONTATOS = [["todos", "Todos"], ["favoritos", "Favoritos"], ["novos", "Novos"], ["conversando", "Conversando"], ["cliente", "Clientes"], ["atrasados", "Atrasados"]];
+  // nov/2026 (pedido da Mari): cada status é uma aba. Ao trocar a etiqueta, a marca sai da aba atual e vai para a aba
+  // com o nome do status escolhido. Sem status = primeira aba (A enviar). Favoritos e Atrasados juntam marcas de qualquer status.
+  const ABAS_EXTRAS = [["favoritos", "Favoritos"], ["atrasados", "Atrasados"]];
+  const situacaoDe = (m) => (m.situacao && SITUACOES.some((s) => s.v === m.situacao) ? m.situacao : (SITUACOES[0] || {}).v);
   function naAba(m, aba) {
     if (aba === "favoritos") return m.favorito;
-    if (aba === "novos") return novoContato(m);
     if (aba === "atrasados") return atrasado(m);
-    if (aba === "conversando" || aba === "cliente") return m.situacao === aba;
-    return true;
+    return situacaoDe(m) === aba;
   }
+  // cores das etiquetas (paleta do painel, sem amarelo); status criados por ela ganham uma cor da lista
+  const CORES_STATUS = { lead: ["#b3a191", "#f3ece4", "#6e5646"], enviado: ["#8a634b", "#efe4d8", "#6b4a35"], conversando: ["#a87058", "#f6e5da", "#8a4f34"], proposta: ["#b9833f", "#f6eadb", "#7f5418"], cliente: ["#4f7a54", "#e4eee2", "#2f5233"], parada: ["#a59c95", "#efecea", "#7a6f68"] };
+  const CORES_EXTRA = [["#6f7f99", "#e8ecf2", "#45526a"], ["#9a6b8c", "#f1e6ee", "#6b4260"], ["#5f8a87", "#e3efee", "#365c59"], ["#a3684a", "#f4e4da", "#7a4127"]];
+  function corStatus(v) {
+    if (CORES_STATUS[v]) return CORES_STATUS[v];
+    const i = Math.max(0, SITUACOES.findIndex((s) => s.v === v));
+    return CORES_EXTRA[i % CORES_EXTRA.length];
+  }
+  const estiloStatus = (v) => { const [c, bg, tx] = corStatus(v); return `--st-c:${c};--st-bg:${bg};--st-tx:${tx}`; };
   function marcasFiltradas() {
     const b = estadoMarcas.busca.toLowerCase().replace(/^@/, "");
     const lista = dados.marcas.filter((m) => {
-      if (!naAba(m, estadoMarcas.aba)) return false;
-      if (estadoMarcas.status && m.situacao !== estadoMarcas.status) return false;
+      if (!b && !naAba(m, estadoMarcas.aba)) return false; // a busca procura em todas as abas
       if (estadoMarcas.origem && (m.origem || "") !== estadoMarcas.origem) return false;
       if (estadoMarcas.nicho && (m.nicho || "") !== estadoMarcas.nicho) return false;
       if (!b) return true;
@@ -972,14 +981,13 @@
     if (!$("#ct-raiz")) {
       sec.innerHTML = `<div id="ct-raiz" class="ct">
         <div class="ct-topo"><h2>Contatos <span id="ct-total"></span></h2><div class="ct-topo-acoes"><button class="btn" type="button" id="ct-perso">Personalizar</button><button class="btn" type="button" id="marcas-importar">Importar planilha</button><input type="file" id="marcas-arquivo" accept=".csv,text/csv" hidden><button class="btn" type="button" id="marcas-csv">${ICONE.baixar}Baixar CSV</button><button class="btn btn-principal" type="button" id="marcas-nova">${ICONE.mais}Adicionar contato</button></div></div>
-        <div id="ct-kpis"></div><div id="ct-contador" class="ct-cont" role="group" aria-label="Quantas marcas em cada status"></div>
-        <nav class="ct-abas" id="ct-abas" role="tablist"></nav>
+        <div id="ct-kpis"></div>
+        <nav class="ct-abas" id="ct-abas" role="tablist" aria-label="Marcas por status"></nav>
         <div class="ct-barra"><input class="entrada ct-busca" type="search" id="marcas-busca" placeholder="Buscar por nome, marca, @, e-mail..." aria-label="Buscar contatos">
-          <select class="entrada ct-sel" id="ct-f-status" aria-label="Filtrar por status"></select><select class="entrada ct-sel" id="ct-f-nicho" aria-label="Filtrar por nicho"></select><select class="entrada ct-sel" id="ct-f-origem" aria-label="Filtrar por origem"></select>
+          <select class="entrada ct-sel" id="ct-f-nicho" aria-label="Filtrar por nicho"></select><select class="entrada ct-sel" id="ct-f-origem" aria-label="Filtrar por origem"></select>
           <select class="entrada ct-sel" id="ct-ordem" aria-label="Ordenar"><option value="recente">Mais recentes</option><option value="contato">Último contato</option><option value="az">Nome (A a Z)</option></select></div>
         <div id="marcas-lista"></div><div id="ct-massa"></div><aside id="ct-perfil" class="ct-perfil" hidden></aside></div>`;
       $("#marcas-busca").addEventListener("input", (e) => { estadoMarcas.busca = e.target.value.trim(); desenharListaMarcas(); });
-      $("#ct-f-status").addEventListener("change", (e) => { estadoMarcas.status = e.target.value; desenharListaMarcas(); });
       $("#ct-f-origem").addEventListener("change", (e) => { estadoMarcas.origem = e.target.value; desenharListaMarcas(); });
       $("#ct-f-nicho").addEventListener("change", (e) => { estadoMarcas.nicho = e.target.value; desenharListaMarcas(); });
       $("#marcas-importar").addEventListener("click", () => $("#marcas-arquivo").click());
@@ -1001,13 +1009,12 @@
     const caixa = $("#marcas-lista"); if (!caixa) return;
     $("#ct-total").textContent = dados.marcas.length;
     $("#ct-kpis").innerHTML = indicadoresContatos();
-    const cont = $("#ct-contador");
-    cont.innerHTML = `<button type="button" data-ct-cont="" class="${estadoMarcas.status ? "" : "on"}"><small>Total</small><b>${dados.marcas.length}</b></button>` +
-      SITUACOES.map((s) => `<button type="button" data-ct-cont="${esc(s.v)}" class="s-${esc(s.v)}${estadoMarcas.status === s.v ? " on" : ""}"><small>${esc(s.t)}</small><b>${dados.marcas.filter((m) => m.situacao === s.v).length}</b></button>`).join("");
-    $$("[data-ct-cont]", cont).forEach((b) => b.addEventListener("click", () => { const v = b.dataset.ctCont; estadoMarcas.status = estadoMarcas.status === v ? "" : v; desenharListaMarcas(); }));
-    $("#ct-abas").innerHTML = ABAS_CONTATOS.map(([k, t]) => `<button type="button" role="tab" data-ct-aba="${k}" class="${estadoMarcas.aba === k ? "on" : ""}">${k === "conversando" || k === "cliente" ? esc(nomeSituacao(k) || t) : t}<span>${dados.marcas.filter((m) => naAba(m, k)).length}</span></button>`).join("");
-    $$("[data-ct-aba]").forEach((b) => b.addEventListener("click", () => { estadoMarcas.aba = b.dataset.ctAba; desenharListaMarcas(); }));
-    $("#ct-f-status").innerHTML = `<option value="">Todos os status</option>${SITUACOES.map((s) => `<option value="${esc(s.v)}" ${estadoMarcas.status === s.v ? "selected" : ""}>${esc(s.t)}</option>`).join("")}`;
+    const chaves = [...SITUACOES.map((s) => s.v), ...ABAS_EXTRAS.map(([k]) => k)];
+    if (!chaves.includes(estadoMarcas.aba)) estadoMarcas.aba = (SITUACOES[0] || {}).v || "favoritos";
+    const buscando = Boolean(estadoMarcas.busca);
+    const abaBtn = (k, t, extra) => `<button type="button" role="tab" aria-selected="${!buscando && estadoMarcas.aba === k}" data-ct-aba="${esc(k)}" class="${extra ? "extra" : "st"}${!buscando && estadoMarcas.aba === k ? " on" : ""}" ${extra ? "" : `style="${estiloStatus(k)}"`}>${extra ? (k === "favoritos" ? "★ " : "") : `<i class="ct-dot"></i>`}${esc(t)}<span>${dados.marcas.filter((m) => naAba(m, k)).length}</span></button>`;
+    $("#ct-abas").innerHTML = SITUACOES.map((s) => abaBtn(s.v, s.t, false)).join("") + `<span class="ct-abas-sep" aria-hidden="true"></span>` + ABAS_EXTRAS.map(([k, t]) => abaBtn(k, t, true)).join("");
+    $$("[data-ct-aba]").forEach((b) => b.addEventListener("click", () => { estadoMarcas.aba = b.dataset.ctAba; if (estadoMarcas.busca) { estadoMarcas.busca = ""; const i = $("#marcas-busca"); if (i) i.value = ""; } desenharListaMarcas(); }));
     const origens = [...new Set([...ORIGENS_CT, ...dados.marcas.map((m) => m.origem).filter(Boolean)])];
     const nichos = [...new Set(dados.marcas.map((m) => m.nicho).filter(Boolean))].sort((a, z) => a.localeCompare(z));
     $("#ct-f-nicho").innerHTML = `<option value="">Todos os nichos</option>${nichos.map((o) => `<option ${estadoMarcas.nicho === o ? "selected" : ""}>${esc(o)}</option>`).join("")}`;
@@ -1015,7 +1022,8 @@
     if (faltando.marcas) { caixa.innerHTML = `<p class="vazio">${esc(faltando.marcas)}</p>`; return; }
     const lista = marcasFiltradas();
     estadoMarcas.sel = new Set([...estadoMarcas.sel].filter((id) => dados.marcas.some((m) => String(m.id) === id)));
-    if (!lista.length) caixa.innerHTML = `<p class="vazio">${dados.marcas.length ? "Nenhum contato nessa busca ou aba." : "Sua base ainda está vazia. Clique em \"Adicionar contato\" ou espere os contatos do formulário do site."}</p>`;
+    const nomeAba = (ABAS_EXTRAS.find(([k]) => k === estadoMarcas.aba) || [])[1] || nomeSituacao(estadoMarcas.aba);
+    if (!lista.length) caixa.innerHTML = `<p class="vazio">${dados.marcas.length ? (estadoMarcas.busca ? "Nenhuma marca encontrada nessa busca." : `Nenhuma marca em "${esc(nomeAba)}" agora.`) : "Sua base ainda está vazia. Clique em \"Adicionar contato\" ou espere os contatos do formulário do site."}</p>`;
     else caixa.innerHTML = `<div class="tabela-caixa ct-tabela-caixa"><table class="tabela ct-tabela">
         <thead><tr><th class="ct-chk"><input type="checkbox" id="ct-todos" aria-label="Selecionar todos" ${lista.every((m) => estadoMarcas.sel.has(String(m.id))) ? "checked" : ""}></th>${["contato", "marca", "email", "status", "responsavel", "origem", "data"].map((k) => `<th>${esc(rotuloCol(k))}</th>`).join("")}<th></th></tr></thead>
         <tbody>${lista.map((m) => {
@@ -1025,18 +1033,23 @@
             <td><div class="ct-pessoa"><span class="ct-av">${esc(iniciais(m.contato || m.nome))}</span><b>${esc(m.contato || m.nome)}</b>${m.favorito ? `<span class="ct-fav" title="Favorito">★</span>` : ""}${exemploTag(m)}</div></td>
             <td>${esc(m.nome)}${ig ? `<small class="ct-ig">@${esc(ig)}${m.seguidores ? ` · ${esc(m.seguidores)}` : ""}</small>` : ""}${m.nicho ? `<small class="ct-ig">${esc(m.nicho)}</small>` : ""}</td>
             <td>${m.email ? `<a class="link-mini" href="mailto:${esc(m.email)}">${esc(m.email)}</a>` : ""}</td>
-            <td><select class="ct-status s-${esc(m.situacao)}" data-ct-status="${id}" aria-label="Status">${SITUACOES.map((s) => `<option value="${esc(s.v)}" ${s.v === m.situacao ? "selected" : ""}>${esc(s.t)}</option>`).join("")}</select></td>
+            <td><label class="ct-pill" style="${estiloStatus(situacaoDe(m))}"><i class="ct-dot"></i><select class="ct-status" data-ct-status="${id}" aria-label="Status">${SITUACOES.map((s) => `<option value="${esc(s.v)}" ${s.v === situacaoDe(m) ? "selected" : ""}>${esc(s.t)}</option>`).join("")}</select></label></td>
             <td><b class="ct-resp">${esc(m.responsavel || "")}</b></td>
             <td>${esc(m.origem || "")}</td>
             <td style="white-space:nowrap">${fmtData(m.ultimo_contato)}${atrasado(m) ? `<small class="ct-atraso">sem retorno</small>` : ""}</td>
             <td class="ct-mais"><button type="button" class="icone-btn" data-ct-menu="${id}" aria-label="Mais opções">⋯</button></td>
           </tr>`;
         }).join("")}</tbody></table></div>
-      <p style="font-size:11.5px;color:var(--suave);margin:8px 2px 0">${plural(lista.length, "contato", "contatos")}. Toque na linha para abrir o perfil.</p>`;
+      <p style="font-size:11.5px;color:var(--suave);margin:8px 2px 0">${plural(lista.length, "contato", "contatos")}${estadoMarcas.busca ? " em todas as abas" : ""}. Toque na linha para abrir o perfil.</p>`;
     const todos = $("#ct-todos", caixa);
     if (todos) todos.addEventListener("change", () => { lista.forEach((m) => todos.checked ? estadoMarcas.sel.add(String(m.id)) : estadoMarcas.sel.delete(String(m.id))); desenharListaMarcas(); });
     $$("[data-ct-sel]", caixa).forEach((c) => c.addEventListener("change", () => { c.checked ? estadoMarcas.sel.add(c.dataset.ctSel) : estadoMarcas.sel.delete(c.dataset.ctSel); desenharListaMarcas(); }));
-    $$("[data-ct-status]", caixa).forEach((s) => s.addEventListener("change", async () => { if (await gravar("marcas", { situacao: s.value }, s.dataset.ctStatus)) { avisar("Status mudado"); await recarregar("marcas"); } }));
+    $$("[data-ct-status]", caixa).forEach((s) => s.addEventListener("change", async () => {
+      const m = dados.marcas.find((x) => String(x.id) === s.dataset.ctStatus), tr = s.closest("tr");
+      if (tr) tr.classList.add("ct-saindo");
+      if (await gravar("marcas", { situacao: s.value }, s.dataset.ctStatus)) { avisar(`${(m && (m.contato || m.nome)) || "Marca"} foi para "${nomeSituacao(s.value)}"`); await recarregar("marcas"); }
+      else if (tr) tr.classList.remove("ct-saindo");
+    }));
     $$("[data-ct-menu]", caixa).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); menuContato(b, dados.marcas.find((x) => String(x.id) === b.dataset.ctMenu)); }));
     const tb = $("tbody", caixa);
     if (tb) tb.addEventListener("click", (e) => {
@@ -1074,7 +1087,7 @@
     if (!n) return;
     const ids = [...estadoMarcas.sel];
     const emTodos = async (linha, msg) => { const r = await Promise.all(ids.map((id) => gravar("marcas", linha, id))); if (r.every(Boolean)) avisar(msg); await recarregar("marcas"); };
-    $("#ct-m-status").addEventListener("change", (e) => { if (e.target.value) emTodos({ situacao: e.target.value }, "Status mudado"); });
+    $("#ct-m-status").addEventListener("change", (e) => { if (e.target.value) { const v = e.target.value; estadoMarcas.sel.clear(); emTodos({ situacao: v }, `${plural(ids.length, "marca foi", "marcas foram")} para "${nomeSituacao(v)}"`); } });
     $("#ct-m-resp").addEventListener("click", async () => { const v = await painelDialogo.texto(`Responsável pelos ${n} contatos (ex.: Eu, Assessoria, Agência). Deixe vazio para tirar.`, ""); if (v !== null) emTodos({ responsavel: v.trim() || null }, "Responsável salvo"); });
     $("#ct-m-fav").addEventListener("click", () => emTodos({ favorito: true }, "Favoritados"));
     $("#ct-m-apagar").addEventListener("click", async () => {
