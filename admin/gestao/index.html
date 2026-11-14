@@ -874,6 +874,21 @@
   .brief-topo{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; font-size:13.5px; color:var(--graphite-soft); }
   .brief-texto, .obs-texto{ width:100%; box-sizing:border-box; resize:vertical; border:1px solid var(--line); border-radius:12px; background:#fff; padding:12px 14px; font:inherit; font-size:14.5px; line-height:1.55; margin-bottom:10px; }
   .brief-texto{ min-height:220px; }
+  /* aprovação da marca (nov/2026) */
+  .apv{ margin-top:14px; border:1px solid var(--line); border-radius:14px; padding:14px; background:#fff; display:flex; flex-direction:column; gap:10px; }
+  .apv-topo{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .apv-topo strong{ flex:1; min-width:0; font-size:15px; }
+  .apv-selo{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:500; border-radius:99px; padding:3px 10px; white-space:nowrap; background:#efe5d8; color:#6b4a35; }
+  .apv-selo::before{ content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+  .apv-selo.enviado{ background:#f7ebcd; color:#9a6b12; } .apv-selo.aprovado{ background:#e4eee2; color:#4f7a54; } .apv-selo.ajustes, .apv-selo.refacao{ background:#f6e0dc; color:#b8473a; }
+  .apv-link{ font-size:12.5px; background:#efe5d8; border-radius:9px; padding:8px 10px; overflow-wrap:anywhere; color:#6b4a35; user-select:all; }
+  .apv-botoes{ display:flex; gap:8px; flex-wrap:wrap; }
+  .apv-hist{ display:flex; flex-direction:column; gap:8px; font-size:13.5px; border-top:1px solid var(--line); padding-top:10px; }
+  .apv-hist div{ display:grid; grid-template-columns:104px 1fr; gap:10px; }
+  .apv-hist time{ color:var(--graphite-soft); font-size:12.5px; }
+  .apv-hist q{ display:block; quotes:none; color:var(--graphite-soft); white-space:pre-wrap; }
+  .apv-erro{ color:#b8473a; font-size:13.5px; }
+  .org-apv{ margin-top:6px; }
   .brief-texto.grande{ min-height:62vh; }
   .obs-texto{ min-height:120px; }
   /* Organize (nov/2026, referência UGControl nas cores dela) */
@@ -3437,6 +3452,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     ...(state.prospeccoes||[]).filter(p=>(p.marca||"").toLowerCase().includes(termo)).map(p=>({id:"x"+p.id, texto:p.marca, sub:"Prospecção · "+(p.status||""), ir:()=>go("prospeccao")})),
   ].slice(0,8);
   const alertas = [];
+  jobs.filter(j=>j.aprovacao && j.aprovacao.roteiro && !j.aprovacao.roteiro.lido && APV_FRASE[j.aprovacao.roteiro.situacao]).forEach(j=>{ const r = j.aprovacao.roteiro; alertas.push({titulo:`${marcaBase(j.marca)||j.marca} ${APV_FRASE[r.situacao]}`, texto:[r.por, r.texto].filter(Boolean).join(": ") || "Toque para abrir o job.", pagina:"jobs", jobId:j.id}); });
   proximos.filter(j=>diasAte(j.prazoEntrega)<=3).forEach(j=>alertas.push({titulo:"Prazo chegando", texto:`${j.marca} vence ${diasAte(j.prazoEntrega)===0?"hoje":"em "+diasAte(j.prazoEntrega)+" dia(s)"}.`, pagina:"jobs"}));
   jobs.filter(j=>j.dataPagamento && diasAte(j.dataPagamento)<0 && j.status!=="Cancelado" && (!j.pagamento || j.pagamento.status!=="Pago")).forEach(j=>alertas.push({titulo:"Pagamento atrasado", texto:`${j.marca} (${fmtMoneyCur(j.valor,j.moeda)})`, pagina:"financeiro"}));
   const semPrazo = ativos.filter(j=>!j.prazoEntrega).length;
@@ -3777,7 +3793,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
           <button className="db-redondo" onClick={()=>setSinoAberto(a=>!a)} aria-label="Alertas"><DbIcone tipo="sino" tam={19}/>{alertas.length>0 && <span className="db-ponto"/>}</button>
           {sinoAberto && <div className="db-pop db-pop-sino">
             <b className="db-pop-titulo">Alertas</b>
-            {alertas.length ? alertas.map((a,i)=><button key={i} onClick={()=>{setSinoAberto(false); go(a.pagina);}}><b>{a.titulo}</b><small>{a.texto}</small></button>)
+            {alertas.length ? alertas.map((a,i)=><button key={i} onClick={()=>{setSinoAberto(false); if(a.jobId) abrirJob(a.jobId); else go(a.pagina);}}><b>{a.titulo}</b><small>{a.texto}</small></button>)
               : <p className="db-vazio">Tudo em ordem por aqui!</p>}
           </div>}
         </div>
@@ -4749,6 +4765,130 @@ function vincularIdRoteiroJob(job){
 }
 
 // ---------- Roteiro do conteúdo do job: só importar (do Google Docs ou da aba Roteiros) ----------
+/* ---------- APROVAÇÃO DA MARCA (nov/2026): link do cliente, versões e respostas ---------- */
+const APV_ROTULO = {enviado:"Aguardando a marca", aprovado:"Roteiro aprovado", ajustes:"Ajustes solicitados", refacao:"Refação solicitada"};
+const APV_FRASE = {aprovado:"aprovou seu roteiro", ajustes:"solicitou ajustes no roteiro", refacao:"solicitou refação do roteiro"};
+const apvQuando = (iso) => { try{ return new Date(iso).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(",",""); }catch(e){ return ""; } };
+const apvLink = (token) => new URL("../../aprovar/?t="+token, location.href).href;
+function apvToken(){ const b = new Uint8Array(32); crypto.getRandomValues(b); return btoa(String.fromCharCode(...b)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+async function apvHash(t){ const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
+// resposta da marca entra no job: aprovado libera a produção; ajustes e refação voltam para a roteirização.
+// Só mexe no status se o job ainda estava em "Aprovação de Roteiro" (se ela mudou à mão, fica como ela deixou).
+function aplicarRespostaNoJob(job, r, lido){
+  if(!job || r.de!=="roteiro") return job;
+  const ap = job.aprovacao || {}, at = ap.roteiro || {};
+  if(at.versao===r.versao && at.situacao===r.situacao) return job;
+  if((at.versao||0) > r.versao) return job;
+  let novo = {...job, aprovacao:{...ap, roteiro:{situacao:r.situacao, versao:r.versao, em:r.em, por:r.por||"", texto:r.texto||"", gancho:r.gancho||"", lido:!!lido}}};
+  if(job.status==="Aprovação de Roteiro" && r.situacao!=="enviado"){
+    const st = r.situacao==="aprovado" ? "Em Produção" : "Roteirização";
+    novo = itensNoStatusDoJob({...novo, status:st}, st);
+  }
+  return novo;
+}
+// respostas que chegaram com o painel fechado: aplica nos jobs e marca como aplicadas
+async function buscarRespostasAprovacao(updateState){
+  try{
+    const { data } = await supabaseClient.from("aprovacao_eventos").select("id, job_id, tipo, autor, texto, gancho, criado_em, aprovacao_envios(tipo, versao)").eq("aplicado", false).in("tipo", ["aprovado","ajustes","refacao"]).order("criado_em", {ascending:true});
+    if(!data || !data.length) return;
+    updateState(st=>({...st, jobs:(st.jobs||[]).map(j=>{
+      let n = j;
+      data.filter(e=>e.job_id===j.id).forEach(e=>{ const env = e.aprovacao_envios || {}; n = aplicarRespostaNoJob(n, {de:env.tipo||"roteiro", versao:env.versao||1, situacao:e.tipo, em:e.criado_em, por:e.autor, texto:e.texto, gancho:e.gancho}, false); });
+      return n;
+    })}));
+    await supabaseClient.from("aprovacao_eventos").update({aplicado:true}).in("id", data.map(e=>e.id));
+  }catch(e){ console.warn("respostas de aprovação", e); }
+}
+function AprovacaoJob({f, setF}){
+  const [envios,setEnvios] = useState([]);
+  const [eventos,setEventos] = useState([]);
+  const [ativo,setAtivo] = useState(true);
+  const [ocupado,setOcupado] = useState(false);
+  const [erro,setErro] = useState("");
+  const [copiado,setCopiado] = useState(false);
+  const ap = f.aprovacao || {}, rot = ap.roteiro || null;
+  async function carregar(){
+    if(!f.id) return;
+    const [a,b,c] = await Promise.all([
+      supabaseClient.from("aprovacao_envios").select("id, tipo, versao, situacao, enviado_em, respondido_em").eq("job_id", f.id).order("enviado_em", {ascending:true}),
+      supabaseClient.from("aprovacao_eventos").select("id, envio_id, tipo, autor, texto, gancho, criado_em").eq("job_id", f.id).order("criado_em", {ascending:true}),
+      supabaseClient.from("aprovacao_links").select("ativo").eq("job_id", f.id).maybeSingle()
+    ]);
+    const es = a.data || [], evs = b.data || [];
+    setEnvios(es); setEventos(evs); if(c.data) setAtivo(!!c.data.ativo);
+    // resposta nova da marca com o job aberto: entra aqui na hora (já conta como vista)
+    const ult = es.filter(e=>e.tipo==="roteiro").slice(-1)[0];
+    if(ult && ult.situacao!=="enviado"){
+      const ev = evs.filter(x=>x.envio_id===ult.id && x.tipo===ult.situacao).slice(-1)[0] || {};
+      setF(p=>aplicarRespostaNoJob(p, {de:"roteiro", versao:ult.versao, situacao:ult.situacao, em:ult.respondido_em, por:ev.autor, texto:ev.texto, gancho:ev.gancho}, true));
+      const ids = evs.filter(x=>x.envio_id===ult.id && x.tipo!=="abriu").map(x=>x.id);
+      if(ids.length) supabaseClient.from("aprovacao_eventos").update({aplicado:true}).in("id", ids).then(()=>null, ()=>null);
+    }
+  }
+  useEffect(()=>{ carregar(); const t = setInterval(()=>{ if(document.visibilityState==="visible") carregar(); }, 30000); return ()=>clearInterval(t); },[f.id]);
+  async function enviar(){
+    setErro("");
+    const conteudo = String(f.roteiroConteudo||"").trim();
+    if(!String(f.marca||"").trim()){ setErro("Preencha a marca do job antes de enviar."); return; }
+    if(!conteudo){ setErro("Escreva ou importe o roteiro antes de enviar."); return; }
+    const anteriores = envios.filter(e=>e.tipo==="roteiro"), ult = anteriores.slice(-1)[0];
+    if(ult && ult.situacao==="enviado" && !(await painelDialogo.confirmar(`A marca ainda não respondeu a versão ${ult.versao}. Enviar uma versão nova mesmo assim? A anterior fica guardada no histórico.`, {ok:"Enviar versão nova"}))) return;
+    if(ult && ult.situacao==="aprovado" && !(await painelDialogo.confirmar(`A versão ${ult.versao} já foi aprovada. Enviar uma versão nova para a marca aprovar de novo?`, {ok:"Enviar versão nova"}))) return;
+    setOcupado(true);
+    try{
+      const token = ap.token || apvToken();
+      const l = await supabaseClient.from("aprovacao_links").upsert({job_id:f.id, token_hash:await apvHash(token), marca:marcaBase(f.marca)||f.marca, produto:String(f.produto||"").trim(), ativo:true}, {onConflict:"job_id"});
+      if(l.error) throw l.error;
+      const versao = anteriores.reduce((m,e)=>Math.max(m, e.versao), 0) + 1;
+      const agora = new Date().toISOString();
+      const e = await supabaseClient.from("aprovacao_envios").insert({job_id:f.id, tipo:"roteiro", versao, titulo:String(f.roteiroTitulo||"").slice(0,200), conteudo, enviado_em:agora});
+      if(e.error) throw e.error;
+      setF(p=>itensNoStatusDoJob({...p, status:"Aprovação de Roteiro", aprovacao:{...(p.aprovacao||{}), token, roteiro:{situacao:"enviado", versao, em:agora, lido:true}}}, "Aprovação de Roteiro"));
+      setAtivo(true);
+      await carregar();
+    }catch(e){ console.warn(e); setErro("Não consegui enviar agora. Tente de novo."); }
+    setOcupado(false);
+  }
+  async function copiar(){ try{ await navigator.clipboard.writeText(apvLink(ap.token)); setCopiado(true); setTimeout(()=>setCopiado(false), 1800); }catch(e){ setErro("Selecione o link e copie."); } }
+  async function alternarLink(){
+    if(ativo && !(await painelDialogo.confirmar("Desligar o link? A marca deixa de conseguir abrir até você ligar de novo.", {ok:"Desligar", perigo:true}))) return;
+    const r = await supabaseClient.from("aprovacao_links").update({ativo:!ativo}).eq("job_id", f.id);
+    if(!r.error) setAtivo(!ativo);
+  }
+  const linhas = [
+    ...envios.map(e=>({em:e.enviado_em, texto:`Você enviou a versão ${e.versao} do ${e.tipo==="video"?"vídeo":"roteiro"}`})),
+    ...eventos.map(x=>{ const e = envios.find(y=>y.id===x.envio_id) || {}; const v = e.versao ? ` (versão ${e.versao})` : "";
+      if(x.tipo==="abriu") return {em:x.criado_em, texto:"A marca abriu o link"+v};
+      return {em:x.criado_em, texto:`${x.autor||"A marca"} ${({aprovado:"aprovou",ajustes:"pediu ajustes",refacao:"pediu refação"})[x.tipo]}${v}`, cita:[x.gancho?("Gancho escolhido: "+x.gancho):"", x.texto||""].filter(Boolean).join("\n")}; })
+  ].sort((a,b)=>String(b.em).localeCompare(String(a.em)));
+  const mudouDepois = rot && envios.length>0;
+  return (
+    <div className="apv">
+      <div className="apv-topo">
+        <strong>Aprovação da marca</strong>
+        {rot ? <span className={"apv-selo "+rot.situacao}>{APV_ROTULO[rot.situacao]}{rot.versao?` · v${rot.versao}`:""}</span> : <span className="apv-selo">Ainda não enviado</span>}
+      </div>
+      {rot && rot.situacao!=="enviado" && (rot.texto || rot.gancho) && <div style={{fontSize:13.5, background:"#f6efe6", borderRadius:10, padding:"9px 11px", whiteSpace:"pre-wrap"}}><b>{rot.por||"Marca"}:</b> {[rot.gancho?("Gancho escolhido: "+rot.gancho):"", rot.texto].filter(Boolean).join("\n")}</div>}
+      <Field label="Produto (aparece para a marca)"><input value={f.produto||""} onChange={e=>{ const v = e.target.value; setF(p=>({...p, produto:v})); }} placeholder="Ex.: Kit Zip Vácuo"/></Field>
+      {ap.token && <>
+        <div className="apv-link">{apvLink(ap.token)}</div>
+        <div className="apv-botoes">
+          <button type="button" className="btn btn-ghost btn-sm" onClick={copiar}><Icon name="content_copy" size={15}/>{copiado?"Copiado":"Copiar link"}</button>
+          <a className="btn btn-ghost btn-sm" href={apvLink(ap.token)+"&previa=1"} target="_blank" rel="noopener"><Icon name="visibility" size={15}/>Ver como a marca vê</a>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={alternarLink}><Icon name={ativo?"link_off":"link"} size={15}/>{ativo?"Desligar link":"Ligar link de novo"}</button>
+        </div>
+        {!ativo && <div className="apv-erro">O link está desligado: a marca não consegue abrir.</div>}
+      </>}
+      <div className="apv-botoes">
+        <button type="button" className="btn btn-primary btn-sm" disabled={ocupado} onClick={enviar}><Icon name="send" size={15}/>{ocupado ? "Enviando..." : (mudouDepois ? "Enviar nova versão para aprovação" : "Enviar roteiro para aprovação")}</button>
+      </div>
+      {erro && <div className="apv-erro">{erro}</div>}
+      {!ap.token && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>Ao enviar, o painel guarda esta versão do roteiro, cria o link exclusivo deste job e muda o status para Aprovação de Roteiro. Você copia o link e manda para a marca.</div>}
+      {linhas.length>0 && <div className="apv-hist">{linhas.map((l,i)=><div key={i}><time>{apvQuando(l.em)}</time><span>{l.texto}{l.cita ? <q>{l.cita}</q> : null}</span></div>)}</div>}
+    </div>
+  );
+}
+
 function ImportarRoteiroJob({f, setF, state}){
   const [modo,setModo] = useState(""); // "docs" | "aba"
   const [link,setLink] = useState("");
@@ -5285,7 +5425,7 @@ function separarQuantidades(job){
   return {...job, entregaveis:{...e, videos:abre(e.videos), fotos:abre(e.fotos), stories:abre(e.stories)}};
 }
 function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
-  const [f,setF] = useState(()=>itensAteStatusDoJob(separarQuantidades(mergeJobWithDefaults(initial))));
+  const [f,setF] = useState(()=>{ const j = itensAteStatusDoJob(separarQuantidades(mergeJobWithDefaults(initial))); const r = j.aprovacao && j.aprovacao.roteiro; return r && !r.lido ? {...j, aprovacao:{...j.aprovacao, roteiro:{...r, lido:true}}} : j; });
   const [nichoModal,setNichoModal] = useState(false);
   const [savedTick,setSavedTick] = useState(false);
   const [briefGrande,setBriefGrande] = useState(false);
@@ -5333,7 +5473,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
 
     if(id==="pagamento") return (f.pagamento||{}).status==="Pago" ? <Badge tone="green" style={{marginLeft:6}}>Pago</Badge> : (f.valor ? <Badge tone="yellow" style={{marginLeft:6}}>A receber</Badge> : null);
     if(id==="briefing") return ((f.briefing||"").trim() || (f.briefingArquivos||[]).length>0) ? <Badge tone="green" style={{marginLeft:6}}>ok</Badge> : null;
-    if(id==="roteiro") return f.roteiroConteudo ? <Badge tone="green" style={{marginLeft:6}}>ok</Badge> : null;
+    if(id==="roteiro"){ const r = (f.aprovacao||{}).roteiro; if(r) return <Badge tone={r.situacao==="aprovado"?"green":(r.situacao==="enviado"?"yellow":"wine")} style={{marginLeft:6}}>{APV_ROTULO[r.situacao]}</Badge>; return f.roteiroConteudo ? <Badge tone="green" style={{marginLeft:6}}>ok</Badge> : null; }
     if(id==="observacoes") return (f.observacoes||"").trim() ? <Badge tone="gray" style={{marginLeft:6}}>escrita</Badge> : null;
     if(id==="trafego") return (f.trafegoPago||{}).ativo ? <Badge tone="wine" style={{marginLeft:6}}>ativo</Badge> : null;
     return null;
@@ -5594,7 +5734,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
             ))}
             <AnexoCampo rotulo="" pasta={`jobs/${f.id||"novos"}/briefing`} onEnviado={(a)=>setF(p=>({...p, briefingArquivos:[...(p.briefingArquivos||[]), a]}))}/>
           </>}
-          {id==="roteiro" && <ImportarRoteiroJob f={f} setF={setF} state={state}/>}
+          {id==="roteiro" && <><ImportarRoteiroJob f={f} setF={setF} state={state}/><AprovacaoJob f={f} setF={setF}/></>}
           {id==="trafego" && <>
         <div className="row-item" style={{marginBottom: f.trafegoPago.ativo ? 12 : 0}}>
           <strong style={{fontSize:15}}>Adicionar tráfego pago (ads)</strong>
@@ -5719,6 +5859,7 @@ function OrgCard({j, onEdit, onDelete, onMarkPaid, onDuplicate, onDragStart}){
         </div>
       </div>
       <div className="org-sub">{[j.categoria, resumoEntregas(j)].filter(Boolean).join(" · ")}</div>
+      {j.aprovacao && j.aprovacao.roteiro && j.status!==FIN_PAGO && <div className="org-apv"><span className={"apv-selo "+j.aprovacao.roteiro.situacao}>{APV_ROTULO[j.aprovacao.roteiro.situacao]}</span></div>}
       {total>0 && <div className="org-icones">
         {nv>0 && <span title="Vídeos"><Icon name="videocam" size={14}/>{nv}</span>}
         {nf>0 && <span title="Fotos"><Icon name="photo_camera" size={14}/>{nf}</span>}
@@ -11384,7 +11525,9 @@ function App({session}){
     }
     document.addEventListener("visibilitychange", conferir);
     window.addEventListener("focus", conferir);
-    const t = setInterval(conferir, 60000);
+    const respostas = ()=>{ if(document.visibilityState==="visible" && baseRef.current) buscarRespostasAprovacao(updateState); };
+    document.addEventListener("visibilitychange", respostas); window.addEventListener("focus", respostas); setTimeout(respostas, 4000);
+    const t = setInterval(()=>{ conferir(); respostas(); }, 60000);
     return ()=>{ document.removeEventListener("visibilitychange", conferir); window.removeEventListener("focus", conferir); clearInterval(t); };
   },[]);
 

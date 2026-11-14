@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Aprovação · Mari Bonetto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--fundo:#f6efe6;--papel:#fffdf9;--bege:#efe5d8;--linha:rgba(107,74,53,.16);--linha-forte:rgba(107,74,53,.3);--texto:#3d2b20;--suave:#7a6355;--cafe:#6b4a35;--terracota:#a87058;--titulo:#705548;--verde:#4f7a54;--verde-suave:#e4eee2;--vermelho:#b8473a;--vermelho-suave:#f6e0dc;--manteiga:#f7ebcd;--mostarda:#9a6b12}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--fundo);color:var(--texto);font:400 15px/1.6 Poppins,system-ui,sans-serif}
+.folha{max-width:680px;margin:0 auto;padding:28px max(16px,env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:18px}
+.rot{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--suave);font-weight:600}
+h1,h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400;color:var(--titulo);margin:0;line-height:1.15}
+h1{font-size:30px} h1 em{color:var(--terracota)} h2{font-size:21px}
+.cartao{background:var(--papel);border:1px solid var(--linha);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.topo{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.topo h2{flex:1;min-width:0}
+.pil{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;border-radius:99px;padding:4px 11px;white-space:nowrap}
+.pil::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.p-enviado{background:var(--manteiga);color:var(--mostarda)} .p-aprovado{background:var(--verde-suave);color:var(--verde)} .p-ajustes,.p-refacao{background:var(--vermelho-suave);color:var(--vermelho)}
+.meta{color:var(--suave);font-size:13px}
+.roteiro{display:flex;flex-direction:column;gap:8px;overflow-wrap:anywhere}
+.roteiro p{margin:0;white-space:pre-wrap}
+.roteiro .tit{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--terracota);font-weight:600;margin-top:10px;padding-top:10px;border-top:1px solid var(--linha)}
+.roteiro .tit:first-child{margin-top:0;padding-top:0;border-top:0}
+.roteiro hr{border:0;border-top:2px solid var(--bege);width:100%;margin:10px 0}
+.ganchos{display:flex;flex-direction:column;gap:8px}
+.gancho{display:flex;flex-direction:row;font-weight:400;gap:10px;align-items:flex-start;border:1px solid var(--linha);border-radius:12px;padding:11px 13px;cursor:pointer;font-size:14px}
+.gancho:has(input:checked){border-color:var(--cafe);background:var(--bege)}
+.gancho input{margin-top:4px;accent-color:var(--cafe);width:16px;height:16px;flex:none}
+.acoes{display:flex;flex-direction:column;gap:9px}
+.dupla{display:flex;gap:9px} .dupla > *{flex:1}
+button{font:500 15px Poppins,system-ui,sans-serif;border-radius:12px;padding:13px 16px;border:1px solid var(--linha-forte);background:var(--papel);color:var(--cafe);cursor:pointer;min-height:48px}
+button.ok{background:var(--verde);border-color:var(--verde);color:#fffdf9}
+button.pri{background:var(--cafe);border-color:var(--cafe);color:#fffdf9}
+button:disabled{opacity:.55;cursor:default}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--terracota);outline-offset:2px}
+label{font-size:13px;font-weight:500;display:flex;flex-direction:column;gap:5px}
+input[type=text],textarea{font:400 16px Poppins,system-ui,sans-serif;color:var(--texto);background:#fff;border:1px solid var(--linha-forte);border-radius:10px;padding:11px 12px;width:100%}
+textarea{min-height:120px;resize:vertical}
+.caixa{background:var(--bege);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:11px}
+.erro{color:var(--vermelho);font-size:13.5px}
+.feito{background:var(--verde-suave);color:var(--verde);border-radius:12px;padding:14px;font-weight:500}
+.feito.aj{background:var(--manteiga);color:var(--mostarda)}
+.hist{display:flex;flex-direction:column;gap:12px;font-size:13.5px}
+.hist div{border-left:2px solid var(--bege);padding-left:12px}
+.hist time{display:block;color:var(--suave);font-size:12px}
+.hist q{display:block;color:var(--suave);quotes:none;white-space:pre-wrap;margin-top:2px}
+details summary{cursor:pointer;color:var(--suave);font-size:13.5px}
+.pe{text-align:center;color:var(--suave);font-size:12.5px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="folha" id="pagina">
+  <span class="rot">Mari Bonetto · UGC Creator</span>
+  <p id="carregando">Carregando...</p>
+</main>
+<script>
+(function(){
+  var FN = "https://ztpzcmeiypnstswasxdw.supabase.co/functions/v1/portal-aprovacao";
+  var CHAVE = "sb_publishable_TxLJkErn4N9jD8rDLV1EnQ_sppuB9VZ"; // chave pública (a mesma do site)
+  var q = new URLSearchParams(location.search), T = q.get("t") || "", PREVIA = q.get("previa") === "1";
+  var pagina = document.getElementById("pagina");
+  var ROTULO = { enviado: "Aguardando sua resposta", aprovado: "Aprovado", ajustes: "Ajustes solicitados", refacao: "Refação solicitada" };
+  var NOME = { roteiro: "Roteiro", video: "Vídeo" };
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function quando(iso){ try{ return new Date(iso).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" }).replace(",", " às"); }catch(e){ return ""; } }
+  function chamar(corpo){
+    corpo.t = T;
+    return fetch(FN, { method:"POST", headers:{ "Content-Type":"application/json", apikey:CHAVE, Authorization:"Bearer " + CHAVE }, body:JSON.stringify(corpo) })
+      .then(function(r){ return r.json().then(function(j){ j.status = r.status; return j; }); });
+  }
+  // opções de gancho escritas no roteiro ("Gancho 1: ...")
+  function ganchosDe(texto){
+    var linhas = String(texto || "").split("\n"), lista = [];
+    for (var i = 0; i < linhas.length; i++){
+      var m = linhas[i].match(/^[\s☐□•*\-]*gancho\s*(\d+)\s*[:.)\-·]*\s*(.*)$/i);
+      if (!m) continue;
+      var fala = m[2].trim();
+      if (!fala){ for (var k = i + 1; k < linhas.length && k < i + 4; k++){ if (linhas[k].trim()){ fala = linhas[k].trim(); break; } } }
+      if (fala && !lista.some(function(g){ return g.n === m[1]; })) lista.push({ n: m[1], fala: fala.slice(0, 500) });
+    }
+    return lista.length > 1 ? lista : [];
+  }
+  var TITULO = /^(roteiro|ganchos?|cena|etapa|cta|legenda|lettering|ideia|tempo|no set|identifica[cç][aã]o|solu[cç][aã]o|prova|fechamento|contexto|conte[uú]do|desenvolvimento|hook|texto na tela|b-?roll|chamada|pra confirmar|para confirmar|creator|marca|produto|entrega|formato|dura[cç][aã]o|onde vai rodar)\b/i;
+  function roteiroHtml(texto){
+    return String(texto || "").split("\n").map(function(l){
+      var t = l.trim();
+      if (!t) return "";
+      if (/^[-_=]{6,}$/.test(t)) return "<hr>";
+      var curta = t.length <= 70;
+      if (curta && (TITULO.test(t) && !/[.!?]"?$/.test(t) || (t === t.toUpperCase() && /[A-ZÀ-Ú]{3}/.test(t)))) return '<p class="tit">' + esc(t) + "</p>";
+      return "<p>" + esc(t) + "</p>";
+    }).join("");
+  }
+  function desenhar(d){
+    var atuais = d.envios.filter(function(e){ return e.atual; });
+    // o vídeo (quando existir) aparece primeiro; o roteiro já aprovado fica embaixo
+    atuais.sort(function(a, b){ return (a.situacao === "enviado" ? 0 : 1) - (b.situacao === "enviado" ? 0 : 1); });
+    var h = '<span class="rot">Mari Bonetto · UGC Creator</span>';
+    h += "<h1>" + esc(d.marca || "Seu projeto") + (d.produto ? " <em>" + esc(d.produto) + "</em>" : "") + "</h1>";
+    if (PREVIA) h += '<p class="feito aj">Prévia: é assim que a marca vê. Os botões ficam desligados aqui.</p>';
+    if (!atuais.length) h += '<p class="cartao">Ainda não há nada para aprovar neste link.</p>';
+    atuais.forEach(function(e){
+      var gs = e.tipo === "roteiro" ? ganchosDe(e.conteudo) : [];
+      h += '<section class="cartao" data-envio="' + e.id + '">';
+      h += '<div class="topo"><h2>' + NOME[e.tipo] + " para aprovação</h2><span class=\"pil p-" + e.situacao + '">' + ROTULO[e.situacao] + "</span></div>";
+      h += '<div class="meta">' + (e.titulo ? esc(e.titulo) + " · " : "") + "versão " + e.versao + " · enviado em " + quando(e.enviado_em) + "</div>";
+      h += '<div class="roteiro">' + roteiroHtml(e.conteudo) + "</div>";
+      if (e.situacao === "enviado"){
+        if (gs.length){
+          h += '<div class="ganchos"><strong>Qual gancho você prefere?</strong>' + gs.map(function(g, i){
+            return '<label class="gancho"><input type="radio" name="g' + e.id + '" value="' + esc("Gancho " + g.n + ": " + g.fala) + '"><span><b>Gancho ' + esc(g.n) + "</b><br>" + esc(g.fala) + "</span></label>";
+          }).join("") + "</div>";
+        }
+        h += '<div class="acoes"><button class="ok" data-abrir="aprovado">Aprovar ' + NOME[e.tipo].toLowerCase() + '</button><div class="dupla"><button data-abrir="ajustes">Pedir ajustes</button><button data-abrir="refacao">Pedir refação</button></div></div>';
+        h += '<div class="caixa" data-form hidden><strong data-form-titulo></strong><span class="meta" data-form-dica></span>' +
+          '<label data-campo-texto>O que precisa mudar?<textarea id="texto' + e.id + '" maxlength="4000"></textarea></label>' +
+          '<label>Seu nome<input type="text" id="nome' + e.id + '" maxlength="80" autocomplete="name"></label>' +
+          '<p class="erro" data-erro hidden></p><div class="dupla"><button data-cancelar>Voltar</button><button class="pri" data-enviar>Confirmar</button></div></div>';
+      } else {
+        h += '<p class="feito' + (e.situacao === "aprovado" ? "" : " aj") + '">' + (e.situacao === "aprovado" ? "Aprovado" : ROTULO[e.situacao]) + " em " + quando(e.respondido_em) + ". A Mari já foi avisada." + (e.situacao === "aprovado" ? "" : " Você recebe a nova versão neste mesmo link.") + "</p>";
+      }
+      h += "</section>";
+    });
+    if (d.historico.length){
+      h += '<section class="cartao"><h2>Histórico</h2><div class="hist">' + d.historico.slice().reverse().map(function(x){
+        var frase = { aprovado: "aprovou", ajustes: "pediu ajustes", refacao: "pediu refação" }[x.tipo] || x.tipo;
+        return "<div><time>" + quando(x.em) + "</time>" + esc(x.autor || "Marca") + " " + frase + " · " + NOME[x.de].toLowerCase() + " versão " + x.versao +
+          (x.gancho ? "<q>Gancho escolhido: " + esc(x.gancho) + "</q>" : "") + (x.texto ? "<q>" + esc(x.texto) + "</q>" : "") + "</div>";
+      }).join("") + "</div></section>";
+    }
+    var antigas = d.envios.filter(function(e){ return !e.atual; });
+    if (antigas.length){
+      h += '<details class="cartao"><summary>Versões anteriores (' + antigas.length + ")</summary>" + antigas.reverse().map(function(e){
+        return '<div class="meta" style="margin-top:12px">' + NOME[e.tipo] + " versão " + e.versao + " · " + quando(e.enviado_em) + '</div><div class="roteiro">' + roteiroHtml(e.conteudo) + "</div>";
+      }).join("") + "</details>";
+    }
+    h += '<p class="pe">Link exclusivo deste projeto. Não compartilhe fora da equipe.</p>';
+    pagina.innerHTML = h;
+  }
+  var TEXTOS = {
+    aprovado: ["Confirmar aprovação", "Ao confirmar, a aprovação fica registrada com seu nome, data e hora.", "Confirmar aprovação"],
+    ajustes: ["Pedir ajustes", "Para mudanças pontuais. Diga o trecho e como deve ficar.", "Enviar pedido de ajustes"],
+    refacao: ["Pedir refação", "Para quando a proposta precisa de uma versão nova. Explique o motivo.", "Enviar pedido de refação"]
+  };
+  pagina.addEventListener("click", function(ev){
+    var b = ev.target.closest("button"); if (!b) return;
+    var sec = b.closest("[data-envio]"); if (!sec) return;
+    var form = sec.querySelector("[data-form]"), acoes = sec.querySelector(".acoes"), erro = sec.querySelector("[data-erro]");
+    if (b.dataset.abrir){
+      if (PREVIA) return;
+      var tx = TEXTOS[b.dataset.abrir];
+      form.dataset.tipo = b.dataset.abrir;
+      form.querySelector("[data-form-titulo]").textContent = tx[0];
+      form.querySelector("[data-form-dica]").textContent = tx[1];
+      form.querySelector("[data-enviar]").textContent = tx[2];
+      form.querySelector("[data-campo-texto]").firstChild.textContent = b.dataset.abrir === "aprovado" ? "Comentário (opcional)" : (b.dataset.abrir === "refacao" ? "Por que precisa refazer?" : "O que precisa mudar?");
+      erro.hidden = true; form.hidden = false; acoes.hidden = true;
+      form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    } else if (b.hasAttribute("data-cancelar")){
+      form.hidden = true; acoes.hidden = false;
+    } else if (b.hasAttribute("data-enviar")){
+      var id = sec.dataset.envio, tipo = form.dataset.tipo;
+      var nome = document.getElementById("nome" + id).value.trim(), texto = document.getElementById("texto" + id).value.trim();
+      var g = sec.querySelector('input[name="g' + id + '"]:checked');
+      var falta = !nome ? "Escreva seu nome." : (tipo !== "aprovado" && texto.length < 3 ? "Explique o que precisa mudar." : "");
+      if (falta){ erro.textContent = falta; erro.hidden = false; return; }
+      b.disabled = true; b.textContent = "Enviando...";
+      chamar({ acao: "responder", envio: Number(id), tipo: tipo, nome: nome, texto: texto, gancho: g ? g.value : "" }).then(function(r){
+        if (r.error && !r.versaoNova){ erro.textContent = r.error; erro.hidden = false; b.disabled = false; b.textContent = TEXTOS[tipo][2]; return; }
+        carregar();
+      }).catch(function(){ erro.textContent = "Sem conexão. Tente de novo."; erro.hidden = false; b.disabled = false; b.textContent = TEXTOS[tipo][2]; });
+    }
+  });
+  function carregar(){
+    return chamar({ acao: "ver", previa: PREVIA }).then(function(d){
+      if (d.error){ pagina.innerHTML = '<span class="rot">Mari Bonetto · UGC Creator</span><h1>Link <em>indisponível</em></h1><p class="cartao">' + esc(d.error) + "</p>"; return; }
+      desenhar(d); window.scrollTo(0, 0);
+    }).catch(function(){ pagina.innerHTML = '<span class="rot">Mari Bonetto · UGC Creator</span><p class="cartao">Sem conexão. Atualize a página para tentar de novo.</p>'; });
+  }
+  if (!T) pagina.innerHTML = '<span class="rot">Mari Bonetto · UGC Creator</span><h1>Link <em>indisponível</em></h1><p class="cartao">Este endereço precisa do código enviado pela Mari.</p>';
+  else carregar();
+})();
+</script>
+</body>
+</html>

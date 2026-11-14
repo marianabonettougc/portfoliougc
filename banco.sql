@@ -611,3 +611,54 @@ alter table public.marcas add column if not exists origem text;
 alter table public.marcas add column if not exists favorito boolean not null default false;
 alter table public.marcas add column if not exists notas jsonb not null default '[]'::jsonb;
 alter table public.marcas drop constraint if exists marcas_situacao_check; -- status com nomes dela (configuracoes, chave contatos_config)
+-- =====================================================================
+-- APROVAÇÕES DOS JOBS (nov/2026): a marca aprova o roteiro (e depois o vídeo) por um link.
+-- aprovacao_links: um link por job (guarda só o sha256 do código; o código fica no job, que só a dona lê).
+-- aprovacao_envios: cada versão enviada, congelada como foi (nova versão nunca apaga a anterior).
+-- aprovacao_eventos: abriu, aprovado, ajustes, refacao (nome de quem respondeu, texto, data e hora).
+-- Só a dona lê e escreve. A marca fala só com a Edge Function portal-aprovacao (service role).
+-- =====================================================================
+create table if not exists public.aprovacao_links (
+  id bigint generated always as identity primary key,
+  job_id text not null unique,
+  token_hash text not null unique,
+  marca text not null default '',
+  produto text not null default '',
+  ativo boolean not null default true,
+  criado_em timestamptz not null default now()
+);
+create table if not exists public.aprovacao_envios (
+  id bigint generated always as identity primary key,
+  job_id text not null,
+  tipo text not null default 'roteiro' check (tipo in ('roteiro','video')),
+  versao integer not null default 1,
+  titulo text not null default '',
+  conteudo text not null default '',
+  video jsonb,
+  situacao text not null default 'enviado' check (situacao in ('enviado','aprovado','ajustes','refacao')),
+  enviado_em timestamptz not null default now(),
+  respondido_em timestamptz,
+  unique (job_id, tipo, versao)
+);
+create table if not exists public.aprovacao_eventos (
+  id bigint generated always as identity primary key,
+  envio_id bigint not null references public.aprovacao_envios(id) on delete cascade,
+  job_id text not null,
+  tipo text not null check (tipo in ('abriu','aprovado','ajustes','refacao')),
+  autor text,
+  texto text,
+  gancho text,
+  aplicado boolean not null default false,
+  criado_em timestamptz not null default now()
+);
+create index if not exists aprovacao_eventos_job on public.aprovacao_eventos (job_id, criado_em);
+create index if not exists aprovacao_eventos_pendentes on public.aprovacao_eventos (criado_em) where not aplicado;
+alter table public.aprovacao_links enable row level security;
+alter table public.aprovacao_envios enable row level security;
+alter table public.aprovacao_eventos enable row level security;
+drop policy if exists "dona faz tudo" on public.aprovacao_links;
+drop policy if exists "dona faz tudo" on public.aprovacao_envios;
+drop policy if exists "dona faz tudo" on public.aprovacao_eventos;
+create policy "dona faz tudo" on public.aprovacao_links for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+create policy "dona faz tudo" on public.aprovacao_envios for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+create policy "dona faz tudo" on public.aprovacao_eventos for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
