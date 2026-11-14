@@ -888,7 +888,9 @@
   // abas (Todos, Favoritos, Novos, Conversando, Clientes, Atrasados), busca, filtro, ordem, tabela com seleção e ações em
   // massa, e o perfil do contato ao lado (Atividade, Notas, Jobs). Sem score. Ela renomeia as colunas e os status e cria
   // status novos em "Personalizar" (configuracoes, chave contatos_config); tudo editável e apagável.
-  const SITUACOES_PADRAO = [{ v: "lead", t: "Lead" }, { v: "conversando", t: "Conversando" }, { v: "cliente", t: "Cliente" }, { v: "parada", t: "Parada" }];
+  // nov/2026 (Imersão, etapa 08 "Marcas"): status de prospecção a enviar · enviado · respondeu · proposta · fechado · sem interesse.
+  // Os valores antigos ficam (lead, conversando, cliente, parada), só o nome muda, para nada que já usa a tabela quebrar.
+  const SITUACOES_PADRAO = [{ v: "lead", t: "A enviar" }, { v: "enviado", t: "Enviado" }, { v: "conversando", t: "Respondeu" }, { v: "proposta", t: "Proposta" }, { v: "cliente", t: "Fechado" }, { v: "parada", t: "Sem interesse" }];
   const COLUNAS_PADRAO = { contato: "Contato", marca: "Marca", email: "E-mail", status: "Status", responsavel: "Responsável", origem: "Origem", data: "Último contato" };
   const ORIGENS_CT = ["Site", "Instagram", "E-mail", "WhatsApp", "TikTok", "LinkedIn", "Indicação", "Evento", "Outro"];
   const cfgContatos = { status: null, colunas: {} };
@@ -898,7 +900,7 @@
   const estadoMarcas = { busca: "", aba: "todos", origem: "", status: "", nicho: "", ordem: "recente", sel: new Set(), aberto: null, abaPerfil: "notas", cfgCarregada: false, menu: null };
   const DIA = 86400000;
   const diasDesde = (iso) => { const d = paraData(iso); return d ? Math.floor((Date.now() - d.getTime()) / DIA) : null; };
-  const atrasado = (m) => ["lead", "conversando"].includes(m.situacao) && (diasDesde(m.ultimo_contato || m.criado_em) ?? 0) > 15;
+  const atrasado = (m) => ["enviado", "conversando", "proposta"].includes(m.situacao) && (diasDesde(m.ultimo_contato || m.criado_em) ?? 0) > 15;
   const novoContato = (m) => (diasDesde(m.criado_em) ?? 99) <= 7;
   const iniciais = (t) => String(t || "?").trim().split(/\s+/).slice(0, 2).map((p) => p[0] || "").join("").toUpperCase() || "?";
   const tempoAtras = (iso) => { const d = diasDesde(iso); if (d === null) return ""; if (d <= 0) return "hoje"; if (d === 1) return "ontem"; if (d < 30) return `há ${d} dias`; return fmtData(iso); };
@@ -968,7 +970,7 @@
     if (!$("#ct-raiz")) {
       sec.innerHTML = `<div id="ct-raiz" class="ct">
         <div class="ct-topo"><h2>Contatos <span id="ct-total"></span></h2><div class="ct-topo-acoes"><button class="btn" type="button" id="ct-perso">Personalizar</button><button class="btn" type="button" id="marcas-importar">Importar planilha</button><input type="file" id="marcas-arquivo" accept=".csv,text/csv" hidden><button class="btn" type="button" id="marcas-csv">${ICONE.baixar}Baixar CSV</button><button class="btn btn-principal" type="button" id="marcas-nova">${ICONE.mais}Adicionar contato</button></div></div>
-        <div id="ct-kpis"></div>
+        <div id="ct-kpis"></div><div id="ct-contador" class="ct-cont" role="group" aria-label="Quantas marcas em cada status"></div>
         <nav class="ct-abas" id="ct-abas" role="tablist"></nav>
         <div class="ct-barra"><input class="entrada ct-busca" type="search" id="marcas-busca" placeholder="Buscar por nome, marca, @, e-mail..." aria-label="Buscar contatos">
           <select class="entrada ct-sel" id="ct-f-status" aria-label="Filtrar por status"></select><select class="entrada ct-sel" id="ct-f-nicho" aria-label="Filtrar por nicho"></select><select class="entrada ct-sel" id="ct-f-origem" aria-label="Filtrar por origem"></select>
@@ -997,6 +999,10 @@
     const caixa = $("#marcas-lista"); if (!caixa) return;
     $("#ct-total").textContent = dados.marcas.length;
     $("#ct-kpis").innerHTML = indicadoresContatos();
+    const cont = $("#ct-contador");
+    cont.innerHTML = `<button type="button" data-ct-cont="" class="${estadoMarcas.status ? "" : "on"}"><small>Total</small><b>${dados.marcas.length}</b></button>` +
+      SITUACOES.map((s) => `<button type="button" data-ct-cont="${esc(s.v)}" class="s-${esc(s.v)}${estadoMarcas.status === s.v ? " on" : ""}"><small>${esc(s.t)}</small><b>${dados.marcas.filter((m) => m.situacao === s.v).length}</b></button>`).join("");
+    $$("[data-ct-cont]", cont).forEach((b) => b.addEventListener("click", () => { const v = b.dataset.ctCont; estadoMarcas.status = estadoMarcas.status === v ? "" : v; desenharListaMarcas(); }));
     $("#ct-abas").innerHTML = ABAS_CONTATOS.map(([k, t]) => `<button type="button" role="tab" data-ct-aba="${k}" class="${estadoMarcas.aba === k ? "on" : ""}">${k === "conversando" || k === "cliente" ? esc(nomeSituacao(k) || t) : t}<span>${dados.marcas.filter((m) => naAba(m, k)).length}</span></button>`).join("");
     $$("[data-ct-aba]").forEach((b) => b.addEventListener("click", () => { estadoMarcas.aba = b.dataset.ctAba; desenharListaMarcas(); }));
     $("#ct-f-status").innerHTML = `<option value="">Todos os status</option>${SITUACOES.map((s) => `<option value="${esc(s.v)}" ${estadoMarcas.status === s.v ? "selected" : ""}>${esc(s.t)}</option>`).join("")}`;
