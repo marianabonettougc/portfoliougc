@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611141300"></script>
-<script src="../../js/dialogos.js?v=202611141300"></script>
-<script src="../../js/metricool-ig.js?v=202611141300"></script>
-<script src="../../js/corretor.js?v=202611141300"></script>
+<script src="../../js/banco.js?v=202611141320"></script>
+<script src="../../js/dialogos.js?v=202611141320"></script>
+<script src="../../js/metricool-ig.js?v=202611141320"></script>
+<script src="../../js/corretor.js?v=202611141320"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -1608,6 +1608,9 @@
   .jb-linha:has(.db-logo-menu){ position:relative; z-index:6; }
   .jb-status{ display:inline-flex; align-items:center; gap:7px; max-width:100%; padding:5px 11px; border-radius:999px; background:#f3ebe0; color:#3d2b20; font-size:11.5px; font-weight:500; line-height:1.25; }
   .jb-status i{ width:8px; height:8px; border-radius:50%; background:var(--cor); flex:none; }
+  .jb-linha .job-linha-status{ min-width:0; }
+  .jb-status{ white-space:normal; text-align:left; }
+  @media (max-width:1100px) and (min-width:701px){ .row-item.job-linha.jb-linha{ grid-template-columns:minmax(0,1fr) minmax(0,max-content) max-content; } }
   @media (max-width:1100px){ .jb-nums{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
   @media (max-width:700px){
     .jb-nums{ gap:10px; margin-bottom:14px; }
@@ -6151,8 +6154,20 @@ function Jobs({state, updateState}){
   const jobsAtivos = state.jobs.filter(j=>j.status!=="Cancelado" && !isHistorico(j));
   const emAberto = (j) => j.tipoJob!=="Permuta" && !(j.pagamento && j.pagamento.status==="Pago") && (!j.moeda || j.moeda==="BRL");
   const aReceber = jobsAtivos.filter(emAberto).reduce((a,j)=>a+(Number(j.valor)||0),0);
-  const emProducao = jobsAtivos.filter(j=>j.status!==FIN_AGUARDANDO);
-  const entregas7j = emProducao.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)>=0 && diasAte(j.prazoEntrega)<=7).length;
+  const emProducao = state.jobs.filter(j=>!JOB_FINISHED.includes(j.status));
+  // mesma conta do Dashboard: cada prazo em aberto de cada conteúdo (roteiro, aprovação, entrega, postagem) + a entrega final
+  const prazosAbertos = (j) => {
+    const e0 = j.entregaveis || {}, at = etapaDoJob(j, state.roteiros), datas = [];
+    [...(e0.videos||[]).map(i=>[i,"videos"]), ...(e0.fotos||[]).map(i=>[i,"fotos"]), ...(e0.stories||[]).map(i=>[i,"stories"])].forEach(([it,t])=>{
+      if(it.concluido) return; const e = ROTEIRO_STATUS_OPTIONS.indexOf(statusDoItem(it,t));
+      if(it.prazoRoteiro && e<3) datas.push(it.prazoRoteiro);
+      if(!it.semAprovacao && it.prazoConteudo && e<5) datas.push(it.prazoConteudo);
+      if(it.dataEntrega && e<5) datas.push(it.dataEntrega);
+      if(j.categoria==="Publi" && it.prazoPostagem && e<8) datas.push(it.prazoPostagem); });
+    if(j.prazoEntrega && !(at===3 || at===5 || at===6) && at<5) datas.push(j.prazoEntrega);
+    return datas;
+  };
+  const entregas7j = emProducao.reduce((n,j)=>n+prazosAbertos(j).filter(d=>diasAte(d)>=0 && diasAte(d)<=7).length, 0);
   const aguardPag = jobsAtivos.filter(j=>j.status===FIN_AGUARDANDO);
   const aguardValor = aguardPag.filter(emAberto).reduce((a,j)=>a+(Number(j.valor)||0),0);
   const hojeJ = new Date();
@@ -6187,7 +6202,7 @@ function Jobs({state, updateState}){
 
       <div className="jb-nums">
         <button type="button" className="jb-num" onClick={()=>{ setTab("Ativos"); setFilterStatus("Todos"); }}>
-          <small>Em produção</small><b>{emProducao.length} {emProducao.length===1?"job":"jobs"}</b><em>{entregas7j} {entregas7j===1?"entrega":"entregas"} em 7 dias</em>
+          <small>Em produção</small><b>{emProducao.length} {emProducao.length===1?"job":"jobs"}</b><em>{entregas7j} {entregas7j===1?"prazo":"prazos"} nos próximos 7 dias</em>
         </button>
         <button type="button" className="jb-num">
           <small>A receber</small><b>{fmtMoneyCur(aReceber,"BRL")}</b><em>{jobsAtivos.filter(emAberto).length} jobs em aberto</em>
