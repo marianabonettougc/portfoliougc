@@ -1644,7 +1644,7 @@
   .org-vazio{ border-color:color-mix(in srgb, var(--cor, #a87058) 45%, transparent) !important; background:rgba(255,253,249,.5); }
 
   /* Organize: barra de rolar para o lado presa no topo da tela (antes ficava só lá embaixo do quadro) */
-  .org-rolar{ position:sticky; top:0; z-index:6; display:flex; align-items:center; gap:8px; padding:8px 10px; margin:0 0 10px; background:rgba(255,253,249,.92); backdrop-filter:saturate(1.2); border:1px solid rgba(107,74,53,.12); border-radius:999px; box-shadow:0 4px 14px rgba(107,74,53,.10); }
+  .org-rolar{ position:sticky; top:8px; z-index:6; display:flex; align-items:center; gap:8px; padding:8px 10px; margin:0 0 10px; background:rgba(255,253,249,.92); backdrop-filter:saturate(1.2); border:1px solid rgba(107,74,53,.12); border-radius:999px; box-shadow:0 4px 14px rgba(107,74,53,.10); }
   .org-rolar-barra{ flex:1; min-width:0; }
   .org-rolar .db-barra{ margin-top:0; height:18px; }
   .org-rolar .db-barra::before{ top:6px; height:6px; background:#efe5d8; }
@@ -1656,6 +1656,9 @@
   .org-quadro::-webkit-scrollbar{ display:none; }
   .org-quadro.puxando{ cursor:grabbing; user-select:none; }
   .org-quadro .org-card{ cursor:pointer; }
+
+  /* sticky só funciona se o body não virar caixa de rolagem (overflow-x:hidden fazia isso); clip corta o lado sem criar rolagem */
+  body{ overflow-x:clip !important; overflow-y:visible !important; }
 </style>
 </head>
 <body>
