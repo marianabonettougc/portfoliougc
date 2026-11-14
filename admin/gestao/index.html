@@ -6119,7 +6119,6 @@ function Jobs({state, updateState}){
         <div className="jobs-abas">
           <button type="button" className={"jobs-aba"+(tab==="Ativos"?" ativa":"")} onClick={()=>setTab("Ativos")}><Icon name="inbox" size={17}/>Ativos ({ativosCount})</button>
           <button type="button" className={"jobs-aba"+(tab==="Organize"?" ativa":"")} onClick={()=>setTab("Organize")}><Icon name="view_kanban" size={17}/>Organize</button>
-          <button type="button" className={"jobs-aba"+(tab==="Aprovações"?" ativa":"")} onClick={()=>setTab("Aprovações")}><Icon name="fact_check" size={17}/>Aprovações{(()=>{ const n = (state.jobs||[]).filter(j=>["enviado","ajustes"].includes(apvColuna(j))).length; return n ? ` (${n})` : ""; })()}</button>
           <button type="button" className={"jobs-aba"+(tab==="Histórico"?" ativa":"")} onClick={()=>setTab("Histórico")}><Icon name="archive" size={17}/>Histórico ({historicoCount})</button>
         </div>
         {tab==="Ativos" && (
@@ -6129,7 +6128,7 @@ function Jobs({state, updateState}){
         )}
       </div>
 
-      {tab!=="Organize" && tab!=="Aprovações" && (
+      {tab!=="Organize" && (
         <div style={{marginBottom:16}}>
           <button className="btn btn-ghost btn-sm" onClick={()=>setShowFilter(v=>!v)}><Icon name="tune" size={15}/>Filtrar</button>
           {showFilter && (
@@ -6144,7 +6143,7 @@ function Jobs({state, updateState}){
         </div>
       )}
 
-      {tab==="Aprovações" ? <CentralAprovacoes jobs={state.jobs||[]} onAbrir={(j)=>setEditing(j)} onSalvar={persistJob}/> : tab==="Organize" ? (
+      {tab==="Organize" ? (
         <div className="org-quadro">
           {colunasStatus.filter(col=>col!==FIN_PAGO && col!=="Cancelado").map(col=>{
             const colJobs = state.jobs.filter(j=>j.status===col && !isHistorico(j) && (!query || (j.marca+(j.tipo||"")+(j.nicho||"")).toLowerCase().includes(query.toLowerCase())));
@@ -6366,6 +6365,21 @@ Se tiver algum feedback ou quiser fechar mais alguma coisa, me chama 💛`;
   );
 }
 
+// CRM de aprovações: página própria no menu (Marcas e jobs > Aprovações)
+function PaginaAprovacoes({state, updateState}){
+  const [editing,setEditing] = useState(null);
+  function persistJob(job){ updateState(st=>({...st, jobs:(st.jobs||[]).map(j=>j.id===job.id?job:j), followups:syncFollowups(st.followups, job), transacoes:syncTransacaoFromJob(st.transacoes, job)})); }
+  return (
+    <div>
+      <div className="page-head"><div>
+        <h1 className="page-title">Aprovações</h1>
+        <p className="page-sub">Envie o roteiro para a marca por um link e acompanhe aqui: o que falta enviar, o que está com a marca, os ajustes pedidos e o que já foi aprovado.</p>
+      </div></div>
+      <CentralAprovacoes jobs={state.jobs||[]} onAbrir={(j)=>setEditing(j)} onSalvar={persistJob}/>
+      {editing && <JobModal state={state} updateState={updateState} initial={(state.jobs||[]).find(j=>j.id===editing.id) || editing} onClose={()=>setEditing(null)} onSave={(job)=>{ persistJob(job); setEditing(null); }} onAutosave={persistJob}/>}
+    </div>
+  );
+}
 function TrafegoPago({state, updateState}){
   const hoje = new Date();
   const [filtro,setFiltro] = useState("Todos");
@@ -11524,7 +11538,7 @@ function App({session}){
   // Páginas que viraram abas do próprio painel (somem do menu do aplicativo quando ele está dentro do painel)
   const NO_PAINEL = (()=>{ try{ return window.parent !== window && window.parent.location.origin === location.origin; }catch(e){ return false; } })();
   // Cada página do aplicativo é uma aba do painel (página do aplicativo: aba do painel)
-  const ABAS_DO_PAINEL = {dashboard:"dashboard", planner:"calendario", jobs:"campanhas", trafego:"trafego", followups:"followups",
+  const ABAS_DO_PAINEL = {dashboard:"dashboard", planner:"calendario", jobs:"campanhas", aprovacoes:"aprovacoes", trafego:"trafego", followups:"followups",
     roteiros:"quadro", prospeccao:"prospeccao", candidaturas:"candidaturas", financeiro:"financeiro",
     performance:"financeiro", tiktokshop:"tiktokshop", config:"config", financeirocpf:"financeirocpf"};
   const [page, setPage] = useState(parametros.get("pagina") || "dashboard");
@@ -11696,6 +11710,7 @@ function App({session}){
     case "planner": PageComp = <Planner {...pageProps}/>; break;
     case "jobs": PageComp = <Jobs {...pageProps}/>; break;
     case "trafego": PageComp = <TrafegoPago {...pageProps}/>; break;
+    case "aprovacoes": PageComp = <PaginaAprovacoes {...pageProps}/>; break;
     case "followups": PageComp = <FollowUps {...pageProps}/>; break;
     case "roteiros": PageComp = <Roteiros {...pageProps} pendingAI={pendingRoteiroAI} clearPendingAI={()=>setPendingRoteiroAI(false)}/>; break;
     case "prospeccao": PageComp = <Prospeccao {...pageProps}/>; break;
