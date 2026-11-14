@@ -3149,7 +3149,7 @@ html,body{background:
 
 /* ===== Marcas > Minhas marcas: abas por status e etiquetas novas (nov/2026, pedido da Mari: "as etiquetas de status estão feias";
    ao trocar a etiqueta a marca vai para a aba com o mesmo nome). Cores de cada status em js/admin.js (CORES_STATUS). ===== */
-.ct-abas{gap:6px;border-bottom:0;margin:2px 0 14px;padding:4px 0 6px;align-items:center;scrollbar-width:thin}
+.ct-abas{gap:6px;border-bottom:0;margin:2px 0 14px;padding:4px 0 6px;align-items:center;flex-wrap:wrap;overflow:visible}
 .ct-abas button{display:inline-flex;align-items:center;gap:7px;padding:7px 12px 7px 11px;border:1px solid var(--linha);border-radius:999px;background:rgba(255,253,249,.7);font-size:12.5px;font-weight:500;color:var(--suave);transition:background .15s,border-color .15s,color .15s}
 .ct-abas button:hover{background:#fffdf9;color:var(--texto)}
 .ct-abas button span{margin-left:0;font-size:11px;font-weight:600;background:rgba(107,74,53,.07);color:var(--suave);padding:1px 7px}
@@ -3176,4 +3176,4 @@ html,body{background:
 .ct-tabela tbody tr:hover td{background:rgba(239,229,216,.45)}
 .ct-tabela td .link-mini{display:inline-block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 .ct-barra .ct-sel{min-width:0}
-@media (max-width:640px){.ct-abas{flex-wrap:nowrap}.ct-abas button{padding:6px 10px;font-size:12px}}
+@media (max-width:640px){.ct-abas{flex-wrap:nowrap;overflow-x:auto}.ct-abas button{padding:6px 10px;font-size:12px}}
