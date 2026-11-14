@@ -662,3 +662,20 @@ drop policy if exists "dona faz tudo" on public.aprovacao_eventos;
 create policy "dona faz tudo" on public.aprovacao_links for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
 create policy "dona faz tudo" on public.aprovacao_envios for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
 create policy "dona faz tudo" on public.aprovacao_eventos for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+-- Roteiros e Moodboard (nov/2026): briefing, imagens (caminhos no bucket anexos), paleta e resultado de cada mood board
+create table if not exists public.moodboards (
+  id uuid primary key default gen_random_uuid(),
+  titulo text not null default '',
+  marca text not null default '',
+  job_id text,
+  briefing jsonb not null default '{}'::jsonb,
+  imagens jsonb not null default '[]'::jsonb,
+  paleta jsonb not null default '[]'::jsonb,
+  resultado jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now()
+);
+alter table public.moodboards enable row level security;
+drop policy if exists "dona faz tudo" on public.moodboards;
+create policy "dona faz tudo" on public.moodboards for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
