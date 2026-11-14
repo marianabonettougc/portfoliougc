@@ -173,7 +173,8 @@
   const doMes = (y, m) => D().lancamentos.filter((l) => { const d = new Date(l.data + "T00:00:00"); return d.getFullYear() === y && d.getMonth() === m; });
   const soma = (l) => l.reduce((a, x) => a + (Number(x.valor) || 0), 0);
   const entradas = (l) => l.filter((x) => x.tipo === "entrada"), saidas = (l) => l.filter((x) => x.tipo === "saida");
-  const vencido = (l) => !l.pago && l.tipo === "saida" && (l.atrasado || l.data < hojeIso());
+  // nov/2026: "Pendente" escolhido à mão numa conta já vencida fica pendente (naoAtrasado), não volta sozinho para atraso
+  const vencido = (l) => !l.pago && l.tipo === "saida" && (l.atrasado || (!l.naoAtrasado && l.data < hojeIso()));
   function resumoMes(y, m) {
     const lancamentos = doMes(y, m), ent = entradas(lancamentos), sai = saidas(lancamentos);
     const recebido = soma(ent.filter((l) => l.pago)), pago = soma(sai.filter((l) => l.pago));
@@ -981,6 +982,8 @@
   // ---------- Visão anual (nov/2026, a partir da referência da Mari): meses no topo, o mês escolhido embaixo ----------
   function mudarSituacao(l, sit) {
     const ent = l.tipo === "entrada";
+    const passou = (ent ? (datasDe(l).prevista || l.data) : l.data) < hojeIso();
+    if (sit === "pendente" && passou) l.naoAtrasado = true; else delete l.naoAtrasado;
     if (sit === "pago") { l.pago = true; l.atrasado = false; if (ent) { const dt = datasDe(l); l.dataPrevista = dt.prevista || l.data; l.dataPagamento = dt.pagamento || hojeIso(); l.data = l.dataPagamento; } }
     else { l.pago = false; l.atrasado = sit === "atraso"; if (ent) { const dt = datasDe(l); l.dataPrevista = dt.prevista || dt.pagamento || l.data; l.dataPagamento = ""; l.data = l.dataPrevista; } }
   }
@@ -990,7 +993,7 @@
     return ls.some(vencidoL) ? "mal" : "amb";
   }
   // vencido vale para saída e entrada (entrada: passou da data prevista sem receber)
-  const vencidoL = (l) => !l.pago && (l.atrasado || (l.data && l.data < hojeIso()));
+  const vencidoL = (l) => !l.pago && (l.atrasado || (!l.naoAtrasado && l.data && l.data < hojeIso()));
   function telaAnual() {
     if (st.anoModo === "planilha") return telaPlanilha();
     const y = st.ref.y, tipo = st.anoAba === "entrada" ? "entrada" : "saida", ent = tipo === "entrada", anoResumo = resumoAno(y);
