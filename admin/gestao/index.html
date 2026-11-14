@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611141340"></script>
-<script src="../../js/dialogos.js?v=202611141340"></script>
-<script src="../../js/metricool-ig.js?v=202611141340"></script>
-<script src="../../js/corretor.js?v=202611141340"></script>
+<script src="../../js/banco.js?v=202611141400"></script>
+<script src="../../js/dialogos.js?v=202611141400"></script>
+<script src="../../js/metricool-ig.js?v=202611141400"></script>
+<script src="../../js/corretor.js?v=202611141400"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -6198,21 +6198,6 @@ function Jobs({state, updateState}){
           <p className="page-sub jb-frase">Você tem <b>{emProducao.length} {emProducao.length===1?"job":"jobs"} em produção</b>, <b>{entregas7j} {entregas7j===1?"entrega":"entregas"}</b> nos próximos 7 dias e <b>{aguardPag.length}</b> {aguardPag.length===1?"job finalizado esperando":"jobs finalizados esperando"} pagamento.</p>
         </div>
         <button className="btn btn-primary" onClick={()=>setModal(true)}><Icon name="add" size={17}/>Novo Job</button>
-      </div>
-
-      <div className="jb-nums">
-        <button type="button" className="jb-num" onClick={()=>{ setTab("Ativos"); setFilterStatus("Todos"); }}>
-          <small>Em produção</small><b>{emProducao.length} {emProducao.length===1?"job":"jobs"}</b><em>{entregas7j} {entregas7j===1?"prazo":"prazos"} nos próximos 7 dias</em>
-        </button>
-        <button type="button" className="jb-num">
-          <small>A receber</small><b>{fmtMoneyCur(aReceber,"BRL")}</b><em>{jobsAtivos.filter(emAberto).length} jobs em aberto</em>
-        </button>
-        <button type="button" className="jb-num" onClick={()=>{ setTab("Ativos"); setShowFilter(true); setFilterStatus(FIN_AGUARDANDO); }}>
-          <small>Aguardando pagamento</small><b>{aguardPag.length} {aguardPag.length===1?"job":"jobs"}</b><em>{fmtMoneyCur(aguardValor,"BRL")} já entregues</em>
-        </button>
-        <button type="button" className="jb-num" onClick={()=>setTab("Histórico")}>
-          <small>Histórico</small><b>{historicoCount} {historicoCount===1?"job":"jobs"}</b><em>finalizados e pagos</em>
-        </button>
       </div>
 
       <div className="search" style={{marginBottom:14}}>
