@@ -1642,6 +1642,20 @@
   .org-valor{ background:#e6efe4; padding:3px 9px; border-radius:999px; }
   .org-valor.permuta{ background:#efe6dc; }
   .org-vazio{ border-color:color-mix(in srgb, var(--cor, #a87058) 45%, transparent) !important; background:rgba(255,253,249,.5); }
+
+  /* Organize: barra de rolar para o lado presa no topo da tela (antes ficava só lá embaixo do quadro) */
+  .org-rolar{ position:sticky; top:0; z-index:6; display:flex; align-items:center; gap:8px; padding:8px 10px; margin:0 0 10px; background:rgba(255,253,249,.92); backdrop-filter:saturate(1.2); border:1px solid rgba(107,74,53,.12); border-radius:999px; box-shadow:0 4px 14px rgba(107,74,53,.10); }
+  .org-rolar-barra{ flex:1; min-width:0; }
+  .org-rolar .db-barra{ margin-top:0; height:18px; }
+  .org-rolar .db-barra::before{ top:6px; height:6px; background:#efe5d8; }
+  .org-rolar .db-barra span{ top:3px; height:12px; background:#b98a5e; }
+  .org-rolar .db-barra:hover span, .org-rolar .db-barra.arrastando span{ background:#6b4a35; }
+  .org-rolar-seta{ border:0; width:30px; height:30px; border-radius:50%; background:#efe5d8; color:#6b4a35; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+  .org-rolar-seta:hover{ background:#6b4a35; color:#fff; }
+  .org-quadro{ scrollbar-width:none; cursor:grab; }
+  .org-quadro::-webkit-scrollbar{ display:none; }
+  .org-quadro.puxando{ cursor:grabbing; user-select:none; }
+  .org-quadro .org-card{ cursor:pointer; }
 </style>
 </head>
 <body>
@@ -6087,6 +6101,17 @@ function Jobs({state, updateState}){
   const [view,setView] = useState("Lista");
   const [tab,setTab] = useState("Ativos");
   const [dragOverCol,setDragOverCol] = useState(null);
+  // barra de rolar do Organize: fica presa no topo (acompanha a tela) e o quadro também anda arrastando o fundo
+  const quadroRef = useRef(null);
+  function andarQuadro(d){ const el = quadroRef.current; if(el) el.scrollBy({left:d, behavior:"smooth"}); }
+  function arrastarFundo(e){
+    if(e.pointerType!=="mouse" || e.button!==0 || e.target.closest(".org-card, button, a, input, select")) return;
+    const el = quadroRef.current; if(!el) return;
+    const x0 = e.clientX, s0 = el.scrollLeft; let mexeu = false;
+    const mover = (ev)=>{ const dx = ev.clientX - x0; if(Math.abs(dx)>3){ mexeu = true; el.classList.add("puxando"); } el.scrollLeft = s0 - dx; };
+    const soltar = ()=>{ el.classList.remove("puxando"); window.removeEventListener("pointermove", mover); window.removeEventListener("pointerup", soltar); };
+    window.addEventListener("pointermove", mover); window.addEventListener("pointerup", soltar);
+  }
   const [showFilter,setShowFilter] = useState(false);
   const [filterStatus,setFilterStatus] = useState("Todos");
   const [confirmPagoId,setConfirmPagoId] = useState(null);
@@ -6253,8 +6278,13 @@ function Jobs({state, updateState}){
         </div>
       )}
 
-      {tab==="Organize" ? (
-        <div className="org-quadro">
+      {tab==="Organize" ? (<>
+        <div className="org-rolar">
+          <button type="button" className="org-rolar-seta" title="Voltar colunas" onClick={()=>andarQuadro(-290)}><Icon name="chevron_left" size={18}/></button>
+          <div className="org-rolar-barra"><DbBarraRolagem alvo={quadroRef} deps={tab+"-"+state.jobs.length+"-"+query}/></div>
+          <button type="button" className="org-rolar-seta" title="Ver mais colunas" onClick={()=>andarQuadro(290)}><Icon name="chevron_right" size={18}/></button>
+        </div>
+        <div className="org-quadro" ref={quadroRef} onPointerDown={arrastarFundo}>
           {colunasStatus.filter(col=>col!==FIN_PAGO && col!=="Cancelado").map(col=>{
             const colJobs = state.jobs.filter(j=>j.status===col && !isHistorico(j) && (!query || (j.marca+(j.tipo||"")+(j.nicho||"")).toLowerCase().includes(query.toLowerCase())));
             const cor = KANBAN_COLORS[col] || "var(--wine)";
@@ -6269,7 +6299,7 @@ function Jobs({state, updateState}){
             );
           })}
         </div>
-      ) : list.length===0 ? (
+      </>) : list.length===0 ? (
         tab==="Histórico" ? (
           <div className="empty">
             <Icon name="archive"/>
