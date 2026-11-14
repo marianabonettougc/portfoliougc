@@ -3042,3 +3042,22 @@ button.pq-titulo:hover{color:var(--terracota)}
 .ct-cont button.s-cliente{border-top:3px solid #6b4a35}.ct-cont button.s-parada{border-top:3px solid var(--linha)}
 .ct-cont button.on{background:var(--bege);border-color:var(--terracota)}
 .ct-cont button:focus-visible{outline:2px solid var(--terracota);outline-offset:2px}
+
+/* ===== ID DO DASHBOARD EM TODO O PAINEL (nov/2026, pedido da Mari: "ajuste a cor de todo o painel igual à aba inicial do Dashboard") =====
+   O mesmo degradê do Dashboard (pêssego, manteiga e creme) no fundo de todas as abas, menu e topo de vidro,
+   cartões papel com 18px de canto, linha fina e sombra suave. O aplicativo (iframe) fica sem moldura e usa o mesmo fundo. */
+:root{--linha:rgba(107,74,53,.12);--sombra:0 6px 20px rgba(107,74,53,.06)}
+html,body{background:
+  radial-gradient(1000px 520px at 0% 0%,rgba(232,214,192,.95),transparent 62%),
+  radial-gradient(820px 460px at 100% 0%,rgba(242,222,164,.75),transparent 60%),
+  radial-gradient(900px 600px at 70% 70%,rgba(214,164,128,.30),transparent 65%),
+  radial-gradient(800px 600px at 10% 95%,rgba(239,229,216,.9),transparent 60%),
+  linear-gradient(170deg,#f3e6d6 0%,#f6efe6 45%,#f1e2cf 100%) fixed}
+.menu{background:rgba(255,253,249,.62);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.menu-item.ativo{background:#6b4a35;color:#fffdf9}
+.menu-item.ativo svg{color:#fffdf9}
+.gestao-app{border:0;border-radius:0;background:transparent}
+.bloco,.cr-card,.rs-caixa,.pc-cartao,.fe-cartao,.ed-cartao,.lab-col,.lab-num,.bib-perfis,.bib-card,.pp-dobra,.pc2-bloco,.pc3-bloco,.pc3-painel{border:1px solid var(--linha);border-radius:18px;box-shadow:0 6px 20px rgba(107,74,53,.06)}
+.btn-principal{border-radius:999px}
+.chips{background:rgba(239,229,216,.85)}
+.vazio{background:rgba(239,229,216,.55)}
