@@ -47,7 +47,7 @@
     busy(true); aviso("Consultando a Biblioteca de Anúncios. Isso pode levar alguns segundos.");
     $("#ci-meta-results",root()).innerHTML='<div class="ci-meta-loading"><span class="ci-spinner"></span> Buscando anúncios públicos…</div>';
     try {
-      const {data,error}=await supa().functions.invoke("ci-ad-library",{body:{query,country:country==="ALL"?"US":country,mediaType,activeOnly,maxResults:30}});
+      const {data,error}=await supa().functions.invoke("ci-ad-library",{body:{query,country,mediaType,activeOnly,maxResults:30}});
       if(error || data?.error) throw new Error(data?.error || error.message || "A busca não respondeu.");
       resultados=Array.isArray(data.ads)?data.ads:[];
       selecionados.clear();
