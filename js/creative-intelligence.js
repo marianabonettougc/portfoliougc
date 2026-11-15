@@ -1,7 +1,7 @@
 /* Creative Intelligence — briefing, biblioteca de anúncios e análise criativa */
 (() => {
   "use strict";
-  const $ = (s, r=document) => r.querySelector(s);
+  const $ = (s, r=document) => r.querySelector(s), $ = (s, r=document) => [...r.querySelectorAll(s)];
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const supa = () => window.banco;
   let projeto = null, anuncios = [], analiseAtual = null;
