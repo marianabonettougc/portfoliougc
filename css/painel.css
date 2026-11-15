@@ -3177,3 +3177,78 @@ html,body{background:
 .ct-tabela td .link-mini{display:inline-block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 .ct-barra .ct-sel{min-width:0}
 @media (max-width:640px){.ct-abas{flex-wrap:nowrap;overflow-x:auto}.ct-abas button{padding:6px 10px;font-size:12px}}
+
+/* =========================================================
+   PORTFÓLIO: visitas no visual da referência (nov/2026)
+   abas em pílula, cartões com mini gráfico, funil, horários e leitura; paleta da Mari
+   ========================================================= */
+#aba-portfolio .pf-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:2px 0 12px}
+#aba-portfolio .pf-abas,#aba-portfolio .pf-periodo{display:inline-flex;gap:4px;padding:4px;border-radius:999px;background:rgba(239,229,216,.85);border:1px solid rgba(107,74,53,.10)}
+#aba-portfolio .pf-abas button,#aba-portfolio .pf-periodo button{border:0;background:transparent;font:inherit;font-size:12.5px;font-weight:500;color:#7a6355;padding:7px 16px;border-radius:999px;cursor:pointer;white-space:nowrap}
+#aba-portfolio .pf-periodo button{padding:6px 12px;font-size:12px}
+#aba-portfolio .pf-abas button.ativa{background:#6b4a35;color:#fffdf9;box-shadow:0 3px 10px rgba(107,74,53,.22)}
+#aba-portfolio .pf-periodo button.ativa{background:#fffdf9;color:#3d2b20;box-shadow:0 2px 6px rgba(107,74,53,.12)}
+#aba-portfolio .pf-ferr{align-items:center;padding:0 0 12px;border-bottom:1px solid rgba(107,74,53,.10)}
+#aba-portfolio .pf-ferr #btn-atualizar{height:34px;border-radius:999px;background:#6b4a35;border:0;color:#fff;font-size:12px;padding:0 16px}
+#aba-portfolio .pf-parte[hidden]{display:none}
+#aba-portfolio .pf-parte{margin-top:14px}
+#aba-portfolio .pf-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
+#aba-portfolio .pf-kpi{min-width:0;padding:15px 16px 14px;border:1px solid rgba(107,74,53,.10);border-radius:18px;background:linear-gradient(145deg,#fffdf9 0%,#f6ecdf 100%);box-shadow:0 6px 20px rgba(107,74,53,.06)}
+#aba-portfolio .pf-kpi>small{display:block;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:#806b5d}
+#aba-portfolio .pf-kpi-linha{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:8px}
+#aba-portfolio .pf-kpi-linha>div:first-child{min-width:0}
+#aba-portfolio .pf-kpi strong{font-family:"DM Serif Display",serif;font-weight:400;font-size:30px;line-height:1;color:#3d2b20;margin-right:6px}
+#aba-portfolio .pf-kpi-per{font-size:10.5px;color:#987f6e;white-space:nowrap}
+#aba-portfolio .pf-kpi em{display:block;font-style:normal;font-size:11px;color:#a87058;font-weight:500;margin-top:5px}
+#aba-portfolio .pf-var{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600;background:#efe5d8;color:#7a6355;white-space:nowrap}
+#aba-portfolio .pf-var.sobe{background:#e4eee2;color:#4f7a54}
+#aba-portfolio .pf-var.desce{background:#f3ded5;color:#a2523a}
+#aba-portfolio .pf-faisca{flex:0 1 46%;height:44px;display:flex;align-items:flex-end;gap:2px;min-width:60px;border-bottom:1px dashed rgba(107,74,53,.18)}
+#aba-portfolio .pf-faisca i{flex:1;min-width:2px;border-radius:3px 3px 0 0;background:#dcc3ae}
+#aba-portfolio .pf-faisca i.hoje{background:#a87058}
+#aba-portfolio .pf-destaque{background:linear-gradient(145deg,#fffdf9 0%,#f3e4d3 100%)!important}
+#aba-portfolio .pf-parte>.bloco{border:1px solid rgba(107,74,53,.10);border-radius:18px;box-shadow:0 6px 20px rgba(107,74,53,.06);padding:17px 18px;background:linear-gradient(145deg,#fffdf9 0%,#faf5ee 100%)}
+#aba-portfolio .pf-parte>.pf-largo{margin:12px 0}
+#aba-portfolio .pf-parte>.pf-largo:first-child{margin-top:0}
+#aba-portfolio .pf-leitura{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}
+#aba-portfolio .pf-leitura li{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;line-height:1.5;color:#49382c}
+#aba-portfolio .pf-leitura li i{flex:0 0 22px;height:22px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:700;background:#efe5d8;color:#6b4a35}
+#aba-portfolio .pf-leitura li.bom i{background:#e4eee2;color:#4f7a54}
+#aba-portfolio .pf-leitura li.atencao i{background:#f3ded5;color:#a2523a}
+#aba-portfolio .pf-ponto{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px}
+#aba-portfolio .pf-funil{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+#aba-portfolio .pf-funil-topo{display:flex;align-items:baseline;gap:8px;font-size:12px;color:#49382c;margin-bottom:5px}
+#aba-portfolio .pf-funil-topo span{flex:1;min-width:0}
+#aba-portfolio .pf-funil-topo b{font-size:13px}
+#aba-portfolio .pf-funil-topo small{min-width:38px;text-align:right;font-size:10.5px;color:#987f6e}
+#aba-portfolio .pf-funil .trilho,#aba-portfolio .pf-rank .trilho{display:block;height:8px;background:#eee5db;border-radius:99px;overflow:hidden}
+#aba-portfolio .pf-funil .trilho i,#aba-portfolio .pf-rank .trilho i{display:block;height:100%;border-radius:99px;background:#a87058}
+#aba-portfolio .pf-rank{flex:1}
+#aba-portfolio .pf-rank .trilho{height:5px;margin-top:5px}
+#aba-portfolio .pf-rank b{white-space:normal}
+#aba-portfolio .pf-sub small{font-weight:400;color:#987f6e;margin-left:6px}
+#aba-portfolio .pf-horas{display:grid;grid-template-columns:repeat(24,minmax(0,1fr));gap:2px}
+#aba-portfolio .pf-horas i{height:26px;border-radius:4px}
+#aba-portfolio .pf-horas-leg{display:flex;justify-content:space-between;font-size:9.5px;color:#987f6e;margin-top:4px}
+#aba-portfolio .pf-semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;height:110px;align-items:end}
+#aba-portfolio .pf-semana div{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;min-width:0}
+#aba-portfolio .pf-semana span{width:100%;max-width:30px;border-radius:6px 6px 2px 2px;background:#dcc3ae}
+#aba-portfolio .pf-semana .pico span{background:#a87058}
+#aba-portfolio .pf-semana b{font-size:10px;font-weight:500;color:#806b5d}
+#aba-portfolio .pf-semana small{font-size:10px;color:#987f6e}
+@media(max-width:900px){#aba-portfolio .pf-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#aba-portfolio .pf-leitura{grid-template-columns:1fr}}
+@media(max-width:600px){
+  #aba-portfolio .pf-topo{gap:8px}
+  #aba-portfolio .pf-abas{width:100%}
+  #aba-portfolio .pf-abas button{flex:1;padding:8px 6px}
+  #aba-portfolio .pf-kpis{gap:8px}
+  #aba-portfolio .pf-kpi{padding:12px 12px 11px;border-radius:16px}
+  #aba-portfolio .pf-kpi strong{font-size:24px}
+  #aba-portfolio .pf-kpi-linha{flex-direction:column;align-items:stretch;gap:8px}
+  #aba-portfolio .pf-faisca{flex:none;height:30px}
+  #aba-portfolio .pf-kpis-3{grid-template-columns:1fr}
+  #aba-portfolio .pf-ferr{flex-direction:column;align-items:flex-start}
+  #aba-portfolio .pf-ferr .direita{width:100%;margin-left:0;flex-wrap:wrap}
+}
+#aba-portfolio .pf-leitura li{border:0;padding:0;margin:0}
+#aba-portfolio .pf-parte .analytics-grade{align-items:start}

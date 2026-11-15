@@ -133,7 +133,7 @@
 
   async function carregarVisitas() {
     await registrarMeuAparelho();
-    const inicio = hoje(); inicio.setDate(inicio.getDate() - 29);
+    const inicio = hoje(); inicio.setDate(inicio.getDate() - 59); // 60 dias: o período escolhido e o anterior, para comparar
     const todas = [];
     try {
       for (let pag = 0; pag < 50; pag++) {
@@ -145,8 +145,14 @@
       }
       dados.visitas = todas;
       delete faltando.visitas;
-      const { data: eventos, error: erroEventos } = await banco.from("portfolio_eventos").select("*")
-        .gte("criado_em", inicio.toISOString()).order("criado_em", { ascending: false }).limit(5000);
+      let eventos = [], erroEventos = null;
+      for (let pag = 0; pag < 20; pag++) { // em páginas: o banco devolve no máximo mil linhas por pedido
+        const { data, error } = await banco.from("portfolio_eventos").select("*")
+          .gte("criado_em", inicio.toISOString()).order("criado_em", { ascending: false }).range(pag * 1000, pag * 1000 + 999);
+        if (error) { erroEventos = error; break; }
+        eventos.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
       if (erroEventos) {
         dados.eventos = [];
         faltando.eventos = traduzErro(erroEventos, "portfolio_eventos");
@@ -574,7 +580,7 @@
   const pfFechados = () => { try { return JSON.parse(localStorage.getItem(PF_FECHADOS) || '["links"]'); } catch (e) { return ["links"]; } };
   const pfGuardar = (lista) => { try { localStorage.setItem(PF_FECHADOS, JSON.stringify(lista)); } catch (e) {} };
   const SETA_MIN = '<svg class="traco" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
-  const PF_BLOCOS = ["grafico", "origens", "links", "ultimas", "dispositivos", "ultimos-videos", "mais-videos", "botoes", "paginas", "meus-videos"];
+  const PF_BLOCOS = ["leitura", "funil", "horarios", "grafico", "origens", "links", "ultimas", "dispositivos", "ultimos-videos", "mais-videos", "botoes", "paginas", "meus-videos"];
   function blocoPf(id, titulo, extra, corpo, classe) {
     const fechado = pfFechados().includes(id);
     return `<div class="bloco pf-bloco${fechado ? " fechado" : ""}${classe ? " " + classe : ""}" data-bloco="${id}">
@@ -592,7 +598,7 @@
   function desenharPortfolio() {
     const sec = $("#aba-portfolio");
     const hc = hojeChave();
-    const periodoAtual = window.__mbPortfolioPeriodo || "14";
+    const periodoAtual = window.__mbPortfolioPeriodo || (() => { try { return localStorage.getItem("pfDias"); } catch (e) { return ""; } })() || "7";
     const diasPeriodo = Number(periodoAtual) || 14;
     const limite = new Date(); limite.setHours(0,0,0,0); limite.setDate(limite.getDate() - (diasPeriodo - 1));
     // visitas e eventos da Mari (aparelhos e rede do painel, ou "Fui eu") ficam de fora, a não ser que ela ligue "Contar minhas visitas"
@@ -657,60 +663,143 @@
     const ultimas = todasVisitas.filter(v => contar || !ehMinha(v)).slice().sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 12);
     const baseSite = (location.origin && !/localhost|127\.0\.0\.1/.test(location.origin) ? location.origin : "https://marianabonetto.com.br") + "/";
 
+    // ---- visual novo (nov/2026): cartões com mini gráfico, comparação, funil, horários e leitura do período ----
+    const abaPf = (() => { try { return localStorage.getItem("pfAba") || "geral"; } catch (e) { return "geral"; } })();
+    const limiteAnt = new Date(limite); limiteAnt.setDate(limiteAnt.getDate() - diasPeriodo);
+    const noAnt = (d) => { const t = new Date(d); return t >= limiteAnt && t < limite; };
+    const visitasAnt = dados.visitas.filter(v => noAnt(v.data) && (contar || !ehMinha(v)));
+    const eventosAnt = (dados.eventos || []).filter(v => noAnt(v.criado_em) && (contar || !ehMinha(v)));
+    const temAnt = dados.visitas.some(v => new Date(v.data) < limite);
+    const leads = (dados.marcas || []).filter(m => m.origem === "Site" && m.criado_em);
+    const contatos = leads.filter(m => new Date(m.criado_em) >= limite);
+    const contatosAnt = leads.filter(m => noAnt(m.criado_em));
+    const serieDe = (lista, campo, unico) => { const m = {}; lista.forEach(x => { const k = chaveDia(new Date(x[campo])); if (unico) (m[k] || (m[k] = new Set())).add(x.visitante_id || x.id); else m[k] = (m[k] || 0) + 1; }); return dias.map(d => unico ? (m[d.chave] ? m[d.chave].size : 0) : (m[d.chave] || 0)); };
+    const variacao = (a, b) => (temAnt && b > 0) ? Math.round((a - b) / b * 100) : null;
+    const chipVar = (v) => v == null ? "" : `<span class="pf-var ${v > 0 ? "sobe" : v < 0 ? "desce" : ""}" title="comparado com os ${diasPeriodo} dias anteriores">${v > 0 ? "▲" : v < 0 ? "▼" : "="} ${Math.abs(v)}%</span>`;
+    const faisca = (serie) => { const mx = Math.max(0, ...serie); return `<div class="pf-faisca" aria-hidden="true">${serie.map((n, i) => `<i class="${i === serie.length - 1 ? "hoje" : ""}" style="height:${mx > 0 ? Math.max(n > 0 ? 12 : 4, Math.round(n / mx * 100)) : 4}%" title="${dias[i].data.toLocaleDateString("pt-BR")}: ${n}"></i>`).join("")}</div>`; };
+    const kpi = (rotulo, valor, serie, hojeTxt, vari, dica) => `<div class="pf-kpi"${dica ? ` title="${esc(dica)}"` : ""}><small>${rotulo}</small><div class="pf-kpi-linha"><div><strong>${valor}</strong><span class="pf-kpi-per">${diasPeriodo} dias</span>${chipVar(vari)}<em>${hojeTxt}</em></div>${serie ? faisca(serie) : ""}</div></div>`;
+    const sVisitas = dias.map(d => d.n);
+    const sPessoas = serieDe(visitas, "data", true);
+    const sCliques = serieDe(cliques, "criado_em");
+    const sContatos = serieDe(contatos, "criado_em");
+    const sPlays = serieDe(reproducoes, "criado_em");
+    const sitePorDia = {}; Object.values(siteRid).forEach(o => { const k = chaveDia(o.ini); const x = sitePorDia[k] || (sitePorDia[k] = { s: 0, n: 0 }); x.s += o.seg; x.n++; });
+    const sSite = dias.map(d => sitePorDia[d.chave] ? Math.round(sitePorDia[d.chave].s / sitePorDia[d.chave].n) : 0);
+    const siteAntRid = {}; eventosAnt.filter(e => e.evento === "tempo_site" && e.reproducao_id).forEach(e => { siteAntRid[e.reproducao_id] = Math.max(siteAntRid[e.reproducao_id] || 0, numero(e.segundos)); });
+    const siteAntV = Object.values(siteAntRid), siteAntMedio = siteAntV.length ? siteAntV.reduce((a, b) => a + b, 0) / siteAntV.length : 0;
+    const ult = (s) => s[s.length - 1] || 0;
+    const kpisGeral = [
+      kpi("Visitas", total, sVisitas, `Hoje ${deHoje}`, variacao(total, visitasAnt.length), contar ? "" : "Só pessoas de fora"),
+      kpi("Visitantes únicos", visitantes, sPessoas, `Hoje ${ult(sPessoas)}`, variacao(visitantes, new Set(visitasAnt.map(v => v.visitante_id).filter(Boolean)).size), "Pessoas diferentes, contadas pelo navegador de cada uma"),
+      kpi("Cliques em botões", cliques.length, sCliques, `Hoje ${ult(sCliques)}`, variacao(cliques.length, eventosAnt.filter(e => e.evento === "click").length), "Toques em botões e links do site"),
+      kpi("Contatos", contatos.length, sContatos, `Hoje ${ult(sContatos)}`, variacao(contatos.length, contatosAnt.length), "Marcas que enviaram o formulário do site"),
+      kpi("Vídeos assistidos", reproducoes.length, sPlays, `Hoje ${ult(sPlays)}`, variacao(reproducoes.length, eventosAnt.filter(e => e.evento === "video_play").length), "Vezes que deram play em um vídeo"),
+      kpi("Tempo médio no site", siteMedio != null ? fmtSeg(siteMedio) : "-", sitesSeg.length ? sSite : null, sitesSeg.length ? `${plural(sitesSeg.length, "visita medida", "visitas medidas")}` : "aparece com as próximas visitas", siteMedio != null ? variacao(Math.round(siteMedio), Math.round(siteAntMedio)) : null, "Tempo com a página aberta e a pessoa mexendo")
+    ].join("");
+    const kpisVideo = [
+      kpi("Vídeos assistidos", reproducoes.length, sPlays, `Hoje ${ult(sPlays)}`, variacao(reproducoes.length, eventosAnt.filter(e => e.evento === "video_play").length)),
+      kpi("Tempo vendo vídeos", videoTotal ? fmtSeg(videoTotal) : "-", null, siteTotal && videoTotal ? Math.min(100, Math.round(videoTotal / siteTotal * 100)) + "% do tempo no site" : "soma de todos os vídeos assistidos", null),
+      kpi("Tempo médio por vídeo", mediaSeg != null ? fmtSeg(mediaSeg) : "-", null, comTempo.length ? plural(comTempo.length, "vídeo com tempo medido", "vídeos com tempo medido") : "aparece quando alguém assistir", null)
+    ].join("");
+    // cores das origens, sempre na paleta
+    const CORES_PF = ["#a87058", "#6b4a35", "#c99c7e", "#4f7a54", "#cfa59a", "#d9b26a", "#b9a48f", "#8a634b"];
+    // funil: pessoas diferentes em cada passo
+    const conj = (lista) => new Set(lista.map(e => e.visitante_id).filter(Boolean));
+    const ehContato = (e) => /wa\.me|whatsapp|mailto:/i.test(e.destino || "") || /whats|e-?mail|or[çc]amento|contato|proposta/i.test(e.alvo || "");
+    const secoes = eventos.filter(e => e.evento === "secao");
+    const quemPlay = conj(reproducoes);
+    const quemTrab = conj(secoes.filter(e => /^Meus trabalhos/.test(e.alvo || ""))); quemPlay.forEach(x => quemTrab.add(x));
+    const quemContato = conj(cliques.filter(ehContato));
+    const funil = [["Visitaram o site", visitantes], ["Chegaram nos vídeos", quemTrab.size], ["Deram play em um vídeo", quemPlay.size], ["Clicaram em contato", quemContato.size], ["Enviaram o formulário", contatos.length]];
+    const pct = (a, b) => b > 0 ? Math.round(a / b * 100) : 0;
+    // horários e dias da semana
+    const horas = Array(24).fill(0), semana = Array(7).fill(0), NOMES_SEM = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"];
+    visitas.forEach(v => { const d = new Date(v.data); horas[d.getHours()]++; semana[(d.getDay() + 6) % 7]++; });
+    const maxHora = Math.max(0, ...horas), maxSem = Math.max(0, ...semana);
+    const picoHora = horas.indexOf(maxHora), picoSem = semana.indexOf(maxSem);
+    // leitura do período: só o que os números mostram
+    const leitura = [];
+    const diz = (tipo, texto) => leitura.push({ tipo, texto });
+    if (total === 0) diz("ideia", "Ainda não chegou nenhuma visita de fora neste período. Coloque o link do portfólio na bio e mande para as marcas usando os links com etiqueta (aba Visitantes).");
+    else {
+      const vv = variacao(total, visitasAnt.length);
+      if (vv != null && vv >= 15) diz("bom", `As visitas subiram ${vv}% comparando com os ${diasPeriodo} dias anteriores (${visitasAnt.length} para ${total}).`);
+      if (vv != null && vv <= -15) diz("atencao", `As visitas caíram ${Math.abs(vv)}% comparando com os ${diasPeriodo} dias anteriores (${visitasAnt.length} para ${total}). Vale divulgar o link de novo nos stories e nas propostas.`);
+      if (total >= 5 && maxSem > 0) diz("ideia", `O dia com mais visitas é ${NOMES_SEM[picoSem]} e o horário mais forte é por volta das ${picoHora}h. Bom momento para divulgar o link.`);
+      if (visitantes >= 3) {
+        const tp = pct(quemPlay.size, visitantes);
+        if (tp < 30) diz("atencao", `Só ${tp}% das pessoas deram play em algum vídeo (${quemPlay.size} de ${visitantes}). Teste deixar seu melhor vídeo como o primeiro de Meus trabalhos e uma chamada na capa levando até eles.`);
+        else diz("bom", `${tp}% das pessoas deram play em algum vídeo (${quemPlay.size} de ${visitantes}).`);
+        if (quemTrab.size && quemTrab.size < visitantes * 0.5 && secoes.length) diz("atencao", `Menos da metade chegou até os vídeos (${quemTrab.size} de ${visitantes}). O começo do site pode estar longo demais antes dos trabalhos.`);
+      }
+      if (visitantes >= 5 && quemContato.size === 0 && contatos.length === 0) diz("atencao", `Ninguém clicou em contato nem enviou o formulário neste período. Vale um botão de contato mais visível logo depois dos vídeos.`);
+      else if (quemContato.size || contatos.length) diz("bom", `${plural(quemContato.size, "pessoa clicou", "pessoas clicaram")} em contato e ${plural(contatos.length, "formulário foi enviado", "formulários foram enviados")}.`);
+      if (sitesSeg.length >= 4) {
+        const curtas = sitesSeg.filter(s => s < 15).length, pc = pct(curtas, sitesSeg.length);
+        if (pc >= 50) diz("atencao", `${pc}% das visitas medidas ficaram menos de 15 segundos. A capa precisa mostrar logo o que você faz e para quem.`);
+      }
+      const direto = origens.find(([n]) => /^direto/i.test(n));
+      if (direto && pct(direto[1], total) >= 50) diz("ideia", `${pct(direto[1], total)}% das visitas chegam sem origem identificada. Use um link com etiqueta em cada lugar (bio, stories, e-mail) para saber de onde vêm.`);
+      const cel = visitas.filter(v => v.dispositivo === "Celular").length;
+      if (total >= 5 && pct(cel, total) >= 60) diz("ideia", `${pct(cel, total)}% das visitas são pelo celular. Confira sempre o site no celular depois de qualquer mudança.`);
+      const semPlay = noAr.filter(v => !reproducoes.some(e => (e.video_link && e.video_link === v.link) || (e.video_titulo && e.video_titulo === v.titulo)));
+      if (reproducoes.length >= 5 && semPlay.length) diz("ideia", `${plural(semPlay.length, "vídeo no ar não teve", "vídeos no ar não tiveram")} nenhum play neste período${semPlay.length <= 3 ? " (" + semPlay.map(v => v.titulo).join(", ") + ")" : ""}. Vale trocar a ordem ou a capa.`);
+      const comRet = videosTop.filter(o => o.nSeg >= 2).sort((a, b) => b.seg / b.nSeg - a.seg / a.nSeg)[0];
+      if (comRet) diz("bom", `O vídeo que mais segura a atenção é "${comRet.nome}" (média de ${fmtSeg(comRet.seg / comRet.nSeg)} assistidos). Bom candidato para ficar em primeiro.`);
+      const vezes = {}; visitas.forEach(v => { if (v.visitante_id) vezes[v.visitante_id] = (vezes[v.visitante_id] || 0) + 1; });
+      const voltaram = Object.values(vezes).filter(n => n > 1).length;
+      if (voltaram) diz("bom", `${plural(voltaram, "pessoa voltou", "pessoas voltaram")} ao portfólio mais de uma vez.`);
+    }
+    const ICO_LEIT = { bom: "✓", atencao: "!", ideia: "→" };
     sec.innerHTML = `
-      <div class="ferramentas" style="margin-bottom:10px">
+      <div class="pf-topo">
+        <div class="pf-abas" role="tablist">${[["geral", "Análise geral"], ["videos", "Vídeos"], ["visitantes", "Visitantes"]].map(([k, t]) => `<button type="button" role="tab" class="pf-aba${abaPf === k ? " ativa" : ""}" data-pfaba="${k}" aria-selected="${abaPf === k}">${t}</button>`).join("")}</div>
+        <div class="pf-periodo" role="group" aria-label="Período das métricas">${[7, 14, 30].map(n => `<button type="button" class="${diasPeriodo === n ? "ativa" : ""}" data-pfdias="${n}">${n} dias</button>`).join("")}</div>
+      </div>
+      <div class="ferramentas pf-ferr" style="margin-bottom:10px">
         <span style="font-size:11.5px;color:var(--suave)">${hora ? `Atualizado às ${hora}.` : "Carregando os números..."} <span id="portfolio-realtime-status" style="font-weight:600;color:#987f6e">Conectando ao tempo real…</span></span>
         <div class="direita">
           <label class="check-linha" style="margin:0;font-size:11.5px;color:var(--suave)" title="Desligado: as visitas dos seus aparelhos e da sua internet não entram nos números.">
             <input type="checkbox" id="contar-minhas"${contar ? " checked" : ""}> Contar minhas visitas</label>
-          <select id="portfolio-periodo" aria-label="Período das métricas" style="min-width:112px"><option value="7"${diasPeriodo===7?" selected":""}>7 dias</option><option value="14"${diasPeriodo===14?" selected":""}>14 dias</option><option value="30"${diasPeriodo===30?" selected":""}>30 dias</option></select>
           <button class="btn" type="button" id="pf-min-todos">${pfFechados().length >= PF_BLOCOS.length ? "Abrir todos" : "Minimizar todos"}</button>
           <button class="btn" type="button" id="btn-atualizar">Atualizar</button>
         </div>
       </div>
-      <div class="numeros">
-        <div class="numero"><small>Visitas</small><strong>${total}</strong><em>nos últimos ${diasPeriodo} dias${contar ? "" : ", só pessoas de fora"}</em></div>
-        <div class="numero"><small>Pessoas diferentes</small><strong>${visitantes}</strong><em>contadas pelo navegador de cada uma</em></div>
-        <div class="numero"><small>Visitas hoje</small><strong>${deHoje}</strong></div>
-        <div class="numero"><small>Tempo médio no site</small><strong>${siteMedio != null ? fmtSeg(siteMedio) : "-"}</strong><em>${sitesSeg.length ? plural(sitesSeg.length, "visita medida", "visitas medidas") + " · " + fmtSeg(siteTotal) + " no total" : "conta desde 11/11/2026"}</em></div>
-        <div class="numero"><small>Tempo vendo vídeos</small><strong>${videoTotal ? fmtSeg(videoTotal) : "-"}</strong><em>${siteTotal && videoTotal ? Math.min(100, Math.round(videoTotal / siteTotal * 100)) + "% do tempo no site" : "soma de todos os vídeos assistidos"}</em></div>
-        <div class="numero"><small>Tempo médio por vídeo</small><strong>${mediaSeg != null ? fmtSeg(mediaSeg) : "-"}</strong><em>${comTempo.length ? plural(comTempo.length, "vídeo assistido", "vídeos assistidos") + " com tempo" : "aparece quando alguém assistir"}</em></div>
-        <div class="numero"><small>Origem principal</small><strong>${topoOrigem ? esc(topoOrigem) : "-"}</strong><em>${topoOrigem ? Math.round((origens[0][1] / total) * 100) + "% das visitas" : "ainda sem visitas"}</em></div>
-      </div>
       ${!contar && minhasVisitas.length ? `<p class="analytics-nota pf-minhas">${plural(minhasVisitas.length, "visita sua ficou", "visitas suas ficaram")} de fora (aparelhos e internet que você usa no painel, ou marcadas como "Fui eu").</p>` : ""}
-      <div class="duas-colunas">
-        ${blocoPf("grafico", `Visitas nos últimos ${diasPeriodo} dias`, "", total === 0 ? `<p class="vazio">Quando chegarem novas visitas, o gráfico diário aparecerá aqui.</p>` :
+      <div class="pf-parte" data-parte="geral"${abaPf === "geral" ? "" : " hidden"}>
+        <div class="pf-kpis">${kpisGeral}</div>
+        ${blocoPf("leitura", "Leitura do período e o que melhorar", `<span class="analytics-contagem">calculado pelos seus números</span>`, leitura.length ? `<ul class="pf-leitura">${leitura.map(l => `<li class="${l.tipo}"><i aria-hidden="true">${ICO_LEIT[l.tipo]}</i><span>${esc(l.texto)}</span></li>`).join("")}</ul>` : `<p class="vazio">Com mais visitas, as leituras aparecem aqui.</p>`, "pf-largo pf-destaque")}
+        <div class="analytics-grade">
+        ${blocoPf("grafico", `Visitas por dia`, `<span class="analytics-contagem">${diasPeriodo} dias</span>`, total === 0 ? `<p class="vazio">Quando chegarem novas visitas, o gráfico diário aparecerá aqui.</p>` :
           `<div class="grafico" role="img" aria-label="Visitas por dia nos últimos ${diasPeriodo} dias" style="grid-template-columns:repeat(${diasPeriodo},minmax(0,1fr))">${dias.map((d) => `
             <div class="coluna${d.chave === hc ? " hoje" : ""}" title="${d.data.toLocaleDateString("pt-BR")}: ${plural(d.n, "visita", "visitas")}">
               <span class="valor">${d.n || ""}</span><span class="barra" style="height:${maior > 0 ? (d.n / maior) * 100 : 0}%"></span><span class="dia">${d.data.getDate()}</span>
             </div>`).join("")}</div>`)}
-        ${blocoPf("origens", "Por onde acessaram meu portfólio", "", origens.length === 0 ? `<p class="vazio">As origens aparecerão aqui conforme novas visitas forem registradas.</p>` :
-          `<ul class="origens pf-origens">${origens.map(([nome, n]) => `<li><span>${esc(nome)}</span><b>${n}</b><span class="trilho"><i style="width:${Math.round((n / total) * 100)}%"></i></span>
-            <ul class="pf-detalhes">${detalhesDe(nome).map(([det, k]) => `<li><span>${esc(det)}</span><b>${k}</b></li>`).join("")}</ul></li>`).join("")}</ul>
-          <p class="analytics-nota">O Facebook e o Instagram contam só que a pessoa veio deles, não de qual post, story ou bio. Para saber o lugar exato, use os links com etiqueta abaixo.</p>`)}
-      </div>
-      <div class="duas-colunas">
-        ${blocoPf("links", "Links com etiqueta (para saber o lugar exato)", "", `
-          <p class="analytics-nota" style="margin-top:0">Use um link diferente em cada lugar. A visita aparece aqui como, por exemplo, "Instagram · Link da bio".</p>
-          <ul class="pf-links">${LINKS_ETIQUETA.map(([de, nome]) => `<li><span><b>${esc(nome)}</b><small>${esc(baseSite)}?de=${esc(de)}</small></span><button class="btn" type="button" data-copiar="${esc(baseSite)}?de=${esc(de)}">Copiar</button></li>`).join("")}</ul>
-          <div class="pf-link-novo"><input type="text" id="pf-link-onde" placeholder="Outro lugar, ex.: instagram post achadinhos" aria-label="Outro lugar para o link"><button class="btn" type="button" id="pf-link-criar">Criar e copiar</button></div>
-          <p class="analytics-nota">No seu celular, abra uma vez <b>${esc(baseSite)}?sou-a-mari</b> dentro do navegador do Instagram e do Facebook: assim esses navegadores nunca contam como visita.</p>`)}
-        ${blocoPf("ultimas", "Últimas visitas", `<span class="analytics-contagem">${ultimas.length ? "toque em Fui eu se alguma for sua" : ""}</span>`, ultimas.length ? `<div class="analytics-lista">${ultimas.map(v => { const minha = ehMinha(v); return `<div class="analytics-linha pf-visita"><div class="analytics-detalhe"><b>${esc(v.origem || "Direto")}${v.origem_detalhe ? " · " + esc(v.origem_detalhe) : ""}</b><small>${esc(v.dispositivo || "aparelho não identificado")} · ${esc(NOME_PAGINA(v.pagina))} · ${fmtHora(v.data)}${minha ? " · sua" : ""}</small>${(() => { const sg = tempoDaVisita(v); return sg != null ? `<small class="pf-tempo">Ficou ${fmtSeg(sg)} no site</small>` : ""; })()}</div>${v.visitante_id ? `<button class="btn pf-fui" type="button" data-fui="${esc(v.visitante_id)}" data-meu="${minha ? "0" : "1"}">${minha ? "Não fui eu" : "Fui eu"}</button>` : ""}</div>`; }).join("")}</div>` : `<p class="vazio">As visitas de pessoas de fora aparecerão aqui.</p>`)}
-      </div>
-      <div class="duas-colunas">
-        ${blocoPf("dispositivos", "Dispositivos de acesso", `<span class="analytics-contagem">${total ? Math.round((visitas.filter(v => v.dispositivo).length / total) * 100) + "% identificados" : "0 acessos"}</span>`,
-          (dispositivos.length ? `<ul class="origens dispositivos-acesso">${dispositivos.map(([nome, n]) => `<li><span>${nome === "Celular" ? "▯ " : nome === "Tablet" ? "▭ " : "▣ "}${esc(nome)}</span><b>${n}</b><span class="trilho"><i style="width:${Math.round((n / total) * 100)}%"></i></span><small>${Math.round((n / total) * 100)}%</small></li>`).join("")}</ul>` : `<p class="vazio">Os dispositivos aparecerão aqui conforme novas visitas forem registradas.</p>`)
-          + (semDispositivo ? `<p class="analytics-nota">${semDispositivo} visita(s) antiga(s) sem identificação de dispositivo.</p>` : ""))}
-      </div>
-      <div class="analytics-grade">
-        ${blocoPf("ultimos-videos", "Últimos vídeos assistidos", `<span class="analytics-contagem">${plural(reproducoes.length, "reprodução", "reproduções")}</span>`,
-          recentes.length ? `<div class="analytics-lista">${recentes.map(e => { const s = segDe(e); return '<div class="analytics-linha">' + thumb(capaDo(e.video_link, e.video_titulo)) + '<div class="analytics-detalhe"><b>' + esc(e.video_titulo || "Vídeo") + '</b><small>' + esc(e.video_marca || "Portfólio") + " · " + fmtHora(e.criado_em) + '</small><small class="pf-tempo">' + (s != null ? "Assistiu " + fmtSeg(s) : e.reproducao_id ? "tempo ainda não chegou" : "sem tempo (antes da contagem)") + '</small></div></div>'; }).join("")}</div>` : `<p class="vazio">Quando alguém iniciar um vídeo no portfólio, ele aparecerá aqui.</p>`)}
-        ${blocoPf("mais-videos", "Vídeos mais assistidos", "", videosTop.length ? `<ul class="analytics-ranking">${videosTop.slice(0,8).map(o => `<li><span>${esc(o.nome)}<small class="pf-tempo">${o.nSeg ? `média ${fmtSeg(o.seg / o.nSeg)} · total ${fmtSeg(o.seg)}` : "sem tempo registrado ainda"}</small></span><b title="vezes que deram play">${o.n}</b></li>`).join("")}</ul>` : `<p class="vazio">Ainda não há reproduções registradas.</p>`)}
+        ${blocoPf("origens", "De onde vêm os acessos", "", origens.length === 0 ? `<p class="vazio">As origens aparecerão aqui conforme novas visitas forem registradas.</p>` :
+          `<ul class="origens pf-origens">${origens.map(([nome, n], i) => `<li><span><i class="pf-ponto" style="background:${CORES_PF[i % CORES_PF.length]}"></i>${esc(nome)}</span><b>${n}</b><span class="trilho"><i style="width:${Math.round((n / total) * 100)}%;background:${CORES_PF[i % CORES_PF.length]}"></i></span>
+            ${(() => { const det = detalhesDe(nome).filter(([d]) => d !== "sem detalhe"); return det.length ? `<ul class="pf-detalhes">${det.map(([d, k]) => `<li><span>${esc(d)}</span><b>${k}</b></li>`).join("")}</ul>` : ""; })()}</li>`).join("")}</ul>
+          <p class="analytics-nota">O Facebook e o Instagram contam só que a pessoa veio deles, não de qual post, story ou bio. Para saber o lugar exato, use os links com etiqueta (aba Visitantes).</p>`)}
+        ${blocoPf("funil", "Caminho até o contato", `<span class="analytics-contagem">pessoas diferentes</span>`, visitantes === 0 ? `<p class="vazio">O caminho aparece quando chegarem visitas.</p>` :
+          `<ol class="pf-funil">${funil.map(([nome, n], i) => `<li><div class="pf-funil-topo"><span>${nome}</span><b>${n}</b><small>${i === 0 ? "100%" : pct(n, visitantes) + "%"}</small></div><span class="trilho"><i style="width:${i === 0 ? 100 : Math.min(100, pct(n, visitantes))}%;background:${CORES_PF[i]}"></i></span></li>`).join("")}</ol>
+          <p class="analytics-nota">Cada passo conta pessoas diferentes; o último conta os formulários enviados pelo site.</p>`)}
+        ${blocoPf("horarios", "Quando acessam", "", total === 0 ? `<p class="vazio">Os horários aparecem quando chegarem visitas.</p>` :
+          `<h3 class="pf-sub" style="margin-top:0">Por horário${maxHora ? ` <small>pico às ${picoHora}h</small>` : ""}</h3>
+          <div class="pf-horas" role="img" aria-label="Visitas por hora do dia">${horas.map((n, h) => `<i title="${h}h: ${plural(n, "visita", "visitas")}" style="background:rgba(168,112,88,${n ? (0.18 + 0.82 * n / maxHora).toFixed(2) : 0.07})"></i>`).join("")}</div>
+          <div class="pf-horas-leg"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>23h</span></div>
+          <h3 class="pf-sub">Por dia da semana</h3>
+          <div class="pf-semana">${semana.map((n, i) => `<div class="${i === picoSem && n ? "pico" : ""}" title="${NOMES_SEM[i]}: ${plural(n, "visita", "visitas")}"><b>${n || ""}</b><span style="height:${maxSem ? Math.max(n ? 8 : 3, Math.round(n / maxSem * 100)) : 3}%"></span><small>${NOMES_SEM[i].slice(0, 3)}</small></div>`).join("")}</div>`)}
         ${blocoPf("botoes", "Botões e links mais clicados", `<span class="analytics-contagem">${plural(cliques.length, "clique", "cliques")}</span>`, botoesTop.length ? `<ul class="analytics-ranking">${botoesTop.slice(0,8).map(([nome,n]) => `<li><span>${esc(nome)}</span><b>${n}</b></li>`).join("")}</ul>` : `<p class="vazio">Os cliques em links e botões aparecerão aqui.</p>`)}
         ${blocoPf("paginas", "Páginas mais visitadas", "", (paginas.length ? `<ul class="analytics-ranking">${paginas.slice(0,8).map(([nome,n]) => `<li><span>${esc(nome)}</span><b>${n}</b></li>`).join("")}</ul>` : `<p class="vazio">Ainda não há páginas registradas.</p>`)
           + `<h3 class="pf-sub">Partes do site mais vistas</h3>` + (partes.length ? `<ul class="origens">${partes.slice(0, 12).map(([nome, n]) => `<li><span>${esc(nome)}</span><b>${n}</b><span class="trilho"><i style="width:${Math.round((n / Math.max(1, partes[0][1])) * 100)}%"></i></span></li>`).join("")}</ul>` : `<p class="vazio">Aparece conforme as pessoas rolarem o site (Sobre mim, Trabalhos, Contato...).</p>`))}
+        </div>
       </div>
-      <p class="analytics-nota">Privacidade: um identificador aleatório no navegador estima as pessoas diferentes. Não guardamos nome, e-mail nem o endereço de internet (só um código embaralhado, usado para reconhecer a sua internet e tirar as suas visitas). O tempo de cada vídeo chega quando a pessoa fecha o vídeo ou sai do site.</p>
+      <div class="pf-parte" data-parte="videos"${abaPf === "videos" ? "" : " hidden"}>
+        <div class="pf-kpis pf-kpis-3">${kpisVideo}</div>
+        <div class="analytics-grade">
+        ${blocoPf("ultimos-videos", "Últimos vídeos assistidos", `<span class="analytics-contagem">${plural(reproducoes.length, "reprodução", "reproduções")}</span>`,
+          recentes.length ? `<div class="analytics-lista">${recentes.map(e => { const s = segDe(e); return '<div class="analytics-linha">' + thumb(capaDo(e.video_link, e.video_titulo)) + '<div class="analytics-detalhe"><b>' + esc(e.video_titulo || "Vídeo") + '</b><small>' + esc(e.video_marca || "Portfólio") + " · " + fmtHora(e.criado_em) + '</small><small class="pf-tempo">' + (s != null ? "Assistiu " + fmtSeg(s) : e.reproducao_id ? "tempo ainda não chegou" : "sem tempo (antes da contagem)") + '</small></div></div>'; }).join("")}</div>` : `<p class="vazio">Quando alguém iniciar um vídeo no portfólio, ele aparecerá aqui.</p>`)}
+        ${blocoPf("mais-videos", "Vídeos mais assistidos", "", videosTop.length ? `<div class="analytics-lista">${videosTop.slice(0, 8).map(o => `<div class="analytics-linha">${thumb(capaDo(o.link, o.nome))}<div class="analytics-detalhe pf-rank"><b>${esc(o.nome)}</b><small>${plural(o.n, "play", "plays")}${o.nSeg ? ` · média ${fmtSeg(o.seg / o.nSeg)} · total ${fmtSeg(o.seg)}` : " · sem tempo registrado ainda"}</small><span class="trilho"><i style="width:${Math.round(o.n / videosTop[0].n * 100)}%"></i></span></div></div>`).join("")}</div>` : `<p class="vazio">Ainda não há reproduções registradas.</p>`)}
+        </div>
       ${blocoPf("meus-videos", `Meus vídeos <span class="analytics-contagem">${noAr.length} no ar</span>`, `<button class="btn btn-principal" type="button" id="video-novo">${ICONE.mais}Adicionar vídeo</button>`,
         faltando.videos ? `<p class="vazio">${esc(faltando.videos)}</p>` : dados.videos.length === 0 ? `<p class="vazio">Nenhum vídeo ainda. Clique em "Adicionar vídeo".</p>` : `
         <div class="tabela-caixa"><table class="tabela" id="tabela-videos">
@@ -727,7 +816,22 @@
               </td>
             </tr>`).join("")}</tbody>
         </table></div>
-        <p style="font-size:11.5px;color:var(--suave);margin:8px 2px 0">Arraste pela alcinha para mudar a ordem em que os vídeos aparecem no site. O olhinho mostra ou esconde do site.</p>`, "pf-largo")}`;
+        <p style="font-size:11.5px;color:var(--suave);margin:8px 2px 0">Arraste pela alcinha para mudar a ordem em que os vídeos aparecem no site. O olhinho mostra ou esconde do site.</p>`, "pf-largo")}
+      </div>
+      <div class="pf-parte" data-parte="visitantes"${abaPf === "visitantes" ? "" : " hidden"}>
+        <div class="analytics-grade">
+        ${blocoPf("ultimas", "Últimas visitas", `<span class="analytics-contagem">${ultimas.length ? "toque em Fui eu se alguma for sua" : ""}</span>`, ultimas.length ? `<div class="analytics-lista">${ultimas.map(v => { const minha = ehMinha(v); return `<div class="analytics-linha pf-visita"><div class="analytics-detalhe"><b>${esc(v.origem || "Direto")}${v.origem_detalhe ? " · " + esc(v.origem_detalhe) : ""}</b><small>${esc(v.dispositivo || "aparelho não identificado")} · ${esc(NOME_PAGINA(v.pagina))} · ${fmtHora(v.data)}${minha ? " · sua" : ""}</small>${(() => { const sg = tempoDaVisita(v); return sg != null ? `<small class="pf-tempo">Ficou ${fmtSeg(sg)} no site</small>` : ""; })()}</div>${v.visitante_id ? `<button class="btn pf-fui" type="button" data-fui="${esc(v.visitante_id)}" data-meu="${minha ? "0" : "1"}">${minha ? "Não fui eu" : "Fui eu"}</button>` : ""}</div>`; }).join("")}</div>` : `<p class="vazio">As visitas de pessoas de fora aparecerão aqui.</p>`)}
+        ${blocoPf("dispositivos", "Dispositivos de acesso", `<span class="analytics-contagem">${total ? Math.round((visitas.filter(v => v.dispositivo).length / total) * 100) + "% identificados" : "0 acessos"}</span>`,
+          (dispositivos.length ? `<ul class="origens dispositivos-acesso">${dispositivos.map(([nome, n]) => `<li><span>${nome === "Celular" ? "▯ " : nome === "Tablet" ? "▭ " : "▣ "}${esc(nome)}</span><b>${n}</b><span class="trilho"><i style="width:${Math.round((n / total) * 100)}%"></i></span><small>${Math.round((n / total) * 100)}%</small></li>`).join("")}</ul>` : `<p class="vazio">Os dispositivos aparecerão aqui conforme novas visitas forem registradas.</p>`)
+          + (semDispositivo ? `<p class="analytics-nota">${semDispositivo} visita(s) antiga(s) sem identificação de dispositivo.</p>` : ""))}
+        </div>
+        ${blocoPf("links", "Links com etiqueta (para saber o lugar exato)", "", `
+          <p class="analytics-nota" style="margin-top:0">Use um link diferente em cada lugar. A visita aparece aqui como, por exemplo, "Instagram · Link da bio".</p>
+          <ul class="pf-links">${LINKS_ETIQUETA.map(([de, nome]) => `<li><span><b>${esc(nome)}</b><small>${esc(baseSite)}?de=${esc(de)}</small></span><button class="btn" type="button" data-copiar="${esc(baseSite)}?de=${esc(de)}">Copiar</button></li>`).join("")}</ul>
+          <div class="pf-link-novo"><input type="text" id="pf-link-onde" placeholder="Outro lugar, ex.: instagram post achadinhos" aria-label="Outro lugar para o link"><button class="btn" type="button" id="pf-link-criar">Criar e copiar</button></div>
+          <p class="analytics-nota">No seu celular, abra uma vez <b>${esc(baseSite)}?sou-a-mari</b> dentro do navegador do Instagram e do Facebook: assim esses navegadores nunca contam como visita.</p>`, "pf-largo")}
+      </div>
+      <p class="analytics-nota">Privacidade: um identificador aleatório no navegador estima as pessoas diferentes. Não guardamos nome, e-mail nem o endereço de internet (só um código embaralhado, usado para reconhecer a sua internet e tirar as suas visitas). O tempo de cada vídeo chega quando a pessoa fecha o vídeo ou sai do site.</p>`;
 
     // minimizar e abrir cada bloco
     $$("[data-min]", sec).forEach((b) => b.addEventListener("click", () => {
@@ -763,7 +867,12 @@
     }));
     $("#video-novo").addEventListener("click", () => formVideo());
     $("#btn-atualizar").addEventListener("click", () => atualizarPortfolio(true));
-    $("#portfolio-periodo").addEventListener("change", (e) => { window.__mbPortfolioPeriodo = e.target.value; desenhar("portfolio", desenharPortfolio); });
+    $$("[data-pfdias]", sec).forEach((b) => b.addEventListener("click", () => { window.__mbPortfolioPeriodo = b.dataset.pfdias; try { localStorage.setItem("pfDias", b.dataset.pfdias); } catch (e) {} desenhar("portfolio", desenharPortfolio); }));
+    $$("[data-pfaba]", sec).forEach((b) => b.addEventListener("click", () => {
+      try { localStorage.setItem("pfAba", b.dataset.pfaba); } catch (e) {}
+      $$("[data-pfaba]", sec).forEach((x) => { const on = x === b; x.classList.toggle("ativa", on); x.setAttribute("aria-selected", String(on)); });
+      $$(".pf-parte", sec).forEach((p) => { p.hidden = p.dataset.parte !== b.dataset.pfaba; });
+    }));
     $("#contar-minhas").addEventListener("change", (e) => {
       try { localStorage.setItem(CHAVE_CONTAR, e.target.checked ? "1" : "0"); } catch (er) {}
       aplicarContagem();
