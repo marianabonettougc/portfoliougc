@@ -30,7 +30,8 @@
                   <label class="wide">Obrigatoriedades e restrições<textarea id="ci-restrictions" rows="3" placeholder="Falas obrigatórias, claims permitidos, proibições, hashtags..."></textarea></label>
                 </div><div class="ci-actions"><button class="ci-btn ci-primary" id="ci-salvar">Salvar briefing</button><span id="ci-save-state" class="ci-muted"></span></div>
               </div>
-              <div class="ci-card"><div class="ci-card-head"><div><span class="ci-kicker">ETAPA 02</span><h3>Biblioteca de anúncios</h3><p>Guarde anúncios de concorrentes e referências do mesmo segmento.</p></div></div>
+              <div class="ci-card"><div class="ci-card-head"><div><span class="ci-kicker">ETAPA 02</span><h3>Biblioteca de anúncios</h3><p>Pesquise anúncios reais da Meta ou adicione referências manualmente.</p></div></div>
+                <div id="ci-meta-library" class="ci-meta-library"></div>
                 <div class="ci-form ci-ad-form"><label>Nome / marca do anúncio<input id="ci-ad-title" placeholder="Ex.: Anúncio de reconstrução capilar"></label><label>Link do anúncio<input id="ci-ad-url" type="url" placeholder="https://..."></label><label>Plataforma<select id="ci-ad-platform"><option>Instagram / Meta</option><option>TikTok</option><option>YouTube</option><option>Pinterest</option><option>Outra</option></select></label><label>Indicador observado<input id="ci-ad-performance" placeholder="Ex.: ativo há 45 dias, muitas interações..."></label><label class="wide">Transcrição, legenda ou descrição do vídeo<textarea id="ci-ad-transcript" rows="4" placeholder="Cole a transcrição ou descreva o que acontece no anúncio. A análise de fala depende deste conteúdo."></textarea></label></div>
                 <div class="ci-actions"><button class="ci-btn" id="ci-add-ad">＋ Adicionar referência</button><span class="ci-muted">A biblioteca não presume métricas que a plataforma não disponibiliza.</span></div><div id="ci-anuncios" class="ci-ad-list"></div>
               </div>
@@ -46,6 +47,7 @@
     q("#ci-salvar",sec()).onclick=salvarProjeto; q("#ci-add-ad",sec()).onclick=adicionarAnuncio;
     q("#ci-gerar",sec()).onclick=gerarRoteiro; q("#ci-busca",sec()).oninput=renderProjetos;
     carregar();
+    window.initCIBiblioteca?.();
   }
 
   async function carregarScript(url, globalName){
@@ -106,6 +108,7 @@
     const c=p||vazio(); projeto=p; q("#ci-inicio",sec()).hidden=true; q("#ci-editor",sec()).hidden=false;
     for(const [k,v] of Object.entries({brand:"brand",product:"product",objective:"objective",audience:"audience",briefing:"briefing",voice:"voice",deliverables:"deliverables",restrictions:"restrictions"})) q("#ci-"+k,sec()).value=c[v]||"";
     renderAnuncios(); renderAnalise(); q("#ci-gerar",sec()).disabled=!c.briefing;
+    window.ciBibliotecaProjetoAlterado?.();
   }
   async function carregar(){
     limparAviso(); const {data,error}=await supa().from("creative_intelligence_projects").select("*").order("updated_at",{ascending:false});
@@ -144,6 +147,7 @@
     q("#ci-anuncios",sec()).innerHTML=anuncios.length?anuncios.map(a=>`<article class="ci-ad"><div><b>${esc(a.title)}</b><small>${esc(a.platform)} · ${data(a.created_at)}</small><a href="${esc(a.url)}" target="_blank" rel="noopener">Abrir anúncio ↗</a></div><div class="ci-ad-actions"><button class="ci-btn ci-small" data-analisar="${a.id}">Analisar</button><button class="ci-btn ci-small" data-excluir="${a.id}">Excluir</button></div></article>`).join(""):'<div class="ci-empty">Suas referências salvas aparecerão aqui.</div>';
     qa("[data-analisar]",sec()).forEach(b=>b.onclick=()=>analisar(b.dataset.analisar)); qa("[data-excluir]",sec()).forEach(b=>b.onclick=()=>excluirAnuncio(b.dataset.excluir));
   }
+  window.ciAtualizarAnuncios = async () => { if(!projeto?.id)return; const {data,error}=await supa().from("creative_intelligence_ads").select("*").eq("project_id",projeto.id).order("created_at",{ascending:false}); if(error){aviso("Não consegui atualizar as referências: "+error.message,true);return;} anuncios=data||[]; renderAnuncios(); renderAnalise(); await carregar(); };
   async function excluirAnuncio(aid){const {error}=await supa().from("creative_intelligence_ads").delete().eq("id",aid);if(error){aviso(error.message,true);return;}anuncios=anuncios.filter(a=>a.id!==aid);renderAnuncios();await carregar();}
   async function analisar(aid){
     const a=anuncios.find(x=>x.id===aid); if(!a)return; if((a.transcript||"").trim().length<30){aviso("Para analisar o anúncio, cole uma transcrição, legenda ou descrição com pelo menos 30 caracteres.",true);return;}
@@ -163,7 +167,7 @@
   }
   async function gerarRoteiro(){
     if(!projeto?.id){aviso("Salve o briefing primeiro.",true);return;}
-    const c=campos(), a=anuncios.find(x=>x.analysis), insight=a?.analysis?.interpretacao?.como_adaptar||"";
+    const c=campos(), referencias=anuncios.filter(x=>x.analysis||x.transcript).slice(0,8), insight=referencias.map((a,i)=>"Referência "+(i+1)+": "+(a.title||"Anúncio")+". Texto observado: "+(a.transcript||a.performance_note||"não disponível")+". Leitura estratégica: "+(a.analysis?.interpretacao?.como_adaptar||a.analysis?.analise?.interpretacao?.como_adaptar||"analisar o mecanismo textual disponível")+".").join("\n");
     aviso("Criando caminhos criativos e roteiro...");
     const briefing=[c.briefing,"Marca: "+c.brand,"Produto: "+c.product,"Objetivo: "+c.objective,"Público: "+c.audience,"Tom de voz: "+c.voice,"Entregáveis: "+c.deliverables,"Obrigatoriedades e restrições: "+c.restrictions,insight?"Aprendizado de referência (adaptar o mecanismo, nunca copiar): "+insight:""].filter(Boolean).join("\n");
     const {data,error}=await supa().functions.invoke("skill-ugc",{body:{acao:"criar",briefing,marca:c.brand,produto:c.product,objetivo:c.objective,publico:c.audience,duracao:0}});
@@ -173,5 +177,6 @@
     q("#ci-copiar",sec()).onclick=()=>navigator.clipboard?.writeText(blocos.map(b=>(b.titulo||b.tipo||"Cena")+"\n"+(b.fala||b.texto||"")+"\n"+(b.cena||b.visual||"")).join("\n\n"));
     aviso("Roteiro gerado. Revise as obrigatoriedades antes de enviar à marca.");
   }
+  window.ciProjetoAtual = () => projeto;
   document.addEventListener("painel:aba",e=>{if(e.detail==="creative-intelligence")layout();});
 })();
