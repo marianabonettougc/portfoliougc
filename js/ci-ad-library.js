@@ -48,7 +48,14 @@
     $("#ci-meta-results",root()).innerHTML='<div class="ci-meta-loading"><span class="ci-spinner"></span> Buscando anúncios públicos…</div>';
     try {
       const {data,error}=await supa().functions.invoke("ci-ad-library",{body:{query,country,mediaType,activeOnly,maxResults:30}});
-      if(error || data?.error) throw new Error(data?.error || error.message || "A busca não respondeu.");
+      if(error || data?.error) {
+        let detalhe = data?.error || "";
+        if (!detalhe && error?.context && typeof error.context.json === "function") {
+          try { const corpo = await error.context.json(); detalhe = corpo?.error || corpo?.message || ""; } catch {}
+        }
+        if (!detalhe) detalhe = error?.message || "A busca não respondeu.";
+        throw new Error(detalhe);
+      }
       resultados=Array.isArray(data.ads)?data.ads:[];
       selecionados.clear();
       const row={project_id:p.id,query,country,active_only:activeOnly,media_type_filter:mediaType,result_count:resultados.length,results:resultados,library_search_url:data.library_search_url||""};
