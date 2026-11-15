@@ -15,7 +15,9 @@
     sec().innerHTML = `
       <div class="ci">
         <header class="ci-head"><div><span class="ci-kicker">PESQUISA + ESTRATÉGIA + CRIAÇÃO</span><h2>Creative <em>Intelligence</em></h2><p>Transforme briefings e referências de anúncios em decisões criativas e roteiros originais.</p></div><button class="ci-btn ci-primary" id="ci-novo">＋ Novo projeto</button></header>
-        <div class="ci-stats"><article><small>Projetos salvos</small><b id="ci-total">0</b></article><article><small>Anúncios analisados</small><b id="ci-ads-total">0</b></article><article><small>Referências por revisar</small><b id="ci-pendentes">0</b></article></div>
+        <nav class="ci-tabs" role="tablist"><button type="button" role="tab" data-citab="projetos">Projetos e briefing</button><button type="button" role="tab" data-citab="biblioteca">Biblioteca de Anúncios</button></nav>
+        <div data-cipane="projetos">
+        <div class="ci-stats"><article><small>Projetos salvos</small><b id="ci-total">0</b></article><article><small>Referências salvas</small><b id="ci-ads-total">0</b></article><article><small>Referências sem análise</small><b id="ci-pendentes">0</b></article></div>
         <div class="ci-grid">
           <aside class="ci-card ci-lista"><div class="ci-card-head"><div><h3>Seus projetos</h3><p>Briefings organizados por cliente</p></div><input id="ci-busca" placeholder="Buscar projeto..." aria-label="Buscar projeto"></div><div id="ci-projetos" class="ci-project-list"><div class="ci-empty">Carregando projetos...</div></div></aside>
           <main class="ci-main">
@@ -31,7 +33,7 @@
                 </div><div class="ci-actions"><button class="ci-btn ci-primary" id="ci-salvar">Salvar briefing</button><span id="ci-save-state" class="ci-muted"></span></div>
               </div>
               <div class="ci-card"><div class="ci-card-head"><div><span class="ci-kicker">ETAPA 02</span><h3>Biblioteca de anúncios</h3><p>Pesquise anúncios reais da Meta ou adicione referências manualmente.</p></div></div>
-                <div id="ci-meta-library" class="ci-meta-library"></div>
+                <div class="ci-atalho"><div><b>Pesquisar anúncios reais da Meta</b><p>A pesquisa, os resultados em grade e a análise com IA ficam na aba Biblioteca de Anúncios. O que você salvar lá com este projeto escolhido aparece na lista abaixo.</p></div><button class="ci-btn ci-primary" id="ci-ir-biblioteca" type="button">Abrir a Biblioteca de Anúncios</button></div>
                 <div class="ci-form ci-ad-form"><label>Nome / marca do anúncio<input id="ci-ad-title" placeholder="Ex.: Anúncio de reconstrução capilar"></label><label>Link do anúncio<input id="ci-ad-url" type="url" placeholder="https://..."></label><label>Plataforma<select id="ci-ad-platform"><option>Instagram / Meta</option><option>TikTok</option><option>YouTube</option><option>Pinterest</option><option>Outra</option></select></label><label>Indicador observado<input id="ci-ad-performance" placeholder="Ex.: ativo há 45 dias, muitas interações..."></label><label class="wide">Transcrição, legenda ou descrição do vídeo<textarea id="ci-ad-transcript" rows="4" placeholder="Cole a transcrição ou descreva o que acontece no anúncio. A análise de fala depende deste conteúdo."></textarea></label></div>
                 <div class="ci-actions"><button class="ci-btn" id="ci-add-ad">＋ Adicionar referência</button><span class="ci-muted">A biblioteca não presume métricas que a plataforma não disponibiliza.</span></div><div id="ci-anuncios" class="ci-ad-list"></div>
               </div>
@@ -41,13 +43,26 @@
           </main>
         </div>
         <div id="ci-aviso" class="ci-aviso" role="status" hidden></div>
+        </div>
+        <div data-cipane="biblioteca" id="ci-biblioteca" hidden></div>
       </div>`;
-    q("#ci-novo",sec()).onclick=novo; q("#ci-comecar",sec()).onclick=novo;
+    q("#ci-novo",sec()).onclick=()=>{abaCI("projetos");novo();}; q("#ci-comecar",sec()).onclick=novo;
+    qa("[data-citab]",sec()).forEach(b=>b.onclick=()=>abaCI(b.dataset.citab));
+    q("#ci-ir-biblioteca",sec()).onclick=()=>{abaCI("biblioteca");window.ciBibliotecaPesquisar?.(q("#ci-brand",sec()).value.trim());};
     q("#ci-extrair",sec()).onclick=extrairArquivo;
     q("#ci-salvar",sec()).onclick=salvarProjeto; q("#ci-add-ad",sec()).onclick=adicionarAnuncio;
     q("#ci-gerar",sec()).onclick=gerarRoteiro; q("#ci-busca",sec()).oninput=renderProjetos;
     carregar();
-    window.initCIBiblioteca?.();
+    try{window.initCIBiblioteca?.();}catch(e){console.error("Biblioteca de Anúncios:",e);}
+    let inicial="projetos"; try{if(localStorage.getItem("ci-aba")==="biblioteca")inicial="biblioteca";}catch(e){}
+    abaCI(inicial);
+  }
+  function abaCI(nome){
+    const s=sec(); if(!s)return;
+    qa("[data-cipane]",s).forEach(p=>p.hidden=p.dataset.cipane!==nome);
+    qa("[data-citab]",s).forEach(b=>{const on=b.dataset.citab===nome;b.classList.toggle("ativa",on);b.setAttribute("aria-selected",on?"true":"false");});
+    const novoBtn=q("#ci-novo",s); if(novoBtn) novoBtn.hidden=nome!=="projetos";
+    try{localStorage.setItem("ci-aba",nome);}catch(e){}
   }
 
   async function carregarScript(url, globalName){
@@ -113,7 +128,7 @@
   async function carregar(){
     limparAviso(); const {data,error}=await supa().from("creative_intelligence_projects").select("*").order("updated_at",{ascending:false});
     if(error){aviso("A tabela da Biblioteca Criativa ainda não foi criada no Supabase. Aplique o arquivo sql-creative-intelligence.sql antes de usar.",true);q("#ci-projetos",sec()).innerHTML='<div class="ci-empty">Configure o banco para salvar seus projetos.</div>';return;}
-    window.ciProjetos=data||[]; renderProjetos(); q("#ci-total",sec()).textContent=(data||[]).length;
+    window.ciProjetos=data||[]; renderProjetos(); window.ciBibliotecaProjetos?.(); q("#ci-total",sec()).textContent=(data||[]).length;
     const {count}=await supa().from("creative_intelligence_ads").select("*",{count:"exact",head:true}); q("#ci-ads-total",sec()).textContent=count||0;
     const {count:pend}=await supa().from("creative_intelligence_ads").select("*",{count:"exact",head:true}).is("analysis","null"); q("#ci-pendentes",sec()).textContent=pend||0;
   }
@@ -141,14 +156,14 @@
     try{new URL(url)}catch{aviso("Confira o link do anúncio.",true);return;}
     const row={project_id:projeto.id,title,url,platform:q("#ci-ad-platform",sec()).value,performance_note:q("#ci-ad-performance",sec()).value.trim(),transcript};
     const {data,error}=await supa().from("creative_intelligence_ads").insert(row).select().single(); if(error){aviso(error.message,true);return;}
-    anuncios.unshift(data); ["ci-ad-title","ci-ad-url","ci-ad-performance","ci-ad-transcript"].forEach(k=>q("#"+k,sec()).value=""); renderAnuncios(); await carregar();
+    anuncios.unshift(data); ["ci-ad-title","ci-ad-url","ci-ad-performance","ci-ad-transcript"].forEach(k=>q("#"+k,sec()).value=""); renderAnuncios(); await carregar(); window.ciBibliotecaRecarregar?.();
   }
   function renderAnuncios(){
     q("#ci-anuncios",sec()).innerHTML=anuncios.length?anuncios.map(a=>`<article class="ci-ad"><div><b>${esc(a.title)}</b><small>${esc(a.platform)} · ${data(a.created_at)}</small><a href="${esc(a.url)}" target="_blank" rel="noopener">Abrir anúncio ↗</a></div><div class="ci-ad-actions"><button class="ci-btn ci-small" data-analisar="${a.id}">Analisar</button><button class="ci-btn ci-small" data-excluir="${a.id}">Excluir</button></div></article>`).join(""):'<div class="ci-empty">Suas referências salvas aparecerão aqui.</div>';
     qa("[data-analisar]",sec()).forEach(b=>b.onclick=()=>analisar(b.dataset.analisar)); qa("[data-excluir]",sec()).forEach(b=>b.onclick=()=>excluirAnuncio(b.dataset.excluir));
   }
   window.ciAtualizarAnuncios = async () => { if(!projeto?.id)return; const {data,error}=await supa().from("creative_intelligence_ads").select("*").eq("project_id",projeto.id).order("created_at",{ascending:false}); if(error){aviso("Não consegui atualizar as referências: "+error.message,true);return;} anuncios=data||[]; renderAnuncios(); renderAnalise(); await carregar(); };
-  async function excluirAnuncio(aid){const {error}=await supa().from("creative_intelligence_ads").delete().eq("id",aid);if(error){aviso(error.message,true);return;}anuncios=anuncios.filter(a=>a.id!==aid);renderAnuncios();await carregar();}
+  async function excluirAnuncio(aid){if(window.painelDialogo&&!(await window.painelDialogo.confirmar("Excluir esta referência?\nA análise guardada nela também será apagada.",{ok:"Excluir",perigo:true})))return;const {error}=await supa().from("creative_intelligence_ads").delete().eq("id",aid);if(error){aviso(error.message,true);return;}anuncios=anuncios.filter(a=>a.id!==aid);renderAnuncios();await carregar();window.ciBibliotecaRecarregar?.();}
   async function analisar(aid){
     const a=anuncios.find(x=>x.id===aid); if(!a)return; if((a.transcript||"").trim().length<30){aviso("Para analisar o anúncio, cole uma transcrição, legenda ou descrição com pelo menos 30 caracteres.",true);return;}
     aviso("Analisando o mecanismo criativo com a Skill UGC...");
@@ -157,7 +172,7 @@
     a.analysis=data.analise; const {error:saveError}=await supa().from("creative_intelligence_ads").update({analysis:data.analise,analyzed_at:new Date().toISOString()}).eq("id",aid);
     if(saveError){aviso("Análise pronta, mas não consegui salvá-la: "+saveError.message,true);return;}
     analiseAtual=data.analise; renderAnalise(); q("#ci-gerar",sec()).disabled=false; aviso("Análise salva. Agora você pode transformar os aprendizados em um roteiro.");
-    await carregar();
+    await carregar(); window.ciBibliotecaRecarregar?.();
   }
   function renderAnalise(){
     const a=anuncios.find(x=>x.analysis); const el=q("#ci-analysis",sec()); if(!el)return;

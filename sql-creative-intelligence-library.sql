@@ -35,3 +35,7 @@ create policy "creative intelligence owner searches"
   using (public.e_a_dona() and user_id = (select auth.uid()))
   with check (public.e_a_dona() and user_id = (select auth.uid()));
 
+-- Biblioteca de Anúncios geral (nov/2026, v2): pesquisar e guardar referências sem precisar
+-- de um projeto. project_id vazio = "Biblioteca geral". Nada é apagado.
+alter table public.creative_intelligence_ads alter column project_id drop not null;
+alter table public.creative_intelligence_searches alter column project_id drop not null;

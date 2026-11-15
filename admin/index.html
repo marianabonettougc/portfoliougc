@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 // Atualiza sozinho: se existir uma versão mais nova do painel publicada, recarrega a página nova
-window.VERSAO_PAINEL = "202611150400";
+window.VERSAO_PAINEL = "202611151200";
 fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).then((j) => {
   if (j.versao && j.versao !== window.VERSAO_PAINEL) {
     const u = new URL(location.href);
@@ -29,7 +29,7 @@ fetch("../js/versao.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/painel.css?v=202611142205">
 <link rel="stylesheet" href="../css/metricas.css?v=202611141900">
-<link rel="stylesheet" href="../css/creative-intelligence.css?v=202611150400">
+<link rel="stylesheet" href="../css/creative-intelligence.css?v=202611151200">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/banco.js?v=202611141900"></script>
 <script src="../js/dialogos.js?v=202611141900"></script>
@@ -212,7 +212,7 @@ window.sessaoPronta = (async function () {
 <script src="../js/metricool-ig.js?v=202611141900"></script>
 <script src="../js/metricas.js?v=202611141900"></script>
 <script src="../js/moodboard.js?v=202611141900"></script>
-<script src="../js/creative-intelligence.js?v=202611150400"></script>
-<script src="../js/ci-ad-library.js?v=202611150400"></script>
+<script src="../js/creative-intelligence.js?v=202611151200"></script>
+<script src="../js/ci-ad-library.js?v=202611151200"></script>
 </body>
 </html>
