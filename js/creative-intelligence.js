@@ -21,7 +21,7 @@
           <main class="ci-main">
             <div class="ci-card ci-intro" id="ci-inicio"><span class="ci-kicker">SEU LABORATÓRIO CRIATIVO</span><h3>Comece pelo briefing.</h3><p>Cadastre o que a marca pediu, adicione anúncios de referência e analise os mecanismos criativos antes de escrever.</p><button class="ci-btn ci-primary" id="ci-comecar">Criar primeiro projeto</button></div>
             <div id="ci-editor" hidden>
-              <div class="ci-card"><div class="ci-card-head"><div><span class="ci-kicker">ETAPA 01</span><h3>Briefing do cliente</h3><p>O contexto que vai orientar toda a pesquisa.</p></div><span class="ci-tag">Projeto</span></div>
+              <div class="ci-card"><div class="ci-card-head"><div><span class="ci-kicker">ETAPA 01</span><h3>Briefing do cliente</h3><p>O contexto que vai orientar toda a pesquisa.</p></div><span class="ci-tag">Projeto</span></div><div class="ci-upload"><div><b>Prefere enviar o arquivo?</b><p>Anexe o briefing em PDF, Word ou TXT. A IA identifica as informações e organiza os campos para você revisar.</p></div><div class="ci-upload-controls"><input id="ci-briefing-file" type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"><button class="ci-btn ci-primary" id="ci-extrair" type="button">Ler briefing com IA</button></div><small id="ci-file-status" class="ci-muted">Até 15 MB. O conteúdo só será salvo quando você clicar em “Salvar briefing”.</small></div>
                 <div class="ci-form">
                   <label>Marca<input id="ci-brand" placeholder="Ex.: Pantene"></label><label>Produto ou serviço<input id="ci-product" placeholder="Ex.: Linha de reconstrução"></label>
                   <label>Objetivo do conteúdo<input id="ci-objective" placeholder="Ex.: Apresentar benefícios e gerar interesse"></label><label>Público-alvo<input id="ci-audience" placeholder="Ex.: Mulheres com cabelos danificados"></label>
@@ -42,11 +42,62 @@
         <div id="ci-aviso" class="ci-aviso" role="status" hidden></div>
       </div>`;
     q("#ci-novo",sec()).onclick=novo; q("#ci-comecar",sec()).onclick=novo;
+    q("#ci-extrair",sec()).onclick=extrairArquivo;
     q("#ci-salvar",sec()).onclick=salvarProjeto; q("#ci-add-ad",sec()).onclick=adicionarAnuncio;
     q("#ci-gerar",sec()).onclick=gerarRoteiro; q("#ci-busca",sec()).oninput=renderProjetos;
     carregar();
   }
-  function campos(){
+
+  async function carregarScript(url, globalName){
+    if(window[globalName]) return;
+    await new Promise((resolve,reject)=>{
+      const s=document.createElement("script"); s.src=url; s.onload=resolve; s.onerror=()=>reject(new Error("Não consegui carregar o leitor do arquivo. Confira sua conexão e tente novamente.")); document.head.appendChild(s);
+    });
+    if(!window[globalName]) throw new Error("O leitor do arquivo não ficou disponível.");
+  }
+  async function textoDoArquivo(file){
+    const nome=file.name.toLowerCase();
+    if(file.size>15*1024*1024) throw new Error("O arquivo deve ter no máximo 15 MB.");
+    if(nome.endsWith(".txt")||nome.endsWith(".md")) return await file.text();
+    if(nome.endsWith(".docx")){
+      await carregarScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js","mammoth");
+      const resultado=await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()});
+      return resultado.value||"";
+    }
+    if(nome.endsWith(".pdf")){
+      await carregarScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js","pdfjsLib");
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const pdf=await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+      if(pdf.numPages>60) throw new Error("O PDF tem mais de 60 páginas. Envie uma versão menor ou dividida.");
+      const paginas=[];
+      for(let n=1;n<=pdf.numPages;n++){
+        const page=await pdf.getPage(n), content=await page.getTextContent();
+        paginas.push(content.items.map(x=>x.str||"").join(" "));
+      }
+      return paginas.join("\\n\\n");
+    }
+    throw new Error("Formato não suportado. Envie PDF, DOCX, TXT ou MD.");
+  }
+  async function extrairArquivo(){
+    const input=q("#ci-briefing-file",sec()), status=q("#ci-file-status",sec()), button=q("#ci-extrair",sec()), file=input.files?.[0];
+    if(!file){status.textContent="Escolha um arquivo antes de continuar.";return;}
+    button.disabled=true; status.textContent="Lendo o arquivo...";
+    try{
+      const texto=await textoDoArquivo(file);
+      if(texto.trim().length<40) throw new Error("Não encontrei texto suficiente. Se o PDF for escaneado como imagem, envie uma versão com texto selecionável ou cole o conteúdo manualmente.");
+      status.textContent="Arquivo lido. A IA está identificando as informações do briefing...";
+      const {data,error}=await supa().functions.invoke("skill-ugc",{body:{acao:"extrair_briefing",briefing:texto}});
+      if(error||data?.error) throw new Error(data?.error||error.message||"Não consegui analisar o briefing.");
+      const c=data.campos||{};
+      const valores={brand:c.marca,product:c.produto,objective:c.objetivo,audience:c.publico,voice:c.tom_de_voz,deliverables:c.entregaveis,restrictions:c.obrigatorias_e_restricoes};
+      for(const [campo,valor] of Object.entries(valores)){if(valor) q("#ci-"+campo,sec()).value=valor;}
+      q("#ci-briefing",sec()).value=texto;
+      const extras=[...(data.informacoes_importantes||[]).map(x=>"Informação: "+x),...(data.duvidas_ou_lacunas||[]).map(x=>"Conferir: "+x)];\n      status.textContent="Briefing lido! Revise os campos preenchidos e clique em “Salvar briefing”. "+(extras.length?extras.join(" | ")+" | ":"")+"Arquivo: "+file.name;
+      aviso("A IA organizou as informações encontradas. Confira os dados antes de salvar.");
+    }catch(e){status.textContent=e.message||"Erro ao ler o arquivo.";aviso(status.textContent,true);}
+    finally{button.disabled=false;}
+  }
+\n  function campos(){
     return {brand:q("#ci-brand",sec()).value.trim(),product:q("#ci-product",sec()).value.trim(),objective:q("#ci-objective",sec()).value.trim(),audience:q("#ci-audience",sec()).value.trim(),briefing:q("#ci-briefing",sec()).value.trim(),voice:q("#ci-voice",sec()).value.trim(),deliverables:q("#ci-deliverables",sec()).value.trim(),restrictions:q("#ci-restrictions",sec()).value.trim()};
   }
   function preencher(p){
@@ -62,7 +113,7 @@
     const {count:pend}=await supa().from("creative_intelligence_ads").select("*",{count:"exact",head:true}).is("analysis","null"); q("#ci-pendentes",sec()).textContent=pend||0;
   }
   function renderProjetos(){
-    const q=(q("#ci-busca",sec())?.value||"").toLowerCase(); const arr=(window.ciProjetos||[]).filter(p=>(p.brand+" "+p.product).toLowerCase().includes(q));
+    const termoBusca=(q("#ci-busca",sec())?.value||"").toLowerCase(); const arr=(window.ciProjetos||[]).filter(p=>(p.brand+" "+p.product).toLowerCase().includes(termoBusca));
     q("#ci-projetos",sec()).innerHTML=arr.length?arr.map(p=>`<button class="ci-project ${projeto?.id===p.id?"active":""}" data-id="${p.id}"><b>${esc(p.brand||"Sem marca")}</b><span>${esc(p.product||"Projeto sem produto")}</span><small>Atualizado em ${data(p.updated_at)}</small></button>`).join(""):'<div class="ci-empty">Nenhum projeto ainda. Crie o primeiro briefing.</div>';
     qa(".ci-project",sec()).forEach(b=>b.onclick=()=>abrirProjeto(b.dataset.id));
   }
