@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     const mediaType = body.mediaType === "video" ? "video" : "all";
     const maxResults = Math.max(5, Math.min(50, Number(body.maxResults) || 30));
     if (query.length < 2) return json({ error: "Digite uma marca, produto ou palavra-chave com pelo menos 2 caracteres." }, 400);
-    if (!/^[A-Z]{2}$/.test(country)) return json({ error: "País inválido. Use um código de duas letras, como BR." }, 400);
+    if (!/^(?:[A-Z]{2}|ALL)$/.test(country)) return json({ error: "País inválido. Use um código de duas letras, como BR, ou ALL." }, 400);
 
     const libraryUrl = new URL("https://www.facebook.com/ads/library/");
     libraryUrl.searchParams.set("active_status", activeOnly ? "active" : "all");
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         startUrls: [{ url: libraryUrl.toString() }],
         platforms: ["meta"],
-        countries: [country],
+        countries: country === "ALL" ? [] : [country],
         maxResultsPerPlatform: maxResults,
         activeOnly,
         includeDetails: false,
