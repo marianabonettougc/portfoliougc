@@ -20,7 +20,8 @@ function normalizar(x: any, index: number) {
   const description = str(first(x.description, x.linkDescription, x.link_description, x.ad_creative_link_descriptions?.[0]), 1000);
   const snapshot = str(first(x.snapshotUrl, x.adUrl, x.ad_url, x.ad_snapshot_url, x.adLibraryUrl, x.ad_library_url, x.url, x.libraryUrl), 1800);
   const media = str(first(x.mediaType, x.media_type, x.format, x.creativeFormat, x.creative_format, x.adFormat, x.ad_format, x.type), 80).toLowerCase();
-  const videoCandidate = first(x.videoUrl, x.video_url, x.videoUrls?.[0], x.video_urls?.[0], x.video?.url, x.creative?.videoUrl, x.creative_video_url);\n  const videoUrl = str(videoCandidate, 1800);
+  const videoCandidate = first(x.videoUrl, x.video_url, x.videoUrls?.[0], x.video_urls?.[0], x.video?.url, x.creative?.videoUrl, x.creative_video_url);
+  const videoUrl = str(videoCandidate, 1800);
   const active = x.isActive ?? x.is_active ?? x.activeToday ?? x.active_today ?? x.active ?? (String(first(x.status, x.adStatus, "")).toLowerCase().includes("active"));
   const start = first(x.startDate, x.start_date, x.firstShown, x.first_shown, x.ad_delivery_start_time, x.deliveryStartTime);
   const stop = first(x.endDate, x.end_date, x.lastShown, x.last_shown, x.ad_delivery_stop_time, x.deliveryStopTime);
