@@ -92,7 +92,7 @@
       const valores={brand:c.marca,product:c.produto,objective:c.objetivo,audience:c.publico,voice:c.tom_de_voz,deliverables:c.entregaveis,restrictions:c.obrigatorias_e_restricoes};
       for(const [campo,valor] of Object.entries(valores)){if(valor) q("#ci-"+campo,sec()).value=valor;}
       q("#ci-briefing",sec()).value=texto;
-      status.textContent="Briefing lido! Revise os campos preenchidos e clique em “Salvar briefing”. Arquivo: "+file.name;
+      const extras=[...(data.informacoes_importantes||[]).map(x=>"Informação: "+x),...(data.duvidas_ou_lacunas||[]).map(x=>"Conferir: "+x)];\n      status.textContent="Briefing lido! Revise os campos preenchidos e clique em “Salvar briefing”. "+(extras.length?extras.join(" | ")+" | ":"")+"Arquivo: "+file.name;
       aviso("A IA organizou as informações encontradas. Confira os dados antes de salvar.");
     }catch(e){status.textContent=e.message||"Erro ao ler o arquivo.";aviso(status.textContent,true);}
     finally{button.disabled=false;}
