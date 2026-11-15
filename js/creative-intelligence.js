@@ -1,13 +1,13 @@
 /* Creative Intelligence — briefing, biblioteca de anúncios e análise criativa */
 (() => {
   "use strict";
-  const $ = (s, r=document) => r.querySelector(s), $ = (s, r=document) => [...r.querySelectorAll(s)];
+  const q = (s, r=document) => r.querySelector(s), qa = (s, r=document) => [...r.querySelectorAll(s)];
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const supa = () => window.banco;
   let projeto = null, anuncios = [], analiseAtual = null;
-  const sec = () => $("#aba-creative-intelligence");
-  const aviso = (msg, erro=false) => { const el=$("#ci-aviso",sec()); if(el){el.textContent=msg;el.className="ci-aviso"+(erro?" erro":"");el.hidden=false;} };
-  const limparAviso = () => { const el=$("#ci-aviso",sec()); if(el) el.hidden=true; };
+  const sec = () => q("#aba-creative-intelligence");
+  const aviso = (msg, erro=false) => { const el=q("#ci-aviso",sec()); if(el){el.textContent=msg;el.className="ci-aviso"+(erro?" erro":"");el.hidden=false;} };
+  const limparAviso = () => { const el=q("#ci-aviso",sec()); if(el) el.hidden=true; };
   const id = () => window.crypto?.randomUUID?.() || String(Date.now())+Math.random().toString(16).slice(2);
   const data = (v) => v ? new Date(v).toLocaleDateString("pt-BR") : "Agora";
   const vazio = () => ({brand:"",product:"",objective:"",audience:"",briefing:"",voice:"",deliverables:"",restrictions:""});
@@ -41,32 +41,32 @@
         </div>
         <div id="ci-aviso" class="ci-aviso" role="status" hidden></div>
       </div>`;
-    $("#ci-novo",sec()).onclick=novo; $("#ci-comecar",sec()).onclick=novo;
-    $("#ci-salvar",sec()).onclick=salvarProjeto; $("#ci-add-ad",sec()).onclick=adicionarAnuncio;
-    $("#ci-gerar",sec()).onclick=gerarRoteiro; $("#ci-busca",sec()).oninput=renderProjetos;
+    q("#ci-novo",sec()).onclick=novo; q("#ci-comecar",sec()).onclick=novo;
+    q("#ci-salvar",sec()).onclick=salvarProjeto; q("#ci-add-ad",sec()).onclick=adicionarAnuncio;
+    q("#ci-gerar",sec()).onclick=gerarRoteiro; q("#ci-busca",sec()).oninput=renderProjetos;
     carregar();
   }
   function campos(){
-    return {brand:$("#ci-brand",sec()).value.trim(),product:$("#ci-product",sec()).value.trim(),objective:$("#ci-objective",sec()).value.trim(),audience:$("#ci-audience",sec()).value.trim(),briefing:$("#ci-briefing",sec()).value.trim(),voice:$("#ci-voice",sec()).value.trim(),deliverables:$("#ci-deliverables",sec()).value.trim(),restrictions:$("#ci-restrictions",sec()).value.trim()};
+    return {brand:q("#ci-brand",sec()).value.trim(),product:q("#ci-product",sec()).value.trim(),objective:q("#ci-objective",sec()).value.trim(),audience:q("#ci-audience",sec()).value.trim(),briefing:q("#ci-briefing",sec()).value.trim(),voice:q("#ci-voice",sec()).value.trim(),deliverables:q("#ci-deliverables",sec()).value.trim(),restrictions:q("#ci-restrictions",sec()).value.trim()};
   }
   function preencher(p){
-    const c=p||vazio(); projeto=p; $("#ci-inicio",sec()).hidden=true; $("#ci-editor",sec()).hidden=false;
-    for(const [k,v] of Object.entries({brand:"brand",product:"product",objective:"objective",audience:"audience",briefing:"briefing",voice:"voice",deliverables:"deliverables",restrictions:"restrictions"})) $("#ci-"+k,sec()).value=c[v]||"";
-    renderAnuncios(); renderAnalise(); $("#ci-gerar",sec()).disabled=!c.briefing;
+    const c=p||vazio(); projeto=p; q("#ci-inicio",sec()).hidden=true; q("#ci-editor",sec()).hidden=false;
+    for(const [k,v] of Object.entries({brand:"brand",product:"product",objective:"objective",audience:"audience",briefing:"briefing",voice:"voice",deliverables:"deliverables",restrictions:"restrictions"})) q("#ci-"+k,sec()).value=c[v]||"";
+    renderAnuncios(); renderAnalise(); q("#ci-gerar",sec()).disabled=!c.briefing;
   }
   async function carregar(){
     limparAviso(); const {data,error}=await supa().from("creative_intelligence_projects").select("*").order("updated_at",{ascending:false});
-    if(error){aviso("A tabela da Biblioteca Criativa ainda não foi criada no Supabase. Aplique o arquivo sql-creative-intelligence.sql antes de usar.",true);$("#ci-projetos",sec()).innerHTML='<div class="ci-empty">Configure o banco para salvar seus projetos.</div>';return;}
-    window.ciProjetos=data||[]; renderProjetos(); $("#ci-total",sec()).textContent=(data||[]).length;
-    const {count}=await supa().from("creative_intelligence_ads").select("*",{count:"exact",head:true}); $("#ci-ads-total",sec()).textContent=count||0;
-    const {count:pend}=await supa().from("creative_intelligence_ads").select("*",{count:"exact",head:true}).is("analysis","null"); $("#ci-pendentes",sec()).textContent=pend||0;
+    if(error){aviso("A tabela da Biblioteca Criativa ainda não foi criada no Supabase. Aplique o arquivo sql-creative-intelligence.sql antes de usar.",true);q("#ci-projetos",sec()).innerHTML='<div class="ci-empty">Configure o banco para salvar seus projetos.</div>';return;}
+    window.ciProjetos=data||[]; renderProjetos(); q("#ci-total",sec()).textContent=(data||[]).length;
+    const {count}=await supa().from("creative_intelligence_ads").select("*",{count:"exact",head:true}); q("#ci-ads-total",sec()).textContent=count||0;
+    const {count:pend}=await supa().from("creative_intelligence_ads").select("*",{count:"exact",head:true}).is("analysis","null"); q("#ci-pendentes",sec()).textContent=pend||0;
   }
   function renderProjetos(){
-    const q=($("#ci-busca",sec())?.value||"").toLowerCase(); const arr=(window.ciProjetos||[]).filter(p=>(p.brand+" "+p.product).toLowerCase().includes(q));
-    $("#ci-projetos",sec()).innerHTML=arr.length?arr.map(p=>`<button class="ci-project ${projeto?.id===p.id?"active":""}" data-id="${p.id}"><b>${esc(p.brand||"Sem marca")}</b><span>${esc(p.product||"Projeto sem produto")}</span><small>Atualizado em ${data(p.updated_at)}</small></button>`).join(""):'<div class="ci-empty">Nenhum projeto ainda. Crie o primeiro briefing.</div>';
-    $$(".ci-project",sec()).forEach(b=>b.onclick=()=>abrirProjeto(b.dataset.id));
+    const q=(q("#ci-busca",sec())?.value||"").toLowerCase(); const arr=(window.ciProjetos||[]).filter(p=>(p.brand+" "+p.product).toLowerCase().includes(q));
+    q("#ci-projetos",sec()).innerHTML=arr.length?arr.map(p=>`<button class="ci-project ${projeto?.id===p.id?"active":""}" data-id="${p.id}"><b>${esc(p.brand||"Sem marca")}</b><span>${esc(p.product||"Projeto sem produto")}</span><small>Atualizado em ${data(p.updated_at)}</small></button>`).join(""):'<div class="ci-empty">Nenhum projeto ainda. Crie o primeiro briefing.</div>';
+    qa(".ci-project",sec()).forEach(b=>b.onclick=()=>abrirProjeto(b.dataset.id));
   }
-  async function novo(){ preencher(vazio()); anuncios=[]; analiseAtual=null; projeto=null; renderProjetos(); $("#ci-anuncios",sec()).innerHTML=""; $("#ci-analysis",sec()).hidden=true; $("#ci-analysis-empty",sec()).hidden=false; $("#ci-roteiro",sec()).hidden=true; }
+  async function novo(){ preencher(vazio()); anuncios=[]; analiseAtual=null; projeto=null; renderProjetos(); q("#ci-anuncios",sec()).innerHTML=""; q("#ci-analysis",sec()).hidden=true; q("#ci-analysis-empty",sec()).hidden=false; q("#ci-roteiro",sec()).hidden=true; }
   async function abrirProjeto(pid){
     limparAviso(); const {data,error}=await supa().from("creative_intelligence_projects").select("*").eq("id",pid).single(); if(error){aviso(error.message,true);return;}
     const {data:ads}=await supa().from("creative_intelligence_ads").select("*").eq("project_id",pid).order("created_at",{ascending:false}); anuncios=ads||[];
@@ -76,20 +76,20 @@
     limparAviso(); const c=campos(); if(!c.brand&&!c.product&&!c.briefing){aviso("Preencha pelo menos a marca, o produto ou o briefing.",true);return;}
     const payload={...c,updated_at:new Date().toISOString()};
     const res=projeto?.id?await supa().from("creative_intelligence_projects").update(payload).eq("id",projeto.id).select().single():await supa().from("creative_intelligence_projects").insert(payload).select().single();
-    if(res.error){aviso("Não consegui salvar: "+res.error.message,true);return;} projeto=res.data; $("#ci-save-state",sec()).textContent="Salvo agora"; await carregar(); renderProjetos();
+    if(res.error){aviso("Não consegui salvar: "+res.error.message,true);return;} projeto=res.data; q("#ci-save-state",sec()).textContent="Salvo agora"; await carregar(); renderProjetos();
   }
   async function adicionarAnuncio(){
     if(!projeto?.id){await salvarProjeto();if(!projeto?.id)return;}
-    const title=$("#ci-ad-title",sec()).value.trim(), url=$("#ci-ad-url",sec()).value.trim(), transcript=$("#ci-ad-transcript",sec()).value.trim();
+    const title=q("#ci-ad-title",sec()).value.trim(), url=q("#ci-ad-url",sec()).value.trim(), transcript=q("#ci-ad-transcript",sec()).value.trim();
     if(!title||!url){aviso("Informe o nome e o link da referência.",true);return;}
     try{new URL(url)}catch{aviso("Confira o link do anúncio.",true);return;}
-    const row={project_id:projeto.id,title,url,platform:$("#ci-ad-platform",sec()).value,performance_note:$("#ci-ad-performance",sec()).value.trim(),transcript};
+    const row={project_id:projeto.id,title,url,platform:q("#ci-ad-platform",sec()).value,performance_note:q("#ci-ad-performance",sec()).value.trim(),transcript};
     const {data,error}=await supa().from("creative_intelligence_ads").insert(row).select().single(); if(error){aviso(error.message,true);return;}
-    anuncios.unshift(data); ["ci-ad-title","ci-ad-url","ci-ad-performance","ci-ad-transcript"].forEach(k=>$("#"+k,sec()).value=""); renderAnuncios(); await carregar();
+    anuncios.unshift(data); ["ci-ad-title","ci-ad-url","ci-ad-performance","ci-ad-transcript"].forEach(k=>q("#"+k,sec()).value=""); renderAnuncios(); await carregar();
   }
   function renderAnuncios(){
-    $("#ci-anuncios",sec()).innerHTML=anuncios.length?anuncios.map(a=>`<article class="ci-ad"><div><b>${esc(a.title)}</b><small>${esc(a.platform)} · ${data(a.created_at)}</small><a href="${esc(a.url)}" target="_blank" rel="noopener">Abrir anúncio ↗</a></div><div class="ci-ad-actions"><button class="ci-btn ci-small" data-analisar="${a.id}">Analisar</button><button class="ci-btn ci-small" data-excluir="${a.id}">Excluir</button></div></article>`).join(""):'<div class="ci-empty">Suas referências salvas aparecerão aqui.</div>';
-    $$("[data-analisar]",sec()).forEach(b=>b.onclick=()=>analisar(b.dataset.analisar)); $$("[data-excluir]",sec()).forEach(b=>b.onclick=()=>excluirAnuncio(b.dataset.excluir));
+    q("#ci-anuncios",sec()).innerHTML=anuncios.length?anuncios.map(a=>`<article class="ci-ad"><div><b>${esc(a.title)}</b><small>${esc(a.platform)} · ${data(a.created_at)}</small><a href="${esc(a.url)}" target="_blank" rel="noopener">Abrir anúncio ↗</a></div><div class="ci-ad-actions"><button class="ci-btn ci-small" data-analisar="${a.id}">Analisar</button><button class="ci-btn ci-small" data-excluir="${a.id}">Excluir</button></div></article>`).join(""):'<div class="ci-empty">Suas referências salvas aparecerão aqui.</div>';
+    qa("[data-analisar]",sec()).forEach(b=>b.onclick=()=>analisar(b.dataset.analisar)); qa("[data-excluir]",sec()).forEach(b=>b.onclick=()=>excluirAnuncio(b.dataset.excluir));
   }
   async function excluirAnuncio(aid){const {error}=await supa().from("creative_intelligence_ads").delete().eq("id",aid);if(error){aviso(error.message,true);return;}anuncios=anuncios.filter(a=>a.id!==aid);renderAnuncios();await carregar();}
   async function analisar(aid){
@@ -99,13 +99,13 @@
     if(error||data?.error){aviso(data?.error||error.message,true);return;}
     a.analysis=data.analise; const {error:saveError}=await supa().from("creative_intelligence_ads").update({analysis:data.analise,analyzed_at:new Date().toISOString()}).eq("id",aid);
     if(saveError){aviso("Análise pronta, mas não consegui salvá-la: "+saveError.message,true);return;}
-    analiseAtual=data.analise; renderAnalise(); $("#ci-gerar",sec()).disabled=false; aviso("Análise salva. Agora você pode transformar os aprendizados em um roteiro.");
+    analiseAtual=data.analise; renderAnalise(); q("#ci-gerar",sec()).disabled=false; aviso("Análise salva. Agora você pode transformar os aprendizados em um roteiro.");
     await carregar();
   }
   function renderAnalise(){
-    const a=anuncios.find(x=>x.analysis); const el=$("#ci-analysis",sec()); if(!el)return;
-    if(!a){el.hidden=true;$("#ci-analysis-empty",sec()).hidden=false;return;}
-    el.hidden=false;$("#ci-analysis-empty",sec()).hidden=true;const o=a.analysis.observado||{},i=a.analysis.interpretacao||{};
+    const a=anuncios.find(x=>x.analysis); const el=q("#ci-analysis",sec()); if(!el)return;
+    if(!a){el.hidden=true;q("#ci-analysis-empty",sec()).hidden=false;return;}
+    el.hidden=false;q("#ci-analysis-empty",sec()).hidden=true;const o=a.analysis.observado||{},i=a.analysis.interpretacao||{};
     el.innerHTML=`<div class="ci-analysis-grid"><section><h4>O que foi observado</h4><dl><dt>Gancho</dt><dd>${esc(o.gancho)}</dd><dt>Formato</dt><dd>${esc(o.formato)}</dd><dt>Estrutura</dt><dd>${esc(o.estrutura)}</dd><dt>Ritmo</dt><dd>${esc(o.ritmo)}</dd><dt>CTA</dt><dd>${esc(o.cta)}</dd></dl></section><section><h4>Leitura estratégica · hipótese</h4><dl><dt>Por que pode funcionar</dt><dd>${esc(i.por_que_funciona)}</dd><dt>Público</dt><dd>${esc(i.publico)}</dd><dt>Emoção</dt><dd>${esc(i.emocao)}</dd><dt>Como adaptar sem copiar</dt><dd>${esc(i.como_adaptar)}</dd></dl></section></div><h4>Ideias derivadas</h4><ul class="ci-ideas">${(a.analysis.ideias||[]).map(x=>"<li>"+esc(x)+"</li>").join("")}</ul><p class="ci-muted">A leitura estratégica é uma hipótese criativa, não uma comprovação de desempenho.</p>`;
   }
   async function gerarRoteiro(){
@@ -115,9 +115,9 @@
     const briefing=[c.briefing,"Marca: "+c.brand,"Produto: "+c.product,"Objetivo: "+c.objective,"Público: "+c.audience,"Tom de voz: "+c.voice,"Entregáveis: "+c.deliverables,"Obrigatoriedades e restrições: "+c.restrictions,insight?"Aprendizado de referência (adaptar o mecanismo, nunca copiar): "+insight:""].filter(Boolean).join("\n");
     const {data,error}=await supa().functions.invoke("skill-ugc",{body:{acao:"criar",briefing,marca:c.brand,produto:c.product,objetivo:c.objective,publico:c.audience,duracao:0}});
     if(error||data?.error){aviso(data?.error||error.message,true);return;}
-    const r=data.roteiro||{};const blocos=r.blocos||[];const out=$("#ci-roteiro",sec());out.hidden=false;
+    const r=data.roteiro||{};const blocos=r.blocos||[];const out=q("#ci-roteiro",sec());out.hidden=false;
     out.innerHTML=`<div class="ci-script-head"><span class="ci-kicker">ROTEIRO GERADO PELA SKILL UGC</span><h4>${esc(c.brand)} · ${esc(c.product)}</h4></div>${(r.ganchos||[]).length?'<h4>Opções de gancho</h4><ol>'+r.ganchos.map(x=>'<li>'+esc(typeof x==="string"?x:x.texto||x.fala||JSON.stringify(x))+'</li>').join("")+'</ol>':""}${blocos.map(b=>`<article class="ci-scene"><b>${esc(b.titulo||b.tipo||"Cena")}</b><p>${esc(b.fala||b.texto||"")}</p><small>${esc(b.cena||b.visual||"")}</small></article>`).join("")}<button class="ci-btn" id="ci-copiar">Copiar roteiro</button>`;
-    $("#ci-copiar",sec()).onclick=()=>navigator.clipboard?.writeText(blocos.map(b=>(b.titulo||b.tipo||"Cena")+"\n"+(b.fala||b.texto||"")+"\n"+(b.cena||b.visual||"")).join("\n\n"));
+    q("#ci-copiar",sec()).onclick=()=>navigator.clipboard?.writeText(blocos.map(b=>(b.titulo||b.tipo||"Cena")+"\n"+(b.fala||b.texto||"")+"\n"+(b.cena||b.visual||"")).join("\n\n"));
     aviso("Roteiro gerado. Revise as obrigatoriedades antes de enviar à marca.");
   }
   document.addEventListener("painel:aba",e=>{if(e.detail==="creative-intelligence")layout();});
