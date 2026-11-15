@@ -74,7 +74,7 @@
         const page=await pdf.getPage(n), content=await page.getTextContent();
         paginas.push(content.items.map(x=>x.str||"").join(" "));
       }
-      return paginas.join("\\n\\n");
+      return paginas.join("\n\n");
     }
     throw new Error("Formato não suportado. Envie PDF, DOCX, TXT ou MD.");
   }
@@ -92,12 +92,14 @@
       const valores={brand:c.marca,product:c.produto,objective:c.objetivo,audience:c.publico,voice:c.tom_de_voz,deliverables:c.entregaveis,restrictions:c.obrigatorias_e_restricoes};
       for(const [campo,valor] of Object.entries(valores)){if(valor) q("#ci-"+campo,sec()).value=valor;}
       q("#ci-briefing",sec()).value=texto;
-      const extras=[...(data.informacoes_importantes||[]).map(x=>"Informação: "+x),...(data.duvidas_ou_lacunas||[]).map(x=>"Conferir: "+x)];\n      status.textContent="Briefing lido! Revise os campos preenchidos e clique em “Salvar briefing”. "+(extras.length?extras.join(" | ")+" | ":"")+"Arquivo: "+file.name;
+      const extras=[...(data.informacoes_importantes||[]).map(x=>"Informação: "+x),...(data.duvidas_ou_lacunas||[]).map(x=>"Conferir: "+x)];
+      status.textContent="Briefing lido! Revise os campos preenchidos e clique em “Salvar briefing”. "+(extras.length?extras.join(" | ")+" | ":"")+"Arquivo: "+file.name;
       aviso("A IA organizou as informações encontradas. Confira os dados antes de salvar.");
     }catch(e){status.textContent=e.message||"Erro ao ler o arquivo.";aviso(status.textContent,true);}
     finally{button.disabled=false;}
   }
-\n  function campos(){
+
+  function campos(){
     return {brand:q("#ci-brand",sec()).value.trim(),product:q("#ci-product",sec()).value.trim(),objective:q("#ci-objective",sec()).value.trim(),audience:q("#ci-audience",sec()).value.trim(),briefing:q("#ci-briefing",sec()).value.trim(),voice:q("#ci-voice",sec()).value.trim(),deliverables:q("#ci-deliverables",sec()).value.trim(),restrictions:q("#ci-restrictions",sec()).value.trim()};
   }
   function preencher(p){
