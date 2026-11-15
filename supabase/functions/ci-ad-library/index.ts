@@ -13,17 +13,17 @@ const str = (v: unknown, max = 1200) => String(v ?? "").replace(/\s+/g, " ").tri
 const first = (...values: unknown[]) => values.find((v) => v !== undefined && v !== null && String(v).trim() !== "");
 
 function normalizar(x: any, index: number) {
-  const id = str(first(x.libraryId, x.adArchiveId, x.ad_archive_id, x.id, x.archive_id), 120);
+  const id = str(first(x.libraryId, x.adId, x.ad_id, x.adArchiveId, x.ad_archive_id, x.id, x.archive_id), 120);
   const page = str(first(x.pageName, x.page_name, x.advertiserName, x.advertiser_name, x.sponsor, x.name), 180) || "Anunciante não identificado";
-  const body = str(first(x.body, x.adText, x.ad_text, x.ad_creative_bodies?.[0], x.creativeBody, x.text, x.caption), 4000);
-  const title = str(first(x.title, x.ad_creative_link_titles?.[0], x.linkTitle, x.headline), 500);
-  const description = str(first(x.description, x.ad_creative_link_descriptions?.[0], x.linkDescription), 1000);
-  const snapshot = str(first(x.snapshotUrl, x.ad_snapshot_url, x.adLibraryUrl, x.ad_library_url, x.url, x.libraryUrl), 1800);
-  const media = str(first(x.mediaType, x.media_type, x.format, x.adFormat, x.ad_format, x.type), 80).toLowerCase();
-  const videoUrl = str(first(x.videoUrl, x.video_url, x.video?.url, x.creative?.videoUrl), 1800);
-  const active = x.isActive ?? x.is_active ?? x.active ?? (String(first(x.status, x.adStatus, "")).toLowerCase().includes("active"));
-  const start = first(x.startDate, x.start_date, x.ad_delivery_start_time, x.deliveryStartTime);
-  const stop = first(x.endDate, x.end_date, x.ad_delivery_stop_time, x.deliveryStopTime);
+  const body = str(first(x.body, x.bodyText, x.body_text, x.adText, x.ad_text, x.ad_creative_bodies?.[0], x.creativeBody, x.text, x.caption), 4000);
+  const title = str(first(x.title, x.headline, x.ad_creative_link_titles?.[0], x.linkTitle), 500);
+  const description = str(first(x.description, x.linkDescription, x.link_description, x.ad_creative_link_descriptions?.[0]), 1000);
+  const snapshot = str(first(x.snapshotUrl, x.adUrl, x.ad_url, x.ad_snapshot_url, x.adLibraryUrl, x.ad_library_url, x.url, x.libraryUrl), 1800);
+  const media = str(first(x.mediaType, x.media_type, x.format, x.creativeFormat, x.creative_format, x.adFormat, x.ad_format, x.type), 80).toLowerCase();
+  const videoUrl = str(first(x.videoUrl, x.video_url, x.video?.url, x.creative?.videoUrl, x.creative_video_url), 1800);
+  const active = x.isActive ?? x.is_active ?? x.activeToday ?? x.active_today ?? x.active ?? (String(first(x.status, x.adStatus, "")).toLowerCase().includes("active"));
+  const start = first(x.startDate, x.start_date, x.firstShown, x.first_shown, x.ad_delivery_start_time, x.deliveryStartTime);
+  const stop = first(x.endDate, x.end_date, x.lastShown, x.last_shown, x.ad_delivery_stop_time, x.deliveryStopTime);
   const platforms = Array.isArray(x.publisherPlatforms) ? x.publisherPlatforms : Array.isArray(x.publisher_platforms) ? x.publisher_platforms : [];
   const textForAnalysis = [body, title, description].filter(Boolean).join("\n");
   const inferredVideo = /video|reel|movie/i.test(media) || !!videoUrl;
