@@ -375,11 +375,11 @@
   // ---------- TENDÊNCIAS ----------
   function tendencias() {
     const T = st.tend || {};
-    const tags = Array.isArray(T.hashtags) ? T.hashtags : ["ugcbrasil", "achadinhos", "skincare", "cabelo", "maternidade"].map((tag) => ({ tag, ativo: true }));
+    const tags = Array.isArray(T.hashtags) ? T.hashtags : ["ugcbrasil", "achadinhos", "skincare", "cabelo", "maternidadereal", "modafeminina", "autocuidado", "rotinareal"].map((tag) => ({ tag, ativo: true }));
     const posts = Array.isArray(T.posts) ? T.posts : [], topicos = Array.isArray(T.topicos) ? T.topicos : [];
     const porTag = (t) => posts.filter((p) => p.tag === t).length;
     const topV = [...posts].filter((p) => p.views).sort((a, b) => b.views - a.views)[0];
-    const topC = [...posts].sort((a, b) => (b.curtidas || 0) - (a.curtidas || 0))[0];
+    const topE = [...posts].filter((p) => Number(p.views) > 0).sort((a, b) => (((b.curtidas || 0) + (b.comentarios || 0)) / b.views) - (((a.curtidas || 0) + (a.comentarios || 0)) / a.views))[0];
     const quando = (s) => (s ? new Date(s).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
     const ocupado = st.buscando || st.analisando || !!(T.run && T.run.id);
     const cartaoTopico = (t) => {
@@ -390,7 +390,7 @@
         <h4>${esc(t.titulo)}</h4><p>${esc(t.resumo)}</p>
         <p class="rs-topico-hash">${ICO.hash}#${esc(t.hashtag)}${qtd ? ` · ${qtd} posts lidos` : ""}</p>
         ${t.encaixe ? `<div class="rs-encaixe"><b>Seu encaixe:</b> ${esc(t.encaixe)}</div>` : ""}
-        ${t.gancho ? `<blockquote>"${esc(t.gancho)}"</blockquote>` : ""}
+        ${Array.isArray(t.ganchos) && t.ganchos.length ? `<div class="rs-ganchos"><b>Ganchos para testar</b><ol>${t.ganchos.slice(0,3).map((g) => `<li>${esc(g)}</li>`).join("")}</ol></div>` : t.gancho ? `<blockquote>"${esc(t.gancho)}"</blockquote>` : ""}
         ${st.verPosts[t.id] && provas.length ? `<div class="rs-provas">${provas.map((p) => `<a href="${esc(p.link)}" target="_blank" rel="noopener" title="@${esc(p.perfil)}">${p.capa ? `<img src="${esc(p.capa)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<small>${p.views ? curto(p.views) + " views" : num(p.curtidas) + " curtidas"}</small></a>`).join("")}</div>` : ""}
         <div class="rs-topico-pe"><span class="rs-acao">${esc(t.acao)}</span>
           ${provas.length ? `<button type="button" class="btn" data-ver="${esc(t.id)}">${st.verPosts[t.id] ? "Esconder posts" : "Ver posts"}</button>` : ""}
@@ -401,14 +401,14 @@
     <div class="rs-kpis">
       ${kpi(0, "Tópicos em alta", num(topicos.length), "", topicos.length ? `${topicos.filter((t) => t.calor === "Em alta").length} em alta agora` : "atualize para montar", ICO.fogo)}
       ${kpi(1, "Post mais visto", topV ? curto(topV.views) : "sem dado", "", topV ? `#${esc(topV.tag)} · @${esc(topV.perfil)}` : "nas hashtags que você acompanha", ICO.play)}
-      ${kpi(2, "Mais curtido", topC ? curto(topC.curtidas) : "sem dado", "", topC ? `#${esc(topC.tag)} · @${esc(topC.perfil)}` : "nas hashtags que você acompanha", ICO.coracao)}
+      ${kpi(2, "Interações por visualização", topE ? pct(((topE.curtidas || 0) + (topE.comentarios || 0)) / topE.views * 100, 1) : "sem dado", "", topE ? `#${esc(topE.tag)} · @${esc(topE.perfil)}` : "sem dados suficientes para calcular", ICO.coracao)}
       ${kpi(3, "Bombou nos perfis", num(st.bombou.length), "", "que você acompanha, 2x ou mais o normal", ICO.coroa)}
     </div>
-    <div class="rs-cartao"><div class="rs-cab"><h3>Hashtags acompanhadas</h3><small>${tags.filter((t) => t.ativo).length} ligadas${T.buscadoEm ? ` · lidas em ${quando(T.buscadoEm)}` : ""}</small></div>
+    <div class="rs-cartao"><div class="rs-cab"><h3>Temas e hashtags monitorados</h3><small>${tags.filter((t) => t.ativo).length} ligadas${T.buscadoEm ? ` · lidas em ${quando(T.buscadoEm)}` : ""}</small></div>
       <div class="rs-hashtags">${tags.map((t, i) => `<span class="rs-hash${t.ativo ? "" : " off"}"><button type="button" data-hliga="${i}" title="${t.ativo ? "Pausar" : "Ligar"}">#${esc(t.tag)}<small>${porTag(t.tag) || ""}</small></button><button type="button" class="x" data-htira="${i}" aria-label="Tirar #${esc(t.tag)}">×</button></span>`).join("")}</div>
       <form class="rs-hash-form" id="rs-hash-form"><input class="entrada" id="rs-hash-nova" placeholder="# Adicionar hashtag, ex.: ugcbeleza" autocomplete="off"><button class="btn" type="submit">Adicionar</button>
         <button class="btn btn-principal" type="button" id="rs-atualizar"${ocupado ? " disabled" : ""}>${ICO.atualizar}${st.buscando || (T.run && T.run.id) ? "Lendo as hashtags..." : st.analisando ? "Montando os tópicos..." : "Atualizar tendências"}</button></form>
-      <p class="rs-nota">Lê só posts públicos das hashtags (pelo Apify, sem entrar na sua conta) e a IA junta em tópicos para o seu nicho. Gasta poucos créditos do Apify: use 1 vez por semana.${T.erro ? ` <b class="rs-erro">${esc(T.erro)}</b>` : ""}</p>
+      <p class="rs-nota">Analisa posts públicos recentes do Instagram nas hashtags monitoradas. Compara visualizações, curtidas e comentários e sugere temas e 3 ganchos para testar. Não acessa mensagens nem dados privados.${T.erro ? ` <b class="rs-erro">${esc(T.erro)}</b>` : ""}</p>
     </div>
     <div class="rs-cab rs-cab-solta"><h3>Tópicos em alta</h3><small>${T.analisadoEm ? `montados em ${quando(T.analisadoEm)}` : ""}${posts.length && !st.analisando ? ` · <button type="button" class="rs-link" id="rs-reanalisar">montar de novo</button>` : ""}</small></div>
     ${topicos.length ? `<div class="rs-topicos">${topicos.map(cartaoTopico).join("")}</div>` : `<div class="rs-cartao"><p class="rs-vazio">${posts.length ? "Toque em montar de novo para a IA juntar os posts em tópicos." : "Toque em Atualizar tendências para ler as hashtags."}</p></div>`}
@@ -469,8 +469,6 @@
     else corpo += calendario();
     sec.innerHTML = `<div class="rs">
       <div class="rs-topo">
-        <div class="rs-conta"><span class="rs-avatar">M</span><div><b>Mari Bonetto UGC</b><small>@maribonettougc</small></div>
-          <span class="rs-redes">${Object.keys(REDES).map((r) => `<i style="background:${COR[r]}" title="${REDES[r]}"></i>`).join("")}</span></div>
         <div class="rs-topo-dir">${lido ? `<span class="rs-sync"><i></i>Metricool lido em ${new Date(lido).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>` : ""}
           <a class="btn" href="https://app.metricool.com/" target="_blank" rel="noopener">Abrir o Metricool</a></div>
       </div>
@@ -539,7 +537,7 @@
     const o = $("#rs-ordem", sec); if (o) o.addEventListener("change", () => { st.ordem = o.value; pintar(); });
     sec.querySelectorAll("[data-pc]").forEach((b) => b.addEventListener("click", () => irConteudos(b.dataset.pc)));
     sec.querySelectorAll("[data-conteudo]").forEach((b) => b.addEventListener("click", () => irConteudos("quadro")));
-    const tags = () => ((st.tend && st.tend.hashtags) || ["ugcbrasil", "achadinhos", "skincare", "cabelo", "maternidade"].map((tag) => ({ tag, ativo: true }))).map((h) => ({ ...h }));
+    const tags = () => ((st.tend && st.tend.hashtags) || ["ugcbrasil", "achadinhos", "skincare", "cabelo", "maternidadereal", "modafeminina", "autocuidado", "rotinareal"].map((tag) => ({ tag, ativo: true }))).map((h) => ({ ...h }));
     sec.querySelectorAll("[data-hliga]").forEach((b) => b.addEventListener("click", () => { const l = tags(); const h = l[Number(b.dataset.hliga)]; h.ativo = !h.ativo; salvarHashtags(l); }));
     sec.querySelectorAll("[data-htira]").forEach((b) => b.addEventListener("click", () => { const l = tags(); l.splice(Number(b.dataset.htira), 1); salvarHashtags(l); }));
     const f = $("#rs-hash-form", sec);
