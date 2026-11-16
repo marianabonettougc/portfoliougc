@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611160130"></script>
-<script src="../../js/dialogos.js?v=202611160130"></script>
-<script src="../../js/metricool-ig.js?v=202611160130"></script>
-<script src="../../js/corretor.js?v=202611160130"></script>
+<script src="../../js/banco.js?v=202611162230"></script>
+<script src="../../js/dialogos.js?v=202611162230"></script>
+<script src="../../js/metricool-ig.js?v=202611162230"></script>
+<script src="../../js/corretor.js?v=202611162230"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -1700,6 +1700,74 @@
     div:has(> .page-head.jb-head) > .search{ flex-basis:100%; }
     .page-head.jb-head{ flex-wrap:wrap; }
   }
+
+  /* ===== DASHBOARD LIMPO (nov/2026, pedido da Mari: "bagunça, paleta apagada, fontes diferentes")
+     Padrão único: DM Serif Display 20px nos títulos dos blocos (32px só na saudação),
+     Poppins em todo o resto com 4 tamanhos: 24px números, 14px texto, 12.5px detalhe, 11px rótulo em caixa alta.
+     Cores: café #6b4a35, terracota #a87058, caramelo #b9825a, café claro #8a634b; vermelho só atraso, verde só bom/concluído. */
+  .dz{--dz-num:600 24px/1.15 Poppins,sans-serif; --dz-txt:14px; --dz-det:12.5px; --dz-rot:11px; --dz-linha:rgba(107,74,53,.14)}
+  .dz .db-bloco{background:#fffdf9 !important;border:1px solid var(--dz-linha) !important;border-radius:18px;padding:20px 22px;box-shadow:0 8px 24px rgba(107,74,53,.07)}
+  .dz .db-bloco h2,.dz .dn-bt h2,.dz .dz-ig-cab h2{font-family:var(--db-serif) !important;font-weight:400 !important;font-size:20px !important;line-height:1.2;color:#3d2b20;margin:0}
+  .dz .dz-sub,.dz .db-sub{font-size:var(--dz-det) !important;color:var(--db-suave);margin-top:3px}
+  .dz .dn-bt{margin-bottom:14px}
+  .dz .db-link{font-size:13px;font-weight:500;color:#6b4a35}
+  /* números do topo */
+  .dz > .dn-cards{gap:14px;margin-bottom:16px}
+  .dz .dz-nums .dn-card{align-items:center;padding:16px 18px;gap:14px;min-height:0;background:#fffdf9;border:1px solid var(--dz-linha);box-shadow:0 8px 24px rgba(107,74,53,.07);transition:transform .15s, box-shadow .15s}
+  .dz .dz-nums .dn-card:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(107,74,53,.12)}
+  .dz .dz-nums .dn-ico{display:grid;place-items:center;width:44px;height:44px;flex:none;border-radius:14px;color:#fff;background:#6b4a35}
+  .dz .dz-nums .dn-ico.k-2{background:#a87058}.dz .dz-nums .dn-ico.k-3{background:#b9825a}.dz .dz-nums .dn-ico.k-4{background:#8a634b}
+  .dz .dz-nums .dn-card-txt small{font-size:var(--dz-rot) !important;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--db-suave)}
+  .dz .dz-nums .dn-card-txt b{font:var(--dz-num) !important;color:#3d2b20;margin:3px 0 2px}
+  .dz .dz-nums .dn-card-txt em{font-size:var(--dz-det) !important;font-style:normal;color:var(--db-suave)}
+  .dz .dz-nums .dn-card-txt em.bom{color:var(--db-verde)}.dz .dz-nums .dn-card-txt em.ruim{color:var(--db-vermelho)}
+  /* Instagram num cartão só */
+  .dz-ig1{margin:0 0 16px}
+  .dz-ig1 .dn-bt{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .dz-ig1-corpo{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:22px;align-items:end}
+  .dz-ig1-nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .dz-ig1-nums > div{padding:12px 14px;border-radius:14px;background:#f6efe6;min-width:0}
+  .dz-ig1-nums small{display:block;font-size:var(--dz-rot);font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--db-suave)}
+  .dz-ig1-nums b{display:block;font:var(--dz-num);color:#3d2b20;margin:4px 0 2px}
+  .dz-ig1-nums em{display:block;font-style:normal;font-size:var(--dz-det);font-weight:500;color:var(--db-suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dz-ig1-nums em.sobe{color:var(--db-verde)}.dz-ig1-nums em.desce{color:var(--db-vermelho)}
+  .dz-ig1-graf .dz-ig-linha{height:74px;margin:0}
+  .dz-ig1-graf .dz-ig-linha .area{fill:rgba(168,112,88,.18)}.dz-ig1-graf .dz-ig-linha .traco{stroke:#a87058;stroke-width:2}.dz-ig1-graf .dz-ig-linha circle{fill:#6b4a35}
+  .dz-ig1-graf small{display:block;margin-top:6px;font-size:var(--dz-det);color:var(--db-suave)}
+  .dz-ig1-txt{font-size:var(--dz-txt);color:#3d2b20;margin:0}
+  .dz .dz-seg{background:#f3ebe0}.dz .dz-seg button{font-size:12.5px}.dz .dz-seg button.on{background:#6b4a35;color:#fff;box-shadow:none}
+  /* calendário e tarefas */
+  .dz .dz-mes2{background:#f6efe6;border-radius:16px}
+  .dz .dz-mes2-cab b{font-size:var(--dz-txt);font-weight:600}
+  .dz .dz-mes2-grade small{font-size:var(--dz-rot);font-weight:600}
+  .dz .dz-mes2-grade button{font-size:13px}
+  .dz .dz-mes2-grade button.hoje{box-shadow:inset 0 0 0 1.5px #a87058}
+  .dz .dz-mes2-grade button.sel{background:#6b4a35;color:#fff}
+  .dz .dz-leg2{font-size:var(--dz-det)}
+  .dz .c-grav{background:#a87058}.dz .c-ent{background:#6b4a35}.dz .c-post{background:#c9a24f}.dz .c-apr{background:#8a634b}.dz .c-reu{background:#d2b9a4}.dz .c-atr{background:var(--db-vermelho)}
+  .dz .dz-dia-lista li{grid-template-columns:8px auto minmax(0,1fr)}
+  .dz .dz-dia-hora:empty{display:none}
+  .dz .dz-dia-cab b{font-size:var(--dz-txt)}
+  .dz .dz-dia-txt b,.dz .dz-ttxt b{font-size:var(--dz-txt) !important;font-weight:500}
+  .dz .dz-dia-txt small,.dz .dz-ttxt small,.dz .dz-prazo{font-size:var(--dz-det) !important}
+  .dz .dz-tabs button{font-size:13px}.dz .dz-tabs button.on{color:#6b4a35;font-weight:600}
+  .dz .dz-tabs button.tem-atr span{color:var(--db-vermelho);opacity:1;font-weight:600}
+  /* campanhas */
+  .dz .dz-cc-nome b{font-size:var(--dz-txt)}.dz .dz-cc-nome small,.dz .dz-cc-prazo,.dz .dz-cc-prog small{font-size:var(--dz-det)}
+  .dz .dz-cc-etapa{font-size:12px;background:#f6efe6}
+  .dz .dz-cc-prog i b{background:#a87058}
+  /* inspirações: mesmos tamanhos */
+  .dz .db-insp .db-abas button{font-size:13px}
+  .dz .db-insp .db-nichos button,.dz .db-insp .db-filtro-rede{font-size:12.5px}
+  .dz .db-insp-txt b{font-size:13px}.dz .db-insp-perfil{font-size:12px}
+  .dz .dn-ola p{font-size:var(--dz-txt) !important}
+  .dz .dz-mes2{padding:10px 12px}
+  .dz .dz-mes2-grade button{height:34px}
+  .dz .dz-dia{margin-top:10px}
+  .dz .dz-dia-lista li{padding:7px 4px}
+  .dz .dz-nums .dn-card-txt em{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  @media (max-width:1100px){ .dz-ig1-corpo{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:700px){ .dz-ig1-nums{grid-template-columns:repeat(2,minmax(0,1fr))} .dz .db-bloco{padding:16px} .dz .dz-nums .dn-ico{width:38px;height:38px;border-radius:12px} .dz .dz-nums .dn-card{padding:14px} .dz .dz-nums .dn-card-txt b{font-size:20px !important} }
 </style>
 </head>
 <body>
@@ -3665,8 +3733,6 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     const xy = pts.map((v,i)=>[i/(pts.length-1)*w, h-4-(v/max)*(h-12)]);
     const d = xy.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
     return {d, area: d+` L ${w} ${h} L 0 ${h} Z`, fim:xy[xy.length-1], w, h}; })();
-  const igBarras = (ig.novosDia||[]).slice(-Math.min(igDias,14));
-  const igMaxBar = Math.max(1, ...igBarras.map(x=>x.valor));
   const igSeg = <span className="dz-seg dz-seg-p" role="group" aria-label="Período">{[7,14,30].map(n=><button key={n} className={igDias===n?"on":""} onClick={()=>setIgDias(n)}>{n} dias</button>)}</span>;
   // em produção: campanhas ativas e entregas dos próximos 7 dias
   const entregas7 = ativos.filter(j=>j.prazoEntrega && diasAte(j.prazoEntrega)>=0 && diasAte(j.prazoEntrega)<=7).length;
@@ -3961,61 +4027,44 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
         <span className="dn-data">{dataExtenso}</span>
       </div>
 
-      {/* 2. visão geral: faturado, a receber, em produção e visitas no site */}
+      {/* 2. visão geral: 4 números, cada um com uma linha de detalhe só (nov/2026, Dashboard limpo) */}
       <div className="dn-cards dz-nums">
         <button className="dn-card" onClick={()=>setDetalheFat(true)} title="Ver as receitas do mês">
+          <span className="dn-ico k-1"><DbIcone tipo="moeda" tam={19}/></span>
           <span className="dn-card-txt"><small>Faturado em {MESES_EXT[hojeD.getMonth()]}</small><b>{dnMoeda(faturadoMes)}</b>
-            <em className={varFat>0?"bom":""}>{faturadoLista.length ? `${dnMoeda(fatRecebido)} recebido · ${dnMoeda(aReceberMes)} a receber${varFat!==null ? ` · ${varFat>0?"+":""}${varFat}% sobre ${MESES_EXT[(hojeD.getMonth()+11)%12]}` : ""}${metaMesValor>0 ? ` · ${pctMeta}% da meta` : ""}` : "nenhuma receita lançada no mês"}</em></span></button>
+            <em className={pctMeta!=null ? (pctMeta>=100?"bom":"") : varFat>0?"bom":varFat<0?"ruim":""}>{faturadoLista.length ? `${dnMoeda(fatRecebido)} recebido${pctMeta!=null ? ` · ${pctMeta}% da meta` : varFat!==null ? ` · ${varFat>0?"▲":varFat<0?"▼":"="} ${Math.abs(varFat)}% vs ${MESES_EXT[(hojeD.getMonth()+11)%12].slice(0,3)}` : ""}` : "nenhuma receita no mês"}</em></span></button>
         <button className="dn-card" onClick={()=>go("financeiro")} title="Abrir o financeiro">
+          <span className="dn-ico k-2"><DbIcone tipo="carteira" tam={19}/></span>
           <span className="dn-card-txt"><small>Para receber</small><b>{dnMoeda(paraReceber)}</b>
-            <em className={vencidosLista.length?"ruim":""}>{!pendentesLista.length ? "nada pendente" : vencidosLista.length ? `${dnMoeda(vencidoValor)} vencido · ${dnMoeda(aVencerValor)} a vencer` : `${plural(pendentesLista.length,"lançamento","lançamentos")} a vencer`}</em></span></button>
+            <em className={vencidosLista.length?"ruim":""}>{!pendentesLista.length ? "nada pendente" : vencidosLista.length ? `${dnMoeda(vencidoValor)} vencido` : plural(pendentesLista.length,"lançamento a vencer","lançamentos a vencer")}</em></span></button>
         <button className="dn-card" onClick={()=>go("jobs")} title="Abrir UGC's & Publis">
+          <span className="dn-ico k-3"><DbIcone tipo="maleta" tam={19}/></span>
           <span className="dn-card-txt"><small>Em produção</small><b>{plural(ativos.length,"job","jobs")}</b>
-            <em className={entregasVencidas?"ruim":""}>{ativos.length ? `${comMarcaN} com a marca · ${entregasVencidas ? plural(entregasVencidas,"prazo vencido","prazos vencidos") : plural(entregasProx7,"entrega","entregas")+" em 7 dias"}` : "nenhum job ativo"}</em></span></button>
-        <div className="dn-card dz-vis" role="button" tabIndex={0} onClick={()=>abrirAba ? abrirAba("portfolio") : null} onKeyDown={e=>{ if(e.key==="Enter" && abrirAba) abrirAba("portfolio"); }} title="Abrir as métricas do portfólio">
-          <span className="dn-card-txt"><small>Visitas no site <span className="dz-per" onClick={e=>e.stopPropagation()}>{[7,14,30].map(n=><button key={n} className={visPer===n?"on":""} onClick={()=>setVisPer(n)} aria-label={`Últimos ${n} dias`}>{n}d</button>)}</span></small>
+            <em className={entregasVencidas?"ruim":""}>{!ativos.length ? "nenhum job ativo" : entregasVencidas ? plural(entregasVencidas,"prazo vencido","prazos vencidos") : plural(entregasProx7,"entrega","entregas")+" em 7 dias"}</em></span></button>
+        <button className="dn-card" onClick={()=>abrirAba ? abrirAba("portfolio") : null} title={"Abrir as métricas do portfólio"+(vis.tempo && vis.tempo.siteMedio!=null ? ` · ${fmtDuracao(vis.tempo.siteMedio)} por visita no site` : "")}>
+          <span className="dn-ico k-4"><DbIcone tipo="grafico" tam={19}/></span>
+          <span className="dn-card-txt"><small>Visitas no site · {visPer} dias</small>
             <b>{vis.erro ? "–" : vis.total==null ? "..." : plural(vis.total,"visita","visitas")}</b>
-            <em className={vis.erro?"ruim":""}>{vis.erro ? "não consegui carregar agora" : vis.total==null ? "carregando" : `${plural(vis.unicos,"visitante único","visitantes únicos")} · ${vis.hoje} hoje`}</em>
-            {!vis.erro && vis.total!=null && <em className="dz-vis-tempo" title="Tempo com o site aberto na tela e a pessoa mexendo (parada há mais de 2 min não conta). Só visitas de fora, as suas ficam de fora.">
-              <span className="dz-vis-linha">No site: <b>{vis.tempo && vis.tempo.siteMedio!=null ? `${fmtDuracao(vis.tempo.siteMedio)} por visita` : "ainda medindo"}</b></span>
-              <span className="dz-vis-linha">Vendo vídeos: <b>{vis.tempo && vis.tempo.videoN ? `${fmtDuracao(vis.tempo.videoTotal)} no total` : "nenhum ainda"}</b></span></em>}</span></div>
+            <em className={vis.erro?"ruim":""}>{vis.erro ? "não consegui carregar" : vis.total==null ? "carregando" : `${plural(vis.unicos,"pessoa","pessoas")} · ${vis.hoje} hoje${vis.tempo && vis.tempo.siteMedio!=null ? ` · ${fmtDuracao(vis.tempo.siteMedio)}/visita` : ""}`}</em></span></button>
       </div>
 
-      {/* 3. Instagram (seguidores e alcance) lado a lado, acima do calendário (pedido da Mari, nov/2026) */}
-      <div className={"dz-igfim"+(ig.conectado ? "" : " sem-ig")}>
-        {/* Instagram: seguidores e alcance (API oficial da Meta) */}
-        {ig.conectado ? <>
-          <section className="db-bloco dz-ig-seg">
-            <div className="dz-ig-cab"><h2>Seguidores</h2>{igSeg}</div>
-            {ig.error ? <p className="dz-ig-erro">{ig.error}</p> : <>
-            <div className="dz-ig-num"><b>{igNum(ig.seguidores)}</b>{ig.novos!=null && <span className="dz-ig-novos"><b>+{igNum(ig.novos)}</b><small>novos em {igDias} dias</small></span>}</div>
-            <small className="dz-ig-rot">total hoje · @{ig.username}</small>
-            {ig.deixaram!=null && <div className="dz-ig-menos"><b>-{igNum(ig.deixaram)}</b><small>deixaram de seguir em {igDias} dias</small></div>}
-            <div className="dz-ig-barras" aria-label="Novos seguidores por dia">{igBarras.map(x=><i key={x.data} title={dataBR(x.data).slice(0,5)+": +"+x.valor} style={{height:Math.max(4, x.valor/igMaxBar*100)+"%"}}/>)}</div>
-            <small className="dz-ig-rot dz-ig-pe">Novos seguidores por dia</small></>}
-          </section>
-          <section className="db-bloco dz-ig-alc">
-            <div className="dz-ig-cab"><h2>Alcance</h2>{igSeg}</div>
-            <div className="dz-ig-tres">
-              <div><b>{igNum(ig.alcance)}</b><small>contas alcançadas</small>{igVar(ig.alcanceVar)}</div>
-              <div><b>{ig.engajamento==null ? "–" : String(ig.engajamento).replace(".",",")+"%"}</b><small>engajamento</small>{igVar(ig.engajamentoVar, true)}</div>
-              <div><b>{igNum(ig.interacoes)}</b><small>interações</small>{igVar(ig.interacoesVar)}</div>
-            </div>
-            <div className="dz-ig-views"><b>{igNum(ig.views)}</b><small>visualizações</small>{igVar(ig.viewsVar)}</div>
-            {igLinha && <svg className="dz-ig-linha" viewBox={`0 0 ${igLinha.w} ${igLinha.h}`} preserveAspectRatio="none" aria-label="Alcance por dia"><path d={igLinha.area} className="area"/><path d={igLinha.d} className="traco"/><circle cx={igLinha.fim[0]} cy={igLinha.fim[1]} r="3.5"/></svg>}
-            <small className="dz-ig-rot">{ig.de ? `${dataBR(ig.de).slice(0,5)} a ${dataBR(ig.ate).slice(0,5)}, comparado com os ${igDias} dias antes` : ""}</small>
-            <small className="dz-ig-rot">Linha: visualizações por dia · números do Metricool, parceiro oficial da Meta</small>
-            <div className="dz-ig-acoes"><a className="db-link db-sublinhado" href={`https://www.instagram.com/${ig.username||""}/`} target="_blank" rel="noopener">Abrir o perfil</a>
-              <a className="db-link" href="https://app.metricool.com/" target="_blank" rel="noopener">Abrir o Metricool</a></div>
-          </section>
-        </> : <section className="db-bloco dz-ig-con">
-            <div className="dz-ig-cab"><h2>Seu Instagram no painel</h2></div>
-            {ig.carregando ? <p className="db-vazio">Carregando...</p> : <>
-            <p>Os números do Instagram chegam aqui pelo <b>Metricool</b>, parceiro oficial da Meta, uma vez por dia. O painel não usa token nem programa nenhum no seu Instagram.</p>
-            <p><a className="db-link db-sublinhado" href="https://app.metricool.com/" target="_blank" rel="noopener">Abrir o Metricool</a></p></>}
-          </section>}
-
-      </div>
+      {/* 3. Instagram num cartão só: 4 números e uma linha de visualizações (nov/2026, Dashboard limpo) */}
+      <section className={"db-bloco dz-ig1"+(ig.conectado ? "" : " sem-ig")}>
+        <div className="dn-bt"><div><h2>Instagram</h2><small className="dz-sub">{ig.conectado ? `@${ig.username||""} · ${ig.de ? `${dataBR(ig.de).slice(0,5)} a ${dataBR(ig.ate).slice(0,5)}, comparado com os ${igDias} dias antes` : "números do Metricool"}` : "números do Metricool, parceiro oficial da Meta"}</small></div>
+          <span className="dn-bt-dir">{ig.conectado && igSeg}</span></div>
+        {!ig.conectado ? (ig.carregando ? <p className="db-vazio">Carregando...</p>
+          : <p className="dz-ig1-txt">Os números chegam aqui pelo <b>Metricool</b> uma vez por dia. <a className="db-link db-sublinhado" href="https://app.metricool.com/" target="_blank" rel="noopener">Abrir o Metricool</a></p>)
+        : ig.error ? <p className="dz-ig1-txt">{ig.error}</p> : <div className="dz-ig1-corpo">
+          <div className="dz-ig1-nums">
+            <div><small>Seguidores</small><b>{igNum(ig.seguidores)}</b>{ig.novos!=null && <em className={(ig.novos-(ig.deixaram||0))>=0?"sobe":"desce"}>+{igNum(ig.novos)} novos{ig.deixaram ? ` · -${igNum(ig.deixaram)}` : ""}</em>}</div>
+            <div><small>Alcance</small><b>{igNum(ig.alcance)}</b>{igVar(ig.alcanceVar)}</div>
+            <div><small>Visualizações</small><b>{igNum(ig.views)}</b>{igVar(ig.viewsVar)}</div>
+            <div><small>Engajamento</small><b>{ig.engajamento==null ? "–" : String(ig.engajamento).replace(".",",")+"%"}</b>{igVar(ig.engajamentoVar, true)}</div>
+          </div>
+          {igLinha && <div className="dz-ig1-graf"><svg className="dz-ig-linha" viewBox={`0 0 ${igLinha.w} ${igLinha.h}`} preserveAspectRatio="none" aria-label="Visualizações por dia"><path d={igLinha.area} className="area"/><path d={igLinha.d} className="traco"/><circle cx={igLinha.fim[0]} cy={igLinha.fim[1]} r="3.5"/></svg>
+            <small>Visualizações por dia · <a className="db-link" href={`https://www.instagram.com/${ig.username||""}/`} target="_blank" rel="noopener">Abrir o perfil</a></small></div>}
+        </div>}
+      </section>
 
       {/* 4. calendário + minhas tarefas, mesmo tamanho */}
       <div className="dz-dupla">
@@ -4047,19 +4096,20 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             <div className="dz-mes2-grade">{["S","T","Q","Q","S","S","D"].map((d,i)=><small key={"c"+i}>{d}</small>)}
               {diasMesCal.map((d,i)=>d ? <button key={i} className={(d.iso===hoje?"hoje ":"")+(d.iso===diaSel?"sel ":"")+(d.atr?"atr ":"")+(d.iso<hoje?"passado":"")} onClick={()=>setDiaSel(d.iso)} aria-label={dataBR(d.iso)+(d.n?`, ${d.n} compromisso${d.n===1?"":"s"}`:"")+(d.atr?", com pendência atrasada":"")}>
                 <span>{d.dia}</span>{d.n>0 && <em>{d.cats.map(c=><i key={c} className={"c-"+c}/>)}</em>}</button> : <span key={i}/>)}</div>
-            <div className="dz-leg2">{["grav","ent","post","apr","reu"].map(c=><span key={c}><i className={"c-"+c}/>{NOME_CAT[c]}</span>)}<span><i className="c-atr"/>Atrasado</span></div>
+            {(()=>{ const tem = new Set(diasMesCal.flatMap(d=>d ? d.cats : [])); const atr = diasMesCal.some(d=>d && d.atr); const cats = ["grav","ent","post","apr","reu"].filter(c=>tem.has(c));
+              return (cats.length || atr) ? <div className="dz-leg2">{cats.map(c=><span key={c}><i className={"c-"+c}/>{NOME_CAT[c]}</span>)}{atr && <span><i className="c-atr"/>Atrasado</span>}</div> : null; })()}
           </div>
           <div className="dz-dia">
             <div className="dz-dia-cab"><b>{diaSel===hoje ? "Hoje" : `${DIAS_NOME[diaSelD.getDay()]}, ${fmtDia(diaSel)}`}</b>
               {diaSel!==hoje && <button className="db-link" onClick={()=>{ setDiaSel(hoje); setMesCal(new Date(hojeD.getFullYear(), hojeD.getMonth(), 1)); }}>Voltar para hoje</button>}</div>
             <ul className="dz-dia-lista">
-              {eventosSel.length ? eventosSel.slice(0,6).map(it=>{ const ok = !it.apple && itemConcluido(it), atr = !ok && !it.apple && diaSel<hoje && podeConcluir(it);
+              {eventosSel.length ? eventosSel.slice(0,3).map(it=>{ const ok = !it.apple && itemConcluido(it), atr = !ok && !it.apple && diaSel<hoje && podeConcluir(it);
                 return <li key={it.id} className={(ok?"ok ":"")+(atr||it.atrasado?"atr ":"")+(it.apple?"":"clica")} onClick={()=>{ if(!it.apple) abrirItem(it); }}>
-                  <i className={"c-"+catEv(it)}/><span className="dz-dia-hora">{it.hora || "–"}</span>
+                  <i className={"c-"+catEv(it)}/><span className="dz-dia-hora">{it.hora || ""}</span>
                   <span className="dz-dia-txt"><b>{it.texto}</b><small>{NOME_CAT[catEv(it)]}{it.sub ? " · "+it.sub : ""}</small></span></li>; })
                 : <li className="dz-vazio-li">Nada marcado para este dia.</li>}
             </ul>
-            {eventosSel.length>6 && <button className="db-link" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}>Ver mais {eventosSel.length-6} no calendário</button>}
+            {eventosSel.length>3 && <button className="db-link" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}>Ver mais {eventosSel.length-3} no calendário</button>}
           </div>
           <button className="db-link dz-rodape" onClick={()=>abrirAba ? abrirAba("planejar") : go("planner")}>Abrir calendário completo<DbIcone tipo="seta" tam={14}/></button>
         </section>
@@ -4102,9 +4152,9 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
 
       {/* 5. campanhas em andamento */}
       <section className={"db-bloco dn-campanhas dz-camp"+(fechadoB("campanhas")?" fechado":"")}>
-        <div className="dn-bt"><div><h2>Campanhas em andamento</h2><small className="dz-sub">{plural(campanhas.length,"campanha ativa","campanhas ativas")}</small></div><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("campanhas")}</span></div>
+        <div className="dn-bt"><div><h2>Campanhas em andamento</h2><small className="dz-sub">{plural(campanhas.length,"campanha ativa","campanhas ativas")}{campanhas.length>4 ? " · as 4 com prazo mais perto" : ""}</small></div><span className="dn-bt-dir"><button className="db-link" onClick={()=>go("jobs")}>Ver todas<DbIcone tipo="seta" tam={15}/></button>{minB("campanhas")}</span></div>
         {campanhas.length ? <div className="dz-cg">
-          {[...campanhas].sort((a,b)=>((prazosDoJob(a)[0]||[a.prazoEntrega||"9999"])[0]||"9999").localeCompare((prazosDoJob(b)[0]||[b.prazoEntrega||"9999"])[0]||"9999")).slice(0,8).map(j=>{ const p = progressoJob(j), at = etapaDoJob(j, state.roteiros), prox = prazosDoJob(j)[0], marca = comAMarca(at);
+          {[...campanhas].sort((a,b)=>((prazosDoJob(a)[0]||[a.prazoEntrega||"9999"])[0]||"9999").localeCompare((prazosDoJob(b)[0]||[b.prazoEntrega||"9999"])[0]||"9999")).slice(0,4).map(j=>{ const p = progressoJob(j), at = etapaDoJob(j, state.roteiros), prox = prazosDoJob(j)[0], marca = comAMarca(at);
             const abrir = ()=>abrirJob(j.id);
             const atraso = prox && !marca && diasAte(prox[0])<0, hoje = prox && !marca && diasAte(prox[0])===0;
             return <div className={"dz-cc"+(atraso?" atr":"")} key={j.id} role="button" tabIndex={0} onClick={abrir} onKeyDown={e=>{ if(e.key==="Enter") abrir(); }}>
@@ -4116,7 +4166,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
                 {prox && !marca ? <span><b>{fmtDia(prox[0])}</b> · {prox[1]} · {relDias(prox[0])}</span> : <span>{marca ? "com a marca" : prox ? `${fmtDia(prox[0])} · ${prox[1]}` : "sem prazo"}</span>}</div>
             </div>; })}
         </div> : <p className="db-vazio">Nenhuma campanha ativa agora.</p>}
-        {campanhas.length>8 && <button className="db-link dz-rodape" onClick={()=>go("jobs")}>Ver as outras {campanhas.length-8}<DbIcone tipo="seta" tam={14}/></button>}
+        {campanhas.length>4 && <button className="db-link dz-rodape" onClick={()=>go("jobs")}>Ver as outras {campanhas.length-4}<DbIcone tipo="seta" tam={14}/></button>}
       </section>
 
       {/* inspirações | ferramentas */}
