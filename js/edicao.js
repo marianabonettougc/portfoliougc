@@ -594,7 +594,14 @@ IDEIA PARA DEPOIS
       try {
         const el = await carregarVideo(a), clipe = { id: uid(), nome: a.name, arquivo: a, el, dur: el.duration || 0, w: el.videoWidth, h: el.videoHeight, palavras: null };
         // abrindo um projeto: o arquivo certo recupera a transcrição salva
-        if (pend) { const i = pend.findIndex((x) => !x.usado && (x.nome === a.name || Math.abs((x.dur || 0) - clipe.dur) < 0.25)); if (i >= 0) { pend[i].usado = true; clipe.palavras = pend[i].palavras && (pend[i].palavras.length || pend[i].mudo) ? pend[i].palavras : null; clipe.mudo = Boolean(pend[i].mudo); clipe.visual = pend[i].visual || null; clipe.ordem = i; } }
+        if (pend) { const i = pend.findIndex((x) => !x.usado && (x.nome === a.name || Math.abs((x.dur || 0) - clipe.dur) < 0.25)); if (i >= 0) { pend[i].usado = true; clipe.palavras = pend[i].palavras && (pend[i].palavras.length || pend[i].mudo) ? pend[i].palavras : null; clipe.mudo = Boolean(pend[i].mudo); clipe.visual = pend[i].visual || null; clipe.ordem = i; }
+          else {
+            // não é o vídeo deste projeto: não entra na lista e diz qual arquivo escolher
+            const falta = pend.filter((x) => !x.usado).map((x) => `"${x.nome}" (${tempo(x.dur || 0)})`).join(", ");
+            el.removeAttribute("src"); el.load();
+            await painelDialogo.confirmar(`"${a.name}" (${tempo(clipe.dur)}) não é o vídeo deste projeto. Escolha ${falta}.`, { ok: "Entendi" });
+            continue;
+          } }
         clipe.capa = miniaturaDoClipe(el);
         el.addEventListener("error", () => { if (!st.clipes.includes(clipe)) return; clipe.quebrado = true; pintar(); });
         st.clipes.push(clipe);
@@ -5040,7 +5047,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
   function pintar() {
     const sec = document.getElementById("aba-" + ABA);
     if (!sec || !$("#ed-clipes", sec)) return;
-    $("#ed-clipes", sec).innerHTML = (st.pendentes ? `<div class="faixa ed-pendentes"><b>Projeto "${esc(st.projeto ? st.projeto.nome : "")}"</b>: escolha de novo ${st.pendentes.length > 1 ? "os vídeos" : "o vídeo"} deste projeto para a edição voltar como você deixou: ${st.pendentes.map((x) => `<span class="${x.usado ? "ok" : ""}">${esc(x.nome)}${x.usado ? " ✓" : ""}</span>`).join(", ")}.</div>` : "") + (st.clipes.length > 1 ? `<p class="ed-clipes-dica">Arraste a cena (ou use as setas) para trocar a ordem. O X tira a cena; para colocar outra, envie mais vídeos.</p>` : "") + st.clipes.map((c, i) => `<div class="ed-clipe" data-clipe="${c.id}" draggable="${st.trabalhando || st.exportando ? "false" : "true"}"><span class="ed-alca" aria-hidden="true">${ic.alca}</span><span class="ed-num">${i + 1}</span>${c.capa ? `<img class="ed-capa-clipe" src="${c.capa}" alt="">` : ""}<div><b>${esc(c.nome)}</b><small>${tempo(c.dur)}${c.w ? ` · ${c.w}x${c.h}` : ""}${c.mudo ? " · sem som" : c.palavras ? ` · ${c.palavras.length} palavras ouvidas` : ""}</small>${c.quebrado || (c.el && c.el.error) ? `<small class="ed-clipe-erro">Perdi o acesso a este arquivo.</small>` : ""}</div>
+    $("#ed-clipes", sec).innerHTML = (st.pendentes ? `<div class="faixa ed-pendentes"><b>Projeto "${esc(st.projeto ? st.projeto.nome : "")}"</b>: escolha ${st.pendentes.length > 1 ? "estes vídeos" : "este vídeo"} no botão de enviar vídeo para a edição abrir: ${st.pendentes.map((x) => `<span class="${x.usado ? "ok" : ""}">${esc(x.nome)} (${tempo(x.dur || 0)})${x.usado ? " ✓" : ""}</span>`).join(", ")}. Precisa ser esse arquivo (ou um com a mesma duração).</div>` : "") + (st.clipes.length > 1 ? `<p class="ed-clipes-dica">Arraste a cena (ou use as setas) para trocar a ordem. O X tira a cena; para colocar outra, envie mais vídeos.</p>` : "") + st.clipes.map((c, i) => `<div class="ed-clipe" data-clipe="${c.id}" draggable="${st.trabalhando || st.exportando ? "false" : "true"}"><span class="ed-alca" aria-hidden="true">${ic.alca}</span><span class="ed-num">${i + 1}</span>${c.capa ? `<img class="ed-capa-clipe" src="${c.capa}" alt="">` : ""}<div><b>${esc(c.nome)}</b><small>${tempo(c.dur)}${c.w ? ` · ${c.w}x${c.h}` : ""}${c.mudo ? " · sem som" : c.palavras ? ` · ${c.palavras.length} palavras ouvidas` : ""}</small>${c.quebrado || (c.el && c.el.error) ? `<small class="ed-clipe-erro">Perdi o acesso a este arquivo.</small>` : ""}</div>
       ${c.quebrado || (c.el && c.el.error) ? `<label class="btn btn-principal">Escolher de novo<input type="file" accept="video/*,.mov,.mp4,.m4v,.webm" data-religar="${c.id}" hidden></label>` : ""}
       <button class="icone-btn" type="button" data-mover="${c.id}" data-passo="-1" aria-label="Subir cena" ${i === 0 || st.trabalhando || st.exportando ? "disabled" : ""}>${ic.cima}</button>
       <button class="icone-btn" type="button" data-mover="${c.id}" data-passo="1" aria-label="Descer cena" ${i === st.clipes.length - 1 || st.trabalhando || st.exportando ? "disabled" : ""}>${ic.baixo}</button>
