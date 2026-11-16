@@ -259,7 +259,7 @@ REFERÊNCIA: VÍDEO PRÉ-EDITADO (Floratta Blue Crystal, out/2026)
 IDEIA PARA DEPOIS
 - Texto atrás da pessoa (DbT3IhlRUgA): o título fica atrás do corpo dela.`;
 
-  const EFEITOS = { woosh: "Woosh", suave: "Whoosh suave", pop: "Pop", click: "Click", shutter: "Shutter", typing: "Typing", riser: "Riser", hit: "Hit", ding: "Ding", cristal: "Ding de cristal", brilho: "Brilho (sparkle)", spray: "Spray / borrifo", mensagem: "Mensagem chegando", relogio: "Tique-taque", zumbido: "Zumbido de pernilongo", interruptor: "Interruptor de luz" };
+  const EFEITOS = { swish: "Swish", woosh: "Whoosh", suave: "Whoosh suave", pop: "Pop", click: "Clique de mouse", shutter: "Shutter", typing: "Typing", riser: "Riser", hit: "Hit", ding: "Ding", cristal: "Ding de cristal", brilho: "Brilho (sparkle)", spray: "Spray / borrifo", mensagem: "Mensagem chegando", relogio: "Tique-taque", zumbido: "Zumbido de pernilongo", interruptor: "Interruptor de luz" };
   const ESTILOS = { capcut: "CapCut (Poppins média, minúscula, sombra suave)", minimal: "Fina e branca", bold: "Forte com contorno", caixa: "Caixinha bege" };
   const TITULOS = { simples: "Limpo, serifada itálica (sem caixinhas)", etapas: "Em etapas com clique (duas fontes e estrelinhas)", frase: "Frase gigante na tela (3 cores)", caixa: "Caixinhas" };
   // fontes da legenda: "minha" é a fonte que ela enviou (Bootzy do CapCut), guardada em configuracoes "fonte_legenda"
@@ -299,7 +299,7 @@ IDEIA PARA DEPOIS
   const CHAVES_ESTILO = ["karaoke", "fonteLeg", "corLegenda", "porLegenda", "tamLeg", "sombra", "estilo", "estiloTitulo", "maiusculas", "sons", "dinamismo", "transicao", "ritmo", "flash", "tremer", "chamativas", "sonsChamativas", "confete", "altura", "vol", "cor", "legenda", "titulo", "efeitos", "fonteTitulo", "corTitulo", "ladoLeg", "alturaTitulo", "tamTitulo"];
 
   // ---------- quadro de efeitos (aba "Efeitos"): tudo o que o editor sabe fazer, achado por busca ----------
-  const DESC_SONS = { woosh: "Troca de assunto e zoom", suave: "Corte para o rosto, bem baixinho", pop: "Quando entra texto ou informação", click: "Cortes rápidos de close", shutter: "Clique de câmera, gravação de tela", typing: "Quando aparece algo escrito", riser: "Antes de revelar o produto", hit: "Logo depois do riser, na revelação", ding: "Produto aparece inteiro", cristal: "Nome da marca, frasco brilhando", brilho: "Névoa, brilho, produto reluzindo", spray: "Borrifo do produto", mensagem: "Antes do print ou áudio de WhatsApp", relogio: "Fixação, \"no fim do dia\"", zumbido: "Pernilongo, mosquito, inseto voando", interruptor: "Apagar ou acender a luz" };
+  const DESC_SONS = { swish: "Passada rápida de ar, texto ou elemento entrando", woosh: "Troca de assunto e zoom", suave: "Corte para o rosto, bem baixinho", pop: "Quando entra texto ou informação", click: "Cortes rápidos de close", shutter: "Clique de câmera, gravação de tela", typing: "Quando aparece algo escrito", riser: "Antes de revelar o produto", hit: "Logo depois do riser, na revelação", ding: "Produto aparece inteiro", cristal: "Nome da marca, frasco brilhando", brilho: "Névoa, brilho, produto reluzindo", spray: "Borrifo do produto", mensagem: "Antes do print ou áudio de WhatsApp", relogio: "Fixação, \"no fim do dia\"", zumbido: "Pernilongo, mosquito, inseto voando", interruptor: "Apagar ou acender a luz" };
   const CATS_FX = [["todos", "Todos"], ["sons", "Sons"], ["camera", "Câmera e zoom"], ["transicao", "Transições"], ["legenda", "Legenda"], ["titulo", "Título"]];
 
   const st = {
@@ -363,6 +363,75 @@ IDEIA PARA DEPOIS
     } catch (e) { toast("Não consegui usar esse arquivo de fonte: " + e.message, true); }
   }
 
+  // ---------- meus sons (nov/2026, pedido dela: efeitos do Epidemic Sound no lugar dos sintetizados) ----------
+  // configuracoes "sons_edicao" = {tipo: [{path, nome}]}; arquivos no bucket privado anexos, pasta edicao/sons/<tipo>/.
+  // Cada tipo pode ter várias versões: o mesmo som não se repete o vídeo todo (a versão sai do id/tempo do efeito,
+  // então a prévia e o MP4 tocam a mesma). Sem arquivo, o tipo continua sintetizado.
+  const MEUS_SONS_TIPOS = ["swish", "woosh", "click", "pop"];
+  const meusSons = { cfg: {}, buf: {}, carregado: false };
+  function somDoArquivo(tipo, chave) {
+    const lista = (meusSons.cfg[tipo] || []).filter((x) => meusSons.buf[x.path]);
+    if (!lista.length) return null;
+    const txt = String(chave ?? ""); let h = 0; for (let i = 0; i < txt.length; i++) h = (h * 31 + txt.charCodeAt(i)) >>> 0;
+    return meusSons.buf[lista[h % lista.length].path];
+  }
+  async function decodificarSom(blob) { const dec = new OfflineAudioContext(2, 1, 48000); return dec.decodeAudioData(await blob.arrayBuffer()); }
+  async function carregarMeusSons() {
+    try {
+      const { data } = await banco().from("configuracoes").select("valor").eq("chave", "sons_edicao").maybeSingle();
+      meusSons.cfg = data && data.valor ? (typeof data.valor === "string" ? JSON.parse(data.valor) : data.valor) : {};
+      const todos = Object.values(meusSons.cfg).flat().filter((x) => x && x.path && !meusSons.buf[x.path]);
+      await Promise.all(todos.map(async (x) => {
+        try { const { data: b, error } = await banco().storage.from("anexos").download(x.path); if (error) throw error; meusSons.buf[x.path] = await decodificarSom(b); } catch (e) { x.falhou = true; }
+      }));
+    } catch (e) { /* segue com os sons sintetizados */ }
+    meusSons.carregado = true; pintarMeusSons();
+  }
+  async function gravarMeusSons() {
+    const limpo = Object.fromEntries(Object.entries(meusSons.cfg).map(([k, v]) => [k, v.map(({ path, nome }) => ({ path, nome }))]));
+    const { error } = await banco().from("configuracoes").upsert({ chave: "sons_edicao", valor: JSON.stringify(limpo) }, { onConflict: "chave" });
+    if (error) throw new Error(error.message);
+  }
+  async function enviarMeuSom(tipo, arqs) {
+    for (const arq of arqs) {
+      if (arq.size > 4 * 1048576) { toast(`"${arq.name}" passou de 4 MB.`, true); continue; }
+      try {
+        const buf = await decodificarSom(arq);
+        const ext = (arq.name.match(/\.([a-z0-9]+)$/i) || [, "mp3"])[1].toLowerCase(), path = `edicao/sons/${tipo}/${uid()}.${ext}`;
+        const { error } = await banco().storage.from("anexos").upload(path, arq, { contentType: arq.type || "audio/mpeg", upsert: false });
+        if (error) throw new Error(error.message);
+        meusSons.buf[path] = buf;
+        (meusSons.cfg[tipo] = meusSons.cfg[tipo] || []).push({ path, nome: arq.name.replace(/\.[^.]+$/, "") });
+        await gravarMeusSons();
+      } catch (e) { toast(`Não consegui usar "${arq.name}": ${e.message}`, true); }
+    }
+    pintarMeusSons();
+  }
+  async function tirarMeuSom(tipo, path) {
+    meusSons.cfg[tipo] = (meusSons.cfg[tipo] || []).filter((x) => x.path !== path);
+    try { await gravarMeusSons(); await banco().storage.from("anexos").remove([path]); } catch (e) { toast("Não consegui tirar o som: " + e.message, true); }
+    delete meusSons.buf[path]; pintarMeusSons();
+  }
+  function ouvirSom(tipo, chave) { audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(tipo, ac.currentTime + 0.02, st.opc.vol, chave); }
+  function pintarMeusSons() {
+    const box = $("#ed-meus-sons"); if (!box) return;
+    box.innerHTML = `<div class="ed-titulo-linha"><h3 class="ed-titulo">Meus sons</h3><span class="ed-sub">Epidemic Sound</span></div>
+      <p class="ed-obs">Os efeitos dos seus vídeos tocam estes arquivos. Envie mais de uma versão de cada para o mesmo som não se repetir. Sem arquivo, o painel usa o som sintetizado.</p>
+      ${!meusSons.carregado ? `<p class="ed-obs">Carregando...</p>` : MEUS_SONS_TIPOS.map((t) => {
+        const l = meusSons.cfg[t] || [];
+        return `<div class="ed-meusom"><div class="ed-meusom-cab"><b>${esc(EFEITOS[t])}</b><small>${l.length ? `${l.length} arquivo${l.length > 1 ? "s" : ""}` : "sintetizado"}</small>
+          <button type="button" class="btn" data-ms-ouvir="${t}">${ic.play}Ouvir</button>
+          <label class="btn">${ic.mais}Enviar<input type="file" accept="audio/*,.wav,.mp3,.m4a" multiple hidden data-ms-env="${t}"></label></div>
+          ${l.map((x, i) => `<div class="ed-meusom-arq"><button type="button" class="icone-btn" data-ms-ouvir-arq="${t}" data-i="${i}" aria-label="Ouvir">${ic.som}</button><span>${esc(x.nome)}${x.falhou ? " (não abriu)" : ""}</span><button type="button" class="icone-btn" data-ms-tirar="${t}" data-path="${esc(x.path)}" aria-label="Tirar">${ic.x}</button></div>`).join("")}</div>`;
+      }).join("")}`;
+    $$("[data-ms-ouvir]", box).forEach((b) => b.addEventListener("click", () => ouvirSom(b.dataset.msOuvir, Math.random())));
+    $$("[data-ms-env]", box).forEach((inp) => inp.addEventListener("change", () => { const fs = [...inp.files]; inp.value = ""; if (fs.length) enviarMeuSom(inp.dataset.msEnv, fs); }));
+    $$("[data-ms-ouvir-arq]", box).forEach((b) => b.addEventListener("click", () => {
+      const x = (meusSons.cfg[b.dataset.msOuvirArq] || [])[Number(b.dataset.i)]; const buf = x && meusSons.buf[x.path]; if (!buf) return;
+      audio(); if (ac.state === "suspended") ac.resume(); const g = ac.createGain(); g.gain.value = st.opc.vol; g.connect(mestre); const f = ac.createBufferSource(); f.buffer = buf; f.connect(g); f.start();
+    }));
+    $$("[data-ms-tirar]", box).forEach((b) => b.addEventListener("click", async () => { if (await painelDialogo.confirmar("Tirar este som da sua biblioteca?", { ok: "Tirar", perigo: true })) tirarMeuSom(b.dataset.msTirar, b.dataset.path); }));
+  }
   // ---------- padrão de edição (tabela configuracoes) ----------
   async function carregarPadrao() {
     try {
@@ -1471,7 +1540,7 @@ IDEIA PARA DEPOIS
     const a = clamp(Math.min(d / 0.06, (f.dur - d) / 0.08));
     const w = W * (f.larg ?? FOTO_CIMA.larg) * Math.max(0.05, pop), h = w * ih / iw, cx = W * (f.x ?? FOTO_CIMA.x), cy = H * (f.y ?? FOTO_CIMA.y), r = Math.min(w, h) * 0.075;
     c2d.save(); c2d.globalAlpha = a; c2d.translate(cx, cy); c2d.rotate(((f.rot ?? 0) * Math.PI) / 180);
-    c2d.shadowColor = "rgba(0,0,0,.42)"; c2d.shadowBlur = 30 * W / 1080; c2d.shadowOffsetY = 10 * W / 1080;
+    if (!f.semSombra) { c2d.shadowColor = "rgba(0,0,0,.42)"; c2d.shadowBlur = 30 * W / 1080; c2d.shadowOffsetY = 10 * W / 1080; } // semSombra: PNG que já vem com sombra própria (caixinhas de pergunta)
     if (f.recorte && !f.quad) c2d.drawImage(f.img, sx, sy, iw, ih, -w / 2, -h / 2, w, h);   // recorte transparente: sem cartão, a sombra acompanha o contorno
     else {
       arredondado(-w / 2, -h / 2, w, h, r); c2d.fillStyle = "#fff"; c2d.fill(); c2d.shadowColor = "transparent";
@@ -1978,7 +2047,11 @@ IDEIA PARA DEPOIS
   let canvas = null, c2d = null;
   // formato (out/2026): vertical 9:16 (padrão) ou horizontal 16:9 (clipes gravados deitados)
   const horizontal = () => st.opc.formato === "horizontal";
-  function tamanho() { const v = st.opc.qualidade === 720 ? [720, 1280] : [1080, 1920]; return horizontal() ? [v[1], v[0]] : v; }
+  // resolução do vídeo (nov/2026: 2K e 4K para baixar com mais qualidade; texto e legenda escalam por min(W,H)/1080)
+  const RESOLUCOES = { 720: [720, 1280, 6e6], 1080: [1080, 1920, 16e6], 1440: [1440, 2560, 28e6], 2160: [2160, 3840, 50e6] };
+  const resolucao = () => RESOLUCOES[st.opc.qualidade] || RESOLUCOES[1080];
+  // a prévia fica em no máximo Full HD (4K travaria a tela); a resolução escolhida vale só na hora de gerar o MP4
+  function tamanho() { const [a, b] = st.resExport ? st.resExport : (st.opc.qualidade > 1080 ? RESOLUCOES[1080] : resolucao()); return horizontal() ? [b, a] : [a, b]; }
   function prepararCanvas() {
     canvas = $("#ed-canvas"); if (!canvas) return;
     const [w, h] = tamanho();
@@ -3066,11 +3139,18 @@ IDEIA PARA DEPOIS
   }
   function ruido(quando, dur, destino) { const s = ac.createBufferSource(); s.buffer = ruidoBuf; s.connect(destino); s.start(quando, Math.random(), dur); return s; }
   function env(g, quando, pico, ataque, queda) { g.gain.setValueAtTime(0.0001, quando); g.gain.exponentialRampToValueAtTime(pico, quando + ataque); g.gain.exponentialRampToValueAtTime(0.0001, quando + ataque + queda); }
-  function tocarEfeito(tipo, quando, vol) {
+  function tocarEfeito(tipo, quando, vol, chave) {
     audio();
     const saida = ac.createGain(); saida.gain.value = vol; saida.connect(mestre);
     const q = Math.max(ac.currentTime, quando);
-    if (tipo === "woosh") {
+    const arq = somDoArquivo(tipo, chave ?? quando);
+    if (arq) { const fonte = ac.createBufferSource(); fonte.buffer = arq; fonte.connect(saida); fonte.start(q); return; }
+    if (tipo === "swish") {
+      // swish: passada de ar curta e aguda (reserva quando ela não enviou o arquivo)
+      const f = ac.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 2; const g = ac.createGain(); f.connect(g); g.connect(saida);
+      f.frequency.setValueAtTime(1800, q); f.frequency.exponentialRampToValueAtTime(6500, q + 0.12); f.frequency.exponentialRampToValueAtTime(2500, q + 0.24);
+      env(g, q, 1.2, 0.08, 0.17); ruido(q, 0.28, f);
+    } else if (tipo === "woosh") {
       const f = ac.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 1.2; const g = ac.createGain(); f.connect(g); g.connect(saida);
       f.frequency.setValueAtTime(300, q); f.frequency.exponentialRampToValueAtTime(3200, q + 0.22); f.frequency.exponentialRampToValueAtTime(500, q + 0.5);
       env(g, q, 1.4, 0.2, 0.32); ruido(q, 0.55, f);
@@ -3156,7 +3236,7 @@ IDEIA PARA DEPOIS
       v.currentTime = s.a + dentro;
       await esperarEvento(v, "seeked");
       const inicioFinal = s.o0 + dentro;
-      if (st.opc.efeitos) for (const e of st.efeitos) if (e.t >= inicioFinal && e.t < s.o1) tocarEfeito(e.tipo, ac.currentTime + (e.t - inicioFinal), st.opc.vol);
+      if (st.opc.efeitos) for (const e of st.efeitos) if (e.t >= inicioFinal && e.t < s.o1) tocarEfeito(e.tipo, ac.currentTime + (e.t - inicioFinal), st.opc.vol, e.id || e.t);
       if (gravador && gravador.state === "paused") gravador.resume();
       try { await v.play(); } catch (e) {
         const q = v.error ? st.clipes[s.ci] : clipeQuebrado();
@@ -3194,7 +3274,7 @@ IDEIA PARA DEPOIS
     const tipo = tipos.find((t) => MediaRecorder.isTypeSupported(t)) || "";
     const fluxo = canvas.captureStream(30);
     saidaGravacao.stream.getAudioTracks().forEach((tr) => fluxo.addTrack(tr));
-    const rec = new MediaRecorder(fluxo, { mimeType: tipo, videoBitsPerSecond: st.opc.qualidade === 720 ? 6e6 : 12e6, audioBitsPerSecond: 192000 });
+    const rec = new MediaRecorder(fluxo, { mimeType: tipo, videoBitsPerSecond: resolucao()[2], audioBitsPerSecond: 192000 });
     const pedacos = [];
     rec.ondataavailable = (e) => { if (e.data && e.data.size) pedacos.push(e.data); };
     const fim = new Promise((ok) => { rec.onstop = ok; });
@@ -3229,8 +3309,9 @@ IDEIA PARA DEPOIS
     return muxerPronto;
   }
   async function configVideo(w, h) {
-    const br = st.opc.qualidade === 720 ? 6e6 : 12e6;
-    const opcoes = [["avc", "avc1.640028"], ["avc", "avc1.4d0028"], ["avc", "avc1.42002a"], ["vp9", "vp09.00.40.08"]];
+    const br = resolucao()[2], grande = Math.max(w, h) > 1920;
+    // nível do H.264: 4.0 vai até 1080p; 2K pede 5.0 e 4K pede 5.1
+    const opcoes = grande ? [["avc", "avc1.640033"], ["avc", "avc1.640032"], ["avc", "avc1.4d0033"], ["vp9", "vp09.00.51.08"], ["vp9", "vp09.00.50.08"]] : [["avc", "avc1.640028"], ["avc", "avc1.4d0028"], ["avc", "avc1.42002a"], ["vp9", "vp09.00.40.08"]];
     for (const [mux, codec] of opcoes) {
       for (const hw of ["prefer-hardware", "no-preference"]) {
         const cfg = { codec, width: w, height: h, bitrate: br, framerate: FPS, hardwareAcceleration: hw, latencyMode: "quality", ...(mux === "avc" ? { avc: { format: "avc" } } : {}) };
@@ -3274,7 +3355,7 @@ IDEIA PARA DEPOIS
         const ini = Math.max(0, s.a), len = Math.max(0, Math.min(s.b, buf.duration) - ini); if (len <= 0.01) continue;
         const src = off.createBufferSource(); src.buffer = buf; src.connect(entrada); src.start(s.o0, ini, len);
       }
-      if (st.opc.efeitos) for (const e of st.efeitos) if (e.t < dur) tocarEfeito(e.tipo, e.t, st.opc.vol);
+      if (st.opc.efeitos) for (const e of st.efeitos) if (e.t < dur) tocarEfeito(e.tipo, e.t, st.opc.vol, e.id || e.t);
       tocarMusica(off, mestre, 0, dur, 0);
     } finally { ({ ac, mestre, ruidoBuf, voz } = guardado); }
     return off.startRendering();
@@ -3289,16 +3370,26 @@ IDEIA PARA DEPOIS
     if (precisaRecorte()) await recortePronto(true);
     const pode = window.VideoEncoder && window.AudioEncoder && window.VideoFrame && window.OfflineAudioContext;
     if (pode) {
+      st.resExport = resolucao();
       try { const r = await exportarQuadros(); if (r !== "sem-suporte") return; }
       catch (e) { console.warn("exportar quadro a quadro falhou:", e); st.exportando = false; if (st.parar) { pintar(); return; } toast("Vou gerar do jeito antigo (ao vivo) neste navegador.", true); }
+      finally { st.resExport = null; }
     }
-    return exportarAoVivo();
+    // ao vivo o navegador desenha em tempo real: acima de Full HD ele perde quadros, então fica em 1080
+    if (st.opc.qualidade > 1080) { toast("Neste navegador o vídeo sai em Full HD. Para 2K ou 4K, use o Chrome ou o Edge atualizados no computador.", true); st.resExport = RESOLUCOES[1080]; }
+    try { return await exportarAoVivo(); } finally { st.resExport = null; prepararCanvas(); }
   }
   async function exportarQuadros() {
     if (st.tocando) { parar(); await espera(150); }
     prepararCanvas();
-    const [W, H] = [canvas.width, canvas.height];
-    const [vc, acfg] = await Promise.all([configVideo(W, H), configAudio()]);
+    let [W, H] = [canvas.width, canvas.height];
+    let [vc, acfg] = await Promise.all([configVideo(W, H), configAudio()]);
+    // o computador não codifica 4K ou 2K: desce um degrau por vez e avisa
+    for (const q of [1440, 1080]) {
+      if (vc || !st.resExport || st.resExport[1] <= RESOLUCOES[q][1]) continue;
+      st.resExport = RESOLUCOES[q]; prepararCanvas(); [W, H] = [canvas.width, canvas.height]; vc = await configVideo(W, H);
+      if (vc) toast(`Este computador não gera nessa resolução. O vídeo vai sair em ${Math.min(W, H)} x ${Math.max(W, H)}.`, true);
+    }
     if (!vc || !acfg) return "sem-suporte";
     await carregarMuxer(); await document.fonts.ready;
     const dur = st.duracao, N = Math.max(1, Math.round(dur * FPS));
@@ -5209,7 +5300,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <label class="ed-rotulo" for="ed-formato">Formato do vídeo</label>
       <select class="entrada" id="ed-formato"><option value="vertical" ${o.formato !== "horizontal" ? "selected" : ""}>Vertical 9:16 (Reels, TikTok)</option><option value="horizontal" ${o.formato === "horizontal" ? "selected" : ""}>Horizontal 16:9 (deitado)</option></select>
       <label class="ed-rotulo" for="ed-qual">Qualidade do arquivo</label>
-      <select class="entrada" id="ed-qual"><option value="1080" ${o.qualidade === 1080 ? "selected" : ""}>${o.formato === "horizontal" ? "1920 x 1080" : "1080 x 1920"} (Full HD)</option><option value="720" ${o.qualidade === 720 ? "selected" : ""}>${o.formato === "horizontal" ? "1280 x 720" : "720 x 1280"} (mais leve)</option></select>`;
+      <select class="entrada" id="ed-qual">${[[2160, "4K, máxima"], [1440, "2K, alta"], [1080, "Full HD"], [720, "mais leve"]].map(([q, t]) => { const [a, b] = RESOLUCOES[q]; return `<option value="${q}" ${o.qualidade === q ? "selected" : ""}>${o.formato === "horizontal" ? `${b} x ${a}` : `${a} x ${b}`} (${t})</option>`; }).join("")}</select>`;
     $("#ed-titulo-txt", box).addEventListener("input", (e) => { st.titulo = e.target.value; if (!st.tocando) desenhar(Math.min(st.t, 1.2)); });
     $("#ed-titulo-txt", box).addEventListener("change", () => { sonsDoTitulo(); pintarPlano(); });
     $("#ed-estilo-titulo", box).addEventListener("change", (e) => { o.estiloTitulo = e.target.value; sonsDoTitulo(); pintarPlano(); if (!st.tocando) { st.t = Math.min(st.t, 1.2); desenhar(st.t); } });
@@ -5412,10 +5503,10 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
 
   function pintarPlano() {
     const box = $("#ed-plano"); if (!box) return;
-    if (!st.plano || !st.segs.length) { box.innerHTML = `<section class="ed-cartao ed-dica"><h3 class="ed-titulo">Como funciona</h3><ol class="ed-passos"><li>Grave do seu jeito, pode ser em várias partes e com tomadas erradas.</li><li>Envie os arquivos aqui e clique em <b>Editar automático</b>.</li><li>Eu escuto, corto, legendo, ponho zoom, título e efeitos no seu padrão.</li><li>Confira a prévia. Se algo não ficou bom, escreva no campo <b>Corrigir a edição</b> e ajuste o texto das legendas na lista <b>Legendas</b>.</li><li>Baixe o MP4.</li></ol><p class="ed-obs">O vídeo não sai do seu computador: só o áudio vai para a transcrição. A exportação acontece em tempo real, então deixe esta aba aberta até terminar.</p></section>
-      <section class="ed-cartao ed-espera"><h3 class="ed-titulo">Legendas</h3><p class="ed-obs">Depois de editar, a lista de legendas aparece do lado esquerdo, embaixo de Ajustes: dá para corrigir o texto, juntar, apagar e marcar ★ palavra chamativa, como no CapCut.</p></section>`; return; }
+    if (!st.plano || !st.segs.length) { box.innerHTML = `<section class="ed-cartao" id="ed-meus-sons"></section><section class="ed-cartao ed-dica"><h3 class="ed-titulo">Como funciona</h3><ol class="ed-passos"><li>Grave do seu jeito, pode ser em várias partes e com tomadas erradas.</li><li>Envie os arquivos aqui e clique em <b>Editar automático</b>.</li><li>Eu escuto, corto, legendo, ponho zoom, título e efeitos no seu padrão.</li><li>Confira a prévia. Se algo não ficou bom, escreva no campo <b>Corrigir a edição</b> e ajuste o texto das legendas na lista <b>Legendas</b>.</li><li>Baixe o MP4.</li></ol><p class="ed-obs">O vídeo não sai do seu computador: só o áudio vai para a transcrição. A exportação acontece em tempo real, então deixe esta aba aberta até terminar.</p></section>
+      <section class="ed-cartao ed-espera"><h3 class="ed-titulo">Legendas</h3><p class="ed-obs">Depois de editar, a lista de legendas aparece do lado esquerdo, embaixo de Ajustes: dá para corrigir o texto, juntar, apagar e marcar ★ palavra chamativa, como no CapCut.</p></section>`; pintarMeusSons(); return; }
     const p = st.plano, bruto = st.clipes.reduce((s, c) => s + c.dur, 0);
-    box.innerHTML = `<section class="ed-cartao">
+    box.innerHTML = `<section class="ed-cartao" id="ed-meus-sons"></section><section class="ed-cartao">
         <h3 class="ed-titulo">O que eu fiz</h3>
         <div class="ed-resumo"><div><b>${tempo(bruto)}</b><span>bruto</span></div><div><b>${tempo(st.duracao)}</b><span>editado</span></div><div><b>${st.segs.length}</b><span>planos</span></div><div><b>${st.legendas.length}</b><span>legendas</span></div></div>
         ${(p.remover || []).length && st.opc.erros ? `<details class="ed-det"><summary>${p.remover.length} trecho${p.remover.length > 1 ? "s" : ""} tirado${p.remover.length > 1 ? "s" : ""} (tomada errada, gaguejo)</summary><ul>${p.remover.map((r) => `<li>${tempo(r.de)} a ${tempo(r.ate)} do bruto · ${esc(r.motivo)}</li>`).join("")}</ul></details>` : ""}
@@ -5434,12 +5525,13 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       ${p.musica || (p.dicas || []).length ? `<section class="ed-cartao"><h3 class="ed-titulo">Dicas do editor</h3>${p.musica ? `<p class="ed-obs"><b>Música:</b> ${esc(p.musica)}</p>` : ""}<ul class="ed-lista">${(p.dicas || []).map((d) => `<li>${esc(d)}</li>`).join("")}</ul></section>` : ""}`;
     $$(".ed-efeito", box).forEach((l) => {
       const e = st.efeitos.find((x) => x.id === l.dataset.id);
-      $("[data-ouvir]", l).addEventListener("click", () => { audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(e.tipo, ac.currentTime + (e.tipo === "riser" ? 1.2 : 0.02), st.opc.vol); });
+      $("[data-ouvir]", l).addEventListener("click", () => { audio(); if (ac.state === "suspended") ac.resume(); tocarEfeito(e.tipo, ac.currentTime + (e.tipo === "riser" ? 1.2 : 0.02), st.opc.vol, e.id || e.t); });
       $("[data-ir]", l).addEventListener("click", () => irPara(Math.max(0, e.t - 0.6)));
       $("[data-tipo]", l).addEventListener("change", (ev) => { const novo = ev.target.value; tirarSom(e, true); porSom(novo, e.t); });
       $("[data-apagar]", l).addEventListener("click", () => { tirarSom(e); });
     });
     $("#ed-add-efeito", box).addEventListener("click", () => porSom($("#ed-novo-tipo", box).value));
+    pintarMeusSons();
   }
   async function irPara(t) {
     if (st.tocando) parar();
@@ -5484,7 +5576,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       montarTela(sec); st.pronto = true;
       carregarProjetos();
       carregarOpcoesStudio().then(()=>{if(st.projeto) return carregarStudio(); pintarStudio();});
-      carregarPadrao(); carregarMinhaFonte(); carregarEstilos();
+      carregarPadrao(); carregarMinhaFonte(); carregarEstilos(); carregarMeusSons();
       try { await Promise.all(["300 40px Poppins", "500 40px Poppins", "800 40px Poppins", "600 40px Poppins", 'italic 40px "DM Serif Display"', "800 40px Montserrat", "700 40px Montserrat", "800 40px Nunito", "700 40px Arimo", 'italic 40px "Instrument Serif"', "700 40px Fredoka", "700 40px Caveat", '40px "Pinyon Script"'].map((f) => document.fonts.load(f))); } catch (e) { /* segue com a fonte do sistema */ }
     }
     pintar();

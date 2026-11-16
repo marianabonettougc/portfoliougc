@@ -3267,3 +3267,12 @@ html,body{background:
 .ed-cheia-barra button{display:inline-flex;align-items:center;gap:6px;height:42px;padding:0 18px;border:0;border-radius:999px;background:rgba(29,22,17,.86);color:#fff;font:500 14px Poppins,sans-serif;cursor:pointer}
 .ed-cheia-barra button svg{width:18px;height:18px}
 body.ed-tela-cheia-on{overflow:hidden}
+
+/* Edição de vídeos: Meus sons (arquivos do Epidemic Sound), nov/2026 */
+.ed-meusom{border-top:1px solid var(--linha,#e6dccf);padding:10px 0}
+.ed-meusom:first-of-type{border-top:0}
+.ed-meusom-cab{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ed-meusom-cab b{font-weight:600;min-width:110px}
+.ed-meusom-cab small{color:var(--texto-suave,#6e5646);flex:1}
+.ed-meusom-arq{display:flex;align-items:center;gap:6px;font-size:13px;padding:4px 0 0 4px}
+.ed-meusom-arq span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
