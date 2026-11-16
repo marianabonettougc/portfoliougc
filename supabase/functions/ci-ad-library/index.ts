@@ -1,8 +1,9 @@
-// Creative Intelligence · Biblioteca de Anúncios (versão 5)
+// Creative Intelligence · Biblioteca de Anúncios (versão 6)
 //
 // Ações (POST, JSON):
 // - "pesquisar" (padrão): busca anúncios públicos na Biblioteca de Anúncios da Meta pelo Apify.
 //     { query, country, mediaType: all|image|video, activeOnly, maxResults }
+//     ordem: "impressoes" pede à Meta os de mais impressões primeiro (usado em Mais performando, função ci-melhores)
 // - "analisar": lê o TEXTO de 1 a 6 anúncios (e a transcrição, se ela colou) e devolve a
 //     análise de cada um, os padrões entre eles e ideias de conteúdo. Nunca vê imagem nem vídeo.
 //     { ads: [...], projeto?: { brand, product, objective, audience } }
@@ -136,6 +137,7 @@ function normalizar(x: any, index: number, paisBusca: string) {
     countries: paises,
     country: paises.length === 1 ? paises[0] : paisBusca,
     matches_query: typeof x.matchesQuery === "boolean" ? x.matchesQuery : null,
+    collation_count: Number(first(x.collationCount, x.collation_count, x.adsCount, x.ads_count)) > 1 ? Number(first(x.collationCount, x.collation_count, x.adsCount, x.ads_count)) : null,
     total_in_library: Number.isFinite(Number(x.totalInLibrary)) && Number(x.totalInLibrary) > 0 ? Number(x.totalInLibrary) : null,
     text_for_analysis: [title, body, description, cta ? `CTA: ${cta}` : ""].filter(Boolean).join("\n"),
     raw_source: FONTE,
@@ -216,6 +218,10 @@ async function pesquisar(token: string, body: any, teste: boolean) {
   libraryUrl.searchParams.set("q", query);
   libraryUrl.searchParams.set("search_type", "keyword_unordered");
   libraryUrl.searchParams.set("media_type", mediaType);
+  if (body.ordem === "impressoes") {
+    libraryUrl.searchParams.set("sort_data[direction]", "desc");
+    libraryUrl.searchParams.set("sort_data[mode]", "total_impressions");
+  }
   const endereco = libraryUrl.toString();
 
   const usarReserva = teste && body.actor === "reserva";

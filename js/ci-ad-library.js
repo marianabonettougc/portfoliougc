@@ -41,7 +41,8 @@
   };
 
   const st = {
-    aba: "pesquisa",
+    aba: "top",
+    topForm: { query: "", country: "BR", media: "video" }, top: null, topAds: null, topBusy: false, topErro: null, topEtapa: 1, topRelogio: null,
     form: { query: "", country: "BR", media: "all", active: "active", max: 20 },
     buscando: false, cronometro: null,
     resultados: [], meta: null, erro: null, vazio: false, avisoHistorico: "",
@@ -55,7 +56,8 @@
   };
   try { Object.assign(st.form, JSON.parse(localStorage.getItem("cib-form") || "{}")); } catch { /* sem preferência salva */ }
   try { st.conjuntos = JSON.parse(localStorage.getItem("cib-conjuntos") || "[]") || []; } catch { st.conjuntos = []; }
-  try { const a = localStorage.getItem("cib-aba"); if (["pesquisa", "acervo", "historico"].includes(a)) st.aba = a; } catch { /* padrão */ }
+  try { const a = localStorage.getItem("cib-aba"); if (["top", "pesquisa", "acervo", "historico"].includes(a)) st.aba = a; } catch { /* padrão */ }
+  try { Object.assign(st.topForm, JSON.parse(localStorage.getItem("cib-top-form") || "{}")); st.top = JSON.parse(localStorage.getItem("cib-top") || "null"); } catch { st.top = null; }
   const lembrar = (k, v) => { try { localStorage.setItem(k, typeof v === "string" ? v : JSON.stringify(v)); } catch { /* sem armazenamento */ } };
 
   // ---------- utilidades ----------
@@ -108,10 +110,10 @@
 
   // ---------- chamada da função (erros sempre com motivo e orientação) ----------
   class Falha extends Error { constructor(o) { super(o.error || "Não foi possível concluir."); this.code = o.code || ""; this.hint = o.hint || ""; } }
-  async function chamar(body) {
+  async function chamar(body, funcao = "ci-ad-library") {
     if (!supa()) throw new Falha({ code: "sem_banco", error: "O painel não conseguiu se conectar ao banco.", hint: "Recarregue a página." });
     let data, error;
-    try { ({ data, error } = await supa().functions.invoke("ci-ad-library", { body })); }
+    try { ({ data, error } = await supa().functions.invoke(funcao, { body })); }
     catch (e) { throw new Falha({ code: "rede", error: "Não consegui falar com o servidor.", hint: "Confira sua internet e tente de novo." }); }
     if (error) {
       let corpo = null;
@@ -119,7 +121,7 @@
       if (corpo && corpo.error) throw new Falha(corpo);
       const status = error.context && error.context.status;
       if (status === 401 || (corpo && /jwt/i.test(String(corpo.message || corpo.msg || "")))) throw new Falha({ code: "sessao", error: "Sua sessão expirou.", hint: "Saia do painel e entre de novo." });
-      if (status === 404) throw new Falha({ code: "funcao_ausente", error: "A função de pesquisa não está publicada no Supabase.", hint: "Avise o Claude para publicar a Edge Function ci-ad-library." });
+      if (status === 404) throw new Falha({ code: "funcao_ausente", error: "A função " + funcao + " não está publicada no Supabase.", hint: "Avise o Claude para publicar a Edge Function " + funcao + "." });
       if (status === 546 || status === 504) throw new Falha({ code: "tempo_excedido", error: "A pesquisa passou do tempo de espera.", hint: "Tente com menos resultados ou um termo mais específico." });
       if (/fetch|network/i.test(String(error.name || "") + String(error.message || ""))) throw new Falha({ code: "rede", error: "Não consegui falar com o servidor.", hint: "Confira sua internet e tente de novo." });
       throw new Falha({ code: "servidor_" + (status || "erro"), error: "O servidor respondeu com erro" + (status ? " (" + status + ")" : "") + ".", hint: "Tente de novo. Se continuar, mostre esta mensagem ao Claude." });
@@ -144,6 +146,7 @@
     el.innerHTML = `<div class="cib">
       <div class="cib-topo">
         <div class="cib-abas" role="tablist">
+          <button type="button" role="tab" data-act="aba" data-aba="top">${IC.brilho}Mais performando</button>
           <button type="button" role="tab" data-act="aba" data-aba="pesquisa">${IC.busca}Pesquisar</button>
           <button type="button" role="tab" data-act="aba" data-aba="acervo">${IC.salvar}Minha biblioteca<span class="cib-conta" id="cib-n-acervo"></span></button>
           <button type="button" role="tab" data-act="aba" data-aba="historico">${IC.relogio}Histórico<span class="cib-conta" id="cib-n-hist"></span></button>
@@ -151,7 +154,16 @@
         <label class="cib-vinculo" title="Referências e pesquisas novas ficam ligadas a este projeto">Guardar em<select id="cib-projeto"></select></label>
       </div>
       <div id="cib-aviso-conta"></div>
-      <section data-cibpane="pesquisa">
+      <section data-cibpane="top">
+        <form class="cib-busca cib-top-busca" id="cib-top-form" autocomplete="off">
+          <label class="cib-campo cib-termo"><span>Marca, produto ou tema</span><div class="cib-entrada">${IC.busca}<input id="cib-tq" type="search" maxlength="180" placeholder="Ex.: MRV, protetor solar, livro infantil" enterkeyhint="search"></div></label>
+          <label class="cib-campo"><span>País</span><select id="cib-tpais">${PAISES.map((p) => `<option value="${p[0]}">${p[1]}</option>`).join("")}</select></label>
+          <label class="cib-campo"><span>Formato</span><select id="cib-tmidia"><option value="video">Vídeo</option><option value="all">Todos</option><option value="image">Imagem</option></select></label>
+          <button class="cib-btn cib-forte" id="cib-tbuscar" type="submit">${IC.brilho}<span>Encontrar os melhores</span></button>
+        </form>
+        <div id="cib-top" aria-live="polite"></div>
+      </section>
+      <section data-cibpane="pesquisa" hidden>
         <form class="cib-busca" id="cib-form" autocomplete="off">
           <label class="cib-campo cib-termo"><span>Marca, produto ou palavra-chave</span><div class="cib-entrada">${IC.busca}<input id="cib-q" type="search" maxlength="180" placeholder="Ex.: hidratante corporal, Natura, sair do aluguel" enterkeyhint="search"></div></label>
           <label class="cib-campo"><span>País</span><select id="cib-pais">${PAISES.map((p) => `<option value="${p[0]}">${p[1]}</option>`).join("")}</select></label>
@@ -174,7 +186,9 @@
     el.addEventListener("input", aoDigitar);
     el.addEventListener("error", aoFalharImagem, true);
     $("#cib-form", el).addEventListener("submit", (e) => { e.preventDefault(); pesquisar(); });
-    pintarProjetos(); pintarAba(); pintarResultados(); pintarConta();
+    $("#cib-tq", el).value = st.topForm.query || ""; $("#cib-tpais", el).value = st.topForm.country || "BR"; $("#cib-tmidia", el).value = st.topForm.media || "video";
+    $("#cib-top-form", el).addEventListener("submit", (e) => { e.preventDefault(); buscarTop(); });
+    pintarProjetos(); pintarAba(); pintarResultados(); pintarTop(); pintarConta();
     carregarAcervo(); carregarHistorico(); conferirConta();
   }
   function pintarProjetos() {
@@ -798,6 +812,124 @@
     toast("Pesquisa apagada do histórico."); pintarContagens(); pintarHistorico();
   }
 
+  // ---------- Mais performando (nov/2026, pedido da Mari: "busque os anúncios que mais estão performando e me dê os melhores ganchos e análises") ----------
+  // 1) pesquisa na Meta pedindo os de mais impressões primeiro (ci-ad-library, ordem "impressoes")
+  // 2) a função ci-melhores ranqueia (posição em impressões, dias no ar, versões com o mesmo texto) e a IA lê os ganchos
+  function lerFormTop() {
+    const el = raiz();
+    st.topForm = { query: $("#cib-tq", el).value.trim(), country: $("#cib-tpais", el).value, media: $("#cib-tmidia", el).value };
+    lembrar("cib-top-form", st.topForm);
+    return st.topForm;
+  }
+  function travarTop(on) {
+    const b = $("#cib-tbuscar", raiz()); if (!b) return;
+    b.disabled = on; b.classList.toggle("ocupado", on);
+    $("span", b).textContent = on ? "Buscando" : "Encontrar os melhores";
+    $$("#cib-top-form select, #cib-top-form input", raiz()).forEach((c) => { c.disabled = on; });
+  }
+  const anuncioEnxuto = (a) => ({ library_id: a.library_id, page_name: a.page_name, title: a.title, body: String(a.body || "").slice(0, 1600), cta_text: a.cta_text, format: a.format, media_type: a.media_type,
+    is_active: a.is_active, start_date: a.start_date, stop_date: a.stop_date, collation_count: a.collation_count || null, position: a.position, snapshot_url: a.snapshot_url, preview_url: a.preview_url, image_url: a.image_url, platforms: a.platforms });
+  async function buscarTop() {
+    if (st.topBusy) return;
+    const f = lerFormTop();
+    if (f.query.length < 2) { toast("Digite uma marca, produto ou tema.", true); const q = $("#cib-tq", raiz()); if (q) q.focus(); return; }
+    st.topBusy = true; st.topErro = null; st.topEtapa = 1; travarTop(true); pintarTop();
+    const inicio = Date.now();
+    clearInterval(st.topRelogio);
+    st.topRelogio = setInterval(() => { const s = $("#cib-ttempo", raiz()); if (s) s.textContent = Math.round((Date.now() - inicio) / 1000) + " s"; }, 1000);
+    try {
+      const d = await chamar({ acao: "pesquisar", query: f.query, country: f.country, mediaType: f.media, activeOnly: true, maxResults: 50, ordem: "impressoes" });
+      const ads = Array.isArray(d.ads) ? d.ads : [];
+      st.topAds = { query: d.query || f.query, url: d.library_search_url || urlMeta({ ...f, active: "active" }), ads: ads.map(anuncioEnxuto) };
+      // a busca também entra no Histórico (dá para reabrir a grade sem gastar crédito)
+      supa().from("creative_intelligence_searches").insert({ project_id: st.projetoId || null, query: st.topAds.query, country: f.country, active_only: true, media_type_filter: f.media, result_count: ads.length, results: ads, library_search_url: st.topAds.url })
+        .select("id,query,country,result_count,created_at,library_search_url,active_only,media_type_filter,project_id").single()
+        .then((r) => { if (!r.error && r.data) { st.historico.unshift(r.data); st.historicoPronto = true; pintarContagens(); } });
+      if (!ads.length) throw new Falha({ code: "sem_resultado", error: `Nenhum anúncio ativo encontrado para “${f.query}”.`, hint: "Tente um termo mais simples, o nome da marca, ou troque o país e o formato." });
+      await analisarTop();
+    } catch (e) {
+      if (!e.tratado) st.topErro = { titulo: e.message || "Não foi possível concluir.", dica: e.hint || "", codigo: e.code || "", soAnalise: false };
+      if (/^apify_/.test(e.code || "")) { st.contaEm = 0; conferirConta(); }
+    } finally {
+      clearInterval(st.topRelogio); st.topBusy = false; travarTop(false); pintarTop();
+    }
+  }
+  async function analisarTop() {
+    st.topEtapa = 2; pintarTop();
+    try {
+      const r = await chamar({ query: st.topAds.query, ordem: "impressoes", ads: st.topAds.ads }, "ci-melhores");
+      st.top = { ...r, url: st.topAds.url, country: (st.topForm || {}).country || "BR" };
+      st.topErro = null;
+      lembrar("cib-top", st.top);
+      toast("Pronto: " + plural((r.ranking || []).length, "anúncio analisado", "anúncios analisados") + ".");
+    } catch (e) {
+      st.topErro = { titulo: e.message || "A análise não terminou.", dica: e.hint || "", codigo: e.code || "", soAnalise: true };
+      throw Object.assign(new Error(st.topErro.titulo), { tratado: true });
+    }
+  }
+  async function refazerAnaliseTop() {
+    if (st.topBusy || !st.topAds) return buscarTop();
+    st.topBusy = true; st.topErro = null; travarTop(true);
+    try { await analisarTop(); } catch { /* erro já guardado em st.topErro */ }
+    finally { st.topBusy = false; travarTop(false); pintarTop(); }
+  }
+  function sinaisTop(r) {
+    const s = [];
+    if (r.posicao) s.push(`<span class="cib-top-sinal forte">${r.posicao}º em impressões</span>`);
+    if (r.dias) s.push(`<span class="cib-top-sinal">${r.dias >= 60 ? "há " + Math.round(r.dias / 30) + " meses no ar" : "há " + plural(r.dias, "dia", "dias") + " no ar"}</span>`);
+    if (r.variacoes > 1) s.push(`<span class="cib-top-sinal">${r.variacoes} versões com o mesmo texto</span>`);
+    s.push(`<span class="cib-top-sinal">${esc(FORMATOS[formatoDe(r.ad || {})] || "Formato não informado")}</span>`);
+    return s.join("");
+  }
+  const botaoCopiar = (txt) => `<button type="button" class="cib-acao" data-act="top-copiar" data-txt="${esc(txt)}" title="Copiar">${IC.check}Copiar</button>`;
+  function pintarTop() {
+    const el = $("#cib-top", raiz()); if (!el) return;
+    if (st.topBusy) {
+      const e = st.topEtapa || 1;
+      el.innerHTML = `<div class="cib-progresso"><span class="cib-giro"></span><div><b>${e === 1 ? "Buscando os anúncios com mais impressões na Biblioteca da Meta" : "Ranqueando e lendo os ganchos dos mais fortes"}</b>
+        <p>${e === 1 ? "Etapa 1 de 2. Costuma levar de 30 a 90 segundos." : "Etapa 2 de 2. Mais uns segundinhos."} <span id="cib-ttempo">0 s</span></p></div></div>`;
+      return;
+    }
+    if (st.topErro) {
+      const x = st.topErro;
+      el.innerHTML = `<div class="cib-estado erro">${IC.alerta}<h4>${esc(x.titulo)}</h4>${x.dica ? `<p>${esc(x.dica)}</p>` : ""}
+        <div class="cib-estado-acoes"><button type="button" class="cib-btn cib-forte" data-act="${x.soAnalise ? "top-analise" : "top-buscar"}">${IC.repetir}Tentar de novo</button></div>
+        ${x.codigo ? `<small>Código: ${esc(x.codigo)}</small>` : ""}</div>` + (st.top ? htmlTop(st.top, true) : "");
+      return;
+    }
+    if (!st.top) {
+      el.innerHTML = `<div class="cib-estado inicio"><h4>Descubra o que está performando</h4><p>Digite uma marca ou um tema. Eu busco os anúncios ativos com mais impressões, ranqueio os mais fortes e te entrego os melhores ganchos com a análise de cada um.</p>
+        <ol class="cib-passos"><li><b>1</b><span>Busca os anúncios mais vistos na Meta</span></li><li><b>2</b><span>Ranqueia por alcance, tempo no ar e versões</span></li><li><b>3</b><span>Te dá os ganchos e ganchos novos pra você</span></li></ol></div>`;
+      return;
+    }
+    el.innerHTML = htmlTop(st.top, false);
+  }
+  function htmlTop(r, antigo) {
+    const rank = Array.isArray(r.ranking) ? r.ranking : [];
+    return `<div class="cib-top${antigo ? " antigo" : ""}">
+      <div class="cib-cab"><div><h4>Os mais fortes para “${esc(r.query)}”</h4><p>${plural(r.estudados || 0, "anúncio estudado", "anúncios estudados")} · ${plural(r.criativos || 0, "texto diferente", "textos diferentes")}${r.em ? " · " + esc(fmtQuando(r.em)) : ""}</p></div>
+        <div class="cib-cab-acoes">${urlSegura(r.url) ? `<a class="cib-btn cib-mini" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${IC.fora}Ver na Meta</a>` : ""}</div></div>
+      ${r.metodo ? `<p class="cib-top-metodo">${esc(r.metodo)}</p>` : ""}
+      <section class="cib-top-bloco"><h5>O que estudei</h5>
+        <div class="cib-top-cab" aria-hidden="true"><span>Referência</span><span>Por que vale modelar</span></div>
+        ${rank.map((x, i) => { const a = x.ad || {}, url = urlSegura(a.snapshot_url), img = urlSegura(a.preview_url) || urlSegura(a.image_url);
+          return `<article class="cib-top-linha">
+            <div class="cib-top-ref"><span class="cib-top-n">${i + 1}</span>
+              <div class="cib-top-thumb">${img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}${formatoDe(a) === "video" ? IC.video : IC.imagem}</div>
+              <div class="cib-top-txt"><b>“${esc(x.gancho)}”</b><small>${esc(a.page_name || "Anunciante")}</small><div class="cib-top-sinais">${sinaisTop(x)}</div></div></div>
+            <div class="cib-top-porque">${x.tipo ? `<span class="cib-top-tipo">${esc(x.tipo)}</span>` : ""}<p>${esc(x.por_que || "A IA não explicou este.")}</p>${x.estrutura ? `<small><b>Estrutura:</b> ${esc(x.estrutura)}</small>` : ""}
+              <div class="cib-top-acoes">${url ? `<a class="cib-acao" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${IC.fora}Ver anúncio</a>` : ""}${botaoCopiar(x.gancho)}<button type="button" class="cib-acao" data-act="top-roteiro" data-txt="${esc("Modelar o gancho: " + x.gancho + (x.tipo ? "\nMecânica: " + x.tipo : "") + (x.estrutura ? "\nEstrutura: " + x.estrutura : ""))}">${IC.roteiro}Roteiro</button></div></div>
+          </article>`; }).join("")}
+      </section>
+      ${(r.melhores_ganchos || []).length ? `<section class="cib-top-bloco"><h5>Os melhores ganchos</h5><ol class="cib-top-ganchos">${r.melhores_ganchos.map((g) => `<li><div><b>“${esc(g.gancho)}”</b><small>${g.tipo ? esc(g.tipo) + " · " : ""}${esc(g.por_que)}</small></div>${botaoCopiar(g.gancho)}</li>`).join("")}</ol></section>` : ""}
+      ${(r.ganchos_para_voce || []).length ? `<section class="cib-top-bloco"><h5>Ganchos pra você gravar</h5><p class="cib-top-sub">Modelam a mecânica dos melhores, sem copiar frase nem promessa da marca.</p>
+        <div class="cib-top-meus">${r.ganchos_para_voce.map((g) => `<article><b>“${esc(g.gancho)}”</b>${g.mecanica ? `<small>${esc(g.mecanica)}${g.de && rank[g.de - 1] ? " · modelado do nº " + g.de : ""}</small>` : ""}
+          <div class="cib-top-acoes">${botaoCopiar(g.gancho)}<button type="button" class="cib-acao" data-act="top-roteiro" data-txt="${esc("Gancho: " + g.gancho + (g.mecanica ? "\nMecânica: " + g.mecanica : ""))}">${IC.roteiro}Criar roteiro</button></div></article>`).join("")}</div></section>` : ""}
+      ${r.o_que_levar || (r.padroes || []).length || (r.oportunidades || []).length ? `<section class="cib-top-bloco cib-top-levar"><h5>O que levar daqui</h5>${r.o_que_levar ? `<p>${esc(r.o_que_levar)}</p>` : ""}
+        <div class="cib-top-duas">${(r.padroes || []).length ? `<div><b>Padrões que se repetem</b><ul>${r.padroes.map((p) => `<li>${esc(p)}</li>`).join("")}</ul></div>` : ""}${(r.oportunidades || []).length ? `<div><b>O que ninguém está fazendo</b><ul>${r.oportunidades.map((p) => `<li>${esc(p)}</li>`).join("")}</ul></div>` : ""}</div></section>` : ""}
+    </div>`;
+  }
+
   // ---------- eventos ----------
   let tempoFiltro = null;
   function aoDigitar(e) {
@@ -822,6 +954,10 @@
     const act = b.dataset.act;
     if (act === "aba") { st.aba = b.dataset.aba; lembrar("cib-aba", st.aba); pintarAba(); return; }
     if (act === "buscar-de-novo") return pesquisar();
+    if (act === "top-buscar") return buscarTop();
+    if (act === "top-analise") return refazerAnaliseTop();
+    if (act === "top-copiar") { const txt = b.dataset.txt || ""; try { await navigator.clipboard.writeText(txt); toast("Gancho copiado."); } catch { toast("Não consegui copiar. Selecione o texto e copie.", true); } return; }
+    if (act === "top-roteiro") return irParaSkill({ ideia: b.dataset.txt || "" });
     if (act === "sel-todos") { if (st.sel.size === st.resultados.length) st.sel.clear(); else st.resultados.forEach((_, i) => st.sel.add(i)); pintarResultados(); pintarBarra(); return; }
     if (act === "salvar-um") { b.disabled = true; const r = await salvar([Number(b.dataset.k)]); if (!r) b.disabled = false; return; }
     if (act === "det-res") return abrirResultado(Number(b.dataset.k));
