@@ -54,7 +54,7 @@
   }
   async function carregar() {
     const [a, ap, e, r] = await Promise.all([
-      banco().from("moodboards").select("id,titulo,marca,atualizado_em").order("atualizado_em", { ascending: false }).limit(60),
+      banco().from("moodboards").select("id,titulo,marca,job_id,atualizado_em").order("atualizado_em", { ascending: false }).limit(60),
       banco().from("app_state").select("data").limit(1).maybeSingle(),
       banco().from("estilo_ugc").select("ritmo_fala").eq("id", 1).maybeSingle(),
       banco().from("roteiros").select("id,titulo,perfil,gancho,transcricao,analise").eq("de_quem", "outra").not("transcricao", "is", null).order("criado_em", { ascending: false }).limit(60),
@@ -266,7 +266,7 @@
     if (error) { if (!quieto) toast("Não salvou: " + error.message, true); return; }
     p.novo = false;
     const na = st.lista.find((x) => x.id === p.id);
-    if (na) { na.titulo = linha.titulo; na.marca = linha.marca; na.atualizado_em = linha.atualizado_em; } else { st.lista.unshift({ id: p.id, titulo: linha.titulo, marca: linha.marca, atualizado_em: linha.atualizado_em }); pintarLista(); }
+    if (na) { na.titulo = linha.titulo; na.marca = linha.marca; na.job_id = p.job_id || null; na.atualizado_em = linha.atualizado_em; } else { st.lista.unshift({ id: p.id, titulo: linha.titulo, marca: linha.marca, job_id: p.job_id || null, atualizado_em: linha.atualizado_em }); pintarLista(); }
     if (!quieto) toast("Salvo.");
   }
   async function abrirProjeto(id) {
@@ -591,7 +591,7 @@
     const jobsOp = st.jobs.map((j) => `<option value="${esc(j.id)}"${String(j.id) === String(p.job_id) ? " selected" : ""}>${esc(j.marca)}${j.status ? " · " + esc(j.status) : ""}</option>`).join("");
     const refsOp = st.refs.map((r) => `<option value="${esc(r.id)}"${String(r.id) === String(b.refId) ? " selected" : ""}>${esc((r.titulo || r.perfil || "Vídeo").slice(0, 70))}</option>`).join("");
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga mb">
-      <header class="pc2-cab"><div><small class="pc2-sobre">Marcas e jobs</small><h2 class="pc2-titulo">Roteiros e <em>Moodboard</em></h2></div>
+      <header class="pc2-cab"><div><small class="pc2-sobre">Marcas e jobs</small><h2 class="pc2-titulo"><em>Mood board</em> da campanha</h2></div>
         <div class="pc2-cab-acoes"><button class="btn" type="button" id="mb-novo">${IC.mais}Novo</button></div></header>
       <div class="mb-lista" id="mb-lista"></div>
       <form class="mb-cartao" id="mb-form" novalidate>
@@ -654,9 +654,21 @@
 
   async function abrirAba() {
     const sec = $("#aba-" + ABA); if (!sec) return;
-    if (st.carregado) { if (!sec.firstElementChild) pintar(); return; }
-    sec.innerHTML = `<p class="mb-dica">Abrindo…</p>`;
-    try { await carregar(); pintar(); } catch (e) { sec.innerHTML = `<p class="faixa faixa-erro">Não consegui abrir Roteiros e Moodboard: ${esc(e.message)}</p>`; }
+    if (!st.carregado) {
+      sec.innerHTML = `<p class="mb-dica">Abrindo…</p>`;
+      try { await carregar(); } catch (e) { sec.innerHTML = `<p class="faixa faixa-erro">Não consegui abrir o Moodboard: ${esc(e.message)}</p>`; return; }
+      pintar();
+    } else if (!sec.firstElementChild) pintar();
+    // veio do botão "Criar mood board deste job": abre o salvo desse job ou um novo já puxando o job
+    const jobId = window.moodboardDoJob; window.moodboardDoJob = "";
+    if (jobId) {
+      const salvo = (st.lista || []).find((m) => String(m.job_id) === jobId);
+      if (salvo) { await abrirProjeto(salvo.id); window.scrollTo({ top: 0 }); return; }
+      st.atual = novo(); st.avisos = []; st.paletaManual = false; st.atual.job_id = jobId; pintar();
+      const sel = $("#mb-form") && $("#mb-form").elements.job;
+      if (sel) { sel.value = jobId; sel.dispatchEvent(new Event("change")); }
+      window.scrollTo({ top: 0 });
+    }
   }
   document.addEventListener("painel:aba", (e) => { if (e.detail === ABA) abrirAba(); });
   if (location.hash.replace("#", "") === ABA) setTimeout(() => document.dispatchEvent(new CustomEvent("painel:aba", { detail: ABA })), 800);

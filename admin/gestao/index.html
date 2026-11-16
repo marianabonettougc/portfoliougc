@@ -4918,6 +4918,12 @@ const APV_ROTULO = {enviado:"Aguardando a marca", aprovado:"Roteiro aprovado", a
 const APV_FRASE = {aprovado:"aprovou seu roteiro", ajustes:"solicitou ajustes no roteiro", refacao:"solicitou refação do roteiro"};
 const apvQuando = (iso) => { try{ return new Date(iso).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(",",""); }catch(e){ return ""; } };
 const apvLink = (token) => new URL("../../aprovar/?t="+token, location.href).href;
+// Roteiros de publi ficam no Google Doc "ROTEIROS PARA MARCAS OFICIAL" (uma aba por campanha); a marca aprova pela página do Apps Script
+const DOC_ROTEIROS_URL = "https://docs.google.com/document/d/1V7i4HEZhTdVCwgfPYsrdJ4zQ7S3_R8xDJw9I9RzcLzI/edit";
+const DOC_APROVACAO_URL = "https://script.google.com/macros/s/AKfycbzpQfjXGILijQDYVB_dDVm-3z4GFtGtFCOuXka1r5g34T-5AuHFypzV-00R705q7jJibw/exec";
+const apvLinkDoc = (aba) => DOC_APROVACAO_URL + "?r=" + encodeURIComponent(String(aba||"").trim());
+const apvLinkDoJob = (j) => (j && String(j.docAba||"").trim()) ? apvLinkDoc(j.docAba) : (j && j.aprovacao && j.aprovacao.token ? apvLink(j.aprovacao.token) : "");
+const apvLinkPrevia = (j) => (j && String(j.docAba||"").trim()) ? apvLinkDoc(j.docAba) : apvLink(j.aprovacao.token)+"&previa=1";
 function apvToken(){ const b = new Uint8Array(32); crypto.getRandomValues(b); return btoa(String.fromCharCode(...b)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
 async function apvHash(t){ const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
 // resposta da marca entra no job: aprovado libera a produção; ajustes e refação voltam para a roteirização.
@@ -4928,7 +4934,11 @@ function aplicarRespostaNoJob(job, r, lido){
   if(at.versao===r.versao && at.situacao===r.situacao) return job;
   if((at.versao||0) > r.versao) return job;
   let novo = {...job, aprovacao:{...ap, roteiro:{situacao:r.situacao, versao:r.versao, em:r.em, por:r.por||"", texto:r.texto||"", gancho:r.gancho||"", lido:!!lido}}};
-  if(job.status==="Aprovação de Roteiro" && r.situacao!=="enviado"){
+  const doDoc = !!String(job.docAba||"").trim();
+  if(doDoc){
+    // no Google Doc a marca comenta e depois aprova a mesma versão: comentário não tira o job da aprovação
+    if(r.situacao==="aprovado" && ["Aprovação de Roteiro","Roteirização"].includes(job.status)) novo = itensNoStatusDoJob({...novo, status:"Em Produção"}, "Em Produção");
+  }else if(job.status==="Aprovação de Roteiro" && r.situacao!=="enviado"){
     const st = r.situacao==="aprovado" ? "Em Produção" : "Roteirização";
     novo = itensNoStatusDoJob({...novo, status:st}, st);
   }
@@ -4951,16 +4961,24 @@ async function buscarRespostasAprovacao(updateState){
 // (null = ela desistiu na confirmação; erro com .aviso = mensagem para mostrar)
 async function apvEnviarRoteiro(job){
   const aviso = (m) => { const e = new Error(m); e.aviso = true; return e; };
-  const conteudo = String(job.roteiroConteudo||"").trim();
+  const docAba = String(job.docAba||"").trim();
+  const conteudo = String(job.roteiroConteudo||"").trim() || (docAba ? `Roteiro no Google Doc · aba ${docAba}` : "");
   if(!String(job.marca||"").trim()) throw aviso("Preencha a marca do job antes de enviar.");
-  if(!conteudo) throw aviso("Escreva ou importe o roteiro no job antes de enviar.");
+  if(!conteudo) throw aviso("Escreva o roteiro no Google Doc e preencha a aba do Doc no job antes de enviar.");
   const { data: ant, error: e0 } = await supabaseClient.from("aprovacao_envios").select("versao, situacao").eq("job_id", job.id).eq("tipo", "roteiro").order("versao", {ascending:true});
   if(e0) throw e0;
   const anteriores = ant || [], ult = anteriores.slice(-1)[0];
+  if(docAba && ult && ult.situacao!=="aprovado"){
+    // no Doc o roteiro é o mesmo link ao vivo: só garante a ligação da aba e devolve o job como está
+    const ap0 = job.aprovacao || {}, token0 = ap0.token || apvToken();
+    const l0 = await supabaseClient.from("aprovacao_links").upsert({job_id:job.id, token_hash:await apvHash(token0), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:docAba}, {onConflict:"job_id"});
+    if(l0.error) throw l0.error;
+    return {...job, aprovacao:{...ap0, token:token0}};
+  }
   if(ult && ult.situacao==="enviado" && !(await painelDialogo.confirmar(`A marca ainda não respondeu a versão ${ult.versao}. Enviar uma versão nova mesmo assim? A anterior fica guardada no histórico.`, {ok:"Enviar versão nova"}))) return null;
   if(ult && ult.situacao==="aprovado" && !(await painelDialogo.confirmar(`A versão ${ult.versao} já foi aprovada. Enviar uma versão nova para a marca aprovar de novo?`, {ok:"Enviar versão nova"}))) return null;
   const ap = job.aprovacao || {}, token = ap.token || apvToken();
-  const l = await supabaseClient.from("aprovacao_links").upsert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true}, {onConflict:"job_id"});
+  const l = await supabaseClient.from("aprovacao_links").upsert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:docAba||null}, {onConflict:"job_id"});
   if(l.error) throw l.error;
   const versao = anteriores.reduce((m,e)=>Math.max(m, e.versao), 0) + 1, agora = new Date().toISOString();
   const e = await supabaseClient.from("aprovacao_envios").insert({job_id:job.id, tipo:"roteiro", versao, titulo:String(job.roteiroTitulo||"").slice(0,200), conteudo, enviado_em:agora});
@@ -4991,7 +5009,7 @@ function CentralAprovacoes({jobs, onAbrir, onSalvar}){
     catch(e){ console.warn(e); setMsg({id:j.id, texto: e && e.aviso ? e.message : "Não consegui enviar agora. Tente de novo."}); }
     setOcupado("");
   }
-  async function copiar(j){ try{ await navigator.clipboard.writeText(apvLink(j.aprovacao.token)); setMsg({id:j.id, texto:"Link copiado."}); }catch(e){ setMsg({id:j.id, texto:apvLink(j.aprovacao.token)}); } }
+  async function copiar(j){ const l = apvLinkDoJob(j); try{ await navigator.clipboard.writeText(l); setMsg({id:j.id, texto:"Link copiado."}); }catch(e){ setMsg({id:j.id, texto:l}); } }
   return (
     <div>
       <div className="apv-resumo">
@@ -5002,7 +5020,7 @@ function CentralAprovacoes({jobs, onAbrir, onSalvar}){
           <div key={c.id} className="org-col" style={{borderTopColor:c.cor, "--cor":c.cor}}>
             <div className="org-col-topo"><span className="org-col-ponto" style={{background:c.cor}}></span><span className="org-col-nome">{c.nome}</span><span className="org-col-n">{lista.length}</span></div>
             {lista.length===0 && <div className="apv-vazio">{c.vazio}</div>}
-            {lista.map(j=>{ const r = (j.aprovacao||{}).roteiro, temRoteiro = !!String(j.roteiroConteudo||"").trim(); return (
+            {lista.map(j=>{ const r = (j.aprovacao||{}).roteiro, temRoteiro = !!String(j.roteiroConteudo||"").trim() || !!String(j.docAba||"").trim(); return (
               <div key={j.id} className="org-card apv-card" onClick={()=>onAbrir(j)}>
                 <div className="org-card-topo"><Icon name={j.categoria==="Publi"?"campaign":"videocam"} size={16} style={{color:"var(--butter)"}}/><span className="org-marca">{j.marca}</span></div>
                 <div className="org-sub">{[j.produto, resumoEntregas(j)].filter(Boolean).join(" · ")}</div>
@@ -5014,10 +5032,13 @@ function CentralAprovacoes({jobs, onAbrir, onSalvar}){
                   {c.id==="enviar" && (temRoteiro
                     ? <button type="button" className="btn btn-primary btn-sm" disabled={ocupado===j.id} onClick={()=>enviar(j)}><Icon name="send" size={15}/>{ocupado===j.id?"Enviando...":"Enviar para aprovação"}</button>
                     : <button type="button" className="btn btn-ghost btn-sm" onClick={()=>onAbrir(j)}><Icon name="edit_note" size={15}/>Pôr o roteiro</button>)}
-                  {c.id==="ajustes" && <button type="button" className="btn btn-primary btn-sm" onClick={()=>onAbrir(j)}><Icon name="edit_note" size={15}/>Corrigir roteiro</button>}
-                  {c.id==="ajustes" && <button type="button" className="btn btn-ghost btn-sm" disabled={ocupado===j.id} onClick={()=>enviar(j)}><Icon name="send" size={15}/>{ocupado===j.id?"Enviando...":"Enviar nova versão"}</button>}
-                  {j.aprovacao && j.aprovacao.token && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>copiar(j)}><Icon name="content_copy" size={15}/>Copiar link</button>}
-                  {j.aprovacao && j.aprovacao.token && <a className="btn btn-ghost btn-sm" href={apvLink(j.aprovacao.token)+"&previa=1"} target="_blank" rel="noopener"><Icon name="visibility" size={15}/>Ver</a>}
+                  {c.id==="ajustes" && (j.docAba
+                    ? <a className="btn btn-primary btn-sm" href={DOC_ROTEIROS_URL} target="_blank" rel="noopener"><Icon name="edit_note" size={15}/>Corrigir no Doc</a>
+                    : <button type="button" className="btn btn-primary btn-sm" onClick={()=>onAbrir(j)}><Icon name="edit_note" size={15}/>Corrigir roteiro</button>)}
+                  {c.id==="ajustes" && !j.docAba && <button type="button" className="btn btn-ghost btn-sm" disabled={ocupado===j.id} onClick={()=>enviar(j)}><Icon name="send" size={15}/>{ocupado===j.id?"Enviando...":"Enviar nova versão"}</button>}
+                  {(j.docAba || (j.aprovacao && j.aprovacao.token)) && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>copiar(j)}><Icon name="content_copy" size={15}/>Copiar link</button>}
+                  {(j.docAba || (j.aprovacao && j.aprovacao.token)) && <a className="btn btn-ghost btn-sm" href={apvLinkPrevia(j)} target="_blank" rel="noopener"><Icon name="visibility" size={15}/>Ver</a>}
+                  {j.docAba && <a className="btn btn-ghost btn-sm" href={DOC_ROTEIROS_URL} target="_blank" rel="noopener"><Icon name="description" size={15}/>Doc</a>}
                 </div>
                 {msg && msg.id===j.id && <div className="apv-linha" style={{overflowWrap:"anywhere"}}>{msg.texto}</div>}
               </div>
@@ -5063,7 +5084,11 @@ function AprovacaoJob({f, setF}){
     }catch(e){ console.warn(e); setErro(e && e.aviso ? e.message : "Não consegui enviar agora. Tente de novo."); }
     setOcupado(false);
   }
-  async function copiar(){ try{ await navigator.clipboard.writeText(apvLink(ap.token)); setCopiado(true); setTimeout(()=>setCopiado(false), 1800); }catch(e){ setErro("Selecione o link e copie."); } }
+  async function copiar(){ try{ await navigator.clipboard.writeText(apvLinkDoJob(f)); setCopiado(true); setTimeout(()=>setCopiado(false), 1800); }catch(e){ setErro("Selecione o link e copie."); } }
+  const docAba = String(f.docAba||"").trim();
+  // trocou a aba do Doc depois de enviar: atualiza a ligação para as respostas da marca caírem neste job
+  async function salvarAba(){ if(!f.id || !ap.token) return; await supabaseClient.from("aprovacao_links").update({doc_aba:docAba||null}).eq("job_id", f.id).then(()=>null, ()=>null); }
+  const abrirMoodboard = () => { if(window.parent !== window) window.parent.postMessage({aba:"moodboard", job:f.id}, location.origin); };
   async function alternarLink(){
     if(ativo && !(await painelDialogo.confirmar("Desligar o link? A marca deixa de conseguir abrir até você ligar de novo.", {ok:"Desligar", perigo:true}))) return;
     const r = await supabaseClient.from("aprovacao_links").update({ativo:!ativo}).eq("job_id", f.id);
@@ -5083,8 +5108,20 @@ function AprovacaoJob({f, setF}){
         {rot ? <span className={"apv-selo "+rot.situacao}>{APV_ROTULO[rot.situacao]}{rot.versao?` · v${rot.versao}`:""}</span> : <span className="apv-selo">Ainda não enviado</span>}
       </div>
       {rot && rot.situacao!=="enviado" && (rot.texto || rot.gancho) && <div style={{fontSize:13.5, background:"#f6efe6", borderRadius:10, padding:"9px 11px", whiteSpace:"pre-wrap"}}><b>{rot.por||"Marca"}:</b> {[rot.gancho?("Gancho escolhido: "+rot.gancho):"", rot.texto].filter(Boolean).join("\n")}</div>}
-      <Field label="Produto (aparece para a marca)"><input value={f.produto||""} onChange={e=>{ const v = e.target.value; setF(p=>({...p, produto:v})); }} placeholder="Ex.: Kit Zip Vácuo"/></Field>
-      {ap.token && <>
+      <Field label="Aba do Google Doc (roteiro de publi)"><input value={f.docAba||""} onChange={e=>{ const v = e.target.value; setF(p=>({...p, docAba:v})); }} onBlur={salvarAba} placeholder="Ex.: MRV - REELS (igual ao nome da aba no Doc)"/></Field>
+      <div className="apv-botoes">
+        <a className="btn btn-ghost btn-sm" href={DOC_ROTEIROS_URL} target="_blank" rel="noopener"><Icon name="description" size={15}/>Abrir o Doc de roteiros</a>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={abrirMoodboard}><Icon name="dashboard" size={15}/>Criar mood board deste job</button>
+      </div>
+      {!docAba && <Field label="Produto (aparece para a marca)"><input value={f.produto||""} onChange={e=>{ const v = e.target.value; setF(p=>({...p, produto:v})); }} placeholder="Ex.: Kit Zip Vácuo"/></Field>}
+      {docAba && <>
+        <div className="apv-link">{apvLinkDoc(docAba)}</div>
+        <div className="apv-botoes">
+          <button type="button" className="btn btn-ghost btn-sm" onClick={copiar}><Icon name="content_copy" size={15}/>{copiado?"Copiado":"Copiar link da marca"}</button>
+          <a className="btn btn-ghost btn-sm" href={apvLinkDoc(docAba)} target="_blank" rel="noopener"><Icon name="visibility" size={15}/>Ver como a marca vê</a>
+        </div>
+      </>}
+      {!docAba && ap.token && <>
         <div className="apv-link">{apvLink(ap.token)}</div>
         <div className="apv-botoes">
           <button type="button" className="btn btn-ghost btn-sm" onClick={copiar}><Icon name="content_copy" size={15}/>{copiado?"Copiado":"Copiar link"}</button>
@@ -5093,11 +5130,12 @@ function AprovacaoJob({f, setF}){
         </div>
         {!ativo && <div className="apv-erro">O link está desligado: a marca não consegue abrir.</div>}
       </>}
-      <div className="apv-botoes">
-        <button type="button" className="btn btn-primary btn-sm" disabled={ocupado} onClick={enviar}><Icon name="send" size={15}/>{ocupado ? "Enviando..." : (mudouDepois ? "Enviar nova versão para aprovação" : "Enviar roteiro para aprovação")}</button>
-      </div>
+      {!(docAba && rot && rot.situacao!=="aprovado") && <div className="apv-botoes">
+        <button type="button" className="btn btn-primary btn-sm" disabled={ocupado} onClick={enviar}><Icon name="send" size={15}/>{ocupado ? "Enviando..." : (docAba ? (mudouDepois ? "Pedir nova aprovação" : "Marcar como enviado para a marca") : (mudouDepois ? "Enviar nova versão para aprovação" : "Enviar roteiro para aprovação"))}</button>
+      </div>}
       {erro && <div className="apv-erro">{erro}</div>}
-      {!ap.token && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>Ao enviar, o painel guarda esta versão do roteiro, cria o link exclusivo deste job e muda o status para Aprovação de Roteiro. Você copia o link e manda para a marca.</div>}
+      {docAba && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>O roteiro fica no Google Doc. Quando a marca comentar ou aprovar pelo link, o status muda aqui sozinho e chega notificação no seu celular.</div>}
+      {!docAba && !ap.token && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>Ao enviar, o painel guarda esta versão do roteiro, cria o link exclusivo deste job e muda o status para Aprovação de Roteiro. Você copia o link e manda para a marca.</div>}
       {linhas.length>0 && <div className="apv-hist">{linhas.map((l,i)=><div key={i}><time>{apvQuando(l.em)}</time><span>{l.texto}{l.cita ? <q>{l.cita}</q> : null}</span></div>)}</div>}
     </div>
   );
@@ -5948,7 +5986,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
             ))}
             <AnexoCampo rotulo="" pasta={`jobs/${f.id||"novos"}/briefing`} onEnviado={(a)=>setF(p=>({...p, briefingArquivos:[...(p.briefingArquivos||[]), a]}))}/>
           </>}
-          {id==="roteiro" && <><ImportarRoteiroJob f={f} setF={setF} state={state}/><AprovacaoJob f={f} setF={setF}/></>}
+          {id==="roteiro" && <><AprovacaoJob f={f} setF={setF}/><ImportarRoteiroJob f={f} setF={setF} state={state}/></>}
           {id==="trafego" && <>
         <div className="row-item" style={{marginBottom: f.trafegoPago.ativo ? 12 : 0}}>
           <strong style={{fontSize:15}}>Adicionar tráfego pago (ads)</strong>

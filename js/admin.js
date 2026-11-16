@@ -290,7 +290,7 @@
   const TITULOS = { portfolio: "Portfólio", marcas: "Marcas", calendario: "Planner", campanhas: "UGC's & Publis", aprovacoes: "Aprovações", roteiros: "Editor de roteiros", checklist: "Checklist portfólio", dashboard: "Dashboard",
     prospeccao: "Prospecção", followups: "Follow-ups", candidaturas: "Candidaturas", trafego: "Tráfego Pago", quadro: "Conteúdos", propostas: "Marcas: propostas do e-mail", central: "Referências", transcricao: "Transcrição de vídeos", analise: "Análise de transcrição", criar: "Criar roteiro",
     meusroteiros: "Referências", modelos: "Modelos", biblioteca: "Referências",
-    financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Referências: transcrever e analisar", laboratorio: "Referências: meus salvos", editorial: "Referências: perfis que eu acompanho", edicao: "Edição de vídeos", planejar: "Conteúdos", ferarquivos: "Edição: organizar gravações", fercapa: "Edição: checar capa", estudio: "Edição: criação de fotos", ferideias: "Conteúdos: organizar ideia ou print", notificacoes: "Configurações: notificações no celular", metricas: "Redes sociais", moodboard: "Roteiros e Moodboard", "creative-intelligence": "Creative Intelligence" };
+    financeiro: "Financeiro CNPJ: geral", financeirocpf: "Financeiro CPF", tiktokshop: "TikTok Shop", config: "Configurações", transcritos: "Referências: transcrever e analisar", laboratorio: "Referências: meus salvos", editorial: "Referências: perfis que eu acompanho", edicao: "Edição de vídeos", planejar: "Conteúdos", ferarquivos: "Edição: organizar gravações", fercapa: "Edição: checar capa", estudio: "Edição: criação de fotos", ferideias: "Conteúdos: organizar ideia ou print", notificacoes: "Configurações: notificações no celular", metricas: "Redes sociais", moodboard: "Mood board da campanha", "creative-intelligence": "Creative Intelligence" };
   // Abas do painel que são páginas do aplicativo Gestão UGC (aba do painel: página do aplicativo)
   const PAGINAS_APP = { dashboard: "dashboard", calendario: "planner", campanhas: "jobs", aprovacoes: "aprovacoes", prospeccao: "prospeccao", followups: "followups",
     candidaturas: "candidaturas", trafego: "trafego", quadro: "roteiros", financeiro: "financeiro", 
@@ -354,7 +354,7 @@
     followups: "Lembretes para voltar a falar com as marcas depois de cada entrega e manter o relacionamento (e os próximos jobs).",
     candidaturas: "Campanhas e vagas em que você se candidatou (plataformas e agências) e o status de cada uma.",
     aprovacoes: "Envie roteiros para as marcas aprovarem por link e acompanhe cada resposta.",
-    moodboard: "Do briefing da marca saem o roteiro cena a cena (fala e imagem) e o mood board com a paleta da marca, suas fotos e o produto, em PNG e PDF.",
+    moodboard: "Abra pelo job (UGC's & Publis > Roteiro > Criar mood board deste job). O roteiro de publi fica no Google Doc; aqui sai o mood board com a paleta da marca, suas fotos e o produto, em PNG e PDF.",
     trafego: "Direitos de uso dos seus vídeos nos anúncios das marcas: o que está valendo, o que vence e as chances de renovar.",
     edicao: "Suba o vídeo gravado e edite aqui: cortes, legendas no seu padrão e efeitos sonoros, com a IA ajudando.",
     estudio: "Estúdio criativo: monte carrosséis e posts de foto a partir das suas fotos, briefings e referências.",
@@ -538,6 +538,7 @@
     if (e.origin === location.origin && e.data && "ocultarValores" in e.data && !e.data.aba) { ocultoAgora = Boolean(e.data.ocultarValores); pintarOlho(); return; }
     if (e.origin !== location.origin || !e.data || !e.data.aba || !TITULOS[e.data.aba]) return;
     if (e.data.link) window.linkParaTranscrever = String(e.data.link); // o Dashboard manda um vídeo para a página Transcrever vídeo
+    if (e.data.job) window.moodboardDoJob = String(e.data.job); // botão "Criar mood board deste job" (dentro do job)
     mostrarAba(e.data.aba);
   });
   window.addEventListener("hashchange", () => { const h = location.hash.replace("#", ""); if (h && h !== abaAtual) mostrarAba(h); });
