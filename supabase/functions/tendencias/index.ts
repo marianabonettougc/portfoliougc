@@ -26,7 +26,7 @@ const num = (x: unknown) => { const n = Number(x); return Number.isFinite(n) && 
 const limparTag = (t: unknown) => String(t || "").toLowerCase().replace(/^#/, "").replace(/[^a-z0-9_à-ú]/gi, "").slice(0, 40);
 const lerJson = (t: string) => { try { return JSON.parse(t); } catch { const m = t.match(/\{[\s\S]*\}/); try { return m ? JSON.parse(m[0]) : {}; } catch { return {}; } } };
 
-const PADRAO = ["ugcbrasil", "achadinhos", "skincare", "cabelo", "maternidade"];
+const PADRAO = ["ugcbrasil", "achadinhos", "skincare", "cabelo", "maternidadereal", "modafeminina", "autocuidado", "rotinareal"];
 
 async function ler(supa: any) {
   const { data } = await supa.from("configuracoes").select("valor").eq("chave", CHAVE).maybeSingle();
@@ -89,7 +89,12 @@ async function recolher(supa: any, token: string) {
     vistos.add(l.codigo);
     lista.push(l);
   }
-  const forca = (p: any) => (p.views || 0) + (p.curtidas || 0) * 20 + (p.comentarios || 0) * 60;
+  // Prioriza taxa de interação e volume, sem deixar um vídeo enorme dominar só por views.
+  const forca = (p: any) => {
+    const interacoes = (p.curtidas || 0) + (p.comentarios || 0);
+    const taxa = p.views > 0 ? interacoes / p.views : 0;
+    return Math.log1p(interacoes) * 2 + Math.min(taxa, 0.25) * 100 + Math.log1p(p.views || 0) * 0.4;
+  };
   lista.sort((a, b) => forca(b) - forca(a));
   v.posts = lista.slice(0, 60);
   v.buscadoEm = new Date().toISOString();
@@ -114,22 +119,30 @@ async function analisar(supa: any, chave: string) {
   const v = await ler(supa);
   if (!v.posts.length) throw new Error("Busque as hashtags primeiro.");
   const { data: perfil } = await supa.from("configuracoes").select("valor").eq("chave", "perfil_conteudo").maybeSingle();
-  let pilares = "";
-  try { pilares = (JSON.parse(perfil?.valor || "{}").pilares || []).map((p: any) => p.nome).join(", "); } catch { /* sem perfil */ }
+  let pilares = "", tom = "", evitar = "";
+  try {
+    const p = JSON.parse(perfil?.valor || "{}");
+    pilares = (p.pilares || []).map((x: any) => x.nome).join(", ");
+    tom = txt(p.tom, 500);
+    evitar = txt(p.evitar, 500);
+  } catch { /* sem perfil */ }
   const { data: meus } = await supa.from("painel_conteudo").select("tema,formato,status,data").order("data", { ascending: false }).limit(40);
   const minhas = (meus || []).map((m: any) => `${m.tema} (${m.formato}, ${m.status})`).join("; ").slice(0, 2500);
   const posts = v.posts.slice(0, 30).map((p: any, i: number) =>
-    `${i + 1}. #${p.tag} · ${p.tipo} · ${p.views ? p.views + " views" : ""} ${p.curtidas ?? "?"} curtidas · ${p.comentarios ?? "?"} coment. · "${txt(p.legenda, 220).replace(/\n/g, " ")}"`).join("\n");
+    `${i + 1}. #${p.tag} · ${p.tipo} · ${p.views ? p.views + " views" : "sem views"} · ${p.curtidas ?? "?"} curtidas · ${p.comentarios ?? "?"} comentários · ${p.views > 0 ? "interações/views " + (((p.curtidas || 0) + (p.comentarios || 0)) / p.views * 100).toFixed(1) + "%" : "taxa indisponível"} · "${txt(p.legenda, 220).replace(/\n/g, " ")}"`).join("\n");
   const pedido = `Você ajuda uma criadora brasileira de UGC (@maribonettougc) a ver o que está em alta no nicho dela no Instagram.
-Pilares dela: ${pilares || "beleza e cabelo, autocuidado, maternidade (filhas já crianças), moda, bem-estar, achadinhos de casa e tech"}.
+Pilares dela: ${pilares || "beleza e cabelo, autocuidado, maternidade, moda, bem-estar, achadinhos de casa e tech"}.
+Tom de voz: ${tom || "conversa natural, como dica de amiga, criativa e direta"}.
+Evitar: ${evitar || "ganchos genéricos, clichês e linguagem artificial"}.
 Conteúdos que ela já tem ou planejou: ${minhas || "nenhum"}.
 
 POSTS PÚBLICOS DAS HASHTAGS QUE ELA ACOMPANHA (últimos 30 dias, mais fortes primeiro):
 ${posts}
 
-Junte esses posts em 4 a 6 tópicos em alta. Responda SOMENTE um JSON:
-{"topicos":[{"titulo":"tema curto","calor":"Em alta" ou "Subindo","hashtag":"a hashtag principal sem #","resumo":"2 frases: o que está acontecendo, citando o que os posts mostram","provas":[números dos posts da lista que sustentam o tópico],"encaixe":"1 frase: como isso conversa com o que ela já tem ou com um pilar dela","gancho":"um gancho em primeira pessoa, do jeito dela falar para a câmera","acao":"Aproveitar agora" ou "Fazer uma série" ou "Ficar de olho"}]}
-Regras: português do Brasil, frases curtas e concretas, nada genérico. Nunca invente números (use só os da lista). Nunca use travessão. Gancho sem esquete, sem "você sabia que", "cansada de", "chega de", "não é X, é Y", "aí eu descobri", "foi aí que", sem gírias.`;
+Agrupe os posts em 4 a 6 assuntos realmente distintos, ordenados pelo potencial de engajamento. Considere volume de visualizações, curtidas, comentários e a proporção de interações por visualização. Não chame um assunto de "Em alta" com base em um único post; use "Subindo" quando a amostra for pequena.
+Responda SOMENTE um JSON:
+{"topicos":[{"titulo":"tema curto","calor":"Em alta" ou "Subindo","hashtag":"hashtag principal sem #","resumo":"o que está acontecendo e qual padrão aparece nos posts","provas":[números dos posts da lista que sustentam o tópico],"encaixe":"como o assunto conversa com um pilar e com a audiência dela","gancho":"o melhor gancho, falado para a câmera","ganchos":["gancho de identificação","gancho de curiosidade","gancho de quebra de objeção"],"acao":"Aproveitar agora" ou "Fazer uma série" ou "Ficar de olho"}]}
+Regras para os ganchos: precisam prender nos 3 primeiros segundos, soar como fala real e abrir uma curiosidade ou tensão específica. Nada de frase publicitária, introdução vaga ou promessa exagerada. Escreva 3 opções diferentes por assunto, sem repetir a mesma estrutura. Use primeira pessoa quando fizer sentido, sem forçar. Português do Brasil, frases curtas e concretas. Nunca invente números. Nunca use travessão. Sem esquete, personagens, clichês ou gírias artificiais.`;
   const m = await modeloTexto(chave);
   const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
@@ -142,6 +155,7 @@ Regras: português do Brasil, frases curtas e concretas, nada genérico. Nunca i
     id: Date.now().toString(36) + i,
     titulo: txt(t.titulo, 80), calor: t.calor === "Subindo" ? "Subindo" : "Em alta", hashtag: limparTag(t.hashtag),
     resumo: txt(t.resumo, 400), encaixe: txt(t.encaixe, 260), gancho: txt(t.gancho, 200),
+    ganchos: (Array.isArray(t.ganchos) ? t.ganchos : []).map((g: unknown) => txt(g, 180)).filter(Boolean).slice(0, 3),
     acao: ["Aproveitar agora", "Fazer uma série", "Ficar de olho"].includes(t.acao) ? t.acao : "Aproveitar agora",
     provas: (Array.isArray(t.provas) ? t.provas : []).map((n: unknown) => Number(n) - 1).filter((n: number) => n >= 0 && n < v.posts.length).slice(0, 4).map((n: number) => v.posts[n].codigo),
   })).filter((t: any) => t.titulo);
