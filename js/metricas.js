@@ -537,7 +537,7 @@
     const o = $("#rs-ordem", sec); if (o) o.addEventListener("change", () => { st.ordem = o.value; pintar(); });
     sec.querySelectorAll("[data-pc]").forEach((b) => b.addEventListener("click", () => irConteudos(b.dataset.pc)));
     sec.querySelectorAll("[data-conteudo]").forEach((b) => b.addEventListener("click", () => irConteudos("quadro")));
-    const tags = () => ((st.tend && st.tend.hashtags) || ["ugcbrasil", "achadinhos", "skincare", "cabelo", "maternidade"].map((tag) => ({ tag, ativo: true }))).map((h) => ({ ...h }));
+    const tags = () => ((st.tend && st.tend.hashtags) || ["ugcbrasil", "achadinhos", "skincare", "cabelo", "maternidadereal", "modafeminina", "autocuidado", "rotinareal"].map((tag) => ({ tag, ativo: true }))).map((h) => ({ ...h }));
     sec.querySelectorAll("[data-hliga]").forEach((b) => b.addEventListener("click", () => { const l = tags(); const h = l[Number(b.dataset.hliga)]; h.ativo = !h.ativo; salvarHashtags(l); }));
     sec.querySelectorAll("[data-htira]").forEach((b) => b.addEventListener("click", () => { const l = tags(); l.splice(Number(b.dataset.htira), 1); salvarHashtags(l); }));
     const f = $("#rs-hash-form", sec);
