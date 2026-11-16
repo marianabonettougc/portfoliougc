@@ -1494,6 +1494,7 @@ IDEIA PARA DEPOIS
     c2d.save(); c2d.globalAlpha = clamp(a); c2d.drawImage(f.img, (W - iw * esc0) / 2, (H - ih * esc0) / 2, iw * esc0, ih * esc0); c2d.restore();
   }
   function pintarFotos() {
+    pintarSelBar();
     const box = $("#ed-fotos-lista"); if (!box) return;
     const fs = st.fotos || [];
     const faltam = fs.filter((f) => !f.img && !f.path && !f.url);
@@ -2511,7 +2512,63 @@ IDEIA PARA DEPOIS
     st.selTela = a && (a.tipo === "leg" || a.tipo === "tit") ? a.tipo : null;
     if (camAntes !== st.camSel) pintarCamadas();
     if (fotoAntes !== st.fotoSel) pintarFotos();
+    pintarSelBar();
   }
+  // barra por cima da prévia com o item escolhido: diminuir, aumentar e excluir (nov/2026, pedido da Mari)
+  function alvoAtual() {
+    if (st.camSel) { const c = st.camadas.find((x) => x.id === st.camSel); if (c) return { tipo: "cam", ref: c }; }
+    if (st.fotoSel) { const f = (st.fotos || []).find((x) => x.id === st.fotoSel); if (f) return { tipo: "foto", ref: f }; }
+    if (st.selTela) return { tipo: st.selTela };
+    return null;
+  }
+  function pintarSelBar() {
+    const box = document.getElementById("ed-selbar"); if (!box) return;
+    const a = st.exportando ? null : alvoAtual();
+    if (!a) { box.hidden = true; box.innerHTML = ""; return; }
+    const nome = { cam: "Texto", foto: "Imagem", leg: "Legenda", tit: "Título" }[a.tipo];
+    const pode = a.tipo === "cam" || a.tipo === "foto";
+    box.hidden = false;
+    box.innerHTML = `<span class="ed-selbar-nome">${nome}</span><button type="button" data-sb="menos" aria-label="Diminuir" title="Diminuir">−</button><button type="button" data-sb="mais" aria-label="Aumentar" title="Aumentar">+</button>${pode ? `<button type="button" class="perigo" data-sb="apagar">Excluir</button>` : ""}<button type="button" data-sb="ok" aria-label="Pronto" title="Pronto">✓</button>`;
+    box.querySelectorAll("[data-sb]").forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); acaoSelBar(b.dataset.sb); }));
+  }
+  async function acaoSelBar(acao) {
+    const a = alvoAtual(); if (!a) return;
+    if (acao === "ok") { selecionar(null); redesenhar(); return; }
+    if (acao === "mais" || acao === "menos") {
+      if (a.tipo === "cam") guardarCam("tam" + a.ref.id);
+      mudarTamanho(a, tamanhoDe(a) * (acao === "mais" ? 1.1 : 1 / 1.1));
+      depoisDeMexer(a); redesenhar(); return;
+    }
+    if (acao === "apagar") {
+      if (a.tipo === "cam") {
+        guardarCam(); st.camadas = st.camadas.filter((c) => c.id !== a.ref.id);
+        selecionar(null); pintarCamadas(); salvarDepois(); redesenhar(); toast("Texto excluído. Se mudar de ideia, toque em Desfazer.");
+      } else if (a.tipo === "foto") {
+        if (!(await painelDialogo.confirmar("Excluir esta imagem do vídeo?", { ok: "Excluir", perigo: true }))) return;
+        st.fotos = (st.fotos || []).filter((f) => f.id !== a.ref.id);
+        selecionar(null); pintarFotos(); salvarDepois(); redesenhar(); toast("Imagem excluída.");
+      }
+    }
+  }
+  // tela cheia da prévia (no iPhone o Safari não deixa pôr a página em tela cheia, então a prévia cobre a tela)
+  function telaCheia(liga) {
+    const tela = document.querySelector("#aba-edicao .ed-tela"); if (!tela) return;
+    liga = liga ?? !tela.classList.contains("cheia");
+    tela.classList.toggle("cheia", liga); document.body.classList.toggle("ed-tela-cheia-on", liga);
+    if (liga) { if (tela.requestFullscreen && !document.fullscreenElement) tela.requestFullscreen().catch(() => {}); }
+    else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    pintarCheia(); redesenhar();
+  }
+  function pintarCheia() {
+    const box = document.getElementById("ed-cheia-barra"), tela = document.querySelector("#aba-edicao .ed-tela"); if (!box || !tela) return;
+    if (!tela.classList.contains("cheia")) { box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    box.innerHTML = `<button type="button" data-cheia="play">${st.tocando && !st.exportando ? ic.pausa + "Pausar" : ic.play + "Play"}</button><button type="button" data-cheia="sair">Sair da tela cheia</button>`;
+    box.querySelector('[data-cheia="play"]').addEventListener("click", (e) => { e.stopPropagation(); if (!st.segs.length) return; if (st.tocando) parar(); else tocar(st.t >= st.duracao - 0.05 ? 0 : st.t); });
+    box.querySelector('[data-cheia="sair"]').addEventListener("click", (e) => { e.stopPropagation(); telaCheia(false); });
+  }
+  document.addEventListener("fullscreenchange", () => { const tela = document.querySelector("#aba-edicao .ed-tela"); if (!document.fullscreenElement && tela && tela.classList.contains("cheia")) telaCheia(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { const tela = document.querySelector("#aba-edicao .ed-tela.cheia"); if (tela) telaCheia(false); } });
   function cantoEm(box, x, y, r) {
     const cs = [[box[0], box[1]], [box[2], box[1]], [box[0], box[3]], [box[2], box[3]]];
     return cs.some(([cx, cy]) => Math.abs(x - cx) <= r && Math.abs(y - cy) <= r);
@@ -2645,6 +2702,7 @@ IDEIA PARA DEPOIS
   }
   function camadaAtual() { return st.camadas.find((c) => c.id === st.camSel); }
   function pintarCamadas() {
+    pintarSelBar();
     const box = $("#ed-camadas"); if (!box) return;
     const fmt = (n) => (Math.round(n * 10) / 10).toFixed(1).replace(".", ",");
     const ordenadas = st.camadas.slice().sort((a, b) => a.t0 - b.t0);
@@ -3712,7 +3770,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
           </div>
         </section>
         <section class="ed-palco" aria-label="Prévia do vídeo">
-          <div class="ed-tela rr-player"><canvas id="ed-canvas" width="1080" height="1920"></canvas><div class="ed-vazio" id="ed-vazio">${ic.filme}<span>A prévia aparece aqui</span></div><span class="rr-relogio" id="ed-relogio">0:00,0</span><div class="ed-trab" id="ed-trab" hidden></div></div>
+          <div class="ed-tela rr-player"><canvas id="ed-canvas" width="1080" height="1920"></canvas><div class="ed-vazio" id="ed-vazio">${ic.filme}<span>A prévia aparece aqui</span></div><span class="rr-relogio" id="ed-relogio">0:00,0</span><div class="ed-selbar" id="ed-selbar" hidden></div><div class="ed-cheia-barra" id="ed-cheia-barra" hidden></div><div class="ed-trab" id="ed-trab" hidden></div></div>
           <div class="ed-controles" id="ed-controles"></div>
           <p class="rr-modo" id="ed-modo"></p>
         </section>
@@ -5101,8 +5159,11 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
     box.innerHTML = `<button class="btn btn-principal" type="button" id="ed-play" ${!ok || st.exportando ? "disabled" : ""}>${st.tocando && !st.exportando ? ic.pausa + "Pausar" : ic.play + "Play"}</button>
       <input type="range" id="ed-barra" min="0" max="${Math.max(0.1, st.duracao).toFixed(2)}" step="0.05" value="${st.t.toFixed(2)}" ${!ok || st.tocando ? "disabled" : ""} aria-label="Posição">
       <span class="ed-tempo" id="ed-tempo">${tempo(st.t)} / ${tempo(st.duracao)}</span>
-      <button class="btn btn-leve ed-desfazer" type="button" data-desfazer-tudo title="Desfazer a última mudança (Ctrl+Z)" ${podeDesfazer() && !st.exportando ? "" : "disabled"}>${ic.desfazer}Desfazer</button>`;
+      <button class="btn btn-leve ed-desfazer" type="button" data-desfazer-tudo title="Desfazer a última mudança (Ctrl+Z)" ${podeDesfazer() && !st.exportando ? "" : "disabled"}>${ic.desfazer}Desfazer</button>
+      <button class="btn btn-leve" type="button" data-tela-cheia ${!ok || st.exportando ? "disabled" : ""}>Tela cheia</button>`;
     $("[data-desfazer-tudo]", box).addEventListener("click", desfazerTudo);
+    $("[data-tela-cheia]", box).addEventListener("click", () => telaCheia(true));
+    pintarCheia(); pintarSelBar();
     const play = $("#ed-play", box);
     play.addEventListener("click", () => { if (st.tocando) parar(); else tocar(st.t); });
     const barra = $("#ed-barra", box);
