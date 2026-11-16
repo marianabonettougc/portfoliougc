@@ -670,7 +670,7 @@ IDEIA PARA DEPOIS
     if (st.camadas.length) st.aba = "textos";
     st.story = { ...novoStory(), ...(d.story || {}) }; st.vari = { ...novaVari(), ...(d.vari || {}), trab: false, gerando: null };
     if (d.opc && d.versao >= 3) Object.assign(st.opc, d.opc);
-    st.opc.coresPalavras = (d.opc && d.opc.coresPalavras) || {};
+    st.opc.coresPalavras = (d.opc && d.opc.coresPalavras) || {}; st.opc.enfaseCor = Boolean(d.opc && d.opc.enfaseCor);
     if (!d.opc || !d.opc.zoomNivel) { st.opc.zoomNivel = "discreto"; st.opc.zoomCortes = false; }
     if (!d.opc || !d.opc.zoomPalavrasV1) migrarZoomPalavras(st.opc);
     if (st.opc.estiloTitulo === "capcut") st.opc.estiloTitulo = "simples";
@@ -682,7 +682,7 @@ IDEIA PARA DEPOIS
     studio.aba = "visao"; await carregarStudio();
   }
   function novoProjeto() {
-    limparTudo(); st.projeto = null; st.opc.coresPalavras = {};
+    limparTudo(); st.projeto = null; st.opc.coresPalavras = {}; st.opc.enfaseCor = false;
     studio.meta = { job_id:"", roteiro_id:"", conteudo_id:null, etapa:"planejamento", prazo:"", observacoes:"" };
     studio.arquivos=[]; studio.gravacoes=[]; studio.entregas=[]; studio.aba="visao"; studio.carregado=false;
     const sec = document.getElementById("aba-" + ABA);
@@ -1573,7 +1573,7 @@ IDEIA PARA DEPOIS
     // cada destaque vai para a palavra mais perto do tempo que a IA marcou (de preferência a mesma palavra)
     const limpa = (x) => String(x || "").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
     for (const d of p.destaques || []) {
-      const perto = palavras.filter((x) => Math.abs(x.g - d.t) < 1.2);
+      const perto = palavras.filter((x) => Math.abs(x.g - d.t) < 1.2).sort((a, b) => Math.abs(a.g - d.t) - Math.abs(b.g - d.t)); // a mais perto primeiro (a mesma palavra pode aparecer duas vezes seguidas)
       const alvo = perto.find((x) => d.palavra && limpa(x.w) === limpa(d.palavra)) || perto.sort((a, b) => Math.abs(a.g - d.t) - Math.abs(b.g - d.t))[0];
       if (alvo) alvo.destaque = true;
     }
@@ -1811,7 +1811,7 @@ IDEIA PARA DEPOIS
     const grupos = [];
     for (const w of palavras) {
       const g = grupos[grupos.length - 1];
-      if (g && g.palavras.length < n && !w.q && w.o0 - g.o1 < 0.35 && !g.fimFrase && !g.palavras.some((x) => x.destaque) && !w.destaque) { g.palavras.push(w); g.o1 = w.o1; g.fimFrase = /[.!?,;:]$/.test(w.w); }
+      if (g && g.palavras.length < n && !w.q && w.o0 - g.o1 < 0.35 && !g.fimFrase && (st.opc.enfaseCor || (!g.palavras.some((x) => x.destaque) && !w.destaque))) { g.palavras.push(w); g.o1 = w.o1; g.fimFrase = /[.!?,;:]$/.test(w.w); }
       else grupos.push({ palavras: [w], o0: w.o0, o1: w.o1, fimFrase: /[.!?,;:]$/.test(w.w) });
     }
     grupos.forEach((g, i) => { const prox = grupos[i + 1]; g.o1 = prox ? Math.min(prox.o0, Math.max(g.o1 + 0.12, g.o0 + 0.25)) : g.o1 + 0.3; });
@@ -2386,11 +2386,11 @@ IDEIA PARA DEPOIS
   const FONTE_CAMADA = { cap: (px) => `600 ${px}px Poppins, sans-serif`, ser: (px) => `italic 400 ${px}px "DM Serif Display", Georgia, serif`, emo: (px) => `${px}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`, pop: (px) => `700 ${px}px Poppins, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`, man: (px) => `400 ${px}px "Pinyon Script", "DM Serif Display", cursive` };
   const ALTURA_LINHA = { cap: 1.55, ser: 1.08, emo: 1.35, pop: 1.18 };
   // visual de cada texto (ela ajusta na aba Textos): cores, contorno, opacidade e sombra atrás
-  const VISUAL_PADRAO = { cor: "#fff3b0", corPequena: "#ffffff", contorno: 0, contornoCor: "#1d1611", opacidade: 1, sombra: 0.72, sombraCor: "#160c08", alinh: "centro", fundo: "" };
+  const VISUAL_PADRAO = { cor: "#fff3b0", corPequena: "#ffffff", contorno: 0, contornoCor: "#1d1611", opacidade: 1, sombra: 0.72, sombraCor: "#160c08", alinh: "centro", fundo: "", canto: 0 };
   function visualCamada(cam) {
     const v = { ...VISUAL_PADRAO };
     for (const k of Object.keys(VISUAL_PADRAO)) if (cam[k] !== undefined && cam[k] !== null && cam[k] !== "") v[k] = cam[k];
-    v.contorno = clamp(+v.contorno || 0, 0, 14); v.opacidade = clamp(+v.opacidade, 0.1, 1); v.sombra = clamp(+v.sombra, 0, 1);
+    v.contorno = clamp(+v.contorno || 0, 0, 14); v.opacidade = clamp(+v.opacidade, 0.1, 1); v.sombra = clamp(+v.sombra, 0, 1); v.canto = clamp(+v.canto || 0, 0, 60);
     return v;
   }
   function rgbaDe(hex, a) { const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "")); const n = m ? parseInt(m[1], 16) : 0x160c08; return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
@@ -2417,7 +2417,16 @@ IDEIA PARA DEPOIS
       c2d.save(); c2d.globalAlpha = alfa * vis.opacidade; c2d.textBaseline = "middle"; c2d.lineJoin = "round"; c2d.miterLimit = 2;
       const semSombra = () => { c2d.shadowColor = "transparent"; c2d.shadowBlur = 0; c2d.shadowOffsetY = 0; };
       // faixa atrás do texto (layout de lettering da marca): retângulo reto na cor escolhida
-      if (vis.fundo) { const px0 = Math.max(...med.map((m) => m.px)), padx = px0 * 0.55, pady = px0 * 0.3; c2d.fillStyle = vis.fundo; c2d.fillRect(cx - bw / 2 - padx, cy - bh / 2 - pady, bw + padx * 2, bh + pady * 2); }
+      if (vis.fundo) { const px0 = Math.max(...med.map((m) => m.px)), padx = px0 * 0.55, pady = px0 * 0.3; c2d.fillStyle = vis.fundo;
+        if (vis.canto > 0) {
+          // caixinha (nov/2026): cantos arredondados, sombra macia e entra dando um "pop", como caixa de pergunta
+          const kk = dentro && !sel ? clamp((t - cam.t0) / 0.22) : 1, esc2 = 0.82 + 0.18 * (1 + 0.35 * Math.sin(kk * Math.PI)) * suave(kk);
+          c2d.translate(cx, cy); c2d.scale(esc2, esc2); c2d.translate(-cx, -cy);
+          const x0 = cx - bw / 2 - padx, y0 = cy - bh / 2 - pady, ww = bw + padx * 2, hh = bh + pady * 2, r = Math.min(vis.canto * u * (cam.escala || 1), hh / 2);
+          c2d.shadowColor = "rgba(0,0,0,.28)"; c2d.shadowBlur = 26 * u; c2d.shadowOffsetY = 8 * u;
+          c2d.beginPath(); c2d.moveTo(x0 + r, y0); c2d.arcTo(x0 + ww, y0, x0 + ww, y0 + hh, r); c2d.arcTo(x0 + ww, y0 + hh, x0, y0 + hh, r); c2d.arcTo(x0, y0 + hh, x0, y0, r); c2d.arcTo(x0, y0, x0 + ww, y0, r); c2d.closePath(); c2d.fill();
+          semSombra();
+        } else c2d.fillRect(cx - bw / 2 - padx, cy - bh / 2 - pady, bw + padx * 2, bh + pady * 2); }
       const comSombra = () => { if (vis.fundo) { c2d.shadowColor = "transparent"; c2d.shadowBlur = 0; c2d.shadowOffsetY = 0; return; } if (vis.sombra > 0) { c2d.shadowColor = rgbaDe(vis.sombraCor, vis.sombra); c2d.shadowBlur = (8 + 22 * vis.sombra) * u; c2d.shadowOffsetY = 4 * u; } else semSombra(); };
       for (const m of med) {
         const meio = y + m.h / 2, l = m.l;
@@ -2663,6 +2672,7 @@ IDEIA PARA DEPOIS
                 <label>Sombra atrás <span class="ed-cam-val">${vs.sombra ? pc(vs.sombra) : "sem"}</span><input type="range" min="0" max="1" step="0.05" data-cam-vis="sombra" value="${vs.sombra}"></label>
                 <label>Cor da sombra <input type="color" data-cam-vis="sombraCor" value="${vs.sombraCor}"></label>
                 <label>Faixa atrás <span class="ed-cam-cor"><input type="color" data-cam-vis="fundo" value="${vs.fundo || "#001e56"}"><button type="button" class="ed-cam-padrao" data-cam-volta="fundo" title="Tirar a faixa">${vs.fundo ? "tirar" : "sem faixa"}</button></span></label>
+                <label>Cantos da faixa <span class="ed-cam-val">${vs.canto ? vs.canto.toFixed(0) : "retos"}</span><input type="range" min="0" max="60" step="2" data-cam-vis="canto" value="${vs.canto}"></label>
                 <label>Alinhamento <select class="entrada" data-cam-vis="alinh"><option value="centro" ${vs.alinh === "centro" ? "selected" : ""}>Centro</option><option value="esq" ${vs.alinh === "esq" ? "selected" : ""}>Esquerda</option><option value="dir" ${vs.alinh === "dir" ? "selected" : ""}>Direita</option></select></label>
               </div>
               <div class="ed-cam-acoes"><button class="btn btn-leve" type="button" data-cam-todos>Usar este visual em todos os textos</button></div>
@@ -2696,12 +2706,12 @@ IDEIA PARA DEPOIS
     $("[data-cam-t0]", corpo).addEventListener("change", (e) => { guardarCam(); c.t0 = Math.max(0, +e.target.value || 0); if (c.t1 <= c.t0) c.t1 = c.t0 + 0.5; pintarCamadas(); mexeu(); });
     $("[data-cam-t1]", corpo).addEventListener("change", (e) => { guardarCam(); c.t1 = Math.max(c.t0 + 0.2, +e.target.value || 0); pintarCamadas(); mexeu(); });
     $("[data-cam-esc]", corpo).addEventListener("input", (e) => { guardarCam("esc" + c.id); c.escala = +e.target.value; mexeu(); });
-    const NUM_VIS = ["contorno", "opacidade", "sombra"];
+    const NUM_VIS = ["contorno", "opacidade", "sombra", "canto"];
     $$("[data-cam-vis]", corpo).forEach((i) => {
       const k = i.dataset.camVis, aplicar = () => {
         guardarCam("vis" + k + c.id); c[k] = NUM_VIS.includes(k) ? +i.value : i.value; mexeu();
         const val = i.closest("label") && i.closest("label").querySelector(".ed-cam-val");
-        if (val) val.textContent = k === "contorno" ? (+i.value ? String(+i.value) : "sem") : (k === "sombra" && !+i.value ? "sem" : Math.round(+i.value * 100) + "%");
+        if (val) val.textContent = k === "canto" ? (+i.value ? String(+i.value) : "retos") : k === "contorno" ? (+i.value ? String(+i.value) : "sem") : (k === "sombra" && !+i.value ? "sem" : Math.round(+i.value * 100) + "%");
       };
       i.addEventListener("input", aplicar); i.addEventListener("change", aplicar); // o iPhone só avisa no "change"
     });
@@ -2800,7 +2810,8 @@ IDEIA PARA DEPOIS
     const ws = (g.palavras || []), pal = texto.split(/\s+/).filter(Boolean);
     // palavras em outra cor (opc.coresPalavras: {"lg": "#ed1c24"}), ex.: a marca sempre em vermelho
     const cp = st.opc.coresPalavras || {}, corDa = (p) => cp[chaveCorPalavra(p)] || "";
-    const temCor = pal.some((p) => corDa(p)), kar = st.opc.karaoke && ws.length === pal.length && ws.length > 1;
+    const enf = st.opc.enfaseCor && ws.length === pal.length ? ws.map((w) => Boolean(w.destaque)) : [];
+    const temCor = pal.some((p) => corDa(p)) || enf.some(Boolean), kar = st.opc.karaoke && ws.length === pal.length && ws.length > 1;
     if (kar || temCor) {
       let atual = -1; if (kar) ws.forEach((w, i) => { if (st.t >= (w.o0 ?? g.o0) - 0.02) atual = i; });
       let n = 0; c2d.textAlign = "left";
@@ -2810,6 +2821,7 @@ IDEIA PARA DEPOIS
         for (const p of ps) {
           const w = c2d.measureText(p).width, ativo = n === atual;
           c2d.save(); if (ativo) { c2d.translate(x + w / 2, yy); c2d.scale(1.1, 1.1); c2d.translate(-(x + w / 2), -yy); c2d.fillStyle = st.opc.cor || "#f2c14e"; }
+          if (enf[n] && !ativo) { c2d.translate(x + w / 2, yy); c2d.scale(1.06, 1.06); c2d.translate(-(x + w / 2), -yy); c2d.fillStyle = st.opc.cor || "#f2c14e"; }
           if (corDa(p)) c2d.fillStyle = corDa(p);
           c2d.fillText(p, x, yy); c2d.restore(); x += w + esp; n++;
         }
@@ -5122,7 +5134,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-zoomnivel">Zoom</label><select class="entrada" id="ed-zoomnivel">${ZOOM_NIVEIS.map(([k, t]) => `<option value="${k}" ${nivelZoom() === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-trans">Transição nos cortes</label><select class="entrada" id="ed-trans">${[["nenhuma", "Nenhuma"], ["punch", "Zoom rápido"], ["deslize", "Zoom rápido + deslize na troca de cena"]].map(([k, t]) => `<option value="${k}" ${o.transicao === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
       <div class="ed-linha"><label class="ed-rotulo" for="ed-ritmo">Ritmo dos cortes</label><select class="entrada" id="ed-ritmo">${[["classico", "Corta só pausas maiores que meio segundo"], ["normal", "Normal (deixa respiro)"], ["rapido", "Rápido (corta respiros)"], ["turbo", "Turbo (sem nenhuma pausa)"]].map(([k, t]) => `<option value="${k}" ${(o.ritmo || "rapido") === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
-      <div class="ed-chks">${chk("chamativas", "Palavras chamativas (grandes, coloridas)")}${chk("sonsChamativas", "Pop nas palavras chamativas")}${chk("tremer", "Tremidinha no impacto")}${chk("flash", "Flash na troca de cena")}</div>
+      <div class="ed-chks">${chk("enfaseCor", "Palavras de ênfase na cor do destaque")}${chk("chamativas", "Palavras chamativas (grandes, coloridas)")}${chk("sonsChamativas", "Pop nas palavras chamativas")}${chk("tremer", "Tremidinha no impacto")}${chk("flash", "Flash na troca de cena")}</div>
       <div class="ed-chks">${chk("silencio", "Cortar silêncios")}${chk("erros", "Tirar tomadas erradas")}${chk("vicios", "Tirar vícios (éé, ahn, hum)")}${chk("vozForte", "Voz no volume do Instagram")}${chk("zoomCortes", "Zoom alternado nos cortes")}${chk("zoomEnfase", "Zoom na ênfase")}${chk("legenda", "Mostrar legenda")}${chk("titulo", "Mostrar título")}${chk("sonsTitulo", "Som de clique no título")}${chk("efeitos", "Efeitos sonoros")}${chk("maiusculas", "Legenda em maiúsculas")}${chk("karaoke", "Palavra falada em destaque (karaokê)")}</div>
       <label class="ed-rotulo" for="ed-vol">Volume dos efeitos</label>
       <input type="range" id="ed-vol" min="0" max="1.2" step="0.05" value="${o.vol}">
@@ -5156,7 +5168,7 @@ CTA: comenta CABELO que eu te mando o link">${esc(st.roteiro)}</textarea>
       o[c.dataset.opc] = c.checked;
       // cortes mudam a linha do tempo inteira: monta de novo (os efeitos voltam aos do plano)
       if (c.dataset.opc === "vozForte") { ajustarVoz(); guardarOpc(); return; }
-      if (["silencio", "erros", "zoomCortes", "chamativas", "sonsChamativas", "vicios"].includes(c.dataset.opc)) { remontar(); pintarCortes(); }
+      if (["silencio", "erros", "zoomCortes", "chamativas", "enfaseCor", "sonsChamativas", "vicios"].includes(c.dataset.opc)) { remontar(); pintarCortes(); }
       else { if (c.dataset.opc === "titulo" || c.dataset.opc === "sonsTitulo") { sonsDoTitulo(); pintarPlano(); } redesenhar(); }
     }));
   }
