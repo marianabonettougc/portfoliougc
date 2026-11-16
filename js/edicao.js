@@ -2382,9 +2382,9 @@ IDEIA PARA DEPOIS
     if (st.guiasIG && !st.exportando && !horizontal()) guiasInstagram(u, W, H);
   }
   // ---------- textos na tela (camadas editáveis: mudar frase, tempo, tamanho e arrastar) ----------
-  // linha: { texto, tipo: "cap" (Poppins caixa-alta espaçada, branca) | "ser" (DM Serif itálica, creme) | "emo" | "pop" | "man" (manuscrita Pinyon Script, a dos diferenciais da referência Weleda), tam (em 1080) }
-  const FONTE_CAMADA = { cap: (px) => `600 ${px}px Poppins, sans-serif`, ser: (px) => `italic 400 ${px}px "DM Serif Display", Georgia, serif`, emo: (px) => `${px}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`, pop: (px) => `700 ${px}px Poppins, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`, man: (px) => `400 ${px}px "Pinyon Script", "DM Serif Display", cursive` };
-  const ALTURA_LINHA = { cap: 1.55, ser: 1.08, emo: 1.35, pop: 1.18 };
+  // linha: { texto, tipo: "cap" (Poppins caixa-alta espaçada, branca) | "ser" (DM Serif itálica, creme) | "emo" | "pop" | "man" (manuscrita Pinyon Script, a dos diferenciais da referência Weleda) | "boo" (Bootzy dela, cor da frase grande) | "bop" (Bootzy, cor das linhas pequenas; emoji na mesma linha), tam (em 1080) }
+  const FONTE_CAMADA = { cap: (px) => `600 ${px}px Poppins, sans-serif`, ser: (px) => `italic 400 ${px}px "DM Serif Display", Georgia, serif`, emo: (px) => `${px}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`, pop: (px) => `700 ${px}px Poppins, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`, man: (px) => `400 ${px}px "Pinyon Script", "DM Serif Display", cursive`, boo: (px) => `${px}px "MinhaFonte", Arimo, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`, bop: (px) => `${px}px "MinhaFonte", Arimo, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif` };
+  const ALTURA_LINHA = { cap: 1.55, ser: 1.08, emo: 1.35, pop: 1.18, boo: 1.08, bop: 1.15 };
   // visual de cada texto (ela ajusta na aba Textos): cores, contorno, opacidade e sombra atrás
   const VISUAL_PADRAO = { cor: "#fff3b0", corPequena: "#ffffff", contorno: 0, contornoCor: "#1d1611", opacidade: 1, sombra: 0.72, sombraCor: "#160c08", alinh: "centro", fundo: "", canto: 0 };
   function visualCamada(cam) {
@@ -2431,7 +2431,7 @@ IDEIA PARA DEPOIS
       for (const m of med) {
         const meio = y + m.h / 2, l = m.l;
         c2d.font = (FONTE_CAMADA[l.tipo] || FONTE_CAMADA.ser)(m.px);
-        c2d.fillStyle = l.tipo === "cap" || l.tipo === "pop" ? vis.corPequena : vis.cor;
+        c2d.fillStyle = l.tipo === "cap" || l.tipo === "pop" || l.tipo === "bop" ? vis.corPequena : vis.cor;
         const lw = l.tipo === "emo" ? 0 : vis.contorno * u * (cam.escala || 1);
         if (lw > 0) { c2d.strokeStyle = vis.contornoCor; c2d.lineWidth = lw * 2; }
         // contorno primeiro (com a sombra), depois o preenchimento por cima (sem sombra dobrada)
@@ -2653,7 +2653,7 @@ IDEIA PARA DEPOIS
           ${ab ? `<div class="ed-cam-corpo">
             ${(c.linhas || []).map((l, i) => `<div class="ed-cam-linha">
               <input class="entrada" data-cam-txt="${i}" value="${esc(l.texto || "")}" aria-label="Texto da linha ${i + 1}">
-              <select class="entrada" data-cam-tipo="${i}" aria-label="Estilo da linha ${i + 1}"><option value="ser" ${l.tipo === "ser" ? "selected" : ""}>Grande (serifada)</option><option value="cap" ${l.tipo === "cap" ? "selected" : ""}>Pequena (caixa-alta)</option><option value="emo" ${l.tipo === "emo" ? "selected" : ""}>Emojis</option><option value="pop" ${l.tipo === "pop" ? "selected" : ""}>Negrito (Poppins)</option><option value="man" ${l.tipo === "man" ? "selected" : ""}>Manuscrita (script)</option></select>
+              <select class="entrada" data-cam-tipo="${i}" aria-label="Estilo da linha ${i + 1}"><option value="ser" ${l.tipo === "ser" ? "selected" : ""}>Grande (serifada)</option><option value="cap" ${l.tipo === "cap" ? "selected" : ""}>Pequena (caixa-alta)</option><option value="emo" ${l.tipo === "emo" ? "selected" : ""}>Emojis</option><option value="pop" ${l.tipo === "pop" ? "selected" : ""}>Negrito (Poppins)</option><option value="man" ${l.tipo === "man" ? "selected" : ""}>Manuscrita (script)</option><option value="boo" ${l.tipo === "boo" ? "selected" : ""}>Bootzy grande (cor da frase grande)</option><option value="bop" ${l.tipo === "bop" ? "selected" : ""}>Bootzy (cor das linhas pequenas)</option></select>
               <button class="icone-btn" type="button" data-cam-tiralinha="${i}" aria-label="Tirar linha">${ic.x}</button></div>`).join("")}
             <button class="btn btn-leve" type="button" data-cam-maislinha>${ic.mais}Linha</button>
             <div class="ed-cam-grade">
