@@ -2016,6 +2016,8 @@ const jobPago = (j) => !!(j && j.pagamento && j.pagamento.status==="Pago");
 // status final certo para o job: pago (ou permuta) = Finalizado · Pago; senão aguardando pagamento
 const finalDoJob = (j) => (jobPago(j) || (j && j.tipoJob==="Permuta")) ? FIN_PAGO : FIN_AGUARDANDO;
 const isHistorico = (j) => j.status===FIN_PAGO;
+// nov/2026 (pedido da Mari): Finalizado · Aguardando pagamento sai de Ativos e vai para a aba própria
+const isAguardandoPag = (j) => j.status===FIN_AGUARDANDO;
 // pagamento e status andam juntos: pagou com o job já finalizado = Finalizado · Pago; desmarcou o pagamento = volta para aguardando
 function statusPeloPagamento(j){
   if(!j || !ehFinalizado(j.status)) return j;
@@ -6329,14 +6331,16 @@ function Jobs({state, updateState}){
 
   const colunasStatus = [...statusDoJobLista(state), ...[...new Set(state.jobs.map(j=>j.status).filter(Boolean))].filter(x=>!statusDoJobLista(state).includes(x))];
   let list = state.jobs;
-  if(tab==="Ativos") list = list.filter(j=>j.status!=="Cancelado" && !isHistorico(j));
+  if(tab==="Ativos") list = list.filter(j=>j.status!=="Cancelado" && !isHistorico(j) && !isAguardandoPag(j));
+  if(tab==="Aguardando pagamento") list = list.filter(j=>isAguardandoPag(j));
   if(tab==="Histórico") list = list.filter(j=>isHistorico(j));
   if(query) list = list.filter(j => (j.marca+(j.tipo||"")+(j.observacoes||"")+(j.nicho||"")).toLowerCase().includes(query.toLowerCase()));
   if(filterStatus!=="Todos") list = list.filter(j=>j.status===filterStatus);
   // em ordem de fechamento da ação: a que fechou primeiro fica em cima (empate: a cadastrada primeiro), na lista e na grade
   list = list.map((j,i)=>[j,i]).sort((a,b)=>String(dataFechamentoJob(a[0])||"9999").localeCompare(String(dataFechamentoJob(b[0])||"9999")) || a[1]-b[1]).map(x=>x[0]);
 
-  const ativosCount = state.jobs.filter(j=>j.status!=="Cancelado" && !isHistorico(j)).length;
+  const ativosCount = state.jobs.filter(j=>j.status!=="Cancelado" && !isHistorico(j) && !isAguardandoPag(j)).length;
+  const aguardandoCount = state.jobs.filter(j=>isAguardandoPag(j)).length;
   const historicoCount = state.jobs.filter(j=>isHistorico(j)).length;
   // nov/2026 (pedido da Mari: "pouco visual"): resumo no topo com a mesma cara do Dashboard
   const jobsAtivos = state.jobs.filter(j=>j.status!=="Cancelado" && !isHistorico(j));
@@ -6396,10 +6400,11 @@ function Jobs({state, updateState}){
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, flexWrap:"wrap", gap:10}}>
         <div className="jobs-abas">
           <button type="button" className={"jobs-aba"+(tab==="Ativos"?" ativa":"")} onClick={()=>setTab("Ativos")}><Icon name="inbox" size={17}/>Ativos ({ativosCount})</button>
+          <button type="button" className={"jobs-aba"+(tab==="Aguardando pagamento"?" ativa":"")} onClick={()=>setTab("Aguardando pagamento")}><Icon name="payments" size={17}/>Aguardando pagamento ({aguardandoCount})</button>
           <button type="button" className={"jobs-aba"+(tab==="Organize"?" ativa":"")} onClick={()=>setTab("Organize")}><Icon name="view_kanban" size={17}/>Organize</button>
           <button type="button" className={"jobs-aba"+(tab==="Histórico"?" ativa":"")} onClick={()=>setTab("Histórico")}><Icon name="archive" size={17}/>Histórico ({historicoCount})</button>
         </div>
-        {tab==="Ativos" && (
+        {(tab==="Ativos" || tab==="Aguardando pagamento") && (
           <div className="tabs">
             {["Lista","Grade"].map(t=><div key={t} className={"tab "+(view===t?"active":"")} onClick={()=>setView(t)}>{t}</div>)}
           </div>
@@ -6443,7 +6448,13 @@ function Jobs({state, updateState}){
           })}
         </div>
       </>) : list.length===0 ? (
-        tab==="Histórico" ? (
+        tab==="Aguardando pagamento" ? (
+          <div className="empty">
+            <Icon name="payments"/>
+            <div className="empty-title">Nenhum job aguardando pagamento.</div>
+            <div className="empty-sub">Quando você marcar um job como Finalizado · Aguardando pagamento, ele sai de Ativos e aparece aqui. Ao marcar como pago, vai para o Histórico.</div>
+          </div>
+        ) : tab==="Histórico" ? (
           <div className="empty">
             <Icon name="archive"/>
             <div className="empty-title">Nenhum job no histórico ainda.</div>
