@@ -459,7 +459,7 @@
   function montar(sec) {
     sec.innerHTML = `<div class="cr-pagina cr-pagina-larga pc pc2">
       <header class="pc2-cab">
-        <div><small class="pc2-sobre">Conteúdos</small><h2 class="pc2-titulo">Meus <em>conteúdos</em></h2></div>
+        <div><small class="pc2-sobre">Seu estúdio de conteúdo</small><h2 class="pc2-titulo">Meus <em>conteúdos</em></h2></div>
         <div class="pc2-cab-acoes"><button class="btn pc2-btn-ano" type="button" data-pcaba="ano" title="Narrativa, ritmo, temas do ano e 2 meses à frente">${icAno}Planejar o ano</button><button class="btn btn-principal" type="button" id="pc-novo">${ic.mais}Novo conteúdo</button></div>
       </header>
       <nav class="sub-abas pc-abas" aria-label="Partes de Conteúdos">
@@ -853,11 +853,11 @@
   function pintarPlano() {
     const box = document.getElementById("pc-plano"); if (!box) return;
     const r = pl.atual;
-    const topo = `<div class="pc-plano-cab"><div><h3 class="pc2-h">Plano da <em>semana</em></h3><p class="pc-ajuda">Gravar e postar. Chega pronto todo sábado às 8h.</p></div>
+    const topo = `<div class="pc-plano-cab"><div><h3 class="pc2-h">Plano da <em>semana</em></h3><p class="pc-ajuda">Sua semana organizada pela IA: distribui ideias nos dias livres conforme seu ritmo, seus pilares e o equilíbrio entre atrair, conectar e vender.</p></div>
       <div class="pc-plano-acoes">${pl.lista.length > 1 ? `<select class="entrada" id="pc-plano-sem" aria-label="Qual semana">${pl.lista.map((x, i) => `<option value="${i}" ${i === pl.idx ? "selected" : ""}>${brCurta(x.semana)} a ${brCurta(x.plano && x.plano.fim || x.semana)}</option>`).join("")}</select>` : ""}
-      <button class="btn" type="button" id="pc-plano-gerar"${pl.gerando ? " disabled" : ""}>${pl.gerando ? "Montando…" : r ? "Montar de novo" : "Montar agora"}</button>
+      <button class="btn" type="button" id="pc-plano-gerar"${pl.gerando ? " disabled" : ""}>${pl.gerando ? "Montando…" : r ? "Surpreenda-me de novo" : "Surpreenda-me"}</button>
       ${r ? `<button class="btn" type="button" id="pc-plano-editar">Editar foco</button><button class="btn btn-perigo" type="button" id="pc-plano-excluir">Excluir</button>` : ""}</div></div>`;
-    if (!r) { box.innerHTML = topo + `<p class="pc-ajuda">Ainda não tem plano. O primeiro chega no sábado de manhã, ou clique em Montar agora.</p>`; ligarPlano(box); return; }
+    if (!r) { box.innerHTML = topo + `<p class="pc-ajuda">Ainda não tem plano para esta semana. Clique em Surpreenda-me para montar sua grade automaticamente.</p>`; ligarPlano(box); return; }
     const p = r.plano || {}, c = p.contas || {};
     sincronizarPlano(p);
     // visual de quadro (nov/2026, pedido da Mari: igual ao Organize de UGC's & Publis): um dia = uma coluna, uma tarefa = um cartão
@@ -919,7 +919,7 @@
   function ligarPlano(box) {
     const sel = $("#pc-plano-sem", box); if (sel) sel.addEventListener("change", () => { pl.idx = Number(sel.value); pl.atual = pl.lista[pl.idx]; pintarPlano(); });
     $("#pc-plano-gerar", box).addEventListener("click", async () => {
-      if (pl.atual && !(await painelDialogo.confirmar("Montar o plano de novo? Os dias livres do seu ritmo ganham ideias novas e o que você marcou como feito recomeça.", { ok: "Montar de novo" }))) return;
+      if (pl.atual && !(await painelDialogo.confirmar("Montar o plano de novo? Os dias livres do seu ritmo ganham ideias novas e o que você marcou como feito recomeça.", { ok: "Surpreenda-me" }))) return;
       pl.gerando = true; pintarPlano();
       try {
         const { data, error } = await banco().functions.invoke("painel-conteudo", { body: { acao: "plano_semana" } });
