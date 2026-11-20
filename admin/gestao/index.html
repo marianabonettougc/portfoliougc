@@ -3471,31 +3471,37 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     setNovaTarefa(null);
   }
 
-  // ----- logos das marcas (descobre sozinho pelo nome) -----
-  // v3 (nov/2026): busca pelo nome limpo da marca ("SBP · Outubro" procura SBP), tenta de novo o que ficou sem site
-  // e a logo pode ser trocada à mão no cartão (manual: true nunca é sobrescrita).
+  // ----- logos das marcas: toda campanha ativa precisa ter a logo pesquisada e salva no painel -----
+  // A busca usa a função assistente-ugc (pesquisa na web); o resultado fica persistido em logosMarcas.
+  // Logos escolhidas manualmente nunca são sobrescritas. Processa TODAS as marcas ativas, sem limite por lote.
   const logos = state.logosMarcas || {};
   useEffect(()=>{
     const semanaAtras = Date.now() - 7*86400000;
-    const ativos = jobs.filter(j=>j.status!=="Cancelado" && j.marca);
-    const faltando = [...new Set(ativos.map(j=>chaveMarca(j.marca)))]
-      .filter(k=>{ const marca = (ativos.find(j=>chaveMarca(j.marca)===k)||{}).marca || k; const i = infoLogo(marca, logos);
-        if(!i) return true; if(i.manual || i.dominio) return false;
-        return (i.v||0) < 3 || (i.tentadoEm||0) < semanaAtras; }).slice(0,6);
+    const campanhasAtivas = jobs.filter(j=>j.status!=="Cancelado" && !ehFinalizado(j.status) && j.marca);
+    const marcasUnicas = [...new Set(campanhasAtivas.map(j=>chaveMarca(j.marca)))];
+    const faltando = marcasUnicas.filter(k=>{
+      const marca = (campanhasAtivas.find(j=>chaveMarca(j.marca)===k)||{}).marca || k;
+      const info = infoLogo(marca, logos);
+      if(!info) return true;
+      if(info.manual || info.dominio) return false;
+      return (info.v||0) < 3 || (info.tentadoEm||0) < semanaAtras;
+    });
     if(!faltando.length || !mudar) return;
     let parar = false;
     (async ()=>{
       for(const k of faltando){
         if(parar) return;
-        const marca = (jobs.find(j=>chaveMarca(j.marca)===k)||{}).marca || k;
+        const marca = (campanhasAtivas.find(j=>chaveMarca(j.marca)===k)||{}).marca || k;
         try{
           const { data, error } = await supabaseClient.functions.invoke("assistente-ugc", {body:{acao:"logo", marca: marcaBase(marca)}});
-          if(!error && data && !data.erro) mudar(s=>({...s, logosMarcas:{...(s.logosMarcas||{}), [k]:{logo:data.logo||null, dominio:data.dominio||null, tentadoEm:Date.now(), v:3}}}));
-        }catch(e){ /* tenta de novo na próxima vez */ }
+          if(!error && data && !data.erro){
+            mudar(s=>({...s, logosMarcas:{...(s.logosMarcas||{}), [k]:{logo:data.logo||null, dominio:data.dominio||null, tentadoEm:Date.now(), v:3}}}));
+          }
+        }catch(e){ /* tenta novamente na próxima entrada de campanha ou atualização de jobs */ }
       }
     })();
     return ()=>{ parar = true; };
-  }, [jobs.map(j=>j.marca).join("|")]);
+  }, [jobs.map(j=>j.marca+"|"+j.status).join("|")]);
   function trocarLogo(marca, novo){
     const k = chaveMarca(marca), b = chaveMarca(marcaBase(marca));
     mudar(s=>{ const l = {...(s.logosMarcas||{})};
