@@ -2027,7 +2027,7 @@ function Toggle({on, onClick}){
 
 /* ---------- STATUS maps ---------- */
 // status do job (out/2026, pedido da Mari); os antigos continuam aparecendo nos jobs que já tinham
-// nov/2026 (pedido da Mari): "Finalizado" virou dois. Aguardando pagamento continua nos Ativos; Pago vai para o Histórico (sai do Organize)
+// Nov/2026: ações finalizadas são separadas entre aguardando pagamento e arquivadas.
 const FIN_AGUARDANDO = "Finalizado · Aguardando pagamento";
 const FIN_PAGO = "Finalizado · Pago";
 const JOB_STATUS = ["Aguardando Briefing","Aguardando Produto","Roteirização","Aprovação de Roteiro","Em Produção","Conteúdo Entregue","Aprovação do Conteúdo","Refação",FIN_AGUARDANDO,FIN_PAGO,"Cancelado"];
@@ -2037,9 +2037,9 @@ const ehFinalizado = (st) => st==="Finalizado" || st===FIN_AGUARDANDO || st===FI
 const jobPago = (j) => !!(j && j.pagamento && j.pagamento.status==="Pago");
 // status final certo para o job: pago (ou permuta) = Finalizado · Pago; senão aguardando pagamento
 const finalDoJob = (j) => (jobPago(j) || (j && j.tipoJob==="Permuta")) ? FIN_PAGO : FIN_AGUARDANDO;
-const isHistorico = (j) => j.status===FIN_PAGO;
-// nov/2026 (pedido da Mari): Finalizado · Aguardando pagamento sai de Ativos e vai para a aba própria
-const isAguardandoPag = (j) => j.status===FIN_AGUARDANDO;
+const isHistorico = (j) => ehFinalizado(j.status) && (jobPago(j) || j.tipoJob==="Permuta");
+// Toda ação finalizada sem pagamento recebido fica em Aguardando pagamento.
+const isAguardandoPag = (j) => ehFinalizado(j.status) && !isHistorico(j);
 // pagamento e status andam juntos: pagou com o job já finalizado = Finalizado · Pago; desmarcou o pagamento = volta para aguardando
 function statusPeloPagamento(j){
   if(!j || !ehFinalizado(j.status)) return j;
@@ -6358,17 +6358,17 @@ function Jobs({state, updateState}){
 
   const colunasStatus = [...statusDoJobLista(state), ...[...new Set(state.jobs.map(j=>j.status).filter(Boolean))].filter(x=>!statusDoJobLista(state).includes(x))];
   let list = state.jobs;
-  if(tab==="Ativos") list = list.filter(j=>j.status!=="Cancelado" && !isHistorico(j) && !isAguardandoPag(j));
+  if(tab==="Ativos") list = list.filter(j=>j.status!=="Cancelado" && !ehFinalizado(j.status));
   if(tab==="Aguardando pagamento") list = list.filter(j=>isAguardandoPag(j));
-  if(tab==="Histórico") list = list.filter(j=>isHistorico(j));
+  if(tab==="Arquivados") list = list.filter(j=>isHistorico(j));
   if(query) list = list.filter(j => (j.marca+(j.tipo||"")+(j.observacoes||"")+(j.nicho||"")).toLowerCase().includes(query.toLowerCase()));
   if(filterStatus!=="Todos") list = list.filter(j=>j.status===filterStatus);
   // em ordem de fechamento da ação: a que fechou primeiro fica em cima (empate: a cadastrada primeiro), na lista e na grade
   list = list.map((j,i)=>[j,i]).sort((a,b)=>String(dataFechamentoJob(a[0])||"9999").localeCompare(String(dataFechamentoJob(b[0])||"9999")) || a[1]-b[1]).map(x=>x[0]);
 
-  const ativosCount = state.jobs.filter(j=>j.status!=="Cancelado" && !isHistorico(j) && !isAguardandoPag(j)).length;
+  const ativosCount = state.jobs.filter(j=>j.status!=="Cancelado" && !ehFinalizado(j.status)).length;
   const aguardandoCount = state.jobs.filter(j=>isAguardandoPag(j)).length;
-  const historicoCount = state.jobs.filter(j=>isHistorico(j)).length;
+  const arquivadosCount = state.jobs.filter(j=>isHistorico(j)).length;
   // nov/2026 (pedido da Mari: "pouco visual"): resumo no topo com a mesma cara do Dashboard
   const jobsAtivos = state.jobs.filter(j=>j.status!=="Cancelado" && !isHistorico(j));
   const emAberto = (j) => j.tipoJob!=="Permuta" && !(j.pagamento && j.pagamento.status==="Pago") && (!j.moeda || j.moeda==="BRL");
@@ -6387,7 +6387,7 @@ function Jobs({state, updateState}){
     return datas;
   };
   const entregas7j = emProducao.reduce((n,j)=>n+prazosAbertos(j).filter(d=>diasAte(d)>=0 && diasAte(d)<=7).length, 0);
-  const aguardPag = jobsAtivos.filter(j=>j.status===FIN_AGUARDANDO);
+  const aguardPag = state.jobs.filter(j=>isAguardandoPag(j));
   const aguardValor = aguardPag.filter(emAberto).reduce((a,j)=>a+(Number(j.valor)||0),0);
   const hojeJ = new Date();
   const dataTopo = hojeJ.toLocaleDateString("pt-BR",{weekday:"long", day:"numeric", month:"long"});
@@ -6434,7 +6434,7 @@ function Jobs({state, updateState}){
           <button type="button" className={"jobs-aba"+(tab==="Ativos"?" ativa":"")} onClick={()=>setTab("Ativos")}><Icon name="inbox" size={17}/>Ativos ({ativosCount})</button>
           <button type="button" className={"jobs-aba"+(tab==="Aguardando pagamento"?" ativa":"")} onClick={()=>setTab("Aguardando pagamento")}><Icon name="payments" size={17}/>Aguardando pagamento ({aguardandoCount})</button>
           <button type="button" className={"jobs-aba"+(tab==="Organize"?" ativa":"")} onClick={()=>setTab("Organize")}><Icon name="view_kanban" size={17}/>Organize</button>
-          <button type="button" className={"jobs-aba"+(tab==="Histórico"?" ativa":"")} onClick={()=>setTab("Histórico")}><Icon name="archive" size={17}/>Histórico ({historicoCount})</button>
+          <button type="button" className={"jobs-aba"+(tab==="Arquivados"?" ativa":"")} onClick={()=>setTab("Arquivados")}><Icon name="archive" size={17}/>Arquivados ({arquivadosCount})</button>
         </div>
         {(tab==="Ativos" || tab==="Aguardando pagamento") && (
           <div className="tabs">
@@ -6466,7 +6466,7 @@ function Jobs({state, updateState}){
         </div>
         <div className="org-quadro" ref={quadroRef} onPointerDown={arrastarFundo} onDragOver={(e)=>rolarNoArraste(e)}>
           {colunasStatus.filter(col=>col!==FIN_PAGO && col!=="Cancelado").map(col=>{
-            const colJobs = state.jobs.filter(j=>j.status===col && !isHistorico(j) && (!query || (j.marca+(j.tipo||"")+(j.nicho||"")).toLowerCase().includes(query.toLowerCase())));
+            const colJobs = state.jobs.filter(j=>j.status===col && !ehFinalizado(j.status) && j.status!=="Cancelado" && (!query || (j.marca+(j.tipo||"")+(j.nicho||"")).toLowerCase().includes(query.toLowerCase())));
             const cor = KANBAN_COLORS[col] || "var(--wine)";
             return (
               <div key={col} style={{borderTopColor:cor, "--cor":cor}} className={"org-col"+(dragOverCol===col?" alvo":"")} onDragOver={(e)=>{e.preventDefault(); setDragOverCol(col);}} onDragLeave={()=>setDragOverCol(c=>c===col?null:c)} onDrop={(e)=>onDrop(e,col)}>
@@ -6484,13 +6484,13 @@ function Jobs({state, updateState}){
           <div className="empty">
             <Icon name="payments"/>
             <div className="empty-title">Nenhum job aguardando pagamento.</div>
-            <div className="empty-sub">Quando você marcar um job como Finalizado · Aguardando pagamento, ele sai de Ativos e aparece aqui. Ao marcar como pago, vai para o Histórico.</div>
+            <div className="empty-sub">Todas as ações finalizadas que ainda não tiveram o pagamento recebido aparecem aqui. Quando marcar como pago, vão para Arquivados.</div>
           </div>
-        ) : tab==="Histórico" ? (
+        ) : tab==="Arquivados" ? (
           <div className="empty">
             <Icon name="archive"/>
-            <div className="empty-title">Nenhum job no histórico ainda.</div>
-            <div className="empty-sub">Jobs finalizados com pagamento confirmado aparecem aqui automaticamente.</div>
+            <div className="empty-title">Nenhuma ação arquivada ainda.</div>
+            <div className="empty-sub">Ações finalizadas com pagamento recebido aparecem aqui automaticamente.</div>
           </div>
         ) : (
           <EmptyState icon="videocam" title="Nenhum job por aqui" sub="Crie seu primeiro job para começar a acompanhar." cta="Novo Job" onClick={()=>setModal(true)}/>
