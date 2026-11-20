@@ -4146,44 +4146,6 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
             <em className={vis.erro?"ruim":""}>{vis.erro ? "não consegui carregar" : vis.total==null ? "carregando" : `${plural(vis.unicos,"pessoa","pessoas")} · ${vis.hoje} hoje${vis.tempo && vis.tempo.siteMedio!=null ? ` · ${fmtDuracao(vis.tempo.siteMedio)}/visita` : ""}`}</em></span></button>
       </div>
 
-      {/* Ranking de faturamento por origem: cada job conta integralmente para uma única origem principal */}
-      {(()=>{
-        const origemDoJob = (j) => {
-          if(j.origemFechamento==="plataforma") return j.origemPlataformaPrincipal || (j.plataformasFechamento||[])[0] || "Plataforma não definida";
-          if(j.origemFechamento==="painel") return j.origemContato || "Painel de marcas";
-          if(j.origemFechamento==="direto") return j.origemContato || "Contato direto";
-          return j.origemContato || "Sem origem definida";
-        };
-        const porJob = {};
-        faturadoLista.forEach(t=>{
-          if(!t.jobId) return;
-          const job = jobPorId[t.jobId];
-          if(!job) return;
-          const origem = origemDoJob(job);
-          porJob[origem] = porJob[origem] || {valor:0, jobs:new Set()};
-          porJob[origem].valor += Number(t.valor||0);
-          porJob[origem].jobs.add(job.id);
-        });
-        const ranking = Object.entries(porJob).map(([nome,d])=>({nome,valor:d.valor,quantidade:d.jobs.size}))
-          .sort((a,b)=>b.valor-a.valor);
-        const maximo = Math.max(1,...ranking.map(x=>x.valor));
-        return <section className="db-bloco" style={{marginBottom:14}}>
-          <div className="dn-bt"><div><h2>Ranking de faturamento por origem</h2><small className="dz-sub">Campanhas do mês · cada campanha atribuída a uma única origem principal</small></div></div>
-          {ranking.length ? <div style={{display:"grid",gap:13}}>
-            {ranking.map((item,i)=><div key={item.nome}>
-              <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"baseline",marginBottom:5}}>
-                <span style={{fontWeight:600,minWidth:0,overflowWrap:"anywhere"}}>{i+1}. {item.nome}</span>
-                <span style={{fontWeight:600,whiteSpace:"nowrap",fontVariantNumeric:"tabular-nums"}}>{dnMoeda(item.valor)}</span>
-              </div>
-              <div style={{height:7,borderRadius:99,background:"var(--db-bege)",overflow:"hidden"}}>
-                <div style={{height:"100%",width:(item.valor/maximo*100)+"%",background:"#a87058",borderRadius:99}}/>
-              </div>
-              <small style={{display:"block",color:"var(--db-suave)",marginTop:3}}>{plural(item.quantidade,"campanha","campanhas")}</small>
-            </div>)}
-          </div> : <p className="db-vazio">Ainda não há faturamento de campanhas com origem identificada neste mês.</p>}
-        </section>;
-      })()}
-
       {/* 3. Instagram num cartão só: 4 números e uma linha de visualizações (nov/2026, Dashboard limpo) */}
       <section className={"db-bloco dz-ig1"+(ig.conectado ? "" : " sem-ig")}>
         <div className="dn-bt"><div><h2>Instagram</h2><small className="dz-sub">{ig.conectado ? `@${ig.username||""} · ${ig.de ? `${dataBR(ig.de).slice(0,5)} a ${dataBR(ig.ate).slice(0,5)}, comparado com os ${igDias} dias antes` : "números do Metricool"}` : "números do Metricool, parceiro oficial da Meta"}</small></div>
@@ -8796,6 +8758,44 @@ function Performance({state, updateState, embutido}){
           </div>
         )}
       </div>
+
+
+  // Ranking de faturamento por origem: cada job é atribuído a uma única origem principal.
+  const jobPorIdRanking = Object.fromEntries((state.jobs||[]).map(j=>[j.id,j]));
+  const rankingPorOrigem = {};
+  txMes.filter(t=>t.tipo==="receita" && t.jobId && jobPorIdRanking[t.jobId]).forEach(t=>{
+    const job = jobPorIdRanking[t.jobId];
+    let origem = "Sem origem definida";
+    if(job.origemFechamento==="plataforma"){
+      origem = job.origemPlataformaPrincipal || (job.plataformasFechamento||[])[0] || "Plataforma não definida";
+    }else if(job.origemFechamento==="painel"){
+      origem = job.origemContato || "Painel de marcas";
+    }else if(job.origemFechamento==="direto"){
+      origem = job.origemContato || "Contato direto";
+    }else{
+      origem = job.origemContato || "Sem origem definida";
+    }
+    if(!rankingPorOrigem[origem]) rankingPorOrigem[origem]={valor:0,jobs:new Set()};
+    rankingPorOrigem[origem].valor += Number(t.valor||0);
+    rankingPorOrigem[origem].jobs.add(job.id);
+  });
+  const rankingOrigem = Object.entries(rankingPorOrigem).map(([nome,d])=>({nome,valor:d.valor,quantidade:d.jobs.size})).sort((a,b)=>b.valor-a.valor);
+  const maxRankingOrigem = Math.max(1,...rankingOrigem.map(x=>x.valor));
+
+
+      <section className="db-bloco" style={{marginBottom:18}}>
+        <div className="dn-bt"><div><h2>Faturamento por plataforma e origem</h2><small className="dz-sub">{monthNames[selMonth]} de {selYear} · cada campanha contabilizada em uma única origem principal</small></div></div>
+        {rankingOrigem.length ? <div style={{display:"grid",gap:12}}>
+          {rankingOrigem.map((item,i)=><div key={item.nome}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:12,marginBottom:5}}>
+              <span style={{fontSize:13.5,fontWeight:600,minWidth:0,overflowWrap:"anywhere"}}>{i+1}. {item.nome}</span>
+              <span style={{fontSize:13.5,fontWeight:600,whiteSpace:"nowrap",fontVariantNumeric:"tabular-nums"}}>{fmtMoney(item.valor)}</span>
+            </div>
+            <div style={{height:6,borderRadius:99,background:"var(--sand)",overflow:"hidden"}}><div style={{height:"100%",width:(item.valor/maxRankingOrigem*100)+"%",background:"var(--butter)",borderRadius:99}}/></div>
+            <small style={{display:"block",fontSize:11.5,color:"var(--graphite-soft)",marginTop:3}}>{plural(item.quantidade,"campanha","campanhas")}</small>
+          </div>)}
+        </div> : <p style={{fontSize:13.5,color:"var(--graphite-soft)",margin:"4px 0"}}>Ainda não há faturamento de campanhas com origem identificada neste mês.</p>}
+      </section>
 
       <h3 style={{margin:"0 0 12px"}}>Inteligência Financeira</h3>
       <div className="grid grid-4" style={{marginBottom:18}}>
