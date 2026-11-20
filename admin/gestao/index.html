@@ -8632,7 +8632,7 @@ function Performance({state, updateState, embutido}){
     months.push({label: monthNames[d.getMonth()].slice(0,3)+"/"+String(d.getFullYear()).slice(2), y:d.getFullYear(), m:d.getMonth()});
   }
 
-  const txMes = (state.transacoes||[]).filter(t=>{ const d=new Date(t.data+"T00:00:00"); return d.getMonth()===selMonth && d.getFullYear()===selYear; });
+  const txMes = state.transacoes.filter(t=>{ const d=new Date(t.data+"T00:00:00"); return d.getMonth()===selMonth && d.getFullYear()===selYear; });
   const receitaPrevista = txMes.filter(t=>t.tipo==="receita").reduce((a,b)=>a+Number(b.valor||0),0);
   const receitaRecebida = txMes.filter(t=>t.tipo==="receita"&&t.status==="Confirmado").reduce((a,b)=>a+Number(b.valor||0),0);
   const receitaPendente = txMes.filter(t=>t.tipo==="receita"&&t.status==="Pendente").reduce((a,b)=>a+Number(b.valor||0),0);
@@ -8640,173 +8640,242 @@ function Performance({state, updateState, embutido}){
   const ticketMedioPago = qtdPaga>0 ? receitaRecebida/qtdPaga : 0;
 
   const receitaPorMes = months.map(mo=>{
-    const tx = (state.transacoes||[]).filter(t=>{ const d=new Date(t.data+"T00:00:00"); return t.tipo==="receita" && d.getMonth()===mo.m && d.getFullYear()===mo.y; });
-    return {label:mo.label, recebido:tx.filter(t=>t.status==="Confirmado").reduce((a,b)=>a+Number(b.valor||0),0), pendente:tx.filter(t=>t.status==="Pendente").reduce((a,b)=>a+Number(b.valor||0),0)};
+    const tx = state.transacoes.filter(t=>{ const d=new Date(t.data+"T00:00:00"); return t.tipo==="receita" && d.getMonth()===mo.m && d.getFullYear()===mo.y; });
+    return {
+      label: mo.label,
+      recebido: tx.filter(t=>t.status==="Confirmado").reduce((a,b)=>a+Number(b.valor||0),0),
+      pendente: tx.filter(t=>t.status==="Pendente").reduce((a,b)=>a+Number(b.valor||0),0)
+    };
   });
 
   const jobsPorMes = months.map(mo=>{
-    const total = (state.jobs||[]).filter(j=>{ if(!dataFechamentoJob(j)) return false; const d=new Date(dataFechamentoJob(j)+"T00:00:00"); return d.getMonth()===mo.m && d.getFullYear()===mo.y; }).length;
-    return {...mo,total};
+    const total = state.jobs.filter(j=>{
+      if(!dataFechamentoJob(j)) return false;
+      const d=new Date(dataFechamentoJob(j)+"T00:00:00");
+      return d.getMonth()===mo.m && d.getFullYear()===mo.y;
+    }).length;
+    return {...mo, total};
   });
-  const maxJobs = Math.max(1,...jobsPorMes.map(m=>m.total));
-  const maxReceitaMes = Math.max(1,...receitaPorMes.map(m=>m.recebido));
+  const maxJobs = Math.max(1, ...jobsPorMes.map(m=>m.total));
+  const maxReceitaMes = Math.max(1, ...receitaPorMes.map(m=>m.recebido));
 
   const marcasCount = {};
-  (state.jobs||[]).forEach(j=>{ if(j.marca && j.pagamento && j.pagamento.status==="Pago") marcasCount[j.marca]=(marcasCount[j.marca]||0)+Number(j.valor||0); });
+  state.jobs.forEach(j=>{ if(j.marca && j.pagamento && j.pagamento.status==="Pago") marcasCount[j.marca] = (marcasCount[j.marca]||0) + Number(j.valor||0); });
   const topMarcas = Object.entries(marcasCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const maxMarca = Math.max(1,...topMarcas.map(m=>m[1]));
+  const maxMarca = Math.max(1, ...topMarcas.map(m=>m[1]));
 
   const tipoCount = {};
-  (state.jobs||[]).forEach(j=>{ if(j.tipo && j.pagamento && j.pagamento.status==="Pago") tipoCount[j.tipo]=(tipoCount[j.tipo]||0)+Number(j.valor||0); });
+  state.jobs.forEach(j=>{ if(j.tipo && j.pagamento && j.pagamento.status==="Pago") tipoCount[j.tipo] = (tipoCount[j.tipo]||0) + Number(j.valor||0); });
   const topTipos = Object.entries(tipoCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const maxTipo = Math.max(1,...topTipos.map(m=>m[1]));
+  const maxTipo = Math.max(1, ...topTipos.map(m=>m[1]));
 
-  const entreguesMes = (state.jobs||[]).filter(j=>{
-    const quando=j.dataEntregaReal || ((j.status==="Conteúdo Entregue" || ehFinalizado(j.status)) ? j.prazoEntrega : "");
-    if(!quando) return false; const d=new Date(quando+"T00:00:00"); return d.getMonth()===selMonth && d.getFullYear()===selYear;
+  const entreguesMes = state.jobs.filter(j=>{
+    // entregues: conteúdo já entregue, no mês da entrega (o campo "data de entrega real" saiu; usa o prazo)
+    const quando = j.dataEntregaReal || ((j.status==="Conteúdo Entregue" || ehFinalizado(j.status)) ? j.prazoEntrega : "");
+    if(!quando) return false;
+    const d = new Date(quando+"T00:00:00");
+    return d.getMonth()===selMonth && d.getFullYear()===selYear;
   }).length;
-  const jobsFechadosMes = (state.jobs||[]).filter(j=>{ if(!dataFechamentoJob(j)) return false; const d=new Date(dataFechamentoJob(j)+"T00:00:00"); return d.getMonth()===selMonth && d.getFullYear()===selYear; });
-  const marcasAtendidas = new Set(jobsFechadosMes.map(j=>j.marca).filter(Boolean)).size;
-  const totalJobsMes = jobsFechadosMes.length;
-  const ticketMedioMes = totalJobsMes ? jobsFechadosMes.reduce((a,b)=>a+Number(b.valor||0),0)/totalJobsMes : 0;
-
-  const mesAnteriorD = new Date(selYear,selMonth-1,1);
-  const receitaMesAnterior = (state.transacoes||[]).filter(t=>{ const d=new Date(t.data+"T00:00:00"); return t.tipo==="receita" && t.status==="Confirmado" && d.getMonth()===mesAnteriorD.getMonth() && d.getFullYear()===mesAnteriorD.getFullYear(); }).reduce((a,b)=>a+Number(b.valor||0),0);
+  const marcasAtendidas = new Set(state.jobs.filter(j=>{
+    if(!dataFechamentoJob(j)) return false;
+    const d = new Date(dataFechamentoJob(j)+"T00:00:00");
+    return d.getMonth()===selMonth && d.getFullYear()===selYear;
+  }).map(j=>j.marca)).size;
+  const totalJobsMes = state.jobs.filter(j=>{
+    if(!dataFechamentoJob(j)) return false;
+    const d = new Date(dataFechamentoJob(j)+"T00:00:00");
+    return d.getMonth()===selMonth && d.getFullYear()===selYear;
+  }).length;
+  const ticketMedioMes = totalJobsMes>0 ? state.jobs.filter(j=>{
+    const d = new Date(dataFechamentoJob(j)+"T00:00:00");
+    return d.getMonth()===selMonth && d.getFullYear()===selYear;
+  }).reduce((a,b)=>a+Number(b.valor||0),0)/totalJobsMes : 0;
+  const mesAnteriorD = new Date(selYear, selMonth-1, 1);
+  const receitaMesAnterior = state.transacoes.filter(t=>{
+    const d = new Date(t.data+"T00:00:00");
+    return t.tipo==="receita" && t.status==="Confirmado" && d.getMonth()===mesAnteriorD.getMonth() && d.getFullYear()===mesAnteriorD.getFullYear();
+  }).reduce((a,b)=>a+Number(b.valor||0),0);
   const crescimento = receitaMesAnterior>0 ? Math.round(((receitaRecebida-receitaMesAnterior)/receitaMesAnterior)*100) : (receitaRecebida>0?100:0);
 
-  const metaKey = selYear+"-"+String(selMonth+1).padStart(2,"0");
+  const metaKey = `${selYear}-${String(selMonth+1).padStart(2,"0")}`;
   const meta = (state.metas||{})[metaKey];
-  const jobsFechadosMetaMes = totalJobsMes;
-  const melhorFech = jobsPorMes.reduce((m,x)=>x.total>(m?m.total:0)?x:m,null);
-  const melhorPag = receitaPorMes.reduce((m,x)=>x.recebido>(m?m.recebido:0)?x:m,null);
+  const jobsFechadosMetaMes = state.jobs.filter(j=>{
+    if(!dataFechamentoJob(j)) return false;
+    const d = new Date(dataFechamentoJob(j)+"T00:00:00");
+    return d.getMonth()===selMonth && d.getFullYear()===selYear;
+  }).length;
 
-  // Cada campanha entra em uma única origem principal no ranking do período.
+
+  // Ranking mensal por origem principal: cada campanha pertence a uma única origem.
   const jobPorIdRanking = Object.fromEntries((state.jobs||[]).map(j=>[j.id,j]));
   const rankingPorOrigem = {};
   txMes.filter(t=>t.tipo==="receita" && t.jobId && jobPorIdRanking[t.jobId]).forEach(t=>{
-    const job=jobPorIdRanking[t.jobId];
-    let origem="Sem origem definida";
-    if(job.origemFechamento==="plataforma") origem=job.origemPlataformaPrincipal || (job.plataformasFechamento||[])[0] || "Plataforma não definida";
-    else if(job.origemFechamento==="painel") origem=job.origemContato || "Painel de marcas";
-    else if(job.origemFechamento==="direto") origem=job.origemContato || "Contato direto";
-    else origem=job.origemContato || "Sem origem definida";
+    const job = jobPorIdRanking[t.jobId];
+    let origem = "Sem origem definida";
+    if(job.origemFechamento==="plataforma"){
+      origem = job.origemPlataformaPrincipal || (job.plataformasFechamento||[])[0] || "Plataforma não definida";
+    }else if(job.origemFechamento==="painel"){
+      origem = job.origemContato || "Painel de marcas";
+    }else if(job.origemFechamento==="direto"){
+      origem = job.origemContato || "Contato direto";
+    }else{
+      origem = job.origemContato || "Sem origem definida";
+    }
     if(!rankingPorOrigem[origem]) rankingPorOrigem[origem]={valor:0,jobs:new Set()};
-    rankingPorOrigem[origem].valor+=Number(t.valor||0);
+    rankingPorOrigem[origem].valor += Number(t.valor||0);
     rankingPorOrigem[origem].jobs.add(job.id);
   });
-  const rankingOrigem=Object.entries(rankingPorOrigem).map(([nome,d])=>({nome,valor:d.valor,quantidade:d.jobs.size})).sort((a,b)=>b.valor-a.valor);
-  const maxRankingOrigem=Math.max(1,...rankingOrigem.map(x=>x.valor));
+  const rankingOrigem = Object.entries(rankingPorOrigem).map(([nome,d])=>({nome,valor:d.valor,quantidade:d.jobs.size})).sort((a,b)=>b.valor-a.valor);
+  const maxRankingOrigem = Math.max(1,...rankingOrigem.map(x=>x.valor));
 
-  const miniCard=(label,value,detail)=>(
-    <div className="pm-card">
-      <span className="pm-label">{label}</span>
-      <strong>{value}</strong>
-      {detail ? <small>{detail}</small> : null}
-    </div>
-  );
-  const bloco=(titulo,sub,children)=>(
-    <section className="pm-panel">
-      <div className="pm-panel-head"><div><h2>{titulo}</h2>{sub ? <p>{sub}</p> : null}</div></div>
-      {children}
-    </section>
-  );
+  // melhores meses (fechamento e pagamento) dentro dos últimos 12
+  const melhorFech = jobsPorMes.reduce((m,x)=>x.total>(m?m.total:0)?x:m, null);
+  const melhorPag = receitaPorMes.reduce((m,x)=>x.recebido>(m?m.recebido:0)?x:m, null);
 
   return (
     <div className="performance-minimal">
-      <style>{\`
-        .performance-minimal{--pm-paper:#fffdf9;--pm-ink:#3d2b20;--pm-soft:#806957;--pm-line:rgba(107,74,53,.12);--pm-sand:#efe5d8;--pm-terra:#a87058;color:var(--pm-ink);display:flex;flex-direction:column;gap:16px;min-width:0}
-        .performance-minimal .pm-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:2px 0 3px}
-        .performance-minimal .pm-head h1{font:400 30px "DM Serif Display",Georgia,serif;margin:0}
-        .performance-minimal .pm-head p{font-size:13px;color:var(--pm-soft);margin:5px 0 0}
-        .performance-minimal .pm-period{display:flex;gap:8px}
-        .performance-minimal .pm-period select{background:var(--pm-paper);color:var(--pm-ink);border:1px solid var(--pm-line);border-radius:10px;padding:9px 12px;font:500 13px Poppins,sans-serif}
-        .performance-minimal .pm-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-        .performance-minimal .pm-card,.performance-minimal .pm-panel{background:var(--pm-paper);border:1px solid var(--pm-line);border-radius:16px;box-shadow:0 2px 10px rgba(61,43,32,.025)}
-        .performance-minimal .pm-card{padding:15px 17px;min-width:0}
-        .performance-minimal .pm-label{display:block;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--pm-soft);font-weight:600;margin-bottom:7px}
-        .performance-minimal .pm-card strong{display:block;font-size:20px;line-height:1.25;font-weight:600;overflow-wrap:anywhere}
-        .performance-minimal .pm-card small{display:block;color:var(--pm-soft);font-size:11px;margin-top:4px}
-        .performance-minimal .pm-panel{padding:17px 19px;min-width:0}
-        .performance-minimal .pm-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:13px}
-        .performance-minimal .pm-panel h2{font:400 19px "DM Serif Display",Georgia,serif;margin:0}
-        .performance-minimal .pm-panel-head p{font-size:12px;color:var(--pm-soft);margin:3px 0 0}
-        .performance-minimal .pm-panel h3{font-size:13px;font-weight:600;margin:0 0 8px}
-        .performance-minimal .pm-action{border:1px solid var(--pm-line);border-radius:999px;background:transparent;color:var(--pm-ink);font:500 12px Poppins,sans-serif;padding:7px 12px;cursor:pointer}
-        .performance-minimal .pm-progress{height:6px;background:var(--pm-sand);border-radius:99px;overflow:hidden}
-        .performance-minimal .pm-progress i{display:block;height:100%;background:var(--pm-terra);border-radius:99px}
-        .performance-minimal .pm-rank-row{display:grid;grid-template-columns:minmax(130px,190px) minmax(70px,1fr) auto;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--pm-line)}
-        .performance-minimal .pm-rank-row:first-child{border-top:0}
-        .performance-minimal .pm-rank-name{font-size:12.5px;font-weight:500;overflow-wrap:anywhere}
-        .performance-minimal .pm-rank-value{font-size:12.5px;font-weight:600;white-space:nowrap}
-        .performance-minimal .pm-rank-count{display:block;font-size:10.5px;color:var(--pm-soft);margin-top:2px}
-        .performance-minimal .pm-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-        .performance-minimal .pm-chart{min-width:0;overflow:hidden}
-        .performance-minimal .pm-empty{color:var(--pm-soft);font-size:12.5px;margin:5px 0}
-        .performance-minimal .pm-meta-line{display:flex;justify-content:space-between;gap:10px;font-size:12px;margin:0 0 6px}
-        .performance-minimal .pm-meta-line strong{font-weight:600}
-        .performance-minimal .bar-chart{margin-top:8px}
-        .performance-minimal .bar-chart .bar{border-radius:4px 4px 0 0}
-        @media(max-width:900px){.performance-minimal .pm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-        @media(max-width:620px){.performance-minimal{gap:12px}.performance-minimal .pm-head{align-items:flex-start}.performance-minimal .pm-head h1{font-size:26px}.performance-minimal .pm-grid{gap:9px}.performance-minimal .pm-card{padding:12px}.performance-minimal .pm-card strong{font-size:17px}.performance-minimal .pm-panel{padding:14px}.performance-minimal .pm-two{grid-template-columns:1fr}.performance-minimal .pm-rank-row{grid-template-columns:minmax(90px,120px) minmax(35px,1fr) auto;gap:8px}.performance-minimal .pm-rank-value{font-size:11px}}
-      \`}</style>
-
-      <div className="pm-head">
-        <div>
-          <h1>Performance</h1>
-          <p>Acompanhe sua evolução como criadora</p>
-        </div>
-        <div className="pm-period">
-          <select aria-label="Mês" value={selMonth} onChange={e=>setSelMonth(Number(e.target.value))}>
+      <style>{`
+        .performance-minimal{color:var(--graphite);display:flex;flex-direction:column;gap:14px;min-width:0}
+        .performance-minimal .page-head{margin:0 0 2px;align-items:flex-end}
+        .performance-minimal .page-title{font-family:"DM Serif Display",Georgia,serif;font-size:30px;font-weight:400}
+        .performance-minimal .page-sub{font-size:13px;color:var(--graphite-soft)}
+        .performance-minimal .card{background:#fffdf9;border:1px solid rgba(107,74,53,.12);border-radius:16px;box-shadow:0 2px 10px rgba(61,43,32,.025);padding:17px 19px}
+        .performance-minimal .card h3{font-family:"DM Serif Display",Georgia,serif;font-size:19px;font-weight:400;color:var(--graphite)}
+        .performance-minimal select{background:#fffdf9;color:var(--graphite);border-color:rgba(107,74,53,.16)!important}
+        .performance-minimal .stat-card{box-shadow:none}
+        .performance-minimal .bar{background:#a87058!important;border-radius:4px 4px 0 0}
+        .performance-minimal .pm-ranking-row{display:grid;grid-template-columns:minmax(130px,190px) minmax(70px,1fr) auto;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(107,74,53,.10)}
+        .performance-minimal .pm-ranking-row:first-child{border-top:0}
+        .performance-minimal .pm-ranking-track{height:6px;border-radius:99px;background:#efe5d8;overflow:hidden}
+        .performance-minimal .pm-ranking-track i{display:block;height:100%;border-radius:99px;background:#a87058}
+        .performance-minimal .pm-ranking-name{font-size:13px;font-weight:500;overflow-wrap:anywhere}
+        .performance-minimal .pm-ranking-value{font-size:13px;font-weight:600;white-space:nowrap}
+        .performance-minimal .pm-ranking-count{display:block;color:var(--graphite-soft);font-size:11px;margin-top:2px}
+        @media(max-width:620px){.performance-minimal .card{padding:14px}.performance-minimal .pm-ranking-row{grid-template-columns:minmax(90px,120px) minmax(35px,1fr) auto;gap:8px}.performance-minimal .pm-ranking-value{font-size:11px}}
+      `}</style>
+      <div className="page-head">
+        {embutido ? <div/> : <div>
+          <h1 className="page-title">Performance</h1>
+          <p className="page-sub">Acompanhe sua evolução como criadora</p>
+        </div>}
+        <div style={{display:"flex", gap:10}}>
+          <select value={selMonth} onChange={e=>setSelMonth(Number(e.target.value))} style={{padding:"9px 12px", borderRadius:10, border:"1px solid var(--line)"}}>
             {monthNames.map((m,i)=><option key={m} value={i}>{m}</option>)}
           </select>
-          <select aria-label="Ano" value={selYear} onChange={e=>setSelYear(Number(e.target.value))}>
+          <select value={selYear} onChange={e=>setSelYear(Number(e.target.value))} style={{padding:"9px 12px", borderRadius:10, border:"1px solid var(--line)"}}>
             {[selYear-1,selYear,selYear+1].map(y=><option key={y} value={y}>{y}</option>)}
           </select>
         </div>
       </div>
 
-      {bloco("Metas de "+monthNames[selMonth],"Seu progresso no período",<>
-        <div style={{display:"flex",justifyContent:"flex-end",marginBottom:meta?12:0}}>
-          <button className="pm-action" onClick={()=>setMetasModal(true)}>Editar metas</button>
+      <div className="card" style={{marginBottom:18}}>
+        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: meta?14:0}}>
+          <h3 style={{margin:0, display:"flex", alignItems:"center", gap:8}}><Icon name="track_changes"/>Metas de {monthNames[selMonth]}</h3>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setMetasModal(true)}><Icon name="edit" size={14}/>Definir Metas</button>
         </div>
-        {!meta ? <p className="pm-empty">Defina suas metas mensais para acompanhar seu progresso.</p> : <div className="pm-two">
-          {meta.marcas ? <div><div className="pm-meta-line"><span>Marcas fechadas</span><strong>{jobsFechadosMetaMes} / {meta.marcas}</strong></div><div className="pm-progress"><i style={{width:Math.min(100,(jobsFechadosMetaMes/meta.marcas)*100)+"%"}}/></div></div> : null}
-          {meta.financeiro ? <div><div className="pm-meta-line"><span>Meta financeira</span><strong>{fmtMoney(receitaRecebida)} / {fmtMoney(meta.financeiro)}</strong></div><div className="pm-progress"><i style={{width:Math.min(100,(receitaRecebida/meta.financeiro)*100)+"%"}}/></div></div> : null}
-        </div>}
-      </>)}
-
-      <div className="pm-grid">
-        {miniCard("Receita prevista",fmtMoney(receitaPrevista),"Total previsto no mês")}
-        {miniCard("Receita recebida",fmtMoney(receitaRecebida),"Pagamentos confirmados")}
-        {miniCard("Receita pendente",fmtMoney(receitaPendente),"Aguardando recebimento")}
-        {miniCard("Ticket médio pago",fmtMoney(ticketMedioPago),qtdPaga+" pagamento(s) confirmado(s)")}
+        {!meta ? (
+          <p style={{textAlign:"center", color:"var(--graphite-soft)", fontSize:14, padding:"6px 0"}}>Defina suas metas mensais para acompanhar seu progresso</p>
+        ) : (
+          <div className="grid grid-2">
+            {meta.marcas && (
+              <div>
+                <div style={{display:"flex", justifyContent:"space-between", fontSize:14, marginBottom:6}}>
+                  <span>Marcas fechadas</span><strong>{jobsFechadosMetaMes} / {meta.marcas}</strong>
+                </div>
+                <div style={{height:10, background:"var(--sand)", borderRadius:999}}>
+                  <div style={{height:10, width:Math.min(100,(jobsFechadosMetaMes/meta.marcas)*100)+"%", background:"var(--butter)", borderRadius:999}}></div>
+                </div>
+              </div>
+            )}
+            {meta.financeiro && (
+              <div>
+                <div style={{display:"flex", justifyContent:"space-between", fontSize:14, marginBottom:6}}>
+                  <span>Meta financeira</span><strong>{fmtMoney(receitaRecebida)} / {fmtMoney(meta.financeiro)}</strong>
+                </div>
+                <div style={{height:10, background:"var(--sand)", borderRadius:999}}>
+                  <div style={{height:10, width:Math.min(100,(receitaRecebida/meta.financeiro)*100)+"%", background:"var(--moss)", borderRadius:999}}></div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {bloco("Faturamento por plataforma e origem",monthNames[selMonth]+" de "+selYear+" · cada campanha atribuída a uma única origem",rankingOrigem.length ? rankingOrigem.map((item,i)=><div className="pm-rank-row" key={item.nome}>
-        <div><div className="pm-rank-name">{i+1}. {item.nome}</div><small className="pm-rank-count">{plural(item.quantidade,"campanha","campanhas")}</small></div>
-        <div className="pm-progress"><i style={{width:(item.valor/maxRankingOrigem*100)+"%"}}/></div>
-        <div className="pm-rank-value">{fmtMoney(item.valor)}</div>
-      </div>) : <p className="pm-empty">Ainda não há faturamento de campanhas com origem identificada neste mês.</p>)}
 
-      {bloco("Receita por jobs","Recebimentos e pendências nos últimos 12 meses",<div className="pm-chart"><DualLineChart data={receitaPorMes} width={900} height={210}/></div>)}
-
-      <div className="pm-two">
-        {bloco("Marcas que mais geraram receita","Pagamentos confirmados",topMarcas.length ? <HBarList items={topMarcas} max={maxMarca}/> : <p className="pm-empty">Nenhum pagamento confirmado ainda.</p>)}
-        {bloco("Tipos de conteúdo com maior receita","Pagamentos confirmados",topTipos.length ? <HBarList items={topTipos} max={maxTipo}/> : <p className="pm-empty">Nenhum pagamento confirmado ainda.</p>)}
+      <div className="card" style={{marginBottom:18}}>
+        <div style={{marginBottom:10}}>
+          <h3 style={{margin:"0 0 3px"}}>Faturamento por plataforma e origem</h3>
+          <p style={{margin:0,fontSize:12.5,color:"var(--graphite-soft)"}}>{monthNames[selMonth]} de {selYear} · cada campanha contabilizada em uma única origem principal</p>
+        </div>
+        {rankingOrigem.length ? rankingOrigem.map((item,i)=><div className="pm-ranking-row" key={item.nome}>
+          <div><span className="pm-ranking-name">{i+1}. {item.nome}</span><small className="pm-ranking-count">{plural(item.quantidade,"campanha","campanhas")}</small></div>
+          <div className="pm-ranking-track"><i style={{width:(item.valor/maxRankingOrigem*100)+"%"}}/></div>
+          <span className="pm-ranking-value">{fmtMoney(item.valor)}</span>
+        </div>) : <p style={{fontSize:13,color:"var(--graphite-soft)",margin:"5px 0"}}>Ainda não há faturamento de campanhas com origem identificada neste mês.</p>}
       </div>
 
-      {bloco("Visão geral","Resultados do mês selecionado",<div className="pm-grid">
-        {miniCard("Conteúdos entregues",String(entreguesMes))}
-        {miniCard("Marcas atendidas",String(marcasAtendidas))}
-        {miniCard("Receita recebida",fmtMoney(receitaRecebida))}
-        {miniCard("Total de jobs",String(totalJobsMes))}
-        {miniCard("Ticket médio",fmtMoney(ticketMedioMes))}
-        {miniCard("Crescimento",(crescimento>=0?"+":"")+crescimento+"%", "Em relação ao mês anterior")}
-      </div>)}
+      <h3 style={{margin:"0 0 12px"}}>Inteligência Financeira</h3>
+      <div className="grid grid-4" style={{marginBottom:18}}>
+        <StatCard label="Receita Prevista" value={fmtMoney(receitaPrevista)} icon="trending_up"/>
+        <StatCard label="Receita Recebida" value={fmtMoney(receitaRecebida)} icon="check_circle"/>
+        <StatCard label="Receita Pendente" value={fmtMoney(receitaPendente)} icon="hourglass_top"/>
+        <StatCard label="Ticket Médio (Pago)" value={fmtMoney(ticketMedioPago)} icon="sell"/>
+      </div>
 
-      <div className="pm-two">
-        {bloco("Fechamentos por mês",melhorFech ? "Melhor mês: "+melhorFech.label+" · "+melhorFech.total+" fechamento(s)" : "Nenhum fechamento nos últimos 12 meses",<div className="bar-chart">{jobsPorMes.map(m=><div className="bar-col" key={m.label}><div className="bar" style={{height:(m.total/maxJobs*110)+"px",background:"var(--pm-terra)"}} title={m.label+": "+m.total+" fechamento(s)"}/><div className="bar-month">{m.label}</div></div>)}</div>)}
-        {bloco("Pagamentos por mês",melhorPag ? "Melhor mês: "+melhorPag.label+" · "+fmtMoney(melhorPag.recebido) : "Nenhum pagamento recebido nos últimos 12 meses",<div className="bar-chart">{receitaPorMes.map(m=><div className="bar-col" key={m.label}><div className="bar" style={{height:(m.recebido/maxReceitaMes*110)+"px",background:"var(--pm-terra)"}} title={m.label+": "+fmtMoney(m.recebido)}/><div className="bar-month">{m.label}</div></div>)}</div>)}
+      <div className="card" style={{marginBottom:18}}>
+        <h3 style={{marginTop:0}}>Receita por Jobs (últimos 6 meses)</h3>
+        <DualLineChart data={receitaPorMes} width={900} height={220}/>
+      </div>
+
+      <div className="grid grid-2" style={{marginBottom:18}}>
+        <div className="card">
+          <h3 style={{marginTop:0, display:"flex", alignItems:"center", gap:8}}><Icon name="apartment"/>Marcas que Mais Geraram Receita</h3>
+          {topMarcas.length===0 ? <p style={{color:"var(--graphite-soft)", fontSize:14}}>Nenhum pagamento confirmado ainda.</p> : <HBarList items={topMarcas} max={maxMarca}/>}
+        </div>
+        <div className="card">
+          <h3 style={{marginTop:0, display:"flex", alignItems:"center", gap:8}}><Icon name="videocam"/>Tipo de Conteúdo que Mais Gerou Receita</h3>
+          {topTipos.length===0 ? <p style={{color:"var(--graphite-soft)", fontSize:14}}>Nenhum pagamento confirmado ainda.</p> : <HBarList items={topTipos} max={maxTipo}/>}
+        </div>
+      </div>
+
+      <h3 style={{margin:"0 0 12px"}}>Visão Geral</h3>
+      <div className="grid grid-3" style={{marginBottom:18}}>
+        <StatCard label="Entregues (mês)" value={entreguesMes} icon="task_alt"/>
+        <StatCard label="Marcas Atendidas" value={marcasAtendidas} icon="apartment"/>
+        <StatCard label="Receita (mês)" value={fmtMoney(receitaRecebida)} icon="payments"/>
+        <StatCard label="Total de Jobs" value={totalJobsMes} icon="work"/>
+        <StatCard label="Ticket Médio" value={fmtMoney(ticketMedioMes)} icon="sell"/>
+        <div className="card stat-card">
+          <div className="stat-label"><Icon name="trending_up" size={16}/>Crescimento</div>
+          <div className="stat-value" style={{color: crescimento>=0 ? "var(--moss)" : "var(--wine)"}}>{crescimento>=0?"+":""}{crescimento}%</div>
+        </div>
+      </div>
+
+      <div className="grid grid-2">
+        <div className="card">
+          <h3 style={{marginTop:0, marginBottom:4}}>Fechamentos por mês</h3>
+          <p style={{margin:"0 0 10px", fontSize:13, color:"var(--graphite-soft)"}}>{melhorFech ? `Mês com mais ações fechadas: ${melhorFech.label} (${melhorFech.total})` : "Nenhuma ação fechada nos últimos 12 meses."}</p>
+          <div className="bar-chart">
+            {jobsPorMes.map(m=>(
+              <div className="bar-col" key={m.label}>
+                <div className="bar" style={{height: (m.total/maxJobs*110)+"px"}} title={`${m.label}: ${m.total} ação(ões) fechada(s)`}></div>
+                <div className="bar-month">{m.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="card">
+          <h3 style={{marginTop:0, marginBottom:4}}>Pagamentos recebidos por mês</h3>
+          <p style={{margin:"0 0 10px", fontSize:13, color:"var(--graphite-soft)"}}>{melhorPag ? `Mês que mais recebeu: ${melhorPag.label} (${fmtMoney(melhorPag.recebido)})` : "Nenhum pagamento recebido nos últimos 12 meses."}</p>
+          <div className="bar-chart">
+            {receitaPorMes.map(m=>(
+              <div className="bar-col" key={m.label}>
+                <div className="bar" style={{height: (m.recebido/maxReceitaMes*110)+"px", background:"var(--moss)"}} title={`${m.label}: ${fmtMoney(m.recebido)}`}></div>
+                <div className="bar-month">{m.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {metasModal && <MetasModal state={state} updateState={updateState} ano={selYear} mes={selMonth} onClose={()=>setMetasModal(false)}/>}
