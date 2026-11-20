@@ -6465,7 +6465,7 @@ function Jobs({state, updateState}){
           <button type="button" className="org-rolar-seta" title="Ver mais colunas" onClick={()=>andarQuadro(290)} onDragOver={(e)=>rolarNoArraste(e,24)}><Icon name="chevron_right" size={18}/></button>
         </div>
         <div className="org-quadro" ref={quadroRef} onPointerDown={arrastarFundo} onDragOver={(e)=>rolarNoArraste(e)}>
-          {colunasStatus.filter(col=>col!==FIN_PAGO && col!=="Cancelado").map(col=>{
+          {colunasStatus.filter(col=>!ehFinalizado(col) && col!=="Cancelado").map(col=>{
             const colJobs = state.jobs.filter(j=>j.status===col && !ehFinalizado(j.status) && j.status!=="Cancelado" && (!query || (j.marca+(j.tipo||"")+(j.nicho||"")).toLowerCase().includes(query.toLowerCase())));
             const cor = KANBAN_COLORS[col] || "var(--wine)";
             return (
