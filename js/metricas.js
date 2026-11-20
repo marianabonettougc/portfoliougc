@@ -122,11 +122,12 @@
   const engPost = (p) => (p.alcance && p.interacoes != null ? (p.interacoes / p.alcance) * 100 : null);
 
   // ---------- pedaços de layout ----------
+  // Formas orgânicas discretas, alinhadas à identidade visual.
   const BLOBS = [
-    "M60 4c22 0 36 18 36 38S80 92 54 92 4 80 8 54 38 4 60 4z",
-    "M50 2l11 22 24-6-6 24 22 11-22 11 6 24-24-6-11 22-11-22-24 6 6-24L-1 53l22-11-6-24 24 6z",
-    "M70 6c18 8 28 30 20 50S56 96 34 88 0 58 8 34 52-2 70 6z",
-    "M10 90C10 40 40 8 92 8v82z",
+    "M62 8c20 2 32 18 29 38S76 86 55 88 13 78 10 57 28 12 48 9c5-1 9-1 14-1z",
+    "M78 12c13 8 18 24 12 39S67 79 51 79 20 69 18 52 31 18 49 12c10-4 20-4 29 0z",
+    "M68 7c19 5 29 22 25 42S72 87 51 89 13 74 12 53 29 12 48 8c7-2 13-2 20-1z",
+    "M12 88C12 48 38 16 88 12v76z",
   ];
   function kpi(i, rotulo, valor, chip, pe, icone) {
     return `<div class="rs-kpi rs-k${i}"><svg class="rs-blob" viewBox="0 0 100 100" aria-hidden="true"><path d="${BLOBS[i]}"/></svg>
