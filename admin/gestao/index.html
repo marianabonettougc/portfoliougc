@@ -3963,7 +3963,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     return datas.sort((a,b)=>a[0].localeCompare(b[0]));
   };
   const entregasProx7 = ativos.reduce((n,j)=>n+prazosDoJob(j).filter(([d])=>diasAte(d)>=0 && diasAte(d)<=7).length, 0);
-  const entregasVencidas = ativos.reduce((n,j)=>n+prazosDoJob(j).filter(([d])=>diasAte(d)<0).length, 0);
+  const entregasVencidas = ativos.filter(j=>j.categoria!=="Conteúdos").reduce((n,j)=>n+prazosDoJob(j).filter(([d])=>diasAte(d)<0).length, 0);
 
   // ----- Radar do meu negócio -----
   const diasDesde = (iso) => iso ? -diasAte(iso) : null;
