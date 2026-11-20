@@ -3980,11 +3980,17 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
   // prazos ainda em aberto de um job (conteúdo por conteúdo + entrega final), o mais próximo primeiro
   const prazosDoJob = (j) => {
     const at = etapaDoJob(j, state.roteiros), datas = [];
-    itensDoJob(j).forEach(([it,t])=>{ if(it.concluido) return; const e = ROTEIRO_STATUS_OPTIONS.indexOf(statusDoItem(it,t));
-      if(it.prazoRoteiro && e<3) datas.push([it.prazoRoteiro, `Roteiro ${it.label||""}`.trim()]);
-      if(!it.semAprovacao && it.prazoConteudo && e<5) datas.push([it.prazoConteudo, `Enviar ${it.label||"conteúdo"} para aprovação`]);
-      if(it.dataEntrega && e<5) datas.push([it.dataEntrega, `Entregar conteúdo final · ${it.label||"conteúdo"}`]);
-      if(j.categoria==="Publi" && it.prazoPostagem && e<8) datas.push([it.prazoPostagem, `Publicar · ${it.label||"conteúdo"}`]); });
+    itensDoJob(j).forEach(([it,t])=>{ if(it.concluido) return;
+      const listaEtapas = t==="fotos" ? FOTO_STATUS_OPTIONS : ROTEIRO_STATUS_OPTIONS;
+      const e = listaEtapas.indexOf(statusDoItem(it,t));
+      // Não contar status desconhecido nem itens já entregues como atraso.
+      if(e<0) return;
+      const itemFinalizado = t==="fotos" ? e===FOTO_STATUS_OPTIONS.indexOf("Entregue") : e===ROTEIRO_STATUS_OPTIONS.indexOf("Finalizado");
+      if(itemFinalizado) return;
+      if(t!=="fotos" && it.prazoRoteiro && e<3) datas.push([it.prazoRoteiro, `Roteiro ${it.label||""}`.trim()]);
+      if(!it.semAprovacao && it.prazoConteudo && e<(t==="fotos" ? 4 : 5)) datas.push([it.prazoConteudo, `Enviar ${it.label||"conteúdo"} para aprovação`]);
+      if(it.dataEntrega && e<(t==="fotos" ? 4 : 5)) datas.push([it.dataEntrega, `Entregar conteúdo final · ${it.label||"conteúdo"}`]);
+      if(t!=="fotos" && j.categoria==="Publi" && it.prazoPostagem && e<8) datas.push([it.prazoPostagem, `Publicar · ${it.label||"conteúdo"}`]); });
     if(j.prazoEntrega && !comAMarca(at) && at<5) datas.push([j.prazoEntrega, "Entrega final"]);
     return datas.sort((a,b)=>a[0].localeCompare(b[0]));
   };
