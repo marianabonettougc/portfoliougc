@@ -4631,7 +4631,9 @@ function Planner({state, updateState}){
   function persistIdeas(next){updateState({...state,ideiasConteudo:next});}
   function saveIdea(){
     if(!ideaDraft.titulo.trim()){alert("Dê um nome para essa ideia.");return;}
-    persistIdeas([{...ideaDraft,id:uid(),criadaEm:new Date().toISOString(),usada:false},...ideas]);
+    const idea={...ideaDraft,id:uid(),criadaEm:new Date().toISOString(),usada:!!ideaDraft.data};
+    const nextPlanner=ideaDraft.data?[...planner,{id:uid(),titulo:idea.titulo,plataforma:idea.formato==="TikTok"?"TikTok":"Instagram",formato:idea.formato,status:"Planejado",data:ideaDraft.data,marca:"",notas:[idea.gancho,idea.notas,idea.referencia].filter(Boolean).join("\n\n"),categoria:idea.categoria,objetivo:idea.objetivo,nicho:idea.nicho}]:planner;
+    updateState({...state,ideiasConteudo:[idea,...ideas],planner:nextPlanner});
     setIdeaDraft({titulo:"",gancho:"",nicho:"Maternidade",formato:"Reels",categoria:"Conteúdos",objetivo:"Atrair",referencia:"",notas:""});
     setIdeaModal(false);
   }
@@ -4647,7 +4649,8 @@ function Planner({state, updateState}){
     const score=i=>i.objetivo==="Atrair"?strategy.atracao:i.objetivo==="Conectar"?strategy.conexao:strategy.venda;
     const ordered=[...pool].sort((a,b)=>score(b)-score(a));
     const vagas=Math.max(0,strategy.meta-weekCount);
-    const selected=empty.slice(0,Math.min(empty.length,vagas||empty.length)).map((d,i)=>({idea:ordered[i%ordered.length],date:iso(d)}));
+    if(vagas===0){alert("Sua meta semanal já foi preenchida. Ajuste a meta na estratégia se quiser adicionar mais conteúdos.");return;}
+    const selected=empty.slice(0,Math.min(empty.length,vagas)).map((d,i)=>({idea:ordered[i%ordered.length],date:iso(d)}));
     const newItems=selected.map(({idea,date})=>({id:uid(),titulo:idea.titulo,plataforma:idea.formato==="TikTok"?"TikTok":"Instagram",formato:idea.formato,status:"Planejado",data:date,marca:"",notas:[idea.gancho,idea.notas,idea.referencia].filter(Boolean).join("\n\n"),categoria:idea.categoria||"Conteúdos",objetivo:idea.objetivo||"Atrair",nicho:idea.nicho||""}));
     const usedIds=new Set(selected.map(x=>x.idea.id));
     updateState({...state,planner:[...planner,...newItems],ideiasConteudo:ideas.map(i=>usedIds.has(i.id)?{...i,usada:true,agendadaEm:selected.find(x=>x.idea.id===i.id)?.date}:i)});
