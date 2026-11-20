@@ -5945,7 +5945,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
             {f.origemFechamento==="plataforma" && <div style={{marginTop:10}}>
               <div style={{fontSize:12.5,fontWeight:600,color:"var(--graphite-soft)",marginBottom:8}}>Plataformas (selecione uma ou mais)</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:8}}>
-                {["MIS","WAKE","BRANDLOVERS","LCREATORS","COCREATORS","CREATIFY","PLAYNEST","MANY"].map(nome=><label key={nome} style={{display:"flex",alignItems:"center",gap:7,fontSize:12.5,padding:"8px 9px",border:"1px solid var(--line)",borderRadius:9,background:(f.plataformasFechamento||[]).includes(nome)?"var(--sand)":"transparent"}}>
+                {["MIS","WAKE","BRANDLOVERS","LCREATORS","COCREATORS","CREATIFY","PLAYNEST","MANY","INSIGHT","CONTY","ELLAS"].map(nome=><label key={nome} style={{display:"flex",alignItems:"center",gap:7,fontSize:12.5,padding:"8px 9px",border:"1px solid var(--line)",borderRadius:9,background:(f.plataformasFechamento||[]).includes(nome)?"var(--sand)":"transparent"}}>
                   <input type="checkbox" checked={(f.plataformasFechamento||[]).includes(nome)} onChange={e=>set("plataformasFechamento",e.target.checked?[...(f.plataformasFechamento||[]),nome]:(f.plataformasFechamento||[]).filter(x=>x!==nome))}/>{nome}
                 </label>)}
               </div>
@@ -5953,7 +5953,12 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
                 <input value={f.plataformaFechamentoOutra||""} onChange={e=>set("plataformaFechamentoOutra",e.target.value)} placeholder="Adicionar outra plataforma" style={{flex:1,minWidth:0}}/>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={()=>{const nome=(f.plataformaFechamentoOutra||"").trim();if(!nome)return;setF(p=>({...p,plataformasFechamento:[...new Set([...(p.plataformasFechamento||[]),nome])],plataformaFechamentoOutra:""}));}}>Adicionar</button>
               </div>
-              {(f.plataformasFechamento||[]).filter(x=>!["MIS","WAKE","BRANDLOVERS","LCREATORS","COCREATORS","CREATIFY","PLAYNEST","MANY"].includes(x)).map(nome=><div key={nome} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12.5,marginTop:6}}>{nome}<button type="button" className="icon-btn" onClick={()=>set("plataformasFechamento",(f.plataformasFechamento||[]).filter(x=>x!==nome))}><Icon name="close" size={14}/></button></div>)}
+              {(f.plataformasFechamento||[]).length>0 && <Field label="Origem principal para o ranking">
+                <select value={f.origemPlataformaPrincipal||((f.plataformasFechamento||[])[0]||"")} onChange={e=>set("origemPlataformaPrincipal",e.target.value)}>
+                  {(f.plataformasFechamento||[]).map(nome=><option key={nome} value={nome}>{nome}</option>)}
+                </select>
+              </Field>}
+              {(f.plataformasFechamento||[]).filter(x=>!["MIS","WAKE","BRANDLOVERS","LCREATORS","COCREATORS","CREATIFY","PLAYNEST","MANY","INSIGHT","CONTY","ELLAS"].includes(x)).map(nome=><div key={nome} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12.5,marginTop:6}}>{nome}<button type="button" className="icon-btn" onClick={()=>set("plataformasFechamento",(f.plataformasFechamento||[]).filter(x=>x!==nome))}><Icon name="close" size={14}/></button></div>)}
             </div>}
             {f.origemFechamento==="painel" && <div style={{marginTop:10}}>
               <Field label="Puxar marca já cadastrada">
