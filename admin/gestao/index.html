@@ -2220,12 +2220,24 @@ function resetEntregaveisConcluido(entregaveis){
 }
 function syncFollowups(followups, job){
   followups = followups || [];
-  if(job.status !== "Conteúdo Entregue" && !ehFinalizado(job.status)) return followups;
-  const exists = followups.some(f=>f.jobId===job.id);
-  if(exists) return followups;
+  const origem = String(job.origemContato || "").trim().toUpperCase();
+  const podeFollowup = origem === "SEU INFLUENCER";
+  // Plataformas e outras origens não recebem follow-up automático.
+  if(!podeFollowup) return followups.filter(f=>f.jobId!==job.id);
+  // Só agenda depois que o conteúdo final foi entregue (ou quando há uma data real de entrega registrada).
+  const entregue = job.status === "Conteúdo Entregue" || !!job.dataEntregaReal;
+  if(!entregue) return followups;
+  const dataEntrega = job.dataEntregaReal || todayISO();
+  const dataBase = new Date(dataEntrega+"T00:00:00");
+  dataBase.setDate(dataBase.getDate()+2);
+  const dataFollowup = isoLocal(dataBase);
+  const atual = followups.find(f=>f.jobId===job.id);
+  if(atual){
+    return followups.map(f=>f.jobId===job.id ? {...f, marca:job.marca, tipo:job.tipo||"", dataEntrega, dataFollowup} : f);
+  }
   return [...followups, {
     id:uid(), jobId:job.id, marca:job.marca, tipo:job.tipo||"",
-    dataEntrega: job.dataEntregaReal || todayISO(), status:"Pendente", notas:"", criadoEm:todayISO()
+    dataEntrega, dataFollowup, status:"Pendente", notas:"", criadoEm:todayISO()
   }];
 }
 
@@ -3398,7 +3410,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     });
     jobs.filter(j=>j.dataPagamento===iso && j.status!=="Cancelado" && (!j.pagamento || j.pagamento.status!=="Pago")).forEach(j=>lista.push({id:"g-"+j.id, hora:"", texto:`Conferir pagamento ${j.marca}`, sub:"Financeiro", pagina:"financeiro"}));
     // follow-ups: os pendentes vencidos e os feitos hoje (ficam riscados até o fim do dia); marcar aqui muda o status na aba Follow-ups
-    if(iso===hoje) followups.filter(f=>(f.status==="Pendente" && f.dataEntrega && f.dataEntrega<=hoje) || (f.status==="Feito" && f.concluidoEm===hoje)).forEach(f=>lista.push({id:"f-"+f.id, followup:f, hora:"", texto:`Follow-up com ${f.marca}`, sub:"Mandar mensagem para a marca", pagina:"followups"}));
+    if(iso===hoje) followups.filter(f=>(f.status==="Pendente" && (f.dataFollowup||f.dataEntrega) && (f.dataFollowup||f.dataEntrega)<=hoje) || (f.status==="Feito" && f.concluidoEm===hoje)).forEach(f=>lista.push({id:"f-"+f.id, followup:f, hora:"", texto:`Follow-up com ${f.marca}`, sub:"Pedir feedback sobre o conteúdo entregue", pagina:"followups"}));
     // eventos do calendário do iPhone
     (apple.eventos||[]).filter(ev=>ev.data===iso).forEach(ev=>lista.push({id:"a-"+ev.id, apple:ev, hora:ev.hora||"", texto:ev.titulo,
       sub:[ev.diaTodo ? "Dia todo" : (ev.fim && ev.fim!==ev.hora ? `${ev.hora} às ${ev.fim}` : ""), "iPhone", ev.local].filter(Boolean).join(" · ")}));
@@ -6682,7 +6694,7 @@ Se tiver algum feedback ou quiser fechar mais alguma coisa, me chama 💛`;
     updateState({...state, followups: state.followups.map(f=>f.id===id?{...f, status:"Pendente", concluidoEm:""}:f)});
   }
 
-  const pendentes = state.followups.filter(f=>f.status==="Pendente").sort((a,b)=>new Date(a.dataEntrega)-new Date(b.dataEntrega));
+  const pendentes = state.followups.filter(f=>f.status==="Pendente").sort((a,b)=>new Date(a.dataFollowup||a.dataEntrega)-new Date(b.dataFollowup||b.dataEntrega));
   const feitos = state.followups.filter(f=>f.status==="Feito").sort((a,b)=>new Date(b.concluidoEm||b.criadoEm)-new Date(a.concluidoEm||a.criadoEm));
   const shown = tab==="Pendentes" ? pendentes : feitos;
 
@@ -6704,18 +6716,19 @@ Se tiver algum feedback ou quiser fechar mais alguma coisa, me chama 💛`;
         <div className="empty">
           <Icon name="call"/>
           <div className="empty-title">{tab==="Pendentes" ? "Nenhum follow-up pendente" : "Nenhum follow-up concluído ainda"}</div>
-          <div className="empty-sub">{tab==="Pendentes" ? "Eles são criados automaticamente quando você marca um job como entregue." : "Follow-ups marcados como feitos aparecem aqui."}</div>
+          <div className="empty-sub">{tab==="Pendentes" ? "São criados automaticamente 2 dias após a entrega final, somente para ações fechadas pelo Seu Influencer." : "Follow-ups marcados como feitos aparecem aqui."}</div>
         </div>
       ) : shown.map(f=>{
-        const dias = Math.round((hoje - new Date(f.dataEntrega+"T00:00:00"))/(1000*60*60*24));
+        const dataAgendada = f.dataFollowup || f.dataEntrega;
+        const dias = Math.round((hoje - new Date(dataAgendada+"T00:00:00"))/(1000*60*60*24));
         return (
           <div className="row-item" key={f.id} style={{flexDirection:"column", alignItems:"stretch", gap:8}}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:10}}>
               <div>
                 <strong style={{fontSize:16}}>{f.marca}</strong>
                 <div style={{fontSize:13.5, color:"var(--graphite-soft)", marginTop:2}}>
-                  {f.tipo && f.tipo+" · "}Entregue em {new Date(f.dataEntrega+"T00:00:00").toLocaleDateString('pt-BR')}
-                  {tab==="Pendentes" && dias>=0 && ` · há ${dias} dia(s)`}
+                  {f.tipo && f.tipo+" · "}Conteúdo entregue em {new Date(f.dataEntrega+"T00:00:00").toLocaleDateString('pt-BR')}
+                  {tab==="Pendentes" && <> · Follow-up {dias<0 ? "vence em "+Math.abs(dias)+" dia(s)" : dias===0 ? "para hoje" : "há "+dias+" dia(s)"}</>}
                 </div>
               </div>
               <Badge tone={tab==="Pendentes" ? (dias>7?"wine":"yellow") : "green"}>{tab==="Pendentes" ? (dias>7?"Atenção":"Pendente"):"Feito"}</Badge>
