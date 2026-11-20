@@ -2328,12 +2328,16 @@ function entregasDoJob(j){
 }
 function DatasJob({j, compacto}){
   const fech = dataFechamentoJob(j), entregas = entregasDoJob(j), publicacoes = j.categoria==="Publi" ? postagensDoJob(j) : [];
+  const pg = j.pagamento || {};
+  const pagamentoPrevisto = j.dataPagamento || pg.dataPrevista || "";
+  const pagamentoRealizado = pg.status==="Pago" ? (pg.dataPagamento || "") : "";
   const br = (iso) => iso ? iso.split("-").reverse().join("/") : "";
   return (
     <div className={"job-datas"+(compacto?" compacto":"")}>
       <span><small>Fechamento</small>{fech ? br(fech) : "sem data"}</span>
       {entregas.length>0 && <span><small>Entrega final</small>{entregas.map(d=><span key={d} className="job-datas-dia">{br(d)}</span>)}</span>}
       {publicacoes.length>0 && <span><small>Publicação</small>{publicacoes.map(d=><span key={d} className="job-datas-dia">{br(d)}</span>)}</span>}
+      {pagamentoPrevisto && <span className="job-data-pagamento"><small>Pagamento</small>{br(pagamentoPrevisto)}{pagamentoRealizado && pagamentoRealizado!==pagamentoPrevisto && <small className="job-pago-em">Pago em {br(pagamentoRealizado)}</small>}</span>}
     </div>
   );
 }
