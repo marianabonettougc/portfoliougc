@@ -5925,6 +5925,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
               <Field label="Data de fechamento da ação"><input type="date" value={f.dataFechamento || f.criadoEm || ""} onChange={e=>set("dataFechamento",e.target.value)}/></Field>
               <Field label="Prazo de pagamento"><input type="date" value={f.dataPagamento||""} onChange={e=>{ const v=e.target.value; setF(p=>({...p, dataPagamento:v, pagamento:{...(p.pagamento||{}), dataPrevista:v}})); }}/></Field>
             </div>
+            {(f.pagamento?.status==="Pago" || f.pagamento?.dataPagamento) && <Field label="Data em que foi pago"><input type="date" value={f.pagamento?.dataPagamento||""} onChange={e=>{ const v=e.target.value; setF(p=>({...p, pagamento:{...(p.pagamento||{}), status:"Pago", dataPagamento:v}})); }}/></Field>}
             <div className="field-row">
               <Field label="Valor"><input type="number" value={f.valor} onChange={e=>set("valor",e.target.value)} placeholder="0,00"/></Field>
               <Field label="Moeda">
