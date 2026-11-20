@@ -5875,6 +5875,44 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
         <section className="job-form-section job-form-identificacao">
           <div className="job-form-section-heading"><span className="job-form-index">01</span><div><strong>Identificação</strong><small>Marca, modalidade e classificação do trabalho</small></div></div>
           <Field label="Marca"><input value={f.marca} onChange={e=>set("marca",e.target.value)} placeholder="Nome da marca"/></Field>
+          <div className="job-origem-fechamento" style={{border:"1px solid var(--line)",borderRadius:14,padding:14,marginBottom:16,background:"var(--card-bg)"}}>
+            <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>Origem do fechamento</div>
+            <Field label="Como essa ação foi fechada?">
+              <select value={f.origemFechamento||""} onChange={e=>setF(p=>({...p,origemFechamento:e.target.value,prospeccaoId:e.target.value==="painel"?(p.prospeccaoId||""):"",plataformasFechamento:e.target.value==="plataforma"?(p.plataformasFechamento||[]):[]}))}>
+                <option value="">Selecione a origem</option>
+                <option value="plataforma">Plataforma de UGC</option>
+                <option value="painel">Painel de marcas / prospecção</option>
+                <option value="direto">Contato direto com a marca</option>
+              </select>
+            </Field>
+            {f.origemFechamento==="plataforma" && <div style={{marginTop:10}}>
+              <div style={{fontSize:12.5,fontWeight:600,color:"var(--graphite-soft)",marginBottom:8}}>Plataformas (selecione uma ou mais)</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:8}}>
+                {["MIS","WAKE","BRANDLOVERS","LCREATORS","COCREATORS","CREATIFY","PLAYNEST","MANY"].map(nome=><label key={nome} style={{display:"flex",alignItems:"center",gap:7,fontSize:12.5,padding:"8px 9px",border:"1px solid var(--line)",borderRadius:9,background:(f.plataformasFechamento||[]).includes(nome)?"var(--sand)":"transparent"}}>
+                  <input type="checkbox" checked={(f.plataformasFechamento||[]).includes(nome)} onChange={e=>set("plataformasFechamento",e.target.checked?[...(f.plataformasFechamento||[]),nome]:(f.plataformasFechamento||[]).filter(x=>x!==nome))}/>{nome}
+                </label>)}
+              </div>
+              <div style={{display:"flex",gap:7,marginTop:9}}>
+                <input value={f.plataformaFechamentoOutra||""} onChange={e=>set("plataformaFechamentoOutra",e.target.value)} placeholder="Adicionar outra plataforma" style={{flex:1,minWidth:0}}/>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={()=>{const nome=(f.plataformaFechamentoOutra||"").trim();if(!nome)return;setF(p=>({...p,plataformasFechamento:[...new Set([...(p.plataformasFechamento||[]),nome])],plataformaFechamentoOutra:""}));}}>Adicionar</button>
+              </div>
+              {(f.plataformasFechamento||[]).filter(x=>!["MIS","WAKE","BRANDLOVERS","LCREATORS","COCREATORS","CREATIFY","PLAYNEST","MANY"].includes(x)).map(nome=><div key={nome} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12.5,marginTop:6}}>{nome}<button type="button" className="icon-btn" onClick={()=>set("plataformasFechamento",(f.plataformasFechamento||[]).filter(x=>x!==nome))}><Icon name="close" size={14}/></button></div>)}
+            </div>}
+            {f.origemFechamento==="painel" && <div style={{marginTop:10}}>
+              <Field label="Puxar marca já cadastrada">
+                <select value={f.prospeccaoId||""} onChange={e=>{
+                  const item=(state.prospeccoes||[]).find(x=>String(x.id)===e.target.value);
+                  if(!item){setF(p=>({...p,prospeccaoId:""}));return;}
+                  setF(p=>({...p,prospeccaoId:item.id,marca:item.marca||p.marca,origemContato:item.origem==="Outra"?(item.origemOutra||"Outra"):(item.origem||"Painel de marcas"),origemFechamento:"painel"}));
+                }}>
+                  <option value="">Selecione uma marca do painel</option>
+                  {(state.prospeccoes||[]).map(item=><option key={item.id} value={item.id}>{item.marca}{item.origem?" · "+(item.origem==="Outra"?(item.origemOutra||"Outra"):item.origem):""}</option>)}
+                </select>
+              </Field>
+              <div style={{fontSize:11.5,color:"var(--graphite-soft)"}}>A marca e a origem cadastradas na Prospecção serão vinculadas a esta ação.</div>
+            </div>}
+            {f.origemFechamento==="direto" && <Field label="Origem / contato"><input value={f.origemContato||""} onChange={e=>set("origemContato",e.target.value)} placeholder="Ex.: indicação, e-mail, Instagram..."/></Field>}
+          </div>
           <Field label="UGC ou Publi">
         <div style={{display:"flex", gap:8}}>
           {["UGC","Publi"].map(c=>(
@@ -8942,6 +8980,8 @@ function Prospeccao({state, updateState}){
     {key:"marca", label:"Marca", required:true, placeholder:"Nome da marca"},
     {key:"contato", label:"Tipo de contato", type:"select", options:["E-mail","Instagram DM","WhatsApp","Formulário"]},
     {key:"status", label:"Status", type:"select", options:["A contatar","Contatado","Respondeu","Fechado","Sem retorno"]},
+    {key:"origem", label:"Origem do contato", type:"select", options:["INSIGHT","CONTY","SEU INFLUENCER","ELLAS","Outra"]},
+    {key:"origemOutra", label:"Outra origem (se necessário)", placeholder:"Nome da plataforma / contato"},
     {key:"data", label:"Data", type:"date", default:todayISO()},
     {key:"notas", label:"Notas", type:"textarea", placeholder:"Detalhes da prospecção..."}
   ];
