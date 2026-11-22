@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611220002"></script>
-<script src="../../js/dialogos.js?v=202611220002"></script>
-<script src="../../js/metricool-ig.js?v=202611220002"></script>
-<script src="../../js/corretor.js?v=202611220002"></script>
+<script src="../../js/banco.js?v=202611220003"></script>
+<script src="../../js/dialogos.js?v=202611220003"></script>
+<script src="../../js/metricool-ig.js?v=202611220003"></script>
+<script src="../../js/corretor.js?v=202611220003"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -898,6 +898,14 @@
   .apv-acesso.off{ opacity:.65; }
   .apv-check{ display:flex; gap:9px; align-items:flex-start; font-size:13.5px; font-weight:400 !important; cursor:pointer; border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:#fff; }
   .apv-check input{ margin-top:3px; accent-color:#6b4a35; flex:none; }
+  .apv-check.on{ border-color:#6b4a35; background:#efe5d8; }
+  .apv-plataforma{ border:1px dashed var(--line); border-radius:12px; padding:8px 11px; font-size:13px; }
+  .apv-plataforma summary{ cursor:pointer; color:var(--graphite-soft); }
+  .apv-plataforma[open] summary{ margin-bottom:8px; }
+  .area-cli{ border:1px solid var(--line); border-radius:14px; background:#fffdf9; padding:10px 12px; margin:-2px 0 14px; display:flex; flex-direction:column; gap:8px; }
+  .area-cli-linha{ display:flex; gap:10px; align-items:flex-start; cursor:pointer; font-weight:400 !important; }
+  .area-cli-linha input{ width:18px; height:18px; margin-top:2px; accent-color:#6b4a35; flex:none; }
+  .area-cli-linha b{ display:block; font-size:14px; } .area-cli-linha small{ display:block; font-size:12.5px; color:var(--graphite-soft); line-height:1.4; }
   .org-apv{ margin-top:6px; }
   .apv-resumo{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
   .apv-resumo div{ background:var(--card-bg); border:1px solid var(--line); border-top:3px solid var(--wine); border-radius:14px; padding:10px 14px; }
@@ -5089,6 +5097,17 @@ async function apvHash(t){ const h = await crypto.subtle.digest("SHA-256", new T
 // resposta da marca entra no job: aprovado libera a produção; ajustes e refação voltam para a roteirização.
 // Só mexe no status se o job ainda estava em "Aprovação de Roteiro" (se ela mudou à mão, fica como ela deixou).
 function aplicarRespostaNoJob(job, r, lido){
+  if(job && r.de==="video"){
+    const ap = job.aprovacao || {}, at = ap.video || {};
+    if((at.versao===r.versao && at.situacao===r.situacao) || (at.versao||0) > r.versao) return job;
+    let novo = {...job, aprovacao:{...ap, video:{situacao:r.situacao, versao:r.versao, em:r.em, por:r.por||"", texto:r.texto||"", lido:!!lido}}};
+    // vídeo aprovado = conteúdo pronto (aguardando pagamento); ajuste ou refação = volta para Refação
+    if(job.status==="Aprovação do Conteúdo" && r.situacao!=="enviado"){
+      const st = r.situacao==="aprovado" ? FIN_AGUARDANDO : "Refação";
+      novo = itensNoStatusDoJob({...novo, status:st}, st);
+    }
+    return novo;
+  }
   if(!job || r.de!=="roteiro") return job;
   const ap = job.aprovacao || {}, at = ap.roteiro || {};
   if(at.versao===r.versao && at.situacao===r.situacao) return job;
@@ -5133,7 +5152,7 @@ async function apvEnviarRoteiro(job){
   const docAba = String(job.docAba||"").trim();
   const conteudo = String(job.roteiroConteudo||"").trim() || (docAba ? `Roteiro no Google Doc · aba ${docAba}` : "");
   if(!String(job.marca||"").trim()) throw aviso("Preencha a marca do job antes de enviar.");
-  if(!conteudo) throw aviso("Escreva o roteiro no Google Doc e preencha a aba do Doc no job antes de enviar.");
+  if(!conteudo) throw aviso("Puxe o roteiro do Google Doc (Roteiro no Google Doc, logo acima) ou escreva o roteiro no job antes de enviar.");
   const { data: ant, error: e0 } = await supabaseClient.from("aprovacao_envios").select("versao, situacao").eq("job_id", job.id).eq("tipo", "roteiro").order("versao", {ascending:true});
   if(e0) throw e0;
   const anteriores = ant || [], ult = anteriores.slice(-1)[0];
@@ -5280,9 +5299,12 @@ function AprovacaoJob({f, setF}){
         {rot ? <span className={"apv-selo "+rot.situacao}>{APV_ROTULO[rot.situacao]}{rot.versao?` · v${rot.versao}`:""}</span> : <span className="apv-selo">Ainda não enviado</span>}
       </div>
       {rot && rot.situacao!=="enviado" && (rot.texto || rot.gancho) && <div style={{fontSize:13.5, background:"#f6efe6", borderRadius:10, padding:"9px 11px", whiteSpace:"pre-wrap"}}><b>{rot.por||"Marca"}:</b> {[rot.gancho?("Gancho escolhido: "+rot.gancho):"", rot.texto].filter(Boolean).join("\n")}</div>}
-      <Field label="Aba do Google Doc (roteiro de publi)"><input value={f.docAba||""} onChange={e=>{ const v = e.target.value; setF(p=>({...p, docAba:v})); }} onBlur={salvarAba} placeholder="Ex.: MRV - REELS (igual ao nome da aba no Doc)"/></Field>
+      <details className="apv-plataforma" open={!!docAba}>
+        <summary>Ação de plataforma, sem contato com a marca: aprovar pelo link do Doc</summary>
+        <Field label="Nome da aba no Google Doc (só para este caso)"><input value={f.docAba||""} onChange={e=>{ const v = e.target.value; setF(p=>({...p, docAba:v})); }} onBlur={salvarAba} placeholder="Ex.: MRV - REELS (igual ao nome da aba no Doc)"/></Field>
+        <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Deixe vazio quando a marca aprova pela Área do cliente: o roteiro do Doc já vem para cá e vai para ela aprovar.</div>
+      </details>
       <div className="apv-botoes">
-        <a className="btn btn-ghost btn-sm" href={DOC_ROTEIROS_URL} target="_blank" rel="noopener"><Icon name="description" size={15}/>Abrir o Doc de roteiros</a>
         <button type="button" className="btn btn-ghost btn-sm" onClick={abrirMoodboard}><Icon name="dashboard" size={15}/>Criar mood board deste job</button>
       </div>
       {!docAba && <Field label="Produto (aparece para a marca)"><input value={f.produto||""} onChange={e=>{ const v = e.target.value; setF(p=>({...p, produto:v})); }} placeholder="Ex.: Kit Zip Vácuo"/></Field>}
@@ -5532,6 +5554,7 @@ const SECOES_JOB = {
   pagamento:{titulo:"Pagamento", icone:"payments"},
   briefing:{titulo:"Briefing", icone:"description"},
   roteiro:{titulo:"Roteiro", icone:"edit_note"},
+  materiais:{titulo:"Vídeos para aprovação", icone:"movie"},
   observacoes:{titulo:"Observações", icone:"notes"},
   trafego:{titulo:"Direitos de uso (tráfego pago)", icone:"campaign"}
 };
@@ -5963,6 +5986,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
         <section className="job-form-section job-form-identificacao">
           <div className="job-form-section-heading"><span className="job-form-index">01</span><div><strong>Identificação</strong><small>Marca, modalidade e classificação do trabalho</small></div></div>
           <Field label="Marca"><input value={f.marca} onChange={e=>set("marca",e.target.value)} placeholder="Nome da marca"/></Field>
+          <AreaClienteJob f={f} setF={setF}/>
           <div className="job-origem-fechamento" style={{border:"1px solid var(--line)",borderRadius:14,padding:14,marginBottom:16,background:"var(--card-bg)"}}>
             <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>Origem do fechamento</div>
             <Field label="Como essa ação foi fechada?">
@@ -6219,7 +6243,8 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
             ))}
             <AnexoCampo rotulo="" pasta={`jobs/${f.id||"novos"}/briefing`} onEnviado={(a)=>setF(p=>({...p, briefingArquivos:[...(p.briefingArquivos||[]), a]}))}/>
           </>}
-          {id==="roteiro" && <><AprovacaoJob f={f} setF={setF}/><ImportarRoteiroJob f={f} setF={setF} state={state}/></>}
+          {id==="roteiro" && <><RoteiroDoDocJob f={f} setF={setF}/><AprovacaoJob f={f} setF={setF}/><ImportarRoteiroJob f={f} setF={setF} state={state}/></>}
+          {id==="materiais" && <AprovacaoVideoJob f={f} setF={setF}/>}
           {id==="trafego" && <>
         <div className="row-item" style={{marginBottom: f.trafegoPago.ativo ? 12 : 0}}>
           <strong style={{fontSize:15}}>Adicionar tráfego pago (ads)</strong>
@@ -7018,6 +7043,221 @@ function AcessosMarcas({jobs, onJob}){
         </div>}
       </>}
       {editando && <AcessoModal acesso={editando.id ? editando : null} jobs={jobs} ligados={editando.id ? ligadosDe(editando.id) : []} onJob={onJob} onSalvo={carregar} onClose={()=>setEditando(null)}/>}
+    </div>
+  );
+}
+
+/* ---------- MATERIAIS: vídeo para a marca aprovar (nov/2026) ----------
+   O vídeo vai para o bucket privado "videos" (pasta aprovacoes/<job>), pelo mesmo guardar do painel
+   (até 20 MB como está; maior é reduzido para 720p só para a aprovação; o original fica com a Mari).
+   Cada envio é uma versão em aprovacao_envios (tipo video, video {path, nome, tamanho}) e aparece na pasta da marca. */
+async function apvGarantirLink(job){
+  const ap = job.aprovacao || {}, token = ap.token || apvToken();
+  const { data: ja } = await supabaseClient.from("aprovacao_links").select("job_id").eq("job_id", job.id).maybeSingle();
+  const r = ja
+    ? await supabaseClient.from("aprovacao_links").update({marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, resumo:resumoEntregas(job)||""}).eq("job_id", job.id)
+    : await supabaseClient.from("aprovacao_links").insert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:String(job.docAba||"").trim()||null, resumo:resumoEntregas(job)||""});
+  if(r.error) throw r.error;
+  await apvPastaDaMarca(job);
+  return {...job, aprovacao:{...ap, token}};
+}
+async function apvEnviarVideo(job, arquivo, obs, aoProgresso){
+  const aviso = (m) => { const e = new Error(m); e.aviso = true; return e; };
+  if(!String(job.marca||"").trim()) throw aviso("Preencha a marca do job antes de enviar.");
+  const PV = (()=>{ try{ return window.parent.painelVideos; }catch(e){ return null; } })();
+  if(!PV) throw aviso("Abra o job pelo painel para enviar o vídeo.");
+  if(!PV.ehVideo(arquivo)) throw aviso("Escolha um arquivo de vídeo (MP4 ou MOV).");
+  const { data: ant } = await supabaseClient.from("aprovacao_envios").select("versao, situacao").eq("job_id", job.id).eq("tipo", "video").order("versao", {ascending:true});
+  const ult = (ant||[]).slice(-1)[0];
+  if(ult && ult.situacao==="enviado" && !(await painelDialogo.confirmar(`A marca ainda não respondeu o vídeo ${ult.versao}. Enviar outro mesmo assim? O anterior fica no histórico.`, {ok:"Enviar"}))) return null;
+  const guardado = await PV.guardar(arquivo, {pasta:"aprovacoes/"+job.id, aoProgresso});
+  let novo = await apvGarantirLink(job);
+  const versao = (ant||[]).reduce((m,e)=>Math.max(m, e.versao), 0) + 1, agora = new Date().toISOString();
+  const e = await supabaseClient.from("aprovacao_envios").insert({job_id:job.id, tipo:"video", versao, titulo:String(arquivo.name||"Vídeo").replace(/\.[^.]+$/,"").slice(0,200), conteudo:String(obs||"").trim().slice(0,4000), video:{path:guardado.path, nome:arquivo.name, tamanho:guardado.tamanho}, enviado_em:agora});
+  if(e.error) throw e.error;
+  const ap = novo.aprovacao || {};
+  return itensNoStatusDoJob({...novo, status:"Aprovação do Conteúdo", aprovacao:{...ap, video:{situacao:"enviado", versao, em:agora, lido:true}}}, "Aprovação do Conteúdo");
+}
+function AprovacaoVideoJob({f, setF}){
+  const [envios,setEnvios] = useState([]);
+  const [eventos,setEventos] = useState([]);
+  const [obs,setObs] = useState("");
+  const [progresso,setProgresso] = useState(null);
+  const [erro,setErro] = useState("");
+  const [tocando,setTocando] = useState({}); // id -> link
+  const inp = useRef(null);
+  const vid = (f.aprovacao||{}).video || null;
+  async function carregar(){
+    if(!f.id) return;
+    const [a,b] = await Promise.all([
+      supabaseClient.from("aprovacao_envios").select("id, versao, titulo, conteudo, video, situacao, enviado_em, respondido_em").eq("job_id", f.id).eq("tipo","video").order("versao", {ascending:false}),
+      supabaseClient.from("aprovacao_eventos").select("id, envio_id, tipo, autor, texto, criado_em").eq("job_id", f.id).order("criado_em", {ascending:true})
+    ]);
+    const es = a.data||[], evs = b.data||[];
+    setEnvios(es); setEventos(evs);
+    const ult = es[0];
+    if(ult && ult.situacao!=="enviado"){
+      const ev = evs.filter(x=>x.envio_id===ult.id && x.tipo===ult.situacao).slice(-1)[0] || {};
+      setF(p=>aplicarRespostaNoJob(p, {de:"video", versao:ult.versao, situacao:ult.situacao, em:ult.respondido_em, por:ev.autor, texto:ev.texto}, true));
+      const ids = evs.filter(x=>x.envio_id===ult.id && x.tipo!=="abriu").map(x=>x.id);
+      if(ids.length) supabaseClient.from("aprovacao_eventos").update({aplicado:true}).in("id", ids).then(()=>null, ()=>null);
+    }
+  }
+  useEffect(()=>{ carregar(); const t = setInterval(()=>{ if(document.visibilityState==="visible") carregar(); }, 30000); return ()=>clearInterval(t); },[f.id]);
+  async function escolher(ev){
+    const arq = ev.target.files && ev.target.files[0]; ev.target.value = "";
+    if(!arq) return;
+    setErro(""); setProgresso(0);
+    try{
+      const novo = await apvEnviarVideo(f, arq, obs, (p)=>setProgresso(p));
+      if(novo){ setF(p=>({...p, status:novo.status, entregaveis:novo.entregaveis, aprovacao:novo.aprovacao})); setObs(""); await carregar(); }
+    }catch(e){ console.warn(e); setErro(e && (e.aviso || e.message) ? e.message : "Não consegui enviar o vídeo agora. Tente de novo."); }
+    setProgresso(null);
+  }
+  async function assistir(e){
+    const PV = window.parent.painelVideos; if(!PV || !e.video) return;
+    const l = await PV.url(e.video.path); if(l) setTocando(t=>({...t, [e.id]:l}));
+  }
+  const FR = {aprovado:"aprovou", ajustes:"pediu ajustes", refacao:"pediu refação"};
+  return (
+    <div className="apv">
+      <div className="apv-topo">
+        <strong>Vídeo para a marca aprovar</strong>
+        {vid ? <span className={"apv-selo "+vid.situacao}>{({enviado:"Aguardando a marca", aprovado:"Vídeo aprovado", ajustes:"Ajustes no vídeo", refacao:"Refazer o vídeo"})[vid.situacao]}{vid.versao?` · v${vid.versao}`:""}</span> : <span className="apv-selo">Nenhum vídeo enviado</span>}
+      </div>
+      {vid && vid.situacao!=="enviado" && vid.texto && <div style={{fontSize:13.5, background:"#f6efe6", borderRadius:10, padding:"9px 11px", whiteSpace:"pre-wrap"}}><b>{vid.por||"Marca"}:</b> {vid.texto}</div>}
+      <Field label="Recado para a marca junto com o vídeo (opcional)"><textarea rows="2" value={obs} onChange={e=>setObs(e.target.value)} placeholder="Ex.: versão com legenda; a música é só de referência"/></Field>
+      <input ref={inp} type="file" accept="video/*,.mov,.mp4" hidden onChange={escolher}/>
+      <div className="apv-botoes">
+        <button type="button" className="btn btn-primary btn-sm" disabled={progresso!==null} onClick={()=>inp.current && inp.current.click()}><Icon name="upload" size={15}/>{progresso!==null ? (progresso>0 ? `Preparando o vídeo ${progresso}%` : "Enviando...") : (envios.length ? "Enviar nova versão do vídeo" : "Enviar vídeo para aprovação")}</button>
+      </div>
+      {progresso!==null && <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Não feche esta janela. Vídeo grande é reduzido para 720p só para a aprovação; o original continua com você.</div>}
+      {erro && <div className="apv-erro">{erro}</div>}
+      {!envios.length && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>O vídeo aparece na Área do cliente da marca com um player. Quando ela aprovar ou pedir ajuste, o status do job muda sozinho e você recebe o aviso.</div>}
+      {envios.length>0 && <div className="apv-hist">{envios.map(e=>{ const evs = eventos.filter(x=>x.envio_id===e.id && x.tipo!=="abriu"); return (
+        <div key={e.id} style={{display:"block"}}>
+          <div style={{display:"flex", gap:8, alignItems:"center", flexWrap:"wrap"}}><time>{apvQuando(e.enviado_em)}</time><span><b>Versão {e.versao}</b> · {e.titulo}</span><span className={"apv-selo "+e.situacao}>{APV_ROTULO[e.situacao].replace("Roteiro","Vídeo")}</span>
+            {!tocando[e.id] && e.video && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>assistir(e)}><Icon name="play_arrow" size={15}/>Assistir</button>}</div>
+          {tocando[e.id] && <video src={tocando[e.id]} controls playsInline style={{width:"100%", maxHeight:360, borderRadius:10, background:"#000", marginTop:6}}/>}
+          {evs.map(x=><q key={x.id}>{(x.autor||"Marca")+" "+(FR[x.tipo]||x.tipo)+(x.texto?": "+x.texto:"")}</q>)}
+        </div>); })}</div>}
+    </div>
+  );
+}
+
+/* ---------- ROTEIRO DO GOOGLE DOC (nov/2026): cada marca tem a sua aba no Doc "ROTEIROS PARA MARCAS OFICIAL".
+   A função google-docs acao "abas" devolve cada aba com MARCA, PRODUTO, ENTREGA e o texto. O job guarda
+   f.docTab {id, rotulo, texto} e o roteiro do job (roteiroConteudo) acompanha o Doc enquanto ela não editar aqui. */
+let cacheAbasDoc = null;
+async function abasDoDoc(forcar){
+  if(!forcar && cacheAbasDoc && cacheAbasDoc.ate > Date.now()) return cacheAbasDoc.abas;
+  const { data, error } = await supabaseClient.functions.invoke("google-docs", { body:{acao:"abas"} });
+  if(error || !data || data.error) throw new Error((data && data.error) || "Não consegui ler o Doc de roteiros agora.");
+  cacheAbasDoc = {abas:data.abas||[], ate:Date.now()+60000};
+  return cacheAbasDoc.abas;
+}
+const rotuloAba = (a) => [a.marca || "Sem marca", a.produto, a.entrega ? "entrega "+a.entrega : ""].filter(Boolean).join(" · ");
+function abaDoJob(job, abas){
+  const k = normMarcaPortal(job.marca); if(!k) return null;
+  const daMarca = abas.filter(a=>{ const m = normMarcaPortal(a.marca); return m && (m===k || m.includes(k) || k.includes(m)); });
+  if(daMarca.length<=1) return daMarca[0] || null;
+  const prod = normMarcaPortal(job.produto||"");
+  return (prod && daMarca.find(a=>normMarcaPortal(a.produto).includes(prod))) || null; // mais de uma aba: ela escolhe
+}
+function RoteiroDoDocJob({f, setF}){
+  const [abas,setAbas] = useState(null);
+  const [lendo,setLendo] = useState(false);
+  const [erro,setErro] = useState("");
+  const [escolher,setEscolher] = useState(false);
+  const tab = f.docTab || null;
+  function usar(a){
+    setF(p=>{
+      const editado = p.roteiroConteudo && p.docTab && p.roteiroConteudo!==p.docTab.texto;
+      const vazio = !String(p.roteiroConteudo||"").trim();
+      return {...p, docTab:{id:a.id, rotulo:rotuloAba(a), texto:a.texto, em:new Date().toISOString()}, ...((vazio || !editado || (p.docTab && p.docTab.id!==a.id)) ? {roteiroConteudo:a.texto, roteiroTitulo:p.roteiroTitulo || ("Roteiro "+(a.marca||p.marca)), roteiroStatus:"Pronto", roteiroDoc:"doc:"+a.id} : {})};
+    });
+    setEscolher(false);
+  }
+  async function ler(forcar, silencioso){
+    setLendo(true); if(!silencioso) setErro("");
+    try{
+      const lista = await abasDoDoc(forcar); setAbas(lista);
+      if(tab){ const a = lista.find(x=>x.id===tab.id); if(a && a.texto!==tab.texto) usar(a); else if(!a && !silencioso) setErro("A aba deste job não existe mais no Doc. Escolha outra."); }
+      else { const a = abaDoJob(f, lista); if(a && !String(f.roteiroConteudo||"").trim()) usar(a); else if(!silencioso) setEscolher(true); }
+    }catch(e){ if(!silencioso) setErro(e.message); }
+    setLendo(false);
+  }
+  // abriu o job: confere se o Doc mudou (ou acha a aba da marca sozinho)
+  useEffect(()=>{ if(f.marca && (tab || !String(f.roteiroConteudo||"").trim())) ler(false, true); },[f.id]);
+  const editadoAqui = tab && f.roteiroConteudo && f.roteiroConteudo!==tab.texto;
+  const sugestao = abas ? abaDoJob(f, abas) : null;
+  return (
+    <div className="apv" style={{marginTop:0}}>
+      <div className="apv-topo"><strong>Roteiro no Google Doc</strong>{tab ? <span className="apv-selo aprovado">Ligado à aba</span> : <span className="apv-selo">Sem aba</span>}</div>
+      {tab && <div style={{fontSize:13.5}}><b>{tab.rotulo}</b><div className="apv-linha" style={{marginTop:2}}>{editadoAqui ? "Você mudou o roteiro aqui no job; o Doc não sobrescreve. Toque em Puxar de novo para voltar ao texto do Doc." : "O roteiro deste job acompanha o Doc sozinho sempre que você abre o job."}</div></div>}
+      <div className="apv-botoes">
+        <button type="button" className="btn btn-ghost btn-sm" disabled={lendo} onClick={()=>{ if(tab && editadoAqui){ abasDoDoc(true).then(l=>{ const a = l.find(x=>x.id===tab.id); if(a) setF(p=>({...p, roteiroConteudo:a.texto, docTab:{...p.docTab, texto:a.texto}})); }).catch(e=>setErro(e.message)); } else ler(true); }}><Icon name="sync" size={15}/>{lendo ? "Lendo o Doc..." : (tab ? "Puxar de novo do Doc" : "Puxar roteiro do Doc")}</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={()=>{ setEscolher(e=>!e); if(!abas) ler(false, true); }}><Icon name="list" size={15}/>{tab ? "Trocar de aba" : "Escolher a aba"}</button>
+        <a className="btn btn-ghost btn-sm" href={DOC_ROTEIROS_URL+(tab?("?tab="+tab.id):"")} target="_blank" rel="noopener"><Icon name="description" size={15}/>Abrir o Doc</a>
+      </div>
+      {escolher && abas && <div style={{display:"flex", flexDirection:"column", gap:6}}>
+        {[...abas].sort((a,b)=>(b===sugestao)-(a===sugestao)).map(a=><button key={a.id} type="button" className={"apv-check"+(tab && tab.id===a.id ? " on":"")} style={{textAlign:"left"}} onClick={()=>usar(a)}>
+          <Icon name={tab && tab.id===a.id ? "radio_button_checked" : "radio_button_unchecked"} size={16}/><span><b>{a.marca || "Sem marca"}</b>{a.produto?" · "+a.produto:""}{a.entrega?" · entrega "+a.entrega:""}{a===sugestao?"  (sugerida)":""}</span></button>)}
+      </div>}
+      {erro && <div className="apv-erro">{erro}</div>}
+    </div>
+  );
+}
+
+/* ---------- caixa "Área do cliente" no job: cria o acesso da marca (link + senha) e põe o job na pasta dela ---------- */
+function AreaClienteJob({f, setF}){
+  const [acesso,setAcesso] = useState(undefined); // undefined = carregando, null = não tem
+  const [naPasta,setNaPasta] = useState(false);
+  const [ocupado,setOcupado] = useState(false);
+  const [msg,setMsg] = useState(null); // {acesso, senha}
+  const [erro,setErro] = useState("");
+  const marca = String(f.marca||"").trim();
+  async function carregar(){
+    if(!marca){ setAcesso(null); return; }
+    const a = await acessoDaMarca(marca).catch(()=>null);
+    setAcesso(a);
+    const { data } = await supabaseClient.from("aprovacao_links").select("portal_marca_id").eq("job_id", f.id).maybeSingle();
+    setNaPasta(!!(a && data && data.portal_marca_id===a.id));
+  }
+  useEffect(()=>{ const t = setTimeout(carregar, 500); return ()=>clearTimeout(t); },[marca, f.id]);
+  async function alternar(){
+    setErro(""); setOcupado(true);
+    try{
+      if(acesso && naPasta){
+        await supabaseClient.from("aprovacao_links").update({portal_marca_id:null}).eq("job_id", f.id);
+        setNaPasta(false); setF(p=>({...p, areaCliente:false}));
+      }else{
+        let a = acesso, senha = "";
+        if(!a){
+          senha = senhaNova();
+          const r = await supabaseClient.from("portal_marcas").insert({marca:marcaBase(marca)||marca, login:codigoPortal(marca), senha_hash:await hashSenhaPortal(senha)}).select("id, marca, login, ativo").single();
+          if(r.error) throw r.error;
+          a = r.data; setAcesso(a);
+        }
+        const n = await ligarJobNaPasta(f, a.id);
+        setF(p=>({...p, areaCliente:true, aprovacao:n.aprovacao || p.aprovacao}));
+        setNaPasta(true);
+        if(senha) setMsg({acesso:a, senha});
+      }
+    }catch(e){ console.warn(e); setErro("Não consegui agora. Tente de novo."); }
+    setOcupado(false);
+  }
+  async function copiar(){ try{ await navigator.clipboard.writeText(linkPortal(acesso.login)); setErro("Link copiado."); setTimeout(()=>setErro(""), 1600); }catch(e){ setErro(linkPortal(acesso.login)); } }
+  if(!marca) return null;
+  return (
+    <div className="area-cli">
+      <label className="area-cli-linha">
+        <input type="checkbox" checked={!!naPasta} disabled={ocupado || acesso===undefined} onChange={alternar}/>
+        <span><b>Área do cliente</b><small>{acesso===undefined ? "Conferindo..." : naPasta ? `A ${acesso.marca} aprova roteiro e vídeo deste job pelo link dela, com senha.` : acesso ? `A ${acesso.marca} já tem área. Marque para pôr este job nela.` : "Marque para criar a área da marca (link + senha) e pôr este job nela."}</small></span>
+      </label>
+      {naPasta && acesso && <div className="apv-botoes"><button type="button" className="btn btn-ghost btn-sm" onClick={copiar}><Icon name="content_copy" size={14}/>Copiar link da marca</button><a className="btn btn-ghost btn-sm" href={PORTAL_URL+"?previa="+acesso.id} target="_blank" rel="noopener"><Icon name="visibility" size={14}/>Ver como a marca vê</a></div>}
+      {erro && <div className="apv-linha">{erro}</div>}
+      {msg && <MessageModal title={`Área da ${msg.acesso.marca} criada`} text={mensagemAcesso(msg.acesso, msg.senha)} onClose={()=>setMsg(null)}/>}
     </div>
   );
 }

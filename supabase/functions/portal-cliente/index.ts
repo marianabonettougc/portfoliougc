@@ -53,10 +53,16 @@ async function montarPasta(adm: Adm, marcaId: string, registrar: boolean) {
   if (!ls.length) return [];
   const ids = ls.map((l: Adm) => l.job_id);
   const [{ data: envios }, { data: eventos }] = await Promise.all([
-    adm.from("aprovacao_envios").select("id, job_id, tipo, versao, titulo, conteudo, situacao, enviado_em, respondido_em").in("job_id", ids).order("enviado_em", { ascending: true }),
+    adm.from("aprovacao_envios").select("id, job_id, tipo, versao, titulo, conteudo, video, situacao, enviado_em, respondido_em").in("job_id", ids).order("enviado_em", { ascending: true }),
     adm.from("aprovacao_eventos").select("envio_id, job_id, tipo, autor, texto, gancho, criado_em").in("job_id", ids).order("criado_em", { ascending: true }),
   ]);
   const todos = envios || [], evs = eventos || [];
+  // vídeos para aprovar: link assinado de 6 horas do bucket privado "videos" (a marca nunca vê o caminho)
+  const assinados: Record<number, string> = {};
+  await Promise.all(todos.filter((e: Adm) => e.tipo === "video" && e.video && e.video.path).map(async (e: Adm) => {
+    const { data } = await adm.storage.from("videos").createSignedUrl(e.video.path, 6 * 3600);
+    if (data) assinados[e.id] = data.signedUrl;
+  }));
   const jobs = [];
   for (const l of ls) {
     const lista = todos.filter((e: Adm) => e.job_id === l.job_id);
@@ -72,7 +78,8 @@ async function montarPasta(adm: Adm, marcaId: string, registrar: boolean) {
     jobs.push({
       id: l.job_id, marca: l.marca, produto: l.produto, resumo: l.resumo || "",
       doc: doDoc ? DOC_APROVACAO_URL + "?r=" + encodeURIComponent(doDoc) : "",
-      envios: lista.map((e: Adm) => ({ id: e.id, tipo: e.tipo, versao: e.versao, titulo: e.titulo, conteudo: doDoc ? "" : e.conteudo, situacao: e.situacao,
+      envios: lista.map((e: Adm) => ({ id: e.id, tipo: e.tipo, versao: e.versao, titulo: e.titulo, conteudo: doDoc && e.tipo === "roteiro" ? "" : e.conteudo, situacao: e.situacao,
+        video: assinados[e.id] || "",
         enviado_em: e.enviado_em, respondido_em: e.respondido_em, atual: ultimo(e.tipo).id === e.id })),
       historico: evs.filter((x: Adm) => x.job_id === l.job_id && x.tipo !== "abriu").map((x: Adm) => {
         const e = lista.find((y: Adm) => y.id === x.envio_id);
@@ -153,13 +160,13 @@ Deno.serve(async (req) => {
       const jobId = txt(corpo.job, 80);
       const { data: link } = await adm.from("aprovacao_links").select("job_id, marca, doc_aba").eq("job_id", jobId).eq("portal_marca_id", m.id).eq("ativo", true).maybeSingle();
       if (!link) return resposta({ error: "Não encontrei este projeto na sua pasta." }, 404);
-      if (String(link.doc_aba || "").trim()) return resposta({ error: "Este roteiro é aprovado pelo Google Doc. Use o botão Abrir o roteiro." }, 400);
       const tipo = txt(corpo.tipo, 20), nome = txt(corpo.nome, 80), texto = txt(corpo.texto, 4000), gancho = txt(corpo.gancho, 600);
       if (!FRASE[tipo]) return resposta({ error: "Resposta desconhecida." }, 400);
       const { data: envios } = await adm.from("aprovacao_envios").select("id, tipo, versao, situacao").eq("job_id", link.job_id).order("enviado_em", { ascending: true });
       const lista = envios || [];
       const envio = lista.find((e: Adm) => e.id === Number(corpo.envio));
       if (!envio) return resposta({ error: "Não encontrei este envio." }, 404);
+      if (envio.tipo === "roteiro" && String(link.doc_aba || "").trim()) return resposta({ error: "Este roteiro é aprovado pelo Google Doc. Use o botão Abrir o roteiro." }, 400);
       const ult = lista.filter((e: Adm) => e.tipo === envio.tipo).slice(-1)[0];
       if (ult.id !== envio.id) return resposta({ error: "A Mari já enviou uma versão mais nova. Atualize a página para ver.", versaoNova: true }, 409);
       if (envio.situacao !== "enviado") return resposta({ ok: true, repetido: true, situacao: envio.situacao });

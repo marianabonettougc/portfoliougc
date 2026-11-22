@@ -100,8 +100,8 @@
   }
   // situação do projeto na lista: o envio mais novo que ainda espera resposta manda
   function situacaoDoJob(j){
-    var atuais = j.envios.filter(function(e){ return e.atual; });
-    if (j.doc) return { cls: "enviado", txt: "Roteiro no Google Doc" };
+    var atuais = j.envios.filter(function(e){ return e.atual && !(j.doc && e.tipo === "roteiro"); });
+    if (j.doc && !atuais.some(function(e){ return e.situacao === "enviado"; })) return { cls: "enviado", txt: "Roteiro no Google Doc" };
     if (!atuais.length) return { cls: "", txt: "Em preparação" };
     var esp = atuais.filter(function(e){ return e.situacao === "enviado"; })[0];
     if (esp) return { cls: "enviado", txt: NOME[esp.tipo] + " para aprovar" };
@@ -135,8 +135,8 @@
 
   // ---------- um projeto ----------
   function telaJob(j){
-    var atuais = j.envios.filter(function(e){ return e.atual; });
-    atuais.sort(function(a, b){ return (a.situacao === "enviado" ? 0 : 1) - (b.situacao === "enviado" ? 0 : 1); });
+    var atuais = j.envios.filter(function(e){ return e.atual && !(j.doc && e.tipo === "roteiro"); });
+    atuais.sort(function(a, b){ return (a.situacao === "enviado" ? 0 : 1) - (b.situacao === "enviado" ? 0 : 1) || (a.tipo === "video" ? 0 : 1) - (b.tipo === "video" ? 0 : 1); });
     var h = '<div class="barra">' + topo + (PREVIA ? "" : '<button id="b-sair" type="button">Sair</button>') + "</div>";
     h += '<button type="button" class="voltar" data-voltar>‹ Seus projetos</button>';
     h += "<h1>" + esc(j.marca || dados.marca || "Seu projeto") + (j.produto ? " <em>" + esc(j.produto) + "</em>" : "") + "</h1>";
@@ -146,15 +146,17 @@
       h += '<section class="cartao"><div class="topo"><h2>Roteiro para aprovação</h2></div>' +
         '<p class="meta">Este roteiro está no Google Doc. Abra para ler, comentar e aprovar. A Mari é avisada na hora.</p>' +
         '<a class="botao" href="' + esc(j.doc) + '" target="_blank" rel="noopener">Abrir o roteiro</a></section>';
-    } else if (!atuais.length){
+    }
+    if (!j.doc && !atuais.length){
       h += '<p class="cartao">Ainda não há nada para aprovar neste projeto.</p>';
     }
-    if (!j.doc) atuais.forEach(function(e){
+    atuais.forEach(function(e){
       var gs = e.tipo === "roteiro" ? ganchosDe(e.conteudo) : [];
       h += '<section class="cartao" data-envio="' + e.id + '">';
       h += '<div class="topo"><h2>' + NOME[e.tipo] + ' para aprovação</h2><span class="pil p-' + e.situacao + '">' + ROTULO[e.situacao] + "</span></div>";
       h += '<div class="meta">' + (e.titulo ? esc(e.titulo) + " · " : "") + "versão " + e.versao + " · enviado em " + quando(e.enviado_em) + "</div>";
-      h += '<div class="roteiro">' + roteiroHtml(e.conteudo) + "</div>";
+      if (e.tipo === "video") h += e.video ? '<video class="player" src="' + esc(e.video) + '" controls playsinline preload="metadata"></video>' : '<p class="meta">O vídeo não carregou. Atualize a página.</p>';
+      if (e.conteudo) h += '<div class="roteiro">' + roteiroHtml(e.conteudo) + "</div>";
       if (e.situacao === "enviado"){
         if (gs.length){
           h += '<div class="ganchos"><strong>Qual gancho você prefere?</strong>' + gs.map(function(g){
@@ -177,10 +179,11 @@
           (x.gancho ? "<q>Gancho escolhido: " + esc(x.gancho) + "</q>" : "") + (x.texto ? "<q>" + esc(x.texto) + "</q>" : "") + "</div>";
       }).join("") + "</div></section>";
     }
-    var antigas = j.doc ? [] : j.envios.filter(function(e){ return !e.atual; });
+    var antigas = j.envios.filter(function(e){ return !e.atual && !(j.doc && e.tipo === "roteiro"); });
     if (antigas.length){
       h += '<details class="cartao"><summary>Versões anteriores (' + antigas.length + ")</summary>" + antigas.slice().reverse().map(function(e){
-        return '<div class="meta" style="margin-top:12px">' + NOME[e.tipo] + " versão " + e.versao + " · " + quando(e.enviado_em) + '</div><div class="roteiro">' + roteiroHtml(e.conteudo) + "</div>";
+        return '<div class="meta" style="margin-top:12px">' + NOME[e.tipo] + " versão " + e.versao + " · " + quando(e.enviado_em) + "</div>" +
+          (e.tipo === "video" && e.video ? '<video class="player" src="' + esc(e.video) + '" controls playsinline preload="none"></video>' : "") + '<div class="roteiro">' + roteiroHtml(e.conteudo) + "</div>";
       }).join("") + "</details>";
     }
     pagina.innerHTML = h;

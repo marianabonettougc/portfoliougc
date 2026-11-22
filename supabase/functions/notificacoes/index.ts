@@ -1,5 +1,6 @@
 // =========================================================
-// NOTIFICAÇÕES NO CELULAR (Edge Function do Supabase)
+// NOTIFICAÇÕES NO CELULAR E POR E-MAIL (Edge Function do Supabase)
+// Todo aviso sai no celular (Web Push e ntfy) e também por e-mail (Apps Script dela, ver mandarEmail).
 // Notificação de verdade no celular (Web Push) para o painel instalado na Tela de Início
 // (admin/manifest.webmanifest + admin/sw.js), com o app ntfy como reserva.
 // - { acao: "chave" }: chave pública para o celular se inscrever (sem login).
@@ -63,7 +64,20 @@ async function enviarTudo(adm: any, titulo: string, texto: string, url = PAINEL,
       body: JSON.stringify({ topic: topico, title: titulo.slice(0, 120), message: (texto || titulo).slice(0, 3800), tags: ["bell"], click: url }) }).catch(() => null);
     ntfy = Boolean(r?.ok);
   }
-  return { celulares: ok, inscritos: (inscricoes || []).length, ntfy };
+  const email = await mandarEmail(adm, titulo, texto, url);
+  return { celulares: ok, inscritos: (inscricoes || []).length, ntfy, email };
+}
+
+// e-mail: pelo Apps Script da própria conta Google dela (MailApp, grátis, até 100 por dia).
+// configuracoes "email_webhook" = {"url": ".../exec", "segredo": "..."}; o script só manda se o segredo bater.
+async function mandarEmail(adm: any, titulo: string, texto: string, url: string) {
+  const { data: cfg } = await adm.from("configuracoes").select("valor").eq("chave", "email_webhook").maybeSingle();
+  let c: any = null; try { c = typeof cfg?.valor === "string" ? JSON.parse(cfg.valor) : cfg?.valor; } catch (_) { c = null; }
+  if (!c || !/^https:\/\/script\.google\.com\//.test(String(c.url || "")) || !c.segredo) return false;
+  const r = await fetch(c.url, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow",
+    body: JSON.stringify({ segredo: c.segredo, assunto: titulo.slice(0, 150), texto: (texto || titulo).slice(0, 3800), link: url }) }).catch(() => null);
+  const corpo = r ? await r.text().catch(() => "") : "";
+  return Boolean(r?.ok && /"ok"\s*:\s*true/.test(corpo));
 }
 
 function quandoBR(iso: string) {
@@ -106,8 +120,12 @@ Deno.serve(async (req) => {
     }
     if (corpo.acao === "teste") {
       const r = await enviarTudo(adm, "Painel da Mari", "Notificações funcionando! Os avisos marcados como Importante chegam assim.", PAINEL, "teste");
-      if (!r.celulares && !r.ntfy) return resposta({ error: "Nenhum celular ativado ainda. Toque em Ativar notificações no celular." }, 400);
+      if (!r.celulares && !r.ntfy && !r.email) return resposta({ error: "Nenhum celular ativado ainda. Toque em Ativar notificações no celular." }, 400);
       return resposta({ ok: true, ...r });
+    }
+    if (corpo.acao === "email_teste") {
+      const ok = await mandarEmail(adm, "Painel da Mari: teste de e-mail", "Os avisos do painel (aprovações das marcas, lembretes e alertas) vão chegar neste e-mail também.", PAINEL);
+      return ok ? resposta({ ok: true }) : resposta({ error: "O e-mail não saiu. Confira se o link do Apps Script está certo e se a implantação está como \"Qualquer pessoa\"." }, 400);
     }
     if (corpo.acao === "enviar") {
       return resposta({ ok: true, ...(await enviarTudo(adm, txt(corpo.titulo, 120) || "Painel da Mari", txt(corpo.texto, 3000), txt(corpo.url, 300) || PAINEL)) });
