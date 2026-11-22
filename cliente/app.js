@@ -1,7 +1,7 @@
 // =========================================================
 // ÁREA DO CLIENTE (marianabonetto.com.br/cliente/)
-// A marca entra com o login e a senha que a Mari criou no painel (Aprovações > Acessos das marcas)
-// e vê só a pasta dela: os projetos, o roteiro para aprovar, as versões e o histórico.
+// A marca abre o link que a Mari mandou (/cliente/?m=<código da marca>) e digita só a senha
+// criada no painel (Aprovações > Área do cliente). Vê só a pasta dela: os projetos, o roteiro para aprovar, as versões e o histórico.
 // Fala só com a Edge Function portal-cliente. A sessão fica neste aparelho (localStorage "mbPortal").
 // ?previa=<id do acesso> = a Mari vendo como a marca vê (usa o login dela no painel; nada é registrado).
 // =========================================================
@@ -10,6 +10,7 @@
   var CHAVE = "sb_publishable_TxLJkErn4N9jD8rDLV1EnQ_sppuB9VZ"; // chave pública (a mesma do site)
   var GUARDA = "mbPortal";
   var q = new URLSearchParams(location.search), PREVIA = q.get("previa") || "";
+  var M = String(q.get("m") || "").trim().toLowerCase(); // código da marca no link
   var pagina = document.getElementById("pagina");
   var ROTULO = { enviado: "Aguardando sua resposta", aprovado: "Aprovado", ajustes: "Ajustes solicitados", refacao: "Refação solicitada" };
   var NOME = { roteiro: "Roteiro", video: "Vídeo" };
@@ -18,7 +19,8 @@
 
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
   function quando(iso){ try{ return new Date(iso).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" }).replace(",", " às"); }catch(e){ return ""; } }
-  function ler(){ try{ var v = JSON.parse(localStorage.getItem(GUARDA) || "null"); return v && v.s && new Date(v.expira).getTime() > Date.now() ? v : null; }catch(e){ return null; } }
+  // sessão deste aparelho; se o link é de outra marca, pede a senha dessa outra
+  function ler(){ try{ var v = JSON.parse(localStorage.getItem(GUARDA) || "null"); return v && v.s && new Date(v.expira).getTime() > Date.now() && (!M || v.m === M) ? v : null; }catch(e){ return null; } }
   function gravar(v){ try{ if (v) localStorage.setItem(GUARDA, JSON.stringify(v)); else localStorage.removeItem(GUARDA); }catch(e){} }
   function tokenDaMari(){
     try{ for (var i = 0; i < localStorage.length; i++){ var k = localStorage.key(i); if (/^sb-.*-auth-token$/.test(k)){ var v = JSON.parse(localStorage.getItem(k)); if (v && v.access_token) return v.access_token; } } }catch(e){}
@@ -33,27 +35,41 @@
   }
   var topo = '<span class="rot">Mari Bonetto · UGC Creator</span>';
 
-  // ---------- entrar ----------
+  // ---------- entrar: só a senha (a marca vem do link) ----------
   function telaLogin(aviso){
-    pagina.innerHTML = topo + '<h1>Área do <em>cliente</em></h1>' +
-      '<p class="meta">Entre com o login e a senha que a Mari enviou para a sua marca. Aqui ficam os roteiros e conteúdos para aprovar e o histórico de cada projeto.</p>' +
+    if (!M){
+      var g = null; try{ g = JSON.parse(localStorage.getItem(GUARDA) || "null"); }catch(e){}
+      if (g && g.m){ location.replace(location.pathname + "?m=" + encodeURIComponent(g.m)); return; }
+      pagina.innerHTML = topo + '<h1>Área do <em>cliente</em></h1><p class="cartao">Abra esta área pelo link que a Mari enviou para a sua marca.</p>';
+      return;
+    }
+    pagina.innerHTML = topo + '<h1 id="t-marca">Área do <em>cliente</em></h1>' +
+      '<p class="meta">Aqui ficam os roteiros e conteúdos para aprovar e o histórico de cada projeto. Digite a senha que a Mari enviou.</p>' +
       '<form class="cartao" id="f-entrar" autocomplete="on">' +
-      '<label>Login<input type="text" id="login" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>' +
+      '<input type="text" name="username" value="' + esc(M) + '" autocomplete="username" hidden>' +
       '<label>Senha<input type="password" id="senha" autocomplete="current-password" required></label>' +
       '<p class="erro" id="erro"' + (aviso ? "" : " hidden") + '>' + esc(aviso || "") + '</p>' +
       '<button class="pri" type="submit" id="b-entrar">Entrar</button></form>' +
       '<p class="pe">Esqueceu a senha? Fale com a Mari para receber uma nova.</p>';
+    fetch(FN, { method:"POST", headers:{ "Content-Type":"application/json", apikey:CHAVE, Authorization:"Bearer " + CHAVE }, body:JSON.stringify({ acao:"marca", m:M }) })
+      .then(function(r){ return r.json(); })
+      .then(function(r){
+        var t = document.getElementById("t-marca"); if (!t) return;
+        if (r.marca) t.innerHTML = "Área da <em>" + esc(r.marca) + "</em>";
+        else if (r.error){ pagina.innerHTML = topo + '<h1>Link <em>indisponível</em></h1><p class="cartao">' + esc(r.error) + "</p>"; }
+      }).catch(function(){});
+    document.getElementById("senha").focus();
     document.getElementById("f-entrar").addEventListener("submit", function(ev){
       ev.preventDefault();
       var b = document.getElementById("b-entrar"), erro = document.getElementById("erro");
-      var login = document.getElementById("login").value.trim(), senha = document.getElementById("senha").value;
-      if (!login || !senha){ erro.textContent = "Escreva seu login e sua senha."; erro.hidden = false; return; }
+      var senha = document.getElementById("senha").value;
+      if (!senha){ erro.textContent = "Escreva sua senha."; erro.hidden = false; return; }
       b.disabled = true; b.textContent = "Entrando...";
-      fetch(FN, { method:"POST", headers:{ "Content-Type":"application/json", apikey:CHAVE, Authorization:"Bearer " + CHAVE }, body:JSON.stringify({ acao:"entrar", login:login, senha:senha }) })
+      fetch(FN, { method:"POST", headers:{ "Content-Type":"application/json", apikey:CHAVE, Authorization:"Bearer " + CHAVE }, body:JSON.stringify({ acao:"entrar", login:M, senha:senha }) })
         .then(function(r){ return r.json(); })
         .then(function(r){
           if (!r.ok){ erro.textContent = r.error || "Não consegui entrar."; erro.hidden = false; b.disabled = false; b.textContent = "Entrar"; return; }
-          gravar({ s:r.s, marca:r.marca, expira:r.expira }); carregar();
+          gravar({ s:r.s, m:M, marca:r.marca, expira:r.expira }); carregar();
         })
         .catch(function(){ erro.textContent = "Sem conexão. Tente de novo."; erro.hidden = false; b.disabled = false; b.textContent = "Entrar"; });
     });
@@ -113,7 +129,7 @@
           (s.cls ? '<span class="pil p-' + s.cls + '">' + esc(s.txt) + "</span>" : '<span class="meta">' + esc(s.txt) + "</span>") + '<span class="seta" aria-hidden="true">›</span></button>';
       }).join("") + "</div>";
     }
-    h += '<p class="pe">Área exclusiva da sua marca. Não compartilhe o login fora da equipe.</p>';
+    h += '<p class="pe">Área exclusiva da sua marca. Não compartilhe o link e a senha fora da equipe.</p>';
     pagina.innerHTML = h;
   }
 
@@ -183,7 +199,7 @@
   };
   pagina.addEventListener("click", function(ev){
     var b = ev.target.closest("button"); if (!b) return;
-    if (b.id === "b-sair"){ chamar({ acao: "sair" }).catch(function(){}); gravar(null); dados = null; history.replaceState(null, "", location.pathname); telaLogin(); return; }
+    if (b.id === "b-sair"){ var g0 = ler(); if (!M && g0 && g0.m) M = g0.m; chamar({ acao: "sair" }).catch(function(){}); gravar(null); dados = null; history.replaceState(null, "", location.pathname + (M ? "?m=" + encodeURIComponent(M) : "")); telaLogin(); return; }
     if (b.dataset.job){ location.hash = "p=" + encodeURIComponent(b.dataset.job); return; }
     if (b.hasAttribute("data-voltar")){ location.hash = ""; return; }
     var sec = b.closest("[data-envio]"); if (!sec) return;

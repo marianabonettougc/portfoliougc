@@ -1,10 +1,10 @@
 // =========================================================
 // PORTAL DO CLIENTE (Edge Function do Supabase, verify_jwt false; faz a própria checagem)
-// A marca entra em marianabonetto.com.br/cliente/ com o login e a senha que a Mari criou no painel
+// A marca abre o link marianabonetto.com.br/cliente/?m=<código> e digita só a senha que a Mari criou no painel
 // (tabela portal_marcas, senha em PBKDF2) e vê SÓ a pasta dela: os jobs ligados a ela
 // (aprovacao_links.portal_marca_id), com o roteiro enviado, as versões e o histórico.
 // Nunca devolve valores, briefing, observações nem nada de outra marca.
-// Ações da marca: entrar {login, senha}, sair {s}, pasta {s}, responder {s, job, envio, tipo, nome, texto, gancho}
+// Ações da marca: marca {m}, entrar {login: código do link, senha}, sair {s}, pasta {s}, responder {s, job, envio, tipo, nome, texto, gancho}
 // Ação da Mari (com o login dela no painel): previa {marca_id} = a pasta como a marca vê, sem registrar nada.
 // =========================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -37,8 +37,8 @@ async function confereSenha(senha: string, guardado: string) {
   return dif === 0;
 }
 
-const SAIU = "Sua sessão terminou. Entre de novo com seu login e senha.";
-const ERRO_LOGIN = "Login ou senha não conferem.";
+const SAIU = "Sua sessão terminou. Digite a senha de novo.";
+const ERRO_LOGIN = "Senha não confere. Confira e tente de novo.";
 const FRASE: Record<string, string> = { aprovado: "aprovou", ajustes: "pediu ajustes", refacao: "pediu refação" };
 const DOC_APROVACAO_URL = "https://script.google.com/macros/s/AKfycbzpQfjXGILijQDYVB_dDVm-3z4GFtGtFCOuXka1r5g34T-5AuHFypzV-00R705q7jJibw/exec";
 const DIAS_SESSAO = 30, MAX_FALHAS = 5, MIN_BLOQUEIO = 15;
@@ -102,10 +102,19 @@ Deno.serve(async (req) => {
       return resposta({ marca: m.marca, previa: true, jobs: await montarPasta(adm, m.id, false) });
     }
 
-    // ---------- entrar ----------
+    // ---------- nome da marca do link (para a tela de senha dizer de quem é a área) ----------
+    if (acao === "marca") {
+      const login = txt(corpo.m, 80).toLowerCase();
+      const { data: m } = login ? await adm.from("portal_marcas").select("marca, ativo").eq("login", login).maybeSingle() : { data: null };
+      if (!m || !m.ativo) return resposta({ error: "Este link não está ativo. Fale com a Mari para receber o link certo." }, 404);
+      return resposta({ marca: m.marca });
+    }
+
+    // ---------- entrar (o "login" é o código do link: ?m=<código>) ----------
     if (acao === "entrar") {
       const login = txt(corpo.login, 80).toLowerCase(), senha = String(corpo.senha ?? "").slice(0, 200);
-      if (!login || !senha) return resposta({ error: "Escreva seu login e sua senha." }, 400);
+      if (!login) return resposta({ error: "Abra a área pelo link que a Mari enviou." }, 400);
+      if (!senha) return resposta({ error: "Escreva sua senha." }, 400);
       const { data: m } = await adm.from("portal_marcas").select("id, marca, senha_hash, ativo, falhas, bloqueado_ate").eq("login", login).maybeSingle();
       if (!m || !m.ativo) { await new Promise((r) => setTimeout(r, 600)); return resposta({ error: ERRO_LOGIN }, 401); }
       if (m.bloqueado_ate && new Date(m.bloqueado_ate).getTime() > Date.now())

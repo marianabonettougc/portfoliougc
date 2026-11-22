@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611220001"></script>
-<script src="../../js/dialogos.js?v=202611220001"></script>
-<script src="../../js/metricool-ig.js?v=202611220001"></script>
-<script src="../../js/corretor.js?v=202611220001"></script>
+<script src="../../js/banco.js?v=202611220002"></script>
+<script src="../../js/dialogos.js?v=202611220002"></script>
+<script src="../../js/metricool-ig.js?v=202611220002"></script>
+<script src="../../js/corretor.js?v=202611220002"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5306,7 +5306,7 @@ function AprovacaoJob({f, setF}){
         <button type="button" className="btn btn-primary btn-sm" disabled={ocupado} onClick={enviar}><Icon name="send" size={15}/>{ocupado ? "Enviando..." : (docAba ? (mudouDepois ? "Pedir nova aprovação" : "Marcar como enviado para a marca") : (mudouDepois ? "Enviar nova versão para aprovação" : "Enviar roteiro para aprovação"))}</button>
       </div>}
       {erro && <div className="apv-erro">{erro}</div>}
-      {pasta && <div style={{fontSize:13, background:"#e4eee2", color:"#3f6644", borderRadius:10, padding:"8px 11px"}}>Este job aparece na Área do cliente da {pasta.marca} (login {pasta.login}{pasta.ativo?"":", acesso desligado"}). A marca aprova por lá, sem precisar do link.</div>}
+      {pasta && <div style={{fontSize:13, background:"#e4eee2", color:"#3f6644", borderRadius:10, padding:"8px 11px"}}>Este job aparece na Área do cliente da {pasta.marca}{pasta.ativo?"":" (acesso desligado)"}. A marca aprova por lá, com o link e a senha dela.</div>}
       {docAba && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>O roteiro fica no Google Doc. Quando a marca comentar ou aprovar pelo link, o status muda aqui sozinho e chega notificação no seu celular.</div>}
       {!docAba && !ap.token && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>Ao enviar, o painel guarda esta versão do roteiro, cria o link exclusivo deste job e muda o status para Aprovação de Roteiro. Você copia o link e manda para a marca.</div>}
       {linhas.length>0 && <div className="apv-hist">{linhas.map((l,i)=><div key={i}><time>{apvQuando(l.em)}</time><span>{l.texto}{l.cita ? <q>{l.cita}</q> : null}</span></div>)}</div>}
@@ -6855,7 +6855,9 @@ Se tiver algum feedback ou quiser fechar mais alguma coisa, me chama 💛`;
    aprovacao_links.portal_marca_id: quais jobs entram na pasta daquela marca. A marca entra em /cliente/ e fala só com a função portal-cliente. */
 const PORTAL_URL = new URL("../../cliente/", location.href).href;
 const normMarcaPortal = (m) => String(marcaBase(m)||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
-const loginSugerido = (m) => normMarcaPortal(m).replace(/\s+/g,"-").slice(0,40) || "marca";
+// código da marca no link: nome + 4 letras/números aleatórios (ninguém chega em outra marca trocando o nome no endereço)
+const codigoPortal = (m) => { const b = new Uint8Array(4); crypto.getRandomValues(b); const l = "abcdefghjkmnpqrstuvwxyz23456789"; return (normMarcaPortal(m).replace(/\s+/g,"-").slice(0,40) || "marca") + "-" + [...b].map(x=>l[x % l.length]).join(""); };
+const linkPortal = (codigo) => PORTAL_URL + "?m=" + encodeURIComponent(codigo);
 function senhaNova(){
   const letras = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789", b = new Uint8Array(10); crypto.getRandomValues(b);
   return [...b].map(x=>letras[x % letras.length]).join("");
@@ -6867,7 +6869,7 @@ async function hashSenhaPortal(senha){
   const b64 = (u) => btoa(String.fromCharCode(...u));
   return `pbkdf2$150000$${b64(sal)}$${b64(bits)}`;
 }
-const mensagemAcesso = (a, senha) => `Oi! Criei uma área só da ${a.marca} para acompanhar nossos projetos: lá você aprova os roteiros e conteúdos e vê o histórico de cada um.\n\nEndereço: ${PORTAL_URL}\nLogin: ${a.login}\nSenha: ${senha}\n\nQualquer dúvida, me chama.`;
+const mensagemAcesso = (a, senha) => `Oi! Criei uma área só da ${a.marca} para acompanhar nossos projetos: lá você aprova os roteiros e conteúdos e vê o histórico de cada um.\n\nLink: ${linkPortal(a.login)}\nSenha: ${senha}\n\nQualquer dúvida, me chama.`;
 // acesso da marca deste job (mesmo nome de marca), para o job entrar sozinho na pasta ao enviar o roteiro
 async function acessoDaMarca(marca){
   const k = normMarcaPortal(marca); if(!k) return null;
@@ -6887,8 +6889,6 @@ async function ligarJobNaPasta(job, acessoId){
 function AcessoModal({acesso, jobs, ligados, onClose, onSalvo, onJob}){
   const novo = !acesso;
   const [marca,setMarca] = useState(acesso ? acesso.marca : "");
-  const [login,setLogin] = useState(acesso ? acesso.login : "");
-  const [loginMexido,setLoginMexido] = useState(!!acesso);
   const [senha,setSenha] = useState(novo ? senhaNova() : "");
   const [marcados,setMarcados] = useState(()=>new Set(ligados));
   const [erro,setErro] = useState("");
@@ -6900,25 +6900,23 @@ function AcessoModal({acesso, jobs, ligados, onClose, onSalvo, onJob}){
   const daMarca = jobs.filter(j=>(k && normMarcaPortal(j.marca)===k && j.status!=="Cancelado") || marcados.has(j.id));
   function trocarMarca(v){
     setMarca(v);
-    if(!loginMexido) setLogin(loginSugerido(v));
     const kk = normMarcaPortal(v);
     if(novo) setMarcados(new Set(jobs.filter(j=>kk && normMarcaPortal(j.marca)===kk && !isHistorico(j) && j.status!=="Cancelado").map(j=>j.id)));
   }
   async function salvar(){
     setErro("");
-    const lg = login.trim().toLowerCase();
     if(!marca.trim()) return setErro("Escreva o nome da marca.");
-    if(!/^[a-z0-9._@-]{3,80}$/.test(lg)) return setErro("O login precisa de 3 letras ou mais, sem espaço nem acento.");
     if(senha && senha.length < 8) return setErro("A senha precisa de 8 caracteres ou mais.");
     if(novo && !senha) return setErro("Crie uma senha.");
     setOcupado(true);
     try{
-      const dados = {marca:marca.trim(), login:lg};
+      const dados = {marca:marca.trim()};
+      if(novo) dados.login = codigoPortal(marca);
       if(senha) dados.senha_hash = await hashSenhaPortal(senha);
       const r = novo
         ? await supabaseClient.from("portal_marcas").insert(dados).select("id, marca, login, ativo, ultimo_acesso, criado_em").single()
         : await supabaseClient.from("portal_marcas").update(dados).eq("id", acesso.id).select("id, marca, login, ativo, ultimo_acesso, criado_em").single();
-      if(r.error){ setOcupado(false); return setErro(/duplicate|unique/i.test(r.error.message||"") ? "Já existe um acesso com esse login. Escolha outro." : "Não consegui salvar agora. Tente de novo."); }
+      if(r.error){ setOcupado(false); return setErro(/duplicate|unique/i.test(r.error.message||"") ? "Não consegui criar o link. Toque em Salvar de novo." : "Não consegui salvar agora. Tente de novo."); }
       const a = r.data;
       // senha trocada: quem estava dentro precisa entrar de novo
       if(!novo && senha) await supabaseClient.from("portal_sessoes").delete().eq("marca_id", a.id);
@@ -6940,14 +6938,14 @@ function AcessoModal({acesso, jobs, ligados, onClose, onSalvo, onJob}){
           <input list="portal-marcas" value={marca} onChange={e=>trocarMarca(e.target.value)} placeholder="Ex.: SBP"/>
           <datalist id="portal-marcas">{marcas.map(m=><option key={m} value={m}/>)}</datalist>
         </Field>
-        <Field label="Login da marca"><input value={login} onChange={e=>{ setLogin(e.target.value); setLoginMexido(true); }} autoCapitalize="none" spellCheck={false} placeholder="ex.: sbp"/></Field>
+        {!novo && <Field label="Link da marca"><div className="apv-link">{linkPortal(acesso.login)}</div></Field>}
         <Field label={novo ? "Senha" : "Nova senha (deixe vazio para manter a atual)"}>
           <div style={{display:"flex", gap:8}}>
             <input value={senha} onChange={e=>setSenha(e.target.value)} autoComplete="new-password" spellCheck={false} style={{flex:1, minWidth:0}}/>
             <button type="button" className="btn btn-ghost btn-sm" onClick={()=>setSenha(senhaNova())}><Icon name="autorenew" size={15}/>Gerar</button>
           </div>
         </Field>
-        <div style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-4}}>A senha não fica guardada no painel. Depois de salvar, aparece a mensagem pronta para mandar para a marca.</div>
+        <div style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-4}}>{novo ? "O link da marca é criado ao salvar. " : ""}A senha não fica guardada no painel. Depois de salvar, aparece a mensagem pronta com o link e a senha para mandar para a marca.</div>
         <div className="field"><label>Projetos na pasta da marca</label>
           {daMarca.length===0 && <div style={{fontSize:13.5, color:"var(--graphite-soft)"}}>{k ? "Nenhum job com esse nome de marca." : "Escolha a marca para ver os jobs."}</div>}
           <div style={{display:"flex", flexDirection:"column", gap:6}}>
@@ -6990,6 +6988,8 @@ function AcessosMarcas({jobs, onJob}){
     carregar();
   }
   const ligadosDe = (id) => ligacoes.filter(l=>l.portal_marca_id===id).map(l=>l.job_id);
+  const [copiado,setCopiado] = useState("");
+  async function copiarLink(a){ try{ await navigator.clipboard.writeText(linkPortal(a.login)); setCopiado(a.id); setTimeout(()=>setCopiado(""), 1800); }catch(e){ await painelDialogo.texto("Copie o link da marca:", linkPortal(a.login)); } }
   return (
     <div className="apv-acessos">
       <div className="apv-acessos-topo">
@@ -6997,16 +6997,17 @@ function AcessosMarcas({jobs, onJob}){
         <button type="button" className="btn btn-primary btn-sm" onClick={()=>setEditando({})}><Icon name="person_add" size={15}/>Novo acesso</button>
       </div>
       {aberto && <>
-        <div style={{fontSize:13, color:"var(--graphite-soft)"}}>Cada marca entra em <a href={PORTAL_URL} target="_blank" rel="noopener">{PORTAL_URL.replace(/^https?:\/\//,"")}</a> com login e senha e vê só os projetos dela. Roteiros de plataforma, sem contato com a marca, continuam pelo Google Doc.</div>
+        <div style={{fontSize:13, color:"var(--graphite-soft)"}}>Cada marca recebe um link próprio e entra só com a senha. Ela vê apenas os projetos dela. Roteiros de plataforma, sem contato com a marca, continuam pelo Google Doc.</div>
         {lista && lista.length===0 && <div className="apv-vazio">Nenhuma marca com acesso ainda.</div>}
         {lista && lista.length>0 && <div className="apv-acessos-lista">
           {lista.map(a=>{ const n = ligadosDe(a.id).length; return (
             <div key={a.id} className={"apv-acesso"+(a.ativo?"":" off")}>
               <div style={{flex:1, minWidth:0}}>
                 <div><b>{a.marca}</b> <span className="apv-selo" style={a.ativo?{background:"#e4eee2", color:"#4f7a54"}:{}}>{a.ativo?"Ligado":"Desligado"}</span></div>
-                <div className="apv-linha">Login {a.login} · {n} {n===1?"projeto":"projetos"} · {a.ultimo_acesso ? "entrou "+apvHa(a.ultimo_acesso) : "ainda não entrou"}</div>
+                <div className="apv-linha">{n} {n===1?"projeto":"projetos"} · {a.ultimo_acesso ? "entrou "+apvHa(a.ultimo_acesso) : "ainda não entrou"}</div>
               </div>
               <div className="apv-botoes">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={()=>copiarLink(a)}><Icon name={copiado===a.id?"check":"content_copy"} size={15}/>{copiado===a.id?"Link copiado":"Copiar link"}</button>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={()=>setEditando(a)}><Icon name="edit" size={15}/>Editar</button>
                 <a className="btn btn-ghost btn-sm" href={PORTAL_URL+"?previa="+a.id} target="_blank" rel="noopener"><Icon name="visibility" size={15}/>Ver como a marca vê</a>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={()=>ligar(a)}><Icon name={a.ativo?"lock":"lock_open"} size={15}/>{a.ativo?"Desligar":"Ligar"}</button>
