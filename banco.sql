@@ -679,3 +679,37 @@ create table if not exists public.moodboards (
 alter table public.moodboards enable row level security;
 drop policy if exists "dona faz tudo" on public.moodboards;
 create policy "dona faz tudo" on public.moodboards for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+
+-- =====================================================================
+-- ÁREA DO CLIENTE (nov/2026): login da marca em /cliente/, cada marca vê só a pasta dela.
+-- portal_marcas: um acesso por marca (senha em PBKDF2 "pbkdf2$voltas$sal$hash", calculada no painel).
+-- portal_sessoes: sessões abertas (só o sha256 do código). A marca fala só com a Edge Function portal-cliente.
+-- aprovacao_links.portal_marca_id: jobs que entram na pasta; resumo = "1 Reels · 2 stories".
+-- =====================================================================
+create table if not exists public.portal_marcas (
+  id uuid primary key default gen_random_uuid(),
+  marca text not null,
+  login text not null unique check (login = lower(login) and length(login) between 3 and 80),
+  senha_hash text not null,
+  ativo boolean not null default true,
+  falhas integer not null default 0,
+  bloqueado_ate timestamptz,
+  ultimo_acesso timestamptz,
+  criado_em timestamptz not null default now()
+);
+create table if not exists public.portal_sessoes (
+  token_hash text primary key,
+  marca_id uuid not null references public.portal_marcas(id) on delete cascade,
+  criado_em timestamptz not null default now(),
+  expira_em timestamptz not null
+);
+create index if not exists portal_sessoes_marca on public.portal_sessoes (marca_id);
+alter table public.aprovacao_links add column if not exists portal_marca_id uuid references public.portal_marcas(id) on delete set null;
+alter table public.aprovacao_links add column if not exists resumo text not null default '';
+create index if not exists aprovacao_links_portal on public.aprovacao_links (portal_marca_id);
+alter table public.portal_marcas enable row level security;
+alter table public.portal_sessoes enable row level security;
+drop policy if exists "dona faz tudo" on public.portal_marcas;
+drop policy if exists "dona faz tudo" on public.portal_sessoes;
+create policy "dona faz tudo" on public.portal_marcas for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());
+create policy "dona faz tudo" on public.portal_sessoes for all to authenticated using (public.e_a_dona()) with check (public.e_a_dona());

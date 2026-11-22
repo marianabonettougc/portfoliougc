@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611162230"></script>
-<script src="../../js/dialogos.js?v=202611162230"></script>
-<script src="../../js/metricool-ig.js?v=202611162230"></script>
-<script src="../../js/corretor.js?v=202611162230"></script>
+<script src="../../js/banco.js?v=202611220001"></script>
+<script src="../../js/dialogos.js?v=202611220001"></script>
+<script src="../../js/metricool-ig.js?v=202611220001"></script>
+<script src="../../js/corretor.js?v=202611220001"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -888,6 +888,16 @@
   .apv-hist time{ color:var(--graphite-soft); font-size:12.5px; }
   .apv-hist q{ display:block; quotes:none; color:var(--graphite-soft); white-space:pre-wrap; }
   .apv-erro{ color:#b8473a; font-size:13.5px; }
+  .apv-acessos{ background:#fffdf9; border:1px solid rgba(107,74,53,.14); border-radius:18px; padding:14px 16px; display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .apv-acessos-topo{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .apv-acessos-titulo{ flex:1; min-width:0; display:flex; align-items:center; gap:8px; border:0; background:none; padding:0; font:inherit; color:var(--graphite); cursor:pointer; text-align:left; }
+  .apv-acessos-titulo strong{ font-family:"DM Serif Display", Georgia, serif; font-weight:400; font-size:20px; color:#705548; }
+  .apv-acessos-titulo span{ font-size:12.5px; color:var(--graphite-soft); }
+  .apv-acessos-lista{ display:flex; flex-direction:column; gap:8px; }
+  .apv-acesso{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; border:1px solid var(--line); border-radius:14px; padding:10px 12px; background:#fff; }
+  .apv-acesso.off{ opacity:.65; }
+  .apv-check{ display:flex; gap:9px; align-items:flex-start; font-size:13.5px; font-weight:400 !important; cursor:pointer; border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:#fff; }
+  .apv-check input{ margin-top:3px; accent-color:#6b4a35; flex:none; }
   .org-apv{ margin-top:6px; }
   .apv-resumo{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
   .apv-resumo div{ background:var(--card-bg); border:1px solid var(--line); border-top:3px solid var(--wine); border-radius:14px; padding:10px 14px; }
@@ -5109,6 +5119,15 @@ async function buscarRespostasAprovacao(updateState){
 }
 // envia o roteiro do job para a marca: guarda a versão, cria/atualiza o link e devolve o job já em "Aprovação de Roteiro"
 // (null = ela desistiu na confirmação; erro com .aviso = mensagem para mostrar)
+// job ainda fora de pasta: entra na Área do cliente da marca com o mesmo nome (se ela tiver acesso)
+async function apvPastaDaMarca(job){
+  try{
+    const { data: l } = await supabaseClient.from("aprovacao_links").select("portal_marca_id").eq("job_id", job.id).maybeSingle();
+    if(!l || l.portal_marca_id) return;
+    const a = await acessoDaMarca(job.marca);
+    if(a) await supabaseClient.from("aprovacao_links").update({portal_marca_id:a.id}).eq("job_id", job.id);
+  }catch(e){ console.warn("pasta da marca", e); }
+}
 async function apvEnviarRoteiro(job){
   const aviso = (m) => { const e = new Error(m); e.aviso = true; return e; };
   const docAba = String(job.docAba||"").trim();
@@ -5123,13 +5142,15 @@ async function apvEnviarRoteiro(job){
     const ap0 = job.aprovacao || {}, token0 = ap0.token || apvToken();
     const l0 = await supabaseClient.from("aprovacao_links").upsert({job_id:job.id, token_hash:await apvHash(token0), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:docAba}, {onConflict:"job_id"});
     if(l0.error) throw l0.error;
+    await apvPastaDaMarca(job);
     return {...job, aprovacao:{...ap0, token:token0}};
   }
   if(ult && ult.situacao==="enviado" && !(await painelDialogo.confirmar(`A marca ainda não respondeu a versão ${ult.versao}. Enviar uma versão nova mesmo assim? A anterior fica guardada no histórico.`, {ok:"Enviar versão nova"}))) return null;
   if(ult && ult.situacao==="aprovado" && !(await painelDialogo.confirmar(`A versão ${ult.versao} já foi aprovada. Enviar uma versão nova para a marca aprovar de novo?`, {ok:"Enviar versão nova"}))) return null;
   const ap = job.aprovacao || {}, token = ap.token || apvToken();
-  const l = await supabaseClient.from("aprovacao_links").upsert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:docAba||null}, {onConflict:"job_id"});
+  const l = await supabaseClient.from("aprovacao_links").upsert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:docAba||null, resumo:resumoEntregas(job)||""}, {onConflict:"job_id"});
   if(l.error) throw l.error;
+  await apvPastaDaMarca(job);
   const versao = anteriores.reduce((m,e)=>Math.max(m, e.versao), 0) + 1, agora = new Date().toISOString();
   const e = await supabaseClient.from("aprovacao_envios").insert({job_id:job.id, tipo:"roteiro", versao, titulo:String(job.roteiroTitulo||"").slice(0,200), conteudo, enviado_em:agora});
   if(e.error) throw e.error;
@@ -5206,16 +5227,17 @@ function AprovacaoJob({f, setF}){
   const [ocupado,setOcupado] = useState(false);
   const [erro,setErro] = useState("");
   const [copiado,setCopiado] = useState(false);
+  const [pasta,setPasta] = useState(null); // acesso da marca (Área do cliente) em que este job aparece
   const ap = f.aprovacao || {}, rot = ap.roteiro || null;
   async function carregar(){
     if(!f.id) return;
     const [a,b,c] = await Promise.all([
       supabaseClient.from("aprovacao_envios").select("id, tipo, versao, situacao, enviado_em, respondido_em").eq("job_id", f.id).order("enviado_em", {ascending:true}),
       supabaseClient.from("aprovacao_eventos").select("id, envio_id, tipo, autor, texto, gancho, criado_em").eq("job_id", f.id).order("criado_em", {ascending:true}),
-      supabaseClient.from("aprovacao_links").select("ativo").eq("job_id", f.id).maybeSingle()
+      supabaseClient.from("aprovacao_links").select("ativo, portal_marca_id, portal_marcas(marca, login, ativo)").eq("job_id", f.id).maybeSingle()
     ]);
     const es = a.data || [], evs = b.data || [];
-    setEnvios(es); setEventos(evs); if(c.data) setAtivo(!!c.data.ativo);
+    setEnvios(es); setEventos(evs); if(c.data){ setAtivo(!!c.data.ativo); setPasta(c.data.portal_marcas || null); }
     // resposta nova da marca com o job aberto: entra aqui na hora (já conta como vista)
     const ult = es.filter(e=>e.tipo==="roteiro").slice(-1)[0];
     if(ult && ult.situacao!=="enviado"){
@@ -5284,6 +5306,7 @@ function AprovacaoJob({f, setF}){
         <button type="button" className="btn btn-primary btn-sm" disabled={ocupado} onClick={enviar}><Icon name="send" size={15}/>{ocupado ? "Enviando..." : (docAba ? (mudouDepois ? "Pedir nova aprovação" : "Marcar como enviado para a marca") : (mudouDepois ? "Enviar nova versão para aprovação" : "Enviar roteiro para aprovação"))}</button>
       </div>}
       {erro && <div className="apv-erro">{erro}</div>}
+      {pasta && <div style={{fontSize:13, background:"#e4eee2", color:"#3f6644", borderRadius:10, padding:"8px 11px"}}>Este job aparece na Área do cliente da {pasta.marca} (login {pasta.login}{pasta.ativo?"":", acesso desligado"}). A marca aprova por lá, sem precisar do link.</div>}
       {docAba && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>O roteiro fica no Google Doc. Quando a marca comentar ou aprovar pelo link, o status muda aqui sozinho e chega notificação no seu celular.</div>}
       {!docAba && !ap.token && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>Ao enviar, o painel guarda esta versão do roteiro, cria o link exclusivo deste job e muda o status para Aprovação de Roteiro. Você copia o link e manda para a marca.</div>}
       {linhas.length>0 && <div className="apv-hist">{linhas.map((l,i)=><div key={i}><time>{apvQuando(l.em)}</time><span>{l.texto}{l.cita ? <q>{l.cita}</q> : null}</span></div>)}</div>}
@@ -6827,6 +6850,177 @@ Se tiver algum feedback ou quiser fechar mais alguma coisa, me chama 💛`;
   );
 }
 
+/* ---------- ÁREA DO CLIENTE (nov/2026): login da marca, cada marca vê só a pasta dela ----------
+   portal_marcas: um acesso por marca (login + senha em PBKDF2 calculada aqui no navegador; a senha em si não fica guardada).
+   aprovacao_links.portal_marca_id: quais jobs entram na pasta daquela marca. A marca entra em /cliente/ e fala só com a função portal-cliente. */
+const PORTAL_URL = new URL("../../cliente/", location.href).href;
+const normMarcaPortal = (m) => String(marcaBase(m)||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+const loginSugerido = (m) => normMarcaPortal(m).replace(/\s+/g,"-").slice(0,40) || "marca";
+function senhaNova(){
+  const letras = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789", b = new Uint8Array(10); crypto.getRandomValues(b);
+  return [...b].map(x=>letras[x % letras.length]).join("");
+}
+async function hashSenhaPortal(senha){
+  const sal = new Uint8Array(16); crypto.getRandomValues(sal);
+  const chave = await crypto.subtle.importKey("raw", new TextEncoder().encode(senha), "PBKDF2", false, ["deriveBits"]);
+  const bits = new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt:sal, iterations:150000}, chave, 256));
+  const b64 = (u) => btoa(String.fromCharCode(...u));
+  return `pbkdf2$150000$${b64(sal)}$${b64(bits)}`;
+}
+const mensagemAcesso = (a, senha) => `Oi! Criei uma área só da ${a.marca} para acompanhar nossos projetos: lá você aprova os roteiros e conteúdos e vê o histórico de cada um.\n\nEndereço: ${PORTAL_URL}\nLogin: ${a.login}\nSenha: ${senha}\n\nQualquer dúvida, me chama.`;
+// acesso da marca deste job (mesmo nome de marca), para o job entrar sozinho na pasta ao enviar o roteiro
+async function acessoDaMarca(marca){
+  const k = normMarcaPortal(marca); if(!k) return null;
+  const { data } = await supabaseClient.from("portal_marcas").select("id, marca, ativo");
+  return (data||[]).find(a=>a.ativo && normMarcaPortal(a.marca)===k) || null;
+}
+// garante o link do job no banco e liga (ou tira) da pasta da marca. Devolve o job com o token (quando foi criado agora)
+async function ligarJobNaPasta(job, acessoId){
+  const ap = job.aprovacao || {}, token = ap.token || apvToken();
+  const { data: ja } = await supabaseClient.from("aprovacao_links").select("job_id").eq("job_id", job.id).maybeSingle();
+  const r = ja
+    ? await supabaseClient.from("aprovacao_links").update({portal_marca_id:acessoId, resumo:resumoEntregas(job)||""}).eq("job_id", job.id)
+    : await supabaseClient.from("aprovacao_links").insert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:String(job.docAba||"").trim()||null, portal_marca_id:acessoId, resumo:resumoEntregas(job)||""});
+  if(r.error) throw r.error;
+  return ap.token ? job : {...job, aprovacao:{...ap, token}};
+}
+function AcessoModal({acesso, jobs, ligados, onClose, onSalvo, onJob}){
+  const novo = !acesso;
+  const [marca,setMarca] = useState(acesso ? acesso.marca : "");
+  const [login,setLogin] = useState(acesso ? acesso.login : "");
+  const [loginMexido,setLoginMexido] = useState(!!acesso);
+  const [senha,setSenha] = useState(novo ? senhaNova() : "");
+  const [marcados,setMarcados] = useState(()=>new Set(ligados));
+  const [erro,setErro] = useState("");
+  const [ocupado,setOcupado] = useState(false);
+  const [feito,setFeito] = useState(null); // {acesso, senha}
+  const marcas = [...new Set(jobs.map(j=>marcaBase(j.marca)).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const k = normMarcaPortal(marca);
+  // jobs da marca primeiro; os já ligados continuam na lista mesmo se o nome mudar
+  const daMarca = jobs.filter(j=>(k && normMarcaPortal(j.marca)===k && j.status!=="Cancelado") || marcados.has(j.id));
+  function trocarMarca(v){
+    setMarca(v);
+    if(!loginMexido) setLogin(loginSugerido(v));
+    const kk = normMarcaPortal(v);
+    if(novo) setMarcados(new Set(jobs.filter(j=>kk && normMarcaPortal(j.marca)===kk && !isHistorico(j) && j.status!=="Cancelado").map(j=>j.id)));
+  }
+  async function salvar(){
+    setErro("");
+    const lg = login.trim().toLowerCase();
+    if(!marca.trim()) return setErro("Escreva o nome da marca.");
+    if(!/^[a-z0-9._@-]{3,80}$/.test(lg)) return setErro("O login precisa de 3 letras ou mais, sem espaço nem acento.");
+    if(senha && senha.length < 8) return setErro("A senha precisa de 8 caracteres ou mais.");
+    if(novo && !senha) return setErro("Crie uma senha.");
+    setOcupado(true);
+    try{
+      const dados = {marca:marca.trim(), login:lg};
+      if(senha) dados.senha_hash = await hashSenhaPortal(senha);
+      const r = novo
+        ? await supabaseClient.from("portal_marcas").insert(dados).select("id, marca, login, ativo, ultimo_acesso, criado_em").single()
+        : await supabaseClient.from("portal_marcas").update(dados).eq("id", acesso.id).select("id, marca, login, ativo, ultimo_acesso, criado_em").single();
+      if(r.error){ setOcupado(false); return setErro(/duplicate|unique/i.test(r.error.message||"") ? "Já existe um acesso com esse login. Escolha outro." : "Não consegui salvar agora. Tente de novo."); }
+      const a = r.data;
+      // senha trocada: quem estava dentro precisa entrar de novo
+      if(!novo && senha) await supabaseClient.from("portal_sessoes").delete().eq("marca_id", a.id);
+      for(const j of jobs){
+        const quer = marcados.has(j.id), tinha = ligados.includes(j.id);
+        if(quer && !tinha){ const n = await ligarJobNaPasta(j, a.id); if(n!==j) onJob(n); }
+        else if(!quer && tinha) await supabaseClient.from("aprovacao_links").update({portal_marca_id:null}).eq("job_id", j.id).eq("portal_marca_id", a.id);
+      }
+      onSalvo();
+      if(senha) setFeito({acesso:a, senha}); else onClose();
+    }catch(e){ console.warn(e); setErro("Não consegui salvar agora. Tente de novo."); }
+    setOcupado(false);
+  }
+  if(feito) return <MessageModal title={`Acesso da ${feito.acesso.marca} pronto`} text={mensagemAcesso(feito.acesso, feito.senha)} onClose={onClose}/>;
+  return (
+    <Modal title={novo ? "Novo acesso de marca" : `Acesso da ${acesso.marca}`} onClose={onClose}>
+      <div style={{display:"flex", flexDirection:"column", gap:12}}>
+        <Field label="Marca">
+          <input list="portal-marcas" value={marca} onChange={e=>trocarMarca(e.target.value)} placeholder="Ex.: SBP"/>
+          <datalist id="portal-marcas">{marcas.map(m=><option key={m} value={m}/>)}</datalist>
+        </Field>
+        <Field label="Login da marca"><input value={login} onChange={e=>{ setLogin(e.target.value); setLoginMexido(true); }} autoCapitalize="none" spellCheck={false} placeholder="ex.: sbp"/></Field>
+        <Field label={novo ? "Senha" : "Nova senha (deixe vazio para manter a atual)"}>
+          <div style={{display:"flex", gap:8}}>
+            <input value={senha} onChange={e=>setSenha(e.target.value)} autoComplete="new-password" spellCheck={false} style={{flex:1, minWidth:0}}/>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={()=>setSenha(senhaNova())}><Icon name="autorenew" size={15}/>Gerar</button>
+          </div>
+        </Field>
+        <div style={{fontSize:13, color:"var(--graphite-soft)", marginTop:-4}}>A senha não fica guardada no painel. Depois de salvar, aparece a mensagem pronta para mandar para a marca.</div>
+        <div className="field"><label>Projetos na pasta da marca</label>
+          {daMarca.length===0 && <div style={{fontSize:13.5, color:"var(--graphite-soft)"}}>{k ? "Nenhum job com esse nome de marca." : "Escolha a marca para ver os jobs."}</div>}
+          <div style={{display:"flex", flexDirection:"column", gap:6}}>
+            {daMarca.map(j=><label key={j.id} className="apv-check">
+              <input type="checkbox" checked={marcados.has(j.id)} onChange={()=>setMarcados(s=>{ const n = new Set(s); n.has(j.id)?n.delete(j.id):n.add(j.id); return n; })}/>
+              <span><b>{j.marca}</b>{[j.produto, resumoEntregas(j), j.status].filter(Boolean).length ? " · "+[j.produto, resumoEntregas(j), j.status].filter(Boolean).join(" · ") : ""}</span>
+            </label>)}
+          </div>
+          <div style={{fontSize:12.5, color:"var(--graphite-soft)", marginTop:6}}>Jobs novos dessa marca entram sozinhos na pasta quando você envia o roteiro para aprovação.</div>
+        </div>
+        {erro && <div className="apv-erro">{erro}</div>}
+        <button type="button" className="btn btn-primary" style={{justifyContent:"center"}} disabled={ocupado} onClick={salvar}><Icon name="check" size={16}/>{ocupado ? "Salvando..." : "Salvar acesso"}</button>
+      </div>
+    </Modal>
+  );
+}
+function AcessosMarcas({jobs, onJob}){
+  const [lista,setLista] = useState(null);
+  const [ligacoes,setLigacoes] = useState([]); // [{job_id, portal_marca_id}]
+  const [editando,setEditando] = useState(null); // {} = novo, acesso = editar
+  const [aberto,setAberto] = useState(()=>{ try{ return localStorage.getItem("portalAcessosAberto")!=="0"; }catch(e){ return true; } });
+  async function carregar(){
+    const [a,b] = await Promise.all([
+      supabaseClient.from("portal_marcas").select("id, marca, login, ativo, ultimo_acesso, criado_em").order("marca"),
+      supabaseClient.from("aprovacao_links").select("job_id, portal_marca_id").not("portal_marca_id","is",null)
+    ]);
+    setLista(a.data||[]); setLigacoes(b.data||[]);
+  }
+  useEffect(()=>{ carregar(); },[]);
+  function alternarAberto(){ setAberto(v=>{ try{ localStorage.setItem("portalAcessosAberto", v?"0":"1"); }catch(e){} return !v; }); }
+  async function ligar(a){
+    if(a.ativo && !(await painelDialogo.confirmar(`Desligar o acesso da ${a.marca}? Ela deixa de conseguir entrar até você ligar de novo.`, {ok:"Desligar", perigo:true}))) return;
+    await supabaseClient.from("portal_marcas").update({ativo:!a.ativo}).eq("id", a.id);
+    if(a.ativo) await supabaseClient.from("portal_sessoes").delete().eq("marca_id", a.id);
+    carregar();
+  }
+  async function excluir(a){
+    if(!(await painelDialogo.confirmar(`Excluir o acesso da ${a.marca}? O login deixa de existir. Os jobs, roteiros e respostas continuam no painel.`, {ok:"Excluir", perigo:true}))) return;
+    await supabaseClient.from("portal_marcas").delete().eq("id", a.id);
+    carregar();
+  }
+  const ligadosDe = (id) => ligacoes.filter(l=>l.portal_marca_id===id).map(l=>l.job_id);
+  return (
+    <div className="apv-acessos">
+      <div className="apv-acessos-topo">
+        <button type="button" className="apv-acessos-titulo" onClick={alternarAberto}><Icon name={aberto?"expand_less":"expand_more"} size={18}/><strong>Área do cliente</strong><span>{lista ? `${lista.length} ${lista.length===1?"marca com acesso":"marcas com acesso"}` : ""}</span></button>
+        <button type="button" className="btn btn-primary btn-sm" onClick={()=>setEditando({})}><Icon name="person_add" size={15}/>Novo acesso</button>
+      </div>
+      {aberto && <>
+        <div style={{fontSize:13, color:"var(--graphite-soft)"}}>Cada marca entra em <a href={PORTAL_URL} target="_blank" rel="noopener">{PORTAL_URL.replace(/^https?:\/\//,"")}</a> com login e senha e vê só os projetos dela. Roteiros de plataforma, sem contato com a marca, continuam pelo Google Doc.</div>
+        {lista && lista.length===0 && <div className="apv-vazio">Nenhuma marca com acesso ainda.</div>}
+        {lista && lista.length>0 && <div className="apv-acessos-lista">
+          {lista.map(a=>{ const n = ligadosDe(a.id).length; return (
+            <div key={a.id} className={"apv-acesso"+(a.ativo?"":" off")}>
+              <div style={{flex:1, minWidth:0}}>
+                <div><b>{a.marca}</b> <span className="apv-selo" style={a.ativo?{background:"#e4eee2", color:"#4f7a54"}:{}}>{a.ativo?"Ligado":"Desligado"}</span></div>
+                <div className="apv-linha">Login {a.login} · {n} {n===1?"projeto":"projetos"} · {a.ultimo_acesso ? "entrou "+apvHa(a.ultimo_acesso) : "ainda não entrou"}</div>
+              </div>
+              <div className="apv-botoes">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={()=>setEditando(a)}><Icon name="edit" size={15}/>Editar</button>
+                <a className="btn btn-ghost btn-sm" href={PORTAL_URL+"?previa="+a.id} target="_blank" rel="noopener"><Icon name="visibility" size={15}/>Ver como a marca vê</a>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={()=>ligar(a)}><Icon name={a.ativo?"lock":"lock_open"} size={15}/>{a.ativo?"Desligar":"Ligar"}</button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={()=>excluir(a)}><Icon name="delete" size={15}/>Excluir</button>
+              </div>
+            </div>
+          ); })}
+        </div>}
+      </>}
+      {editando && <AcessoModal acesso={editando.id ? editando : null} jobs={jobs} ligados={editando.id ? ligadosDe(editando.id) : []} onJob={onJob} onSalvo={carregar} onClose={()=>setEditando(null)}/>}
+    </div>
+  );
+}
+
 // CRM de aprovações: página própria no menu (Marcas e jobs > Aprovações)
 function PaginaAprovacoes({state, updateState}){
   const [editing,setEditing] = useState(null);
@@ -6837,6 +7031,7 @@ function PaginaAprovacoes({state, updateState}){
         <h1 className="page-title">Aprovações</h1>
         <p className="page-sub">Envie o roteiro para a marca por um link e acompanhe aqui: o que falta enviar, o que está com a marca, os ajustes pedidos e o que já foi aprovado.</p>
       </div></div>
+      <AcessosMarcas jobs={state.jobs||[]} onJob={persistJob}/>
       <CentralAprovacoes jobs={state.jobs||[]} onAbrir={(j)=>setEditing(j)} onSalvar={persistJob}/>
       {editing && <JobModal state={state} updateState={updateState} initial={(state.jobs||[]).find(j=>j.id===editing.id) || editing} onClose={()=>setEditing(null)} onSave={(job)=>{ persistJob(job); setEditing(null); }} onAutosave={persistJob}/>}
     </div>
