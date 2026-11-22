@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611220003"></script>
-<script src="../../js/dialogos.js?v=202611220003"></script>
-<script src="../../js/metricool-ig.js?v=202611220003"></script>
-<script src="../../js/corretor.js?v=202611220003"></script>
+<script src="../../js/banco.js?v=202611220004"></script>
+<script src="../../js/dialogos.js?v=202611220004"></script>
+<script src="../../js/metricool-ig.js?v=202611220004"></script>
+<script src="../../js/corretor.js?v=202611220004"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5304,9 +5304,6 @@ function AprovacaoJob({f, setF}){
         <Field label="Nome da aba no Google Doc (só para este caso)"><input value={f.docAba||""} onChange={e=>{ const v = e.target.value; setF(p=>({...p, docAba:v})); }} onBlur={salvarAba} placeholder="Ex.: MRV - REELS (igual ao nome da aba no Doc)"/></Field>
         <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Deixe vazio quando a marca aprova pela Área do cliente: o roteiro do Doc já vem para cá e vai para ela aprovar.</div>
       </details>
-      <div className="apv-botoes">
-        <button type="button" className="btn btn-ghost btn-sm" onClick={abrirMoodboard}><Icon name="dashboard" size={15}/>Criar mood board deste job</button>
-      </div>
       {!docAba && <Field label="Produto (aparece para a marca)"><input value={f.produto||""} onChange={e=>{ const v = e.target.value; setF(p=>({...p, produto:v})); }} placeholder="Ex.: Kit Zip Vácuo"/></Field>}
       {docAba && <>
         <div className="apv-link">{apvLinkDoc(docAba)}</div>
@@ -5987,8 +5984,8 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
           <div className="job-form-section-heading"><span className="job-form-index">01</span><div><strong>Identificação</strong><small>Marca, modalidade e classificação do trabalho</small></div></div>
           <Field label="Marca"><input value={f.marca} onChange={e=>set("marca",e.target.value)} placeholder="Nome da marca"/></Field>
           <AreaClienteJob f={f} setF={setF}/>
-          <div className="job-origem-fechamento" style={{border:"1px solid var(--line)",borderRadius:14,padding:14,marginBottom:16,background:"var(--card-bg)"}}>
-            <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>Origem do fechamento</div>
+          <CaixaMin chave="origemFechamento" titulo="Origem do fechamento" resumo={({plataforma:"Plataforma",painel:"Painel de marcas",direto:"Direto com a marca"})[f.origemFechamento]||""}>
+          <div className="job-origem-fechamento">
             <Field label="Como essa ação foi fechada?">
               <select value={f.origemFechamento||""} onChange={e=>setF(p=>({...p,origemFechamento:e.target.value,prospeccaoId:e.target.value==="painel"?(p.prospeccaoId||""):"",plataformasFechamento:e.target.value==="plataforma"?(p.plataformasFechamento||[]):[]}))}>
                 <option value="">Selecione a origem</option>
@@ -6046,6 +6043,7 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
             </div>}
             {f.origemFechamento==="direto" && <Field label="Origem / contato"><input value={f.origemContato||""} onChange={e=>set("origemContato",e.target.value)} placeholder="Ex.: indicação, e-mail, Instagram..."/></Field>}
           </div>
+          </CaixaMin>
           <Field label="UGC ou Publi">
         <div style={{display:"flex", gap:8}}>
           {["UGC","Publi"].map(c=>(
@@ -6116,12 +6114,6 @@ function JobModal({onClose, onSave, onAutosave, initial, state, updateState}){
                 {PAYMENT_METHODS.map(p=><option key={p}>{p}</option>)}
               </select>
             </Field>
-            <SubSecaoJob titulo="Roteiro do conteúdo" aberta={!!f.roteiroConteudo}>
-              <Field label="Roteiro">
-                <textarea className="brief-texto" value={f.roteiroConteudo||""} onChange={e=>{ const v=e.target.value; setF(p=>({...vincularIdRoteiroJob(p), roteiroConteudo:v, roteiroStatus:v.trim() ? (p.roteiroStatus==="Em criação" ? "Pronto" : p.roteiroStatus) : "Em criação"})); }} placeholder="Escreva ou cole o roteiro. Ele ficará sincronizado com a aba Roteiros."/>
-              </Field>
-              <p style={{fontSize:12.5, color:"var(--graphite-soft)", margin:"-4px 0 0"}}>Este campo e a aba Roteiros atualizam o mesmo registro, sem criar cópias independentes.</p>
-            </SubSecaoJob>
             <SubSecaoJob titulo="Tipo de pagamento" aberta={false}>
 
           {[["unico","Pagamento único"],["parcelado","Parcelado"]].map(([val,label])=>(
@@ -7210,6 +7202,20 @@ function RoteiroDoDocJob({f, setF}){
 }
 
 /* ---------- caixa "Área do cliente" no job: cria o acesso da marca (link + senha) e põe o job na pasta dela ---------- */
+function CaixaMin({chave, titulo, resumo, children, estilo}){
+  const [aberta,setAberta] = useState(()=>{ try{ return localStorage.getItem("caixaJob-"+chave)==="1"; }catch(e){ return false; } });
+  const alternar = ()=>setAberta(a=>{ const n=!a; try{ localStorage.setItem("caixaJob-"+chave, n?"1":"0"); }catch(e){} return n; });
+  return (
+    <div style={{border:"1px solid var(--line)",borderRadius:14,padding:"10px 14px",marginBottom:16,background:"var(--card-bg)",...(estilo||{})}}>
+      <button type="button" onClick={alternar} aria-expanded={aberta} style={{all:"unset",cursor:"pointer",display:"flex",alignItems:"center",gap:8,width:"100%",boxSizing:"border-box"}}>
+        <strong style={{fontSize:14,flex:1}}>{titulo}</strong>
+        {!aberta && resumo ? <span style={{fontSize:12.5,color:"var(--graphite-soft)"}}>{resumo}</span> : null}
+        <Icon name={aberta?"expand_less":"expand_more"} size={20}/>
+      </button>
+      {aberta && <div style={{marginTop:10}}>{children}</div>}
+    </div>
+  );
+}
 function AreaClienteJob({f, setF}){
   const [acesso,setAcesso] = useState(undefined); // undefined = carregando, null = não tem
   const [naPasta,setNaPasta] = useState(false);
@@ -7250,6 +7256,7 @@ function AreaClienteJob({f, setF}){
   async function copiar(){ try{ await navigator.clipboard.writeText(linkPortal(acesso.login)); setErro("Link copiado."); setTimeout(()=>setErro(""), 1600); }catch(e){ setErro(linkPortal(acesso.login)); } }
   if(!marca) return null;
   return (
+    <CaixaMin chave="areaCliente" titulo="Área do cliente" resumo={acesso===undefined ? "" : naPasta ? "Ligada" : "Desligada"}>
     <div className="area-cli">
       <label className="area-cli-linha">
         <input type="checkbox" checked={!!naPasta} disabled={ocupado || acesso===undefined} onChange={alternar}/>
@@ -7259,6 +7266,7 @@ function AreaClienteJob({f, setF}){
       {erro && <div className="apv-linha">{erro}</div>}
       {msg && <MessageModal title={`Área da ${msg.acesso.marca} criada`} text={mensagemAcesso(msg.acesso, msg.senha)} onClose={()=>setMsg(null)}/>}
     </div>
+    </CaixaMin>
   );
 }
 
