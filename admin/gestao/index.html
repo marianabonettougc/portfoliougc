@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611222230"></script>
-<script src="../../js/dialogos.js?v=202611222230"></script>
-<script src="../../js/metricool-ig.js?v=202611222230"></script>
-<script src="../../js/corretor.js?v=202611222230"></script>
+<script src="../../js/banco.js?v=202611222245"></script>
+<script src="../../js/dialogos.js?v=202611222245"></script>
+<script src="../../js/metricool-ig.js?v=202611222245"></script>
+<script src="../../js/corretor.js?v=202611222245"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -2248,6 +2248,9 @@ const qtdItens = (lista) => (lista||[]).reduce((s,i)=>s+qtdItem(i), 0);
 // nov/2026: o Escopo do job escolhe as entregas por formato (cada item guarda "formato"); itens antigos sem formato são lidos pelo nome
 const FORMATOS_ESCOPO = [
   {k:"reels", nome:"Reels", um:"Reels", varios:"Reels", tipo:"videos", icone:"videocam"},
+  {k:"vertical", nome:"Vídeo UGC vertical (9:16)", um:"vídeo vertical", varios:"vídeos verticais", tipo:"videos", icone:"stay_current_portrait"},
+  {k:"horizontal", nome:"Vídeo UGC horizontal (16:9)", um:"vídeo horizontal", varios:"vídeos horizontais", tipo:"videos", icone:"stay_current_landscape"},
+  {k:"cta", nome:"CTA extra", um:"CTA extra", varios:"CTAs extras", tipo:"videos", icone:"ads_click"},
   {k:"foto", nome:"Foto", um:"foto", varios:"fotos", tipo:"fotos", icone:"photo_camera"},
   {k:"story", nome:"Story", um:"story", varios:"stories", tipo:"stories", icone:"auto_stories"},
   {k:"carrossel", nome:"Carrossel", um:"carrossel", varios:"carrosséis", tipo:"fotos", icone:"view_carousel"},
@@ -2258,7 +2261,7 @@ const FORMATOS_ESCOPO = [
 function formatoDoItem(it, tipo){
   if(it && it.formato && FORMATOS_ESCOPO.some(x=>x.k===it.formato)) return it.formato;
   const l = String((it && it.label) || "").toLowerCase();
-  if(tipo==="videos"){ if(/^tik ?tok/.test(l)) return "tiktok"; if(/shorts/.test(l)) return "shorts"; if(/^youtube/.test(l)) return "youtube"; return "reels"; }
+  if(tipo==="videos"){ if(/^cta/.test(l)) return "cta"; if(/horizontal/.test(l)) return "horizontal"; if(/vertical/.test(l)) return "vertical"; if(/^tik ?tok/.test(l)) return "tiktok"; if(/shorts/.test(l)) return "shorts"; if(/^youtube/.test(l)) return "youtube"; return "reels"; }
   if(tipo==="fotos") return /^carross/.test(l) ? "carrossel" : "foto";
   return "story";
 }
