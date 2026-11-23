@@ -1,6 +1,7 @@
 // Vídeos guardados no painel (nov/2026, pedido da Mari: ela apaga o vídeo do celular depois de enviar)
 // Bucket privado "videos" do Supabase (só a dona). Vídeo até 20 MB vai como está; maior é reduzido
 // no navegador para 720p (MediaRecorder, leva o tempo do vídeo) antes de subir. Limite por arquivo: 50 MB.
+// guardar(arq, {marcaDagua: "Mari Bonetto"}) sempre converte e grava o nome dela no meio (vídeo de aprovação).
 (function () {
   const BUCKET = "videos";
   const MAX = 50 * 1024 * 1024;
@@ -15,8 +16,24 @@
   const extDoTipo = (t) => (/mp4/.test(t) ? "mp4" : /webm/.test(t) ? "webm" : /quicktime/.test(t) ? "mov" : "mp4");
   const limpo = (s) => String(s || "video").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase().slice(0, 50) || "video";
 
+  // marca d'água de aprovação (nov/2026, pedido da Mari): o nome dela no meio, mais apagado, gravado na imagem
+  function marcaDagua(x, W, H, texto) {
+    x.save();
+    let t = Math.round(Math.min(W, H) * 0.14);
+    x.font = `700 ${t}px Poppins, Arial, sans-serif`;
+    const larg = x.measureText(texto).width || 1;
+    t = Math.max(18, Math.round(t * Math.min(1.6, (W * 0.78) / larg)));
+    x.font = `700 ${t}px Poppins, Arial, sans-serif`;
+    x.textAlign = "center"; x.textBaseline = "middle";
+    x.globalAlpha = 0.34;
+    x.lineWidth = Math.max(2, Math.round(t * 0.045)); x.lineJoin = "round";
+    x.strokeStyle = "rgba(0,0,0,.55)"; x.strokeText(texto, W / 2, H / 2);
+    x.fillStyle = "#ffffff"; x.fillText(texto, W / 2, H / 2);
+    x.restore();
+  }
+
   // reduz para no máximo 720 de largura (ou altura, se deitado), uns 2,2 Mbps; toca o vídeo uma vez, sem som na caixa de som
-  async function reduzir(arq, aoProgresso) {
+  async function reduzir(arq, aoProgresso, marca) {
     const tipo = tipoGravador();
     if (!tipo) throw new Error("Este navegador não consegue reduzir o vídeo. Use o Chrome, o Edge ou o Safari atualizado.");
     const url = URL.createObjectURL(arq);
@@ -50,6 +67,7 @@
       const desenhar = () => {
         if (!vivo) return;
         x.drawImage(v, 0, 0, W, H);
+        if (marca) marcaDagua(x, W, H, marca);
         if (aoProgresso && dur) aoProgresso(Math.min(99, Math.round((v.currentTime / dur) * 100)));
         if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(desenhar); else requestAnimationFrame(desenhar);
       };
@@ -60,6 +78,7 @@
       await new Promise((ok) => { v.onended = ok; });
       vivo = false;
       x.drawImage(v, 0, 0, W, H);
+      if (marca) marcaDagua(x, W, H, marca);
       rec.stop();
       await parou;
       stream.getTracks().forEach((t) => t.stop());
@@ -72,10 +91,11 @@
   }
 
   // devolve o arquivo que vai ser guardado (o original se for leve; senão a versão reduzida)
-  async function preparar(arq, aoProgresso) {
+  // com marcaDagua o vídeo SEMPRE passa pela conversão (a marca d'água fica gravada na imagem)
+  async function preparar(arq, aoProgresso, marca) {
     if (!ehVideo(arq)) return null;
-    if (arq.size <= SEM_REDUZIR) return arq;
-    const b = await reduzir(arq, aoProgresso);
+    if (!marca && arq.size <= SEM_REDUZIR) return arq;
+    const b = await reduzir(arq, aoProgresso, marca);
     if (b.size > MAX) throw new Error("Mesmo reduzido, esse vídeo passou de 50 MB. Envie um trecho mais curto.");
     return b;
   }
@@ -91,8 +111,8 @@
     return { path, tamanho: blob.size };
   }
 
-  async function guardar(arq, { pasta, aoProgresso } = {}) {
-    const b = await preparar(arq, aoProgresso);
+  async function guardar(arq, { pasta, aoProgresso, marcaDagua: marca } = {}) {
+    const b = await preparar(arq, aoProgresso, marca);
     return subir(b, arq.name, pasta);
   }
 

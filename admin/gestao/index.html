@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611222350"></script>
-<script src="../../js/dialogos.js?v=202611222350"></script>
-<script src="../../js/metricool-ig.js?v=202611222350"></script>
-<script src="../../js/corretor.js?v=202611222350"></script>
+<script src="../../js/banco.js?v=202611231400"></script>
+<script src="../../js/dialogos.js?v=202611231400"></script>
+<script src="../../js/metricool-ig.js?v=202611231400"></script>
+<script src="../../js/corretor.js?v=202611231400"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -7165,6 +7165,23 @@ async function apvGarantirLink(job){
   await apvPastaDaMarca(job);
   return {...job, aprovacao:{...ap, token}};
 }
+// Google (Drive e YouTube) pela ligação do painel (js/google-ponte.js, window.parent.painelGoogle)
+const googleDoPainel = () => { try{ return window.parent.painelGoogle || null; }catch(e){ return null; } };
+const MARCA_DAGUA = "Mari Bonetto";
+// pasta do cliente no Drive: "Vídeos UGC aprovação" > nome da Área do cliente (ou a marca do job)
+async function clienteDoDrive(job){
+  try{ const { data } = await supabaseClient.from("aprovacao_links").select("portal_marcas(marca)").eq("job_id", job.id).maybeSingle(); if(data && data.portal_marcas && data.portal_marcas.marca) return data.portal_marcas.marca; }catch(e){}
+  return marcaBase(job.marca) || job.marca;
+}
+// original em alta para o Drive (qualidade cheia); devolve {alta, drive} ou nada se o Google não estiver ligado
+async function apvGuardarAlta(job, arquivo, nome, aoProgresso){
+  const G = googleDoPainel();
+  if(!G || !(await G.ligado())) return null;
+  const pasta = await G.pasta(await clienteDoDrive(job));
+  const alta = await G.enviarAlta(arquivo, pasta.id, nome, aoProgresso);
+  return {alta, drive:{pastaId:pasta.id, url:pasta.url, cliente:pasta.cliente}};
+}
+// o vídeo de uma vez só: o original vai para o Drive e a cópia de aprovação (720p, marca d'água) para a marca
 async function apvEnviarVideo(job, arquivo, obs, aoProgresso){
   const aviso = (m) => { const e = new Error(m); e.aviso = true; return e; };
   if(!String(job.marca||"").trim()) throw aviso("Preencha a marca do job antes de enviar.");
@@ -7174,13 +7191,38 @@ async function apvEnviarVideo(job, arquivo, obs, aoProgresso){
   const { data: ant } = await supabaseClient.from("aprovacao_envios").select("versao, situacao").eq("job_id", job.id).eq("tipo", "video").order("versao", {ascending:true});
   const ult = (ant||[]).slice(-1)[0];
   if(ult && ult.situacao==="enviado" && !(await painelDialogo.confirmar(`A marca ainda não respondeu o vídeo ${ult.versao}. Enviar outro mesmo assim? O anterior fica no histórico.`, {ok:"Enviar"}))) return null;
-  const guardado = await PV.guardar(arquivo, {pasta:"aprovacoes/"+job.id, aoProgresso});
-  let novo = await apvGarantirLink(job);
   const versao = (ant||[]).reduce((m,e)=>Math.max(m, e.versao), 0) + 1, agora = new Date().toISOString();
-  const e = await supabaseClient.from("aprovacao_envios").insert({job_id:job.id, tipo:"video", versao, titulo:String(arquivo.name||"Vídeo").replace(/\.[^.]+$/,"").slice(0,200), conteudo:String(obs||"").trim().slice(0,4000), video:{path:guardado.path, nome:arquivo.name, tamanho:guardado.tamanho}, enviado_em:agora});
+  const prog = {previa:0, drive:null};
+  const avisa = () => aoProgresso && aoProgresso({...prog});
+  const nomeAlta = `${String(job.marca).trim()} - v${versao} - ${arquivo.name}`;
+  let [guardado, noDrive] = await Promise.all([
+    PV.guardar(arquivo, {pasta:"aprovacoes/"+job.id, marcaDagua:MARCA_DAGUA, aoProgresso:(p)=>{ prog.previa = p; avisa(); }}),
+    (async()=>{
+      const G = googleDoPainel(); if(!G || !(await G.ligado())) return null;
+      prog.drive = 0; avisa();
+      try{ const r = await apvGuardarAlta(job, arquivo, nomeAlta, (p)=>{ prog.drive = p; avisa(); }); prog.drive = 100; avisa(); return r; }
+      catch(err){ console.warn(err); prog.drive = null; avisa(); return {erro: err.message || "erro no Drive"}; }
+    })()
+  ]);
+  const erroDrive = noDrive && noDrive.erro ? noDrive.erro : "";
+  if(erroDrive) noDrive = null;
+  let novo = await apvGarantirLink(job);
+  const video = {path:guardado.path, nome:arquivo.name, tamanho:guardado.tamanho, marcaDagua:true, ...(noDrive ? {alta:noDrive.alta} : {})};
+  const e = await supabaseClient.from("aprovacao_envios").insert({job_id:job.id, tipo:"video", versao, titulo:String(arquivo.name||"Vídeo").replace(/\.[^.]+$/,"").slice(0,200), conteudo:String(obs||"").trim().slice(0,4000), video, enviado_em:agora});
   if(e.error) throw e.error;
   const ap = novo.aprovacao || {};
-  return itensNoStatusDoJob({...novo, status:"Aprovação do Conteúdo", aprovacao:{...ap, video:{situacao:"enviado", versao, em:agora, lido:true}}}, "Aprovação do Conteúdo");
+  const pronto = itensNoStatusDoJob({...novo, ...(noDrive ? {drive:noDrive.drive} : {}), status:"Aprovação do Conteúdo", aprovacao:{...ap, video:{situacao:"enviado", versao, em:agora, lido:true}}}, "Aprovação do Conteúdo");
+  return erroDrive ? {...pronto, _avisoDrive:erroDrive} : pronto;
+}
+// vídeo enviado sem o original (Google desligado na hora): manda só o arquivo em alta; se já foi aprovado, libera para a marca
+async function apvEnviarAltaDepois(job, envio, arquivo, aoProgresso){
+  const noDrive = await apvGuardarAlta(job, arquivo, `${String(job.marca).trim()} - v${envio.versao} - ${arquivo.name}`, aoProgresso);
+  if(!noDrive) { const e = new Error("Ligue o Google primeiro em Ajustes > Notificações > Ligação com o Google."); e.aviso = true; throw e; }
+  let alta = noDrive.alta;
+  if(envio.situacao==="aprovado"){ const l = await googleDoPainel().liberar(alta.id); alta = {...alta, url:l.url, baixar:l.baixar, liberado:new Date().toISOString()}; }
+  const { error } = await supabaseClient.from("aprovacao_envios").update({video:{...(envio.video||{}), alta}}).eq("id", envio.id);
+  if(error) throw error;
+  return noDrive.drive;
 }
 function AprovacaoVideoJob({f, setF}){
   const [envios,setEnvios] = useState([]);
@@ -7189,8 +7231,16 @@ function AprovacaoVideoJob({f, setF}){
   const [progresso,setProgresso] = useState(null);
   const [erro,setErro] = useState("");
   const [tocando,setTocando] = useState({}); // id -> link
-  const inp = useRef(null);
+  const [aviso,setAviso] = useState("");
+  const [googleOk,setGoogleOk] = useState(null); // ligação com o Google (Drive e YouTube)
+  const [altaPara,setAltaPara] = useState(null); // envio que vai receber o original depois
+  const [altaProg,setAltaProg] = useState(null);
+  const [yt,setYt] = useState({titulo:"", descricao:""});
+  const [ytProg,setYtProg] = useState(null);
+  const inp = useRef(null), inpAlta = useRef(null);
   const vid = (f.aprovacao||{}).video || null;
+  useEffect(()=>{ const G = googleDoPainel(); if(G) G.ligado().then(setGoogleOk, ()=>setGoogleOk(false)); else setGoogleOk(false); },[]);
+  const abrirAjustesGoogle = () => { try{ window.parent.postMessage({aba:"notificacoes"}, location.origin); }catch(e){} };
   async function carregar(){
     if(!f.id) return;
     const [a,b] = await Promise.all([
@@ -7211,12 +7261,41 @@ function AprovacaoVideoJob({f, setF}){
   async function escolher(ev){
     const arq = ev.target.files && ev.target.files[0]; ev.target.value = "";
     if(!arq) return;
-    setErro(""); setProgresso(0);
+    setErro(""); setAviso(""); setProgresso({previa:0, drive:null});
     try{
       const novo = await apvEnviarVideo(f, arq, obs, (p)=>setProgresso(p));
-      if(novo){ setF(p=>({...p, status:novo.status, entregaveis:novo.entregaveis, aprovacao:novo.aprovacao})); setObs(""); await carregar(); }
+      if(novo){
+        setF(p=>({...p, status:novo.status, entregaveis:novo.entregaveis, aprovacao:novo.aprovacao, ...(novo.drive ? {drive:novo.drive} : {})})); setObs(""); await carregar();
+        if(novo._avisoDrive) setAviso("O vídeo foi para a marca, mas o original não foi para o Drive: "+novo._avisoDrive+" Use \"Enviar o original em alta\" na versão abaixo.");
+        else if(!googleOk) setAviso("O vídeo foi para a marca. O original em alta não foi guardado porque a ligação com o Google está desligada.");
+      }
     }catch(e){ console.warn(e); setErro(e && (e.aviso || e.message) ? e.message : "Não consegui enviar o vídeo agora. Tente de novo."); }
     setProgresso(null);
+  }
+  async function escolherAlta(ev){
+    const arq = ev.target.files && ev.target.files[0]; ev.target.value = "";
+    const envio = altaPara; setAltaPara(null);
+    if(!arq || !envio) return;
+    setErro(""); setAltaProg(0);
+    try{ const drive = await apvEnviarAltaDepois(f, envio, arq, (p)=>setAltaProg(p)); if(drive) setF(p=>({...p, drive})); await carregar(); setAviso(envio.situacao==="aprovado" ? "Original em alta guardado no Drive e liberado para a marca." : "Original em alta guardado no Drive. Ele é liberado para a marca quando ela aprovar."); }
+    catch(e){ console.warn(e); setErro(e.message || "Não consegui mandar o original para o Drive."); }
+    setAltaProg(null);
+  }
+  // YouTube: o vídeo em alta sai do Drive direto para o canal, como não listado
+  async function publicarYoutube(e){
+    const G = googleDoPainel(); const alta = e.video && e.video.alta;
+    if(!G || !alta) return;
+    setErro(""); setYtProg(0);
+    try{
+      const titulo = (yt.titulo || [f.marca, f.produto].filter(Boolean).join(" · ")).trim().slice(0,100);
+      const r = await G.youtube({arquivo:alta.id, titulo, descricao:yt.descricao||"", privacidade:"unlisted"}, (p)=>setYtProg(p));
+      const youtube = {id:r.id, url:r.url, em:new Date().toISOString(), privacidade:(r.status||{}).privacyStatus || "unlisted", titulo};
+      await supabaseClient.from("aprovacao_envios").update({video:{...e.video, youtube}}).eq("id", e.id);
+      setF(p=>({...p, youtube}));
+      await carregar();
+      setAviso(youtube.privacidade==="private" ? "O vídeo subiu, mas o YouTube deixou como PRIVADO (trava para programas sem auditoria). Abra no YouTube Studio e mude para não listado." : "Publicado no YouTube como não listado.");
+    }catch(err){ console.warn(err); setErro("YouTube: "+(err.message || "não consegui publicar agora.")); }
+    setYtProg(null);
   }
   async function assistir(e){
     const PV = window.parent.painelVideos; if(!PV || !e.video) return;
@@ -7232,16 +7311,36 @@ function AprovacaoVideoJob({f, setF}){
       {vid && vid.situacao!=="enviado" && vid.texto && <div style={{fontSize:13.5, background:"#f6efe6", borderRadius:10, padding:"9px 11px", whiteSpace:"pre-wrap"}}><b>{vid.por||"Marca"}:</b> {vid.texto}</div>}
       <Field label="Recado para a marca junto com o vídeo (opcional)"><textarea rows="2" value={obs} onChange={e=>setObs(e.target.value)} placeholder="Ex.: versão com legenda; a música é só de referência"/></Field>
       <input ref={inp} type="file" accept="video/*,.mov,.mp4" hidden onChange={escolher}/>
+      <input ref={inpAlta} type="file" accept="video/*,.mov,.mp4" hidden onChange={escolherAlta}/>
       <div className="apv-botoes">
-        <button type="button" className="btn btn-primary btn-sm" disabled={progresso!==null} onClick={()=>inp.current && inp.current.click()}><Icon name="upload" size={15}/>{progresso!==null ? (progresso>0 ? `Preparando o vídeo ${progresso}%` : "Enviando...") : (envios.length ? "Enviar nova versão do vídeo" : "Enviar vídeo para aprovação")}</button>
+        <button type="button" className="btn btn-primary btn-sm" disabled={progresso!==null || altaProg!==null || ytProg!==null} onClick={()=>inp.current && inp.current.click()}><Icon name="upload" size={15}/>{progresso!==null ? "Enviando..." : (envios.length ? "Enviar nova versão do vídeo" : "Enviar vídeo para aprovação")}</button>
+        {f.drive && f.drive.url && <a className="btn btn-ghost btn-sm" href={f.drive.url} target="_blank" rel="noopener"><Icon name="folder_open" size={15}/>Pasta no Drive</a>}
       </div>
-      {progresso!==null && <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Não feche esta janela. Vídeo grande é reduzido para 720p só para a aprovação; o original continua com você.</div>}
+      {progresso!==null && <div style={{fontSize:12.5, color:"var(--graphite-soft)", display:"flex", flexDirection:"column", gap:2}}>
+        <span>Cópia de aprovação com a marca d'água "{MARCA_DAGUA}": {progresso.previa||0}%</span>
+        {progresso.drive!==null && <span>Original em alta para o seu Drive: {progresso.drive}%</span>}
+        <span>Não feche esta janela. A cópia de aprovação leva o tempo do vídeo para ficar pronta.</span>
+      </div>}
+      {altaProg!==null && <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Original em alta para o seu Drive: {altaProg}%. Não feche esta janela.</div>}
+      {ytProg!==null && <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Enviando do Drive para o YouTube: {ytProg}%. Pode levar alguns minutos; não feche esta janela.</div>}
       {erro && <div className="apv-erro">{erro}</div>}
-      {!envios.length && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>O vídeo aparece na Área do cliente da marca com um player. Quando ela aprovar ou pedir ajuste, o status do job muda sozinho e você recebe o aviso.</div>}
+      {aviso && <div style={{fontSize:13, background:"#e4eee2", color:"#3f6644", borderRadius:10, padding:"8px 11px"}}>{aviso}</div>}
+      {googleOk===false && <div style={{fontSize:13, background:"#f7ebcd", color:"#7a5a12", borderRadius:10, padding:"8px 11px"}}>A ligação com o Google está desligada: o vídeo vai para a marca com marca d'água, mas o original em alta não vai para o Drive e não dá para publicar no YouTube. <button type="button" className="btn btn-ghost btn-sm" onClick={abrirAjustesGoogle}>Ligar com o Google</button></div>}
+      {!envios.length && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>Você envia o vídeo final uma vez só. A marca recebe uma cópia em 720p com a sua marca d'água no meio; o original, em alta, vai para o seu Drive (pasta {googleDoPainel() ? googleDoPainel().PASTA_MAE : "Vídeos UGC aprovação"} &gt; cliente) e só é liberado para ela baixar quando aprovar.</div>}
       {envios.length>0 && <div className="apv-hist">{envios.map(e=>{ const evs = eventos.filter(x=>x.envio_id===e.id && x.tipo!=="abriu"); return (
         <div key={e.id} style={{display:"block"}}>
           <div style={{display:"flex", gap:8, alignItems:"center", flexWrap:"wrap"}}><time>{apvQuando(e.enviado_em)}</time><span><b>Versão {e.versao}</b> · {e.titulo}</span><span className={"apv-selo "+e.situacao}>{APV_ROTULO[e.situacao].replace("Roteiro","Vídeo")}</span>
-            {!tocando[e.id] && e.video && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>assistir(e)}><Icon name="play_arrow" size={15}/>Assistir</button>}</div>
+            {!tocando[e.id] && e.video && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>assistir(e)}><Icon name="play_arrow" size={15}/>Assistir</button>}
+            {e.video && e.video.alta && <a className="btn btn-ghost btn-sm" href={e.video.alta.url || ("https://drive.google.com/file/d/"+e.video.alta.id+"/view")} target="_blank" rel="noopener"><Icon name="hd" size={15}/>Original no Drive{e.video.alta.liberado ? " · liberado para a marca" : ""}</a>}
+            {e.video && !e.video.alta && googleOk && <button type="button" className="btn btn-ghost btn-sm" disabled={altaProg!==null} onClick={()=>{ setAltaPara(e); setTimeout(()=>inpAlta.current && inpAlta.current.click(), 0); }}><Icon name="hd" size={15}/>Enviar o original em alta</button>}
+            {e.video && e.video.youtube && <a className="btn btn-ghost btn-sm" href={e.video.youtube.url} target="_blank" rel="noopener"><Icon name="smart_display" size={15}/>No YouTube{e.video.youtube.privacidade==="private" ? " (privado)" : ""}</a>}</div>
+          {e===envios[0] && e.situacao==="aprovado" && e.video && e.video.alta && !e.video.youtube && googleOk && <div style={{display:"flex", flexDirection:"column", gap:6, marginTop:8, background:"#f6efe6", borderRadius:12, padding:"10px 12px"}}>
+            <b style={{fontSize:13.5}}>Publicar no YouTube (não listado)</b>
+            <input value={yt.titulo} onChange={ev=>setYt(y=>({...y, titulo:ev.target.value}))} placeholder={[f.marca, f.produto].filter(Boolean).join(" · ") || "Título do vídeo"} maxLength={100}/>
+            <textarea rows="2" value={yt.descricao} onChange={ev=>setYt(y=>({...y, descricao:ev.target.value}))} placeholder="Descrição (opcional)"/>
+            <div className="apv-botoes"><button type="button" className="btn btn-primary btn-sm" disabled={ytProg!==null} onClick={()=>publicarYoutube(e)}><Icon name="smart_display" size={15}/>{ytProg!==null ? `Enviando ${ytProg}%` : "Publicar no YouTube"}</button></div>
+            <span style={{fontSize:12, color:"var(--graphite-soft)"}}>Vai em alta, direto do seu Drive, para o canal ligado em Ajustes.</span>
+          </div>}
           {tocando[e.id] && <video src={tocando[e.id]} controls playsInline style={{width:"100%", maxHeight:360, borderRadius:10, background:"#000", marginTop:6}}/>}
           {evs.map(x=><q key={x.id}>{(x.autor||"Marca")+" "+(FR[x.tipo]||x.tipo)+(x.texto?": "+x.texto:"")}</q>)}
         </div>); })}</div>}
@@ -12831,6 +12930,24 @@ function App({session}){
   const etapasPortal = useRef(null);
   useEffect(()=>{ const h = ()=>{ etapasPortal.current = null; }; window.addEventListener("apv:recarregar", h); return ()=>window.removeEventListener("apv:recarregar", h); },[]);
   useEffect(()=>{ if(!loaded) return; const t = setTimeout(()=>sincronizarEtapasPortal(state.jobs||[], etapasPortal), 1500); return ()=>clearTimeout(t); },[loaded, state.jobs]);
+  // pasta do cliente no Drive ("Vídeos UGC aprovação" > cliente) assim que a ação é cadastrada (só com a ligação do Google)
+  const pastasFeitas = useRef(new Set());
+  useEffect(()=>{
+    if(!loaded) return;
+    const t = setTimeout(async()=>{
+      const G = googleDoPainel(); if(!G) return;
+      try{ if(!(await G.ligado())) return; }catch(e){ return; }
+      const faltam = (state.jobs||[]).filter(j=>j.id && String(j.marca||"").trim() && !(j.drive && j.drive.pastaId) && !ehFinalizado(j.status) && j.status!=="Cancelado" && !pastasFeitas.current.has(j.id));
+      for(const j of faltam){
+        pastasFeitas.current.add(j.id);
+        try{
+          const p = await G.pasta(await clienteDoDrive(j));
+          updateState(st=>({...st, jobs:(st.jobs||[]).map(x=>x.id===j.id ? {...x, drive:{pastaId:p.id, url:p.url, cliente:p.cliente}} : x)}));
+        }catch(e){ console.warn("pasta no Drive", e); }
+      }
+    }, 2500);
+    return ()=>clearTimeout(t);
+  },[loaded, state.jobs]);
 
   function handleSaveStatus(status){
     setSaveStatus(status);

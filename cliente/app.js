@@ -221,7 +221,11 @@
       h += '<section class="cartao" data-envio="' + e.id + '">';
       h += '<div class="topo"><h2>' + NOME[e.tipo] + ' para aprovação</h2><span class="pil p-' + e.situacao + '">' + ROTULO[e.situacao] + "</span></div>";
       h += '<div class="meta">' + (e.titulo ? esc(e.titulo) + " · " : "") + "versão " + e.versao + " · enviado em " + quando(e.enviado_em) + "</div>";
-      if (e.tipo === "video") h += e.video ? '<video class="player" src="' + esc(e.video) + '" controls playsinline preload="metadata"></video>' : '<p class="meta">O vídeo não carregou. Atualize a página.</p>';
+      if (e.tipo === "video") h += e.video ? '<video class="player" src="' + esc(e.video) + '" controls playsinline preload="metadata" controlslist="nodownload"></video>' : '<p class="meta">O vídeo não carregou. Atualize a página.</p>';
+      if (e.tipo === "video" && e.situacao !== "aprovado" && e.marcaDagua) h += '<p class="aviso-md">Vídeo de aprovação, com marca d\'água. O arquivo em alta qualidade, sem marca d\'água, é liberado aqui depois da aprovação.</p>';
+      if (e.tipo === "video" && e.situacao === "aprovado") h += e.alta
+        ? '<div class="alta"><b>Arquivo final em alta qualidade, sem marca d\'água</b><a class="botao" href="' + esc(e.alta.url) + '" target="_blank" rel="noopener">Baixar em alta qualidade</a><span class="meta">Abre no Google Drive. Toque no ícone de download no alto da tela.</span></div>'
+        : '<p class="aviso-md">Vídeo aprovado. A Mari vai liberar o arquivo em alta qualidade aqui em breve.</p>';
       if (e.conteudo) h += '<div class="roteiro">' + roteiroHtml(e.conteudo) + "</div>";
       if (e.situacao === "enviado"){
         if (gs.length){

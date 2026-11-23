@@ -5,6 +5,7 @@
 // (aprovacao_links.portal_marca_id), com o roteiro enviado, as versões e o histórico.
 // Nunca devolve valores, briefing, observações nem nada de outra marca.
 // Ações da marca: marca {m}, entrar {login: código do link, senha}, sair {s}, pasta {s}, responder {s, job, envio, tipo, nome, texto, gancho}
+// Vídeo: a marca vê a cópia com marca d'água; o original em alta (Drive) só aparece depois que ela aprova.
 // Cada projeto leva a etapa do job (aprovacao_links.etapa, gravada pelo painel: Roteirização, Gravação, Edição...).
 // Ação da Mari (com o login dela no painel): previa {marca_id} = a pasta como a marca vê, sem registrar nada.
 // =========================================================
@@ -47,6 +48,28 @@ const DIAS_SESSAO = 30, MAX_FALHAS = 5, MIN_BLOQUEIO = 15;
 // deno-lint-ignore no-explicit-any
 type Adm = any;
 
+// vídeo em alta (nov/2026): fica no Drive da Mari; quando a marca aprova, o Apps Script dela (configuracoes
+// "google_ponte" = {url, segredo}) libera o arquivo para quem tem o link, e o link aparece na pasta da marca.
+async function liberarNoDrive(adm: Adm, arquivo: string) {
+  const { data } = await adm.from("configuracoes").select("valor").eq("chave", "google_ponte").maybeSingle();
+  let c: Adm = null; try { c = data && data.valor ? (typeof data.valor === "string" ? JSON.parse(data.valor) : data.valor) : null; } catch (_) { c = null; }
+  if (!c || !c.url || !c.segredo) return null;
+  const r = await fetch(c.url, { method: "POST", body: JSON.stringify({ segredo: c.segredo, acao: "liberar", arquivo }), redirect: "follow" });
+  const j = await r.json().catch(() => null);
+  return j && j.ok ? { url: j.url, baixar: j.baixar } : null;
+}
+// o que a marca vê do vídeo: o player sempre; o arquivo em alta só depois de aprovar
+function videoParaMarca(e: Adm, assinado: string) {
+  if (e.tipo !== "video") return { video: "" };
+  const v = e.video || {}, a = v.alta || null;
+  return {
+    video: assinado || "",
+    marcaDagua: !!v.marcaDagua,
+    temAlta: !!a,
+    alta: e.situacao === "aprovado" && a && a.liberado && a.url ? { url: a.url, baixar: a.baixar || "", nome: a.nome || "" } : null,
+  };
+}
+
 async function montarPasta(adm: Adm, marcaId: string, registrar: boolean) {
   const { data: links } = await adm.from("aprovacao_links").select("job_id, marca, produto, resumo, doc_aba, etapa, etapa_em, criado_em")
     .eq("portal_marca_id", marcaId).eq("ativo", true).order("criado_em", { ascending: false });
@@ -80,7 +103,7 @@ async function montarPasta(adm: Adm, marcaId: string, registrar: boolean) {
       id: l.job_id, marca: l.marca, produto: l.produto, resumo: l.resumo || "", etapa: l.etapa || "", etapa_em: l.etapa_em || null,
       doc: doDoc ? DOC_APROVACAO_URL + "?r=" + encodeURIComponent(doDoc) : "",
       envios: lista.map((e: Adm) => ({ id: e.id, tipo: e.tipo, versao: e.versao, titulo: e.titulo, conteudo: doDoc && e.tipo === "roteiro" ? "" : e.conteudo, situacao: e.situacao,
-        video: assinados[e.id] || "",
+        ...videoParaMarca(e, assinados[e.id]),
         enviado_em: e.enviado_em, respondido_em: e.respondido_em, atual: ultimo(e.tipo).id === e.id })),
       historico: evs.filter((x: Adm) => x.job_id === l.job_id && x.tipo !== "abriu").map((x: Adm) => {
         const e = lista.find((y: Adm) => y.id === x.envio_id);
@@ -163,7 +186,7 @@ Deno.serve(async (req) => {
       if (!link) return resposta({ error: "Não encontrei este projeto na sua pasta." }, 404);
       const tipo = txt(corpo.tipo, 20), nome = txt(corpo.nome, 80), texto = txt(corpo.texto, 4000), gancho = txt(corpo.gancho, 600);
       if (!FRASE[tipo]) return resposta({ error: "Resposta desconhecida." }, 400);
-      const { data: envios } = await adm.from("aprovacao_envios").select("id, tipo, versao, situacao").eq("job_id", link.job_id).order("enviado_em", { ascending: true });
+      const { data: envios } = await adm.from("aprovacao_envios").select("id, tipo, versao, situacao, video").eq("job_id", link.job_id).order("enviado_em", { ascending: true });
       const lista = envios || [];
       const envio = lista.find((e: Adm) => e.id === Number(corpo.envio));
       if (!envio) return resposta({ error: "Não encontrei este envio." }, 404);
@@ -177,6 +200,13 @@ Deno.serve(async (req) => {
       const { data: mudou } = await adm.from("aprovacao_envios").update({ situacao: tipo, respondido_em: agora }).eq("id", envio.id).eq("situacao", "enviado").select("id");
       if (!mudou || !mudou.length) return resposta({ ok: true, repetido: true });
       const { data: ev } = await adm.from("aprovacao_eventos").insert({ envio_id: envio.id, job_id: link.job_id, tipo, autor: nome, texto: texto || null, gancho: gancho || null }).select("id").single();
+      // vídeo aprovado: libera o arquivo em alta do Drive para a marca baixar
+      if (tipo === "aprovado" && envio.tipo === "video" && envio.video && envio.video.alta && envio.video.alta.id && !envio.video.alta.liberado) {
+        try {
+          const l = await liberarNoDrive(adm, envio.video.alta.id);
+          if (l) await adm.from("aprovacao_envios").update({ video: { ...envio.video, alta: { ...envio.video.alta, url: l.url, baixar: l.baixar, liberado: agora } } }).eq("id", envio.id);
+        } catch (err) { console.error("liberar no Drive", err); }
+      }
       const oque = envio.tipo === "video" ? "o vídeo" : "o roteiro";
       const quem = m.marca || link.marca || "A marca";
       const titulo = tipo === "aprovado" ? `${quem} aprovou ${oque}` : `${quem} ${FRASE[tipo]} n${oque}`;
