@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611220004"></script>
-<script src="../../js/dialogos.js?v=202611220004"></script>
-<script src="../../js/metricool-ig.js?v=202611220004"></script>
-<script src="../../js/corretor.js?v=202611220004"></script>
+<script src="../../js/banco.js?v=202611222205"></script>
+<script src="../../js/dialogos.js?v=202611222205"></script>
+<script src="../../js/metricool-ig.js?v=202611222205"></script>
+<script src="../../js/corretor.js?v=202611222205"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -7216,8 +7216,25 @@ function CaixaMin({chave, titulo, resumo, children, estilo}){
     </div>
   );
 }
+// área que parece ser da mesma marca quando o nome do job é outro (ex.: job "OCAFRIDAY" e área "Turma do Cabeça Oca")
+function areaParecida(marca, areas){
+  const k = normMarcaPortal(marca), junto = k.replace(/\s+/g,""); if(!junto) return null;
+  let melhor = null, pts = 0;
+  for(const a of areas){
+    const ka = normMarcaPortal(a.marca), ja = ka.replace(/\s+/g,"");
+    if(!ja) continue;
+    let p = 0;
+    if(junto.includes(ja) || ja.includes(junto)) p = 10;
+    else for(const w of ka.split(" ")) if(w.length>=3 && junto.includes(w)) p += w.length;
+    for(const w of k.split(" ")) if(w.length>=3 && ja.includes(w)) p += w.length;
+    if(p>pts){ pts = p; melhor = a; }
+  }
+  return pts>=3 ? melhor : null;
+}
 function AreaClienteJob({f, setF}){
   const [acesso,setAcesso] = useState(undefined); // undefined = carregando, null = não tem
+  const [areas,setAreas] = useState([]);           // todas as áreas ligadas
+  const [escolha,setEscolha] = useState("nova");   // id da área existente ou "nova"
   const [naPasta,setNaPasta] = useState(false);
   const [ocupado,setOcupado] = useState(false);
   const [msg,setMsg] = useState(null); // {acesso, senha}
@@ -7225,10 +7242,18 @@ function AreaClienteJob({f, setF}){
   const marca = String(f.marca||"").trim();
   async function carregar(){
     if(!marca){ setAcesso(null); return; }
-    const a = await acessoDaMarca(marca).catch(()=>null);
+    const { data: todas } = await supabaseClient.from("portal_marcas").select("id, marca, login, ativo");
+    const ativas = (todas||[]).filter(a=>a.ativo);
+    setAreas(ativas);
+    const { data: lk } = await supabaseClient.from("aprovacao_links").select("portal_marca_id").eq("job_id", f.id).maybeSingle();
+    // 1) job já está numa área (mesmo com outro nome); 2) área com o mesmo nome; 3) nenhuma
+    const ligada = lk && lk.portal_marca_id ? (todas||[]).find(a=>a.id===lk.portal_marca_id) : null;
+    const k = normMarcaPortal(marca);
+    const mesma = ativas.find(a=>normMarcaPortal(a.marca)===k) || null;
+    const a = ligada || mesma;
     setAcesso(a);
-    const { data } = await supabaseClient.from("aprovacao_links").select("portal_marca_id").eq("job_id", f.id).maybeSingle();
-    setNaPasta(!!(a && data && data.portal_marca_id===a.id));
+    setNaPasta(!!ligada);
+    if(!a){ const p = areaParecida(marca, ativas); setEscolha(p ? p.id : (ativas.length ? ativas[0].id : "nova")); }
   }
   useEffect(()=>{ const t = setTimeout(carregar, 500); return ()=>clearTimeout(t); },[marca, f.id]);
   async function alternar(){
@@ -7239,12 +7264,14 @@ function AreaClienteJob({f, setF}){
         setNaPasta(false); setF(p=>({...p, areaCliente:false}));
       }else{
         let a = acesso, senha = "";
+        if(!a && escolha!=="nova") a = areas.find(x=>x.id===escolha) || null;
         if(!a){
           senha = senhaNova();
           const r = await supabaseClient.from("portal_marcas").insert({marca:marcaBase(marca)||marca, login:codigoPortal(marca), senha_hash:await hashSenhaPortal(senha)}).select("id, marca, login, ativo").single();
           if(r.error) throw r.error;
-          a = r.data; setAcesso(a);
+          a = r.data;
         }
+        setAcesso(a);
         const n = await ligarJobNaPasta(f, a.id);
         setF(p=>({...p, areaCliente:true, aprovacao:n.aprovacao || p.aprovacao}));
         setNaPasta(true);
@@ -7255,12 +7282,28 @@ function AreaClienteJob({f, setF}){
   }
   async function copiar(){ try{ await navigator.clipboard.writeText(linkPortal(acesso.login)); setErro("Link copiado."); setTimeout(()=>setErro(""), 1600); }catch(e){ setErro(linkPortal(acesso.login)); } }
   if(!marca) return null;
+  const semArea = acesso===null;
+  const escolhida = semArea && escolha!=="nova" ? areas.find(x=>x.id===escolha) : null;
+  const texto = acesso===undefined ? "Conferindo..."
+    : naPasta ? `A ${acesso.marca} aprova roteiro e vídeo deste job pelo link dela, com senha.`
+    : acesso ? `A ${acesso.marca} já tem área. Marque para pôr este job nela.`
+    : escolhida ? `Marque para pôr este job na área que já existe da ${escolhida.marca}.`
+    : "Marque para criar a área da marca (link + senha) e pôr este job nela.";
   return (
-    <CaixaMin chave="areaCliente" titulo="Área do cliente" resumo={acesso===undefined ? "" : naPasta ? "Ligada" : "Desligada"}>
+    <CaixaMin chave="areaCliente" titulo="Área do cliente" resumo={acesso===undefined ? "" : naPasta ? `Ligada · ${acesso.marca}` : "Desligada"}>
     <div className="area-cli">
+      {semArea && areas.length>0 && (
+        <label style={{display:"flex",flexDirection:"column",gap:4,fontSize:12.5,color:"var(--graphite-soft)"}}>
+          Área da marca
+          <select value={escolha} onChange={e=>setEscolha(e.target.value)} disabled={ocupado}>
+            {areas.map(a=><option key={a.id} value={a.id}>{a.marca} (já existe)</option>)}
+            <option value="nova">Criar área nova para "{marcaBase(marca)||marca}"</option>
+          </select>
+        </label>
+      )}
       <label className="area-cli-linha">
         <input type="checkbox" checked={!!naPasta} disabled={ocupado || acesso===undefined} onChange={alternar}/>
-        <span><b>Área do cliente</b><small>{acesso===undefined ? "Conferindo..." : naPasta ? `A ${acesso.marca} aprova roteiro e vídeo deste job pelo link dela, com senha.` : acesso ? `A ${acesso.marca} já tem área. Marque para pôr este job nela.` : "Marque para criar a área da marca (link + senha) e pôr este job nela."}</small></span>
+        <span><b>Área do cliente</b><small>{texto}</small></span>
       </label>
       {naPasta && acesso && <div className="apv-botoes"><button type="button" className="btn btn-ghost btn-sm" onClick={copiar}><Icon name="content_copy" size={14}/>Copiar link da marca</button><a className="btn btn-ghost btn-sm" href={PORTAL_URL+"?previa="+acesso.id} target="_blank" rel="noopener"><Icon name="visibility" size={14}/>Ver como a marca vê</a></div>}
       {erro && <div className="apv-linha">{erro}</div>}
