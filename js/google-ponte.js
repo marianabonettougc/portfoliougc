@@ -2,10 +2,10 @@
 // LIGAÇÃO COM O GOOGLE (nov/2026, pedido da Mari)
 // Um Apps Script na conta Google dela (App da Web) faz tudo que precisa da conta dela:
 //   e-mail dos avisos, pasta "Vídeos UGC aprovação" > <cliente> no Drive, liberar o vídeo em alta
-//   depois que a marca aprova e mandar o vídeo do Drive para o YouTube (não listado).
+//   depois que a marca aprova. Sem YouTube (a Mari pediu para deixar de fora, 23/11/2026).
 // O link (/exec) e o segredo ficam em configuracoes "google_ponte" (e em "email_webhook",
 // que a função notificacoes já usa para os e-mails). O código do script é gerado aqui (codigo()).
-// window.painelGoogle: cfg, ligado, chamar, pasta, enviarAlta, liberar, youtube, codigo, PASTA_MAE
+// window.painelGoogle: cfg, ligado, chamar, pasta, enviarAlta, liberar, codigo, PASTA_MAE
 // =========================================================
 (function () {
   const PASTA_MAE = "Vídeos UGC aprovação";
@@ -76,22 +76,11 @@
   // libera o arquivo (qualquer pessoa com o link vê e baixa) e devolve os links
   async function liberar(id) { const j = await chamar("liberar", { arquivo: id }); return { url: j.url, baixar: j.baixar }; }
 
-  // Drive -> YouTube em pedaços; o Apps Script trabalha até ~4,5 min por chamada e a gente chama de novo até terminar
-  async function youtube({ arquivo, titulo, descricao, privacidade }, aoProgresso) {
-    for (let i = 0; i < 60; i++) {
-      const j = await chamar("youtube", { arquivo, titulo, descricao, privacidade: privacidade || "unlisted" });
-      if (j.pronto) return j;
-      if (aoProgresso && j.total) aoProgresso(Math.min(99, Math.round((j.feito / j.total) * 100)));
-    }
-    throw new Error("O envio para o YouTube está demorando demais. Tente de novo mais tarde.");
-  }
-
   // código do Apps Script (ela cola uma vez no script.google.com)
   const codigo = (segredo) => `// Ligação do painel da Mari com a conta Google dela.
-// Faz: avisos por e-mail, pasta "${PASTA_MAE}" > cliente no Drive, liberar o vídeo em alta e enviar para o YouTube.
+// Faz: avisos por e-mail, pasta "${PASTA_MAE}" > cliente no Drive e liberar o vídeo em alta. Não mexe no YouTube.
 var SEGREDO = "${segredo}";
 var PASTA_MAE = "${PASTA_MAE}";
-var PEDACO = 32 * 1024 * 1024; // múltiplo de 256 KB
 
 function resp(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
@@ -105,8 +94,7 @@ function doPost(e) {
     if (a === "pasta") return resp(pasta(d.cliente));
     if (a === "token") return resp({ ok: true, token: ScriptApp.getOAuthToken() });
     if (a === "liberar") return resp(liberar(d.arquivo));
-    if (a === "youtube") return resp(youtube(d));
-    if (a === "canal") return resp(canal());
+    if (a === "ping") return resp({ ok: true });
     return resp({ ok: false, erro: "acao" });
   } catch (err) {
     return resp({ ok: false, erro: String((err && err.message) || err) });
@@ -131,64 +119,11 @@ function liberar(id) {
   return { ok: true, url: "https://drive.google.com/file/d/" + id + "/view", baixar: "https://drive.google.com/uc?export=download&id=" + id };
 }
 
-function canal() {
-  var r = YouTube.Channels.list("snippet", { mine: true });
-  var c = r.items && r.items[0];
-  return { ok: true, canal: c ? c.snippet.title : "" };
-}
-
-function cabecalho(r, nome) { var h = r.getAllHeaders(); for (var k in h) { if (k.toLowerCase() === nome) return h[k]; } return ""; }
-
-function youtube(d) {
-  var props = PropertiesService.getScriptProperties();
-  var chave = "yt_" + d.arquivo;
-  var est = JSON.parse(props.getProperty(chave) || "null");
-  var token = ScriptApp.getOAuthToken();
-  var f = DriveApp.getFileById(d.arquivo);
-  var total = f.getSize(), tipo = f.getMimeType() || "video/mp4";
-  if (!est) {
-    var meta = { snippet: { title: String(d.titulo || f.getName()).slice(0, 100), description: String(d.descricao || "").slice(0, 4900), categoryId: "22" },
-      status: { privacyStatus: d.privacidade || "unlisted", selfDeclaredMadeForKids: false } };
-    var r = UrlFetchApp.fetch("https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status", {
-      method: "post", contentType: "application/json; charset=UTF-8", payload: JSON.stringify(meta), muteHttpExceptions: true,
-      headers: { Authorization: "Bearer " + token, "X-Upload-Content-Length": String(total), "X-Upload-Content-Type": tipo } });
-    if (r.getResponseCode() >= 300) return { ok: false, erro: "O YouTube recusou: " + r.getContentText().slice(0, 300) };
-    est = { sessao: cabecalho(r, "location"), feito: 0 };
-    props.setProperty(chave, JSON.stringify(est));
-  }
-  var ini = Date.now();
-  while (est.feito < total && Date.now() - ini < 270000) {
-    var fim = Math.min(est.feito + PEDACO, total) - 1;
-    var parte = UrlFetchApp.fetch("https://www.googleapis.com/drive/v3/files/" + d.arquivo + "?alt=media", { headers: { Authorization: "Bearer " + token, Range: "bytes=" + est.feito + "-" + fim }, muteHttpExceptions: true });
-    if (parte.getResponseCode() >= 300) return { ok: false, erro: "Não consegui ler o vídeo no Drive (" + parte.getResponseCode() + ")." };
-    var bytes = parte.getContent();
-    var up = UrlFetchApp.fetch(est.sessao, { method: "put", payload: bytes, contentType: tipo, muteHttpExceptions: true,
-      headers: { "Content-Range": "bytes " + est.feito + "-" + (est.feito + bytes.length - 1) + "/" + total } });
-    var c = up.getResponseCode();
-    if (c === 308) {
-      var rg = cabecalho(up, "range");
-      est.feito = rg ? Number(String(rg).split("-")[1]) + 1 : est.feito + bytes.length;
-      props.setProperty(chave, JSON.stringify(est));
-      continue;
-    }
-    if (c === 200 || c === 201) {
-      props.deleteProperty(chave);
-      var v = JSON.parse(up.getContentText());
-      return { ok: true, pronto: true, id: v.id, url: "https://youtu.be/" + v.id, status: v.status || {} };
-    }
-    props.deleteProperty(chave);
-    return { ok: false, erro: "O YouTube parou o envio (" + c + "): " + up.getContentText().slice(0, 300) };
-  }
-  return { ok: true, pronto: false, feito: est.feito, total: total };
-}
-
-// rode UMA vez pelo editor para dar as permissões (e-mail, Drive e YouTube)
+// rode UMA vez pelo editor para dar as permissões (e-mail e Drive)
 function testar() {
   filha(DriveApp.getRootFolder(), PASTA_MAE);
-  var c = { canal: "" };
-  try { c = canal(); } catch (err) { c.canal = "(o serviço YouTube Data API ainda não foi adicionado em Serviços)"; }
-  MailApp.sendEmail(Session.getEffectiveUser().getEmail(), "[Painel] Ligação com o Google pronta", "Drive e e-mail liberados. Canal do YouTube: " + (c.canal || "(nenhum)") + ". Agora implante como App da Web.");
+  MailApp.sendEmail(Session.getEffectiveUser().getEmail(), "[Painel] Ligação com o Google pronta", "Drive e e-mail liberados. Agora implante como App da Web.");
 }`;
 
-  window.painelGoogle = { cfg, gravar, ligado, chamar, pasta, enviarAlta, liberar, youtube, codigo, PASTA_MAE };
+  window.painelGoogle = { cfg, gravar, ligado, chamar, pasta, enviarAlta, liberar, codigo, PASTA_MAE };
 })();

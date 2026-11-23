@@ -32,33 +32,62 @@
     x.restore();
   }
 
-  // reduz para no máximo 720 de largura (ou altura, se deitado), uns 2,2 Mbps; toca o vídeo uma vez, sem som na caixa de som
+  // som da conversão: o navegador só deixa ligar o áudio no toque dela. destravar() é chamado no clique do botão
+  // (antes de abrir a escolha do arquivo) e deixa um AudioContext e um <video> já liberados para depois.
+  let acComum = null, vComum = null;
+  function destravar() {
+    try {
+      if (!acComum || acComum.state === "closed") acComum = new (window.AudioContext || window.webkitAudioContext)();
+      if (acComum.state === "suspended") acComum.resume().catch(() => {});
+    } catch (e) { acComum = null; }
+    try { if (!vComum) { vComum = document.createElement("video"); vComum.playsInline = true; vComum.load(); } } catch (e) { vComum = null; }
+  }
+  // promessa com limite de tempo (nunca fica esperando para sempre)
+  const comLimite = (p, ms, msg) => Promise.race([p, new Promise((_, erro) => setTimeout(() => erro(new Error(msg)), ms))]);
+
+  // reduz para no máximo 720 de largura (ou altura, se deitado), uns 2,2 Mbps; toca o vídeo uma vez, sem som na caixa de som.
+  // Nunca fica travado: se o vídeo não abre, não toca ou para no meio, devolve um erro explicando.
   async function reduzir(arq, aoProgresso, marca) {
     const tipo = tipoGravador();
-    if (!tipo) throw new Error("Este navegador não consegue reduzir o vídeo. Use o Chrome, o Edge ou o Safari atualizado.");
+    if (!tipo) throw new Error("Este navegador não consegue preparar o vídeo. Use o Chrome, o Edge ou o Safari atualizado.");
     const url = URL.createObjectURL(arq);
-    const v = document.createElement("video");
-    v.src = url; v.playsInline = true; v.preload = "auto"; v.crossOrigin = "anonymous";
+    const v = vComum || document.createElement("video"); vComum = null;
+    v.removeAttribute("src"); v.muted = false;
+    v.playsInline = true; v.preload = "auto";
     v.style.cssText = "position:fixed;left:0;top:0;width:2px;height:2px;opacity:0.01;pointer-events:none";
     document.body.appendChild(v);
-    let ac = null;
+    let ac = null, guarda = null;
     try {
-      await new Promise((ok, erro) => { v.onloadedmetadata = ok; v.onerror = () => erro(new Error("Não consegui abrir esse vídeo para guardar.")); });
-      const dur = v.duration || 0;
+      const naoAbre = "Não consegui abrir esse vídeo neste navegador. Se ele foi gravado no iPhone (formato HEVC), exporte em MP4 (H.264) pelo CapCut ou tente pelo Safari/Edge.";
+      v.src = url;
+      await comLimite(new Promise((ok, erro) => { v.onloadeddata = ok; v.onerror = () => erro(new Error(naoAbre)); if (v.readyState >= 2) ok(); }), 25000, naoAbre);
+      if (!v.videoWidth || !v.videoHeight) throw new Error(naoAbre);
+      const dur = v.duration && isFinite(v.duration) ? v.duration : 0;
       const lado = Math.min(720, Math.min(v.videoWidth, v.videoHeight) || 720);
       const fator = lado / (Math.min(v.videoWidth, v.videoHeight) || lado);
       const W = Math.round((v.videoWidth * fator) / 2) * 2, H = Math.round((v.videoHeight * fator) / 2) * 2;
       const c = document.createElement("canvas"); c.width = W; c.height = H;
       const x = c.getContext("2d");
       const stream = c.captureStream(30);
-      // áudio pelo WebAudio: vai para a gravação e não sai na caixa de som
+      // áudio: pelo WebAudio (vai para a gravação e não sai na caixa de som). Se o navegador não liberar o som em 2 s,
+      // segue pelo captureStream do próprio vídeo; nunca espera para sempre.
+      let comSom = false;
       try {
-        ac = new (window.AudioContext || window.webkitAudioContext)();
-        if (ac.state === "suspended") await ac.resume();
-        const dest = ac.createMediaStreamDestination();
-        ac.createMediaElementSource(v).connect(dest);
-        dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
-      } catch (e) { v.muted = true; }
+        ac = acComum && acComum.state !== "closed" ? acComum : new (window.AudioContext || window.webkitAudioContext)();
+        if (ac.state !== "running") await comLimite(ac.resume(), 2000, "sem som").catch(() => null);
+        if (ac.state === "running") {
+          const dest = ac.createMediaStreamDestination();
+          ac.createMediaElementSource(v).connect(dest);
+          dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
+          comSom = true;
+        } else { ac = null; }
+      } catch (e) { ac = null; }
+      if (!comSom) {
+        try {
+          const cap = v.captureStream ? v.captureStream() : v.mozCaptureStream ? v.mozCaptureStream() : null;
+          if (cap) { cap.getAudioTracks().forEach((t) => stream.addTrack(t)); comSom = cap.getAudioTracks().length > 0; v.volume = 0.0001; }
+        } catch (e) { /* segue sem som */ }
+      }
       const partes = [];
       const rec = new MediaRecorder(stream, { mimeType: tipo, videoBitsPerSecond: 2200000, audioBitsPerSecond: 128000 });
       rec.ondataavailable = (e) => { if (e.data && e.data.size) partes.push(e.data); };
@@ -66,27 +95,46 @@
       let vivo = true;
       const desenhar = () => {
         if (!vivo) return;
-        x.drawImage(v, 0, 0, W, H);
-        if (marca) marcaDagua(x, W, H, marca);
+        try { x.drawImage(v, 0, 0, W, H); if (marca) marcaDagua(x, W, H, marca); } catch (e) { /* quadro ainda não pronto */ }
         if (aoProgresso && dur) aoProgresso(Math.min(99, Math.round((v.currentTime / dur) * 100)));
         if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(desenhar); else requestAnimationFrame(desenhar);
       };
       v.currentTime = 0;
-      await v.play();
+      try { await comLimite(v.play(), 10000, "não tocou"); }
+      catch (e) {
+        // o navegador não deixou tocar com som: tenta sem som para não travar
+        v.muted = true; comSom = false;
+        await comLimite(v.play(), 10000, "Não consegui tocar esse vídeo para preparar a cópia. Toque em Enviar de novo e deixe esta tela aberta.");
+      }
       rec.start(1000);
       desenhar();
-      await new Promise((ok) => { v.onended = ok; });
+      // fim: evento ended, ou chegou no fim parado; vigia: se ficar 20 s sem andar (com a tela aberta), para com erro
+      await new Promise((ok, erro) => {
+        let ultimo = -1, parado = 0;
+        v.onended = ok;
+        guarda = setInterval(() => {
+          if (dur && v.currentTime >= dur - 0.15 && (v.paused || v.ended)) { ok(); return; }
+          if (document.hidden) return; // aba escondida: o navegador pausa; espera ela voltar
+          if (v.paused && !v.ended) v.play().catch(() => {});
+          if (Math.abs(v.currentTime - ultimo) < 0.01) { parado += 1; if (parado >= 20) erro(new Error("O vídeo parou de tocar enquanto eu preparava a cópia com marca d'água. Deixe esta tela aberta e na frente e envie de novo.")); }
+          else { parado = 0; ultimo = v.currentTime; }
+        }, 1000);
+      });
       vivo = false;
-      x.drawImage(v, 0, 0, W, H);
-      if (marca) marcaDagua(x, W, H, marca);
+      try { x.drawImage(v, 0, 0, W, H); if (marca) marcaDagua(x, W, H, marca); } catch (e) { /* segue */ }
       rec.stop();
-      await parou;
+      await comLimite(parou, 10000, "A gravação da cópia não terminou. Envie de novo.");
       stream.getTracks().forEach((t) => t.stop());
-      return new Blob(partes, { type: tipo.split(";")[0] });
+      const blob = new Blob(partes, { type: tipo.split(";")[0] });
+      if (!blob.size) throw new Error("A cópia saiu vazia. Envie de novo deixando esta tela aberta.");
+      blob.semSom = !comSom;
+      return blob;
     } finally {
+      if (guarda) clearInterval(guarda);
       try { v.pause(); } catch (e) { /* segue */ }
       v.remove(); URL.revokeObjectURL(url);
-      if (ac) ac.close().catch(() => {});
+      // o AudioContext comum fica aberto para o próximo envio; um criado aqui é fechado
+      if (ac && ac !== acComum) ac.close().catch(() => {});
     }
   }
 
@@ -113,7 +161,8 @@
 
   async function guardar(arq, { pasta, aoProgresso, marcaDagua: marca } = {}) {
     const b = await preparar(arq, aoProgresso, marca);
-    return subir(b, arq.name, pasta);
+    const r = await subir(b, arq.name, pasta);
+    return r && b && b.semSom ? { ...r, semSom: true } : r;
   }
 
   const cacheUrl = new Map();
@@ -171,5 +220,5 @@
     catch (e) { aviso && aviso(e.message || "Não consegui guardar o vídeo.", true); }
   }
 
-  window.painelVideos = { ehVideo, preparar, subir, guardar, url, baixar, apagar, tocarEm, reduzir, anexarAoRoteiro, oferecerAnexar };
+  window.painelVideos = { destravar, ehVideo, preparar, subir, guardar, url, baixar, apagar, tocarEm, reduzir, anexarAoRoteiro, oferecerAnexar };
 })();

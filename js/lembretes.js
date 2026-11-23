@@ -215,8 +215,8 @@
     $$("[data-desligar]", sec).forEach((b) => b.addEventListener("click", async () => { const { error } = await banco().from("lembretes").update({ ativo: false }).eq("id", b.dataset.desligar); if (error) toast(error.message, true); else { toast("Aviso desligado."); await carregar(); pintar(); } }));
     $$("[data-apagar]", sec).forEach((b) => b.addEventListener("click", async () => { const { error } = await banco().from("lembretes").delete().eq("id", b.dataset.apagar); if (error) toast(error.message, true); else { await carregar(); pintar(); } }));
   }
-  // ---------- LIGAÇÃO COM O GOOGLE (e-mail dos avisos, Drive e YouTube), um Apps Script só na conta dela ----------
-  // configuracoes "google_ponte" (e "email_webhook", usado pela função notificacoes) = {url, segredo, drive, canal}
+  // ---------- LIGAÇÃO COM O GOOGLE (e-mail dos avisos e Drive; sem YouTube), um Apps Script só na conta dela ----------
+  // configuracoes "google_ponte" (e "email_webhook", usado pela função notificacoes) = {url, segredo, drive}
   async function pintarEmail() {
     const box = document.getElementById("lb-email"); if (!box) return;
     const G = window.painelGoogle;
@@ -227,43 +227,39 @@
       const b = new Uint8Array(18); crypto.getRandomValues(b);
       cfg = { url: "", segredo: [...b].map((x) => x.toString(16).padStart(2, "0")).join("") };
     }
-    box.innerHTML = `<h3 class="pc-h3">${SINO}Ligação com o Google: e-mail, Drive e YouTube</h3>
-      ${completo ? `<p class="faixa faixa-ok">Ligado.${cfg.canal ? " Canal do YouTube: <b>" + esc(cfg.canal) + "</b>." : ""} Os avisos chegam no seu e-mail, os vídeos em alta ficam na pasta <b>${esc(G.PASTA_MAE)}</b> do seu Drive e o painel publica no YouTube.</p>`
-        : ligado ? `<p class="faixa faixa-erro">Só os e-mails estão ligados. Cole o código novo abaixo no mesmo projeto do Apps Script e reimplante para ligar o Drive e o YouTube.</p>`
-        : `<p class="pc-ajuda">Liga três coisas da sua conta Google com o painel: os avisos chegam no seu Gmail; o vídeo em alta de cada job fica no seu Drive (pasta <b>${esc(G.PASTA_MAE)}</b>, uma subpasta por cliente) e é liberado para a marca quando ela aprova; e o painel publica o vídeo no YouTube como não listado. É grátis e leva uns 5 minutos, uma vez só.</p>`}
+    box.innerHTML = `<h3 class="pc-h3">${SINO}Ligação com o Google: e-mail e Drive</h3>
+      ${completo ? `<p class="faixa faixa-ok">Ligado. Os avisos chegam no seu e-mail e os vídeos em alta ficam na pasta <b>${esc(G.PASTA_MAE)}</b> do seu Drive.</p>`
+        : ligado ? `<p class="faixa faixa-erro">Só os e-mails estão ligados. Cole o código novo abaixo no mesmo projeto do Apps Script e reimplante para ligar o Drive.</p>`
+        : `<p class="pc-ajuda">Liga duas coisas da sua conta Google com o painel: os avisos chegam no seu Gmail, e o vídeo em alta de cada job fica no seu Drive (pasta <b>${esc(G.PASTA_MAE)}</b>, uma subpasta por cliente) e é liberado para a marca quando ela aprova. O painel não mexe no seu YouTube. É grátis e leva uns 5 minutos, uma vez só.</p>`}
       <div class="pc-linha lb-botoes">${ligado ? `<button class="btn btn-principal" type="button" id="lb-email-teste">Testar a ligação</button><button class="btn" type="button" id="lb-email-desligar">Desligar</button>` : ""}</div>
       <details class="pc-passos"${completo ? "" : " open"}><summary><b>${ligado ? "Colar o código de novo / trocar o link" : "Ligar com o Google"}</b></summary><ol class="pc-ajuda">
-        <li>No computador, abra <a href="https://script.google.com/home/projects/create" target="_blank" rel="noopener">script.google.com</a> (Novo projeto) com a conta Google do canal <b>Mari Bonetto UGC</b>.${ligado ? " Se já tem o projeto do painel, abra ele." : ""}</li>
+        <li>No computador, abra <a href="https://script.google.com/home/projects/create" target="_blank" rel="noopener">script.google.com</a> (Novo projeto) com a sua conta Google.${ligado ? " Se já tem o projeto do painel, abra ele." : ""}</li>
         <li>Apague o que estiver escrito e cole o código abaixo. <button class="btn" type="button" id="lb-email-copiar">Copiar o código</button> Salve (ícone do disquete).</li>
-        <li>Na coluna da esquerda, em <b>Serviços</b>, toque no <b>+</b>, escolha <b>YouTube Data API v3</b> e toque em <b>Adicionar</b>.</li>
-        <li>Em cima, escolha a função <b>testar</b> e toque em <b>Executar</b>. O Google pede permissão: Revisar permissões, escolha sua conta (se aparecer a lista de canais, escolha <b>Mari Bonetto UGC</b>), Avançado, Acessar e Permitir. Chega um e-mail dizendo o nome do canal.</li>
+        <li>Em cima, escolha a função <b>testar</b> e toque em <b>Executar</b>. O Google pede permissão: Revisar permissões, escolha sua conta, Avançado, Acessar e Permitir. Chega um e-mail de teste.</li>
         <li>${ligado ? "Toque em <b>Implantar</b> > <b>Gerenciar implantações</b> > lápis > Versão: <b>Nova versão</b> > Implantar. O link continua o mesmo." : "Toque em <b>Implantar</b> > <b>Nova implantação</b> > engrenagem > <b>App da Web</b>. Executar como: <b>Eu</b>. Quem pode acessar: <b>Qualquer pessoa</b>. Implantar."}</li>
         <li>Copie o <b>URL do app da Web</b> (termina em /exec), cole aqui e toque em Salvar e testar.</li></ol>
         <textarea class="lb-codigo" readonly rows="9" id="lb-email-codigo">${esc(G.codigo(cfg.segredo))}</textarea>
         <div class="pc-linha"><input type="url" id="lb-email-url" placeholder="https://script.google.com/macros/s/.../exec" value="${esc(cfg.url || "")}" style="flex:1;min-width:0"><button class="btn btn-principal" type="button" id="lb-email-salvar">Salvar e testar</button></div>
       </details>`;
     const q = (id) => document.getElementById(id);
-    // testa e-mail, Drive (pasta mãe) e YouTube (nome do canal); marca drive:true quando o código novo responde
+    // testa e-mail e se o código novo (com Drive) responde; marca drive:true
     async function testarTudo(url) {
       const base = { url, segredo: cfg.segredo };
       await G.gravar(base);
       await chamar({ acao: "email_teste" }).catch(() => null);
-      let canal = "";
-      try { const c = await G.chamar("canal"); canal = c.canal || ""; }
-      catch (e) { if (/desatualizado|outra versão/.test(e.message)) throw e; toast("Drive ligado, mas o YouTube ainda não: " + e.message, true); }
-      await G.gravar({ ...base, drive: true, canal });
-      return canal;
+      await G.chamar("ping");
+      await G.gravar({ ...base, drive: true });
     }
     q("lb-email-copiar").addEventListener("click", async () => { try { await navigator.clipboard.writeText(q("lb-email-codigo").value); toast("Código copiado."); } catch (e) { q("lb-email-codigo").select(); } });
     q("lb-email-salvar").addEventListener("click", async (ev) => {
       const url = q("lb-email-url").value.trim();
       if (!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) { toast("Cole o URL do app da Web, que termina em /exec.", true); return; }
       ev.currentTarget.disabled = true;
-      try { const canal = await testarTudo(url); toast(canal ? "Pronto. Ligado ao canal " + canal + "." : "Pronto. E-mail e Drive ligados."); }
+      try { await testarTudo(url); toast("Pronto. E-mail e Drive ligados."); }
       catch (e) { toast(e.message || "Não consegui salvar.", true); }
       pintarEmail();
     });
-    if (q("lb-email-teste")) q("lb-email-teste").addEventListener("click", async (ev) => { ev.currentTarget.disabled = true; try { const canal = await testarTudo(cfg.url); toast("Tudo certo" + (canal ? ", canal " + canal : "") + ". Mandei um e-mail de teste."); } catch (e) { toast(e.message, true); } pintarEmail(); });
+    if (q("lb-email-teste")) q("lb-email-teste").addEventListener("click", async (ev) => { ev.currentTarget.disabled = true; try { await testarTudo(cfg.url); toast("Tudo certo. Mandei um e-mail de teste."); } catch (e) { toast(e.message, true); } pintarEmail(); });
     if (q("lb-email-desligar")) q("lb-email-desligar").addEventListener("click", async () => {
       if (!(await window.painelDialogo.confirmar("Desligar a ligação com o Google? Os e-mails param, e os vídeos novos não vão mais para o Drive. O que já está no Drive continua lá.", { ok: "Desligar", perigo: true }))) return;
       try { await G.gravar({ url: "", segredo: cfg.segredo }); toast("Ligação desligada."); } catch (e) { toast(e.message, true); }
