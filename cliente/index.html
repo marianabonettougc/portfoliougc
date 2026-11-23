@@ -102,6 +102,49 @@ video.player{width:100%;max-height:72vh;border-radius:12px;background:#000;displ
 .alta{display:flex;flex-direction:column;gap:8px;background:var(--verde-suave);border-radius:14px;padding:12px 14px;margin-top:10px}
 .alta b{color:var(--verde);font-size:14px}
 .alta .botao{align-self:flex-start}
+
+/* Refinamento visual do portal da marca */
+.folha{max-width:760px;padding-top:34px;gap:20px}
+.folha>.rot,.barra>.rot{font-size:10.5px;letter-spacing:.17em;color:#927565}
+h1{font-size:clamp(29px,5vw,36px);letter-spacing:-.025em}
+h2{font-size:23px}
+.meta{line-height:1.65}
+.num{gap:12px}
+.num div{padding:16px 17px;min-height:92px;justify-content:center;transition:transform .18s ease,border-color .18s ease}
+.num strong{font-size:30px}
+.num span{font-size:12.5px}
+.job{padding:19px 20px;border-radius:18px;gap:16px;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.job:hover{transform:translateY(-2px);border-color:rgba(107,74,53,.3);box-shadow:0 8px 24px rgba(75,48,31,.055)}
+.job .nome{font-size:21px;letter-spacing:-.01em}
+.job .info{gap:6px}
+.job .seta{font-size:24px;line-height:1}
+.etapas{gap:7px}
+.etapas .pil{padding:5px 11px;font-size:11.5px}
+.pil{font-size:12px;padding:5px 11px}
+.cartao{border-radius:18px;padding:20px;gap:16px;box-shadow:0 2px 8px rgba(75,48,31,.018)}
+.status-job div{border-radius:15px;padding:15px}
+.linha-et{margin-top:10px;gap:6px}
+.linha-et li{font-size:11.5px}
+.hist{gap:15px}
+.hist div{padding:2px 0 2px 14px;border-left:2px solid #e8d9c9}
+.feito{line-height:1.55}
+button,a.botao{transition:filter .18s ease,transform .18s ease}
+button:hover:not(:disabled),a.botao:hover{filter:brightness(.98);transform:translateY(-1px)}
+.pe{line-height:1.7;padding-top:4px}
+@media(max-width:520px){
+ .folha{padding-top:22px;gap:16px}
+ .num{gap:7px}
+ .num div{padding:12px 10px;min-height:82px}
+ .num strong{font-size:25px}
+ .num span{font-size:11px;line-height:1.35}
+ .job{padding:16px;border-radius:16px}
+ .job .nome{font-size:19px}
+ .cartao{padding:16px}
+ .etapas{gap:5px}
+ .etapas .pil{font-size:10.5px;padding:4px 8px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+
 </style>
 </head>
 <body>

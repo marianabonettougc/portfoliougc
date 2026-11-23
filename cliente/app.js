@@ -163,9 +163,10 @@
     jobs.forEach(function(j){ var i = etapaIdx(j); if (situacaoDoJob(j).cls === "enviado") cont.esp++; else if (i === 6) cont.ent++; else if (i >= 0) cont.prod++; });
     var h = '<div class="barra">' + topo + (PREVIA ? "" : '<button id="b-sair" type="button">Sair</button>') + "</div>";
     h += "<h1>Olá, <em>" + esc(dados.marca || "marca") + "</em></h1>";
+    h += '<p class="meta" style="margin:-8px 0 2px">Acompanhe por aqui o andamento dos seus conteúdos, aprovações e entregas.</p>';
     if (PREVIA) h += '<p class="feito aj">Prévia: é assim que a marca vê a pasta dela. Os botões ficam desligados aqui.</p>';
     h += '<div class="num"><div><strong>' + cont.esp + '</strong><span>Para você aprovar</span></div><div><strong>' + cont.prod + '</strong><span>Em produção</span></div><div><strong>' + cont.ent + '</strong><span>Entregues</span></div></div>';
-    h += "<h2>Seus projetos</h2>";
+    h += '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><h2>Seus projetos</h2><span class="rot">Acompanhamento</span></div>';
     if (!jobs.length) h += '<p class="cartao">Ainda não há projetos na sua pasta. Assim que a Mari enviar um roteiro, ele aparece aqui.</p>';
     else {
       var ord = jobs.slice().sort(function(a, b){ return (situacaoDoJob(a).cls === "enviado" ? 0 : 1) - (situacaoDoJob(b).cls === "enviado" ? 0 : 1); });
@@ -173,6 +174,7 @@
         var s = situacaoDoJob(j);
         return '<button type="button" class="job" data-job="' + esc(j.id) + '"><span class="info"><span class="nome">' + esc(j.produto || j.marca || "Projeto") + "</span>" +
           (j.resumo ? '<span class="meta">' + esc(j.resumo) + "</span>" : "") +
+          (j.etapa_em ? '<span class="meta" style="font-size:11.5px">Atualizado em ' + quando(j.etapa_em) + "</span>" : "") +
           '<span class="et-agora"><b>' + esc(nomeEtapa(j)) + "</b>" + barraHtml(j) + "</span>" + etapasHtml(j) + "</span>" +
           '<span class="seta" aria-hidden="true">›</span></button>';
       }).join("") + "</div>";
