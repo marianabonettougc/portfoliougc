@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611222330"></script>
-<script src="../../js/dialogos.js?v=202611222330"></script>
-<script src="../../js/metricool-ig.js?v=202611222330"></script>
-<script src="../../js/corretor.js?v=202611222330"></script>
+<script src="../../js/banco.js?v=202611222340"></script>
+<script src="../../js/dialogos.js?v=202611222340"></script>
+<script src="../../js/metricool-ig.js?v=202611222340"></script>
+<script src="../../js/corretor.js?v=202611222340"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5253,14 +5253,15 @@ const APV_GRUPOS = [
   {id:"aprovado", nome:"Aprovados", cor:"#4f7a54"},
   {id:"sem", nome:"Sem roteiro ainda", cor:"#b9a99a"}
 ];
-function apvGrupo(j){
+function apvGrupo(j, naArea){
   if(ehFinalizado(j.status) || j.status==="Cancelado") return "";
   const ap = j.aprovacao || {}, r = ap.roteiro, v = ap.video, cur = v || r;
   if(cur && (cur.situacao==="ajustes" || cur.situacao==="refacao")) return "ajustes";
   if(cur && cur.situacao==="enviado") return "marca";
   if(!r && !v){
     const tem = !!String(j.roteiroConteudo||"").trim() || !!String(j.docAba||"").trim();
-    if(!APV_ANTES_DA_APROVACAO.includes(j.status)) return "";
+    // job na Área do cliente aparece sempre (a marca precisa receber o roteiro); fora dela, só antes da produção
+    if(!naArea && !APV_ANTES_DA_APROVACAO.includes(j.status)) return "";
     return tem ? "enviar" : "sem";
   }
   if(v && v.situacao==="aprovado") return "aprovado";
@@ -5292,7 +5293,7 @@ function CentralAprovacoes({jobs, onAbrir, onSalvar}){
   }
   const linkDe = (j) => areas[j.id] ? linkPortal(areas[j.id].login) : apvLinkDoJob(j);
   async function copiar(j){ const l = linkDe(j); try{ await navigator.clipboard.writeText(l); setMsg({id:j.id, texto:"Link copiado."}); }catch(e){ setMsg({id:j.id, texto:l}); } }
-  const comGrupo = jobs.map(j=>({j, g:apvGrupo(j)})).filter(x=>x.g);
+  const comGrupo = jobs.map(j=>({j, g:apvGrupo(j, !!areas[j.id])})).filter(x=>x.g);
   const conta = (g) => comGrupo.filter(x=>x.g===g).length;
   const visiveis = APV_GRUPOS.filter(g=>filtro==="todos" ? g.id!=="sem" : g.id===filtro);
   const precisa = conta("ajustes") + conta("enviar");
@@ -7480,7 +7481,6 @@ function PaginaAprovacoes({state, updateState}){
   return (
     <div>
       <div className="apv2-topo">
-        <p className="page-sub" style={{margin:0}}>Roteiros e vídeos que a marca aprova, na ordem do que precisa de você.</p>
         <div className="apv2-abas">
           <button type="button" className={aba==="fila"?"on":""} onClick={()=>trocarAba("fila")}>Aprovações</button>
           <button type="button" className={aba==="acessos"?"on":""} onClick={()=>trocarAba("acessos")}>Acessos das marcas</button>
