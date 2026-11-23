@@ -84,6 +84,20 @@ video.player{width:100%;max-height:72vh;border-radius:12px;background:#000;displ
 .todas .o{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .todas .o span{font-size:14px}
 @media (max-width:520px){ .status-job{grid-template-columns:1fr} .todas .linha{flex-wrap:wrap} }
+.et-agora{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--texto);margin-top:2px}
+.et-agora b{font-weight:600}
+.barra-et{display:inline-flex;gap:3px}
+.barra-et i{width:16px;height:5px;border-radius:3px;background:var(--bege)}
+.barra-et i.feito{background:var(--verde)} .barra-et i.agora{background:var(--terracota)}
+.linha-et{list-style:none;margin:6px 0 0;padding:0;display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.linha-et li{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;font-size:12px;color:var(--suave);line-height:1.25;position:relative}
+.linha-et li span{width:14px;height:14px;border-radius:50%;background:var(--papel);border:2px solid var(--bege);z-index:1}
+.linha-et li::before{content:"";position:absolute;top:6px;left:-50%;width:100%;height:2px;background:var(--bege)}
+.linha-et li:first-child::before{display:none}
+.linha-et li.feito span{background:var(--verde);border-color:var(--verde)} .linha-et li.feito::before,.linha-et li.agora::before{background:var(--verde)}
+.linha-et li.agora span{background:var(--terracota);border-color:var(--terracota);box-shadow:0 0 0 4px rgba(168,112,88,.18)}
+.linha-et li.agora{color:var(--texto);font-weight:600}
+@media (max-width:520px){ .linha-et{grid-template-columns:1fr;gap:0} .linha-et li{flex-direction:row;text-align:left;gap:10px;padding:6px 0} .linha-et li::before{left:6px;top:-50%;width:2px;height:100%} }
 </style>
 </head>
 <body>
@@ -91,6 +105,6 @@ video.player{width:100%;max-height:72vh;border-radius:12px;background:#000;displ
   <span class="rot">Mari Bonetto · UGC Creator</span>
   <p>Carregando...</p>
 </main>
-<script src="app.js?v=202611222245"></script>
+<script src="app.js?v=202611222330"></script>
 </body>
 </html>

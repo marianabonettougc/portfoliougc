@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611222245"></script>
-<script src="../../js/dialogos.js?v=202611222245"></script>
-<script src="../../js/metricool-ig.js?v=202611222245"></script>
-<script src="../../js/corretor.js?v=202611222245"></script>
+<script src="../../js/banco.js?v=202611222330"></script>
+<script src="../../js/dialogos.js?v=202611222330"></script>
+<script src="../../js/metricool-ig.js?v=202611222330"></script>
+<script src="../../js/corretor.js?v=202611222330"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -917,6 +917,31 @@
   .apv-linha{ font-size:12.5px; color:var(--graphite-soft); margin-top:6px; }
   .apv-fala{ font-size:13px; background:#f6efe6; border-radius:9px; padding:7px 9px; margin-top:6px; white-space:pre-wrap; overflow-wrap:anywhere; }
   .apv-vazio{ font-size:13px; color:var(--graphite-soft); border:1px dashed var(--line); border-radius:10px; padding:14px 10px; text-align:center; margin-bottom:8px; }
+  /* APROVAÇÕES v2 (nov/2026): lista por prioridade */
+  .apv2-topo{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .apv2-abas{ display:inline-flex; background:#efe5d8; border-radius:999px; padding:3px; gap:2px; }
+  .apv2-abas button{ all:unset; cursor:pointer; padding:7px 14px; border-radius:999px; font-size:13.5px; color:var(--graphite-soft); }
+  .apv2-abas button.on{ background:#fffdf9; color:var(--graphite); font-weight:500; box-shadow:0 1px 3px rgba(107,74,53,.12); }
+  .apv2-filtros{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .apv2-filtros button{ all:unset; cursor:pointer; display:inline-flex; align-items:center; gap:7px; padding:7px 12px; border-radius:999px; border:1px solid rgba(107,74,53,.16); background:#fffdf9; font-size:13px; color:var(--graphite); }
+  .apv2-filtros button b{ font-weight:600; }
+  .apv2-filtros button i{ width:8px; height:8px; border-radius:50%; background:var(--c); }
+  .apv2-filtros button.on{ border-color:var(--c); box-shadow:inset 0 0 0 1px var(--c); }
+  .apv2-grupo{ margin:16px 0 8px; display:flex; align-items:center; gap:8px; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; color:var(--graphite-soft); }
+  .apv2-grupo i{ width:8px; height:8px; border-radius:50%; background:var(--c); }
+  .apv2-lista{ display:flex; flex-direction:column; gap:8px; }
+  .apv2-item{ background:#fffdf9; border:1px solid rgba(107,74,53,.14); border-left:4px solid var(--c); border-radius:14px; padding:12px 14px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 14px; align-items:center; cursor:pointer; }
+  .apv2-item:hover{ border-color:rgba(107,74,53,.3); border-left-color:var(--c); }
+  .apv2-nome{ font-weight:600; font-size:14.5px; color:var(--graphite); }
+  .apv2-nome small{ font-weight:400; color:var(--graphite-soft); font-size:13px; margin-left:6px; }
+  .apv2-meio{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; color:var(--graphite-soft); }
+  .apv2-et{ display:inline-flex; gap:3px; } .apv2-et i{ width:14px; height:5px; border-radius:3px; background:#efe5d8; }
+  .apv2-et i.f{ background:#4f7a54; } .apv2-et i.a{ background:#a87058; }
+  .apv2-etn{ color:var(--graphite); font-weight:500; }
+  .apv2-fala{ grid-column:1/-1; font-size:13px; background:#f6e0dc; color:#7a3a2f; border-radius:10px; padding:7px 10px; white-space:pre-wrap; }
+  .apv2-acoes{ display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  .apv2-msg{ grid-column:1/-1; font-size:12.5px; color:var(--graphite-soft); overflow-wrap:anywhere; }
+  @media (max-width:700px){ .apv2-item{ grid-template-columns:1fr; } .apv2-acoes{ justify-content:flex-start; } }
   @media (max-width:700px){ .apv-resumo{ grid-template-columns:1fr 1fr; } }
   .brief-texto.grande{ min-height:62vh; }
   .obs-texto{ min-height:120px; }
@@ -2094,7 +2119,7 @@ function Toggle({on, onClick}){
 // Nov/2026: ações finalizadas são separadas entre aguardando pagamento e arquivadas.
 const FIN_AGUARDANDO = "Finalizado · Aguardando pagamento";
 const FIN_PAGO = "Finalizado · Pago";
-const JOB_STATUS = ["Aguardando Briefing","Aguardando Produto","Roteirização","Aprovação de Roteiro","Em Produção","Conteúdo Entregue","Aprovação do Conteúdo","Refação",FIN_AGUARDANDO,FIN_PAGO,"Cancelado"];
+const JOB_STATUS = ["Aguardando Briefing","Aguardando Produto","Roteirização","Aprovação de Roteiro","Gravação","Edição","Conteúdo Entregue","Aprovação do Conteúdo","Refação",FIN_AGUARDANDO,FIN_PAGO,"Cancelado"];
 const statusDoJobLista = (state, atual) => { const l = [...JOB_STATUS, ...((state && state.statusJobExtras)||[])]; return atual && !l.includes(atual) ? [atual, ...l] : l; };;
 const JOB_FINISHED = ["Finalizado",FIN_AGUARDANDO,FIN_PAGO,"Cancelado"];
 const ehFinalizado = (st) => st==="Finalizado" || st===FIN_AGUARDANDO || st===FIN_PAGO;
@@ -2120,13 +2145,13 @@ function pagamentoPeloStatus(j){
 }
 const jobStatusTone = (s) => ({
   "Lead":"gray","Em Negociação":"yellow","Fechado":"blue","Aguardando Aprovação":"wine","Aguardando Produto":"yellow",
-  "Aprovado":"blue","Planejado":"yellow","Em Produção":"blue","Gravado":"wine","Conteúdo Entregue":"green",
+  "Aprovado":"blue","Planejado":"yellow","Em Produção":"blue","Gravação":"blue","Edição":"wine","Gravado":"wine","Conteúdo Entregue":"green",
   "Finalizado":"green","Cancelado":"gray",[FIN_AGUARDANDO]:"yellow",[FIN_PAGO]:"green",
   "Aguardando Briefing":"yellow","Roteirização":"yellow","Aprovação de Roteiro":"wine","Aprovação do Conteúdo":"wine","Refação":"yellow"
 }[s] || "gray");
 const KANBAN_COLORS = {
   "Lead":"#8a634b","Em Negociação":"#c9a24a","Fechado":"#a87058","Aguardando Aprovação":"#c98f7a","Aguardando Produto":"#c98f7a",
-  "Aprovado":"#4f7a54","Planejado":"#c9a24a","Em Produção":"#6b4a35","Gravado":"#8a634b","Conteúdo Entregue":"#7a9a6e",
+  "Aprovado":"#4f7a54","Planejado":"#c9a24a","Em Produção":"#6b4a35","Gravação":"#6b4a35","Edição":"#8a634b","Gravado":"#8a634b","Conteúdo Entregue":"#7a9a6e",
   "Finalizado":"#4f7a54","Cancelado":"#b9a99a",[FIN_AGUARDANDO]:"#c9a24a",[FIN_PAGO]:"#4f7a54",
   "Aguardando Briefing":"#c9a24a","Roteirização":"#b98a5e","Aprovação de Roteiro":"#a87058","Aprovação do Conteúdo":"#9c7a8a","Refação":"#c5533f"
 };
@@ -2139,11 +2164,13 @@ const fmtMoneyCur = (v, moeda) => {
 const NICHOS_DEFAULT = ["Beleza","Maternidade","Pet","Casa","Moda","Eletrônicos","Alimentos","Infantil","Fitness","Outro"];
 // status de cada vídeo/story do job: as mesmas etapas da "Minha prioridade" do Dashboard (a última é Entregue)
 // out/2026 (pedido da Mari): as etapas de cada Reels/story; a última (Finalizado) marca como concluído
-const ROTEIRO_STATUS_OPTIONS = ["Aguardando briefing","Aguardando produto","Roteirização","Aprovação de roteiro","Em produção","Conteúdo entregue","Aprovação do conteúdo","Refação","Finalizado"];
+const ROTEIRO_STATUS_OPTIONS = ["Aguardando briefing","Aguardando produto","Roteirização","Aprovação de roteiro","Gravação","Edição","Conteúdo entregue","Aprovação do conteúdo","Refação","Finalizado"];
+// posição de cada etapa (nov/2026: "Em produção" virou Gravação + Edição; nada de número fixo no código)
+const EI = { rot:2, aprRot:3, grav:4, edi:5, ent:6, aprCont:7, ref:8, fim:9 };
 const STATUS_FINAL = (tipo) => tipo==="fotos" ? "Entregue" : "Finalizado";
 // nomes antigos (antes de out/2026) -> nomes novos
-const STATUS_VIDEO_ANTIGO = {"Roteiro pendente":"Roteirização", "Roteiro pronto":"Aprovação de roteiro", "Gravado":"Em produção", "Editado":"Aprovação do conteúdo",
-  "Roteiro":"Roteirização", "Ag. aprovação de roteiro":"Aprovação de roteiro", "Gravação":"Em produção", "Edição":"Em produção", "Aprovação":"Aprovação do conteúdo", "Entregue":"Finalizado"};
+const STATUS_VIDEO_ANTIGO = {"Roteiro pendente":"Roteirização", "Roteiro pronto":"Aprovação de roteiro", "Gravado":"Edição", "Editado":"Aprovação do conteúdo",
+  "Roteiro":"Roteirização", "Ag. aprovação de roteiro":"Aprovação de roteiro", "Em produção":"Gravação", "Aprovação":"Aprovação do conteúdo", "Entregue":"Finalizado"};
 const statusDoItem = (it, tipo) => tipo==="fotos" ? (it.roteiroStatus||FOTO_STATUS_OPTIONS[0]) : (STATUS_VIDEO_ANTIGO[it.roteiroStatus] || it.roteiroStatus || ROTEIRO_STATUS_OPTIONS[0]);
 const FOTO_STATUS_OPTIONS = ["A planejar","Planejada","Tirada","Editado","Entregue"];
 const STATUS_OPTIONS_BY_TIPO = {videos:ROTEIRO_STATUS_OPTIONS, fotos:FOTO_STATUS_OPTIONS, stories:ROTEIRO_STATUS_OPTIONS};
@@ -2547,8 +2574,8 @@ const ETAPAS_JOB = ROTEIRO_STATUS_OPTIONS;
 // nomes curtos para as bolinhas do Dashboard (o nome inteiro aparece ao passar o mouse)
 const etapaCurta = (e) => String(e).replace(/^Aguardando /i, "Ag. ").replace(/^Aprovação d[eo] /i, "Aprov. ");
 // etapa do job na "Minha prioridade" (ordem de prioridade em etapaDoJob); as bolinhas são clicáveis (jobNaEtapa)
-const ETAPA_JOB_DO_STATUS = {"Aguardando Briefing":0, "Aguardando Produto":1, "Roteirização":2, "Aprovação de Roteiro":3, "Em Produção":4, "Gravado":4, "Conteúdo Entregue":5, "Aguardando Aprovação":6, "Aprovação do Conteúdo":6, "Refação":7, "Finalizado":8, [FIN_AGUARDANDO]:8, [FIN_PAGO]:8};
-const ETAPA_JOB_DO_QUADRO = {"Ideias":2, "Roteirização":2, "Revisão":2, "Em Aprovação":3, "Gravação":4, "Edição":4, "Pronto para postar":6, "Pronto p/ Postar":6, "Finalizado":8};
+const ETAPA_JOB_DO_STATUS = {"Aguardando Briefing":0, "Aguardando Produto":1, "Roteirização":EI.rot, "Aprovação de Roteiro":EI.aprRot, "Em Produção":EI.grav, "Gravação":EI.grav, "Gravado":EI.edi, "Edição":EI.edi, "Conteúdo Entregue":EI.ent, "Aguardando Aprovação":EI.aprCont, "Aprovação do Conteúdo":EI.aprCont, "Refação":EI.ref, "Finalizado":EI.fim, [FIN_AGUARDANDO]:EI.fim, [FIN_PAGO]:EI.fim};
+const ETAPA_JOB_DO_QUADRO = {"Ideias":EI.rot, "Roteirização":EI.rot, "Revisão":EI.rot, "Em Aprovação":EI.aprRot, "Gravação":EI.grav, "Edição":EI.edi, "Pronto para postar":EI.aprCont, "Pronto p/ Postar":EI.aprCont, "Finalizado":EI.fim};
 const etapaDoJob = (job, roteiros) => Math.max(ETAPA_JOB_DO_STATUS[job && job.status] ?? 0, etapaDoAndamento(job, roteiros));
 // o status do job (Em Produção, Conteúdo Entregue...) é o mínimo; o andamento dos conteúdos pode estar mais adiantado
 const etapaDoAndamento = (job, roteiros) => {
@@ -2569,7 +2596,7 @@ function jobNaEtapa(job, i){
   const st = ROTEIRO_STATUS_OPTIONS[i], fim = i===ROTEIRO_STATUS_OPTIONS.length-1;
   const e = job.entregaveis || {};
   const muda = (lista) => (lista||[]).map(it=>({...it, roteiroStatus:st, concluido: fim ? true : (statusDoItem(it,"videos")==="Finalizado" ? false : it.concluido)}));
-  return {...job, etapaManual:i, status: (job.status==="Cancelado" ? job.status : (jobDoStatusItem(st, job) || job.status)), entregaveis:{...e, videos:muda(e.videos), stories:muda(e.stories)}};
+  return {...job, etapaManual:i, etapaV2:true, status: (job.status==="Cancelado" ? job.status : (jobDoStatusItem(st, job) || job.status)), entregaveis:{...e, videos:muda(e.videos), stories:muda(e.stories)}};
 }
 const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const diasAte = (iso) => { const h = new Date(); h.setHours(0,0,0,0); return Math.round((new Date(iso+"T00:00:00") - h)/86400000); };
@@ -3856,8 +3883,8 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     const feitos = its.filter(([i,t])=>i.concluido || ["Finalizado","Conteúdo entregue","Entregue"].includes(statusDoItem(i,t))).reduce((a,[i])=>a+qtdItem(i),0);
     return {total, feitos, pct: total ? Math.round(feitos/total*100) : 0}; };
   const campanhas = [...ativos].sort((a,b)=>(a.prazoEntrega||"9999").localeCompare(b.prazoEntrega||"9999"));
-  const classeEtapa = (i) => i>=8 ? "ok" : i===7 ? "edi" : i===6 || i===3 ? "apr" : i>=4 ? "grav" : i===2 ? "rot" : "plan";
-  const nomeEtapa = (i) => ({0:"Briefing",1:"Produto",2:"Roteiro",3:"Aprovação do roteiro",4:"Produção",5:"Entregue",6:"Aprovação",7:"Refação",8:"Finalizado"})[i] || ETAPAS_JOB[i];
+  const classeEtapa = (i) => i>=EI.fim ? "ok" : i===EI.ref ? "edi" : i===EI.aprCont || i===EI.aprRot ? "apr" : i>=EI.grav ? "grav" : i===EI.rot ? "rot" : "plan";
+  const nomeEtapa = (i) => ({0:"Briefing",1:"Produto",[EI.rot]:"Roteiro",[EI.aprRot]:"Aprovação do roteiro",[EI.grav]:"Gravação",[EI.edi]:"Edição",[EI.ent]:"Entregue",[EI.aprCont]:"Aprovação",[EI.ref]:"Refação",[EI.fim]:"Finalizado"})[i] || ETAPAS_JOB[i];
   async function avancarJob(j){
     const at = etapaDoJob(j, state.roteiros);
     if(at>=ETAPAS_JOB.length-1) return;
@@ -3888,7 +3915,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     })}));
   }
   // prazo: se o conteúdo está com a marca (aprovação) ou já foi entregue, o atraso não é dela
-  const comAMarca = (at) => at===3 || at===5 || at===6;
+  const comAMarca = (at) => at===EI.aprRot || at===EI.ent || at===EI.aprCont;
   // semana com setas (a rotina mostra o dia escolhido)
   const [semanaDesloc,setSemanaDesloc] = useState(0);
   // nov/2026: cada bloco do Dashboard minimiza e maximiza (fica lembrado neste aparelho)
@@ -4008,7 +4035,7 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
 
   // ----- tarefas: os mesmos itens da agenda (tarefas, follow-ups, plano da semana, prazos dos jobs e posts) -----
   // concluído = o que o registro de origem diz (nada fica marcado só no Dashboard)
-  const ETAPA_FEITO = {r:3, c:5, d:5, o:8};
+  const ETAPA_FEITO = {r:EI.aprRot, c:EI.ent, d:EI.ent, o:EI.fim};
   const PROX_STATUS = {r:"Aprovação de roteiro", c:"Aprovação do conteúdo", d:"Conteúdo entregue", o:"Finalizado"};
   const tipoJobItem = (it) => it.item && /^[rcdo]-/.test(it.id) ? it.id[0] : null;
   const itemConcluido = (it) => {
@@ -4016,10 +4043,10 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
     if(it.followup) return it.followup.status==="Feito";
     const k = tipoJobItem(it);
     if(k){ if(it.item.concluido) return true; const e = ROTEIRO_STATUS_OPTIONS.indexOf(statusDoItem(it.item, it.tipoItem));
-      if(k==="c") return e>=5; // em refação o conteúdo já foi enviado para aprovação
-      if(k==="o" && it.item.semAprovacao && e>=5 && e!==7) return true; // sem aprovação: "Conteúdo entregue" já conta como publicado
-      return e>=ETAPA_FEITO[k] && e!==7; }
-    if(it.id.startsWith("e-") && it.job){ const at = etapaDoJob(it.job, state.roteiros); return at>=5 && at!==7; }
+      if(k==="c") return e>=EI.ent; // em refação o conteúdo já foi enviado para aprovação
+      if(k==="o" && it.item.semAprovacao && e>=EI.ent && e!==EI.ref) return true; // sem aprovação: "Conteúdo entregue" já conta como publicado
+      return e>=ETAPA_FEITO[k] && e!==EI.ref; }
+    if(it.id.startsWith("e-") && it.job){ const at = etapaDoJob(it.job, state.roteiros); return at>=EI.ent && at!==EI.ref; }
     return false;
   };
   const podeConcluir = (it) => !!(it.tarefa || it.followup || (tipoJobItem(it) && it.tipoItem!=="fotos"));
@@ -4073,11 +4100,11 @@ function Dashboard({ocultar, alternarOcultar, abrirAba, mudar, state, updateStat
       if(e<0) return;
       const itemFinalizado = t==="fotos" ? e===FOTO_STATUS_OPTIONS.indexOf("Entregue") : e===ROTEIRO_STATUS_OPTIONS.indexOf("Finalizado");
       if(itemFinalizado) return;
-      if(t!=="fotos" && it.prazoRoteiro && e<3) datas.push([it.prazoRoteiro, `Roteiro ${it.label||""}`.trim()]);
-      if(!it.semAprovacao && it.prazoConteudo && e<(t==="fotos" ? 4 : 5)) datas.push([it.prazoConteudo, `Enviar ${it.label||"conteúdo"} para aprovação`]);
-      if(it.dataEntrega && e<(t==="fotos" ? 4 : 5)) datas.push([it.dataEntrega, `Entregar conteúdo final · ${it.label||"conteúdo"}`]);
-      if(t!=="fotos" && j.categoria==="Publi" && it.prazoPostagem && e<8) datas.push([it.prazoPostagem, `Publicar · ${it.label||"conteúdo"}`]); });
-    if(j.prazoEntrega && !comAMarca(at) && at<5) datas.push([j.prazoEntrega, "Entrega final"]);
+      if(t!=="fotos" && it.prazoRoteiro && e<EI.aprRot) datas.push([it.prazoRoteiro, `Roteiro ${it.label||""}`.trim()]);
+      if(!it.semAprovacao && it.prazoConteudo && e<(t==="fotos" ? 4 : EI.ent)) datas.push([it.prazoConteudo, `Enviar ${it.label||"conteúdo"} para aprovação`]);
+      if(it.dataEntrega && e<(t==="fotos" ? 4 : EI.ent)) datas.push([it.dataEntrega, `Entregar conteúdo final · ${it.label||"conteúdo"}`]);
+      if(t!=="fotos" && j.categoria==="Publi" && it.prazoPostagem && e<EI.ref) datas.push([it.prazoPostagem, `Publicar · ${it.label||"conteúdo"}`]); });
+    if(j.prazoEntrega && !comAMarca(at) && at<EI.ent) datas.push([j.prazoEntrega, "Entrega final"]);
     return datas.sort((a,b)=>a[0].localeCompare(b[0]));
   };
   const entregasProx7 = ativos.reduce((n,j)=>n+prazosDoJob(j).filter(([d])=>diasAte(d)>=0 && diasAte(d)<=7).length, 0);
@@ -5119,14 +5146,31 @@ function aplicarRespostaNoJob(job, r, lido){
   const doDoc = !!String(job.docAba||"").trim();
   if(doDoc){
     // no Google Doc a marca comenta e depois aprova a mesma versão: comentário não tira o job da aprovação
-    if(r.situacao==="aprovado" && ["Aprovação de Roteiro","Roteirização"].includes(job.status)) novo = itensNoStatusDoJob({...novo, status:"Em Produção"}, "Em Produção");
+    if(r.situacao==="aprovado" && ["Aprovação de Roteiro","Roteirização"].includes(job.status)) novo = itensNoStatusDoJob({...novo, status:"Gravação"}, "Gravação");
   }else if(job.status==="Aprovação de Roteiro" && r.situacao!=="enviado"){
-    const st = r.situacao==="aprovado" ? "Em Produção" : "Roteirização";
+    const st = r.situacao==="aprovado" ? "Gravação" : "Roteirização";
     novo = itensNoStatusDoJob({...novo, status:st}, st);
   }
   return novo;
 }
 // respostas que chegaram com o painel fechado: aplica nos jobs e marca como aplicadas
+// Área do cliente: a etapa de cada job (status) vai para aprovacao_links.etapa; a marca vê Roteirização, Gravação, Edição...
+// ref.current = {job_id: etapa já gravada}; null = reler os links (job novo na pasta)
+async function sincronizarEtapasPortal(jobs, ref){
+  try{
+    if(!ref.current || Date.now() - (ref.lido||0) > 600000){
+      const { data, error } = await supabaseClient.from("aprovacao_links").select("job_id, etapa"); if(error) return;
+      ref.current = {}; ref.lido = Date.now(); (data||[]).forEach(l=>{ ref.current[l.job_id] = l.etapa || ""; });
+    }
+    for(const j of jobs){
+      if(!(j.id in ref.current)) continue;
+      const st = String(j.status||"");
+      if(!st || ref.current[j.id]===st) continue;
+      ref.current[j.id] = st;
+      await supabaseClient.from("aprovacao_links").update({etapa:st, etapa_em:new Date().toISOString()}).eq("job_id", j.id);
+    }
+  }catch(e){ console.warn("etapas da área do cliente", e); }
+}
 async function buscarRespostasAprovacao(updateState){
   try{
     const { data } = await supabaseClient.from("aprovacao_eventos").select("id, job_id, tipo, autor, texto, gancho, criado_em, aprovacao_envios(tipo, versao)").eq("aplicado", false).in("tipo", ["aprovado","ajustes","refacao"]).order("criado_em", {ascending:true});
@@ -5193,52 +5237,106 @@ function apvColuna(j){
   return r.situacao==="refacao" ? "ajustes" : r.situacao;
 }
 const apvHa = (iso) => { const d = Math.floor((Date.now() - new Date(iso).getTime())/86400000); return d<=0 ? "hoje" : d===1 ? "ontem" : `há ${d} dias`; };
+// APROVAÇÕES v2 (nov/2026, pedido da Mari: "bagunçado"): uma lista só, na ordem do que precisa dela.
+// Etapas que a marca vê (as mesmas da Área do cliente): pelo status do job
+const ETAPAS_CLIENTE = ["Preparação","Roteirização","Aprovação do roteiro","Gravação","Edição","Aprovação do vídeo","Entregue"];
+function etapaClienteIdx(j){
+  const st = String(j.status||"");
+  if(ehFinalizado(st)) return 6;
+  const m = {"Aguardando Briefing":0,"Aguardando Produto":0,"Roteirização":1,"Aprovação de Roteiro":2,"Gravação":3,"Em Produção":3,"Edição":4,"Refação":4,"Conteúdo Entregue":5,"Aprovação do Conteúdo":5};
+  return st in m ? m[st] : 1;
+}
+const APV_GRUPOS = [
+  {id:"ajustes", nome:"Ajustes pedidos", cor:"#c5533f"},
+  {id:"enviar", nome:"Prontos para enviar", cor:"#b98a5e"},
+  {id:"marca", nome:"Com a marca", cor:"#c9a24a"},
+  {id:"aprovado", nome:"Aprovados", cor:"#4f7a54"},
+  {id:"sem", nome:"Sem roteiro ainda", cor:"#b9a99a"}
+];
+function apvGrupo(j){
+  if(ehFinalizado(j.status) || j.status==="Cancelado") return "";
+  const ap = j.aprovacao || {}, r = ap.roteiro, v = ap.video, cur = v || r;
+  if(cur && (cur.situacao==="ajustes" || cur.situacao==="refacao")) return "ajustes";
+  if(cur && cur.situacao==="enviado") return "marca";
+  if(!r && !v){
+    const tem = !!String(j.roteiroConteudo||"").trim() || !!String(j.docAba||"").trim();
+    if(!APV_ANTES_DA_APROVACAO.includes(j.status)) return "";
+    return tem ? "enviar" : "sem";
+  }
+  if(v && v.situacao==="aprovado") return "aprovado";
+  if(r && r.situacao==="aprovado" && !v) return j.status==="Edição" ? "enviar" : "aprovado";
+  return "";
+}
+function apvFrase(j){
+  const ap = j.aprovacao || {}, r = ap.roteiro, v = ap.video, cur = v || r, oque = v ? "vídeo" : "roteiro";
+  const FR = {aprovado:"aprovou", ajustes:"pediu ajustes", refacao:"pediu refação"};
+  if(!cur) return String(j.roteiroConteudo||"").trim() || j.docAba ? "Roteiro pronto no job" : "Ainda sem roteiro no job";
+  if(cur.situacao==="enviado") return `${oque[0].toUpperCase()+oque.slice(1)} versão ${cur.versao} enviado ${apvHa(cur.em)}`;
+  if(r && r.situacao==="aprovado" && !v && j.status==="Edição") return "Roteiro aprovado · vídeo em edição, pronto para enviar";
+  return `${cur.por||"A marca"} ${FR[cur.situacao]||cur.situacao} o ${oque} ${apvHa(cur.em)} · versão ${cur.versao}`;
+}
 function CentralAprovacoes({jobs, onAbrir, onSalvar}){
   const [ocupado,setOcupado] = useState("");
   const [msg,setMsg] = useState(null); // {id, texto}
+  const [filtro,setFiltro] = useState("todos");
+  const [areas,setAreas] = useState({}); // job_id -> {marca, login}
+  useEffect(()=>{
+    supabaseClient.from("aprovacao_links").select("job_id, portal_marca_id, portal_marcas(marca, login, ativo)").not("portal_marca_id","is",null)
+      .then(({data})=>{ const m = {}; (data||[]).forEach(l=>{ if(l.portal_marcas && l.portal_marcas.ativo!==false) m[l.job_id] = {...l.portal_marcas, id:l.portal_marca_id}; }); setAreas(m); }, ()=>null);
+  },[jobs.length]);
   async function enviar(j){
     setMsg(null); setOcupado(j.id);
-    try{ const novo = await apvEnviarRoteiro(j); if(novo){ onSalvar(novo); setMsg({id:j.id, texto:"Enviado. Copie o link e mande para a marca."}); } }
+    try{ const novo = await apvEnviarRoteiro(j); if(novo){ onSalvar(novo); window.dispatchEvent(new Event("apv:recarregar")); setMsg({id:j.id, texto: areas[j.id] ? `Enviado para a Área do cliente da ${areas[j.id].marca}.` : "Enviado. Copie o link e mande para a marca."}); } }
     catch(e){ console.warn(e); setMsg({id:j.id, texto: e && e.aviso ? e.message : "Não consegui enviar agora. Tente de novo."}); }
     setOcupado("");
   }
-  async function copiar(j){ const l = apvLinkDoJob(j); try{ await navigator.clipboard.writeText(l); setMsg({id:j.id, texto:"Link copiado."}); }catch(e){ setMsg({id:j.id, texto:l}); } }
+  const linkDe = (j) => areas[j.id] ? linkPortal(areas[j.id].login) : apvLinkDoJob(j);
+  async function copiar(j){ const l = linkDe(j); try{ await navigator.clipboard.writeText(l); setMsg({id:j.id, texto:"Link copiado."}); }catch(e){ setMsg({id:j.id, texto:l}); } }
+  const comGrupo = jobs.map(j=>({j, g:apvGrupo(j)})).filter(x=>x.g);
+  const conta = (g) => comGrupo.filter(x=>x.g===g).length;
+  const visiveis = APV_GRUPOS.filter(g=>filtro==="todos" ? g.id!=="sem" : g.id===filtro);
+  const precisa = conta("ajustes") + conta("enviar");
   return (
     <div>
-      <div className="apv-resumo">
-        {APV_COLUNAS.map(c=><div key={c.id} style={{borderTopColor:c.cor}}><strong>{jobs.filter(j=>apvColuna(j)===c.id).length}</strong><span>{c.nome}</span></div>)}
+      <div className="apv2-filtros">
+        <button type="button" className={filtro==="todos"?"on":""} style={{"--c":"#6b4a35"}} onClick={()=>setFiltro("todos")}><i></i>Tudo <b>{comGrupo.length - conta("sem")}</b></button>
+        {APV_GRUPOS.map(g=><button key={g.id} type="button" className={filtro===g.id?"on":""} style={{"--c":g.cor}} onClick={()=>setFiltro(filtro===g.id?"todos":g.id)}><i></i>{g.nome} <b>{conta(g.id)}</b></button>)}
       </div>
-      <div className="org-quadro">
-        {APV_COLUNAS.map(c=>{ const lista = jobs.filter(j=>apvColuna(j)===c.id); return (
-          <div key={c.id} className="org-col" style={{borderTopColor:c.cor, "--cor":c.cor}}>
-            <div className="org-col-topo"><span className="org-col-ponto" style={{background:c.cor}}></span><span className="org-col-nome">{c.nome}</span><span className="org-col-n">{lista.length}</span></div>
-            {lista.length===0 && <div className="apv-vazio">{c.vazio}</div>}
-            {lista.map(j=>{ const r = (j.aprovacao||{}).roteiro, temRoteiro = !!String(j.roteiroConteudo||"").trim() || !!String(j.docAba||"").trim(); return (
-              <div key={j.id} className="org-card apv-card" onClick={()=>onAbrir(j)}>
-                <div className="org-card-topo"><Icon name={j.categoria==="Publi"?"campaign":"videocam"} size={16} style={{color:"var(--butter)"}}/><span className="org-marca">{j.marca}</span></div>
-                <div className="org-sub">{[j.produto, resumoEntregas(j)].filter(Boolean).join(" · ")}</div>
-                {r && <div className="apv-linha">{r.situacao==="enviado" ? `Versão ${r.versao} enviada ${apvHa(r.em)}` : `${r.por||"A marca"} ${({aprovado:"aprovou",ajustes:"pediu ajustes",refacao:"pediu refação"})[r.situacao]} ${apvHa(r.em)} · versão ${r.versao}`}</div>}
-                {r && r.situacao==="refacao" && <span className="apv-selo refacao">Refação</span>}
-                {r && r.situacao!=="enviado" && (r.texto || r.gancho) && <div className="apv-fala">{[r.gancho?("Gancho escolhido: "+r.gancho):"", r.texto].filter(Boolean).join("\n")}</div>}
-                {!r && !temRoteiro && <div className="apv-linha">Ainda sem roteiro no job.</div>}
-                <div className="apv-botoes" onClick={ev=>ev.stopPropagation()}>
-                  {c.id==="enviar" && (temRoteiro
-                    ? <button type="button" className="btn btn-primary btn-sm" disabled={ocupado===j.id} onClick={()=>enviar(j)}><Icon name="send" size={15}/>{ocupado===j.id?"Enviando...":"Enviar para aprovação"}</button>
-                    : <button type="button" className="btn btn-ghost btn-sm" onClick={()=>onAbrir(j)}><Icon name="edit_note" size={15}/>Pôr o roteiro</button>)}
-                  {c.id==="ajustes" && (j.docAba
-                    ? <a className="btn btn-primary btn-sm" href={DOC_ROTEIROS_URL} target="_blank" rel="noopener"><Icon name="edit_note" size={15}/>Corrigir no Doc</a>
-                    : <button type="button" className="btn btn-primary btn-sm" onClick={()=>onAbrir(j)}><Icon name="edit_note" size={15}/>Corrigir roteiro</button>)}
-                  {c.id==="ajustes" && !j.docAba && <button type="button" className="btn btn-ghost btn-sm" disabled={ocupado===j.id} onClick={()=>enviar(j)}><Icon name="send" size={15}/>{ocupado===j.id?"Enviando...":"Enviar nova versão"}</button>}
-                  {(j.docAba || (j.aprovacao && j.aprovacao.token)) && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>copiar(j)}><Icon name="content_copy" size={15}/>Copiar link</button>}
-                  {(j.docAba || (j.aprovacao && j.aprovacao.token)) && <a className="btn btn-ghost btn-sm" href={apvLinkPrevia(j)} target="_blank" rel="noopener"><Icon name="visibility" size={15}/>Ver</a>}
-                  {j.docAba && <a className="btn btn-ghost btn-sm" href={DOC_ROTEIROS_URL} target="_blank" rel="noopener"><Icon name="description" size={15}/>Doc</a>}
+      {filtro==="todos" && <div className="apv-linha" style={{marginBottom:4}}>{precisa ? `${precisa} ${precisa===1?"job precisa":"jobs precisam"} de você agora.` : "Nada esperando por você agora."}</div>}
+      {visiveis.map(g=>{ const lista = comGrupo.filter(x=>x.g===g.id).map(x=>x.j); if(!lista.length && filtro==="todos") return null; return (
+        <div key={g.id}>
+          <div className="apv2-grupo" style={{"--c":g.cor}}><i></i>{g.nome} · {lista.length}</div>
+          {!lista.length && <div className="apv-vazio">Nada aqui.</div>}
+          <div className="apv2-lista">
+            {lista.map(j=>{ const et = etapaClienteIdx(j), ap = j.aprovacao || {}, cur = ap.video || ap.roteiro, area = areas[j.id], temLink = !!(area || ap.token || j.docAba); return (
+              <div key={j.id} className="apv2-item" style={{"--c":g.cor}} onClick={()=>onAbrir(j)}>
+                <div style={{minWidth:0}}>
+                  <div className="apv2-nome">{j.marca}<small>{[j.produto, resumoEntregas(j)].filter(Boolean).join(" · ")}</small></div>
+                  <div className="apv2-meio">
+                    <span className="apv2-et" title={ETAPAS_CLIENTE[et]}>{ETAPAS_CLIENTE.map((_,k)=><i key={k} className={k<et?"f":k===et?"a":""}></i>)}</span>
+                    <span className="apv2-etn">{ETAPAS_CLIENTE[et]}</span>
+                    <span>{apvFrase(j)}</span>
+                    {area ? <span>· Área da {area.marca}</span> : j.docAba ? <span>· pelo Google Doc</span> : null}
+                  </div>
                 </div>
-                {msg && msg.id===j.id && <div className="apv-linha" style={{overflowWrap:"anywhere"}}>{msg.texto}</div>}
+                <div className="apv2-acoes" onClick={ev=>ev.stopPropagation()}>
+                  {g.id==="enviar" && !ap.roteiro && <button type="button" className="btn btn-primary btn-sm" disabled={ocupado===j.id} onClick={()=>enviar(j)}><Icon name="send" size={15}/>{ocupado===j.id?"Enviando...":"Enviar roteiro"}</button>}
+                  {g.id==="enviar" && ap.roteiro && <button type="button" className="btn btn-primary btn-sm" onClick={()=>onAbrir(j)}><Icon name="movie" size={15}/>Enviar vídeo</button>}
+                  {g.id==="ajustes" && (j.docAba && !ap.video
+                    ? <a className="btn btn-primary btn-sm" href={DOC_ROTEIROS_URL} target="_blank" rel="noopener"><Icon name="edit_note" size={15}/>Corrigir no Doc</a>
+                    : <button type="button" className="btn btn-primary btn-sm" onClick={()=>onAbrir(j)}><Icon name="edit_note" size={15}/>{ap.video ? "Ajustar e reenviar vídeo" : "Corrigir roteiro"}</button>)}
+                  {g.id==="ajustes" && !ap.video && !j.docAba && <button type="button" className="btn btn-ghost btn-sm" disabled={ocupado===j.id} onClick={()=>enviar(j)}><Icon name="send" size={15}/>{ocupado===j.id?"Enviando...":"Enviar nova versão"}</button>}
+                  {g.id==="sem" && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>onAbrir(j)}><Icon name="edit_note" size={15}/>Pôr o roteiro</button>}
+                  {temLink && g.id!=="sem" && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>copiar(j)}><Icon name="content_copy" size={15}/>Copiar link</button>}
+                  {temLink && g.id!=="sem" && <a className="btn btn-ghost btn-sm" href={area ? PORTAL_URL+"?previa="+area.id+"#p="+encodeURIComponent(j.id) : apvLinkPrevia(j)} target="_blank" rel="noopener"><Icon name="visibility" size={15}/>Ver como a marca vê</a>}
+                </div>
+                {cur && cur.situacao!=="enviado" && cur.situacao!=="aprovado" && (cur.texto || cur.gancho) && <div className="apv2-fala">{[cur.gancho?("Gancho escolhido: "+cur.gancho):"", cur.texto].filter(Boolean).join("\n")}</div>}
+                {msg && msg.id===j.id && <div className="apv2-msg">{msg.texto}</div>}
               </div>
             ); })}
           </div>
-        ); })}
-      </div>
+        </div>
+      ); })}
     </div>
   );
 }
@@ -5857,10 +5955,16 @@ function normalizarStatusJobs(state){
     let n = j;
     // "Finalizado" antigo: pago (ou permuta) vai para o Histórico, sem pagamento fica nos Ativos aguardando
     if(j.status==="Finalizado") n = {...j, status: finalDoJob(j)};
+    else if(j.status==="Em Produção" || j.status==="Gravado") n = {...j, status: j.status==="Gravado" ? "Edição" : "Gravação"};
     else if(j.status!=="Cancelado" && !JOB_STATUS.includes(j.status) && !((state.statusJobExtras||[]).includes(j.status))){
       const e = j.entregaveis || {}, ks = [...(e.videos||[]), ...(e.stories||[])].map(etapaItem).filter(k=>k>=0);
       n = {...j, status: ks.length ? (jobDoStatusItem(ROTEIRO_STATUS_OPTIONS[Math.min(...ks)], j) || "Aguardando Briefing") : "Aguardando Briefing"};
     }
+    // bolinha escolhida antes de nov/2026 (sem "Edição" na lista): da Gravação em diante anda uma casa
+    if(Number.isInteger(n.etapaManual) && !n.etapaV2){ n = {...n, etapaManual: n.etapaManual>=EI.edi ? n.etapaManual+1 : n.etapaManual, etapaV2:true}; }
+    // status gravado nos itens com o nome antigo
+    { const e = n.entregaveis || {}; const fix = (l) => (l||[]).map(i=>STATUS_VIDEO_ANTIGO[i.roteiroStatus] && ["Em produção","Gravado"].includes(i.roteiroStatus) ? {...i, roteiroStatus:STATUS_VIDEO_ANTIGO[i.roteiroStatus]} : i);
+      n = {...n, entregaveis:{...e, videos:fix(e.videos), stories:fix(e.stories)}}; }
     n = itensAteStatusDoJob(n);
     if(JSON.stringify(n)!==JSON.stringify(j)) mudou = true;
     return n;
@@ -6553,11 +6657,11 @@ function Jobs({state, updateState}){
     const e0 = j.entregaveis || {}, at = etapaDoJob(j, state.roteiros), datas = [];
     [...(e0.videos||[]).map(i=>[i,"videos"]), ...(e0.fotos||[]).map(i=>[i,"fotos"]), ...(e0.stories||[]).map(i=>[i,"stories"])].forEach(([it,t])=>{
       if(it.concluido) return; const e = ROTEIRO_STATUS_OPTIONS.indexOf(statusDoItem(it,t));
-      if(it.prazoRoteiro && e<3) datas.push(it.prazoRoteiro);
-      if(!it.semAprovacao && it.prazoConteudo && e<5) datas.push(it.prazoConteudo);
-      if(it.dataEntrega && e<5) datas.push(it.dataEntrega);
-      if(j.categoria==="Publi" && it.prazoPostagem && e<8) datas.push(it.prazoPostagem); });
-    if(j.prazoEntrega && !(at===3 || at===5 || at===6) && at<5) datas.push(j.prazoEntrega);
+      if(it.prazoRoteiro && e<EI.aprRot) datas.push(it.prazoRoteiro);
+      if(!it.semAprovacao && it.prazoConteudo && e<EI.ent) datas.push(it.prazoConteudo);
+      if(it.dataEntrega && e<EI.ent) datas.push(it.dataEntrega);
+      if(j.categoria==="Publi" && it.prazoPostagem && e<EI.ref) datas.push(it.prazoPostagem); });
+    if(j.prazoEntrega && !(at===EI.aprRot || at===EI.ent || at===EI.aprCont) && at<EI.ent) datas.push(j.prazoEntrega);
     return datas;
   };
   const entregas7j = emProducao.reduce((n,j)=>n+prazosAbertos(j).filter(d=>diasAte(d)>=0 && diasAte(d)<=7).length, 0);
@@ -6902,7 +7006,8 @@ async function ligarJobNaPasta(job, acessoId){
   const { data: ja } = await supabaseClient.from("aprovacao_links").select("job_id").eq("job_id", job.id).maybeSingle();
   const r = ja
     ? await supabaseClient.from("aprovacao_links").update({portal_marca_id:acessoId, resumo:resumoEntregas(job)||""}).eq("job_id", job.id)
-    : await supabaseClient.from("aprovacao_links").insert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:String(job.docAba||"").trim()||null, portal_marca_id:acessoId, resumo:resumoEntregas(job)||""});
+    : await supabaseClient.from("aprovacao_links").insert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:String(job.docAba||"").trim()||null, portal_marca_id:acessoId, resumo:resumoEntregas(job)||"", etapa:job.status||null, etapa_em:new Date().toISOString()});
+  window.dispatchEvent(new Event("apv:recarregar"));
   if(r.error) throw r.error;
   return ap.token ? job : {...job, aprovacao:{...ap, token}};
 }
@@ -7369,15 +7474,20 @@ function AreaClienteJob({f, setF}){
 // CRM de aprovações: página própria no menu (Marcas e jobs > Aprovações)
 function PaginaAprovacoes({state, updateState}){
   const [editing,setEditing] = useState(null);
+  const [aba,setAba] = useState(()=>{ try{ return localStorage.getItem("apvAba")==="acessos" ? "acessos" : "fila"; }catch(e){ return "fila"; } });
+  const trocarAba = (a) => { setAba(a); try{ localStorage.setItem("apvAba", a); }catch(e){} };
   function persistJob(job){ updateState(st=>({...st, jobs:(st.jobs||[]).map(j=>j.id===job.id?job:j), followups:syncFollowups(st.followups, job), transacoes:syncTransacaoFromJob(st.transacoes, job)})); }
   return (
     <div>
-      <div className="page-head"><div>
-        <h1 className="page-title">Aprovações</h1>
-        <p className="page-sub">Envie o roteiro para a marca por um link e acompanhe aqui: o que falta enviar, o que está com a marca, os ajustes pedidos e o que já foi aprovado.</p>
-      </div></div>
-      <AcessosMarcas jobs={state.jobs||[]} onJob={persistJob}/>
-      <CentralAprovacoes jobs={state.jobs||[]} onAbrir={(j)=>setEditing(j)} onSalvar={persistJob}/>
+      <div className="apv2-topo">
+        <p className="page-sub" style={{margin:0}}>Roteiros e vídeos que a marca aprova, na ordem do que precisa de você.</p>
+        <div className="apv2-abas">
+          <button type="button" className={aba==="fila"?"on":""} onClick={()=>trocarAba("fila")}>Aprovações</button>
+          <button type="button" className={aba==="acessos"?"on":""} onClick={()=>trocarAba("acessos")}>Acessos das marcas</button>
+        </div>
+      </div>
+      {aba==="acessos" && <AcessosMarcas jobs={state.jobs||[]} onJob={persistJob}/>}
+      {aba==="fila" && <CentralAprovacoes jobs={state.jobs||[]} onAbrir={(j)=>setEditing(j)} onSalvar={persistJob}/>}
       {editing && <JobModal state={state} updateState={updateState} initial={(state.jobs||[]).find(j=>j.id===editing.id) || editing} onClose={()=>setEditing(null)} onSave={(job)=>{ persistJob(job); setEditing(null); }} onAutosave={persistJob}/>}
     </div>
   );
@@ -12714,6 +12824,10 @@ function App({session}){
     const t = setInterval(()=>{ conferir(); respostas(); }, 60000);
     return ()=>{ document.removeEventListener("visibilitychange", conferir); window.removeEventListener("focus", conferir); clearInterval(t); };
   },[]);
+  // etapa de cada job na Área do cliente (só jobs que estão numa pasta/link)
+  const etapasPortal = useRef(null);
+  useEffect(()=>{ const h = ()=>{ etapasPortal.current = null; }; window.addEventListener("apv:recarregar", h); return ()=>window.removeEventListener("apv:recarregar", h); },[]);
+  useEffect(()=>{ if(!loaded) return; const t = setTimeout(()=>sincronizarEtapasPortal(state.jobs||[], etapasPortal), 1500); return ()=>clearTimeout(t); },[loaded, state.jobs]);
 
   function handleSaveStatus(status){
     setSaveStatus(status);

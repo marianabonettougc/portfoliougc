@@ -109,6 +109,39 @@
     return { cls: u.situacao, txt: ROTULO[u.situacao] };
   }
 
+  // ---------- etapa do projeto (status do job na Mari) ----------
+  var ETAPAS = ["Preparação", "Roteirização", "Aprovação do roteiro", "Gravação", "Edição", "Aprovação do vídeo", "Entregue"];
+  var DA_ETAPA = { "aguardando briefing": 0, "aguardando produto": 0, "roteirização": 1, "aprovação de roteiro": 2, "gravação": 3, "em produção": 3,
+    "edição": 4, "gravado": 4, "refação": 4, "conteúdo entregue": 5, "aprovação do conteúdo": 5 };
+  function etapaIdx(j){
+    var st = String(j.etapa || "").toLowerCase();
+    if (st.indexOf("finalizado") === 0) return 6;
+    if (st === "cancelado") return -1;
+    if (st in DA_ETAPA) return DA_ETAPA[st];
+    // sem etapa gravada: o que já foi enviado diz onde está
+    var r = j.envios.filter(function(e){ return e.tipo === "roteiro" && e.atual; })[0];
+    var v = j.envios.filter(function(e){ return e.tipo === "video" && e.atual; })[0];
+    if (v) return v.situacao === "aprovado" ? 6 : 5;
+    if (r) return r.situacao === "aprovado" ? 3 : 2;
+    return 1;
+  }
+  function nomeEtapa(j){
+    var i = etapaIdx(j), st = String(j.etapa || "").toLowerCase();
+    if (i < 0) return "Cancelado";
+    if (st === "refação") return "Edição (ajustes)";
+    return ETAPAS[i];
+  }
+  function roteiroAprovado(j){ return j.envios.some(function(e){ return e.tipo === "roteiro" && e.atual && e.situacao === "aprovado"; }); }
+  function barraHtml(j, grande){
+    var i = etapaIdx(j);
+    if (i < 0) return '<span class="meta">Projeto cancelado</span>';
+    if (!grande) return '<span class="barra-et" aria-label="Etapa ' + (i + 1) + ' de ' + ETAPAS.length + '">' + ETAPAS.map(function(_, k){ return '<i class="' + (k < i ? "feito" : k === i ? "agora" : "") + '"></i>'; }).join("") + "</span>";
+    return '<ol class="linha-et">' + ETAPAS.map(function(n, k){
+      var rot = k === 2 && roteiroAprovado(j) && i > 2 ? "Roteiro aprovado" : (k === i ? nomeEtapa(j) : n);
+      return '<li class="' + (k < i ? "feito" : k === i ? "agora" : "") + '"><span></span>' + esc(rot) + "</li>";
+    }).join("") + "</ol>";
+  }
+
   // situação de cada tipo de aprovação (roteiro e vídeo) num projeto
   function etapaDe(j, tipo){
     if (tipo === "roteiro" && j.doc){
@@ -126,12 +159,12 @@
   // ---------- pasta da marca ----------
   function telaPasta(){
     var jobs = dados.jobs || [];
-    var cont = { esp: 0, apr: 0, aj: 0 };
-    jobs.forEach(function(j){ var s = situacaoDoJob(j).cls; if (s === "enviado") cont.esp++; else if (s === "aprovado") cont.apr++; else if (s === "ajustes" || s === "refacao") cont.aj++; });
+    var cont = { esp: 0, prod: 0, ent: 0 };
+    jobs.forEach(function(j){ var i = etapaIdx(j); if (situacaoDoJob(j).cls === "enviado") cont.esp++; else if (i === 6) cont.ent++; else if (i >= 0) cont.prod++; });
     var h = '<div class="barra">' + topo + (PREVIA ? "" : '<button id="b-sair" type="button">Sair</button>') + "</div>";
     h += "<h1>Olá, <em>" + esc(dados.marca || "marca") + "</em></h1>";
     if (PREVIA) h += '<p class="feito aj">Prévia: é assim que a marca vê a pasta dela. Os botões ficam desligados aqui.</p>';
-    h += '<div class="num"><div><strong>' + cont.esp + '</strong><span>Para você aprovar</span></div><div><strong>' + cont.aj + '</strong><span>Com ajustes pedidos</span></div><div><strong>' + cont.apr + '</strong><span>Aprovados</span></div></div>';
+    h += '<div class="num"><div><strong>' + cont.esp + '</strong><span>Para você aprovar</span></div><div><strong>' + cont.prod + '</strong><span>Em produção</span></div><div><strong>' + cont.ent + '</strong><span>Entregues</span></div></div>';
     h += "<h2>Seus projetos</h2>";
     if (!jobs.length) h += '<p class="cartao">Ainda não há projetos na sua pasta. Assim que a Mari enviar um roteiro, ele aparece aqui.</p>';
     else {
@@ -139,7 +172,8 @@
       h += '<div class="lista">' + ord.map(function(j){
         var s = situacaoDoJob(j);
         return '<button type="button" class="job" data-job="' + esc(j.id) + '"><span class="info"><span class="nome">' + esc(j.produto || j.marca || "Projeto") + "</span>" +
-          (j.resumo ? '<span class="meta">' + esc(j.resumo) + "</span>" : "") + etapasHtml(j) + "</span>" +
+          (j.resumo ? '<span class="meta">' + esc(j.resumo) + "</span>" : "") +
+          '<span class="et-agora"><b>' + esc(nomeEtapa(j)) + "</b>" + barraHtml(j) + "</span>" + etapasHtml(j) + "</span>" +
           '<span class="seta" aria-hidden="true">›</span></button>';
       }).join("") + "</div>";
       // todas as aprovações, da mais nova para a mais antiga
@@ -167,6 +201,8 @@
     h += "<h1>" + esc(j.marca || dados.marca || "Seu projeto") + (j.produto ? " <em>" + esc(j.produto) + "</em>" : "") + "</h1>";
     if (j.resumo) h += '<p class="meta">' + esc(j.resumo) + "</p>";
     if (PREVIA) h += '<p class="feito aj">Prévia: os botões ficam desligados aqui.</p>';
+    h += '<section class="cartao"><div class="topo"><h2>Em que pé está</h2><span class="pil p-' + (etapaIdx(j) === 6 ? "aprovado" : "enviado") + '">' + esc(nomeEtapa(j)) + "</span></div>" + barraHtml(j, true) +
+      (j.etapa_em ? '<p class="meta">Atualizado em ' + quando(j.etapa_em) + "</p>" : "") + "</section>";
     h += '<div class="status-job">' + ["roteiro", "video"].map(function(t){
       var s = etapaDe(j, t);
       return "<div><b>" + NOME[t] + '</b><span class="pil p-' + s.cls + '" style="align-self:flex-start">' + esc(s.txt) + "</span>" +

@@ -5,6 +5,7 @@
 // (aprovacao_links.portal_marca_id), com o roteiro enviado, as versões e o histórico.
 // Nunca devolve valores, briefing, observações nem nada de outra marca.
 // Ações da marca: marca {m}, entrar {login: código do link, senha}, sair {s}, pasta {s}, responder {s, job, envio, tipo, nome, texto, gancho}
+// Cada projeto leva a etapa do job (aprovacao_links.etapa, gravada pelo painel: Roteirização, Gravação, Edição...).
 // Ação da Mari (com o login dela no painel): previa {marca_id} = a pasta como a marca vê, sem registrar nada.
 // =========================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -47,7 +48,7 @@ const DIAS_SESSAO = 30, MAX_FALHAS = 5, MIN_BLOQUEIO = 15;
 type Adm = any;
 
 async function montarPasta(adm: Adm, marcaId: string, registrar: boolean) {
-  const { data: links } = await adm.from("aprovacao_links").select("job_id, marca, produto, resumo, doc_aba, criado_em")
+  const { data: links } = await adm.from("aprovacao_links").select("job_id, marca, produto, resumo, doc_aba, etapa, etapa_em, criado_em")
     .eq("portal_marca_id", marcaId).eq("ativo", true).order("criado_em", { ascending: false });
   const ls = links || [];
   if (!ls.length) return [];
@@ -76,7 +77,7 @@ async function montarPasta(adm: Adm, marcaId: string, registrar: boolean) {
       }
     }
     jobs.push({
-      id: l.job_id, marca: l.marca, produto: l.produto, resumo: l.resumo || "",
+      id: l.job_id, marca: l.marca, produto: l.produto, resumo: l.resumo || "", etapa: l.etapa || "", etapa_em: l.etapa_em || null,
       doc: doDoc ? DOC_APROVACAO_URL + "?r=" + encodeURIComponent(doDoc) : "",
       envios: lista.map((e: Adm) => ({ id: e.id, tipo: e.tipo, versao: e.versao, titulo: e.titulo, conteudo: doDoc && e.tipo === "roteiro" ? "" : e.conteudo, situacao: e.situacao,
         video: assinados[e.id] || "",
