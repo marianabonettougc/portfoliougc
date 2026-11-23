@@ -5485,27 +5485,27 @@ function ImportarRoteiroJob({f, setF, state}){
       if(msg) throw new Error(msg);
       const lista = separarRoteirosDoDocs(data.texto);
       if(lista.length>1) setAchados(lista.map(r=>({...r, marcado:true})));
-      else usar(data.titulo || (lista[0]||{}).titulo || "Roteiro do Google Docs", lista.length ? roteiroDoDocs(lista[0], {}).conteudo : data.texto, {roteiroDoc:link.trim(), roteiroId:"", roteirosIds:[], roteiroBase:""});
+      else usar(data.titulo || (lista[0]||{}).titulo || "Roteiro do Google Docs", "", {roteiroDoc:link.trim(), roteiroId:"", roteirosIds:[], roteiroBase:""});
     }catch(e){ setErro(String(e.message||e)); }
     setLendo(false);
   }
   function usarAchados(){
     const marc = achados.filter(r=>r.marcado);
     if(!marc.length) return;
-    usar(marc.length===1 ? marc[0].titulo : `${marc.length} roteiros do Google Docs`, marc.map(r=>`${r.titulo}\n\n${roteiroDoDocs(r, {}).conteudo}`).join("\n\n----------\n\n"), {roteiroDoc:link.trim(), roteiroId:"", roteirosIds:[], roteiroBase:""});
+    usar(marc.length===1 ? marc[0].titulo : `${marc.length} roteiros do Google Docs`, "", {roteiroDoc:link.trim(), roteiroId:"", roteirosIds:[], roteiroBase:""});
   }
   const marcaJob = String(f.marca||"").trim().toLowerCase();
   const roteiros = (state.roteiros||[]).filter(r=>!busca.trim() || [r.titulo, r.cliente, r.conteudo].join(" ").toLowerCase().includes(busca.trim().toLowerCase()))
     .sort((a,b)=>{ const da = marcaJob && String(a.cliente||"").toLowerCase()===marcaJob ? 0 : 1, db = marcaJob && String(b.cliente||"").toLowerCase()===marcaJob ? 0 : 1; return da-db; });
   return (
     <div>
-      {f.roteiroConteudo ? (
+      {(f.roteiroConteudo || f.roteiroDoc) ? (
         <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6}}>
-          <Icon name="description" size={16}/><strong style={{flex:1, fontSize:14.5}}>{f.roteiroTitulo || "Roteiro"}</strong>
+          <Icon name="description" size={16}/><strong style={{flex:1, fontSize:14.5}}>{f.roteiroTitulo || "Roteiro"}</strong>{f.roteiroDoc && <a className="btn btn-primary btn-sm" href={f.roteiroDoc} target="_blank" rel="noopener noreferrer"><Icon name="open_in_new" size={14}/>Abrir no Google Docs</a>}
           <button type="button" className="btn btn-ghost btn-sm" onClick={async ()=>{ if(await painelDialogo.confirmar("Tirar o roteiro deste job? Se ele veio de Meus roteiros ou do Google Docs, continua salvo lá.", { ok: "Tirar" })) setF(p=>({...p, roteiroConteudo:"", roteiroTitulo:"", roteiroId:"", roteirosIds:[], roteiroBase:"", roteiroDoc:"", roteiroStatus:"Em criação"})); }}>Remover</button>
         </div>
       ) : null}
-      <textarea className="brief-texto" value={f.roteiroConteudo||""} onChange={e=>{ const v=e.target.value; setF(p=>({...vincularIdRoteiroJob(p), roteiroConteudo:v, roteiroStatus: v.trim() ? (p.roteiroStatus==="Em criação" ? "Pronto" : p.roteiroStatus) : "Em criação"})); }} placeholder="Escreva ou cole o roteiro aqui, ou importe do Google Docs ou de Meus roteiros..."/>
+      {!f.roteiroDoc && <textarea className="brief-texto" value={f.roteiroConteudo||""} onChange={e=>{ const v=e.target.value; setF(p=>({...vincularIdRoteiroJob(p), roteiroConteudo:v, roteiroStatus: v.trim() ? (p.roteiroStatus==="Em criação" ? "Pronto" : p.roteiroStatus) : "Em criação"})); }} placeholder="Escreva ou cole o roteiro aqui, ou importe do Google Docs ou de Meus roteiros..."/>}
       <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
         <button type="button" className={"btn btn-sm "+(modo==="docs"?"btn-primary":"btn-ghost")} onClick={()=>{ setModo(modo==="docs"?"":"docs"); setErro(""); }}><Icon name="upload_file" size={15}/>{f.roteiroConteudo?"Trocar: ":""}Importar do Google Docs</button>
         <button type="button" className={"btn btn-sm "+(modo==="aba"?"btn-primary":"btn-ghost")} onClick={()=>{ setModo(modo==="aba"?"":"aba"); setErro(""); }}><Icon name="description" size={15}/>{f.roteiroConteudo?"Trocar: ":""}Importar da aba Roteiros</button>
