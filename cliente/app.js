@@ -135,10 +135,10 @@
   function barraHtml(j, grande){
     var i = etapaIdx(j);
     if (i < 0) return '<span class="meta">Projeto cancelado</span>';
-    if (!grande) return '<span class="barra-et" aria-label="Etapa ' + (i + 1) + ' de ' + ETAPAS.length + '">' + ETAPAS.map(function(_, k){ return '<i class="' + (k < i ? "feito" : k === i ? "agora" : "") + '"></i>'; }).join("") + "</span>";
+    if (!grande) return '<span class="barra-et" aria-label="Etapa ' + (i + 1) + ' de ' + ETAPAS.length + '">' + ETAPAS.map(function(_, k){ return '<i class="' + (k < i ? "ok" : k === i ? "agora" : "") + '"></i>'; }).join("") + "</span>";
     return '<ol class="linha-et">' + ETAPAS.map(function(n, k){
       var rot = k === 2 && roteiroAprovado(j) && i > 2 ? "Roteiro aprovado" : (k === i ? nomeEtapa(j) : n);
-      return '<li class="' + (k < i ? "feito" : k === i ? "agora" : "") + '"><span></span>' + esc(rot) + "</li>";
+      return '<li class="' + (k < i ? "ok" : k === i ? "agora" : "") + '"><span></span>' + esc(rot) + "</li>";
     }).join("") + "</ol>";
   }
 

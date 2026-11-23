@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611222340"></script>
-<script src="../../js/dialogos.js?v=202611222340"></script>
-<script src="../../js/metricool-ig.js?v=202611222340"></script>
-<script src="../../js/corretor.js?v=202611222340"></script>
+<script src="../../js/banco.js?v=202611222350"></script>
+<script src="../../js/dialogos.js?v=202611222350"></script>
+<script src="../../js/metricool-ig.js?v=202611222350"></script>
+<script src="../../js/corretor.js?v=202611222350"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5155,19 +5155,22 @@ function aplicarRespostaNoJob(job, r, lido){
 }
 // respostas que chegaram com o painel fechado: aplica nos jobs e marca como aplicadas
 // Área do cliente: a etapa de cada job (status) vai para aprovacao_links.etapa; a marca vê Roteirização, Gravação, Edição...
-// ref.current = {job_id: etapa já gravada}; null = reler os links (job novo na pasta)
+// ref.current = {job_id: {etapa, resumo} já gravados}; null = reler os links (job novo na pasta)
 async function sincronizarEtapasPortal(jobs, ref){
   try{
     if(!ref.current || Date.now() - (ref.lido||0) > 600000){
-      const { data, error } = await supabaseClient.from("aprovacao_links").select("job_id, etapa"); if(error) return;
-      ref.current = {}; ref.lido = Date.now(); (data||[]).forEach(l=>{ ref.current[l.job_id] = l.etapa || ""; });
+      const { data, error } = await supabaseClient.from("aprovacao_links").select("job_id, etapa, resumo"); if(error) return;
+      ref.current = {}; ref.lido = Date.now(); (data||[]).forEach(l=>{ ref.current[l.job_id] = {etapa:l.etapa || "", resumo:l.resumo || ""}; });
     }
     for(const j of jobs){
-      if(!(j.id in ref.current)) continue;
-      const st = String(j.status||"");
-      if(!st || ref.current[j.id]===st) continue;
-      ref.current[j.id] = st;
-      await supabaseClient.from("aprovacao_links").update({etapa:st, etapa_em:new Date().toISOString()}).eq("job_id", j.id);
+      const ant = ref.current[j.id]; if(!ant) continue;
+      const st = String(j.status||""), resumo = resumoEntregas(j) || "";
+      const muda = {};
+      if(st && ant.etapa!==st){ muda.etapa = st; muda.etapa_em = new Date().toISOString(); }
+      if(resumo !== ant.resumo) muda.resumo = resumo; // escopo novo também aparece para a marca
+      if(!Object.keys(muda).length) continue;
+      ref.current[j.id] = {etapa: st || ant.etapa, resumo};
+      await supabaseClient.from("aprovacao_links").update(muda).eq("job_id", j.id);
     }
   }catch(e){ console.warn("etapas da área do cliente", e); }
 }
