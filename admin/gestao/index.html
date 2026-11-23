@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611231530"></script>
-<script src="../../js/dialogos.js?v=202611231530"></script>
-<script src="../../js/metricool-ig.js?v=202611231530"></script>
-<script src="../../js/corretor.js?v=202611231530"></script>
+<script src="../../js/banco.js?v=202611231710"></script>
+<script src="../../js/dialogos.js?v=202611231710"></script>
+<script src="../../js/metricool-ig.js?v=202611231710"></script>
+<script src="../../js/corretor.js?v=202611231710"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5130,11 +5130,14 @@ async function apvHash(t){ const h = await crypto.subtle.digest("SHA-256", new T
 // Só mexe no status se o job ainda estava em "Aprovação de Roteiro" (se ela mudou à mão, fica como ela deixou).
 function aplicarRespostaNoJob(job, r, lido){
   if(job && r.de==="video"){
+    // vários vídeos (23/11/2026): cada um é uma entrega com título; vale a resposta mais nova (pela hora)
     const ap = job.aprovacao || {}, at = ap.video || {};
-    if((at.versao===r.versao && at.situacao===r.situacao) || (at.versao||0) > r.versao) return job;
-    let novo = {...job, aprovacao:{...ap, video:{situacao:r.situacao, versao:r.versao, em:r.em, por:r.por||"", texto:r.texto||"", lido:!!lido}}};
-    // vídeo aprovado = conteúdo pronto (aguardando pagamento); ajuste ou refação = volta para Refação
-    if(job.status==="Aprovação do Conteúdo" && r.situacao!=="enviado"){
+    const hora = (x) => { const t = x ? new Date(x).getTime() : 0; return isNaN(t) ? 0 : t; };
+    if(at.em && hora(r.em) < hora(at.em)) return job;
+    if(at.em && hora(r.em)===hora(at.em) && at.situacao===r.situacao && (at.titulo||"")===(r.titulo||"")) return job;
+    let novo = {...job, aprovacao:{...ap, video:{situacao:r.situacao, versao:r.versao, titulo:r.titulo||"", em:r.em, por:r.por||"", texto:r.texto||"", lido:!!lido}}};
+    // todos os vídeos aprovados = conteúdo pronto (aguardando pagamento); ajuste em qualquer um = volta para Refação
+    if(job.status==="Aprovação do Conteúdo" && r.situacao!=="enviado" && (r.situacao!=="aprovado" || r.todas!==false)){
       const st = r.situacao==="aprovado" ? FIN_AGUARDANDO : "Refação";
       novo = itensNoStatusDoJob({...novo, status:st}, st);
     }
@@ -5179,13 +5182,30 @@ async function sincronizarEtapasPortal(jobs, ref){
     }
   }catch(e){ console.warn("etapas da área do cliente", e); }
 }
+// vídeos para aprovação (23/11/2026): cada vídeo é uma ENTREGA pelo título (ex. "Vertical sem Black Friday");
+// a versão do banco continua contando no job todo, mas a marca e a Mari veem as versões de cada entrega
+const apvNormTitulo = (t) => String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+function apvEntregas(envs){ // envs de vídeo em qualquer ordem -> [{chave, titulo, envios(ordem de envio), atual}]
+  const ord = [...(envs||[])].sort((a,b)=>String(a.enviado_em||"").localeCompare(String(b.enviado_em||"")) || (a.versao||0)-(b.versao||0));
+  const mapa = {}, lista = [];
+  ord.forEach(e=>{ const k = apvNormTitulo(e.titulo); if(!mapa[k]){ mapa[k] = {chave:k, titulo:e.titulo||"Vídeo", envios:[]}; lista.push(mapa[k]); } mapa[k].envios.push(e); });
+  lista.forEach(x=>{ x.atual = x.envios[x.envios.length-1]; x.titulo = x.atual.titulo || x.titulo; });
+  return lista;
+}
+const apvTodasAprovadas = (envs) => { const es = apvEntregas(envs); return es.length>0 && es.every(x=>x.atual.situacao==="aprovado"); };
 async function buscarRespostasAprovacao(updateState){
   try{
-    const { data } = await supabaseClient.from("aprovacao_eventos").select("id, job_id, tipo, autor, texto, gancho, criado_em, aprovacao_envios(tipo, versao)").eq("aplicado", false).in("tipo", ["aprovado","ajustes","refacao"]).order("criado_em", {ascending:true});
+    const { data } = await supabaseClient.from("aprovacao_eventos").select("id, job_id, tipo, autor, texto, gancho, criado_em, aprovacao_envios(tipo, versao, titulo)").eq("aplicado", false).in("tipo", ["aprovado","ajustes","refacao"]).order("criado_em", {ascending:true});
     if(!data || !data.length) return;
+    const comVideo = [...new Set(data.filter(e=>(e.aprovacao_envios||{}).tipo==="video").map(e=>e.job_id))];
+    const todas = {};
+    if(comVideo.length){
+      const { data: vs } = await supabaseClient.from("aprovacao_envios").select("job_id, versao, titulo, situacao, enviado_em").eq("tipo","video").in("job_id", comVideo);
+      comVideo.forEach(id=>{ todas[id] = apvTodasAprovadas((vs||[]).filter(v=>v.job_id===id)); });
+    }
     updateState(st=>({...st, jobs:(st.jobs||[]).map(j=>{
       let n = j;
-      data.filter(e=>e.job_id===j.id).forEach(e=>{ const env = e.aprovacao_envios || {}; n = aplicarRespostaNoJob(n, {de:env.tipo||"roteiro", versao:env.versao||1, situacao:e.tipo, em:e.criado_em, por:e.autor, texto:e.texto, gancho:e.gancho}, false); });
+      data.filter(e=>e.job_id===j.id).forEach(e=>{ const env = e.aprovacao_envios || {}; n = aplicarRespostaNoJob(n, {de:env.tipo||"roteiro", versao:env.versao||1, titulo:env.titulo||"", todas:todas[j.id], situacao:e.tipo==="refacao"?"ajustes":e.tipo, em:e.criado_em, por:e.autor, texto:e.texto, gancho:e.gancho}, false); });
       return n;
     })}));
     await supabaseClient.from("aprovacao_eventos").update({aplicado:true}).in("id", data.map(e=>e.id));
@@ -7184,15 +7204,18 @@ async function apvGuardarAlta(job, arquivo, nome, aoProgresso){
   return {alta, drive:{pastaId:pasta.id, url:pasta.url, cliente:pasta.cliente}};
 }
 // o vídeo de uma vez só: o original vai para o Drive e a cópia de aprovação (720p, marca d'água) para a marca
-async function apvEnviarVideo(job, arquivo, obs, aoProgresso){
+async function apvEnviarVideo(job, arquivo, obs, aoProgresso, titulo){
   const aviso = (m) => { const e = new Error(m); e.aviso = true; return e; };
   if(!String(job.marca||"").trim()) throw aviso("Preencha a marca do job antes de enviar.");
   const PV = (()=>{ try{ return window.parent.painelVideos; }catch(e){ return null; } })();
   if(!PV) throw aviso("Abra o job pelo painel para enviar o vídeo.");
   if(!PV.ehVideo(arquivo)) throw aviso("Escolha um arquivo de vídeo (MP4 ou MOV).");
-  const { data: ant } = await supabaseClient.from("aprovacao_envios").select("versao, situacao").eq("job_id", job.id).eq("tipo", "video").order("versao", {ascending:true});
-  const ult = (ant||[]).slice(-1)[0];
-  if(ult && ult.situacao==="enviado" && !(await painelDialogo.confirmar(`A marca ainda não respondeu o vídeo ${ult.versao}. Enviar outro mesmo assim? O anterior fica no histórico.`, {ok:"Enviar"}))) return null;
+  const tit = String(titulo||"").trim().slice(0,200);
+  if(!tit) throw aviso("Diga qual vídeo é este (ex.: Vertical sem Black Friday) antes de enviar.");
+  const { data: ant } = await supabaseClient.from("aprovacao_envios").select("versao, titulo, situacao, enviado_em").eq("job_id", job.id).eq("tipo", "video").order("versao", {ascending:true});
+  const daEntrega = (ant||[]).filter(e=>apvNormTitulo(e.titulo)===apvNormTitulo(tit));
+  const ult = daEntrega.slice(-1)[0];
+  if(ult && ult.situacao==="enviado" && !(await painelDialogo.confirmar(`A marca ainda não respondeu "${tit}". Enviar uma versão nova dele mesmo assim? A anterior fica no histórico.`, {ok:"Enviar"}))) return null;
   const versao = (ant||[]).reduce((m,e)=>Math.max(m, e.versao), 0) + 1, agora = new Date().toISOString();
   const prog = {previa:0, drive:null};
   const avisa = () => aoProgresso && aoProgresso({...prog});
@@ -7210,10 +7233,10 @@ async function apvEnviarVideo(job, arquivo, obs, aoProgresso){
   if(erroDrive) noDrive = null;
   let novo = await apvGarantirLink(job);
   const video = {path:guardado.path, nome:arquivo.name, tamanho:guardado.tamanho, marcaDagua:true, ...(noDrive ? {alta:noDrive.alta} : {})};
-  const e = await supabaseClient.from("aprovacao_envios").insert({job_id:job.id, tipo:"video", versao, titulo:String(arquivo.name||"Vídeo").replace(/\.[^.]+$/,"").slice(0,200), conteudo:String(obs||"").trim().slice(0,4000), video, enviado_em:agora});
+  const e = await supabaseClient.from("aprovacao_envios").insert({job_id:job.id, tipo:"video", versao, titulo:tit, conteudo:String(obs||"").trim().slice(0,4000), video, enviado_em:agora});
   if(e.error) throw e.error;
   const ap = novo.aprovacao || {};
-  const pronto = itensNoStatusDoJob({...novo, ...(noDrive ? {drive:noDrive.drive} : {}), status:"Aprovação do Conteúdo", aprovacao:{...ap, video:{situacao:"enviado", versao, em:agora, lido:true}}}, "Aprovação do Conteúdo");
+  const pronto = itensNoStatusDoJob({...novo, ...(noDrive ? {drive:noDrive.drive} : {}), status:"Aprovação do Conteúdo", aprovacao:{...ap, video:{situacao:"enviado", versao, titulo:tit, em:agora, lido:true}}}, "Aprovação do Conteúdo");
   const com = guardado.semSom ? {...pronto, _semSom:true} : pronto;
   return erroDrive ? {...com, _avisoDrive:erroDrive} : com;
 }
@@ -7227,10 +7250,23 @@ async function apvEnviarAltaDepois(job, envio, arquivo, aoProgresso){
   if(error) throw error;
   return noDrive.drive;
 }
+// sugestões para "Qual vídeo é este?": vídeos já enviados + o escopo do job
+function apvSugestoesEntrega(job, entregas){
+  const nomes = (entregas||[]).map(x=>x.titulo);
+  const NOMES_FMT = {vertical:"Vídeo vertical", horizontal:"Vídeo horizontal", reels:"Reels", tiktok:"TikTok", youtube:"YouTube", shorts:"Shorts"};
+  let cta = 0;
+  ((job.entregaveis||{}).videos||[]).forEach(it=>{
+    const fm = formatoDoItem(it, "videos");
+    if(fm==="cta"){ cta++; nomes.push("CTA extra "+cta); }
+    else if(NOMES_FMT[fm]){ nomes.push(NOMES_FMT[fm]+" sem Black Friday", NOMES_FMT[fm]+" com Black Friday", NOMES_FMT[fm]); }
+  });
+  const vistos = new Set(); return nomes.filter(n=>{ const k = apvNormTitulo(n); if(!k || vistos.has(k)) return false; vistos.add(k); return true; });
+}
 function AprovacaoVideoJob({f, setF}){
   const [envios,setEnvios] = useState([]);
   const [eventos,setEventos] = useState([]);
   const [obs,setObs] = useState("");
+  const [titulo,setTitulo] = useState("");
   const [progresso,setProgresso] = useState(null);
   const [erro,setErro] = useState("");
   const [tocando,setTocando] = useState({}); // id -> link
@@ -7238,8 +7274,12 @@ function AprovacaoVideoJob({f, setF}){
   const [googleOk,setGoogleOk] = useState(null); // ligação com o Google (Drive)
   const [altaPara,setAltaPara] = useState(null); // envio que vai receber o original depois
   const [altaProg,setAltaProg] = useState(null);
-  const inp = useRef(null), inpAlta = useRef(null);
+  const [coment,setComent] = useState({}); // id do envio -> texto do comentário sendo editado
+  const [salvando,setSalvando] = useState(null);
+  const inp = useRef(null), inpAlta = useRef(null), campoTit = useRef(null);
   const vid = (f.aprovacao||{}).video || null;
+  const entregas = apvEntregas(envios);
+  const sugestoes = apvSugestoesEntrega(f, entregas);
   useEffect(()=>{ const G = googleDoPainel(); if(G) G.ligado().then(setGoogleOk, ()=>setGoogleOk(false)); else setGoogleOk(false); },[]);
   const abrirAjustesGoogle = () => { try{ window.parent.postMessage({aba:"notificacoes"}, location.origin); }catch(e){} };
   async function carregar(){
@@ -7250,23 +7290,31 @@ function AprovacaoVideoJob({f, setF}){
     ]);
     const es = a.data||[], evs = b.data||[];
     setEnvios(es); setEventos(evs);
-    const ult = es[0];
-    if(ult && ult.situacao!=="enviado"){
-      const ev = evs.filter(x=>x.envio_id===ult.id && x.tipo===ult.situacao).slice(-1)[0] || {};
-      setF(p=>aplicarRespostaNoJob(p, {de:"video", versao:ult.versao, situacao:ult.situacao, em:ult.respondido_em, por:ev.autor, texto:ev.texto}, true));
-      const ids = evs.filter(x=>x.envio_id===ult.id && x.tipo!=="abriu").map(x=>x.id);
+    // a resposta mais nova de qualquer vídeo vai para o job
+    const resp = es.filter(e=>e.situacao!=="enviado" && e.respondido_em).sort((x,y)=>String(y.respondido_em).localeCompare(String(x.respondido_em)))[0];
+    if(resp){
+      const ev = evs.filter(x=>x.envio_id===resp.id && x.tipo!=="abriu").slice(-1)[0] || {};
+      const sit = resp.situacao==="refacao" ? "ajustes" : resp.situacao;
+      setF(p=>aplicarRespostaNoJob(p, {de:"video", versao:resp.versao, titulo:resp.titulo, todas:apvTodasAprovadas(es), situacao:sit, em:resp.respondido_em, por:ev.autor, texto:ev.texto}, true));
+      const ids = evs.filter(x=>es.some(e=>e.id===x.envio_id) && x.tipo!=="abriu").map(x=>x.id);
       if(ids.length) supabaseClient.from("aprovacao_eventos").update({aplicado:true}).in("id", ids).then(()=>null, ()=>null);
     }
   }
   useEffect(()=>{ carregar(); const t = setInterval(()=>{ if(document.visibilityState==="visible") carregar(); }, 30000); return ()=>clearInterval(t); },[f.id]);
+  function abrirEscolha(){
+    setErro("");
+    if(!titulo.trim()){ setErro("Escreva qual vídeo é este (ex.: Vertical sem Black Friday) antes de escolher o arquivo."); campoTit.current && campoTit.current.focus(); return; }
+    try{ const PV = window.parent.painelVideos; if(PV && PV.destravar) PV.destravar(); }catch(e){}
+    inp.current && inp.current.click();
+  }
   async function escolher(ev){
     const arq = ev.target.files && ev.target.files[0]; ev.target.value = "";
     if(!arq) return;
     setErro(""); setAviso(""); setProgresso({previa:0, drive:null});
     try{
-      const novo = await apvEnviarVideo(f, arq, obs, (p)=>setProgresso(p));
+      const novo = await apvEnviarVideo(f, arq, obs, (p)=>setProgresso(p), titulo);
       if(novo){
-        setF(p=>({...p, status:novo.status, entregaveis:novo.entregaveis, aprovacao:novo.aprovacao, ...(novo.drive ? {drive:novo.drive} : {})})); setObs(""); await carregar();
+        setF(p=>({...p, status:novo.status, entregaveis:novo.entregaveis, aprovacao:novo.aprovacao, ...(novo.drive ? {drive:novo.drive} : {})})); setObs(""); setTitulo(""); await carregar();
         if(novo._semSom) setAviso("O vídeo foi para a marca, mas o navegador não deixou gravar o som na cópia de aprovação. Se precisar do som, envie de novo pelo Chrome ou Edge do computador.");
         else if(novo._avisoDrive) setAviso("O vídeo foi para a marca, mas o original não foi para o Drive: "+novo._avisoDrive+" Use \"Enviar o original em alta\" na versão abaixo.");
         else if(!googleOk) setAviso("O vídeo foi para a marca. O original em alta não foi guardado porque a ligação com o Google está desligada.");
@@ -7287,19 +7335,77 @@ function AprovacaoVideoJob({f, setF}){
     const PV = window.parent.painelVideos; if(!PV || !e.video) return;
     const l = await PV.url(e.video.path); if(l) setTocando(t=>({...t, [e.id]:l}));
   }
-  const FR = {aprovado:"aprovou", ajustes:"pediu ajustes", refacao:"pediu refação"};
+  // comentário para a marca: dá para escrever ou mudar depois de enviado (aparece como "Recado da Mari")
+  async function salvarComentario(e){
+    const texto = String(coment[e.id]||"").trim().slice(0,4000);
+    setSalvando(e.id); setErro("");
+    const { error } = await supabaseClient.from("aprovacao_envios").update({conteudo:texto}).eq("id", e.id);
+    setSalvando(null);
+    if(error){ setErro("Não consegui salvar o comentário: "+error.message); return; }
+    setComent(c=>{ const n = {...c}; delete n[e.id]; return n; });
+    setAviso(texto ? "Comentário salvo. A marca já vê na Área do cliente." : "Comentário tirado.");
+    await carregar();
+  }
+  async function renomear(x){
+    const novo = await painelDialogo.texto("Nome deste vídeo para a marca:", x.titulo);
+    const t = String(novo||"").trim().slice(0,200); if(!t || t===x.titulo) return;
+    const { error } = await supabaseClient.from("aprovacao_envios").update({titulo:t}).in("id", x.envios.map(e=>e.id));
+    if(error){ setErro("Não consegui renomear: "+error.message); return; }
+    await carregar();
+  }
+  const FR = {aprovado:"aprovou", ajustes:"pediu ajustes", refacao:"pediu ajustes"};
+  const ROT_V = {enviado:"Aguardando a marca", aprovado:"Aprovado", ajustes:"Ajustes pedidos", refacao:"Ajustes pedidos"};
+  const nEsp = entregas.filter(x=>x.atual.situacao==="enviado").length, nApr = entregas.filter(x=>x.atual.situacao==="aprovado").length;
   return (
     <div className="apv">
       <div className="apv-topo">
-        <strong>Vídeo para a marca aprovar</strong>
-        {vid ? <span className={"apv-selo "+vid.situacao}>{({enviado:"Aguardando a marca", aprovado:"Vídeo aprovado", ajustes:"Ajustes no vídeo", refacao:"Refazer o vídeo"})[vid.situacao]}{vid.versao?` · v${vid.versao}`:""}</span> : <span className="apv-selo">Nenhum vídeo enviado</span>}
+        <strong>Vídeos para a marca aprovar</strong>
+        {entregas.length ? <span className={"apv-selo "+(nEsp?"enviado":nApr===entregas.length?"aprovado":"ajustes")}>{nEsp ? `${nEsp} de ${entregas.length} com a marca` : nApr===entregas.length ? (entregas.length>1?"Todos aprovados":"Vídeo aprovado") : "Ajustes pedidos"}</span> : <span className="apv-selo">Nenhum vídeo enviado</span>}
       </div>
-      {vid && vid.situacao!=="enviado" && vid.texto && <div style={{fontSize:13.5, background:"#f6efe6", borderRadius:10, padding:"9px 11px", whiteSpace:"pre-wrap"}}><b>{vid.por||"Marca"}:</b> {vid.texto}</div>}
-      <Field label="Recado para a marca junto com o vídeo (opcional)"><textarea rows="2" value={obs} onChange={e=>setObs(e.target.value)} placeholder="Ex.: versão com legenda; a música é só de referência"/></Field>
+      {vid && vid.situacao!=="enviado" && vid.texto && <div style={{fontSize:13.5, background:"#f6efe6", borderRadius:10, padding:"9px 11px", whiteSpace:"pre-wrap"}}><b>{vid.por||"Marca"}{vid.titulo?` · ${vid.titulo}`:""}:</b> {vid.texto}</div>}
+      {entregas.length>0 && <div style={{display:"flex", flexDirection:"column", gap:10}}>{entregas.map((x,i)=>{ const e = x.atual, ed = coment[e.id]; return (
+        <div key={x.chave} style={{border:"1px solid var(--line, rgba(107,74,53,.16))", borderRadius:12, padding:"10px 12px", display:"flex", flexDirection:"column", gap:8}}>
+          <div style={{display:"flex", gap:8, alignItems:"center", flexWrap:"wrap"}}>
+            <span style={{fontSize:11, letterSpacing:".1em", textTransform:"uppercase", fontWeight:600, color:"#a87058"}}>{i+1}ª versão</span>
+            <b>{x.titulo}</b>
+            <span className={"apv-selo "+(e.situacao==="refacao"?"ajustes":e.situacao)}>{ROT_V[e.situacao]}</span>
+            {x.envios.length>1 && <span style={{fontSize:12, color:"var(--graphite-soft)"}}>{x.envios.length} envios</span>}
+            <button type="button" className="btn btn-ghost btn-sm" onClick={()=>renomear(x)}><Icon name="edit" size={14}/>Renomear</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={()=>{ setTitulo(x.titulo); setTimeout(()=>campoTit.current && campoTit.current.scrollIntoView({block:"center"}),0); }}><Icon name="upload" size={14}/>Nova versão deste vídeo</button>
+          </div>
+          <div>
+            <div style={{fontSize:12.5, color:"var(--graphite-soft)", marginBottom:4}}>Comentário para a marca (aparece como "Recado da Mari" em cima do vídeo)</div>
+            {ed===undefined
+              ? <div style={{display:"flex", gap:8, alignItems:"flex-start"}}>
+                  <div style={{flex:1, fontSize:13.5, whiteSpace:"pre-wrap", background:"#f6efe6", borderRadius:10, padding:"8px 10px", color:e.conteudo?"inherit":"var(--graphite-soft)"}}>{e.conteudo || "Sem comentário."}</div>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={()=>setComent(c=>({...c, [e.id]:e.conteudo||""}))}><Icon name="edit_note" size={15}/>{e.conteudo?"Editar":"Escrever"}</button>
+                </div>
+              : <div style={{display:"flex", flexDirection:"column", gap:6}}>
+                  <textarea rows="4" value={ed} onChange={ev=>setComent(c=>({...c, [e.id]:ev.target.value}))} placeholder="Ex.: fiz algumas alterações nas cenas finais..."/>
+                  <div style={{display:"flex", gap:8}}><button type="button" className="btn btn-primary btn-sm" disabled={salvando===e.id} onClick={()=>salvarComentario(e)}>{salvando===e.id?"Salvando...":"Salvar comentário"}</button><button type="button" className="btn btn-ghost btn-sm" onClick={()=>setComent(c=>{ const n = {...c}; delete n[e.id]; return n; })}>Cancelar</button></div>
+                </div>}
+          </div>
+          <div className="apv-hist">{[...x.envios].reverse().map((v,k)=>{ const evs = eventos.filter(z=>z.envio_id===v.id && z.tipo!=="abriu"); const num = x.envios.length-k; return (
+            <div key={v.id} style={{display:"block"}}>
+              <div style={{display:"flex", gap:8, alignItems:"center", flexWrap:"wrap"}}><time>{apvQuando(v.enviado_em)}</time><span>{x.envios.length>1 ? `Envio ${num}` : "Enviado"}{v.video && v.video.nome ? " · "+v.video.nome : ""}</span><span className={"apv-selo "+(v.situacao==="refacao"?"ajustes":v.situacao)}>{ROT_V[v.situacao]}</span>
+                {!tocando[v.id] && v.video && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>assistir(v)}><Icon name="play_arrow" size={15}/>Assistir</button>}
+                {v.video && v.video.alta && <a className="btn btn-ghost btn-sm" href={v.video.alta.url || ("https://drive.google.com/file/d/"+v.video.alta.id+"/view")} target="_blank" rel="noopener"><Icon name="hd" size={15}/>Original no Drive{v.video.alta.liberado ? " · liberado para a marca" : ""}</a>}
+                {v.video && !v.video.alta && googleOk && <button type="button" className="btn btn-ghost btn-sm" disabled={altaProg!==null} onClick={()=>{ setAltaPara(v); setTimeout(()=>inpAlta.current && inpAlta.current.click(), 0); }}><Icon name="hd" size={15}/>Enviar o original em alta</button>}
+              </div>
+              {tocando[v.id] && <video src={tocando[v.id]} controls playsInline style={{width:"100%", maxHeight:360, borderRadius:10, background:"#000", marginTop:6}}/>}
+              {evs.map(z=><q key={z.id}>{(z.autor||"Marca")+" "+(FR[z.tipo]||z.tipo)+(z.texto?": "+z.texto:"")}</q>)}
+            </div>); })}</div>
+        </div>); })}</div>}
+      <div style={{borderTop:entregas.length?"1px solid var(--line, rgba(107,74,53,.16))":"0", paddingTop:entregas.length?10:0, display:"flex", flexDirection:"column", gap:8}}>
+        <Field label="Qual vídeo é este? (a marca vê este nome em cima da miniatura)"><input ref={campoTit} type="text" list={"apv-sug-"+f.id} value={titulo} onChange={e=>setTitulo(e.target.value)} placeholder="Ex.: Vertical sem Black Friday"/></Field>
+        <datalist id={"apv-sug-"+f.id}>{sugestoes.map(n=><option key={n} value={n}/>)}</datalist>
+        {sugestoes.length>0 && <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>{sugestoes.slice(0,8).map(n=><button key={n} type="button" className="btn btn-ghost btn-sm" onClick={()=>setTitulo(n)}>{n}</button>)}</div>}
+        <Field label="Comentário para a marca (opcional; dá para mudar depois)"><textarea rows="3" value={obs} onChange={e=>setObs(e.target.value)} placeholder="Ex.: fiz algumas alterações nas cenas finais..."/></Field>
+      </div>
       <input ref={inp} type="file" accept="video/*,.mov,.mp4" hidden onChange={escolher}/>
       <input ref={inpAlta} type="file" accept="video/*,.mov,.mp4" hidden onChange={escolherAlta}/>
       <div className="apv-botoes">
-        <button type="button" className="btn btn-primary btn-sm" disabled={progresso!==null || altaProg!==null} onClick={()=>{ try{ const PV = window.parent.painelVideos; if(PV && PV.destravar) PV.destravar(); }catch(e){} inp.current && inp.current.click(); }}><Icon name="upload" size={15}/>{progresso!==null ? "Enviando..." : (envios.length ? "Enviar nova versão do vídeo" : "Enviar vídeo para aprovação")}</button>
+        <button type="button" className="btn btn-primary btn-sm" disabled={progresso!==null || altaProg!==null} onClick={abrirEscolha}><Icon name="upload" size={15}/>{progresso!==null ? "Enviando..." : (entregas.some(x=>apvNormTitulo(x.titulo)===apvNormTitulo(titulo)) ? "Enviar nova versão deste vídeo" : "Escolher o vídeo e enviar")}</button>
         {f.drive && f.drive.url && <a className="btn btn-ghost btn-sm" href={f.drive.url} target="_blank" rel="noopener"><Icon name="folder_open" size={15}/>Pasta no Drive</a>}
       </div>
       {progresso!==null && <div style={{fontSize:12.5, color:"var(--graphite-soft)", display:"flex", flexDirection:"column", gap:2}}>
@@ -7311,17 +7417,7 @@ function AprovacaoVideoJob({f, setF}){
       {erro && <div className="apv-erro">{erro}</div>}
       {aviso && <div style={{fontSize:13, background:"#e4eee2", color:"#3f6644", borderRadius:10, padding:"8px 11px"}}>{aviso}</div>}
       {googleOk===false && <div style={{fontSize:13, background:"#f7ebcd", color:"#7a5a12", borderRadius:10, padding:"8px 11px"}}>A ligação com o Google está desligada: o vídeo vai para a marca com marca d'água, mas o original em alta não vai para o Drive. <button type="button" className="btn btn-ghost btn-sm" onClick={abrirAjustesGoogle}>Ligar com o Google</button></div>}
-      {!envios.length && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>Você envia o vídeo final uma vez só. A marca recebe uma cópia em 720p com a sua marca d'água no meio; o original, em alta, vai para o seu Drive (pasta {googleDoPainel() ? googleDoPainel().PASTA_MAE : "Vídeos UGC aprovação"} &gt; cliente) e só é liberado para ela baixar quando aprovar.</div>}
-      {envios.length>0 && <div className="apv-hist">{envios.map(e=>{ const evs = eventos.filter(x=>x.envio_id===e.id && x.tipo!=="abriu"); return (
-        <div key={e.id} style={{display:"block"}}>
-          <div style={{display:"flex", gap:8, alignItems:"center", flexWrap:"wrap"}}><time>{apvQuando(e.enviado_em)}</time><span><b>Versão {e.versao}</b> · {e.titulo}</span><span className={"apv-selo "+e.situacao}>{APV_ROTULO[e.situacao].replace("Roteiro","Vídeo")}</span>
-            {!tocando[e.id] && e.video && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>assistir(e)}><Icon name="play_arrow" size={15}/>Assistir</button>}
-            {e.video && e.video.alta && <a className="btn btn-ghost btn-sm" href={e.video.alta.url || ("https://drive.google.com/file/d/"+e.video.alta.id+"/view")} target="_blank" rel="noopener"><Icon name="hd" size={15}/>Original no Drive{e.video.alta.liberado ? " · liberado para a marca" : ""}</a>}
-            {e.video && !e.video.alta && googleOk && <button type="button" className="btn btn-ghost btn-sm" disabled={altaProg!==null} onClick={()=>{ setAltaPara(e); setTimeout(()=>inpAlta.current && inpAlta.current.click(), 0); }}><Icon name="hd" size={15}/>Enviar o original em alta</button>}
-</div>
-          {tocando[e.id] && <video src={tocando[e.id]} controls playsInline style={{width:"100%", maxHeight:360, borderRadius:10, background:"#000", marginTop:6}}/>}
-          {evs.map(x=><q key={x.id}>{(x.autor||"Marca")+" "+(FR[x.tipo]||x.tipo)+(x.texto?": "+x.texto:"")}</q>)}
-        </div>); })}</div>}
+      {!envios.length && <div style={{fontSize:13, color:"var(--graphite-soft)"}}>Cada vídeo do escopo é enviado com um nome (ex.: Vertical sem Black Friday, Vertical com Black Friday). A marca vê todos em miniatura, separados, e aprova um por um. Ela recebe uma cópia em 720p com a sua marca d'água no meio; o original, em alta, vai para o seu Drive (pasta {googleDoPainel() ? googleDoPainel().PASTA_MAE : "Vídeos UGC aprovação"} &gt; cliente) e só é liberado quando ela aprovar.</div>}
     </div>
   );
 }

@@ -12,9 +12,10 @@
   var q = new URLSearchParams(location.search), PREVIA = q.get("previa") || "";
   var M = String(q.get("m") || "").trim().toLowerCase(); // código da marca no link
   var pagina = document.getElementById("pagina");
-  var ROTULO = { enviado: "Aguardando sua resposta", aprovado: "Aprovado", ajustes: "Ajustes solicitados", refacao: "Refação solicitada" };
+  // "refacao" antigo é lido como ajustes: pedir ajuste e pedir refação são a mesma coisa (pedido da Mari, 23/11/2026)
+  var ROTULO = { enviado: "Aguardando sua resposta", aprovado: "Aprovado", ajustes: "Ajustes solicitados", refacao: "Ajustes solicitados" };
   var NOME = { roteiro: "Roteiro", video: "Vídeo" };
-  var FRASE = { aprovado: "aprovou", ajustes: "pediu ajustes", refacao: "pediu refação" };
+  var FRASE = { aprovado: "aprovou", ajustes: "pediu ajustes", refacao: "pediu ajustes" };
   var dados = null, ocupado = false;
 
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
@@ -98,6 +99,32 @@
       return "<p>" + esc(t) + "</p>";
     }).join("");
   }
+  // ---------- vídeos: cada vídeo é uma entrega (título) com versões próprias ----------
+  // entregas na ordem em que a Mari mandou a primeira vez; cada uma com o envio atual e quantos já foram
+  function entregasDe(j){
+    var vs = j.envios.filter(function(e){ return e.tipo === "video"; }), mapa = {}, lista = [];
+    vs.forEach(function(e){
+      var k = e.entrega || ("video:" + String(e.titulo || "").toLowerCase());
+      if (!mapa[k]){ mapa[k] = { chave: k, envios: [] }; lista.push(mapa[k]); }
+      mapa[k].envios.push(e);
+    });
+    lista.forEach(function(x, i){
+      x.n = i + 1; x.atual = x.envios.filter(function(e){ return e.atual; })[0] || x.envios[x.envios.length - 1];
+      x.titulo = x.atual.titulo || ("Vídeo " + x.n);
+    });
+    return lista;
+  }
+  function ordinal(n){ return n + "ª versão"; }
+  function revisao(x, e){ var i = x.envios.indexOf(e) + 1; return i > 1 ? "atualização " + i + " · " : ""; }
+  function resumoVideos(j){
+    var es = entregasDe(j); if (!es.length) return null;
+    var esp = es.filter(function(x){ return x.atual.situacao === "enviado"; }).length;
+    var apr = es.filter(function(x){ return x.atual.situacao === "aprovado"; }).length;
+    if (esp) return { cls: "enviado", txt: es.length > 1 ? esp + " de " + es.length + " para aprovar" : ROTULO.enviado, atual: es[0].atual };
+    if (apr === es.length) return { cls: "aprovado", txt: es.length > 1 ? "Todos aprovados" : ROTULO.aprovado, atual: es[0].atual };
+    return { cls: "ajustes", txt: ROTULO.ajustes, atual: es[0].atual };
+  }
+
   // situação do projeto na lista: o envio mais novo que ainda espera resposta manda
   function situacaoDoJob(j){
     // roteiro nunca fica anexado aqui: a marca abre pela página do roteiro (j.doc)
@@ -106,7 +133,7 @@
     if (rot && !j.doc && !atuais.some(function(e){ return e.situacao === "enviado"; })) return { cls: "", txt: "Roteiro em preparação" };
     if (!atuais.length) return { cls: "", txt: "Em preparação" };
     var esp = atuais.filter(function(e){ return e.situacao === "enviado"; })[0];
-    if (esp) return { cls: "enviado", txt: NOME[esp.tipo] + " para aprovar" };
+    if (esp) return { cls: "enviado", txt: esp.tipo === "video" ? (resumoVideos(j) || {}).txt || "Vídeo para aprovar" : NOME[esp.tipo] + " para aprovar" };
     var u = atuais.slice().sort(function(a, b){ return String(b.respondido_em || "").localeCompare(String(a.respondido_em || "")); })[0];
     return { cls: u.situacao, txt: ROTULO[u.situacao] };
   }
@@ -151,9 +178,10 @@
       if (!ev || !j.doc) return { cls: "espera", txt: "Em preparação", vazio: true };
       return { cls: ev.situacao, txt: ROTULO[ev.situacao], versao: ev.versao, em: ev.situacao === "enviado" ? ev.enviado_em : ev.respondido_em, enviado: ev.enviado_em };
     }
-    var e = j.envios.filter(function(x){ return x.tipo === tipo && x.atual; })[0];
-    if (!e) return { cls: "espera", txt: tipo === "video" ? "Ainda não enviado" : "Em preparação", vazio: true };
-    return { cls: e.situacao, txt: ROTULO[e.situacao], versao: e.versao, em: e.situacao === "enviado" ? e.enviado_em : e.respondido_em, enviado: e.enviado_em };
+    var rv = resumoVideos(j);
+    if (!rv) return { cls: "espera", txt: "Ainda não enviado", vazio: true };
+    var n = entregasDe(j).length;
+    return { cls: rv.cls, txt: rv.txt, qtd: n };
   }
   function etapasHtml(j){
     return '<span class="etapas">' + ["roteiro", "video"].map(function(t){ var s = etapaDe(j, t); return '<span class="pil p-' + s.cls + '">' + NOME[t] + ": " + esc(s.txt) + "</span>"; }).join("") + "</span>";
@@ -188,7 +216,7 @@
       if (todas.length){
         h += '<h2>Todas as aprovações</h2><section class="cartao todas">' + todas.map(function(x){
           var e = x.e, quandoTxt = e.situacao === "enviado" ? "enviado em " + quando(e.enviado_em) : ROTULO[e.situacao].toLowerCase() + " em " + quando(e.respondido_em);
-          return '<button type="button" class="linha" data-job="' + esc(x.j.id) + '"><span class="o"><span>' + esc(x.j.produto || x.j.marca || "Projeto") + " · " + NOME[e.tipo] + " versão " + e.versao + (e.atual ? "" : " (anterior)") + '</span><span class="meta">' + quandoTxt + "</span></span>" +
+          return '<button type="button" class="linha" data-job="' + esc(x.j.id) + '"><span class="o"><span>' + esc(x.j.produto || x.j.marca || "Projeto") + " · " + (e.tipo === "video" && e.titulo ? esc(e.titulo) : NOME[e.tipo]) + (e.atual ? "" : " (versão anterior)") + '</span><span class="meta">' + quandoTxt + "</span></span>" +
             '<span class="pil p-' + e.situacao + '">' + ROTULO[e.situacao] + "</span></button>";
         }).join("") + "</section>";
       }
@@ -198,20 +226,69 @@
   }
 
   // ---------- um projeto ----------
-  function telaJob(j){
-    var atuais = j.envios.filter(function(e){ return e.atual && e.tipo !== "roteiro"; });
+  function hashJob(){ var m = location.hash.match(/^#p=([^&]+)(?:&e=(\d+))?/); return m ? { job: decodeURIComponent(m[1]), e: m[2] ? Number(m[2]) : 0 } : { job: "", e: 0 }; }
+  // miniaturas pequenas no topo; tocar abre o vídeo embaixo
+  function videosHtml(j, abertoId){
+    var es = entregasDe(j); if (!es.length) return "";
+    var aberto = es.filter(function(x){ return x.envios.some(function(e){ return e.id === abertoId; }); })[0] || null;
+    var h = '<section class="cartao videos"><div class="topo"><h2>Vídeos para aprovação</h2>' + (es.length > 1 ? '<span class="meta">' + es.length + " vídeos</span>" : "") + "</div>";
+    h += '<p class="meta">Toque no vídeo para assistir, ler o recado da Mari e responder.</p>';
+    h += '<div class="minis">' + es.map(function(x){
+      var e = x.atual;
+      return '<button type="button" class="mini' + (aberto === x ? " aberta" : "") + '" data-entrega="' + e.id + '">' +
+        '<span class="ord">' + ordinal(x.n) + "</span>" +
+        '<span class="quadro">' + (e.video ? '<video src="' + esc(e.video) + '#t=0.8" muted playsinline preload="metadata" tabindex="-1"></video>' : "") + '<span class="play" aria-hidden="true">▶</span></span>' +
+        '<span class="tit">' + esc(x.titulo) + "</span>" +
+        '<span class="pil p-' + e.situacao + '">' + ROTULO[e.situacao] + "</span></button>";
+    }).join("") + "</div>";
+    if (aberto) h += entregaHtml(aberto);
+    return h + "</section>";
+  }
+  function entregaHtml(x){
+    var e = x.atual;
+    var h = '<div class="entrega" data-envio="' + e.id + '">';
+    h += '<div class="topo"><h3><span class="ord">' + ordinal(x.n) + "</span> " + esc(x.titulo) + '</h3><button type="button" class="fechar" data-fechar aria-label="Fechar o vídeo">×</button></div>';
+    h += '<div class="meta">' + revisao(x, e) + "enviado em " + quando(e.enviado_em) + "</div>";
+    if (e.conteudo) h += '<div class="recado"><b>Recado da Mari</b>' + esc(e.conteudo).split(/\n+/).map(function(l){ return "<p>" + l + "</p>"; }).join("") + "</div>";
+    h += e.video ? '<video class="player" src="' + esc(e.video) + '" controls playsinline preload="metadata" controlslist="nodownload"></video>' : '<p class="meta">O vídeo não carregou. Atualize a página.</p>';
+    if (e.situacao !== "aprovado" && e.marcaDagua) h += '<p class="aviso-md">Vídeo de aprovação, com marca d\'água. O arquivo em alta qualidade, sem marca d\'água, é liberado aqui depois da aprovação.</p>';
+    if (e.situacao === "aprovado") h += e.alta
+      ? '<div class="alta"><b>Arquivo final em alta qualidade, sem marca d\'água</b><a class="botao" href="' + esc(e.alta.url) + '" target="_blank" rel="noopener">Baixar em alta qualidade</a><span class="meta">Abre no Google Drive. Toque no ícone de download no alto da tela.</span></div>'
+      : '<p class="aviso-md">Vídeo aprovado. A Mari vai liberar o arquivo em alta qualidade aqui em breve.</p>';
+    if (e.situacao === "enviado"){
+      h += '<div class="acoes"><button class="ok" data-abrir="aprovado">Aprovar vídeo</button><button data-abrir="ajustes">Pedir ajustes</button></div>';
+      h += '<div class="caixa" data-form hidden><strong data-form-titulo></strong><span class="meta" data-form-dica></span>' +
+        '<label data-campo-texto>O que precisa mudar?<textarea id="texto' + e.id + '" maxlength="4000"></textarea></label>' +
+        '<label>Seu nome<input type="text" id="nome' + e.id + '" maxlength="80" autocomplete="name"></label>' +
+        '<p class="erro" data-erro hidden></p><div class="dupla"><button data-cancelar>Voltar</button><button class="pri" data-enviar>Confirmar</button></div></div>';
+    } else {
+      h += '<p class="feito' + (e.situacao === "aprovado" ? "" : " aj") + '">' + ROTULO[e.situacao] + " em " + quando(e.respondido_em) + ". A Mari já foi avisada." + (e.situacao === "aprovado" ? "" : " A nova versão aparece aqui.") + "</p>";
+    }
+    var antigas = x.envios.filter(function(y){ return y !== e; });
+    if (antigas.length){
+      h += '<details><summary>Versões anteriores deste vídeo (' + antigas.length + ")</summary>" + antigas.slice().reverse().map(function(y){
+        return '<div class="meta" style="margin-top:12px">' + revisao(x, y) + "enviado em " + quando(y.enviado_em) + " · " + ROTULO[y.situacao] + "</div>" +
+          (y.video ? '<video class="player" src="' + esc(y.video) + '" controls playsinline preload="none"></video>' : "") +
+          (y.conteudo ? '<div class="recado"><b>Recado da Mari</b><p>' + esc(y.conteudo) + "</p></div>" : "");
+      }).join("") + "</details>";
+    }
+    return h + "</div>";
+  }
+  function telaJob(j, abertoId){
     var rotAtual = j.envios.filter(function(e){ return e.atual && e.tipo === "roteiro"; })[0];
-    atuais.sort(function(a, b){ return (a.situacao === "enviado" ? 0 : 1) - (b.situacao === "enviado" ? 0 : 1) || (a.tipo === "video" ? 0 : 1) - (b.tipo === "video" ? 0 : 1); });
+    var temVideo = j.envios.some(function(e){ return e.tipo === "video"; });
     var h = '<div class="barra">' + topo + (PREVIA ? "" : '<button id="b-sair" type="button">Sair</button>') + "</div>";
     h += '<button type="button" class="voltar" data-voltar>‹ Seus projetos</button>';
     h += "<h1>" + esc(j.marca || dados.marca || "Seu projeto") + (j.produto ? " <em>" + esc(j.produto) + "</em>" : "") + "</h1>";
     if (j.resumo) h += '<p class="meta">' + esc(j.resumo) + "</p>";
     if (PREVIA) h += '<p class="feito aj">Prévia: os botões ficam desligados aqui.</p>';
+    // vídeos em cima, separados por versão
+    h += videosHtml(j, abertoId);
     h += '<section class="cartao"><div class="topo"><h2>Em que pé está</h2><span class="pil p-' + (etapaIdx(j) === 6 ? "aprovado" : "enviado") + '">' + esc(nomeEtapa(j)) + "</span></div>" + barraHtml(j, true) +
       (j.etapa_em ? '<p class="meta">Atualizado em ' + quando(j.etapa_em) + "</p>" : "") + "</section>";
     h += '<div class="status-job">' + ["roteiro", "video"].map(function(t){
       var s = etapaDe(j, t);
-      return "<div><b>" + NOME[t] + '</b><span class="pil p-' + s.cls + '" style="align-self:flex-start">' + esc(s.txt) + "</span>" +
+      return "<div><b>" + (t === "video" && s.qtd > 1 ? "Vídeos" : NOME[t]) + '</b><span class="pil p-' + s.cls + '" style="align-self:flex-start">' + esc(s.txt) + "</span>" +
         (s.versao ? '<span class="meta">versão ' + s.versao + (s.em ? " · " + quando(s.em) : "") + "</span>" : "") + "</div>";
     }).join("") + "</div>";
     // roteiro: só o link para a página do roteiro, nunca o texto aqui dentro
@@ -224,68 +301,43 @@
       h += '<section class="cartao"><div class="topo"><h2>Roteiro</h2><span class="pil p-espera">Em preparação</span></div>' +
         '<p class="meta">O link do roteiro aparece aqui assim que a Mari liberar.</p></section>';
     }
-    if (!j.doc && !rotAtual && !atuais.length){
+    if (!j.doc && !rotAtual && !temVideo){
       h += '<p class="cartao">Ainda não há nada para aprovar neste projeto. Assim que a Mari enviar o roteiro ou o vídeo, ele aparece aqui.</p>';
     }
-    atuais.forEach(function(e){
-      var gs = e.tipo === "roteiro" ? ganchosDe(e.conteudo) : [];
-      h += '<section class="cartao" data-envio="' + e.id + '">';
-      h += '<div class="topo"><h2>' + NOME[e.tipo] + ' para aprovação</h2><span class="pil p-' + e.situacao + '">' + ROTULO[e.situacao] + "</span></div>";
-      h += '<div class="meta">' + (e.titulo ? esc(e.titulo) + " · " : "") + "versão " + e.versao + " · enviado em " + quando(e.enviado_em) + "</div>";
-      if (e.tipo === "video") h += e.video ? '<video class="player" src="' + esc(e.video) + '" controls playsinline preload="metadata" controlslist="nodownload"></video>' : '<p class="meta">O vídeo não carregou. Atualize a página.</p>';
-      if (e.tipo === "video" && e.situacao !== "aprovado" && e.marcaDagua) h += '<p class="aviso-md">Vídeo de aprovação, com marca d\'água. O arquivo em alta qualidade, sem marca d\'água, é liberado aqui depois da aprovação.</p>';
-      if (e.tipo === "video" && e.situacao === "aprovado") h += e.alta
-        ? '<div class="alta"><b>Arquivo final em alta qualidade, sem marca d\'água</b><a class="botao" href="' + esc(e.alta.url) + '" target="_blank" rel="noopener">Baixar em alta qualidade</a><span class="meta">Abre no Google Drive. Toque no ícone de download no alto da tela.</span></div>'
-        : '<p class="aviso-md">Vídeo aprovado. A Mari vai liberar o arquivo em alta qualidade aqui em breve.</p>';
-      if (e.conteudo) h += '<div class="roteiro">' + roteiroHtml(e.conteudo) + "</div>";
-      if (e.situacao === "enviado"){
-        if (gs.length){
-          h += '<div class="ganchos"><strong>Qual gancho você prefere?</strong>' + gs.map(function(g){
-            return '<label class="gancho"><input type="radio" name="g' + e.id + '" value="' + esc("Gancho " + g.n + ": " + g.fala) + '"><span><b>Gancho ' + esc(g.n) + "</b><br>" + esc(g.fala) + "</span></label>";
-          }).join("") + "</div>";
-        }
-        h += '<div class="acoes"><button class="ok" data-abrir="aprovado">Aprovar ' + NOME[e.tipo].toLowerCase() + '</button><div class="dupla"><button data-abrir="ajustes">Pedir ajustes</button><button data-abrir="refacao">Pedir refação</button></div></div>';
-        h += '<div class="caixa" data-form hidden><strong data-form-titulo></strong><span class="meta" data-form-dica></span>' +
-          '<label data-campo-texto>O que precisa mudar?<textarea id="texto' + e.id + '" maxlength="4000"></textarea></label>' +
-          '<label>Seu nome<input type="text" id="nome' + e.id + '" maxlength="80" autocomplete="name"></label>' +
-          '<p class="erro" data-erro hidden></p><div class="dupla"><button data-cancelar>Voltar</button><button class="pri" data-enviar>Confirmar</button></div></div>';
-      } else {
-        h += '<p class="feito' + (e.situacao === "aprovado" ? "" : " aj") + '">' + (e.situacao === "aprovado" ? "Aprovado" : ROTULO[e.situacao]) + " em " + quando(e.respondido_em) + ". A Mari já foi avisada." + (e.situacao === "aprovado" ? "" : " A nova versão aparece aqui na sua pasta.") + "</p>";
-      }
-      h += "</section>";
-    });
     if (j.historico.length){
       h += '<section class="cartao"><h2>Histórico</h2><div class="hist">' + j.historico.slice().reverse().map(function(x){
-        return "<div><time>" + quando(x.em) + "</time>" + esc(x.autor || "Marca") + " " + (FRASE[x.tipo] || x.tipo) + " · " + NOME[x.de].toLowerCase() + " versão " + x.versao +
+        var oque = x.de === "video" ? (x.titulo ? "vídeo " + x.titulo : "vídeo") : "roteiro versão " + x.versao;
+        return "<div><time>" + quando(x.em) + "</time>" + esc(x.autor || "Marca") + " " + (FRASE[x.tipo] || x.tipo) + " · " + esc(oque) +
           (x.gancho ? "<q>Gancho escolhido: " + esc(x.gancho) + "</q>" : "") + (x.texto ? "<q>" + esc(x.texto) + "</q>" : "") + "</div>";
       }).join("") + "</div></section>";
-    }
-    var antigas = j.envios.filter(function(e){ return !e.atual && e.tipo !== "roteiro"; });
-    if (antigas.length){
-      h += '<details class="cartao"><summary>Versões anteriores (' + antigas.length + ")</summary>" + antigas.slice().reverse().map(function(e){
-        return '<div class="meta" style="margin-top:12px">' + NOME[e.tipo] + " versão " + e.versao + " · " + quando(e.enviado_em) + "</div>" +
-          (e.tipo === "video" && e.video ? '<video class="player" src="' + esc(e.video) + '" controls playsinline preload="none"></video>' : "") + '<div class="roteiro">' + roteiroHtml(e.conteudo) + "</div>";
-      }).join("") + "</details>";
     }
     pagina.innerHTML = h;
   }
 
   function desenhar(){
-    var m = location.hash.match(/^#p=(.+)$/), id = m ? decodeURIComponent(m[1]) : "";
+    var hj = hashJob(), id = hj.job;
     var j = id && dados && (dados.jobs || []).filter(function(x){ return x.id === id; })[0];
-    if (j) telaJob(j); else telaPasta();
+    if (j) telaJob(j, hj.e); else telaPasta();
   }
 
   var TEXTOS = {
     aprovado: ["Confirmar aprovação", "Ao confirmar, a aprovação fica registrada com seu nome, data e hora.", "Confirmar aprovação"],
-    ajustes: ["Pedir ajustes", "Para mudanças pontuais. Diga o trecho e como deve ficar.", "Enviar pedido de ajustes"],
-    refacao: ["Pedir refação", "Para quando a proposta precisa de uma versão nova. Explique o motivo.", "Enviar pedido de refação"]
+    ajustes: ["Pedir ajustes", "Diga o que precisa mudar: o trecho e como deve ficar.", "Enviar pedido de ajustes"]
   };
   pagina.addEventListener("click", function(ev){
     var b = ev.target.closest("button"); if (!b) return;
     if (b.id === "b-sair"){ var g0 = ler(); if (!M && g0 && g0.m) M = g0.m; chamar({ acao: "sair" }).catch(function(){}); gravar(null); dados = null; history.replaceState(null, "", location.pathname + (M ? "?m=" + encodeURIComponent(M) : "")); telaLogin(); return; }
     if (b.dataset.job){ location.hash = "p=" + encodeURIComponent(b.dataset.job); return; }
     if (b.hasAttribute("data-voltar")){ location.hash = ""; return; }
+    // miniatura: abre (ou fecha) o vídeo embaixo, sem rolar a página para o topo
+    if (b.dataset.entrega || b.hasAttribute("data-fechar")){
+      var hj = hashJob(), abrir = b.dataset.entrega && Number(b.dataset.entrega) !== hj.e ? b.dataset.entrega : "";
+      history.replaceState(null, "", location.pathname + location.search + "#p=" + encodeURIComponent(hj.job) + (abrir ? "&e=" + abrir : ""));
+      desenhar();
+      var alvo = document.querySelector(".entrega") || document.querySelector(".videos");
+      if (alvo) alvo.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     var sec = b.closest("[data-envio]"); if (!sec) return;
     var form = sec.querySelector("[data-form]"), acoes = sec.querySelector(".acoes"), erro = sec.querySelector("[data-erro]");
     if (b.dataset.abrir){
@@ -295,7 +347,7 @@
       form.querySelector("[data-form-titulo]").textContent = tx[0];
       form.querySelector("[data-form-dica]").textContent = tx[1];
       form.querySelector("[data-enviar]").textContent = tx[2];
-      form.querySelector("[data-campo-texto]").firstChild.textContent = b.dataset.abrir === "aprovado" ? "Comentário (opcional)" : (b.dataset.abrir === "refacao" ? "Por que precisa refazer?" : "O que precisa mudar?");
+      form.querySelector("[data-campo-texto]").firstChild.textContent = b.dataset.abrir === "aprovado" ? "Comentário (opcional)" : "O que precisa mudar?";
       erro.hidden = true; form.hidden = false; acoes.hidden = true;
       form.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } else if (b.hasAttribute("data-cancelar")){
@@ -303,7 +355,7 @@
     } else if (b.hasAttribute("data-enviar")){
       if (ocupado) return;
       var id = sec.dataset.envio, tipo = form.dataset.tipo;
-      var m = location.hash.match(/^#p=(.+)$/), job = m ? decodeURIComponent(m[1]) : "";
+      var job = hashJob().job;
       var nome = document.getElementById("nome" + id).value.trim(), texto = document.getElementById("texto" + id).value.trim();
       var g = sec.querySelector('input[name="g' + id + '"]:checked');
       var falta = !nome ? "Escreva seu nome." : (tipo !== "aprovado" && texto.length < 3 ? "Explique o que precisa mudar." : "");

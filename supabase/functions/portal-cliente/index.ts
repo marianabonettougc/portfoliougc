@@ -8,6 +8,8 @@
 // Vídeo: a marca vê a cópia com marca d'água; o original em alta (Drive) só aparece depois que ela aprova.
 // Cada projeto leva a etapa do job (aprovacao_links.etapa, gravada pelo painel: Roteirização, Gravação, Edição...).
 // Ação da Mari (com o login dela no painel): previa {marca_id} = a pasta como a marca vê, sem registrar nada.
+// v9 (23/11/2026): vários vídeos por projeto. Cada vídeo é uma ENTREGA (título, ex. "Vertical sem Black Friday") com
+// versões próprias; "atual" = o envio mais novo da mesma entrega. Pedir refação saiu: é tudo "ajustes".
 // =========================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -70,6 +72,10 @@ function videoParaMarca(e: Adm, assinado: string) {
   };
 }
 
+// entrega = tipo + título normalizado (roteiro tem uma entrega só)
+const normT = (t: unknown) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const chaveEntrega = (e: Adm) => e.tipo === "roteiro" ? "roteiro" : "video:" + normT(e.titulo);
+
 async function montarPasta(adm: Adm, marcaId: string, registrar: boolean) {
   const { data: links } = await adm.from("aprovacao_links").select("job_id, marca, produto, resumo, doc_aba, doc_tab, etapa, etapa_em, criado_em")
     .eq("portal_marca_id", marcaId).eq("ativo", true).order("criado_em", { ascending: false });
@@ -90,25 +96,25 @@ async function montarPasta(adm: Adm, marcaId: string, registrar: boolean) {
   const jobs = [];
   for (const l of ls) {
     const lista = todos.filter((e: Adm) => e.job_id === l.job_id);
-    const ultimo = (tipo: string) => lista.filter((e: Adm) => e.tipo === tipo).slice(-1)[0];
+    const ultDaEntrega = (e: Adm) => lista.filter((x: Adm) => chaveEntrega(x) === chaveEntrega(e)).slice(-1)[0];
     // roteiro sempre pela página de aprovação do Doc (nome da aba ou o código t.xxxx que o painel guarda); o texto nunca vai para o portal
     const doDoc = String(l.doc_aba || "").trim() || String(l.doc_tab || "").trim();
     if (registrar) {
-      for (const tipo of ["roteiro", "video"]) {
-        const e = ultimo(tipo);
-        if (e && e.situacao === "enviado" && !evs.some((x: Adm) => x.envio_id === e.id && x.tipo === "abriu"))
+      for (const e of lista.filter((x: Adm) => ultDaEntrega(x).id === x.id)) {
+        if (e.situacao === "enviado" && !evs.some((x: Adm) => x.envio_id === e.id && x.tipo === "abriu"))
           await adm.from("aprovacao_eventos").insert({ envio_id: e.id, job_id: l.job_id, tipo: "abriu", aplicado: true }).then(() => null, () => null);
       }
     }
     jobs.push({
       id: l.job_id, marca: l.marca, produto: l.produto, resumo: l.resumo || "", etapa: l.etapa || "", etapa_em: l.etapa_em || null,
       doc: doDoc ? DOC_APROVACAO_URL + "?r=" + encodeURIComponent(doDoc) : "",
-      envios: lista.map((e: Adm) => ({ id: e.id, tipo: e.tipo, versao: e.versao, titulo: e.titulo, conteudo: e.tipo === "roteiro" ? "" : e.conteudo, situacao: e.situacao,
+      envios: lista.map((e: Adm) => ({ id: e.id, tipo: e.tipo, versao: e.versao, titulo: e.titulo, conteudo: e.tipo === "roteiro" ? "" : e.conteudo, situacao: e.situacao === "refacao" ? "ajustes" : e.situacao,
+        entrega: chaveEntrega(e),
         ...videoParaMarca(e, assinados[e.id]),
-        enviado_em: e.enviado_em, respondido_em: e.respondido_em, atual: ultimo(e.tipo).id === e.id })),
+        enviado_em: e.enviado_em, respondido_em: e.respondido_em, atual: ultDaEntrega(e).id === e.id })),
       historico: evs.filter((x: Adm) => x.job_id === l.job_id && x.tipo !== "abriu").map((x: Adm) => {
         const e = lista.find((y: Adm) => y.id === x.envio_id);
-        return { tipo: x.tipo, autor: x.autor, texto: x.texto, gancho: x.gancho, em: x.criado_em, de: e ? e.tipo : "roteiro", versao: e ? e.versao : 1 };
+        return { tipo: x.tipo === "refacao" ? "ajustes" : x.tipo, autor: x.autor, texto: x.texto, gancho: x.gancho, em: x.criado_em, de: e ? e.tipo : "roteiro", versao: e ? e.versao : 1, titulo: e ? e.titulo || "" : "", envio_id: x.envio_id };
       }),
     });
   }
@@ -185,14 +191,14 @@ Deno.serve(async (req) => {
       const jobId = txt(corpo.job, 80);
       const { data: link } = await adm.from("aprovacao_links").select("job_id, marca, doc_aba, doc_tab").eq("job_id", jobId).eq("portal_marca_id", m.id).eq("ativo", true).maybeSingle();
       if (!link) return resposta({ error: "Não encontrei este projeto na sua pasta." }, 404);
-      const tipo = txt(corpo.tipo, 20), nome = txt(corpo.nome, 80), texto = txt(corpo.texto, 4000), gancho = txt(corpo.gancho, 600);
+      const tipo0 = txt(corpo.tipo, 20), tipo = tipo0 === "refacao" ? "ajustes" : tipo0, nome = txt(corpo.nome, 80), texto = txt(corpo.texto, 4000), gancho = txt(corpo.gancho, 600);
       if (!FRASE[tipo]) return resposta({ error: "Resposta desconhecida." }, 400);
-      const { data: envios } = await adm.from("aprovacao_envios").select("id, tipo, versao, situacao, video").eq("job_id", link.job_id).order("enviado_em", { ascending: true });
+      const { data: envios } = await adm.from("aprovacao_envios").select("id, tipo, versao, titulo, situacao, video").eq("job_id", link.job_id).order("enviado_em", { ascending: true });
       const lista = envios || [];
       const envio = lista.find((e: Adm) => e.id === Number(corpo.envio));
       if (!envio) return resposta({ error: "Não encontrei este envio." }, 404);
       if (envio.tipo === "roteiro") return resposta({ error: "Este roteiro é aprovado pela página do roteiro. Use o botão Abrir o roteiro." }, 400);
-      const ult = lista.filter((e: Adm) => e.tipo === envio.tipo).slice(-1)[0];
+      const ult = lista.filter((e: Adm) => chaveEntrega(e) === chaveEntrega(envio)).slice(-1)[0];
       if (ult.id !== envio.id) return resposta({ error: "A Mari já enviou uma versão mais nova. Atualize a página para ver.", versaoNova: true }, 409);
       if (envio.situacao !== "enviado") return resposta({ ok: true, repetido: true, situacao: envio.situacao });
       if (!nome) return resposta({ error: "Escreva seu nome para registrar a resposta." }, 400);
@@ -210,7 +216,7 @@ Deno.serve(async (req) => {
           if (l) await adm.from("aprovacao_envios").update({ video: { ...envio.video, alta: { ...envio.video.alta, url: l.url, baixar: l.baixar, liberado: agora } } }).eq("id", envio.id);
         } catch (err) { console.error("liberar no Drive", err); }
       }
-      const oque = envio.tipo === "video" ? "o vídeo" : "o roteiro";
+      const oque = envio.tipo === "video" ? (envio.titulo ? `o vídeo "${envio.titulo}"` : "o vídeo") : "o roteiro";
       const quem = m.marca || link.marca || "A marca";
       const titulo = tipo === "aprovado" ? `${quem} aprovou ${oque}` : `${quem} ${FRASE[tipo]} n${oque}`;
       await adm.from("lembretes").insert({ item_tipo: "aprovacao", item_id: String(ev?.id || envio.id + "-" + tipo), titulo: titulo.slice(0, 120),
