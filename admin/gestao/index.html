@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611231420"></script>
-<script src="../../js/dialogos.js?v=202611231420"></script>
-<script src="../../js/metricool-ig.js?v=202611231420"></script>
-<script src="../../js/corretor.js?v=202611231420"></script>
+<script src="../../js/banco.js?v=202611231450"></script>
+<script src="../../js/dialogos.js?v=202611231450"></script>
+<script src="../../js/metricool-ig.js?v=202611231450"></script>
+<script src="../../js/corretor.js?v=202611231450"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5118,7 +5118,9 @@ const apvQuando = (iso) => { try{ return new Date(iso).toLocaleString("pt-BR",{d
 const apvLink = (token) => new URL("../../aprovar/?t="+token, location.href).href;
 // Roteiros de publi ficam no Google Doc "ROTEIROS PARA MARCAS OFICIAL" (uma aba por campanha); a marca aprova pela página do Apps Script
 const DOC_ROTEIROS_URL = "https://docs.google.com/document/d/1V7i4HEZhTdVCwgfPYsrdJ4zQ7S3_R8xDJw9I9RzcLzI/edit";
-const DOC_APROVACAO_URL = "https://script.google.com/macros/s/AKfycbzpQfjXGILijQDYVB_dDVm-3z4GFtGtFCOuXka1r5g34T-5AuHFypzV-00R705q7jJibw/exec";
+const DOC_APROVACAO_URL = "https://script.google.com/macros/s/AKfycbwS94UkHT7R-rMzBgx60sRec76oH4VoRj3OTLvrctkAvBv-hZjEBvuBldLppftg26t4CA/exec";
+// aceita o nome da aba ou o link inteiro da página da marca (...exec?r=NOME) e devolve só o nome da aba
+const abaDoLinkDoc = (v) => { const t = String(v||"").trim(); const m = t.match(/[?&]r=([^&#]+)/); if(m){ try{ return decodeURIComponent(m[1].replace(/\+/g," ")).trim(); }catch(e){ return m[1]; } } return t; };
 const apvLinkDoc = (aba) => DOC_APROVACAO_URL + "?r=" + encodeURIComponent(String(aba||"").trim());
 const apvLinkDoJob = (j) => (j && String(j.docAba||"").trim()) ? apvLinkDoc(j.docAba) : (j && j.aprovacao && j.aprovacao.token ? apvLink(j.aprovacao.token) : "");
 const apvLinkPrevia = (j) => (j && String(j.docAba||"").trim()) ? apvLinkDoc(j.docAba) : apvLink(j.aprovacao.token)+"&previa=1";
@@ -5383,7 +5385,7 @@ function AprovacaoJob({f, setF}){
   async function copiar(){ try{ await navigator.clipboard.writeText(apvLinkDoJob(f)); setCopiado(true); setTimeout(()=>setCopiado(false), 1800); }catch(e){ setErro("Selecione o link e copie."); } }
   const docAba = String(f.docAba||"").trim();
   // trocou a aba do Doc depois de enviar: atualiza a ligação para as respostas da marca caírem neste job
-  async function salvarAba(){ if(!f.id || !ap.token) return; await supabaseClient.from("aprovacao_links").update({doc_aba:docAba||null}).eq("job_id", f.id).then(()=>null, ()=>null); }
+  async function salvarAba(){ if(!f.id) return; await supabaseClient.from("aprovacao_links").update({doc_aba:docAba||null}).eq("job_id", f.id).then(()=>null, ()=>null); }
   const abrirMoodboard = () => { if(window.parent !== window) window.parent.postMessage({aba:"moodboard", job:f.id}, location.origin); };
   async function alternarLink(){
     if(ativo && !(await painelDialogo.confirmar("Desligar o link? A marca deixa de conseguir abrir até você ligar de novo.", {ok:"Desligar", perigo:true}))) return;
@@ -5404,11 +5406,8 @@ function AprovacaoJob({f, setF}){
         {rot ? <span className={"apv-selo "+rot.situacao}>{APV_ROTULO[rot.situacao]}{rot.versao?` · v${rot.versao}`:""}</span> : <span className="apv-selo">Ainda não enviado</span>}
       </div>
       {rot && rot.situacao!=="enviado" && (rot.texto || rot.gancho) && <div style={{fontSize:13.5, background:"#f6efe6", borderRadius:10, padding:"9px 11px", whiteSpace:"pre-wrap"}}><b>{rot.por||"Marca"}:</b> {[rot.gancho?("Gancho escolhido: "+rot.gancho):"", rot.texto].filter(Boolean).join("\n")}</div>}
-      <details className="apv-plataforma" open={!!docAba}>
-        <summary>Ação de plataforma, sem contato com a marca: aprovar pelo link do Doc</summary>
-        <Field label="Nome da aba no Google Doc (só para este caso)"><input value={f.docAba||""} onChange={e=>{ const v = e.target.value; setF(p=>({...p, docAba:v})); }} onBlur={salvarAba} placeholder="Ex.: MRV - REELS (igual ao nome da aba no Doc)"/></Field>
-        <div style={{fontSize:12.5, color:"var(--graphite-soft)"}}>Deixe vazio quando a marca aprova pela Área do cliente: o roteiro do Doc já vem para cá e vai para ela aprovar.</div>
-      </details>
+      <Field label="Link do roteiro para a marca (página do Google Doc)"><input value={f.docAba||""} onChange={e=>{ const v = abaDoLinkDoc(e.target.value); setF(p=>({...p, docAba:v})); }} onBlur={salvarAba} placeholder="Cole o link ...exec?r=NOME ou só o nome da aba (ex.: OCA FRIDAY - 02 BF)"/></Field>
+      <div style={{fontSize:12.5, color:"var(--graphite-soft)", marginTop:-4}}>A marca lê, comenta e aprova o roteiro por essa página. Na Área do cliente aparece só o botão "Abrir o roteiro", sem o texto dentro.</div>
       {!docAba && <Field label="Produto (aparece para a marca)"><input value={f.produto||""} onChange={e=>{ const v = e.target.value; setF(p=>({...p, produto:v})); }} placeholder="Ex.: Kit Zip Vácuo"/></Field>}
       {docAba && <>
         <div className="apv-link">{apvLinkDoc(docAba)}</div>

@@ -42,7 +42,7 @@ async function confereSenha(senha: string, guardado: string) {
 const SAIU = "Sua sessão terminou. Digite a senha de novo.";
 const ERRO_LOGIN = "Senha não confere. Confira e tente de novo.";
 const FRASE: Record<string, string> = { aprovado: "aprovou", ajustes: "pediu ajustes", refacao: "pediu refação" };
-const DOC_APROVACAO_URL = "https://script.google.com/macros/s/AKfycbzpQfjXGILijQDYVB_dDVm-3z4GFtGtFCOuXka1r5g34T-5AuHFypzV-00R705q7jJibw/exec";
+const DOC_APROVACAO_URL = "https://script.google.com/macros/s/AKfycbwS94UkHT7R-rMzBgx60sRec76oH4VoRj3OTLvrctkAvBv-hZjEBvuBldLppftg26t4CA/exec";
 const DIAS_SESSAO = 30, MAX_FALHAS = 5, MIN_BLOQUEIO = 15;
 
 // deno-lint-ignore no-explicit-any
@@ -203,7 +203,9 @@ Deno.serve(async (req) => {
       // vídeo aprovado: libera o arquivo em alta do Drive para a marca baixar
       if (tipo === "aprovado" && envio.tipo === "video" && envio.video && envio.video.alta && envio.video.alta.id && !envio.video.alta.liberado) {
         try {
-          const l = await liberarNoDrive(adm, envio.video.alta.id);
+          // arquivo que ela já deixou aberto no Drive (alta.publico): só mostra o link guardado
+          const a = envio.video.alta;
+          const l = (await liberarNoDrive(adm, a.id)) || (a.publico && a.url ? { url: a.url, baixar: a.baixar || "" } : null);
           if (l) await adm.from("aprovacao_envios").update({ video: { ...envio.video, alta: { ...envio.video.alta, url: l.url, baixar: l.baixar, liberado: agora } } }).eq("id", envio.id);
         } catch (err) { console.error("liberar no Drive", err); }
       }
