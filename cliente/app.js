@@ -109,6 +109,20 @@
     return { cls: u.situacao, txt: ROTULO[u.situacao] };
   }
 
+  // situação de cada tipo de aprovação (roteiro e vídeo) num projeto
+  function etapaDe(j, tipo){
+    if (tipo === "roteiro" && j.doc){
+      var ev = j.envios.filter(function(e){ return e.tipo === "roteiro" && e.atual; })[0];
+      return ev && ev.situacao !== "enviado" ? { cls: ev.situacao, txt: ROTULO[ev.situacao] } : { cls: "doc", txt: "No Google Doc" };
+    }
+    var e = j.envios.filter(function(x){ return x.tipo === tipo && x.atual; })[0];
+    if (!e) return { cls: "espera", txt: tipo === "video" ? "Ainda não enviado" : "Em preparação", vazio: true };
+    return { cls: e.situacao, txt: ROTULO[e.situacao], versao: e.versao, em: e.situacao === "enviado" ? e.enviado_em : e.respondido_em, enviado: e.enviado_em };
+  }
+  function etapasHtml(j){
+    return '<span class="etapas">' + ["roteiro", "video"].map(function(t){ var s = etapaDe(j, t); return '<span class="pil p-' + s.cls + '">' + NOME[t] + ": " + esc(s.txt) + "</span>"; }).join("") + "</span>";
+  }
+
   // ---------- pasta da marca ----------
   function telaPasta(){
     var jobs = dados.jobs || [];
@@ -125,9 +139,20 @@
       h += '<div class="lista">' + ord.map(function(j){
         var s = situacaoDoJob(j);
         return '<button type="button" class="job" data-job="' + esc(j.id) + '"><span class="info"><span class="nome">' + esc(j.produto || j.marca || "Projeto") + "</span>" +
-          (j.resumo ? '<span class="meta">' + esc(j.resumo) + "</span>" : "") + "</span>" +
-          (s.cls ? '<span class="pil p-' + s.cls + '">' + esc(s.txt) + "</span>" : '<span class="meta">' + esc(s.txt) + "</span>") + '<span class="seta" aria-hidden="true">›</span></button>';
+          (j.resumo ? '<span class="meta">' + esc(j.resumo) + "</span>" : "") + etapasHtml(j) + "</span>" +
+          '<span class="seta" aria-hidden="true">›</span></button>';
       }).join("") + "</div>";
+      // todas as aprovações, da mais nova para a mais antiga
+      var todas = [];
+      jobs.forEach(function(j){ j.envios.forEach(function(e){ if (!(j.doc && e.tipo === "roteiro" && e.situacao === "enviado")) todas.push({ j: j, e: e }); }); });
+      todas.sort(function(a, b){ return String(b.e.respondido_em || b.e.enviado_em || "").localeCompare(String(a.e.respondido_em || a.e.enviado_em || "")); });
+      if (todas.length){
+        h += '<h2>Todas as aprovações</h2><section class="cartao todas">' + todas.map(function(x){
+          var e = x.e, quandoTxt = e.situacao === "enviado" ? "enviado em " + quando(e.enviado_em) : ROTULO[e.situacao].toLowerCase() + " em " + quando(e.respondido_em);
+          return '<button type="button" class="linha" data-job="' + esc(x.j.id) + '"><span class="o"><span>' + esc(x.j.produto || x.j.marca || "Projeto") + " · " + NOME[e.tipo] + " versão " + e.versao + (e.atual ? "" : " (anterior)") + '</span><span class="meta">' + quandoTxt + "</span></span>" +
+            '<span class="pil p-' + e.situacao + '">' + ROTULO[e.situacao] + "</span></button>";
+        }).join("") + "</section>";
+      }
     }
     h += '<p class="pe">Área exclusiva da sua marca. Não compartilhe o link e a senha fora da equipe.</p>';
     pagina.innerHTML = h;
@@ -142,13 +167,18 @@
     h += "<h1>" + esc(j.marca || dados.marca || "Seu projeto") + (j.produto ? " <em>" + esc(j.produto) + "</em>" : "") + "</h1>";
     if (j.resumo) h += '<p class="meta">' + esc(j.resumo) + "</p>";
     if (PREVIA) h += '<p class="feito aj">Prévia: os botões ficam desligados aqui.</p>';
+    h += '<div class="status-job">' + ["roteiro", "video"].map(function(t){
+      var s = etapaDe(j, t);
+      return "<div><b>" + NOME[t] + '</b><span class="pil p-' + s.cls + '" style="align-self:flex-start">' + esc(s.txt) + "</span>" +
+        (s.versao ? '<span class="meta">versão ' + s.versao + (s.em ? " · " + quando(s.em) : "") + "</span>" : "") + "</div>";
+    }).join("") + "</div>";
     if (j.doc){
       h += '<section class="cartao"><div class="topo"><h2>Roteiro para aprovação</h2></div>' +
         '<p class="meta">Este roteiro está no Google Doc. Abra para ler, comentar e aprovar. A Mari é avisada na hora.</p>' +
         '<a class="botao" href="' + esc(j.doc) + '" target="_blank" rel="noopener">Abrir o roteiro</a></section>';
     }
     if (!j.doc && !atuais.length){
-      h += '<p class="cartao">Ainda não há nada para aprovar neste projeto.</p>';
+      h += '<p class="cartao">Ainda não há nada para aprovar neste projeto. Assim que a Mari enviar o roteiro ou o vídeo, ele aparece aqui.</p>';
     }
     atuais.forEach(function(e){
       var gs = e.tipo === "roteiro" ? ganchosDe(e.conteudo) : [];

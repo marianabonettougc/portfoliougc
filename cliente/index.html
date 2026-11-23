@@ -72,6 +72,18 @@ input[type=password],input[type=email]{font:400 16px Poppins,system-ui,sans-seri
 a.botao{display:flex;align-items:center;justify-content:center;font:500 15px Poppins,system-ui,sans-serif;border-radius:12px;padding:13px 16px;background:var(--cafe);color:#fffdf9;text-decoration:none;min-height:48px}
 video.player{width:100%;max-height:72vh;border-radius:12px;background:#000;display:block}
 [hidden]{display:none!important}
+.p-espera{background:var(--bege);color:var(--suave)} .p-doc{background:var(--manteiga);color:var(--mostarda)}
+.etapas{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.etapas .pil{font-size:12px;padding:3px 10px}
+.status-job{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.status-job div{background:var(--papel);border:1px solid var(--linha);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.status-job b{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--terracota);font-weight:600}
+.todas{display:flex;flex-direction:column}
+.todas .linha{display:flex;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--linha);cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;font-weight:400;color:var(--texto);border-radius:0;min-height:0}
+.todas .linha:first-child{border-top:0}
+.todas .o{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.todas .o span{font-size:14px}
+@media (max-width:520px){ .status-job{grid-template-columns:1fr} .todas .linha{flex-wrap:wrap} }
 </style>
 </head>
 <body>
@@ -79,6 +91,6 @@ video.player{width:100%;max-height:72vh;border-radius:12px;background:#000;displ
   <span class="rot">Mari Bonetto · UGC Creator</span>
   <p>Carregando...</p>
 </main>
-<script src="app.js?v=202611220004"></script>
+<script src="app.js?v=202611222220"></script>
 </body>
 </html>

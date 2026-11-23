@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611222205"></script>
-<script src="../../js/dialogos.js?v=202611222205"></script>
-<script src="../../js/metricool-ig.js?v=202611222205"></script>
-<script src="../../js/corretor.js?v=202611222205"></script>
+<script src="../../js/banco.js?v=202611222220"></script>
+<script src="../../js/dialogos.js?v=202611222220"></script>
+<script src="../../js/metricool-ig.js?v=202611222220"></script>
+<script src="../../js/corretor.js?v=202611222220"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5266,12 +5266,12 @@ function AprovacaoJob({f, setF}){
       if(ids.length) supabaseClient.from("aprovacao_eventos").update({aplicado:true}).in("id", ids).then(()=>null, ()=>null);
     }
   }
-  useEffect(()=>{ carregar(); const t = setInterval(()=>{ if(document.visibilityState==="visible") carregar(); }, 30000); return ()=>clearInterval(t); },[f.id]);
+  useEffect(()=>{ carregar(); const t = setInterval(()=>{ if(document.visibilityState==="visible") carregar(); }, 30000); const h = ()=>carregar(); window.addEventListener("apv:recarregar", h); return ()=>{ clearInterval(t); window.removeEventListener("apv:recarregar", h); }; },[f.id]);
   async function enviar(){
     setErro(""); setOcupado(true);
     try{
       const novo = await apvEnviarRoteiro(f);
-      if(novo){ setF(p=>({...p, status:novo.status, entregaveis:novo.entregaveis, aprovacao:novo.aprovacao})); setAtivo(true); await carregar(); }
+      if(novo){ setF(p=>({...p, status:novo.status, entregaveis:novo.entregaveis, aprovacao:novo.aprovacao})); setAtivo(true); await carregar(); window.dispatchEvent(new Event("apv:recarregar")); }
     }catch(e){ console.warn(e); setErro(e && e.aviso ? e.message : "Não consegui enviar agora. Tente de novo."); }
     setOcupado(false);
   }
@@ -7149,9 +7149,18 @@ async function abasDoDoc(forcar){
   return cacheAbasDoc.abas;
 }
 const rotuloAba = (a) => [a.marca || "Sem marca", a.produto, a.entrega ? "entrega "+a.entrega : ""].filter(Boolean).join(" · ");
-function abaDoJob(job, abas){
+// marca do Doc que bate com o job: nome igual/contido ou palavra forte em comum (ex.: job "OCAFRIDAY" e aba "Turma do Cabeça Oca")
+function marcaBate(nomeJob, nomeDoc){
+  const k = normMarcaPortal(nomeJob), m = normMarcaPortal(nomeDoc); if(!k || !m) return false;
+  if(m===k || m.includes(k) || k.includes(m)) return true;
+  const jk = k.replace(/\s+/g,""), jm = m.replace(/\s+/g,"");
+  return m.split(" ").some(w=>w.length>=3 && jk.includes(w)) || k.split(" ").some(w=>w.length>=3 && jm.includes(w));
+}
+function abaDoJob(job, abas, marcaArea){
   const k = normMarcaPortal(job.marca); if(!k) return null;
-  const daMarca = abas.filter(a=>{ const m = normMarcaPortal(a.marca); return m && (m===k || m.includes(k) || k.includes(m)); });
+  let daMarca = abas.filter(a=>{ const m = normMarcaPortal(a.marca); return m && (m===k || m.includes(k) || k.includes(m)); });
+  if(!daMarca.length && marcaArea) daMarca = abas.filter(a=>normMarcaPortal(a.marca)===normMarcaPortal(marcaArea));
+  if(!daMarca.length) daMarca = abas.filter(a=>marcaBate(job.marca, a.marca));
   if(daMarca.length<=1) return daMarca[0] || null;
   const prod = normMarcaPortal(job.produto||"");
   return (prod && daMarca.find(a=>normMarcaPortal(a.produto).includes(prod))) || null; // mais de uma aba: ela escolhe
@@ -7160,42 +7169,83 @@ function RoteiroDoDocJob({f, setF}){
   const [abas,setAbas] = useState(null);
   const [lendo,setLendo] = useState(false);
   const [erro,setErro] = useState("");
+  const [ok,setOk] = useState("");
   const [escolher,setEscolher] = useState(false);
+  const [area,setArea] = useState(null);       // marca da Área do cliente em que o job está (null = não está)
+  const [enviado,setEnviado] = useState(null); // texto da última versão do roteiro que a marca recebeu
+  const fRef = useRef(f); fRef.current = f;
   const tab = f.docTab || null;
-  function usar(a){
-    setF(p=>{
-      const editado = p.roteiroConteudo && p.docTab && p.roteiroConteudo!==p.docTab.texto;
-      const vazio = !String(p.roteiroConteudo||"").trim();
-      return {...p, docTab:{id:a.id, rotulo:rotuloAba(a), texto:a.texto, em:new Date().toISOString()}, ...((vazio || !editado || (p.docTab && p.docTab.id!==a.id)) ? {roteiroConteudo:a.texto, roteiroTitulo:p.roteiroTitulo || ("Roteiro "+(a.marca||p.marca)), roteiroStatus:"Pronto", roteiroDoc:"doc:"+a.id} : {})};
-    });
+  const semDoc = !String(f.docAba||"").trim(); // ação de plataforma (aprovação pelo link do Doc) fica de fora
+  async function conferirArea(){
+    if(!f.id) return;
+    const [l, e] = await Promise.all([
+      supabaseClient.from("aprovacao_links").select("portal_marca_id, portal_marcas(marca, ativo)").eq("job_id", f.id).maybeSingle(),
+      supabaseClient.from("aprovacao_envios").select("conteudo, versao").eq("job_id", f.id).eq("tipo", "roteiro").order("versao", {ascending:false}).limit(1)
+    ]);
+    const pm = l.data && l.data.portal_marca_id && l.data.portal_marcas;
+    setArea(pm && pm.ativo !== false ? pm.marca : null);
+    setEnviado(e.data && e.data[0] ? String(e.data[0].conteudo||"") : null);
+  }
+  useEffect(()=>{ conferirArea(); const h = ()=>conferirArea(); window.addEventListener("apv:recarregar", h); return ()=>window.removeEventListener("apv:recarregar", h); },[f.id]);
+  function jobCom(p, a){
+    const editado = p.roteiroConteudo && p.docTab && p.roteiroConteudo!==p.docTab.texto;
+    const vazio = !String(p.roteiroConteudo||"").trim();
+    return {...p, docTab:{id:a.id, rotulo:rotuloAba(a), texto:a.texto, em:new Date().toISOString()}, ...((vazio || !editado || !p.docTab || p.docTab.id!==a.id) ? {roteiroConteudo:a.texto, roteiroTitulo:p.roteiroTitulo || ("Roteiro "+(a.marca||p.marca)), roteiroStatus:"Pronto", roteiroDoc:"doc:"+a.id} : {})};
+  }
+  // manda o roteiro do job para a Área do cliente (só quando o texto é diferente do que a marca já recebeu)
+  async function mandarParaMarca(job){
+    if(!area || !semDoc) return;
+    const texto = String(job.roteiroConteudo||"").trim();
+    if(!texto || (enviado!==null && enviado.trim()===texto)) return;
+    const novo = await apvEnviarRoteiro(job);
+    if(!novo) return;
+    setF(p=>({...p, status:novo.status, entregaveis:novo.entregaveis, aprovacao:novo.aprovacao}));
+    setEnviado(texto); setOk(`Roteiro enviado para a Área do cliente da ${area}. Status do job: Aprovação de Roteiro.`);
+    window.dispatchEvent(new Event("apv:recarregar"));
+  }
+  async function usar(a, enviar){
+    const job = jobCom(fRef.current, a);
+    setF(p=>jobCom(p, a));
     setEscolher(false);
+    if(enviar){ try{ await mandarParaMarca(job); }catch(e){ console.warn(e); setErro(e && e.aviso ? e.message : "Puxei o roteiro, mas não consegui mandar para a marca. Use Enviar roteiro para aprovação."); } }
   }
   async function ler(forcar, silencioso){
-    setLendo(true); if(!silencioso) setErro("");
+    setLendo(true); if(!silencioso){ setErro(""); setOk(""); }
     try{
       const lista = await abasDoDoc(forcar); setAbas(lista);
-      if(tab){ const a = lista.find(x=>x.id===tab.id); if(a && a.texto!==tab.texto) usar(a); else if(!a && !silencioso) setErro("A aba deste job não existe mais no Doc. Escolha outra."); }
-      else { const a = abaDoJob(f, lista); if(a && !String(f.roteiroConteudo||"").trim()) usar(a); else if(!silencioso) setEscolher(true); }
+      if(tab){
+        const a = lista.find(x=>x.id===tab.id);
+        if(a && (a.texto!==tab.texto || !silencioso)) await usar(a, !silencioso);
+        else if(!a && !silencioso) setErro("A aba deste job não existe mais no Doc. Escolha outra.");
+      } else {
+        const a = abaDoJob(f, lista, area);
+        if(a && (!String(f.roteiroConteudo||"").trim() || !silencioso)) await usar(a, !silencioso);
+        else if(!silencioso) setEscolher(true);
+      }
     }catch(e){ if(!silencioso) setErro(e.message); }
     setLendo(false);
   }
   // abriu o job: confere se o Doc mudou (ou acha a aba da marca sozinho)
   useEffect(()=>{ if(f.marca && (tab || !String(f.roteiroConteudo||"").trim())) ler(false, true); },[f.id]);
   const editadoAqui = tab && f.roteiroConteudo && f.roteiroConteudo!==tab.texto;
-  const sugestao = abas ? abaDoJob(f, abas) : null;
+  const sugestao = abas ? abaDoJob(f, abas, area) : null;
+  const marcaNaoViu = area && semDoc && String(f.roteiroConteudo||"").trim() && (enviado===null || enviado.trim()!==String(f.roteiroConteudo||"").trim());
   return (
     <div className="apv" style={{marginTop:0}}>
       <div className="apv-topo"><strong>Roteiro no Google Doc</strong>{tab ? <span className="apv-selo aprovado">Ligado à aba</span> : <span className="apv-selo">Sem aba</span>}</div>
       {tab && <div style={{fontSize:13.5}}><b>{tab.rotulo}</b><div className="apv-linha" style={{marginTop:2}}>{editadoAqui ? "Você mudou o roteiro aqui no job; o Doc não sobrescreve. Toque em Puxar de novo para voltar ao texto do Doc." : "O roteiro deste job acompanha o Doc sozinho sempre que você abre o job."}</div></div>}
       <div className="apv-botoes">
-        <button type="button" className="btn btn-ghost btn-sm" disabled={lendo} onClick={()=>{ if(tab && editadoAqui){ abasDoDoc(true).then(l=>{ const a = l.find(x=>x.id===tab.id); if(a) setF(p=>({...p, roteiroConteudo:a.texto, docTab:{...p.docTab, texto:a.texto}})); }).catch(e=>setErro(e.message)); } else ler(true); }}><Icon name="sync" size={15}/>{lendo ? "Lendo o Doc..." : (tab ? "Puxar de novo do Doc" : "Puxar roteiro do Doc")}</button>
+        <button type="button" className="btn btn-ghost btn-sm" disabled={lendo} onClick={()=>{ if(tab && editadoAqui){ setErro(""); setOk(""); abasDoDoc(true).then(l=>{ const a = l.find(x=>x.id===tab.id); if(a){ const job = {...fRef.current, roteiroConteudo:a.texto, docTab:{...fRef.current.docTab, texto:a.texto}}; setF(p=>({...p, roteiroConteudo:a.texto, docTab:{...p.docTab, texto:a.texto}})); return mandarParaMarca(job); } }).catch(e=>setErro(e && e.aviso ? e.message : (e.message||"Não consegui ler o Doc."))); } else ler(true); }}><Icon name="sync" size={15}/>{lendo ? "Lendo o Doc..." : (tab ? "Puxar de novo do Doc" : "Puxar roteiro do Doc")}</button>
         <button type="button" className="btn btn-ghost btn-sm" onClick={()=>{ setEscolher(e=>!e); if(!abas) ler(false, true); }}><Icon name="list" size={15}/>{tab ? "Trocar de aba" : "Escolher a aba"}</button>
         <a className="btn btn-ghost btn-sm" href={DOC_ROTEIROS_URL+(tab?("?tab="+tab.id):"")} target="_blank" rel="noopener"><Icon name="description" size={15}/>Abrir o Doc</a>
       </div>
       {escolher && abas && <div style={{display:"flex", flexDirection:"column", gap:6}}>
-        {[...abas].sort((a,b)=>(b===sugestao)-(a===sugestao)).map(a=><button key={a.id} type="button" className={"apv-check"+(tab && tab.id===a.id ? " on":"")} style={{textAlign:"left"}} onClick={()=>usar(a)}>
+        {[...abas].sort((a,b)=>(b===sugestao)-(a===sugestao)).map(a=><button key={a.id} type="button" className={"apv-check"+(tab && tab.id===a.id ? " on":"")} style={{textAlign:"left"}} onClick={()=>usar(a, true)}>
           <Icon name={tab && tab.id===a.id ? "radio_button_checked" : "radio_button_unchecked"} size={16}/><span><b>{a.marca || "Sem marca"}</b>{a.produto?" · "+a.produto:""}{a.entrega?" · entrega "+a.entrega:""}{a===sugestao?"  (sugerida)":""}</span></button>)}
       </div>}
+      {area && semDoc && <div className="apv-linha">{marcaNaoViu ? `A ${area} ainda não vê este texto na Área do cliente.` : `A ${area} já recebeu este roteiro na Área do cliente.`} Puxar do Doc já manda a versão nova para ela.</div>}
+      {marcaNaoViu && <div className="apv-botoes"><button type="button" className="btn btn-primary btn-sm" disabled={lendo} onClick={async()=>{ setErro(""); setOk(""); setLendo(true); try{ await mandarParaMarca(fRef.current); }catch(e){ setErro(e && e.aviso ? e.message : "Não consegui mandar agora. Tente de novo."); } setLendo(false); }}><Icon name="send" size={15}/>Mandar para a área da {area}</button></div>}
+      {ok && <div style={{fontSize:13, background:"#e4eee2", color:"#3f6644", borderRadius:10, padding:"8px 11px"}}>{ok}</div>}
       {erro && <div className="apv-erro">{erro}</div>}
     </div>
   );
