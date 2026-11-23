@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611231450"></script>
-<script src="../../js/dialogos.js?v=202611231450"></script>
-<script src="../../js/metricool-ig.js?v=202611231450"></script>
-<script src="../../js/corretor.js?v=202611231450"></script>
+<script src="../../js/banco.js?v=202611231500"></script>
+<script src="../../js/dialogos.js?v=202611231500"></script>
+<script src="../../js/metricool-ig.js?v=202611231500"></script>
+<script src="../../js/corretor.js?v=202611231500"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5120,7 +5120,7 @@ const apvLink = (token) => new URL("../../aprovar/?t="+token, location.href).hre
 const DOC_ROTEIROS_URL = "https://docs.google.com/document/d/1V7i4HEZhTdVCwgfPYsrdJ4zQ7S3_R8xDJw9I9RzcLzI/edit";
 const DOC_APROVACAO_URL = "https://script.google.com/macros/s/AKfycbwS94UkHT7R-rMzBgx60sRec76oH4VoRj3OTLvrctkAvBv-hZjEBvuBldLppftg26t4CA/exec";
 // aceita o nome da aba ou o link inteiro da página da marca (...exec?r=NOME) e devolve só o nome da aba
-const abaDoLinkDoc = (v) => { const t = String(v||"").trim(); const m = t.match(/[?&]r=([^&#]+)/); if(m){ try{ return decodeURIComponent(m[1].replace(/\+/g," ")).trim(); }catch(e){ return m[1]; } } return t; };
+const abaDoLinkDoc = (v) => { const t = String(v||""); const m = t.match(/[?&]r=([^&#]+)/); if(m){ try{ return decodeURIComponent(m[1].replace(/\+/g," ")).trim(); }catch(e){ return m[1]; } } return t; }; // sem trim enquanto digita (senão come os espaços)
 const apvLinkDoc = (aba) => DOC_APROVACAO_URL + "?r=" + encodeURIComponent(String(aba||"").trim());
 const apvLinkDoJob = (j) => (j && String(j.docAba||"").trim()) ? apvLinkDoc(j.docAba) : (j && j.aprovacao && j.aprovacao.token ? apvLink(j.aprovacao.token) : "");
 const apvLinkPrevia = (j) => (j && String(j.docAba||"").trim()) ? apvLinkDoc(j.docAba) : apvLink(j.aprovacao.token)+"&previa=1";
