@@ -205,9 +205,17 @@
     $("#lb-testar", sec).addEventListener("click", (e) => testar(e.currentTarget));
     if (st.faltaTabela) { $("#lb-proximos", sec).innerHTML = `<p class="faixa faixa-erro">A tabela de avisos ainda não existe no banco.</p>`; return; }
     const agora = Date.now();
+    // por onde o aviso saiu (lembretes.resultado, gravado pela função notificacoes); falha aparece aqui
+    const comoSaiu = (r) => {
+      if (!r) return "";
+      if (r.erro) return " · não saiu (erro)";
+      const ok = [r.celulares ? "celular" : "", r.ntfy ? "ntfy" : "", r.email ? "e-mail" : ""].filter(Boolean);
+      const falhou = [!r.email ? "e-mail" : "", !r.celulares ? "celular" : ""].filter(Boolean);
+      return (ok.length ? " por " + ok.join(", ") : " · não chegou em lugar nenhum") + (falhou.length && ok.length ? " (não saiu: " + falhou.join(", ") + ")" : "");
+    };
     const prox = st.lista.filter((l) => l.ativo && !l.enviado_em);
     const passados = st.lista.filter((l) => !(l.ativo && !l.enviado_em)).sort((a, b) => new Date(b.enviado_em || b.quando) - new Date(a.enviado_em || a.quando)).slice(0, 15);
-    const linha = (l, futuro) => `<li class="lb-item${futuro && new Date(l.quando).getTime() < agora ? " atrasado" : ""}"><div><b>${esc(l.titulo)}</b><small>${esc(mostrarQuando(l.quando))}${l.detalhe ? " · " + esc(l.detalhe) : ""}${!futuro ? (l.enviado_em ? " · enviado" : " · desligado") : ""}</small></div>
+    const linha = (l, futuro) => `<li class="lb-item${futuro && new Date(l.quando).getTime() < agora ? " atrasado" : ""}"><div><b>${esc(l.titulo)}</b><small>${esc(mostrarQuando(l.quando))}${l.detalhe ? " · " + esc(l.detalhe) : ""}${!futuro ? (l.enviado_em ? " · enviado" + comoSaiu(l.resultado) : " · desligado") : ""}</small></div>
       <span class="lb-acoes"><button class="btn" type="button" data-editar="${l.id}">${futuro ? "Editar" : "Avisar de novo"}</button>${futuro ? `<button class="btn" type="button" data-desligar="${l.id}">Desligar</button>` : `<button class="icone-btn" type="button" data-apagar="${l.id}" aria-label="Apagar">×</button>`}</span></li>`;
     $("#lb-proximos", sec).innerHTML = prox.length ? `<ul class="lb-lista">${prox.map((l) => linha(l, true)).join("")}</ul>` : `<p class="pc-ajuda">Nenhum aviso marcado. Toque no sininho de qualquer janela do painel, ou em + Novo aviso.</p>`;
     $("#lb-passados", sec).innerHTML = passados.length ? `<ul class="lb-lista">${passados.map((l) => linha(l, false)).join("")}</ul>` : `<p class="pc-ajuda">Nada por aqui ainda.</p>`;

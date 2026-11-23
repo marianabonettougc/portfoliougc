@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611231500"></script>
-<script src="../../js/dialogos.js?v=202611231500"></script>
-<script src="../../js/metricool-ig.js?v=202611231500"></script>
-<script src="../../js/corretor.js?v=202611231500"></script>
+<script src="../../js/banco.js?v=202611231530"></script>
+<script src="../../js/dialogos.js?v=202611231530"></script>
+<script src="../../js/metricool-ig.js?v=202611231530"></script>
+<script src="../../js/corretor.js?v=202611231530"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5161,8 +5161,8 @@ function aplicarRespostaNoJob(job, r, lido){
 async function sincronizarEtapasPortal(jobs, ref){
   try{
     if(!ref.current || Date.now() - (ref.lido||0) > 600000){
-      const { data, error } = await supabaseClient.from("aprovacao_links").select("job_id, etapa, resumo"); if(error) return;
-      ref.current = {}; ref.lido = Date.now(); (data||[]).forEach(l=>{ ref.current[l.job_id] = {etapa:l.etapa || "", resumo:l.resumo || ""}; });
+      const { data, error } = await supabaseClient.from("aprovacao_links").select("job_id, etapa, resumo, doc_tab"); if(error) return;
+      ref.current = {}; ref.lido = Date.now(); (data||[]).forEach(l=>{ ref.current[l.job_id] = {etapa:l.etapa || "", resumo:l.resumo || "", tab:l.doc_tab || ""}; });
     }
     for(const j of jobs){
       const ant = ref.current[j.id]; if(!ant) continue;
@@ -5170,8 +5170,11 @@ async function sincronizarEtapasPortal(jobs, ref){
       const muda = {};
       if(st && ant.etapa!==st){ muda.etapa = st; muda.etapa_em = new Date().toISOString(); }
       if(resumo !== ant.resumo) muda.resumo = resumo; // escopo novo também aparece para a marca
+      // roteiro puxado do Doc: a marca abre pela página de aprovação (exec?r=<código da aba>), nunca o texto no portal
+      const tab = String((j.docTab && j.docTab.id) || "");
+      if(tab && tab !== ant.tab) muda.doc_tab = tab;
       if(!Object.keys(muda).length) continue;
-      ref.current[j.id] = {etapa: st || ant.etapa, resumo};
+      ref.current[j.id] = {etapa: st || ant.etapa, resumo, tab: tab || ant.tab};
       await supabaseClient.from("aprovacao_links").update(muda).eq("job_id", j.id);
     }
   }catch(e){ console.warn("etapas da área do cliente", e); }
@@ -5211,7 +5214,7 @@ async function apvEnviarRoteiro(job){
   if(docAba && ult && ult.situacao!=="aprovado"){
     // no Doc o roteiro é o mesmo link ao vivo: só garante a ligação da aba e devolve o job como está
     const ap0 = job.aprovacao || {}, token0 = ap0.token || apvToken();
-    const l0 = await supabaseClient.from("aprovacao_links").upsert({job_id:job.id, token_hash:await apvHash(token0), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:docAba}, {onConflict:"job_id"});
+    const l0 = await supabaseClient.from("aprovacao_links").upsert({job_id:job.id, token_hash:await apvHash(token0), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, ...(job.docTab&&job.docTab.id?{doc_tab:job.docTab.id}:{}), doc_aba:docAba}, {onConflict:"job_id"});
     if(l0.error) throw l0.error;
     await apvPastaDaMarca(job);
     return {...job, aprovacao:{...ap0, token:token0}};
@@ -5219,7 +5222,7 @@ async function apvEnviarRoteiro(job){
   if(ult && ult.situacao==="enviado" && !(await painelDialogo.confirmar(`A marca ainda não respondeu a versão ${ult.versao}. Enviar uma versão nova mesmo assim? A anterior fica guardada no histórico.`, {ok:"Enviar versão nova"}))) return null;
   if(ult && ult.situacao==="aprovado" && !(await painelDialogo.confirmar(`A versão ${ult.versao} já foi aprovada. Enviar uma versão nova para a marca aprovar de novo?`, {ok:"Enviar versão nova"}))) return null;
   const ap = job.aprovacao || {}, token = ap.token || apvToken();
-  const l = await supabaseClient.from("aprovacao_links").upsert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:docAba||null, resumo:resumoEntregas(job)||""}, {onConflict:"job_id"});
+  const l = await supabaseClient.from("aprovacao_links").upsert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, ...(job.docTab&&job.docTab.id?{doc_tab:job.docTab.id}:{}), doc_aba:docAba||null, resumo:resumoEntregas(job)||""}, {onConflict:"job_id"});
   if(l.error) throw l.error;
   await apvPastaDaMarca(job);
   const versao = anteriores.reduce((m,e)=>Math.max(m, e.versao), 0) + 1, agora = new Date().toISOString();
@@ -7009,7 +7012,7 @@ async function ligarJobNaPasta(job, acessoId){
   const { data: ja } = await supabaseClient.from("aprovacao_links").select("job_id").eq("job_id", job.id).maybeSingle();
   const r = ja
     ? await supabaseClient.from("aprovacao_links").update({portal_marca_id:acessoId, resumo:resumoEntregas(job)||""}).eq("job_id", job.id)
-    : await supabaseClient.from("aprovacao_links").insert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:String(job.docAba||"").trim()||null, portal_marca_id:acessoId, resumo:resumoEntregas(job)||"", etapa:job.status||null, etapa_em:new Date().toISOString()});
+    : await supabaseClient.from("aprovacao_links").insert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, ...(job.docTab&&job.docTab.id?{doc_tab:job.docTab.id}:{}), doc_aba:String(job.docAba||"").trim()||null, portal_marca_id:acessoId, resumo:resumoEntregas(job)||"", etapa:job.status||null, etapa_em:new Date().toISOString()});
   window.dispatchEvent(new Event("apv:recarregar"));
   if(r.error) throw r.error;
   return ap.token ? job : {...job, aprovacao:{...ap, token}};
@@ -7159,7 +7162,7 @@ async function apvGarantirLink(job){
   const { data: ja } = await supabaseClient.from("aprovacao_links").select("job_id").eq("job_id", job.id).maybeSingle();
   const r = ja
     ? await supabaseClient.from("aprovacao_links").update({marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, resumo:resumoEntregas(job)||""}).eq("job_id", job.id)
-    : await supabaseClient.from("aprovacao_links").insert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, doc_aba:String(job.docAba||"").trim()||null, resumo:resumoEntregas(job)||""});
+    : await supabaseClient.from("aprovacao_links").insert({job_id:job.id, token_hash:await apvHash(token), marca:marcaBase(job.marca)||job.marca, produto:String(job.produto||"").trim(), ativo:true, ...(job.docTab&&job.docTab.id?{doc_tab:job.docTab.id}:{}), doc_aba:String(job.docAba||"").trim()||null, resumo:resumoEntregas(job)||""});
   if(r.error) throw r.error;
   await apvPastaDaMarca(job);
   return {...job, aprovacao:{...ap, token}};

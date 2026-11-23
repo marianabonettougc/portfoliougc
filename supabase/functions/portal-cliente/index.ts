@@ -71,7 +71,7 @@ function videoParaMarca(e: Adm, assinado: string) {
 }
 
 async function montarPasta(adm: Adm, marcaId: string, registrar: boolean) {
-  const { data: links } = await adm.from("aprovacao_links").select("job_id, marca, produto, resumo, doc_aba, etapa, etapa_em, criado_em")
+  const { data: links } = await adm.from("aprovacao_links").select("job_id, marca, produto, resumo, doc_aba, doc_tab, etapa, etapa_em, criado_em")
     .eq("portal_marca_id", marcaId).eq("ativo", true).order("criado_em", { ascending: false });
   const ls = links || [];
   if (!ls.length) return [];
@@ -91,7 +91,8 @@ async function montarPasta(adm: Adm, marcaId: string, registrar: boolean) {
   for (const l of ls) {
     const lista = todos.filter((e: Adm) => e.job_id === l.job_id);
     const ultimo = (tipo: string) => lista.filter((e: Adm) => e.tipo === tipo).slice(-1)[0];
-    const doDoc = String(l.doc_aba || "").trim();
+    // roteiro sempre pela página de aprovação do Doc (nome da aba ou o código t.xxxx que o painel guarda); o texto nunca vai para o portal
+    const doDoc = String(l.doc_aba || "").trim() || String(l.doc_tab || "").trim();
     if (registrar) {
       for (const tipo of ["roteiro", "video"]) {
         const e = ultimo(tipo);
@@ -102,7 +103,7 @@ async function montarPasta(adm: Adm, marcaId: string, registrar: boolean) {
     jobs.push({
       id: l.job_id, marca: l.marca, produto: l.produto, resumo: l.resumo || "", etapa: l.etapa || "", etapa_em: l.etapa_em || null,
       doc: doDoc ? DOC_APROVACAO_URL + "?r=" + encodeURIComponent(doDoc) : "",
-      envios: lista.map((e: Adm) => ({ id: e.id, tipo: e.tipo, versao: e.versao, titulo: e.titulo, conteudo: doDoc && e.tipo === "roteiro" ? "" : e.conteudo, situacao: e.situacao,
+      envios: lista.map((e: Adm) => ({ id: e.id, tipo: e.tipo, versao: e.versao, titulo: e.titulo, conteudo: e.tipo === "roteiro" ? "" : e.conteudo, situacao: e.situacao,
         ...videoParaMarca(e, assinados[e.id]),
         enviado_em: e.enviado_em, respondido_em: e.respondido_em, atual: ultimo(e.tipo).id === e.id })),
       historico: evs.filter((x: Adm) => x.job_id === l.job_id && x.tipo !== "abriu").map((x: Adm) => {
@@ -182,7 +183,7 @@ Deno.serve(async (req) => {
 
     if (acao === "responder") {
       const jobId = txt(corpo.job, 80);
-      const { data: link } = await adm.from("aprovacao_links").select("job_id, marca, doc_aba").eq("job_id", jobId).eq("portal_marca_id", m.id).eq("ativo", true).maybeSingle();
+      const { data: link } = await adm.from("aprovacao_links").select("job_id, marca, doc_aba, doc_tab").eq("job_id", jobId).eq("portal_marca_id", m.id).eq("ativo", true).maybeSingle();
       if (!link) return resposta({ error: "Não encontrei este projeto na sua pasta." }, 404);
       const tipo = txt(corpo.tipo, 20), nome = txt(corpo.nome, 80), texto = txt(corpo.texto, 4000), gancho = txt(corpo.gancho, 600);
       if (!FRASE[tipo]) return resposta({ error: "Resposta desconhecida." }, 400);
@@ -190,7 +191,7 @@ Deno.serve(async (req) => {
       const lista = envios || [];
       const envio = lista.find((e: Adm) => e.id === Number(corpo.envio));
       if (!envio) return resposta({ error: "Não encontrei este envio." }, 404);
-      if (envio.tipo === "roteiro" && String(link.doc_aba || "").trim()) return resposta({ error: "Este roteiro é aprovado pelo Google Doc. Use o botão Abrir o roteiro." }, 400);
+      if (envio.tipo === "roteiro") return resposta({ error: "Este roteiro é aprovado pela página do roteiro. Use o botão Abrir o roteiro." }, 400);
       const ult = lista.filter((e: Adm) => e.tipo === envio.tipo).slice(-1)[0];
       if (ult.id !== envio.id) return resposta({ error: "A Mari já enviou uma versão mais nova. Atualize a página para ver.", versaoNova: true }, 409);
       if (envio.situacao !== "enviado") return resposta({ ok: true, repetido: true, situacao: envio.situacao });

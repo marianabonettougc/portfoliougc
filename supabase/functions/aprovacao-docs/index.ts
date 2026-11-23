@@ -5,7 +5,7 @@
 // Confere o segredo (sha256 em configuracoes.docs_segredo_hash), acha o job ligado àquela aba
 // (aprovacao_links.doc_aba), registra a resposta no mesmo fluxo do portal (aprovacao_envios/eventos)
 // e manda o aviso para o celular (lembretes, disparado pelo cron em até 1 minuto).
-// Corpo: { segredo, aba, tipo: "aprovar" | "comentario" | "gancho", nome, texto, parte, marca }
+// Corpo: { segredo, aba, abaId, tipo: "aprovar" | "comentario" | "gancho", nome, texto, parte, marca }
 // =========================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -31,8 +31,21 @@ Deno.serve(async (req) => {
     const agora = new Date().toISOString();
 
     // job ligado a esta aba (o último cadastrado, se por engano houver dois)
-    const { data: links } = await adm.from("aprovacao_links").select("job_id, marca, ativo").ilike("doc_aba", aba.replace(/[%_\\]/g, "\\$&")).order("criado_em", { ascending: false }).limit(1);
-    const link = links && links[0];
+    // pelo nome da aba ou pelo código dela (t.xxxx, que o painel guarda quando puxa o roteiro do Doc)
+    const abaId = txt(corpo.abaId, 80);
+    let link = null;
+    if (abaId) {
+      const { data: porId } = await adm.from("aprovacao_links").select("job_id, marca, ativo").eq("doc_tab", abaId).order("criado_em", { ascending: false }).limit(1);
+      link = porId && porId[0];
+    }
+    if (!link) {
+      const { data: links } = await adm.from("aprovacao_links").select("job_id, marca, ativo").ilike("doc_aba", aba.replace(/[%_\\]/g, "\\$&")).order("criado_em", { ascending: false }).limit(1);
+      link = links && links[0];
+    }
+    if (!link) {
+      const { data: links } = await adm.from("aprovacao_links").select("job_id, marca, ativo").eq("doc_tab", aba).order("criado_em", { ascending: false }).limit(1);
+      link = links && links[0];
+    }
     const marca = (link && link.marca) || txt(corpo.marca, 80) || aba;
 
     let eventoId = "", ligado = false;

@@ -100,8 +100,10 @@
   }
   // situação do projeto na lista: o envio mais novo que ainda espera resposta manda
   function situacaoDoJob(j){
-    var atuais = j.envios.filter(function(e){ return e.atual && !(j.doc && e.tipo === "roteiro"); });
-    if (j.doc && !atuais.some(function(e){ return e.situacao === "enviado"; })) return { cls: "enviado", txt: "Roteiro no Google Doc" };
+    // roteiro nunca fica anexado aqui: a marca abre pela página do roteiro (j.doc)
+    var rot = j.envios.filter(function(e){ return e.atual && e.tipo === "roteiro"; })[0];
+    var atuais = j.envios.filter(function(e){ return e.atual && (e.tipo !== "roteiro" || j.doc); });
+    if (rot && !j.doc && !atuais.some(function(e){ return e.situacao === "enviado"; })) return { cls: "", txt: "Roteiro em preparação" };
     if (!atuais.length) return { cls: "", txt: "Em preparação" };
     var esp = atuais.filter(function(e){ return e.situacao === "enviado"; })[0];
     if (esp) return { cls: "enviado", txt: NOME[esp.tipo] + " para aprovar" };
@@ -144,9 +146,10 @@
 
   // situação de cada tipo de aprovação (roteiro e vídeo) num projeto
   function etapaDe(j, tipo){
-    if (tipo === "roteiro" && j.doc){
+    if (tipo === "roteiro"){
       var ev = j.envios.filter(function(e){ return e.tipo === "roteiro" && e.atual; })[0];
-      return ev && ev.situacao !== "enviado" ? { cls: ev.situacao, txt: ROTULO[ev.situacao] } : { cls: "doc", txt: "No Google Doc" };
+      if (!ev || !j.doc) return { cls: "espera", txt: "Em preparação", vazio: true };
+      return { cls: ev.situacao, txt: ROTULO[ev.situacao], versao: ev.versao, em: ev.situacao === "enviado" ? ev.enviado_em : ev.respondido_em, enviado: ev.enviado_em };
     }
     var e = j.envios.filter(function(x){ return x.tipo === tipo && x.atual; })[0];
     if (!e) return { cls: "espera", txt: tipo === "video" ? "Ainda não enviado" : "Em preparação", vazio: true };
@@ -180,7 +183,7 @@
       }).join("") + "</div>";
       // todas as aprovações, da mais nova para a mais antiga
       var todas = [];
-      jobs.forEach(function(j){ j.envios.forEach(function(e){ if (!(j.doc && e.tipo === "roteiro" && e.situacao === "enviado")) todas.push({ j: j, e: e }); }); });
+      jobs.forEach(function(j){ j.envios.forEach(function(e){ if (e.tipo !== "roteiro" || j.doc) todas.push({ j: j, e: e }); }); });
       todas.sort(function(a, b){ return String(b.e.respondido_em || b.e.enviado_em || "").localeCompare(String(a.e.respondido_em || a.e.enviado_em || "")); });
       if (todas.length){
         h += '<h2>Todas as aprovações</h2><section class="cartao todas">' + todas.map(function(x){
@@ -196,7 +199,8 @@
 
   // ---------- um projeto ----------
   function telaJob(j){
-    var atuais = j.envios.filter(function(e){ return e.atual && !(j.doc && e.tipo === "roteiro"); });
+    var atuais = j.envios.filter(function(e){ return e.atual && e.tipo !== "roteiro"; });
+    var rotAtual = j.envios.filter(function(e){ return e.atual && e.tipo === "roteiro"; })[0];
     atuais.sort(function(a, b){ return (a.situacao === "enviado" ? 0 : 1) - (b.situacao === "enviado" ? 0 : 1) || (a.tipo === "video" ? 0 : 1) - (b.tipo === "video" ? 0 : 1); });
     var h = '<div class="barra">' + topo + (PREVIA ? "" : '<button id="b-sair" type="button">Sair</button>') + "</div>";
     h += '<button type="button" class="voltar" data-voltar>‹ Seus projetos</button>';
@@ -210,12 +214,17 @@
       return "<div><b>" + NOME[t] + '</b><span class="pil p-' + s.cls + '" style="align-self:flex-start">' + esc(s.txt) + "</span>" +
         (s.versao ? '<span class="meta">versão ' + s.versao + (s.em ? " · " + quando(s.em) : "") + "</span>" : "") + "</div>";
     }).join("") + "</div>";
+    // roteiro: só o link para a página do roteiro, nunca o texto aqui dentro
     if (j.doc){
-      h += '<section class="cartao"><div class="topo"><h2>Roteiro para aprovação</h2></div>' +
-        '<p class="meta">Este roteiro está no Google Doc. Abra para ler, comentar e aprovar. A Mari é avisada na hora.</p>' +
+      var sr = etapaDe(j, "roteiro");
+      h += '<section class="cartao"><div class="topo"><h2>Roteiro</h2><span class="pil p-' + sr.cls + '">' + esc(sr.txt) + "</span></div>" +
+        '<p class="meta">Toque para abrir o roteiro, escolher o gancho, comentar e aprovar. A Mari é avisada na hora.</p>' +
         '<a class="botao" href="' + esc(j.doc) + '" target="_blank" rel="noopener">Abrir o roteiro</a></section>';
+    } else if (rotAtual){
+      h += '<section class="cartao"><div class="topo"><h2>Roteiro</h2><span class="pil p-espera">Em preparação</span></div>' +
+        '<p class="meta">O link do roteiro aparece aqui assim que a Mari liberar.</p></section>';
     }
-    if (!j.doc && !atuais.length){
+    if (!j.doc && !rotAtual && !atuais.length){
       h += '<p class="cartao">Ainda não há nada para aprovar neste projeto. Assim que a Mari enviar o roteiro ou o vídeo, ele aparece aqui.</p>';
     }
     atuais.forEach(function(e){
@@ -251,7 +260,7 @@
           (x.gancho ? "<q>Gancho escolhido: " + esc(x.gancho) + "</q>" : "") + (x.texto ? "<q>" + esc(x.texto) + "</q>" : "") + "</div>";
       }).join("") + "</div></section>";
     }
-    var antigas = j.envios.filter(function(e){ return !e.atual && !(j.doc && e.tipo === "roteiro"); });
+    var antigas = j.envios.filter(function(e){ return !e.atual && e.tipo !== "roteiro"; });
     if (antigas.length){
       h += '<details class="cartao"><summary>Versões anteriores (' + antigas.length + ")</summary>" + antigas.slice().reverse().map(function(e){
         return '<div class="meta" style="margin-top:12px">' + NOME[e.tipo] + " versão " + e.versao + " · " + quando(e.enviado_em) + "</div>" +

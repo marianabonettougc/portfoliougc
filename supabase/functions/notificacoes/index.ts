@@ -11,6 +11,7 @@
 // - { acao: "disparar" }: chamada a cada minuto pelo pg_cron. Manda os lembretes cujo
 //   horário chegou (tabela lembretes, "Importante, notificar") e marca como enviados.
 //   Não precisa de login: só manda o que já venceu e nunca manda duas vezes.
+//   Guarda em lembretes.resultado por onde saiu (celulares, ntfy, email).
 // As chaves VAPID são criadas aqui mesmo na primeira vez e ficam na tabela chaves_push,
 // que só o servidor lê. Nenhuma chave vai para arquivo.
 // =========================================================
@@ -91,7 +92,12 @@ async function disparar(adm: any) {
     // marca antes de mandar, para nunca sair duas vezes se o minuto seguinte chegar junto
     const { data: marcado } = await adm.from("lembretes").update({ enviado_em: new Date().toISOString() }).eq("id", l.id).is("enviado_em", null).select("id");
     if (!marcado?.length) continue;
-    await enviarTudo(adm, "Importante: " + l.titulo, l.detalhe || `Aviso marcado para ${quandoBR(l.quando)}.`, l.url || PAINEL, "lembrete-" + l.id);
+    // guarda por onde o aviso saiu (antes uma falha de e-mail ou de celular passava sem ninguém ver)
+    let r: Record<string, unknown> = {};
+    try { r = await enviarTudo(adm, "Importante: " + l.titulo, l.detalhe || `Aviso marcado para ${quandoBR(l.quando)}.`, l.url || PAINEL, "lembrete-" + l.id); }
+    catch (e) { r = { erro: String((e as Error)?.message || e) }; }
+    if (!r.email || !r.celulares) console.error("aviso incompleto", l.id, JSON.stringify(r));
+    await adm.from("lembretes").update({ resultado: { ...r, em: new Date().toISOString() } }).eq("id", l.id).then(() => null, () => null);
     n++;
   }
   return n;
