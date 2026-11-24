@@ -350,7 +350,7 @@
     campanhas: "Todas as suas campanhas de UGC e publi, do briefing à entrega. Tudo o que você cadastra aqui entra sozinho no Financeiro.",
     marcas: "Sua agenda de marcas: contatos e leads de cada marca, num lugar só.",
     propostas: "Propostas de marcas que chegaram no seu e-mail, para você responder e transformar em campanha.",
-    prospeccao: "Marcas que você quer abordar e em que pé está a conversa com cada uma.",
+    prospeccao: "Marcas que você quer abordar e como anda a conversa com cada uma.",
     followups: "Lembretes para voltar a falar com as marcas depois de cada entrega e manter o relacionamento (e os próximos jobs).",
     candidaturas: "Campanhas e vagas em que você se candidatou (plataformas e agências) e o status de cada uma.",
     aprovacoes: "Envie roteiros para as marcas aprovarem por link e acompanhe cada resposta.",

@@ -284,7 +284,7 @@
     if (PREVIA) h += '<p class="feito aj">Prévia: os botões ficam desligados aqui.</p>';
     // vídeos em cima, separados por versão
     h += videosHtml(j, abertoId);
-    h += '<section class="cartao"><div class="topo"><h2>Em que pé está</h2><span class="pil p-' + (etapaIdx(j) === 6 ? "aprovado" : "enviado") + '">' + esc(nomeEtapa(j)) + "</span></div>" + barraHtml(j, true) +
+    h += '<section class="cartao"><div class="topo"><h2>Andamento do projeto</h2><span class="pil p-' + (etapaIdx(j) === 6 ? "aprovado" : "enviado") + '">' + esc(nomeEtapa(j)) + "</span></div>" + barraHtml(j, true) +
       (j.etapa_em ? '<p class="meta">Atualizado em ' + quando(j.etapa_em) + "</p>" : "") + "</section>";
     h += '<div class="status-job">' + ["roteiro", "video"].map(function(t){
       var s = etapaDe(j, t);
