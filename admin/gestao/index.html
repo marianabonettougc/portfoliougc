@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611240245"></script>
-<script src="../../js/dialogos.js?v=202611240245"></script>
-<script src="../../js/metricool-ig.js?v=202611240245"></script>
-<script src="../../js/corretor.js?v=202611240245"></script>
+<script src="../../js/banco.js?v=202611240315"></script>
+<script src="../../js/dialogos.js?v=202611240315"></script>
+<script src="../../js/metricool-ig.js?v=202611240315"></script>
+<script src="../../js/corretor.js?v=202611240315"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -5357,6 +5357,7 @@ function CentralAprovacoes({jobs, onAbrir, onSalvar}){
                   {g.id==="ajustes" && !ap.video && !j.docAba && <button type="button" className="btn btn-ghost btn-sm" disabled={ocupado===j.id} onClick={()=>enviar(j)}><Icon name="send" size={15}/>{ocupado===j.id?"Enviando...":"Enviar nova versão"}</button>}
                   {g.id==="sem" && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>onAbrir(j)}><Icon name="edit_note" size={15}/>Pôr o roteiro</button>}
                   {temLink && g.id!=="sem" && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>copiar(j)}><Icon name="content_copy" size={15}/>Copiar link</button>}
+                  {area && g.id!=="sem" && <BotaoMensagemAcesso acesso={area} aoErro={(t)=>setMsg({id:j.id, texto:t})}/>}
                   {temLink && g.id!=="sem" && <a className="btn btn-ghost btn-sm" href={area ? PORTAL_URL+"?previa="+area.id+"#p="+encodeURIComponent(j.id) : apvLinkPrevia(j)} target="_blank" rel="noopener"><Icon name="visibility" size={15}/>Ver como a marca vê</a>}
                 </div>
                 {cur && cur.situacao!=="enviado" && cur.situacao!=="aprovado" && (cur.texto || cur.gancho) && <div className="apv2-fala">{[cur.gancho?("Gancho escolhido: "+cur.gancho):"", cur.texto].filter(Boolean).join("\n")}</div>}
@@ -7020,6 +7021,32 @@ async function hashSenhaPortal(senha){
   return `pbkdf2$150000$${b64(sal)}$${b64(bits)}`;
 }
 const mensagemAcesso = (a, senha) => `Oi! Criei uma área só da ${a.marca} para acompanhar nossos projetos: lá você aprova os roteiros e conteúdos e vê o histórico de cada um.\n\nLink: ${linkPortal(a.login)}\nSenha: ${senha}\n\nQualquer dúvida, me chama.`;
+// Mensagem com link + senha para mandar à marca (nov/2026, pedido da Mari: no celular não tinha como copiar depois).
+// A senha não fica guardada no banco (só o hash), então para mandar de novo é criada uma senha nova.
+async function novaSenhaDoAcesso(a){
+  const senha = senhaNova();
+  const r = await supabaseClient.from("portal_marcas").update({senha_hash:await hashSenhaPortal(senha)}).eq("id", a.id).select("id, marca, login").single();
+  if(r.error) throw r.error;
+  await supabaseClient.from("portal_sessoes").delete().eq("marca_id", a.id);
+  return {acesso:r.data, senha};
+}
+function BotaoMensagemAcesso({acesso, pequeno, aoErro}){
+  const [msg,setMsg] = useState(null);
+  const [ocupado,setOcupado] = useState(false);
+  async function abrir(){
+    if(!acesso || !acesso.id) return;
+    const ok = await painelDialogo.confirmar(`A senha da ${acesso.marca} não fica guardada no painel, por segurança. Para montar a mensagem eu crio uma senha nova agora: a antiga para de funcionar e a marca entra com a nova. Continuar?`, {ok:"Criar senha e mostrar mensagem"});
+    if(!ok) return;
+    setOcupado(true);
+    try{ setMsg(await novaSenhaDoAcesso(acesso)); }
+    catch(e){ console.warn(e); if(aoErro) aoErro("Não consegui criar a senha agora. Tente de novo."); }
+    setOcupado(false);
+  }
+  return (<>
+    <button type="button" className={"btn btn-ghost "+(pequeno===false?"":"btn-sm")} disabled={ocupado} onClick={(e)=>{ e.stopPropagation(); abrir(); }}><Icon name="key" size={15}/>{ocupado ? "Criando senha..." : "Mensagem com senha"}</button>
+    {msg && <MessageModal title={`Acesso da ${msg.acesso.marca}`} text={mensagemAcesso(msg.acesso, msg.senha)} onClose={()=>setMsg(null)}/>}
+  </>);
+}
 // acesso da marca deste job (mesmo nome de marca), para o job entrar sozinho na pasta ao enviar o roteiro
 async function acessoDaMarca(marca){
   const k = normMarcaPortal(marca); if(!k) return null;
@@ -7159,6 +7186,7 @@ function AcessosMarcas({jobs, onJob}){
               </div>
               <div className="apv-botoes">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={()=>copiarLink(a)}><Icon name={copiado===a.id?"check":"content_copy"} size={15}/>{copiado===a.id?"Link copiado":"Copiar link"}</button>
+                {a.ativo && <BotaoMensagemAcesso acesso={a}/>}
                 <button type="button" className="btn btn-ghost btn-sm" onClick={()=>setEditando(a)}><Icon name="edit" size={15}/>Editar</button>
                 <a className="btn btn-ghost btn-sm" href={PORTAL_URL+"?previa="+a.id} target="_blank" rel="noopener"><Icon name="visibility" size={15}/>Ver como a marca vê</a>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={()=>ligar(a)}><Icon name={a.ativo?"lock":"lock_open"} size={15}/>{a.ativo?"Desligar":"Ligar"}</button>
@@ -7683,7 +7711,7 @@ function AreaClienteJob({f, setF}){
         <input type="checkbox" checked={!!naPasta} disabled={ocupado || acesso===undefined} onChange={alternar}/>
         <span><b>Área do cliente</b><small>{texto}</small></span>
       </label>
-      {naPasta && acesso && <div className="apv-botoes"><button type="button" className="btn btn-ghost btn-sm" onClick={copiar}><Icon name="content_copy" size={14}/>Copiar link da marca</button><a className="btn btn-ghost btn-sm" href={PORTAL_URL+"?previa="+acesso.id} target="_blank" rel="noopener"><Icon name="visibility" size={14}/>Ver como a marca vê</a></div>}
+      {naPasta && acesso && <div className="apv-botoes"><button type="button" className="btn btn-ghost btn-sm" onClick={copiar}><Icon name="content_copy" size={14}/>Copiar link da marca</button><BotaoMensagemAcesso acesso={acesso} aoErro={setErro}/><a className="btn btn-ghost btn-sm" href={PORTAL_URL+"?previa="+acesso.id} target="_blank" rel="noopener"><Icon name="visibility" size={14}/>Ver como a marca vê</a></div>}
       {erro && <div className="apv-linha">{erro}</div>}
       {msg && <MessageModal title={`Área da ${msg.acesso.marca} criada`} text={mensagemAcesso(msg.acesso, msg.senha)} onClose={()=>setMsg(null)}/>}
     </div>
