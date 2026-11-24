@@ -5,7 +5,7 @@
 //   depois que a marca aprova. Sem YouTube (a Mari pediu para deixar de fora, 23/11/2026).
 // O link (/exec) e o segredo ficam em configuracoes "google_ponte" (e em "email_webhook",
 // que a função notificacoes já usa para os e-mails). O código do script é gerado aqui (codigo()).
-// window.painelGoogle: cfg, ligado, chamar, pasta, enviarAlta, liberar, codigo, PASTA_MAE
+// window.painelGoogle: cfg, ligado, chamar, pasta, enviarAlta, liberar, lixeira, codigo, PASTA_MAE
 // =========================================================
 (function () {
   const PASTA_MAE = "Vídeos UGC aprovação";
@@ -76,6 +76,19 @@
   // libera o arquivo (qualquer pessoa com o link vê e baixa) e devolve os links
   async function liberar(id) { const j = await chamar("liberar", { arquivo: id }); return { url: j.url, baixar: j.baixar }; }
 
+  // manda o arquivo para a lixeira do Drive (some do cliente, volta pela lixeira por 30 dias); já apagado conta como ok
+  async function lixeira(id) {
+    if (!id) return true;
+    const { token } = await chamar("token");
+    const r = await fetch("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(id) + "?supportsAllDrives=true", {
+      method: "PATCH",
+      headers: { Authorization: "Bearer " + token, "Content-Type": "application/json; charset=UTF-8" },
+      body: JSON.stringify({ trashed: true }),
+    });
+    if (r.ok || r.status === 404) return true;
+    throw new Error(r.status === 403 ? "o Drive não deixou apagar (o arquivo não é da sua conta)." : "o Drive não apagou o arquivo (" + r.status + ").");
+  }
+
   // código do Apps Script (ela cola uma vez no script.google.com)
   const codigo = (segredo) => `// Ligação do painel da Mari com a conta Google dela.
 // Faz: avisos por e-mail, pasta "${PASTA_MAE}" > cliente no Drive e liberar o vídeo em alta. Não mexe no YouTube.
@@ -125,5 +138,5 @@ function testar() {
   MailApp.sendEmail(Session.getEffectiveUser().getEmail(), "[Painel] Ligação com o Google pronta", "Drive e e-mail liberados. Agora implante como App da Web.");
 }`;
 
-  window.painelGoogle = { cfg, gravar, ligado, chamar, pasta, enviarAlta, liberar, codigo, PASTA_MAE };
+  window.painelGoogle = { cfg, gravar, ligado, chamar, pasta, enviarAlta, liberar, lixeira, codigo, PASTA_MAE };
 })();

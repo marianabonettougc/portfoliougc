@@ -16,10 +16,10 @@
   // O aplicativo só roda dentro do painel (cada página é uma aba). Aberto sozinho, volta para o painel.
   if (window.top === window.self) location.replace("../#dashboard");
 </script>
-<script src="../../js/banco.js?v=202611231710"></script>
-<script src="../../js/dialogos.js?v=202611231710"></script>
-<script src="../../js/metricool-ig.js?v=202611231710"></script>
-<script src="../../js/corretor.js?v=202611231710"></script>
+<script src="../../js/banco.js?v=202611232150"></script>
+<script src="../../js/dialogos.js?v=202611232150"></script>
+<script src="../../js/metricool-ig.js?v=202611232150"></script>
+<script src="../../js/corretor.js?v=202611232150"></script>
 <script>
   // Usa o mesmo banco e o mesmo login do painel (projeto Admin UGC)
   window.APP_CONFIG = { SUPABASE_URL: window.BANCO_URL, SUPABASE_ANON_KEY: window.BANCO_CHAVE };
@@ -7204,7 +7204,21 @@ async function apvGuardarAlta(job, arquivo, nome, aoProgresso){
   return {alta, drive:{pastaId:pasta.id, url:pasta.url, cliente:pasta.cliente}};
 }
 // o vídeo de uma vez só: o original vai para o Drive e a cópia de aprovação (720p, marca d'água) para a marca
-async function apvEnviarVideo(job, arquivo, obs, aoProgresso, titulo){
+// apaga um envio de vídeo: original do Drive vai para a lixeira, cópia de aprovação sai do bucket e a versão some do portal
+async function apvExcluirEnvio(envio){
+  let avisoDrive = "";
+  const alta = envio.video && envio.video.alta;
+  if(alta && alta.id){
+    const G = googleDoPainel();
+    try{ if(!G || !(await G.ligado())) throw new Error("a ligação com o Google está desligada."); await G.lixeira(alta.id); }
+    catch(err){ console.warn(err); avisoDrive = err.message || "erro no Drive"; }
+  }
+  const { error } = await supabaseClient.from("aprovacao_envios").delete().eq("id", envio.id);
+  if(error) throw error;
+  try{ const PV = window.parent.painelVideos; if(PV && envio.video && envio.video.path) await PV.apagar(envio.video.path); }catch(e){ console.warn(e); }
+  return {avisoDrive};
+}
+async function apvEnviarVideo(job, arquivo, obs, aoProgresso, titulo, substituir){
   const aviso = (m) => { const e = new Error(m); e.aviso = true; return e; };
   if(!String(job.marca||"").trim()) throw aviso("Preencha a marca do job antes de enviar.");
   const PV = (()=>{ try{ return window.parent.painelVideos; }catch(e){ return null; } })();
@@ -7213,9 +7227,10 @@ async function apvEnviarVideo(job, arquivo, obs, aoProgresso, titulo){
   const tit = String(titulo||"").trim().slice(0,200);
   if(!tit) throw aviso("Diga qual vídeo é este (ex.: Vertical sem Black Friday) antes de enviar.");
   const { data: ant } = await supabaseClient.from("aprovacao_envios").select("versao, titulo, situacao, enviado_em").eq("job_id", job.id).eq("tipo", "video").order("versao", {ascending:true});
-  const daEntrega = (ant||[]).filter(e=>apvNormTitulo(e.titulo)===apvNormTitulo(tit));
+  const daEntrega = (ant||[]).filter(e=>apvNormTitulo(e.titulo)===apvNormTitulo(tit) && !(substituir && e.versao===substituir.versao));
   const ult = daEntrega.slice(-1)[0];
-  if(ult && ult.situacao==="enviado" && !(await painelDialogo.confirmar(`A marca ainda não respondeu "${tit}". Enviar uma versão nova dele mesmo assim? A anterior fica no histórico.`, {ok:"Enviar"}))) return null;
+  if(!String(obs||"").trim() && substituir && substituir.conteudo) obs = substituir.conteudo; // reenviar mantém o recado
+  if(ult && ult.situacao==="enviado" && !substituir && !(await painelDialogo.confirmar(`A marca ainda não respondeu "${tit}". Enviar uma versão nova dele mesmo assim? A anterior fica no histórico.`, {ok:"Enviar"}))) return null;
   const versao = (ant||[]).reduce((m,e)=>Math.max(m, e.versao), 0) + 1, agora = new Date().toISOString();
   const prog = {previa:0, drive:null};
   const avisa = () => aoProgresso && aoProgresso({...prog});
@@ -7235,10 +7250,13 @@ async function apvEnviarVideo(job, arquivo, obs, aoProgresso, titulo){
   const video = {path:guardado.path, nome:arquivo.name, tamanho:guardado.tamanho, marcaDagua:true, ...(noDrive ? {alta:noDrive.alta} : {})};
   const e = await supabaseClient.from("aprovacao_envios").insert({job_id:job.id, tipo:"video", versao, titulo:tit, conteudo:String(obs||"").trim().slice(0,4000), video, enviado_em:agora});
   if(e.error) throw e.error;
+  let avisoExcluir = "";
+  if(substituir){ try{ const x = await apvExcluirEnvio(substituir); avisoExcluir = x.avisoDrive; }catch(err){ console.warn(err); avisoExcluir = "a versão antiga não saiu ("+(err.message||"erro")+")."; } }
   const ap = novo.aprovacao || {};
   const pronto = itensNoStatusDoJob({...novo, ...(noDrive ? {drive:noDrive.drive} : {}), status:"Aprovação do Conteúdo", aprovacao:{...ap, video:{situacao:"enviado", versao, titulo:tit, em:agora, lido:true}}}, "Aprovação do Conteúdo");
   const com = guardado.semSom ? {...pronto, _semSom:true} : pronto;
-  return erroDrive ? {...com, _avisoDrive:erroDrive} : com;
+  const com2 = avisoExcluir ? {...com, _avisoExcluir:avisoExcluir} : com;
+  return erroDrive ? {...com2, _avisoDrive:erroDrive} : com2;
 }
 // vídeo enviado sem o original (Google desligado na hora): manda só o arquivo em alta; se já foi aprovado, libera para a marca
 async function apvEnviarAltaDepois(job, envio, arquivo, aoProgresso){
@@ -7276,7 +7294,8 @@ function AprovacaoVideoJob({f, setF}){
   const [altaProg,setAltaProg] = useState(null);
   const [coment,setComent] = useState({}); // id do envio -> texto do comentário sendo editado
   const [salvando,setSalvando] = useState(null);
-  const inp = useRef(null), inpAlta = useRef(null), campoTit = useRef(null);
+  const inp = useRef(null), inpAlta = useRef(null), campoTit = useRef(null), subRef = useRef(null);
+  const [excluindo,setExcluindo] = useState(null);
   const vid = (f.aprovacao||{}).video || null;
   const entregas = apvEntregas(envios);
   const sugestoes = apvSugestoesEntrega(f, entregas);
@@ -7304,18 +7323,40 @@ function AprovacaoVideoJob({f, setF}){
   function abrirEscolha(){
     setErro("");
     if(!titulo.trim()){ setErro("Escreva qual vídeo é este (ex.: Vertical sem Black Friday) antes de escolher o arquivo."); campoTit.current && campoTit.current.focus(); return; }
+    subRef.current = null;
     try{ const PV = window.parent.painelVideos; if(PV && PV.destravar) PV.destravar(); }catch(e){}
     inp.current && inp.current.click();
+  }
+  // excluir e reenviar: escolhe o vídeo novo; só depois que ele subir a versão antiga sai (portal, bucket e Drive)
+  async function reenviar(v, tit){
+    setErro(""); setAviso("");
+    const temDrive = v.video && v.video.alta && v.video.alta.id;
+    if(!(await painelDialogo.confirmar(`Excluir este envio de "${tit}" e mandar outro vídeo no lugar? A marca deixa de ver o antigo${temDrive ? " e o original dele vai para a lixeira do Drive" : ""}. O novo sobe para o Drive e para a marca do mesmo jeito.`, {ok:"Escolher o vídeo novo", perigo:true}))) return;
+    subRef.current = {...v, titulo:tit};
+    try{ const PV = window.parent.painelVideos; if(PV && PV.destravar) PV.destravar(); }catch(e){}
+    inp.current && inp.current.click();
+  }
+  async function excluir(v, tit){
+    setErro(""); setAviso("");
+    const temDrive = v.video && v.video.alta && v.video.alta.id;
+    if(!(await painelDialogo.confirmar(`Excluir este envio de "${tit}"? A marca deixa de ver este vídeo${temDrive ? " e o original vai para a lixeira do Drive (dá para recuperar lá por 30 dias)" : ""}. As respostas dela sobre ele também somem.`, {ok:"Excluir", perigo:true}))) return;
+    setExcluindo(v.id);
+    try{ const x = await apvExcluirEnvio(v); await carregar(); setAviso(x.avisoDrive ? "Envio excluído, mas o original continua no Drive: "+x.avisoDrive : (temDrive ? "Envio excluído e original mandado para a lixeira do Drive." : "Envio excluído.")); }
+    catch(e){ console.warn(e); setErro("Não consegui excluir: "+(e.message||"tente de novo.")); }
+    setExcluindo(null);
   }
   async function escolher(ev){
     const arq = ev.target.files && ev.target.files[0]; ev.target.value = "";
     if(!arq) return;
+    const sub = subRef.current; subRef.current = null;
     setErro(""); setAviso(""); setProgresso({previa:0, drive:null});
     try{
-      const novo = await apvEnviarVideo(f, arq, obs, (p)=>setProgresso(p), titulo);
+      const novo = await apvEnviarVideo(f, arq, obs, (p)=>setProgresso(p), sub ? sub.titulo : titulo, sub);
       if(novo){
         setF(p=>({...p, status:novo.status, entregaveis:novo.entregaveis, aprovacao:novo.aprovacao, ...(novo.drive ? {drive:novo.drive} : {})})); setObs(""); setTitulo(""); await carregar();
         if(novo._semSom) setAviso("O vídeo foi para a marca, mas o navegador não deixou gravar o som na cópia de aprovação. Se precisar do som, envie de novo pelo Chrome ou Edge do computador.");
+        else if(novo._avisoExcluir) setAviso("O vídeo novo foi para a marca e para o Drive, mas não consegui tirar o antigo: "+novo._avisoExcluir+" Apague o antigo à mão no Drive.");
+        else if(sub && !novo._avisoDrive) setAviso("Pronto: o envio antigo foi excluído e o vídeo novo já está com a marca e no Drive.");
         else if(novo._avisoDrive) setAviso("O vídeo foi para a marca, mas o original não foi para o Drive: "+novo._avisoDrive+" Use \"Enviar o original em alta\" na versão abaixo.");
         else if(!googleOk) setAviso("O vídeo foi para a marca. O original em alta não foi guardado porque a ligação com o Google está desligada.");
       }
@@ -7390,6 +7431,8 @@ function AprovacaoVideoJob({f, setF}){
               <div style={{display:"flex", gap:8, alignItems:"center", flexWrap:"wrap"}}><time>{apvQuando(v.enviado_em)}</time><span>{x.envios.length>1 ? `Envio ${num}` : "Enviado"}{v.video && v.video.nome ? " · "+v.video.nome : ""}</span><span className={"apv-selo "+(v.situacao==="refacao"?"ajustes":v.situacao)}>{ROT_V[v.situacao]}</span>
                 {!tocando[v.id] && v.video && <button type="button" className="btn btn-ghost btn-sm" onClick={()=>assistir(v)}><Icon name="play_arrow" size={15}/>Assistir</button>}
                 {v.video && v.video.alta && <a className="btn btn-ghost btn-sm" href={v.video.alta.url || ("https://drive.google.com/file/d/"+v.video.alta.id+"/view")} target="_blank" rel="noopener"><Icon name="hd" size={15}/>Original no Drive{v.video.alta.liberado ? " · liberado para a marca" : ""}</a>}
+                <button type="button" className="btn btn-ghost btn-sm" disabled={progresso!==null || excluindo!==null} onClick={()=>reenviar(v, x.titulo)}><Icon name="restart_alt" size={15}/>Excluir e reenviar</button>
+                <button type="button" className="btn btn-ghost btn-sm" disabled={progresso!==null || excluindo!==null} onClick={()=>excluir(v, x.titulo)}><Icon name="delete" size={15}/>{excluindo===v.id ? "Excluindo..." : "Excluir"}</button>
                 {v.video && !v.video.alta && googleOk && <button type="button" className="btn btn-ghost btn-sm" disabled={altaProg!==null} onClick={()=>{ setAltaPara(v); setTimeout(()=>inpAlta.current && inpAlta.current.click(), 0); }}><Icon name="hd" size={15}/>Enviar o original em alta</button>}
               </div>
               {tocando[v.id] && <video src={tocando[v.id]} controls playsInline style={{width:"100%", maxHeight:360, borderRadius:10, background:"#000", marginTop:6}}/>}
